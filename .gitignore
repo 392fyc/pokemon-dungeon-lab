@@ -10,3 +10,6 @@ playwright-report/
 .env
 .env.*
 !.env.example
+
+# Task worktrees (Mercury worktree rule)
+.worktrees/

@@ -54,7 +54,7 @@
     "AGENTS.md": "cea5fe571e16a10a09004943aed65cc517d6ea29949f919a9727607958d3ffbf",
     "CLAUDE.md": "b4d4b612c77319b4538ee98217cfe3081c059f349baac9d3965cfedae75a0c59"
   },
-  "source": "mercury@369cf830a808eff8687b8e915511219016429fdf",
-  "source_commit": "369cf830a808eff8687b8e915511219016429fdf",
+  "source": "mercury@88c2967f2917e539d76acbbf509a0d3570751dbd",
+  "source_commit": "88c2967f2917e539d76acbbf509a0d3570751dbd",
   "source_repo": "392fyc/Mercury"
 }

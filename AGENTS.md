@@ -1,3 +1,39 @@
+<!-- MERCURY:BEGIN managed by tools/mercury.py from the packs in .mercury/config.json; edits here stop the installer, change the pack and run apply -->
+## Mercury-managed section
+
+This section, from the begin marker to the end marker, is installed and kept up to date by Mercury
+(`python tools/mercury.py apply`) from the packs the project selects in `.mercury/config.json`. Do not edit it by
+hand: a hand edit stops the next apply. Everything outside the markers belongs to the project and is never touched.
+Paths Mercury manages, and who may change them, are listed in `.mercury/packs/core/docs/mercury-harness-ownership.md`.
+
+## Explanation and reasoning
+
+These rules bind the main agent and every subagent in both Codex and Claude Code, in every kind of task.
+
+- **Explain the Feynman way.** When you explain, report, review, or hand off, write so that someone outside the task can follow it. Use plain words, define each term the reader may not know, build from what the reader already knows, and back each point with a concrete example or the actual evidence. If you cannot explain a point simply, treat it as a gap in your own understanding: return to the source and close the gap, or mark the point as unresolved. Do not cover it with jargon.
+- **Reason from first principles in research, design, and investigation.** Start from the goal, the hard constraints, and facts verified in primary sources or by direct observation, and build the conclusion up from them. Treat conventions, analogies, existing implementations, earlier conclusions, and other agents' claims as hypotheses to check, not as premises. State the assumptions a conclusion depends on and label any that remain unverified. Check the assumptions the conclusion actually depends on, in proportion to risk; evidence that stays applicable under the evidence-reuse rules counts as verified fact. User decisions and authorization are constraints, not hypotheses.
+- **Carry the rules into delegation.** When you delegate to an agent that does not load these instructions, restate both rules in the delegation prompt. Examples: Claude Code's built-in Explore and Plan agents, agents defined with `omitClaudeMd`, and agents working in another repository or directory that has its own instructions.
+
+## Scope, verification, and completion
+
+Use .mercury/packs/core/docs/mercury-task-contract.md for
+bounded scope, test relevance, evidence reuse, provenance-check triggers,
+review, and completion. Read its details when needed for these decisions;
+it does not add a mandatory workflow or weaken governing requirements.
+
+## Mercury roles and Git safety rules
+
+- Mercury installs five roles for both hosts: `mercury-dev`, `mercury-reviewer`, `mercury-acceptance`, `mercury-design` and `mercury-research`, as `.claude/agents/mercury-*.md` and `.codex/agents/mercury-*.toml`. They are generated from `.mercury/packs/core/roles/`; change the source in Mercury, not the generated files. A project role of the same name in `.claude/agents/` takes priority over a user-level one, so these project roles apply in this project.
+- `mercury-reviewer`, `mercury-acceptance`, `mercury-design` and `mercury-research` are read-only. Codex enforces this with the sandbox; the Claude roles run a `PreToolUse` guard (`.mercury/packs/core/hooks/readonly_guard.sh`) that blocks write commands in Bash and PowerShell. The guard is best-effort, not an operating-system sandbox. A project can name more write-type scripts in `params.guard_write_scripts` in `.mercury/config.json`.
+- `.codex/rules/mercury-git-safety.rules` forbids raw `git push` and direct switching to `develop`, `main` or `master` in Codex. Perform Git writes through the controlled entry point that this project's own instructions name; never bypass a denial through another shell.
+
+## Mercury updates (deploy pack)
+
+- `.github/workflows/mercury-update.yml` and `.github/workflows/mercury-verify.yml` are managed files: Mercury renders them from `params` in `.mercury/config.json` (`integration_branch`, `required_checks`, `update_schedule`). Do not edit them by hand; change the params and run the installer from a released Mercury commit.
+- Updates arrive on their own. GitHub runs scheduled workflows only from the default branch, so when that is not the integration branch the scheduled run only starts the same workflow on the integration branch (`gh workflow run`); the update itself always runs from the integration branch's own copy. A scheduled job takes the latest released Mercury commit (`origin/master` of Mercury), and when the managed files differ it opens one pull request from a `mercury/update-*` branch into the integration branch. The same job merges that pull request (squash) only when every condition holds: the source commit is on Mercury's `master` and descends from the recorded one, only Mercury-managed paths changed, and the project's required checks plus the `Mercury verify` check (a GitHub Actions check run, not a status) are green on the exact head. Paths the new release stops shipping may only be deleted. Otherwise it stops and says why.
+- Do not push to, force-push or rebase a `mercury/update-*` branch, do not edit `.mercury/config.json` inside an update pull request, and do not merge an update pull request by hand to get around a failed condition; fix the cause or ask the project owner.
+<!-- MERCURY:END -->
+
 # 代理工作约定
 
 ## 当前范围
@@ -25,3 +61,7 @@
 保留用户已有改动，修改前读当前内容。研究文档按主题命名并维护相对链接与总索引。Obsidian 资料只通过 MCP 或 CLI 操作；MCP 写入前先核实 vault，不使用 Computer Use 编辑笔记。
 
 本仓库的研究快照不自动覆盖本机主库。需要同步时核对来源和目标的当前内容，并保存实际同步清单。环境验证产物写入忽略目录，不能提交凭据或整个环境。
+
+## Git 写入
+
+Mercury 安装的 Codex 规则禁止直接切换到 `main` 和裸 `git push`。本仓库没有另设受控推送入口，因此 Codex 完成提交后停下，由用户推送或在用户授权的流程中交付。Mercury 受管的路径不手工编辑：它们只通过 `Mercury update` 的更新 PR，或在修改 `.mercury/config.json` 参数后、从已发布的 Mercury 提交运行安装器而改变。

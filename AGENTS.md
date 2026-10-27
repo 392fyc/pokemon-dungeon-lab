@@ -24,7 +24,8 @@ it does not add a mandatory workflow or weaken governing requirements.
 ## Mercury roles and Git safety rules
 
 - Mercury installs five roles for both hosts: `mercury-dev`, `mercury-reviewer`, `mercury-acceptance`, `mercury-design` and `mercury-research`, as `.claude/agents/mercury-*.md` and `.codex/agents/mercury-*.toml`. They are generated from `.mercury/packs/core/roles/`; change the source in Mercury, not the generated files. A project role of the same name in `.claude/agents/` takes priority over a user-level one, so these project roles apply in this project.
-- `mercury-reviewer`, `mercury-acceptance`, `mercury-design` and `mercury-research` are read-only. Codex enforces this with the sandbox; the Claude roles run a `PreToolUse` guard (`.mercury/packs/core/hooks/readonly_guard.sh`) that blocks write commands in Bash and PowerShell. The guard is best-effort, not an operating-system sandbox. A project can name more write-type scripts in `params.guard_write_scripts` in `.mercury/config.json`.
+- `mercury-reviewer`, `mercury-acceptance`, `mercury-design` and `mercury-research` are read-only. Codex enforces this with the sandbox; the Claude roles run a `PreToolUse` guard (`.mercury/packs/core/hooks/readonly_guard.sh`) that blocks write commands in Bash and PowerShell. The guard is best-effort, not an operating-system sandbox. A project can name more write-type scripts in `params.guard_write_scripts` in `.mercury/config.json`, and scripts that write only for some `-Action` values in `params.guard_write_actions`.
+- A project's own roles and skills live in its project area: declared in `.mercury/local.json`, with role sources in `.mercury/local/roles/`. Mercury's installer (`tools/mercury.py apply`, run from a Mercury checkout) generates their `.claude/agents/`, `.codex/agents/` and skill entry files without the `mercury-` prefix; change the source or the manifest, never the generated files. Mercury updates do not touch this area.
 - `.codex/rules/mercury-git-safety.rules` forbids raw `git push` and direct switching to `develop`, `main` or `master` in Codex. Perform Git writes through the controlled entry point that this project's own instructions name; never bypass a denial through another shell.
 
 ## Mercury updates (deploy pack)
@@ -32,6 +33,17 @@ it does not add a mandatory workflow or weaken governing requirements.
 - `.github/workflows/mercury-update.yml` and `.github/workflows/mercury-verify.yml` are managed files: Mercury renders them from `params` in `.mercury/config.json` (`integration_branch`, `required_checks`, `update_schedule`). Do not edit them by hand; change the params and run the installer from a released Mercury commit.
 - Updates arrive on their own. GitHub runs scheduled workflows only from the default branch, so when that is not the integration branch the scheduled run only starts the same workflow on the integration branch (`gh workflow run`); the update itself always runs from the integration branch's own copy. A scheduled job takes the latest released Mercury commit (`origin/master` of Mercury), and when the managed files differ it opens one pull request from a `mercury/update-*` branch into the integration branch. The same job merges that pull request (squash) only when every condition holds: the source commit is on Mercury's `master` and descends from the recorded one, only Mercury-managed paths changed, and the project's required checks plus the `Mercury verify` check (a GitHub Actions check run, not a status) are green on the exact head. Paths the new release stops shipping may only be deleted. Otherwise it stops and says why.
 - Do not push to, force-push or rebase a `mercury/update-*` branch, do not edit `.mercury/config.json` inside an update pull request, and do not merge an update pull request by hand to get around a failed condition; fix the cause or ask the project owner.
+
+## Linked repositories
+
+Declared in `linked_repos` in `.mercury/config.json`; Mercury renders this section from it. Each entry says what the repository is for, how to find it without a machine path, how to use it quickly (skills, scripts, commands) and the rules that bind work in it. Anything its rules do not allow needs its own authorized scope.
+
+### Pokemon_Game_Research
+
+- Purpose: Obsidian vault with the main research library (PokéBonk, Pokémon Arena 2D, data and asset pipeline, decisions); docs/research in this repository is a dated snapshot of it.
+- Locate: PDL_RESEARCH_ROOT, else the research_root key of the ignored .local/roots.json in the main checkout. Stop when neither is set; never guess from a parent directory.
+- Use: Start from its README.md, which indexes the research by question, and 项目目标与当前决策.md for what is decided; docs/research-snapshot.json here lists the snapshotted sources with SHA-256.
+- Rules: Read and write only through Obsidian MCP or CLI after verifying the vault. The snapshot here never overwrites the vault automatically; a sync compares source and target and records the actual file list.
 <!-- MERCURY:END -->
 
 # 代理工作约定

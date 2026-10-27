@@ -11,7 +11,7 @@
       "purpose": "Obsidian vault with the main research library (PokéBonk, Pokémon Arena 2D, data and asset pipeline, decisions); docs/research in this repository is a dated snapshot of it.",
       "locate": "PDL_RESEARCH_ROOT, else the research_root key of the ignored .local/roots.json in the main checkout. Stop when neither is set; never guess from a parent directory.",
       "use": "Start from its README.md, which indexes the research by question, and 项目目标与当前决策.md for what is decided; docs/research-snapshot.json here lists the snapshotted sources with SHA-256.",
-      "rules": "Read and write only through Obsidian MCP or CLI after verifying the vault. The snapshot here never overwrites the vault automatically; a sync compares source and target and records the actual file list."
+      "rules": "Read and write only through Obsidian MCP or CLI after verifying the vault; never edit notes with Computer Use. The snapshot here never overwrites the vault automatically; a sync compares source and target and records the actual file list."
     }
   ],
   "params": {

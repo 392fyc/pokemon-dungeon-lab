@@ -43,7 +43,7 @@ Declared in `linked_repos` in `.mercury/config.json`; Mercury renders this secti
 - Purpose: Obsidian vault with the main research library (PokéBonk, Pokémon Arena 2D, data and asset pipeline, decisions); docs/research in this repository is a dated snapshot of it.
 - Locate: PDL_RESEARCH_ROOT, else the research_root key of the ignored .local/roots.json in the main checkout. Stop when neither is set; never guess from a parent directory.
 - Use: Start from its README.md, which indexes the research by question, and 项目目标与当前决策.md for what is decided; docs/research-snapshot.json here lists the snapshotted sources with SHA-256.
-- Rules: Read and write only through Obsidian MCP or CLI after verifying the vault. The snapshot here never overwrites the vault automatically; a sync compares source and target and records the actual file list.
+- Rules: Read and write only through Obsidian MCP or CLI after verifying the vault; never edit notes with Computer Use. The snapshot here never overwrites the vault automatically; a sync compares source and target and records the actual file list.
 <!-- MERCURY:END -->
 
 # 代理工作约定
@@ -71,6 +71,8 @@ Declared in `linked_repos` in `.mercury/config.json`; Mercury renders this secti
 ## 文件维护
 
 保留用户已有改动，修改前读当前内容。研究文档按主题命名并维护相对链接与总索引。Obsidian 资料只通过 MCP 或 CLI 操作；MCP 写入前先核实 vault，不使用 Computer Use 编辑笔记。
+
+研究主库的位置只在本机配置，不写进仓库：先读环境变量 `PDL_RESEARCH_ROOT`，没有时读主 checkout 中被 Git 忽略的 `.local/roots.json`，格式为 `{"research_root": "<研究库的绝对路径>"}`，由在本机工作的用户或代理创建。两者都没有时停止并说明缺少哪一项，不从父目录或相邻目录猜测。云端环境没有本机 vault，需要主库时同样停止。
 
 本仓库的研究快照不自动覆盖本机主库。需要同步时核对来源和目标的当前内容，并保存实际同步清单。环境验证产物写入忽略目录，不能提交凭据或整个环境。
 

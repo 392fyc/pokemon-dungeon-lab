@@ -1,0 +1,74 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createMain} from '../../src/core/engine.ts';
+import {pos,row,friend,enemy,world,doCmd,reject,move,wait,basic,skill,interact,round,switchTo,refuse,accept,finish,coords,hp,pp,preview,V,K,K5} from './fixtures.mjs';
+const U=[{strong:2},{guard:2},{strong:2,line:2}];
+function prefix(inv=true,choice='reject'){
+ let s=createMain('acceptance',inv);
+ assert.deepEqual(coords(s),[pos(0),pos(1),pos(2)]);assert.deepEqual(hp(s),[20,20,20]);
+ assert.deepEqual(s.seen,['0,1','1,1','2,1','3,1','4,1','5,1','6,1']);assert.deepEqual(pp(s),U);
+ const snapshots=[
+  [[0,1,3],[20,20,16],16],
+  [[0,2,3],[20,20,12],10],
+  [[1,2,3],[20,20,8],4],
+  [[1,2,3],[20,20,8],0]
+ ];
+ for(let i=0;i<4;i++){
+  s=round(s,i===0?move(3):basic('E'));
+  assert.deepEqual(coords(s),snapshots[i][0].map(x=>pos(x)));
+  assert.deepEqual(hp(s),snapshots[i][1]);assert.equal(s.units.E.hp,snapshots[i][2]);assert.deepEqual(pp(s),U);
+  assert.equal(s.seen.includes('7,1'),true);assert.equal(s.seen.includes('9,1'),false);assert.equal(s.round,i+1);
+ }
+ if(inv){assert.equal(s.phase,'invitation');assert.deepEqual(s.anchor,pos(3));s=choice==='accept'?accept(s,'C'):refuse(s);}
+ else assert.equal(s.invitations.length,0);
+ return s;
+}
+function scout(inv=true){
+ let s=prefix(inv);s=round(s,move(4));assert.equal(s.seen.includes('8,1'),true);assert.equal(s.seen.includes('9,1'),false);
+ s=round(s,interact(false));s=round(s,move(5));
+ assert.deepEqual(coords(s),[pos(2),pos(3),pos(5)]);assert.equal(s.seen.includes('9,1'),true);return s;
+}
+function normal(s){assert.equal(s.phase,'exit');const n=finish(s);assert.equal(n.phase,'ended');assert.equal(n.end.outcome,'normal');return n;}
+for(const inv of [true,false]){
+ test('M1 short '+inv,()=>{let s=prefix(inv);s=round(s,move(4));s=normal(round(s,interact(true)));assert.equal(s.round,6);assert.deepEqual(coords(s),[pos(1),pos(3),pos(4)]);assert.deepEqual(hp(s),[20,20,8]);assert.deepEqual(pp(s),U);assert.equal(s.end.goal,true);assert.equal(s.end.brought,0);});
+ test('M2 scout return '+inv,()=>{let s=scout(inv);s=switchTo(s,'B');s=round(s,move(4));s=normal(round(s,interact(true)));assert.equal(s.round,9);assert.deepEqual(coords(s),[pos(3),pos(4),pos(5)]);assert.deepEqual(hp(s),[20,20,8]);assert.deepEqual(pp(s),U);assert.equal(s.units.R.hp,6);});
+ test('M3 line and item '+inv,()=>{let s=scout(inv);s=round(s,move(6));assert.deepEqual(hp(s),[20,20,2]);s=round(s,skill('line','R'));assert.equal(s.units.R.hp,0);s=round(s,move(7));s=normal(round(s,interact(true)));assert.equal(s.round,11);assert.deepEqual(coords(s),[pos(4),pos(6),pos(7)]);assert.deepEqual(hp(s),[20,20,2]);assert.deepEqual(pp(s),[{strong:2},{guard:2},{strong:2,line:1}]);assert.equal(s.end.brought,1);});
+}
+test('M4 hurt then return',()=>{let s=round(scout(),move(6));s=switchTo(s,'B');s=normal(round(s,interact(true)));assert.equal(s.round,9);assert.deepEqual(coords(s),[pos(3),pos(4),pos(5)]);assert.deepEqual(hp(s),[20,20,2]);assert.deepEqual(pp(s),U);});
+for(const recruit of [false,true])test(recruit?'M6 same B plan replace C':'M5 same B plan keep C',()=>{
+ let s=prefix(true,recruit?'accept':'reject'),p=recruit?'N':'C';s=switchTo(s,'B');s=round(s,{type:'swap',target:p});
+ assert.deepEqual(coords(s),[pos(1),pos(3),pos(2)]);
+ const actions=[move(4),interact(false),move(5),move(6),move(7),interact(true)];
+ const ps=[[1,4,3],[2,4,3],[2,5,4],[3,6,5],[4,7,6],[5,7,6]],bhp=[20,20,20,14,8,2];
+ for(let i=0;i<actions.length;i++){s=round(s,actions[i]);assert.deepEqual(coords(s),ps[i].map(x=>pos(x)));assert.equal(s.units.B.hp,bhp[i]);}
+ s=normal(s);assert.equal(s.round,11);assert.deepEqual(hp(s),[20,2,recruit?10:8]);assert.equal(s.units.R.hp,6);assert.equal(s.end.brought,1);
+ if(recruit){assert.deepEqual(s.camp,['C']);assert.equal(s.units.C.hp,8);assert.deepEqual(s.units.C.pp,{strong:2,line:2});assert.deepEqual(pp(s),[{strong:2},{guard:2},{strong:1,push:1}]);}
+ else assert.deepEqual(pp(s),U);
+});
+test('V1 preflight no partial member execution',()=>{const s=scout();reject(s,{type:'round',action:move(4)});});
+test('V2 core combo and free switch (UI draft checks separately)',()=>{let s=scout();s=switchTo(s,'B');assert.equal(s.round,7);s=switchTo(s,'C');s=round(s,move(4),'B',wait);assert.equal(s.round,8);assert.deepEqual(coords(s),[pos(2),pos(3),pos(4)]);});
+test('V3 reverse without swap',()=>{let s=round(V(3),move(0));assert.deepEqual(coords(s),[pos(3),pos(2),pos(0)]);s=normal(round(s,interact(true)));assert.equal(s.round,2);});
+test('V4 side path',()=>{let s=round(V(4),wait,'C',{type:'move',to:pos(2,2)});assert.deepEqual(coords(s),[pos(3),pos(1),pos(2,2)]);s=round(s,wait);assert.deepEqual(coords(s),[pos(3),pos(2),pos(3,2)]);});
+test('V5 down body does not block; finish whole round after kill',()=>{let s=round(V(5),move(2));assert.deepEqual(coords(s),[null,pos(2),pos(1)]);assert.deepEqual(hp(s),[0,5,8]);s=round(s,basic('E'));assert.equal(s.units.E.hp,0);assert.deepEqual(coords(s),[null,pos(2),pos(1)]);assert.equal(s.queue.length,3);});
+test('V6 leader succeeds without added action',()=>{const s=round(V(6),move(2));assert.deepEqual(coords(s),[null,null,pos(1)]);assert.equal(s.leader,'C');assert.equal(s.round,1);assert.deepEqual(s.queue,['A','B','C']);});
+test('V7 normal exit includes down member no healing',()=>{const s=normal(round(V(7),interact(true)));assert.deepEqual(hp(s),[0,8,8]);assert.deepEqual(s.end.team,['A','B','C']);});
+test('V8 no slot; actual outgoing removal preview',()=>{const s=V(8);assert.equal(preview(s,'C').ok,false);reject(s,{type:'invite',choice:'accept',outgoing:'C'});assert.deepEqual(preview(s,'B').pos,pos(1,2));assert.deepEqual(preview(s,'A').pos,pos(2,2));assert.equal(refuse(s).invitations[0].status,'rejected');});
+test('V9 replace down member',()=>{const s=accept(V(9),'C');assert.deepEqual(s.units.N.pos,pos(3,2));assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.camp,['C']);assert.equal(s.units.C.hp,0);assert.deepEqual(hp(s),[20,20,10]);assert.equal(s.round,0);});
+test('V10 fixed rally across two invitations',()=>{let s=accept(V(10),'A');assert.deepEqual(s.units.N1.pos,pos(2,2));assert.equal(s.leader,'B');assert.deepEqual(s.anchor,pos(2,2));reject(s,{type:'switch',actor:'N1'});s=accept(s,'C');assert.deepEqual(s.units.N2.pos,pos(3,2));assert.deepEqual(s.queue,['B','N1','N2']);assert.deepEqual(s.camp,['A','C']);assert.deepEqual(hp(s),[10,10,10]);assert.equal(s.round,0);});
+test('V11 interaction actor down cancels exit, not acquisition',()=>{const s=round(V(11),interact(true));assert.equal(s.bag,1);assert.equal(s.phase,'playing');assert.equal(s.request,null);assert.equal(s.end,null);assert.equal(s.leader,'A');assert.deepEqual(coords(s),[pos(5),null,pos(6)]);});
+test('V12 wipe priority retains returned C',()=>{const s=round(V(12),interact(true));assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');assert.deepEqual(s.end.team,['A','B','N']);assert.deepEqual(s.end.camp,['C']);assert.equal(s.units.C.hp,8);assert.deepEqual(s.units.C.pp,{strong:2,line:2});assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.equal(s.end.goal,true);assert.equal(s.request,null);});
+test('V13 recruit after valid exit may replace actor',()=>{let s=round(V(13),interact(true));assert.equal(s.phase,'invitation');assert.equal(s.request.locked,true);s=accept(s,'B');assert.equal(s.phase,'exit');assert.deepEqual(s.units.N.pos,pos(4));assert.equal(s.leader,'A');s=normal(s);assert.equal(s.round,1);assert.deepEqual(s.end.team,['A','C','N']);assert.deepEqual(s.end.camp,['B']);assert.equal(s.units.B.hp,20);});
+test('M interaction repeat never grants duplicate target or item',()=>{
+ for(const kind of ['goal','item']){
+  let s=world({A:friend('A',0),B:friend('B',1),C:friend('C',2)},{leader:'C',points:[{pos:pos(2),kind,used:false}]});
+  s=round(s,interact(false));s=round(s,interact(false));s=normal(round(s,interact(true)));
+  assert.equal(s.round,3);assert.equal(s.goal,kind==='goal');assert.equal(s.bag,kind==='item'?1:0);assert.equal(s.end.brought,kind==='item'?1:0);
+ }
+});
+test('K1 guard and strong',()=>{let s=round(K(),skill('strong','H'),'B',skill('guard','A'));assert.deepEqual(hp(s),[8,12,10]);assert.equal(s.units.H.hp,8);assert.deepEqual(pp(s),[{strong:1},{guard:0},{strong:2,line:1}]);s=round(s,skill('strong','H'));assert.equal(s.units.H.hp,0);assert.equal(s.units.A.hp,8);assert.equal(s.units.A.pp.strong,0);});
+test('K2 push saves guard with lower HP newcomer',()=>{let s=round(K(true),skill('strong','H'),'D',skill('push','H'));assert.deepEqual(s.units.H.pos,pos(3,2));assert.equal(s.units.H.hp,14);assert.deepEqual(hp(s),[12,12,4]);assert.deepEqual(pp(s),[{strong:1},{guard:1},{strong:1,push:0}]);s=round(s,skill('strong','H'));assert.equal(s.units.H.hp,0);assert.deepEqual(hp(s),[12,12,4]);assert.equal(s.units.B.pp.guard,1);assert.equal(s.units.D.pp.strong,1);});
+for(const blocker of ['wall','unit'])test('K3 blocked push '+blocker,()=>{const s=K(true);if(blocker==='wall')s.floor=s.floor.filter(p=>p.x!==3||p.y!==1);else{s.units.X=enemy('X',3,1,20,'melee',0);s.enemies.push('X');}reject(s,{type:'round',action:skill('strong','H'),override:{actor:'D',action:skill('push','H')}});});
+test('K4 friendly unit blocks ray',()=>{const s=world({A:friend('A',2,1,20,{line:1}),B:friend('B',3,1),C:friend('C',0,1,0),R:enemy('R',5,1,6,'ranged',6,3)},{floor:row(5),enemies:['R']});reject(s,{type:'round',action:skill('line','R')});});
+test('K5 refuse and line',()=>{let s=refuse(K5());s=round(s,skill('line','R'));assert.equal(s.round,1);assert.deepEqual(hp(s),[12,12,2]);assert.equal(s.units.C.pp.line,0);assert.equal(s.units.B.pp.guard,1);assert.equal(s.units.R.hp,0);});
+test('K5 replace C costs guard and 3 rounds',()=>{let s=switchTo(accept(K5(),'C'),'Q');s=round(s,move(3),'B',skill('guard','Q'));assert.equal(s.units.Q.hp,8);s=round(s,move(4));assert.equal(s.units.Q.hp,2);s=round(s,basic('R'));assert.equal(s.round,3);assert.equal(s.units.Q.hp,2);assert.equal(s.units.B.pp.guard,0);assert.equal(s.units.A.hp,12);assert.equal(s.units.B.hp,12);assert.equal(s.units.C.hp,2);assert.equal(s.units.C.pp.line,1);});
+for(const outgoing of ['A','B'])test('K5 keep C and replace '+outgoing,()=>{let s=accept(K5(),outgoing);assert.deepEqual(s.units.Q.pos,pos(3));assert.equal(s.units[outgoing].hp,12);assert.equal(s.units[outgoing].maxHp,20);s=switchTo(s,'Q');s=round(s,move(4));assert.equal(s.units.Q.hp,4);assert.deepEqual(s.units.C.pos,pos(2));s=round(s,basic('R'));assert.equal(s.round,2);assert.equal(s.units.R.hp,0);assert.deepEqual(s.units.C.pos,pos(3));assert.equal(s.units.C.hp,2);assert.equal(s.units.C.pp.line,1);assert.equal(s.units.B.pp.guard,1);assert.equal(s.units.A.hp,12);assert.equal(s.units.B.hp,12);assert.equal(s.units.Q.hp,4);});

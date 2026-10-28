@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>同行 · 地牢试验</title>
+</head>
+<body>
+  <div id="app"><p>正在加载试验画面…</p></div>
+  <noscript>需要启用JavaScript才能运行本试验。浏览器中的原记录未被清除。</noscript>
+  <script>
+    window.addEventListener('error', function (event) {
+      if (event.target instanceof HTMLScriptElement) {
+        document.getElementById('app').textContent = '试验脚本加载失败。请检查本机服务后刷新重试；浏览器中的原记录未被清除。';
+      }
+    }, true);
+  </script>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

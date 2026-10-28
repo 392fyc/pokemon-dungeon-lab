@@ -1,0 +1,77 @@
+{
+  "specification": "392fyc/pokemon-game-research@5f3547889b30e59f6cdfebc5af8c91e46cba4ee4",
+  "subjectTree": "81ebef0b9c9d319f50708345e6ca2ccaf0887d9a",
+  "engineBlob": "df1d45f1d0311435232411e358b39201be800a1d",
+  "scenariosBlob": "00b0c1c37633486c013ebf92af128ce3c463cb82",
+  "saveBlob": "fdd26baed427a4027b01f3e600fa00df567f312c",
+  "mainBlob": "e6eb3cbd59fe05304974db3150432f97892424a2",
+  "environment": "REA Linux; source cloud/env.sh; Node v24.22.1; no dependency installs",
+  "observedAtUTC": "2026-10-28 18:17:31 UTC",
+  "commands": [
+    {
+      "command": "node --experimental-strip-types tests/acceptance/rules.test.mjs",
+      "tests": 32,
+      "pass": 32,
+      "fail": 0,
+      "exit": 0,
+      "evidenceReuse": "engine unchanged between original and final tree"
+    },
+    {
+      "command": "node --experimental-strip-types tests/acceptance/scenarios.test.mjs",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "exit": 0,
+      "evidenceReuse": "scenarios unchanged"
+    },
+    {
+      "command": "node --experimental-strip-types tests/acceptance/save.test.mjs",
+      "tests": 24,
+      "pass": 23,
+      "fail": 1,
+      "exit": 1
+    }
+  ],
+  "finding": {
+    "id": "S9-phase",
+    "input": "Save valid V13 pending invitation with locked exit request; change only current.phase to exit; reload same bytes",
+    "expected": "blocked, raw preserved, no exit before invitation",
+    "actual": {
+      "loadedStatus": "ready",
+      "phase": "exit",
+      "pendingInvitations": 1,
+      "finishExitAccepted": true,
+      "afterPhase": "ended",
+      "afterPendingInvitations": 1,
+      "afterTeam": [
+        "A",
+        "B",
+        "C"
+      ]
+    },
+    "risk": "Corrupt but structurally accepted phase lets normal startup finish exit without handling the real invitation",
+    "fixScope": "Validate phase/pending-invitation consistency at decode; preserve original raw and rerun. Production implementation not edited by acceptance author."
+  },
+  "historical": [
+    {
+      "tree": "28c6cb8eaee7e2d4299091eee1dd9fb17b409bd1",
+      "saveBlob": "a8deddf7034c655b5662b44ba0f122f635f8d666",
+      "tests": 23,
+      "pass": 21,
+      "fail": 2,
+      "failures": [
+        "negativePP",
+        "missingInviteUnit"
+      ],
+      "resolvedOnFinal": true
+    }
+  ],
+  "unverified": [
+    "V2 UI draft cancel/editor semantics",
+    "I1 keyboard repeat/focus/panel handling",
+    "real browser persistence and origin",
+    "Windows browser and native behavior",
+    "game dependency install/typecheck/build"
+  ],
+  "scope": "Independent public engine and actual TrialStore checks; no production fixes, own factories derive from approved literal fixtures; no production expected calculators."
+}

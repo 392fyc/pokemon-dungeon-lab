@@ -15,6 +15,8 @@ export function facingRow(dx:number, dy:number):number {
   const rows: Record<string, number> = {'0,1':0, '1,1':1, '1,0':2, '1,-1':3, '0,-1':4, '-1,-1':5, '-1,0':6, '-1,1':7};
   return rows[`${sx},${sy}`] ?? 0;
 }
+/** Sheet metadata (frame size and per-frame durations in 1/60 s), or undefined when a species lacks that action. */
+export const sheet = (dex:string, name:string):AnimMeta|undefined => CHARACTERS[dex]?.[name];
 export const animKey = (dex:string, name:string, row:number) => `${dex}-${name}-${row}`;
 export function preloadArt(scene:Phaser.Scene):void {
   const base = 'assets/'; // relative to the page, so the private build works from any folder
@@ -23,6 +25,11 @@ export function preloadArt(scene:Phaser.Scene):void {
   scene.load.image('exit', base + 'tiles/marker-exit.png');
   scene.load.image('goal', base + 'props/marker-goal.png');
   scene.load.image('item', base + 'props/marker-item.png');
+  scene.load.image('stairs-down', base + 'tiles/stairs-down.png');
+  scene.load.image('stairs-up', base + 'tiles/stairs-up.png');
+  scene.load.image('item-berry', base + 'props/item-berry.png');
+  scene.load.image('item-tonic', base + 'props/item-tonic.png');
+  for (const fx of ['strong', 'line', 'guard', 'push', 'heal']) scene.load.image('fx-' + fx, base + `effects/fx-${fx}.png`);
   for (const [dex, anims] of Object.entries(CHARACTERS))
     for (const [name, m] of Object.entries(anims)) scene.load.spritesheet(`${dex}-${name}`, base + m.file, {frameWidth:m.w, frameHeight:m.h});
 }

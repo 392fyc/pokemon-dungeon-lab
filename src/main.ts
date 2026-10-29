@@ -5,13 +5,15 @@ import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from './core/save.ts';
 import {createScenario,SCENARIOS,type ScenarioId} from './core/scenarios.ts';
 import './style.css';
 import {preloadArt,createAnims,skinFor,facingRow,animKey,TILE} from './render/sprites.ts';
+import {inferEvents,plan,type AnimEvent} from './render/animation.ts';
+import {playEvents,type Stage,type UnitView} from './render/playback.ts';
 const names:Record<Skill,string>={strong:'强击',line:'直线',guard:'保护',push:'推退'};
 const CN:Record<string,string>={bulbasaur:'妙蛙种子',charmander:'小火龙',squirtle:'杰尼龟',pidgey:'波波',rattata:'小拉达',spearow:'烈雀',pikachu:'皮卡丘',zubat:'超音蝠',geodude:'小拳石'};
 const specName=(u:Unit)=>u.species?(CN[u.species]??SPECIES[u.species]?.name??u.species):'';
 const nextExp=(s:World)=>s.prog&&s.prog.level<PROG.maxLevel?String(PROG.thresholds[s.prog.level]):'满级';
 const hints:Record<Skill,string>={strong:'相邻敌人，伤害10',line:'同排／列三格，伤害10；墙和存活单位挡线',guard:'相邻另一伙伴，本次敌方阶段首次伤害减4，不治疗',push:'相邻敌人，推出一格；后格须已见且空置，无伤害无眩晕'};
 const app=document.querySelector<HTMLDivElement>('#app')!;
-app.innerHTML=`<header><div class="brand">同行<span>FIELD TRIAL / 01</span></div><div class="build">${BUILD_ID} · 私有单层试验</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>完成G的记录即可结束。也可以探看后段，再决定是否带回T的成果。</p></div><div class="board-head"><span id="world-label">尚未开始</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标／出口</span><span>T 成果／出口</span><span>下／上 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP补剂</span><span>暗格尚未揭示</span></div><div id="message" role="status" aria-live="polite"></div><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section><details><summary>操作说明与试验边界</summary><p>方向键移动；点相邻敌人普攻；句点等待。普通动作合法即推进完整一轮。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑主控动作并提交。切主控不改变队列。倒下退图但仍占名额。</p><p>出口使用也占一轮，敌人仍会行动。关闭不是撤离；恢复最后成功保存点。</p><p>远征模式为随机两层迷宫：走到楼梯格后点击楼梯按钮请求跨层，可返回旧层。本试验不含救援经济与永久培养（远征含本局等级）；所有数值均为人工参数。</p></details><details><summary>检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option>${id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button></details><footer>规则源 ${SPEC_SOURCE.slice(0,7)}<br>几何占位 · 无账号 · 同一网页来源本地保存</footer></aside></main>`;
+app.innerHTML=`<header><div class="brand">同行<span>FIELD TRIAL / 01</span></div><div class="build">${BUILD_ID} · 私有单层试验</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>完成G的记录即可结束。也可以探看后段，再决定是否带回T的成果。</p></div><div class="board-head"><span id="world-label">尚未开始</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标／出口</span><span>T 成果／出口</span><span>下／上 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP补剂</span><span>暗格尚未揭示</span><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label></div><div id="message" role="status" aria-live="polite"></div><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section><details><summary>操作说明与试验边界</summary><p>方向键移动；点相邻敌人普攻；句点等待。普通动作合法即推进完整一轮。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑主控动作并提交。切主控不改变队列。倒下退图但仍占名额。</p><p>出口使用也占一轮，敌人仍会行动。关闭不是撤离；恢复最后成功保存点。</p><p>远征模式为随机两层迷宫：走到楼梯格后点击楼梯按钮请求跨层，可返回旧层。本试验不含救援经济与永久培养（远征含本局等级）；所有数值均为人工参数。</p></details><details><summary>检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option>${id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button></details><footer>规则源 ${SPEC_SOURCE.slice(0,7)}<br>几何占位 · 无账号 · 同一网页来源本地保存</footer></aside></main>`;
 const params=new URLSearchParams(location.search);const fixture=params.get('fixture') as ScenarioId|null;
 const checkMode=fixture!==null&&SCENARIOS.includes(fixture);
 /** `?seed=<integer>` fixes the expedition seed (browser checks); otherwise every expedition draws a fresh one. */
@@ -29,6 +31,13 @@ let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
 let inviteChoice:string|undefined,inviteReject=false,notice='',recentVisible=false,detailsId:string|null=null;
 let scene:BoardScene|null=null;
+/** Stage 6.4: `active` is true while a round's animation plays; every world-changing input is dropped (not queued) meanwhile. */
+const anim={active:false,shift:false};
+const PREF_KEY='trial-anim-pref'; // deliberately outside the `dungeon-trial.` namespace used by the save store
+/** Animation switch: `?anim=off|on` wins, then `window.__trialNoAnim` (browser checks), then the saved checkbox, then reduced-motion. */
+const animationEnabled=():boolean=>{const q=params.get('anim');if(q==='off')return false;if(q==='on')return true;if((window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim)return false;
+ try{const v=window.localStorage.getItem(PREF_KEY);if(v==='off')return false;if(v==='on')return true;}catch{/* storage may be blocked */}
+ return !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;};
 const $=(id:string)=>document.getElementById(id)!;
 const esc=(s:unknown)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const button=(id:string,label:string,disabled=false,extra='')=>`<button id="${id}" ${disabled?'disabled':''} ${extra}>${label}</button>`;
@@ -39,15 +48,20 @@ function clear(){draft=null;selectedSkill=null;choosingItem=null;choosingPartner
 /** A saved pending exit or pending crossing is completed once, automatically, after the save succeeded. */
 const finishing=():Parameters<typeof applyCommand>[1]|null=>{const p=store.state?.phase;return store.status!=='ready'?null:p==='exit'?{type:'finishExit'}:p==='transit'?{type:'finishTransit'}:null;};
 async function transition(p:Promise<unknown>,clearDraft=true){if(clearDraft)clear();render();await p;render();const next=finishing();if(next){const done=store.dispatch(next);render();await done;render();}}
-async function send(command:Parameters<typeof applyCommand>[1]){if(store.status!=='ready'){notice='保存未完成，当前只可查看或重试；本轮未执行。';render();return;}const predicted=applyCommand(live()!,command);if(!predicted.ok){notice=predicted.error;render();return;}const cancelledCombination=command.type==='switch'&&draft!==null;const pending=store.dispatch(command);clear();notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;inviteReject=false;}render();const r=await pending;if(!r.ok)notice=r.error;render();const next=finishing();if(next)await transition(store.dispatch(next));}
-function act(action:Action){if(!live()||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
+async function send(command:Parameters<typeof applyCommand>[1]){if(anim.active)return;if(store.status!=='ready'){notice='保存未完成，当前只可查看或重试；本轮未执行。';render();return;}const predicted=applyCommand(live()!,command);if(!predicted.ok){notice=predicted.error;render();return;}const cancelledCombination=command.type==='switch'&&draft!==null;const before=clone(live()!);const pending=store.dispatch(command);
+ let playing:Promise<void>|null=null;{const after=live();
+  // Animation is presentation only: any failure here must leave the input lock released and the real state drawn.
+  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){anim.active=true;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;render();});}}
+  catch{anim.active=false;playing=null;render();}}
+ clear();notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;inviteReject=false;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));}
+function act(action:Action){if(anim.active||!live()||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
  selectedSkill=null;choosingItem=null;
  if(draft?.swap){notice='换位已占双方动作卡；要改成其他动作，请先取消组合。';render();return;}
  if(draft){if(draft.editor===live()!.leader)draft.main=action;else draft.action=action;render();return;}
  if(action.type==='interact'&&action.exit){confirmExit=true;render();return;}
  void send({type:'round',action});
 }
-function clickCell(p:Pos){const s=live();if(!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
+function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
  const id=draft?.editor??s.leader;const target=[...s.queue,...s.enemies].find(i=>s.units[i].hp>0&&same(s.units[i].pos,p)&&s.seen.includes(key(p)));
  if(selectedSkill){if(target)act({type:'skill',skill:selectedSkill,target});else{notice='该招式需要存活的合法目标；本轮未执行。';render();}return;}
  if(target&&s.enemies.includes(target))act({type:'basic',target});else act({type:'move',to:p});
@@ -95,7 +109,7 @@ function render(){const s=live();$('legend-items').hidden=!s?.prog;scene?.paint(
 }
 function download(raw:string){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.download='trial-save-original.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 class BoardScene extends Phaser.Scene {
- private graphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();
+ private graphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;
  constructor(){super('board');}
  preload(){preloadArt(this);}
  create(){createAnims(this);this.graphics=this.add.graphics().setDepth(0);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
@@ -103,32 +117,54 @@ class BoardScene extends Phaser.Scene {
   const x=Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX;const y=Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY;clickCell({x,y});});scene=this;this.paint(live());}
  geometry(s:World){if(s.dungeon){const d=s.dungeon;return {minX:0,minY:0,cell:40,ox:0,oy:0,dungeon:true,w:d.width*40,h:d.height*40};}
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,600/(maxX-minX+1),270/(maxY-minY+1));return {minX,minY,cell,ox:(680-(maxX-minX+1)*cell)/2,oy:(350-(maxY-minY+1)*cell)/2,dungeon:false,w:680,h:350};}
- paint(s:World|null){if(!this.graphics)return;this.graphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];const text=(x:number,y:number,t:string,color='#d9e6e0',size=16)=>this.labels.push(this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6));
+ paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());});this.views.clear();this.graphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];const text=(x:number,y:number,t:string,color='#d9e6e0',size=16)=>this.labels.push(this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6));
  this.graphics.fillStyle(0x101c1b);this.graphics.fillRoundedRect(0,0,680,350,14);if(!s){this.cameras.main.setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,'准备好以后，开始探索。','#8ba39b',20);return;}
  const g=this.geometry(s);const fog=g.dungeon;if(fog){this.graphics.fillStyle(0x101c1b);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
  const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){if(fog&&!s.seen.includes(key(p)))continue;walls.add(key(q));img('wall',center(q),s.seen.includes(key(p))?.85:.3,1);}}
- for(const p of s.floor){const c=center(p),seen=s.seen.includes(key(p));if(fog&&!seen)continue;img('floor',c,seen?1:.28,1);if(seen){const point=s.points.find(q=>same(p,q.pos));if(point&&(point.kind==='berry'||point.kind==='tonic')){this.overlay.fillStyle(point.kind==='berry'?0xff9f43:0x6ec1ff,point.used?.25:1);this.overlay.fillCircle(c.x,c.y,g.cell*.2);text(c.x,c.y,point.kind==='berry'?'果':'剂','#10201c',12);}else if(point){const stairs=point.kind==='down'||point.kind==='up';img(point.kind==='goal'?'goal':point.kind==='item'?'item':'exit',c,point.used?.45:1,2,point.kind==='exit'||stairs?1:.8);if(stairs)this.tiles[this.tiles.length-1].setTint(0x8ec5ff);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='goal'?'G':point.kind==='item'?'T':point.kind==='down'?'下':point.kind==='up'?'上':'出口','#e4efb0',11);}}text(c.x-g.cell*.3,c.y+g.cell*.4,`${p.x},${p.y}`,'#8fa89c',9);}
+ for(const p of s.floor){const c=center(p),seen=s.seen.includes(key(p));if(fog&&!seen)continue;img('floor',c,seen?1:.28,1);if(seen){const point=s.points.find(q=>same(p,q.pos));if(point&&(point.kind==='berry'||point.kind==='tonic')){img(point.kind==='berry'?'item-berry':'item-tonic',c,point.used?.3:1,2,.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='berry'?'果':'剂','#e4efb0',11);}else if(point){const stairs=point.kind==='down'||point.kind==='up';img(point.kind==='goal'?'goal':point.kind==='item'?'item':point.kind==='down'?'stairs-down':point.kind==='up'?'stairs-up':'exit',c,point.used?.45:1,2,point.kind==='exit'||stairs?1:.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='goal'?'G':point.kind==='item'?'T':point.kind==='down'?'下':point.kind==='up'?'上':'出口','#e4efb0',11);}}text(c.x-g.cell*.3,c.y+g.cell*.4,`${p.x},${p.y}`,'#8fa89c',9);}
  const shown=new Set<string>();const visible=(id:string)=>{const u=s.units[id];return u.pos&&u.hp>0&&s.seen.includes(key(u.pos))?u:null;};
  for(const id of [...s.enemies,...s.queue]){const u=visible(id);if(!u||!u.pos)continue;shown.add(id);const c=center(u.pos);
-  this.graphics.fillStyle(0x000000,.35);this.graphics.fillEllipse(c.x,c.y+g.cell*.3,g.cell*.55,g.cell*.2);if(id===s.leader){this.graphics.lineStyle(3,0xf3d997);this.graphics.strokeEllipse(c.x,c.y+g.cell*.3,g.cell*.86,g.cell*.34);}
+  // Shadow and leader ring live in a per-unit Graphics (local origin = cell centre, depth 3: above floor tiles and props, below sprites, highlights and labels) so animation can move them with the sprite.
+  const ug=this.add.graphics().setDepth(3).setPosition(c.x,c.y);  // above floor tiles (1-2), below sprites (4)
+ ug.fillStyle(0x000000,.35);ug.fillEllipse(0,g.cell*.3,g.cell*.55,g.cell*.2);if(id===s.leader){ug.lineStyle(3,0xf3d997);ug.strokeEllipse(0,g.cell*.3,g.cell*.86,g.cell*.34);}
   const foes=(u.side==='enemy'?s.queue:s.enemies).map(visible).filter((v):v is NonNullable<typeof v>=>!!v&&!!v.pos);const near=foes.sort((a,b)=>Math.abs(a.pos!.x-u.pos!.x)+Math.abs(a.pos!.y-u.pos!.y)-Math.abs(b.pos!.x-u.pos!.x)-Math.abs(b.pos!.y-u.pos!.y))[0];
   const row=near?facingRow(near.pos!.x-u.pos.x,near.pos!.y-u.pos.y):u.side==='enemy'?6:2;const dex=skinFor(id,u.side,u.species);const anim=animKey(dex,'Idle',row);
   let sp=this.sprites.get(id);if(!sp){sp=this.add.sprite(c.x,c.y,`${dex}-Idle`).setDepth(4);this.sprites.set(id,sp);}
-  sp.setVisible(true).setPosition(c.x,c.y+g.cell*.08).setScale(scale).setOrigin(.5,.6);if(sp.anims.currentAnim?.key!==anim)sp.play(anim);
-  text(c.x-g.cell*.36,c.y-g.cell*.4,id,u.side==='enemy'?'#ffb4a6':'#cdeccf',11);text(c.x+g.cell*.3,c.y-g.cell*.4,`${u.hp}`,'#f0e8d0',11);}
- this.sprites.forEach((sp,id)=>{if(!shown.has(id))sp.setVisible(false);});
+  sp.setVisible(true).setAlpha(1).setPosition(c.x,c.y+g.cell*.08).setScale(scale).setOrigin(.5,.6);sp.anims.timeScale=1;if(sp.anims.currentAnim?.key!==anim)sp.play(anim);
+  const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:11,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
+  this.views.set(id,{sprite:sp,gfx:ug,labels:[ut(-g.cell*.36,-g.cell*.4,id,u.side==='enemy'?'#ffb4a6':'#cdeccf'),ut(g.cell*.3,-g.cell*.4,`${u.hp}`,'#f0e8d0')],dex,row});}
+ this.sprites.forEach((sp,id)=>{if(!shown.has(id))sp.setVisible(false);});this.lastGeometry=g;
  {const cam=this.cameras.main,lead=s.units[s.leader]?.pos;
   // Dungeon maps are bigger than the 680x350 view: follow the leader, clamped to the map (centred when the map is smaller).
   if(g.dungeon){const c=lead?center(lead):{x:g.w/2,y:g.h/2};const fit=(v:number,view:number,size:number)=>size<=view?(size-view)/2:Math.min(Math.max(v-view/2,0),size-view);cam.setScroll(fit(c.x,680,g.w),fit(c.y,350,g.h));}else cam.setScroll(0,0);}
  if(selectedSkill&&s.phase==='playing'&&!draft?.swap){const editor=draft?.editor??s.leader;for(const target of [...s.queue,...s.enemies]){const u=s.units[target];if(!u.pos||!s.seen.includes(key(u.pos)))continue;const action:Action={type:'skill',skill:selectedSkill,target};const cmd=draft&&editor!==s.leader?{type:'round' as const,action:draft.main??{type:'wait' as const},override:{actor:editor,action}}:{type:'round' as const,action,...(draft?.action?{override:{actor:draft.partner,action:draft.action}}:{})};if(applyCommand(s,cmd).ok){const c=center(u.pos);this.overlay.lineStyle(2,0xf1d88e);this.overlay.strokeCircle(c.x,c.y,g.cell*.46);}}}
  if(s.phase==='invitation'&&inviteChoice){const p=previewInvitation(s,inviteChoice);if(p.ok){const c=center(p.pos);this.overlay.lineStyle(3,0xf1d88e);this.overlay.strokeRect(c.x-g.cell/2+3,c.y-g.cell/2+3,g.cell-6,g.cell-6);}}
  }
+ /** Paints the state before the round, then plays the inferred steps on top; resolves when finished, skipped or timed out. */
+ animate(before:World,after:World,events:AnimEvent[]):Promise<void>{
+  const p=plan(events);this.paint(before,true);const g=this.lastGeometry;
+  if(!p||!g)return Promise.resolve();
+  const center=(q:Pos)=>({x:g.ox+(q.x-g.minX+.5)*g.cell,y:g.oy+(q.y-g.minY+.5)*g.cell});
+  const st:Stage={scene:this,views:this.views,center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale};
+  return new Promise<void>(resolve=>{
+   let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();try{this.paint(live(),true);}finally{resolve();}};
+   const timer=setTimeout(finish,3000); // safety net, e.g. a hidden tab where Phaser's clock is paused
+   this.skipNow=finish;
+   void playEvents(st,events).then(finish,finish);
+  });
+ }
+ skip(){this.skipNow?.();}
 }
 try{new Phaser.Game({type:Phaser.AUTO,width:680,height:350,parent:'board',backgroundColor:'#101c1b',scene:BoardScene,scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},pixelArt:true});}catch(e){notice=`画面加载失败：${String(e)}。记录未清除。`;}
 bind('open-fixture',()=>{const id=(document.getElementById('fixture') as HTMLSelectElement).value;window.open(`?fixture=${encodeURIComponent(id)}`,'_blank','noopener');});
-document.addEventListener('keydown',e=>{if(e.repeat){e.preventDefault();return;}const target=e.target as HTMLElement;if(target.matches('input,select,textarea'))return;if(e.key==='Enter'){if(target.matches('button[data-confirm]')&&!target.hasAttribute('disabled')){e.preventDefault();target.click();}else e.preventDefault();return;}if(e.key==='Escape'){if(live()?.phase==='invitation'&&inviteReject){inviteReject=false;notice='已取消拒绝，返回邀请比较。';}else{clear();notice='未执行的选择已取消。';}render();return;}const s=live();if(!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;if(['1','2','3'].includes(e.key)&&store.status==='ready'){const id=s.queue[Number(e.key)-1];if(id){void send({type:'switch',actor:id});}return;}const directions:Record<string,Pos>={ArrowRight:{x:1,y:0},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowUp:{x:0,y:-1},d:{x:1,y:0},s:{x:0,y:1},a:{x:-1,y:0},w:{x:0,y:-1}};if(directions[e.key]){e.preventDefault();const u=s.units[draft?.editor??s.leader];if(u.pos)act({type:'move',to:plus(u.pos,directions[e.key])});}if(e.key==='.')act({type:'wait'});if(e.key.toLowerCase()==='k')document.getElementById('skill-'+s.units[draft?.editor??s.leader].learned[0])?.click();});
-window.addEventListener('blur',()=>{selectedSkill=null;render();});
+document.addEventListener('keyup',e=>{if(e.key==='Shift')anim.shift=false;});
+// While a round plays, every click on a control is swallowed before its own handler sees it (nothing is queued); the animation switch stays usable.
+document.addEventListener('click',e=>{if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, label:has(#anim-toggle), summary')){e.stopPropagation();e.preventDefault();}},true);
+document.addEventListener('keydown',e=>{if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}if(e.repeat){e.preventDefault();return;}if(anim.active){if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}const target=e.target as HTMLElement;if(target.matches('input,select,textarea'))return;if(e.key==='Enter'){if(target.matches('button[data-confirm]')&&!target.hasAttribute('disabled')){e.preventDefault();target.click();}else e.preventDefault();return;}if(e.key==='Escape'){if(live()?.phase==='invitation'&&inviteReject){inviteReject=false;notice='已取消拒绝，返回邀请比较。';}else{clear();notice='未执行的选择已取消。';}render();return;}const s=live();if(!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;if(['1','2','3'].includes(e.key)&&store.status==='ready'){const id=s.queue[Number(e.key)-1];if(id){void send({type:'switch',actor:id});}return;}const directions:Record<string,Pos>={ArrowRight:{x:1,y:0},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowUp:{x:0,y:-1},d:{x:1,y:0},s:{x:0,y:1},a:{x:-1,y:0},w:{x:0,y:-1}};if(directions[e.key]){e.preventDefault();const u=s.units[draft?.editor??s.leader];if(u.pos)act({type:'move',to:plus(u.pos,directions[e.key])});}if(e.key==='.')act({type:'wait'});if(e.key.toLowerCase()==='k')document.getElementById('skill-'+s.units[draft?.editor??s.leader].learned[0])?.click();});
+window.addEventListener('blur',()=>{anim.shift=false;selectedSkill=null;render();});
+{const box=document.getElementById('anim-toggle') as HTMLInputElement;box.checked=animationEnabled();box.disabled=params.get('anim')!==null||!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim;
+ box.addEventListener('change',()=>{try{window.localStorage.setItem(PREF_KEY,box.checked?'on':'off');}catch{/* preference is optional */}if(!box.checked)scene?.skip();});}
 // Read-only state inspection and the same dispatch API for private browser acceptance.
-Object.assign(window,{trial:{store,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0})}});
+Object.assign(window,{trial:{store,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,animationEnabled}});
 render();{const next=finishing();if(next)void transition(store.dispatch(next));}

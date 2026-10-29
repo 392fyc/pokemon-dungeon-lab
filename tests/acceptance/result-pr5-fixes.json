@@ -1,0 +1,62 @@
+{
+  "baselineCommit": "2a79ba37c4f3d5f4df096be388c63b783ef87883",
+  "subjectTree": "374b916852dfe38ddb4c68ac253ddec5b6ffe7c7",
+  "specification": "docs/trial-spec/玩法研究/单层试开发短规格.md at baseline",
+  "observedAtUTC": "2026-10-29 02:32:41 UTC",
+  "environment": "REA Linux; activated Node24.22.1; no dependency installs",
+  "productionBlobs": {
+    "engine": "f37d4e1dccab1899b60aa18cd867fbfcf2348ee8",
+    "main": "ffc4ff3bcd1cf85dc7af6aaf560ac206b1a78c7c",
+    "save": "146fca2d1bac03db24f0e93f0817f0b8da7c06dc",
+    "scenarios": "00b0c1c37633486c013ebf92af128ce3c463cb82"
+  },
+  "testBlobs": {
+    "tests/acceptance/rules.test.mjs": "21a042812ee6418985407f16194683d7267a6494",
+    "tests/browser/windows.mjs": "a26af46ba75dbc2c7e262cee7d101f63cc2742e0",
+    "tests/acceptance/save.test.mjs": "79139e8ee90143f3df79ca57e7749f596dad0003",
+    "tests/acceptance/scenarios.test.mjs": "239928e5380fe602bb4e912eae2999808ae6fe0d"
+  },
+  "commands": [
+    {
+      "command": "node --experimental-strip-types tests/acceptance/rules.test.mjs",
+      "tests": 37,
+      "pass": 37,
+      "fail": 0,
+      "exit": 0
+    },
+    {
+      "command": "node --experimental-strip-types tests/acceptance/scenarios.test.mjs",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "exit": 0
+    },
+    {
+      "command": "node --experimental-strip-types tests/acceptance/save.test.mjs",
+      "tests": 24,
+      "pass": 24,
+      "fail": 0,
+      "exit": 0
+    }
+  ],
+  "syntaxOnly": [
+    "node --check tests/acceptance/rules.test.mjs",
+    "node --check tests/browser/windows.mjs"
+  ],
+  "review": {
+    "scope": "Exactly engine.ts, main.ts and one implementation selftest differ from baseline; no source/spec/save/managed path changes outside these production candidate paths.",
+    "engine": "Used goal/item and pure-exit collect rejected in preflight; error reasons split and earlier mover named; common rejection suffix added; ownPhase tracks movement for error explanation.",
+    "main": "Used points hide collect and label exit only; Esc cancels invitation reject confirmation; both leader switch paths preserve knowledge of existing draft until send emits cancellation notice.",
+    "oldTestCorrection": "Duplicate collect formerly expected a legal empty round; corrected from approved short spec, not from implementation.",
+    "runtimeConclusion": "No remaining blocker in executed engine/scenario/save assertions; UI completion awaits actual browser results."
+  },
+  "notRun": [
+    "Four PR5 browser groups and full19 groups",
+    "Windows Edge",
+    "dependency install/typecheck/build",
+    "OS focus or player experience"
+  ],
+  "browserCapabilityNote": "Chromium/Playwright exist in REA, but candidate Phaser/Vite dependencies and a running built candidate are absent; no new install performed. Main session owns Windows execution.",
+  "historicalEvidence": "result-b066.json and history/result-81.json retained byte-for-byte; prior baseline red results supplied by main session are not REA executions.",
+  "productionNotModified": true
+}

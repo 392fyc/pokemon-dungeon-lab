@@ -1,38 +1,49 @@
 # 阶段3—4单层试验验收记录
 
-2026-10-29，获准的单层片段已经实现，主会话在Windows完成生产构建和浏览器检查。阶段5的独立玩家体验尚未进行；当前证据说明程序按规格工作，不证明趣味性、平衡或玩家接受度。运行入口见[使用说明](trial-run.md)。
+2026-10-29，获准的单层片段已完成PR #5四项交互修复，主会话在Windows重建并运行规则、保存和浏览器检查。阶段5的独立玩家体验尚未进行；当前证据支持本页列出的程序检查，不证明趣味性、平衡或玩家接受度。运行入口见[使用说明](trial-run.md)。
 
 ## 范围与固定依据
 
 研究来源为`392fyc/pokemon-game-research@5f3547889b30e59f6cdfebc5af8c91e46cba4ee4`，即已合并PR #4。游戏基线为`e05cc4f5be45bc852084226ccc0e29e7a03cdf26`，当前规格同步提交为`adfba332429a918890bc07511b435d7bcd5ae4ff`。界面构建标识为`trial-0.1.0`。
 
-游戏云在旧但干净的`work@47f369d8`上仅新增实现文件，通过Git对象交付；主会话核对e05基线后导入adfba。没有把旧云工作区当成已同步远端，也没有覆盖同步规格或Mercury文件。
+本轮修复基于`2a79ba37c4f3d5f4df096be388c63b783ef87883`和[固定提交的审核评论](https://github.com/392fyc/pokemon-dungeon-lab/pull/5#issuecomment-6485884528)。游戏云只修改引擎、界面及必要自测，交付候选树`374b916852dfe38ddb4c68ac253ddec5b6ffe7c7`；REA云独立修改验收断言并复核，主会话整合、运行Windows检查和更新交付记录。保存实现、场景、依赖、12份派生规格与Mercury受管文件保持不变。
 
 核心代码绑定以下Git blob：
 
 | 路径 | 对象 |
 | --- | --- |
-| src/core/engine.ts | df1d45f1d0311435232411e358b39201be800a1d |
+| src/core/engine.ts | f37d4e1dccab1899b60aa18cd867fbfcf2348ee8 |
 | src/core/scenarios.ts | 00b0c1c37633486c013ebf92af128ce3c463cb82 |
 | src/core/save.ts | 146fca2d1bac03db24f0e93f0817f0b8da7c06dc |
-| src/main.ts | 728b69a68b2fc561c15c3226953955c33c9a11fc |
+| src/main.ts | ffc4ff3bcd1cf85dc7af6aaf560ac206b1a78c7c |
 
 只有几何占位和人工数据；没有导入角色图、Showdown或自有mod代码。第三方运行依赖的授权声明随构建保存。
 
 ## 实际检查
 
-主会话使用Windows、Node24.22.1、npm11.16.0和Edge156.0.4314.50。浏览器脚本在生产构建上运行，读取真实页面与localStorage；纯规则结果没有冒充浏览器结果。
+主会话使用Windows、Node24.22.1、npm11.16.0、Edge156.0.4314.50和Playwright1.62.1。浏览器脚本在生产构建上运行，读取真实页面与localStorage；纯规则结果没有冒充浏览器结果。
 
 | 检查 | 实际结果与范围 |
 | --- | --- |
-| npm ci | 成功安装锁文件中的依赖；Phaser4.2.1、Vite8.3.5、TypeScript5.9.3 |
-| npm run check | 类型检查通过 |
-| npm test | 26项实现自测通过，含有限状态存档回归 |
-| npm run test:acceptance | 70项独立断言在Windows通过：32项规则、14项初态、24项保存 |
-| npm run build | 成功；主脚本1,405,012字节，gzip约371.71KB，保留体积提示 |
-| npm run test:browser | 15组生产页面检查通过；真实输入覆盖M1/M2/M3/M6、V1/V2/V10/V12及保存边界 |
+| npm ci | 复用前次成功安装；锁文件及本机依赖未变，本轮未重装。Phaser4.2.1、Vite8.3.5、TypeScript5.9.3 |
+| npm run check | 本轮由build脚本执行，类型检查通过 |
+| npm test | 本轮34项实现自测通过，包含8项交互修复回归 |
+| npm run test:acceptance | 本轮75项独立断言在Windows通过：37项规则、14项初态、24项保存 |
+| npm run build | 本轮成功；主脚本1,405,755字节，gzip约371.93KB，保留体积提示 |
+| npm run test:browser | 本轮19组生产页面检查全部通过；原15组及新增4组交互回归均实际执行 |
 
-REA云独立编写预期，并使用实际engine与TrialStore运行。固定修复树上的24项保存检查全部通过；engine和场景blob未变，因此复用此前32项规则和14项初态结果。详见[独立验收入口](../tests/acceptance/README.md)和[固定收据](../tests/acceptance/result-b066.json)。REA没有运行Windows浏览器，不将主会话的检查算到它名下。
+REA云从规格独立编写预期；本轮固定候选及其实际复核范围见[独立验收入口](../tests/acceptance/README.md)和[本轮收据](../tests/acceptance/result-pr5-fixes.json)。Windows结果由主会话负责，不算作REA亲测。此前result-b066收据保留历史身份，不用于证明本次已修改的引擎或界面。
+
+## 四项修复的定向证据
+
+| 审核问题 | 当前行为和实际检查 |
+| --- | --- |
+| 已用G/T重复取得会耗轮 | 引擎拒绝重复取得，整轮状态不变；G/T取得后及V3/V7纯出口只显示“请求撤离”。浏览器实际走到这些点，确认撤离仍合法且只耗一轮 |
+| 非法原因有错或含糊 | 墙、未揭示、已有占格与前序成员移动分别提示。主图撞墙提示“目标格(2,0)是墙，不能进入；本轮未执行”；V1提示“B会先进入(4,1)，挡住C；请选择另一动作或切换主控；本轮未执行” |
+| Esc没有取消拒绝确认 | V10点击选择拒绝后按Esc，确认按钮消失，回到比较，邀请、完整世界与存档字节不变 |
+| 切主控清空草稿没有提示 | 按钮和数字键均显示“组合已取消”，只改主控，不耗轮；无草稿的下一次切换不误报取消 |
+
+新独立断言曾在旧实现上实际运行，75项中12项失败；新增4组浏览器回归也分别复现审核缺陷。导入修复后同一套独立断言和浏览器检查全部通过。未揭示格由独立引擎夹具检查；自然主图会揭示相邻地面，没有声称通过普通浏览器操作自然到达该人工局面。
 
 浏览器具体覆盖：
 
@@ -47,9 +58,9 @@ REA云独立编写预期，并使用实际engine与TrialStore运行。固定修�
 
 ## 私有产物与复现
 
-生产构建位于被忽略的`.artifacts/trial/dist/`。`.artifacts/trial/windows-browser-results.json`记录15组实际结果；同目录保留构建日志、初态与终局截图、构建文件摘要。`tests/browser/windows.mjs`可用本机已安装的Playwright和Edge复现，不包含个人机器路径或固定端口。
+生产构建位于被忽略的`.artifacts/trial/dist/`。`.artifacts/trial/windows-browser-results.json`记录19组实际结果；本轮命令日志和旧版复现结果在`.artifacts/trial-fixes/`，上次交付证据副本在其`baseline/`中。审核者的`.worktrees/review-pr5/`和`.artifacts/review-pr5/`原样保留。`tests/browser/windows.mjs`可用本机已安装的Playwright和Edge复现，不包含个人机器路径或固定端口。
 
-生产主脚本SHA-256：`5e78793fbde767d91c0ec9869e0717a3313db3d7a9a60e762b71c9f492511218`。实际构建文件清单见[交付收据](trial-delivery.json)。私有截图和浏览器来源只留在本机证据目录，不作为远端可直接访问的附件。
+生产主脚本SHA-256：`7f9a24131451934f593bcd5a78de62df92b60fa8224823932d73b955451220ea`。实际构建文件清单见[交付收据](trial-delivery.json)。本次构建使用LF的`index.html`和`public/THIRD-PARTY-NOTICES.txt`；产物摘要按实际字节计算，没有在计算前转换换行。Windows的`core.autocrlf=true`检出可能改变这两份输入及对应产物的字节，复现摘要需要同样的LF输入。私有截图和浏览器来源只留在本机证据目录，不作为远端可直接访问的附件。
 
 ## 阶段5入口与限制
 

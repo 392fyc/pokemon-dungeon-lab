@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMain} from '../../src/core/engine.ts';
-import {pos,row,friend,enemy,world,doCmd,reject,move,wait,basic,skill,interact,round,switchTo,refuse,accept,finish,coords,hp,pp,preview,V,K,K5} from './fixtures.mjs';
+import {pos,row,friend,enemy,world,doCmd,reject as rejectRaw,move,wait,basic,skill,interact,round,switchTo,refuse,accept,finish,coords,hp,pp,preview,V,K,K5} from './fixtures.mjs';
+// 拒绝必须明确说明没有执行整轮；底层helper已比较完整世界不变。
+function reject(s,command){const r=rejectRaw(s,command);assert.match(r.error,/本轮未执行/);return r;}
 const U=[{strong:2},{guard:2},{strong:2,line:2}];
 function prefix(inv=true,choice='reject'){
  let s=createMain('acceptance',inv);
@@ -45,7 +47,7 @@ for(const recruit of [false,true])test(recruit?'M6 same B plan replace C':'M5 sa
  if(recruit){assert.deepEqual(s.camp,['C']);assert.equal(s.units.C.hp,8);assert.deepEqual(s.units.C.pp,{strong:2,line:2});assert.deepEqual(pp(s),[{strong:2},{guard:2},{strong:1,push:1}]);}
  else assert.deepEqual(pp(s),U);
 });
-test('V1 preflight no partial member execution',()=>{const s=scout();reject(s,{type:'round',action:move(4)});});
+test('V1 preflight no partial member execution',()=>{const s=scout();const r=reject(s,{type:'round',action:move(4)});assert.match(r.error,/B/);assert.match(r.error,/4/);assert.match(r.error,/先|前序/);assert.doesNotMatch(r.error,/可能/);});
 test('V2 core combo and free switch (UI draft checks separately)',()=>{let s=scout();s=switchTo(s,'B');assert.equal(s.round,7);s=switchTo(s,'C');s=round(s,move(4),'B',wait);assert.equal(s.round,8);assert.deepEqual(coords(s),[pos(2),pos(3),pos(4)]);});
 test('V3 reverse without swap',()=>{let s=round(V(3),move(0));assert.deepEqual(coords(s),[pos(3),pos(2),pos(0)]);s=normal(round(s,interact(true)));assert.equal(s.round,2);});
 test('V4 side path',()=>{let s=round(V(4),wait,'C',{type:'move',to:pos(2,2)});assert.deepEqual(coords(s),[pos(3),pos(1),pos(2,2)]);s=round(s,wait);assert.deepEqual(coords(s),[pos(3),pos(2),pos(3,2)]);});
@@ -58,12 +60,28 @@ test('V10 fixed rally across two invitations',()=>{let s=accept(V(10),'A');asser
 test('V11 interaction actor down cancels exit, not acquisition',()=>{const s=round(V(11),interact(true));assert.equal(s.bag,1);assert.equal(s.phase,'playing');assert.equal(s.request,null);assert.equal(s.end,null);assert.equal(s.leader,'A');assert.deepEqual(coords(s),[pos(5),null,pos(6)]);});
 test('V12 wipe priority retains returned C',()=>{const s=round(V(12),interact(true));assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');assert.deepEqual(s.end.team,['A','B','N']);assert.deepEqual(s.end.camp,['C']);assert.equal(s.units.C.hp,8);assert.deepEqual(s.units.C.pp,{strong:2,line:2});assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.equal(s.end.goal,true);assert.equal(s.request,null);});
 test('V13 recruit after valid exit may replace actor',()=>{let s=round(V(13),interact(true));assert.equal(s.phase,'invitation');assert.equal(s.request.locked,true);s=accept(s,'B');assert.equal(s.phase,'exit');assert.deepEqual(s.units.N.pos,pos(4));assert.equal(s.leader,'A');s=normal(s);assert.equal(s.round,1);assert.deepEqual(s.end.team,['A','C','N']);assert.deepEqual(s.end.camp,['B']);assert.equal(s.units.B.hp,20);});
-test('M interaction repeat never grants duplicate target or item',()=>{
- for(const kind of ['goal','item']){
-  let s=world({A:friend('A',0),B:friend('B',1),C:friend('C',2)},{leader:'C',points:[{pos:pos(2),kind,used:false}]});
-  s=round(s,interact(false));s=round(s,interact(false));s=normal(round(s,interact(true)));
-  assert.equal(s.round,3);assert.equal(s.goal,kind==='goal');assert.equal(s.bag,kind==='item'?1:0);assert.equal(s.end.brought,kind==='item'?1:0);
- }
+// PR5: fixed literal used points and pure exit fixtures, no expected-value calculator.
+for(const kind of ['goal','item'])test('PR5 used '+kind+' rejects collect without an empty round',()=>{
+ let s=world({A:friend('A',0),B:friend('B',1),C:friend('C',2)},{leader:'C',points:[{pos:pos(2),kind,used:false}]});
+ s=round(s,interact(false));assert.equal(s.round,1);
+ const r=reject(s,{type:'round',action:interact(false)});
+ assert.match(r.error,kind==='goal'?/记录|目标|取得|使用/:/取得|物品|使用/);
+ assert.equal(s.goal,kind==='goal');assert.equal(s.bag,kind==='item'?1:0);
+ s=normal(round(s,interact(true)));
+ assert.equal(s.round,2);assert.equal(s.end.brought,kind==='item'?1:0);
+});
+for(const fixture of [3,7])test('PR5 V'+fixture+' pure exit rejects collect without state change',()=>{
+ let s=V(fixture);if(fixture===3)s=round(s,move(0));const beforeRound=s.round;
+ const r=reject(s,{type:'round',action:interact(false)});assert.match(r.error,/出口|撤离/);
+ s=normal(round(s,interact(true)));assert.equal(s.round,beforeRound+1);assert.equal(s.goal,false);assert.equal(s.bag,0);
+});
+test('PR5 wall refusal names terrain rather than hypothetical earlier member',()=>{
+ const s=createMain('wall',false),r=reject(s,{type:'round',action:{type:'move',to:pos(2,0)}});
+ assert.match(r.error,/墙|不可行走|非地面|不是可行走/);assert.doesNotMatch(r.error,/前序成员可能/);
+});
+test('PR5 unrevealed refusal names missing knowledge',()=>{
+ const s=createMain('unrevealed',false);s.seen=s.seen.filter(k=>k!=='3,1');
+ const r=reject(s,{type:'round',action:move(3)});assert.match(r.error,/未揭示|尚未发现|未发现/);assert.doesNotMatch(r.error,/前序成员可能/);
 });
 test('K1 guard and strong',()=>{let s=round(K(),skill('strong','H'),'B',skill('guard','A'));assert.deepEqual(hp(s),[8,12,10]);assert.equal(s.units.H.hp,8);assert.deepEqual(pp(s),[{strong:1},{guard:0},{strong:2,line:1}]);s=round(s,skill('strong','H'));assert.equal(s.units.H.hp,0);assert.equal(s.units.A.hp,8);assert.equal(s.units.A.pp.strong,0);});
 test('K2 push saves guard with lower HP newcomer',()=>{let s=round(K(true),skill('strong','H'),'D',skill('push','H'));assert.deepEqual(s.units.H.pos,pos(3,2));assert.equal(s.units.H.hp,14);assert.deepEqual(hp(s),[12,12,4]);assert.deepEqual(pp(s),[{strong:1},{guard:1},{strong:1,push:0}]);s=round(s,skill('strong','H'));assert.equal(s.units.H.hp,0);assert.deepEqual(hp(s),[12,12,4]);assert.equal(s.units.B.pp.guard,1);assert.equal(s.units.D.pp.strong,1);});

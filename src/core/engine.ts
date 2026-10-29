@@ -78,11 +78,24 @@ function clearRay(s:World,a:Pos,b:Pos,range:number):boolean {
   const d={x:Math.sign(b.x-a.x),y:Math.sign(b.y-a.y)};let p=plus(a,d);
   while(!same(p,b)){if(!walk(s,p)||occupied(s,p))return false;p=plus(p,d);}return true;
 }
-function invalid(s:World,id:string,a:Action):string|null {
+function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set()):string|null {
   const u=s.units[id];if(!alive(u))return `${id}已倒下，不能行动`;
   if(a.type==='wait')return null;
-  if(a.type==='move')return distance(u.pos,a.to)!==1||!walk(s,a.to)||!s.seen.includes(key(a.to))||occupied(s,a.to)?`${id}到序时目标格不可用（前序成员可能先占格）；本轮未执行`:null;
-  if(a.type==='interact')return id!==s.leader||!s.points.some(p=>same(p.pos,u.pos))?'主控必须站在交互点':null;
+  if(a.type==='move'){
+    const cell=`(${a.to.x},${a.to.y})`;
+    if(distance(u.pos,a.to)!==1)return `${id}只能移动到相邻格`;
+    if(!walk(s,a.to))return `目标格${cell}是墙，不能进入`;
+    if(!s.seen.includes(key(a.to)))return `目标格${cell}尚未揭示，不能进入`;
+    const blocker=active(s).find(v=>same(v.pos,a.to));
+    if(blocker)return moved.has(blocker.id)?`${blocker.id}会先进入${cell}，挡住${id}；请选择另一动作或切换主控`:`目标格${cell}被${blocker.id}占据，不能进入`;
+    return null;
+  }
+  if(a.type==='interact'){
+    const point=s.points.find(p=>same(p.pos,u.pos));
+    if(id!==s.leader||!point)return '主控必须站在交互点';
+    if(!a.exit&&(point.used||point.kind==='exit'))return point.kind==='goal'?'G已记录，仅可请求撤离':point.kind==='item'?'T已取得，仅可请求撤离':'此处是纯出口，仅可请求撤离';
+    return null;
+  }
   const t=s.units[a.target];if(!alive(t)||(!s.queue.includes(t.id)&&!s.enemies.includes(t.id)))return '目标不存在或已倒下';
   if(!s.seen.includes(key(t.pos)))return '目标尚未发现';
   if(a.type==='swap')return !s.queue.includes(t.id)||id===t.id||distance(u.pos,t.pos)!==1?'只能与相邻存活伙伴换位':null;
@@ -117,7 +130,7 @@ function execute(s:World,id:string,a:Action,guards:Record<string,number>):void {
   }else note(s,`${id}等待`);
 }
 function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean):string|null {
-  const guards:Record<string,number>={};const lead=s.leader;
+  const guards:Record<string,number>={};const lead=s.leader;const moved=new Set<string>();
   if(cmd.override&&(cmd.override.actor===lead||!s.queue.includes(cmd.override.actor)||!alive(s.units[cmd.override.actor])))return '只能安排另一名存活伙伴';
   if(cmd.override?.action.type==='swap')return '换位须从主控发起';
   if(cmd.override?.action.type==='interact')return '伙伴不能代替主控交互';
@@ -127,11 +140,11 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean)
   for(let i=0;i<s.queue.length;i++){const id=s.queue[i];if(!alive(s.units[id]))continue;
     if(swap&&(id===lead||id===swap)){
       if(i===later){const err=invalid(s,lead,cmd.action);if(err){if(preflight)return err;continue;}
-        const p=s.units[lead].pos;s.units[lead].pos=s.units[swap].pos;s.units[swap].pos=p;reveal(s);note(s,`${lead}与${swap}换位`);}continue;}
+        const p=s.units[lead].pos;s.units[lead].pos=s.units[swap].pos;s.units[swap].pos=p;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);}continue;}
     const explicit=id===lead?cmd.action:cmd.override?.actor===id?cmd.override.action:null;
-    const a=explicit??defaultAction(s,id);const err=invalid(s,id,a);
+    const a=explicit??defaultAction(s,id);const err=invalid(s,id,a,moved);
     if(err){if(explicit&&preflight)return err;note(s,`${id}动作失效，等待，未扣PP`);continue;}
-    execute(s,id,a,guards);
+    execute(s,id,a,guards);if(a.type==='move')moved.add(id);
   }
   if(preflight)return null;
   for(const id of s.enemies){const e=s.units[id];if(!alive(e))continue;
@@ -176,7 +189,7 @@ export function previewInvitation(s:World,outgoing?:string):InvitationPreview {
   return {ok:true,pos:clone(pos),queue,leader};
 }
 export function applyCommand(original:World,cmd:Command):Result {
-  const fail=(error:string):Result=>({ok:false,state:original,error});
+  const fail=(error:string):Result=>({ok:false,state:original,error:`${error}；本轮未执行`});
   if(cmd.type==='switch'){
     if(original.phase!=='playing'||!original.queue.includes(cmd.actor)||!alive(original.units[cmd.actor]))return fail('此时不能切换主控');
     const s=clone(original);s.leader=cmd.actor;return {ok:true,state:s};

@@ -60,7 +60,7 @@ await test('M6：邀请替换、双方换位、承伤撤离',async()=>{
  const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await key(p,'2');await click(p,'swap');await click(p,'partner-N');assert.ok((await p.locator('#controls').innerText()).includes('双方行动'));await click(p,'submit');await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,11);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,2,10]);assert.equal(s.units.C.hp,8);assert.deepEqual(s.camp,['C']);assert.equal(s.units.B.pp.guard,2);assert.deepEqual(errors,[]);return {rounds:11,team:['A20','B2','N10'],camp:'C8'};}finally{await context.close();}
 });
 await test('V1/V2、I1：直接预检、草稿取消、切主控清空、长按和详情',async()=>{
- const {context,page:p,errors}=await setup('V1');try{await start(p);const original=await state(p);await key(p,'ArrowLeft');assert.deepEqual(await state(p),original);assert.match(await p.locator('#message').innerText(),/不可用/);
+ const {context,page:p,errors}=await setup('V1');try{await start(p);const original=await state(p);await key(p,'ArrowLeft');assert.deepEqual(await state(p),original);const reason=await p.locator('#message').innerText();assert.match(reason,/B/);assert.match(reason,/4/);assert.match(reason,/先|前序/);assert.match(reason,/本轮未执行/);assert.doesNotMatch(reason,/可能/);
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');assert.equal((await state(p)).round,7);assert.equal(await p.locator('#submit').isEnabled(),true);await click(p,'detail-1');await click(p,'detail-1');assert.ok(await p.locator('#submit').count());await click(p,'cancel-draft');assert.deepEqual(await state(p),original);
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await key(p,'2');assert.equal(await p.locator('#submit').count(),0);assert.equal((await state(p)).round,7);await key(p,'3');
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await click(p,'submit');let s=await state(p);assert.equal(s.round,8);assert.deepEqual(s.queue.map(i=>s.units[i].pos.x),[2,3,4]);
@@ -103,5 +103,93 @@ await test('补充 加载失败：脚本请求失败显示原因并保留原记�
 await test('补充 S9：阶段矛盾记录阻止自动退出并保留原字节',async()=>{
  const {context,page:p,errors}=await setup('V13');try{await start(p);await click(p,'take-exit');await click(p,'exit-confirm');const bytes=await p.evaluate(()=>{const key=window.trial.store.key;const record=JSON.parse(localStorage.getItem(key));record.current.phase='exit';const bytes=JSON.stringify(record);localStorage.setItem(key,bytes);return bytes;});await p.reload();await p.waitForFunction(()=>window.trial.store.status==='blocked');assert.equal(await raw(p),bytes);assert.equal(await state(p),null);assert.equal(await p.locator('#new').count(),0);assert.match(await p.locator('#save').innerText(),/记录无法载入/);assert.deepEqual(errors,[]);return {invalidPhaseBlocked:true,noAutomaticExit:true,originalBytesPreserved:true};}finally{await context.close();}
 });
+
+/* PR5 targeted regression. Only button/keyboard interaction changes the world.
+   getState/localStorage reads below are observations, not command injection. */
+await test('PR5 已使用G/T和V3/V7出口仅提供撤离',async()=>{
+ const observations=[];
+ for(const kind of ['G','T','V3','V7']){
+  const {context,page:p,errors}=await setup(kind.startsWith('V')?kind:undefined);
+  try{
+   if(!kind.startsWith('V'))await p.locator('#config').selectOption('main-none');
+   await start(p);
+   if(kind==='G'||kind==='T'){
+    await prefix(p);await key(p,'ArrowRight');await click(p,'take');
+    if(kind==='T'){
+     await key(p,'ArrowRight');await key(p,'ArrowRight');
+     await click(p,'skill-line');await cell(p,9,1);await key(p,'ArrowRight');await click(p,'take');
+    }
+   }else if(kind==='V3')await key(p,'ArrowLeft');
+   const before=await state(p),bytes=await raw(p);
+   assert.equal(await p.locator('#take').count(),0,'used/pure exit must not offer collect');
+   assert.equal(await p.locator('#take-exit').isEnabled(),true);
+   assert.match(await p.locator('#take-exit').innerText(),/撤离/);
+   assert.doesNotMatch(await p.locator('#take-exit').innerText(),/取得|记录/);
+   await click(p,'detail-0');await click(p,'detail-0');
+   assert.deepEqual(await state(p),before);assert.equal(await raw(p),bytes);
+   await exit(p);const after=await state(p);
+   assert.equal(after.round,before.round+1);assert.equal(after.bag,before.bag);
+   assert.equal(after.end.brought,kind==='T'?1:0);assert.deepEqual(errors,[]);
+   observations.push({kind,noCollectButton:true,exitConsumesOneRound:true});
+  }finally{await context.close();}
+ }
+ return observations;
+});
+await test('PR5 非法移动点名真实原因且说明本轮未执行',async()=>{
+ const observations=[];
+ for(const fixture of [undefined,'V1']){
+  const {context,page:p,errors}=await setup(fixture);
+  try{
+   await start(p);const before=await state(p),bytes=await raw(p);
+   await key(p,fixture==='V1'?'ArrowLeft':'ArrowUp');
+   const text=await p.locator('#message').innerText();
+   assert.match(text,/本轮未执行/);assert.doesNotMatch(text,/可能/);
+   if(fixture==='V1'){assert.match(text,/B/);assert.match(text,/4/);assert.match(text,/先|前序/);}
+   else assert.match(text,/墙|不可行走|非地面|不是可行走/);
+   assert.deepEqual(await state(p),before);assert.equal(await raw(p),bytes);assert.deepEqual(errors,[]);
+   observations.push({fixture:fixture??'main-invite',text});
+  }finally{await context.close();}
+ }
+ // An unrevealed adjacent tile is tested by an independent engine fixture:
+ // normal reveal exposes all adjacent walkable tiles, so no fake browser claim.
+ return observations;
+});
+await test('PR5 V10拒绝确认按Esc回比较且不处理邀请',async()=>{
+ const {context,page:p,errors}=await setup('V10');
+ try{
+  await start(p);const before=await state(p),bytes=await raw(p);
+  await click(p,'reject');assert.equal(await p.locator('#reject-confirm').count(),1);
+  await key(p,'Escape');
+  assert.equal(await p.locator('#reject-confirm').count(),0);
+  assert.equal(await p.locator('#reject').isVisible(),true);
+  assert.equal(await p.locator('#accept').count(),1);
+  assert.deepEqual(await state(p),before);assert.equal(await raw(p),bytes);
+  assert.equal((await state(p)).invitations.filter(i=>i.status==='pending').length,2);
+  assert.deepEqual(errors,[]);return {returnedToComparison:true,invitationUnchanged:true};
+ }finally{await context.close();}
+});
+await test('PR5 伙伴草稿切主控提示取消，无草稿不误报',async()=>{
+ const observations=[];
+ for(const method of ['button','number']){
+  const {context,page:p,errors}=await setup('V1');
+  try{
+   await start(p);const before=await state(p);
+   await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');
+   await click(p,'edit-main');await key(p,'ArrowLeft');
+   assert.equal(await p.locator('#submit').count(),1);
+   if(method==='button')await click(p,'leader-1');else await key(p,'2');
+   assert.equal(await p.locator('#submit').count(),0);
+   assert.match(await p.locator('#message').innerText(),/(?:组合|草稿).*取消/);
+   assert.deepEqual(await state(p),{...before,leader:'B'});
+   // A second, real switch has no draft to cancel.
+   if(method==='button')await click(p,'leader-2');else await key(p,'3');
+   assert.doesNotMatch(await p.locator('#message').innerText(),/(?:组合|草稿).*取消/);
+   assert.deepEqual(await state(p),before);assert.deepEqual(errors,[]);
+   observations.push({method,draftCancelledWithNotice:true,noRoundConsumed:true,noFalseNotice:true});
+  }finally{await context.close();}
+ }
+ return observations;
+});
+
 await browser.close();
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

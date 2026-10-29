@@ -58,6 +58,8 @@ These rules bind the main agent and every subagent in both Codex and Claude Code
 
 先读README.md、docs/trial-spec/README.md，再读其中的当前规则、短规格和验收场景。docs/trial-spec/是本轮获准试验的固定规格副本；研究库的现行版本在docs/。云端范围以本文件和用户较新的指令为准；本仓已包含完整研究库，不需要访问本机vault。
 
+阶段3—4已以PR #5合并（03e0c2b），下一步为阶段5。2026-10-30起由本机Claude主会话接手：实现交给`mercury-dev`子代理，独立验收交给只读的`mercury-acceptance`与`mercury-reviewer`，两个Codex云只由用户手动派发；Claude云环境等确有需要时再建。详见`docs/工作环境/Claude作业方式.md`。
+
 ## 设计边界
 
 目标平台为网页和 Windows，二维随机迷宫，包含轻度撤离带出元素。可使用 Pokémon Showdown 数据；阵容以某个时代的有限多样子集起步。用户喜欢 Big Kid Nation 的 Pokémon Arena 2D 角色视觉样式。
@@ -82,4 +84,4 @@ These rules bind the main agent and every subagent in both Codex and Claude Code
 
 ## Git 写入
 
-Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。在本机（含从其他仓库启动的会话）提交与推送任务分支，经受管段「Controlled Git entry」所述的 `.mercury/packs/git-safe/scripts/git-safe.ps1`；调用任务 worktree 中的那一份。阶段3—4试开发在云端通过[当前规格的受控发布约定](docs/trial-spec/README.md)交付：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。
+Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。在本机（含从其他仓库启动的会话）提交与推送任务分支，经受管段「Controlled Git entry」所述的 `.mercury/packs/git-safe/scripts/git-safe.ps1`；调用任务 worktree 中的那一份。用户手动派发的Codex云任务（阶段3—4曾采用）通过[当前规格的受控发布约定](docs/trial-spec/README.md)交付：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。

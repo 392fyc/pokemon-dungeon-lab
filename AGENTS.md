@@ -50,15 +50,15 @@ Declared in `linked_repos` in `.mercury/config.json`; Mercury renders this secti
 
 ## 当前范围
 
-用户已授权维护研究资料、配置专用 Codex Cloud 环境以及验证该环境。开始游戏功能开发前，依据用户届时的明确任务执行。环境准备不等于引擎、玩法或首批内容已获批准。
+2026-10-29用户已批准按研究PR #4准备包开始阶段3—4试开发，并采用Vite。固定来源为pokemon-game-research@5f3547889b30e59f6cdfebc5af8c91e46cba4ee4。范围内同步规格、安装锁定依赖、建立工程、运行规则／保存／浏览器检查和交付私有可玩片段连续执行，不逐步询问。正式平衡、公开发布、网络扩权及第三方素材／数据引入不在本次范围。
 
-先读 README.md、docs/research/项目目标与当前决策.md，再按 docs/research/README.md 的问题索引进入主题。云端范围以本文件和用户较新的指令为准；快照中的本机路径只描述研究主库的位置。
+先读README.md、docs/trial-spec/README.md，再读其中的当前规则、短规格和验收场景。docs/research/及其清单仅为2026-10-25历史快照。云端范围以本文件和用户较新的指令为准；不需要访问本机vault才能读取本仓固定规格。
 
 ## 设计边界
 
 目标平台为网页和 Windows，二维随机迷宫，包含轻度撤离带出元素。可使用 Pokémon Showdown 数据；阵容以某个时代的有限多样子集起步。用户喜欢 Big Kid Nation 的 Pokémon Arena 2D 角色视觉样式。
 
-引擎、语言、时间推进方式、时代基准、首批名单、撤离与跨局保留规则、大型机制及融合是否加入，均待决定。不要把研究建议改写成批准的规则。
+本片段已采用Phaser 4.2.1＋TypeScript、Vite、行动推进回合和三人上限，具体执行按docs/trial-spec/当前入口。一张固定单层图、人工参数和自制几何占位；可返回、半额邀请、终局记录与独立重开是本轮获准的试验基准。时代基准、正式名单、长期培养、完整救援经济、素材许可路线和最终平衡仍待后续决定。
 
 ## 研究与验证
 
@@ -78,4 +78,4 @@ Declared in `linked_repos` in `.mercury/config.json`; Mercury renders this secti
 
 ## Git 写入
 
-Mercury 安装的 Codex 规则禁止直接切换到 `main` 和裸 `git push`。本仓库没有另设受控推送入口，因此 Codex 完成提交后停下，由用户推送或在用户授权的流程中交付。Mercury 受管的路径不手工编辑：它们只通过 `Mercury update` 的更新 PR，或在修改 `.mercury/config.json` 参数后、从已发布的 Mercury 提交运行安装器而改变。
+Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。本次授权工作通过[当前规格的受控发布约定](docs/trial-spec/README.md)交付：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。

@@ -1,0 +1,42 @@
+{
+  "specification": "392fyc/pokemon-game-research@5f3547889b30e59f6cdfebc5af8c91e46cba4ee4",
+  "subjectTree": "b066d9230addf4eb195e259c9e80bcf126065c26",
+  "saveBlob": "146fca2d1bac03db24f0e93f0817f0b8da7c06dc",
+  "mainBlob": "728b69a68b2fc561c15c3226953955c33c9a11fc",
+  "observedAtUTC": "2026-10-28 18:23:49 UTC",
+  "environment": "REA Linux; activated Node v24.22.1; no dependency installs",
+  "executed": {
+    "command": "node --experimental-strip-types tests/acceptance/save.test.mjs",
+    "tests": 24,
+    "pass": 24,
+    "fail": 0,
+    "exit": 0
+  },
+  "reused": [
+    {
+      "blob": "df1d45f1d0311435232411e358b39201be800a1d",
+      "tests": 32,
+      "pass": 32,
+      "reason": "engine unchanged; not rerun"
+    },
+    {
+      "blob": "00b0c1c37633486c013ebf92af128ce3c463cb82",
+      "tests": 14,
+      "pass": 14,
+      "reason": "scenarios unchanged; not rerun"
+    }
+  ],
+  "review": {
+    "save": "Finite complete-checkpoint checks added: pending invitations cannot be loaded as exit/playing/ended; locked request, survivor, anchor and sequential progress constraints checked. No persistence controller or engine changes.",
+    "main": "Only blur callback adds render(); static diff confirmed, browser effect not executed here.",
+    "regression": "S9 pendingInviteMarkedExit now blocked; all 24 existing independent tests unchanged and pass"
+  },
+  "history": "history/result-81.json preserves prior failure receipt; not current status",
+  "unverified": [
+    "integration additions pending review",
+    "V2 UI draft and I1 actual inputs",
+    "real browser storage/origin and Windows",
+    "dependency install/typecheck/build"
+  ],
+  "scopeConclusion": "No remaining blocker in this bounded rules/scenarios/save API scope; not whole-game or browser acceptance."
+}

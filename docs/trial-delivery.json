@@ -1,0 +1,444 @@
+{
+  "task_id": "dungeon-trial-pr5-interaction-fixes",
+  "status": "completed",
+  "target_repository": "392fyc/pokemon-dungeon-lab",
+  "target_branch": "codex/trial-slice",
+  "target_head_before": "2a79ba37c4f3d5f4df096be388c63b783ef87883",
+  "candidate_head": null,
+  "specification": "392fyc/pokemon-game-research@5f3547889b30e59f6cdfebc5af8c91e46cba4ee4",
+  "build": "trial-0.1.0",
+  "hashBasis": {
+    "inputs": "Git对象内容，文本按LF换行计算字节数和摘要。",
+    "artifacts": "本次生产构建文件的实际原始字节，计算前没有转换换行。构建使用LF的index.html及public/THIRD-PARTY-NOTICES.txt；core.autocrlf=true的重新检出可能产生CRLF，使HTML和声明的原始字节摘要不同。复现本文摘要时须使用相同LF输入，不将换行转换后的摘要冒充原文件摘要。"
+  },
+  "contract_summary": [
+    {
+      "contract": "研究PR #4准备包及2026-10-29用户授权",
+      "summary": "完成阶段3—4单层私有试验，两个云环境分工；不公开部署或自动合并游戏PR。"
+    },
+    {
+      "contract": ".mercury/packs/core/docs/mercury-task-contract.md",
+      "summary": "按固定候选保留独立验收与实际证据；不修改受管文件，使用受控Git对象发布。"
+    }
+  ],
+  "changed_files": [
+    "README.md",
+    "docs/trial-acceptance-2026-10-29.md",
+    "docs/trial-delivery.json",
+    "docs/trial-run.md",
+    "src/core/engine.ts",
+    "src/main.ts",
+    "tests/acceptance/README.md",
+    "tests/acceptance/result-pr5-fixes.json",
+    "tests/acceptance/rules.test.mjs",
+    "tests/browser/windows.mjs",
+    "tests/core/interaction-review.test.mjs"
+  ],
+  "inputs": [
+    {
+      "path": "index.html",
+      "bytes": 747,
+      "sha256": "e61fce29f1cb1e0f4e4e4a0989d9542294ff207014df06874a706eb311bc54a6",
+      "gitBlob": "edf8d5e2976ab68c8cd40820451a7b3e27971891"
+    },
+    {
+      "path": "package-lock.json",
+      "bytes": 26629,
+      "sha256": "7ff0eb911d943c24dd964541c30f80e8ad8e8e1bdd3b47136b88edcacc0e438b",
+      "gitBlob": "9e9ad2012939452813e743611b9e478c9b7388b2"
+    },
+    {
+      "path": "package.json",
+      "bytes": 656,
+      "sha256": "e71bb515936dd892c245ad8f015b751827b9da62780b4b1ba876799f1c70c5ca",
+      "gitBlob": "731a8b1697fd8efedb259e7cc11694ee2fa9ad2d"
+    },
+    {
+      "path": "public/THIRD-PARTY-NOTICES.txt",
+      "bytes": 3621,
+      "sha256": "12fda86c9101f4f499321fd6aef3da39a0c384b22afd177dbb699bc54b7f37f7",
+      "gitBlob": "60d64b7fd17d47317f1863dd95552850cfcb9d6c"
+    },
+    {
+      "path": "src/core/engine.ts",
+      "bytes": 16001,
+      "sha256": "97b3e75462171d068c438e1ed8982bd67bcae5e41deb24971c4eeaebcefaf2db",
+      "gitBlob": "f37d4e1dccab1899b60aa18cd867fbfcf2348ee8"
+    },
+    {
+      "path": "src/core/save.ts",
+      "bytes": 8822,
+      "sha256": "af89369bc6a91fcfcdb9124121f3bb088e285db5d593559aad69152ab33ab74f",
+      "gitBlob": "146fca2d1bac03db24f0e93f0817f0b8da7c06dc"
+    },
+    {
+      "path": "src/core/scenarios.ts",
+      "bytes": 4358,
+      "sha256": "20fb8494d8e7cdbec039846ac43c0ec9be59255a749b8401b6be3e38bfe7a83a",
+      "gitBlob": "00b0c1c37633486c013ebf92af128ce3c463cb82"
+    },
+    {
+      "path": "src/main.ts",
+      "bytes": 23245,
+      "sha256": "7925ff475198bb59b2070dc44121e3a457f77973fee49e2e076c9d77a7497006",
+      "gitBlob": "ffc4ff3bcd1cf85dc7af6aaf560ac206b1a78c7c"
+    },
+    {
+      "path": "src/style.css",
+      "bytes": 3517,
+      "sha256": "6616ab1fd383d3de315dbe1ce66f7e181762efbb55c114545debab022e143f4d",
+      "gitBlob": "dfb7c52a863562e709f27ef9312e86cfeb6602fd"
+    },
+    {
+      "path": "tsconfig.json",
+      "bytes": 250,
+      "sha256": "966d4dc6c2caad93c7faf3baefbd681ca584b05b59d2d7c3a7b54df9c6808ac6",
+      "gitBlob": "376d9bc9894e63ef0d6f6e099b0d331d4fc455a9"
+    },
+    {
+      "path": "vite.config.ts",
+      "bytes": 134,
+      "sha256": "dbd524a83414ee7987df9d3b4a9cb19f1a569f7cc7795121100e2afc7f9a2e34",
+      "gitBlob": "f0f459d16b4001d782350e3a64a75217fc351075"
+    }
+  ],
+  "verification": [
+    {
+      "command": "npm ci --no-audit --no-fund",
+      "result": "pass",
+      "evidence": "复用前次Windows安装；package.json、package-lock.json及本机依赖未改变，本轮未重装。"
+    },
+    {
+      "command": "npm run check (via npm run build)",
+      "result": "pass",
+      "evidence": "本轮TypeScript类型检查通过，退出0。"
+    },
+    {
+      "command": "npm test",
+      "result": "pass",
+      "evidence": "本轮34项自测通过，含8项交互修复回归，退出0。"
+    },
+    {
+      "command": "npm run test:acceptance",
+      "result": "pass",
+      "evidence": "本轮75项独立断言在Windows通过：37规则、14初态、24保存，退出0。"
+    },
+    {
+      "command": "npm run build",
+      "result": "pass",
+      "evidence": "本轮生产构建成功，退出0；保留主脚本体积提示。"
+    },
+    {
+      "command": "npm run test:browser",
+      "result": "pass",
+      "evidence": "本轮Windows Edge 156.0.4314.50、Playwright 1.62.1，生产构建19组检查通过，退出0。"
+    }
+  ],
+  "criteria_evidence": [
+    {
+      "criterion": "已用G/T和纯出口仅能撤离",
+      "result": "pass",
+      "evidence": [
+        "独立规则断言拒绝重复取得且全状态不变",
+        "Windows实际键鼠到达G/T/V3/V7，取得入口消失、撤离仍合法且只耗一轮"
+      ]
+    },
+    {
+      "criterion": "非法输入说明具体原因和未执行",
+      "result": "pass",
+      "evidence": [
+        "墙、未揭示、已有占格与前序B移动分别检查",
+        "V1浏览器点名B会先进入(4,1)，墙提示明确是墙，两者状态和存档不变"
+      ]
+    },
+    {
+      "criterion": "邀请确认取消和切主控取消草稿",
+      "result": "pass",
+      "evidence": [
+        "V10按Esc后回比较，邀请、世界与存档不变",
+        "按钮与数字键切主控均提示组合已取消，不耗轮；无草稿时不误提示"
+      ]
+    },
+    {
+      "criterion": "完整处理点保存、失败冻结和恢复",
+      "result": "pass",
+      "evidence": [
+        "save.ts保持原blob，本轮24项独立保存检查通过",
+        "Windows原有故障和恢复用例全部重跑通过"
+      ]
+    },
+    {
+      "criterion": "独立玩家体验",
+      "result": "partial",
+      "evidence": [
+        "未开展，阶段5的趣味性与理解观察不能由自动检查替代"
+      ]
+    }
+  ],
+  "protected_state": [
+    {
+      "subject": "Mercury受管路径、AGENTS、历史快照及12份派生规格",
+      "result": "unchanged",
+      "evidence": "相对2a79ba3仅修改交互实现、相关测试和交付文档，未修改上述路径。"
+    },
+    {
+      "subject": "保存实现、场景、依赖及历史独立收据",
+      "result": "unchanged",
+      "evidence": "src/core/save.ts、src/core/scenarios.ts、package文件、result-b066.json和history原字节不变。"
+    }
+  ],
+  "independent_evidence": {
+    "subject_tree": "374b916852dfe38ddb4c68ac253ddec5b6ffe7c7",
+    "receipt": "tests/acceptance/result-pr5-fixes.json",
+    "rules": 37,
+    "scenario_inputs": 14,
+    "save": 24,
+    "scope": "REA独立限定复核，实际执行范围见收据；Windows生产浏览器检查由主会话运行。"
+  },
+  "artifacts": [
+    {
+      "path": "THIRD-PARTY-NOTICES.txt",
+      "bytes": 3621,
+      "sha256": "12fda86c9101f4f499321fd6aef3da39a0c384b22afd177dbb699bc54b7f37f7"
+    },
+    {
+      "path": "assets/index-Aust2nA0.js",
+      "bytes": 1405755,
+      "sha256": "7f9a24131451934f593bcd5a78de62df92b60fa8224823932d73b955451220ea"
+    },
+    {
+      "path": "assets/index-CgPfNWS-.css",
+      "bytes": 3511,
+      "sha256": "a5a3efa1c48751a8850b0397adcd61fed98a5a3bab72dc65213ece1a4afab499"
+    },
+    {
+      "path": "index.html",
+      "bytes": 844,
+      "sha256": "4784cd0ba4d93b1f2cb22d3106c6bdc0a22a367aae82c27d6da4e84062761954"
+    }
+  ],
+  "browser_cases": [
+    {
+      "name": "M1、S2、S5、S8：真实输入、待邀请与终局重载、独立重开",
+      "status": "PASS",
+      "details": {
+        "rounds": 6,
+        "invitationStable": true,
+        "terminalStable": true,
+        "newRunPreservesPrevious": true,
+        "pageErrors": []
+      }
+    },
+    {
+      "name": "M2、S1：探看返回及关闭页面后同源恢复",
+      "status": "PASS",
+      "details": {
+        "rounds": 9,
+        "restoredRevealedR": true
+      }
+    },
+    {
+      "name": "M3：直线技能取物与一次结算",
+      "status": "PASS",
+      "details": {
+        "rounds": 11,
+        "brought": 1,
+        "C": 2,
+        "linePP": 1
+      }
+    },
+    {
+      "name": "M6：邀请替换、双方换位、承伤撤离",
+      "status": "PASS",
+      "details": {
+        "rounds": 11,
+        "team": [
+          "A20",
+          "B2",
+          "N10"
+        ],
+        "camp": "C8"
+      }
+    },
+    {
+      "name": "V1/V2、I1：直接预检、草稿取消、切主控清空、长按和详情",
+      "status": "PASS",
+      "details": {
+        "directRejected": true,
+        "combinedRound": 8,
+        "repeatedKeyIgnored": true
+      }
+    },
+    {
+      "name": "V10、S3、I1：连续邀请不跨面板、固定集结格",
+      "status": "PASS",
+      "details": {
+        "anchorStable": true,
+        "noCarriedConfirmation": true
+      }
+    },
+    {
+      "name": "V12、S5：全灭优先、此前回营与未带出物品",
+      "status": "PASS",
+      "details": {
+        "outcome": "wipe",
+        "acquired": 1,
+        "brought": 0,
+        "campC": 8
+      }
+    },
+    {
+      "name": "S6/S7：初次保存失败、冻结与相同记录重试",
+      "status": "PASS",
+      "details": {
+        "failedInitialNoDiskRecord": true,
+        "retrySamePayload": true
+      }
+    },
+    {
+      "name": "S6、I1：异步保存冻结、编辑草稿不排队执行",
+      "status": "PASS",
+      "details": {
+        "pendingFreeze": true,
+        "draftEditable": true,
+        "noAutomaticSubmit": true
+      }
+    },
+    {
+      "name": "S9：损坏记录保留、导出后明确重置",
+      "status": "PASS",
+      "details": {
+        "rawExportExact": true,
+        "explicitReset": true
+      }
+    },
+    {
+      "name": "补充 I1：浏览器失焦事件后选招提示同步",
+      "status": "PASS",
+      "details": {
+        "browserBlurEventInjected": true,
+        "selectionAndPromptAgree": true
+      }
+    },
+    {
+      "name": "补充 S4/S6：待退出写失败重试不重放邀请或世界轮",
+      "status": "PASS",
+      "details": {
+        "exitRetrySamePayload": true,
+        "rounds": 1,
+        "invitationOnce": true
+      }
+    },
+    {
+      "name": "补充 S4/S6/S8：终局写失败恢复、重开写失败保持旧记录",
+      "status": "PASS",
+      "details": {
+        "terminalIdStable": true,
+        "restartOldDiskRetained": true,
+        "retrySameRunId": true
+      }
+    },
+    {
+      "name": "补充 加载失败：脚本请求失败显示原因并保留原记录",
+      "status": "PASS",
+      "details": {
+        "failedModuleRequest": true,
+        "originalRecordPreserved": true
+      }
+    },
+    {
+      "name": "补充 S9：阶段矛盾记录阻止自动退出并保留原字节",
+      "status": "PASS",
+      "details": {
+        "invalidPhaseBlocked": true,
+        "noAutomaticExit": true,
+        "originalBytesPreserved": true
+      }
+    },
+    {
+      "name": "PR5 已使用G/T和V3/V7出口仅提供撤离",
+      "status": "PASS",
+      "details": [
+        {
+          "kind": "G",
+          "noCollectButton": true,
+          "exitConsumesOneRound": true
+        },
+        {
+          "kind": "T",
+          "noCollectButton": true,
+          "exitConsumesOneRound": true
+        },
+        {
+          "kind": "V3",
+          "noCollectButton": true,
+          "exitConsumesOneRound": true
+        },
+        {
+          "kind": "V7",
+          "noCollectButton": true,
+          "exitConsumesOneRound": true
+        }
+      ]
+    },
+    {
+      "name": "PR5 非法移动点名真实原因且说明本轮未执行",
+      "status": "PASS",
+      "details": [
+        {
+          "fixture": "main-invite",
+          "text": "目标格(2,0)是墙，不能进入；本轮未执行"
+        },
+        {
+          "fixture": "V1",
+          "text": "B会先进入(4,1)，挡住C；请选择另一动作或切换主控；本轮未执行"
+        }
+      ]
+    },
+    {
+      "name": "PR5 V10拒绝确认按Esc回比较且不处理邀请",
+      "status": "PASS",
+      "details": {
+        "returnedToComparison": true,
+        "invitationUnchanged": true
+      }
+    },
+    {
+      "name": "PR5 伙伴草稿切主控提示取消，无草稿不误报",
+      "status": "PASS",
+      "details": [
+        {
+          "method": "button",
+          "draftCancelledWithNotice": true,
+          "noRoundConsumed": true,
+          "noFalseNotice": true
+        },
+        {
+          "method": "number",
+          "draftCancelledWithNotice": true,
+          "noRoundConsumed": true,
+          "noFalseNotice": true
+        }
+      ]
+    }
+  ],
+  "residual_risks": [
+    "主脚本1,405,755字节，gzip约371.93KB；未开展性能专项。",
+    "没有独立体验者，趣味性与玩家偏好未验证。",
+    "本轮Windows Edge实测；云端实际执行范围分别记录。不代表操作系统窗口失焦、Electron、移动平台或公开部署验收。"
+  ],
+  "escalation_reason": null,
+  "review_comment": "https://github.com/392fyc/pokemon-dungeon-lab/pull/5#issuecomment-6485884528",
+  "buildSourceNewlines": [
+    {
+      "path": "index.html",
+      "crlf": 0,
+      "lf": 20
+    },
+    {
+      "path": "public/THIRD-PARTY-NOTICES.txt",
+      "crlf": 0,
+      "lf": 75
+    }
+  ]
+}

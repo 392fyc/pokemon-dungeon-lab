@@ -2155,6 +2155,42 @@
       },
       "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
     },
+    "tiles/floor-arena.png": {
+      "bytes": 1218,
+      "sha256": "dcd90fa4c3132fbfa27a50e96132ac2969c7c6d72c7644327899f2f36d7f50d4",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "floor-arena",
+      "prompt": "A single seamless tileable square floor tile that fills the whole image edge to edge: scorched reddish-brown stone arena slabs with worn carved border grooves and soot marks. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "44346b2cfe2493bf487c25beff0e19cae47d2aa48120f00260445abcd2e2abd6",
+      "postprocess": {
+        "crop": null,
+        "trim": false,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/floor-ash.png": {
+      "bytes": 1277,
+      "sha256": "6f9b602df54a1ba71ac1a45a114b025a3b55605e3c83779e00b4f38b8dbd961a",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "floor-ash",
+      "prompt": "A single seamless tileable square floor tile that fills the whole image edge to edge: dusty charcoal-grey volcanic ash ground with faint cracks glowing dull orange and scattered cinders. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "4576a1483fbe32bf4a5eb14ebdf8fcd50c4635b56ecded77a8e6bb454466031a",
+      "postprocess": {
+        "crop": null,
+        "trim": false,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
     "tiles/floor-stone.png": {
       "bytes": 1206,
       "sha256": "268eff6281ea80be64fdba58658aab0201a80b81bf2ada8cb2a1700ecfee702a",
@@ -2163,6 +2199,24 @@
       "card": "floor-stone",
       "prompt": "A single seamless tileable square floor tile that fills the whole image edge to edge: worn grey-green flagstones with thin dark mortar lines and a few moss flecks. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
       "rawSha256": "f36fcc9060a47e3179c27882f16911c82c7fa7e2ad5588d1a28d0e311a4897b4",
+      "postprocess": {
+        "crop": null,
+        "trim": false,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/floor-wet.png": {
+      "bytes": 1532,
+      "sha256": "a67e5124d275aeee302137a3e046b20e5a34bd653c8b3cc2c8c6a433068029d7",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "floor-wet",
+      "prompt": "A single seamless tileable square floor tile that fills the whole image edge to edge: smooth blue-grey cave stone slick with shallow puddles and thin water reflections, a few pale pebbles. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "b2c8ae1717372e15a16a65c443e20070ed19aae2fa9dd79f2fd85cc5f067646e",
       "postprocess": {
         "crop": null,
         "trim": false,
@@ -2227,6 +2281,24 @@
       },
       "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
     },
+    "tiles/wall-basalt.png": {
+      "bytes": 1295,
+      "sha256": "58c7225ff8c45f42bc31a3fdc41de1de7607f7561bc7f6b79a1d001266ef8474",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "wall-basalt",
+      "prompt": "A single seamless tileable square wall tile seen from above that fills the whole image edge to edge: very dark basalt columns with hexagonal tops, faint red-brown heat tint in the crevices, clearly darker and more solid than a floor. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "f47af046bf6a24c86b81f515d553a649c0578af70198b52d0dc38ef4d10066f1",
+      "postprocess": {
+        "crop": null,
+        "trim": false,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
     "tiles/wall-rock.png": {
       "bytes": 1254,
       "sha256": "c28e6a73ca3932ccf9578534bbe9ed4d00726a6a5ae8398a78eb4851b49fec68",
@@ -2235,6 +2307,24 @@
       "card": "wall-rock",
       "prompt": "A single seamless tileable square wall tile seen from above that fills the whole image edge to edge: dark brown-grey rough cave rock, heavier shadows, clearly darker and more solid than a floor. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
       "rawSha256": "fc6dcfc5f275de3ab12ef807f243a11efa8bdf761f2e7808f19e14ea35cfe75d",
+      "postprocess": {
+        "crop": null,
+        "trim": false,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/wall-wet.png": {
+      "bytes": 1439,
+      "sha256": "10ccd3b5d9bb1c10c696f35ae7850a53014853484957b2fc89d293386399529b",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "wall-wet",
+      "prompt": "A single seamless tileable square wall tile seen from above that fills the whole image edge to edge: dark teal-grey wet cave rock with dripping streaks and deep shadows, clearly darker and more solid than a floor. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "cc60df284cb870f15f8b2e56f37a5167c925f4e3817636126b40174178ad1d33",
       "postprocess": {
         "crop": null,
         "trim": false,

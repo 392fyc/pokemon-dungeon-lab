@@ -1,0 +1,7 @@
+{
+ "id": "wall-wet",
+ "model": "gpt-image-2.5-flare",
+ "quality": "low",
+ "size": "1024x1024",
+ "prompt": "A single seamless tileable square wall tile seen from above that fills the whole image edge to edge: dark teal-grey wet cave rock with dripping streaks and deep shadows, clearly darker and more solid than a floor. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures."
+}

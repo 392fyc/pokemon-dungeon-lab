@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
-import {createExpedition,traceRound,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
+import {createExpedition,traceRound,closeOut,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {newGameProfile,squadOf,profileProblem,settleRun} from '../../src/core/base.ts';
 import {TrialStore,decode,BUILD_ID,SAVE_KEY} from '../../src/core/save.ts';
 import {SPECIES,STARTER_IDS,TM_MOVES} from '../../src/core/roster.ts';
@@ -57,7 +57,7 @@ test('N5 a two-member squad runs: queue A,B; a run saved from it decodes; settli
  assert.ok(w.units.A.pos&&w.units.B.pos);
  const env={format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:w,recent:null,profile:p};
  assert.ok(decode(JSON.stringify(env)));
- const done=structuredClone(w);done.phase='ended';done.end={id:'r1:end',outcome:'normal',team:[...done.queue],camp:[],goal:false,acquired:0,brought:0};
+ const done=structuredClone(w);done.phase='ended';done.end=closeOut(done,'normal');
  const after=settleRun(p,done);assert.deepEqual(after.roster.map(i=>i.species),['chikorita','cyndaquil']);assert.equal(after.expeditions,1);
 });
 

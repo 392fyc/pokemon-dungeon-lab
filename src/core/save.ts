@@ -1,7 +1,8 @@
-import {applyCommand,clone,levelFor,PROG,RULE_VERSION,CONTENT_VERSION,type World,type Command,type Result,type StoredFloor,type Dungeon} from './engine.ts';
-import {WILD_SPECIES} from './dungeon.ts';
+import {applyCommand,clone,levelFor,PROG,RULE_VERSION,CONTENT_VERSION,closeOut,isProtected,reasonsOf,type World,type Command,type Result,type StoredFloor,type Dungeon} from './engine.ts';
+import {WILD_SPECIES,serviceRoll} from './dungeon.ts';
+import {ECON} from './economy.ts';
 import {speciesOf,TM_MOVES,learnableMove} from './roster.ts';
-import {profileProblem,profileFitsWorld,settleRun,applyBase,squadOf,type Profile,type BaseAction} from './base.ts';
+import {profileProblem,profileFitsWorld,settleRun,applyBase,squadOf,migrateProfile,purseProblem,type Profile,type BaseAction} from './base.ts';
 import {createExpedition} from './engine.ts';
 export interface StoragePort {getItem(key:string):string|null;setItem(key:string,value:string):void|Promise<void>;}
 /** `current` is null while the player is at the base (6.5); `profile` exists only for expedition players and is written in the same record as `current` and `recent`. */
@@ -20,6 +21,7 @@ function validUnit(v:unknown,depth=0):boolean {
   for(const [k,n] of Object.entries(v.pp)){if(!skillNames.includes(k)||!integer(n)||(n as number)<0||!integer(v.maxPp[k])||(n as number)>(v.maxPp[k] as number))return false;}
   for(const [k,n] of Object.entries(v.maxPp))if(!skillNames.includes(k)||!integer(n)||(n as number)<0)return false;
   if(v.ai!==undefined&&!['melee','ranged','chase'].includes(String(v.ai)))return false;
+  if(v.protected!==undefined&&(v.protected!==true||v.side!=='friend'||v.inst===undefined))return false;
   if(v.damage!==undefined&&(!integer(v.damage)||(v.damage as number)<0))return false;
   if(v.range!==undefined&&(!integer(v.range)||(v.range as number)<1))return false;
   if(v.species!==undefined&&(typeof v.species!=='string'||!speciesOf(v.species)))return false;
@@ -29,9 +31,9 @@ function validUnit(v:unknown,depth=0):boolean {
   return v.recruit===undefined||(depth<1&&validUnit(v.recruit,depth+1));
 }
 const keyOf=(p:{x:number;y:number})=>`${p.x},${p.y}`;
-const pointKinds=['goal','item','exit','down','up','berry','tonic','rest'];
-/** Points that exist only in 6.4+ expeditions (pickups and the 6.5 rest point). */
-const isPickup=(k:unknown)=>k==='berry'||k==='tonic'||k==='rest';
+const pointKinds=['goal','item','exit','down','up','berry','tonic','rest','shop','exchange'];
+/** Points that exist only in 6.4+ expeditions (pickups, the 6.5 rest point and the 7.2 service cells). */
+const isPickup=(k:unknown)=>k==='berry'||k==='tonic'||k==='rest'||k==='shop'||k==='exchange';
 const validPoint=(p:unknown,cells:Set<string>)=>object(p)&&position(p.pos)&&pointKinds.includes(String(p.kind))&&typeof p.used==='boolean'&&cells.has(keyOf(p.pos));
 /** A stored (non-current) floor: terrain, revealed cells, real enemies and points. Ids are claimed in `taken` so none repeats across floors. */
 function validStored(f:unknown,d:Dungeon,taken:Set<string>,run:boolean):f is StoredFloor {
@@ -63,14 +65,55 @@ function validProgress(s:World,d:Dungeon):boolean {
   const p=s.prog,here=new Set(s.floor.map(keyOf));
   if((s.rooms!==undefined)!==(p!==undefined)||(s.rooms!==undefined&&!validRooms(s.rooms,here,d)))return false;
   const points=[...s.points,...Object.values(d.stored).flatMap(f=>f.points)];
-  if(p===undefined)return !points.some(q=>isPickup(q.kind))&&s.tm===undefined;
+  if(p===undefined)return !points.some(q=>isPickup(q.kind))&&s.tms===undefined&&s.purse===undefined&&s.shop===undefined&&s.exchange===undefined;
   if(!object(p)||!integer(p.level)||!integer(p.exp)||!integer(p.rng)||!integer(p.made)||!Array.isArray(p.kills)||!object(p.items))return false;
   if(p.exp<0||p.level<1||p.level>PROG.maxLevel||p.level!==levelFor(p.exp)||p.rng<0||p.rng>4294967295||p.made<0||p.made>999||p.kills.length>0)return false;
   if(Object.keys(p.items).sort().join()!=='berry,tonic')return false;
-  for(const k of ['berry','tonic'] as const){const n=p.items[k];if(!integer(n)||n<0||n>points.filter(q=>q.kind===k&&q.used).length)return false;}
+  for(const k of ['berry','tonic'] as const){const n=p.items[k];if(!integer(n)||n<0||n>points.filter(q=>q.kind===k&&q.used).length+(s.shop?.trades.filter(t=>t.item===k).length??0))return false;}
   if(s.goal&&p.exp<PROG.goalExp)return false;
   if(points.filter(q=>q.kind==='rest').length>(d.base?1:0))return false;
-  if(s.tm!==undefined&&(!(TM_MOVES as readonly string[]).includes(s.tm)||s.bag<1))return false;
+  return validTms(s)&&validServices(s,d);
+}
+const fates=['held','brought','sent','lost'];
+/** The run's technique machines: known moves, source and fate in range; fates agree with the phase (held only while playing, brought only after a normal exit, lost only after a wipe). */
+function validTms(s:World):boolean {
+  const t=s.tms;if(!Array.isArray(t)||t.length>12)return false;
+  for(const m of t){if(!object(m)||!(TM_MOVES as readonly string[]).includes(String(m.move))||!['target','shop'].includes(String(m.source))||!fates.includes(String(m.fate))||Object.keys(m).length!==3)return false;}
+  if(t.filter(m=>m.source==='target').length>s.bag)return false;
+  if(s.phase==='ended'){const wipe=s.end?.outcome==='wipe';if(t.some(m=>m.fate==='held'||(wipe?m.fate==='brought':m.fate==='lost')))return false;}
+  else if(t.some(m=>m.fate!=='held'&&m.fate!=='sent'))return false;
+  return true;
+}
+/** Purse, shop and exchanger against the run's seed: their level, stock, sales, cells and the units they touched must all agree with what the seed decides. */
+function validServices(s:World,d:Dungeon):boolean {
+  const purse=s.purse;if(!integer(purse)||(purse as number)<0)return false;
+  const floors:[number,{kind:string;used:boolean}[]][]=[[d.level,s.points],...Object.entries(d.stored).map(([n,f])=>[Number(n),f.points] as [number,{kind:string;used:boolean}[]])];
+  const cellsOf=(kind:string)=>floors.flatMap(([lv,ps])=>ps.filter(q=>q.kind===kind).map(q=>({lv,used:q.used})));
+  const spent=s.shop?.trades.reduce((a,t)=>a+(typeof t.price==='number'?t.price:0),0)??0;
+  const start=(purse as number)+spent;
+  if(start>ECON.purseMax||start%ECON.purseStep!==0)return false;
+  const sentFates=(s.tms??[]).filter(m=>m.fate==='sent').length;
+  if(!d.services)return s.shop===undefined&&s.exchange===undefined&&cellsOf('shop').length===0&&cellsOf('exchange').length===0&&sentFates===0;
+  const roll=serviceRoll(d.seed,d.floors),shop=s.shop,ex=s.exchange;
+  if(!!roll.shop!==!!shop||!!roll.exchange!==!!ex)return false;
+  const generated=(lv:number)=>lv===d.level||String(lv) in d.stored;
+  if(roll.shop&&shop){
+    const want=TM_MOVES[Math.floor(roll.shop.tmDraw*TM_MOVES.length)];
+    if(!object(shop)||shop.level!==roll.shop.level||!object(shop.stock)||!Array.isArray(shop.trades))return false;
+    const n=(item:string)=>shop.trades.filter(t=>t.item===item).length;
+    if(shop.trades.some(t=>!object(t)||!(t.item in ECON.price)||t.price!==ECON.price[t.item]))return false;
+    if(shop.stock.berry!==ECON.stock.berry-n('berry')||shop.stock.tonic!==ECON.stock.tonic-n('tonic')||n('tm')>1||shop.stock.tm!==(n('tm')?null:want)||shop.stock.berry<0||shop.stock.tonic<0)return false;
+    const bought=(s.tms??[]).filter(m=>m.source==='shop');
+    if(bought.length!==n('tm')||bought.some(m=>m.move!==want))return false;
+    const cells=cellsOf('shop');if(cells.length!==(generated(shop.level)?1:0)||cells.some(c=>c.lv!==shop.level||c.used))return false;
+  }
+  if(roll.exchange&&ex){
+    if(!object(ex)||ex.level!==roll.exchange.level||typeof ex.used!=='boolean'||(ex.sent!==null&&typeof ex.sent!=='string')||ex.used!==(ex.sent!==null))return false;
+    const cells=cellsOf('exchange');if(cells.length!==(generated(ex.level)?1:0)||cells.some(c=>c.lv!==ex.level||c.used!==ex.used))return false;
+    if(ex.sent!==null){const u=s.units[ex.sent];
+      if(!u||u.side!=='friend'||u.pos!==null||u.hp<=0||s.queue.includes(ex.sent)||s.camp.includes(ex.sent)||s.enemies.includes(ex.sent)||ex.sent===s.leader)return false;}
+    if(sentFates>ECON.exchangeCargo||(!ex.used&&sentFates>0))return false;
+  }else if(sentFates>0)return false;
   return true;
 }
 /** A roster unit of a 6.4 run must keep its species' kit exactly; max HP follows the run level (queue: exactly; camp: from the base up to it). */
@@ -93,6 +136,7 @@ function validRun(s:World):boolean {
   const p=s.prog;if(!p)return true;
   for(const id of s.queue)if(!validSpeciesUnit(s.units[id],p.level,'queue'))return false;
   for(const id of s.camp)if(!validSpeciesUnit(s.units[id],p.level,'camp'))return false;
+  if(s.exchange?.sent&&(!s.units[s.exchange.sent]||!validSpeciesUnit(s.units[s.exchange.sent],p.level,'any')))return false;
   if(new Set(s.invitations.map(i=>i.unit.id)).size!==s.invitations.length)return false;
   for(const i of s.invitations){
     if(!validSpeciesUnit(i.unit,p.level,'any'))return false;
@@ -111,7 +155,7 @@ function validDungeon(s:World):boolean {
   const stairs=point?.kind==='down'||point?.kind==='up';
   if(r&&stairs!==(r.to!==undefined))return false;
   if(d===undefined)return s.scenario!=='expedition'&&s.phase!=='transit'&&!stairs&&pointsFitLevel(s.points,null,0)&&s.prog===undefined&&s.rooms===undefined&&!s.points.some(p=>isPickup(p.kind));
-  if(!object(d)||s.scenario!=='expedition'||(d.base!==undefined&&(d.base!==true||s.prog===undefined)))return false;
+  if(!object(d)||s.scenario!=='expedition'||(d.base!==undefined&&(d.base!==true||s.prog===undefined))||(d.services!==undefined&&(d.services!==true||d.base!==true)))return false;
   if(![d.seed,d.width,d.height,d.floors,d.level].every(integer)||d.seed<0||d.seed>4294967295||d.width<8||d.height<8||d.width>64||d.height>64||d.floors<2||d.floors>9||d.level<1||d.level>d.floors||!object(d.stored))return false;
   if(s.floor.some(p=>p.x<0||p.y<0||p.x>=d.width||p.y>=d.height))return false;
   const taken=new Set(Object.keys(s.units));
@@ -123,6 +167,18 @@ function validDungeon(s:World):boolean {
     if(!integer(r.to)||(r.to as number)<1||(r.to as number)>d.floors||r.to!==d.level+(point!.kind==='down'?1:-1))return false;
   }
   return true;
+}
+/** The 7.2 fields of an end record against the world it closes: only runs with `prog` have them, and every judgement can be recomputed from the final state except the draw itself. */
+function validEnd(s:World,e:NonNullable<World['end']>):boolean {
+  const extra=[e.tms,e.lost,e.effective,e.reasons,e.reward,e.purse,e.refund];
+  if(!s.prog)return extra.every(x=>x===undefined);
+  if(!Array.isArray(e.tms)||!Array.isArray(e.lost)||!Array.isArray(e.reasons)||typeof e.effective!=='boolean')return false;
+  if(JSON.stringify(e.tms)!==JSON.stringify(s.tms))return false;
+  const wipe=e.outcome==='wipe';
+  if(!strings(e.lost)||new Set(e.lost).size!==e.lost.length||(!wipe&&e.lost.length>0)||e.lost.some(id=>!s.queue.includes(id)||isProtected(s,id)))return false;
+  if(JSON.stringify(e.reasons)!==JSON.stringify(reasonsOf(s))||e.effective!==(e.reasons.length>0))return false;
+  const purse=s.purse??0;
+  return e.reward===(s.goal?ECON.reward:0)&&e.purse===purse&&e.refund===(wipe?0:purse);
 }
 function validWorld(v:unknown):v is World {
   if(!object(v))return false;const s=v as unknown as World;
@@ -138,7 +194,7 @@ function validWorld(v:unknown):v is World {
   if(s.request!==null&&(!object(s.request)||typeof s.request.actor!=='string'||!s.units[s.request.actor]||!position(s.request.pos)||typeof s.request.locked!=='boolean'))return false;
   if(s.invitations.some(i=>!object(i)||typeof i.id!=='string'||!validUnit(i.unit)||!['pending','accepted','rejected','cancelled'].includes(i.status)))return false;
   if(s.phase==='ended'){const e=s.end;if(!object(e)||e.id!==`${s.runId}:end`||!['normal','wipe'].includes(e.outcome)||!strings(e.team)||!strings(e.camp)||e.team.join()!==s.queue.join()||e.camp.join()!==s.camp.join()||e.goal!==s.goal||e.acquired!==s.bag||e.brought!==(e.outcome==='normal'?s.bag:0))return false;
-    if(s.tm===undefined?e.tm!==undefined:(!object(e.tm)||e.tm.move!==s.tm||e.tm.brought!==(e.outcome==='normal')||Object.keys(e.tm).length!==2))return false;}else if(s.end!==null)return false;
+    if(!validEnd(s,e))return false;}else if(s.end!==null)return false;
   // Only complete processing checkpoints may be loaded. A phase tag cannot
   // bypass a pending invitation or revive an unfinished/contradictory result.
   const pending=s.invitations.some(i=>i.status==='pending');
@@ -151,7 +207,6 @@ function validWorld(v:unknown):v is World {
   if(s.phase==='exit'&&(pending||cancelled||s.anchor!==null||!s.request?.locked||s.request.to!==undefined))return false;
   if(s.phase==='transit'&&(pending||cancelled||s.anchor!==null||!s.request?.locked||s.request.to===undefined))return false;
   if(!validDungeon(s)||!validRun(s))return false;
-  if(s.tm!==undefined&&!s.prog)return false;
   if(s.phase==='ended'&&(pending||s.anchor!==null||s.request!==null||
     (s.end!.outcome==='wipe'?living:!living||cancelled)))return false;
   // Sequential invitation handling allows a processed prefix, never a
@@ -159,9 +214,33 @@ function validWorld(v:unknown):v is World {
   if(pending){let waiting=false;for(const invite of s.invitations){if(invite.status==='pending')waiting=true;else if(waiting)return false;}}
   return true;
 }
+/**
+ * Stage 7.2 reads older records without raising the rules version (spec "旧档案的迁移"): the profile by content (see `migrateProfile`); a run in progress or finished:
+ * the single `tm` becomes a one-item list, `purse` 0, no shop or exchanger, and founding members get their mark from the profile. A finished run that has no
+ * end-of-run processing yet gets it now, once, from its saved state (the draw uses the saved random state, so the same bytes always give the same result).
+ */
+function migrateWorld(w:unknown,profile:unknown,history=false):void {
+  if(!object(w)||!object(w.prog))return;
+  const world=w as Record<string,unknown>&{units:Record<string,Record<string,unknown>>;queue:string[];camp:string[]};
+  if(world.purse===undefined)world.purse=0;
+  if(world.tms===undefined){world.tms=world.tm!==undefined?[{move:world.tm,source:'target',fate:'held'}]:[];}
+  delete world.tm;
+  const roster=object(profile)&&Array.isArray(profile.roster)?profile.roster as unknown[]:[];
+  if(Array.isArray(world.queue)&&Array.isArray(world.camp)&&object(world.units))
+    for(const id of [...world.queue,...world.camp]){const u=world.units[id];if(!object(u)||u.inst===undefined||u.protected!==undefined)continue;
+      const inst=roster.find(i=>object(i)&&i.id===u.inst);if(object(inst)&&inst.protected===true)u.protected=true;}
+  const e=world.end;
+  if(world.phase==='ended'&&object(e)&&e.effective===undefined&&(e.outcome==='normal'||e.outcome==='wipe')&&Array.isArray(world.tms)){
+    const old=object(e.tm)?e.tm:null;
+    const tms=world.tms as {fate:unknown}[];for(const t of tms)t.fate='held';
+    if(old&&!tms.length)tms.push({move:old.move,source:'target',fate:'held'} as never);
+    try{world.end=closeOut(world as unknown as World,e.outcome as 'normal'|'wipe',!history);}catch{/* validation rejects what cannot be read */}
+  }
+}
 export function decode(raw:string):Envelope {
   const e=JSON.parse(raw) as Envelope;
   if(e.format!==1||e.rules!==RULE_VERSION||e.content!==CONTENT_VERSION)throw Error('存档版本不兼容；原记录已保留');
+  if(object(e)){if(e.profile!==undefined)e.profile=migrateProfile(e.profile) as Profile;migrateWorld(e.current,e.profile);migrateWorld(e.recent,undefined,true);}
   if(typeof e.build!=='string'||!Number.isInteger(e.sequence)||e.sequence<1||(e.current!==null&&!validWorld(e.current))||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('存档结构损坏；原记录已保留');
   // 6.5: the profile is validated on its own and against the run that uses it; at the base (no current run) a profile is required.
   if(e.profile!==undefined&&profileProblem(e.profile)!==null)throw Error('存档结构损坏；原记录已保留');
@@ -223,9 +302,12 @@ export class TrialStore {
     return {ok:true,saved:await this.persist()};
   }
   /** 6.5 departure: a new seeded expedition from the saved squad, full HP and PP, run level 1. One write. */
-  async depart(runId:string,seed:number):Promise<boolean> {
+  async depart(runId:string,seed:number,purse=0):Promise<boolean> {
     if(this.status!=='ready'||!this.record||this.record.current!==null||!this.record.profile)return false;
-    this.record={...this.record,sequence:this.record.sequence+1,current:createExpedition(runId,seed,2,squadOf(this.record.profile))};return this.persist();
+    if(purseProblem(this.record.profile,purse)!==null)return false;
+    // One write: the purse leaves the account and goes into the new run.
+    const profile=clone(this.record.profile);profile.account-=purse;
+    this.record={...this.record,sequence:this.record.sequence+1,profile,current:createExpedition(runId,seed,2,squadOf(profile),purse)};return this.persist();
   }
   /**
    * Stage 7.1: writes a brand-new record that holds only a base profile (the player is at the base, no run). An empty store needs no consent;

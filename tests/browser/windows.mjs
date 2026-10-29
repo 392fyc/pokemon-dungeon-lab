@@ -329,8 +329,9 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
  const {createExpedition}=await import('../../src/core/engine.ts');
  const {RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
  const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
- const w=createExpedition('seeded-run',4242);w.goal=true;w.prog.exp=2;w.bag=1;w.tm='protect';w.phase='ended';
- w.end={id:'seeded-run:end',outcome:'normal',team:[...w.queue],camp:[],goal:true,acquired:1,brought:1,tm:{move:'protect',brought:true}};
+ const {closeOut}=await import('../../src/core/engine.ts');
+ const w=createExpedition('seeded-run',4242);w.goal=true;w.prog.exp=2;w.bag=1;w.tms=[{move:'protect',source:'target',fate:'held'}];w.phase='ended';
+ w.end=closeOut(w,'normal');
  const record=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:5,current:w,recent:null});
  const context=await browser.newContext({viewport:{width:1440,height:1100}});
  await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;
@@ -342,12 +343,12 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
  try{
   await p.goto(base+'?dev=1&seed=4243');await p.locator('#to-base').waitFor();await ready(p);
   assert.equal(await p.locator('#new').count(),0,'an expedition result offers the base, not a new independent trial');
-  assert.match(await p.locator('#tm-line').innerText(),/保护.*已带出/);
+  assert.match(await p.locator('#tm-list').innerText(),/保护.*已带回/);
   await click(p,'to-base');
   let s=await state(p);assert.equal(s,null);
   const prof=()=>p.evaluate(()=>window.trial.profile());
   let pr=await prof();assert.deepEqual(pr.vault,{protect:1});assert.equal(pr.expeditions,1);assert.deepEqual(pr.roster.map(i=>i.species),['charmander','squirtle','bulbasaur']);
-  assert.deepEqual(await p.evaluate(()=>window.trial.store.envelope.recent.end.tm),{move:'protect',brought:true});
+  assert.deepEqual(await p.evaluate(()=>window.trial.store.envelope.recent.end.tms),[{move:'protect',source:'target',fate:'brought'}]);
   await p.screenshot({path:artifact+'windows-base-1.png',fullPage:true});
   // learning
   await click(p,'tm-protect');await click(p,'learn-P3');pr=await prof();
@@ -409,6 +410,107 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
   assert.equal(await p.locator('#rest').isDisabled(),true);
   await p.reload();await ready(p);assert.deepEqual(await state(p),s1);assert.deepEqual(errors,[]);
   return {refusedWhenFull:true,usedOnce:true};
+ }finally{await context.close();}
+});
+/* Stage 7.2: failure, rescue and return, with real clicks. CHECK ENTRY: the record is pre-seeded (written to the page's own storage before it loads) with a run
+   in progress: the leader stands on G, every member has 1 HP, and a chasing enemy with 200 HP is next to them; random state 7 makes the third member
+   (P3, an ordinary partner) go missing. Everything after that is real clicks: take G, wait until the wipe, read the result, return to the base,
+   pay the rescue, set a purse, depart, finish an effective run (the second run is moved onto its G cell by editing the saved record, as the 6.5 check does), and
+   see the partner back on the roster. */
+await test('失败与救援7.2：完成G→全灭→伙伴走失→基地付费→下一局有效探险后回归',async()=>{
+ const {createExpedition,reveal,RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
+ const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
+ const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
+ const profile=newGameProfile('chikorita','cyndaquil').profile;
+ profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',behavior:'strong',pp:3},{move:'gust',behavior:'line',pp:3}],carry:['tackle','gust'],protected:false});
+ profile.next=4;profile.team=['P1','P2','P3'];profile.leader='P1';
+ const w=createExpedition('rescue-run',4242,2,squadOf(profile),0);
+ const g=w.points.find(q=>q.kind==='goal').pos;const k=q=>q.x+','+q.y;const floor=new Set(w.floor.map(k));
+ const near=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1},{x:1,y:1},{x:-1,y:-1},{x:1,y:-1},{x:-1,y:1},{x:2,y:0},{x:-2,y:0}].map(d=>({x:g.x+d.x,y:g.y+d.y})).filter(q=>floor.has(k(q)));
+ assert.ok(near.length>=4,'enough free cells around G');
+ w.units.A.pos={...g};w.units.B.pos=near[1];w.units.C.pos=near[2];
+ for(const id of w.queue)w.units[id].hp=1;
+ const foe=w.units[w.enemies[0]];foe.pos=near[0];foe.hp=200;foe.maxHp=200;foe.ai='chase';foe.damage=4;foe.range=1;
+ w.prog.rng=7;reveal(w);
+ const record=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:5,current:w,recent:null,profile});
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});
+ await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;const original=Storage.prototype.setItem;try{if(!localStorage.getItem(k))original.call(localStorage,k,v);}catch{}},{k:SAVE_KEY,v:record});
+ const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ try{
+  await p.goto(base+'?dev=1&seed=4300');await p.locator('#take').waitFor();await ready(p);
+  await click(p,'take');assert.equal((await state(p)).goal,true);
+  for(let i=0;i<30&&(await state(p)).phase!=='ended';i++)await click(p,'wait');
+  let s=await state(p);assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');
+  assert.deepEqual(s.end.lost,['C']);assert.equal(s.end.reward,100);assert.equal(s.end.effective,true);
+  await p.locator('#settle').waitFor();
+  assert.match(await p.locator('#eff-line').innerText(),/算有效探险.*完成了基础目标 G/);
+  assert.match(await p.locator('#reward-line').innerText(),/基础报酬：100/);
+  assert.match(await p.locator('#lost-line').innerText(),/C 波波/);
+  assert.match(await p.locator('#pool-change').innerText(),/P3 波波/);
+  assert.match(await p.locator('#pool-change').innerText(),/进入救援池/);
+  await p.screenshot({path:artifact+'windows-rescue-1-result.png',fullPage:true});
+  await p.reload();await ready(p);assert.deepEqual((await state(p)).end,s.end,'the draw is not redone after a reload');
+  await click(p,'to-base');
+  let pr=await p.evaluate(()=>window.trial.profile());
+  assert.equal(pr.account,100);assert.deepEqual(pr.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P3',false,4]]);assert.deepEqual(pr.team,['P1','P2']);
+  assert.match(await p.locator('#account').innerText(),/100/);assert.match(await p.locator('#rescue-P3').innerText(),/未付费.*4/);
+  await p.screenshot({path:artifact+'windows-rescue-2-base.png',fullPage:true});
+  await click(p,'rescue-pay-P3');
+  pr=await p.evaluate(()=>window.trial.profile());assert.equal(pr.account,40);assert.deepEqual(pr.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P3',true,1]]);
+  assert.match(await p.locator('#rescue-P3').innerText(),/已付费/);assert.equal(await p.locator('#rescue-pay-P3').count(),0);
+  await click(p,'purse-up');await click(p,'purse-up');assert.equal(await p.locator('#purse-value').innerText(),'40');assert.equal(await p.locator('#purse-up').isDisabled(),true,'no more than the account holds');
+  await click(p,'depart');await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
+  s=await state(p);assert.equal(s.purse,40);assert.deepEqual(s.queue,['A','B']);
+  assert.equal((await p.evaluate(()=>window.trial.profile())).account,0);
+  // second run: stand the leader on G in the saved record, then finish with real clicks
+  await p.evaluate(()=>{const key=window.trial.store.key,e=JSON.parse(localStorage.getItem(key)),w=e.current,g=w.points.find(q=>q.kind==='goal').pos;
+   w.units.A.pos={x:g.x,y:g.y};if(w.units.B.pos.x===g.x&&w.units.B.pos.y===g.y)throw Error('B on G');localStorage.setItem(key,JSON.stringify(e));});
+  await p.reload();await ready(p);
+  await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='ended');
+  s=await state(p);assert.equal(s.end.outcome,'normal');assert.equal(s.end.effective,true);assert.equal(s.end.refund,40);
+  assert.match(await p.locator('#pool-change').innerText(),/P3 波波/);
+  await click(p,'to-base');
+  pr=await p.evaluate(()=>window.trial.profile());
+  assert.equal(pr.account,140);assert.deepEqual(pr.rescue,[]);assert.deepEqual(pr.roster.map(i=>i.id),['P1','P2','P3']);assert.deepEqual(pr.roster[2].carry,['tackle','gust']);
+  assert.equal(await p.locator('#rescue-empty').count(),1);
+  await p.screenshot({path:artifact+'windows-rescue-3-returned.png',fullPage:true});
+  await p.reload();await ready(p);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),pr);
+  assert.deepEqual(errors,[]);return {wipe:true,lost:['C'],paid:60,returnedAfterEffectiveRun:true,account:pr.account};
+ }finally{await context.close();}
+});
+/* Stage 7.2: shop and exchanger panels with real clicks. CHECK ENTRY: seed 103 has a shop (3,10) and an exchanger (7,3) on floor 1; the record is pre-seeded
+   with the leader on the shop cell, a 100 purse and one held machine. Buying takes no round; each sale is one save; the exchanger takes the leader's action. */
+await test('服务点7.2：商店购买不占回合且读档不刷新；交换机送回伙伴与招式机',async()=>{
+ const {createExpedition,reveal,RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
+ const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
+ const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
+ const profile=newGameProfile('chikorita','cyndaquil').profile;
+ profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',behavior:'strong',pp:3},{move:'gust',behavior:'line',pp:3}],carry:['tackle','gust'],protected:false});
+ profile.next=4;profile.team=['P1','P2','P3'];profile.leader='P1';
+ const w=createExpedition('svc-run',103,2,squadOf(profile),100);
+ w.units.A.pos={x:3,y:10};w.tms=[{move:'protect',source:'target',fate:'held'}];w.bag=1;reveal(w);
+ const record=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:5,current:w,recent:null,profile});
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});
+ await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;const original=Storage.prototype.setItem;try{if(!localStorage.getItem(k))original.call(localStorage,k,v);}catch{}},{k:SAVE_KEY,v:record});
+ const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ try{
+  await p.goto(base+'?dev=1&seed=4300');await p.locator('#shop-panel').waitFor();await ready(p);
+  assert.match(await p.locator('#shop-panel').innerText(),/橙橙果.*价格 20.*库存 2/s);
+  assert.equal(await p.locator('#take').count(),0,'no pickup button on a shop cell');
+  await click(p,'buy-berry');
+  let s=await state(p);assert.equal(s.purse,80);assert.equal(s.prog.items.berry,1);assert.equal(s.round,0);assert.deepEqual(s.shop.trades,[{item:'berry',price:20}]);
+  await click(p,'buy-tm');s=await state(p);assert.equal(s.purse,0);assert.deepEqual(s.tms.map(t=>[t.move,t.source,t.fate]),[['protect','target','held'],['roar','shop','held']]);
+  assert.equal(await p.locator('#buy-tonic').isDisabled(),true);assert.match(await p.locator('#shop-panel').innerText(),/钱袋不足，还差30/);
+  await p.screenshot({path:artifact+'windows-service-1-shop.png',fullPage:true});
+  await p.reload();await ready(p);assert.deepEqual((await state(p)).shop,s.shop,'a reload does not refresh the stock');
+  await p.evaluate(()=>{const key=window.trial.store.key,e=JSON.parse(localStorage.getItem(key));e.current.units.A.pos={x:7,y:3};localStorage.setItem(key,JSON.stringify(e));});
+  await p.reload();await ready(p);await p.locator('#exchange-panel').waitFor();
+  assert.equal(await p.locator('#ex-target-A').count(),0,'the leader cannot be chosen');assert.equal(await p.locator('#ex-confirm').isDisabled(),true);
+  await click(p,'ex-target-C');await click(p,'ex-cargo-1');await p.screenshot({path:artifact+'windows-service-2-exchange.png',fullPage:true});
+  await click(p,'ex-confirm');await p.waitForFunction(()=>window.trial.getState().exchange.used);await ready(p);
+  s=await state(p);assert.deepEqual(s.queue,['A','B']);assert.deepEqual(s.exchange,{level:1,used:true,sent:'C'});assert.deepEqual(s.tms.map(t=>t.fate),['held','sent']);assert.equal(s.round,1);
+  assert.match(await p.locator('#exchange-panel').innerText(),/本局已经使用/);
+  await p.reload();await ready(p);assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {boughtWithoutRound:true,exchangeOnce:true};
  }finally{await context.close();}
 });
 /* Stage 7.1: title, new game, overwrite confirmation and readability. (a) and (b) use no developer parameter at all. */

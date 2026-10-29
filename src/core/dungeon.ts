@@ -7,7 +7,8 @@
 export type Cell={x:number;y:number};
 export type FloorParams={width:number;height:number;floors:number};
 export const DEFAULT_PARAMS:FloorParams={width:20,height:14,floors:2};
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest';
+import {ECON} from './economy.ts';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest'|'shop'|'exchange';
 export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
 export type EnemyAi='melee'|'ranged'|'chase';
 export type EnemySpec={id:string;species:string;ai:EnemyAi;hp:number;damage:number;range:number;pos:Cell};
@@ -18,7 +19,9 @@ export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[]
   /** 6.4 recovery pickups (berry on every floor, tonic on floor 2). Kept apart from `points` and drawn from their own random stream, so the layout above is unchanged. */
   pickups:PointSpec[];
   /** 6.5 one-use rest point, floor 2 only, in the arrival room next to the up stairs. Kept apart from `pickups` and `points` so those lists are unchanged. */
-  rest:PointSpec|null};
+  rest:PointSpec|null;
+  /** 7.2 rare service cells (shop, exchanger) of this floor, own random stream, never part of `points`. The caller adds them only for runs that carry the services. */
+  services:PointSpec[]};
 /**
  * Wild species used for display and ids only; battle numbers stay on the manual tiers below.
  * Must stay a subset of the non-starter species in src/data/roster.json (checked by a test); values are dex numbers.
@@ -36,6 +39,17 @@ const DIRS:Cell[]=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 const center=(r:Room):Cell=>({x:r.x+Math.floor(r.w/2),y:r.y+Math.floor(r.h/2)});
 const roomCells=(r:Room):Cell[]=>{const out:Cell[]=[];for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)out.push({x,y});return out;};
 
+/**
+ * 7.2: which floor (if any) holds this run's shop and exchanger. Decided once from the seed alone, so it does not depend on the order floors are visited;
+ * `tmDraw` in [0,1) picks the shop's technique machine. Always draws the same number of values, so one decision never shifts another.
+ */
+export type ServiceRoll={shop:{level:number;tmDraw:number}|null;exchange:{level:number}|null};
+export function serviceRoll(seed:number,floors:number):ServiceRoll {
+  const r=mulberry32((Math.imul(seed>>>0,0x2545F491)^0x7A3C1D55)>>>0);
+  const shopOn=r()<ECON.shopChance,shopLevel=1+Math.floor(r()*Math.min(2,floors)),tmDraw=r();
+  const exOn=r()<ECON.exchangeChance,exLevel=1+Math.floor(r()*floors);
+  return {shop:shopOn?{level:shopLevel,tmDraw}:null,exchange:exOn?{level:exLevel}:null};
+}
 export function generateFloor(seed:number,level:number,params:FloorParams=DEFAULT_PARAMS):GeneratedFloor {
   const {width:W,height:H,floors}=params;
   const rng=mulberry32((Math.imul(seed>>>0,0x9E3779B1)^Math.imul(level,0x85EBCA6B)^0x5BD1E995)>>>0);
@@ -100,5 +114,14 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
   let rest:PointSpec|null=null;
   if(level===2){const near=roomCells(rooms[0]).filter(c=>!used.has(k(c))).sort((a,b)=>dist(a,start)-dist(b,start)||a.y-b.y||a.x-b.x)[0];
     if(near){used.add(k(near));rest={pos:{x:near.x,y:near.y},kind:'rest',used:false};}}
-  return {level,width:W,height:H,floor,rooms,arrival:level===1?start:up!,up,down,points,enemies,pickups,rest};
+  // 8. Service cells (7.2): outside the arrival room, on a free cell; own stream so nothing above changes.
+  const roll=serviceRoll(seed,floors),srng=mulberry32((Math.imul(seed>>>0,0x68E31DA4)^Math.imul(level,0xB5297A4D)^0x1B56C4E9)>>>0);
+  const services:PointSpec[]=[];
+  for(const [kind,at] of [['shop',roll.shop?.level],['exchange',roll.exchange?.level]] as [PointKind,number|undefined][]){
+    if(at!==level)continue;
+    const outside=rooms.slice(1).flatMap(roomCells).filter(c=>!used.has(k(c)));
+    const pool=outside.length?outside:floor.filter(c=>!used.has(k(c)));
+    const pos=pool[Math.floor(srng()*pool.length)];used.add(k(pos));services.push({pos:{x:pos.x,y:pos.y},kind,used:false});
+  }
+  return {level,width:W,height:H,floor,rooms,arrival:level===1?start:up!,up,down,points,enemies,pickups,rest,services};
 }

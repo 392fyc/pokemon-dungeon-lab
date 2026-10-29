@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createExpedition,createMain,applyCommand,recruitUnit,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
+import {createExpedition,createMain,applyCommand,recruitUnit,closeOut,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {initialProfile,learnTm,setCarry,setTeam,squadOf,settleRun,profileProblem} from '../../src/core/base.ts';
 import {TrialStore,decode,BUILD_ID} from '../../src/core/save.ts';
 // Stage 6.5 rule tests. Every expected value below is a literal written from docs/玩法研究/基地与培养.md and the roster data
@@ -11,11 +11,11 @@ const withVault=(vault)=>({...initialProfile(),vault});
 /** A finished expedition made from the initial squad: hand-set end fields, as the engine would leave them. */
 function ended({outcome='normal',tm='protect',camp=[],wipe=outcome==='wipe',legacy=false}={}){
  const s=legacy?createExpedition('run-a',7):createExpedition('run-a',7,2,squadOf(initialProfile()));
- s.goal=true;s.prog.exp=2;s.bag=1;if(tm)s.tm=tm;
+ s.goal=true;s.prog.exp=2;s.bag=1;if(tm)s.tms=[{move:tm,source:'target',fate:'held'}];
  for(const [id,sp] of camp){s.units[id]=recruitUnit(id,sp,1);s.units[id].pos=null;s.camp.push(id);}
  if(wipe)for(const id of s.queue){s.units[id].hp=0;s.units[id].pos=null;}
  s.phase='ended';s.request=null;s.anchor=null;
- s.end={id:'run-a:end',outcome,team:[...s.queue],camp:[...s.camp],goal:true,acquired:1,brought:outcome==='normal'?1:0,...(tm?{tm:{move:tm,brought:outcome==='normal'}}:{})};
+ s.end=closeOut(s,outcome);
  return s;
 }
 const envelope=(over)=>({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:3,current:null,recent:null,profile:initialProfile(),...over});
@@ -126,11 +126,11 @@ test('B9 T gives one machine drawn from the saved random state; reload and later
   let s=atFloor2(Number(seed));for(const id of ['A','B']){s.units[id].hp=0;s.units[id].pos=null;}
   s.units.C.pos=s.points.find(p=>p.kind==='item').pos;
   const r=applyCommand(s,{type:'round',action:{type:'interact',exit:false}});assert.equal(r.ok,true);
-  assert.equal(r.state.tm,move,`seed ${seed}`);assert.equal(r.state.bag,1);
+  assert.deepEqual(r.state.tms,[{move,source:'target',fate:'held'}],`seed ${seed}`);assert.equal(r.state.bag,1);
   const rng=r.state.prog.rng;
-  const text=JSON.stringify(r.state);assert.equal(JSON.parse(text).tm,move);
+  const text=JSON.stringify(r.state);assert.equal(JSON.parse(text).tms[0].move,move);
   const w=applyCommand(JSON.parse(text),{type:'round',action:{type:'wait'}});
-  assert.equal(w.state.tm,move);
+  assert.equal(w.state.tms[0].move,move);
   // T is used: a second interact is refused and draws nothing
   assert.equal(applyCommand(r.state,{type:'round',action:{type:'interact',exit:false}}).ok,false);
   assert.equal(r.state.prog.rng,rng);
@@ -187,7 +187,7 @@ test('B15 the base flow round-trips through storage: return, learn, carry, team 
  assert.equal(await store.returnToBase(),true);
  assert.equal(store.atBase,true);assert.equal(store.state,null);
  assert.deepEqual(store.profile.vault,{protect:1});assert.equal(store.profile.roster.length,4);
- assert.deepEqual(store.envelope.recent.end.tm,{move:'protect',brought:true});
+ assert.deepEqual(store.envelope.recent.end.tms,[{move:'protect',source:'target',fate:'brought'}]);
  let reopened=new TrialStore(port);assert.equal(reopened.status,'ready');assert.deepEqual(reopened.profile,store.profile);
  assert.deepEqual((await store.baseAction({type:'learn',inst:'P4',move:'whirlwind'})).ok,false);
  assert.equal((await store.baseAction({type:'learn',inst:'P4',move:'protect'})).ok,true);
@@ -258,10 +258,10 @@ test('B20 a run unit must match its profile instance; a machine in the record mu
  const wrongMoves=structuredClone(run);wrongMoves.units.A.moves=['ember','scratch'];
  assert.throws(()=>decode(JSON.stringify(envelope({current:wrongMoves}))),/损坏/);
  const finished=ended();assert.doesNotThrow(()=>decode(JSON.stringify(envelope({current:finished}))));
- const wrongTm=structuredClone(finished);wrongTm.end.tm.move='roar';
+ const wrongTm=structuredClone(finished);wrongTm.end.tms[0].move='roar';
  assert.throws(()=>decode(JSON.stringify(envelope({current:wrongTm}))),/损坏/);
- const missingTm=structuredClone(finished);delete missingTm.end.tm;
+ const missingTm=structuredClone(finished);delete missingTm.end.tms;
  assert.throws(()=>decode(JSON.stringify(envelope({current:missingTm}))),/损坏/);
- const unknownTm=structuredClone(finished);unknownTm.tm='tackle';unknownTm.end.tm.move='tackle';
+ const unknownTm=structuredClone(finished);unknownTm.tms[0].move='tackle';unknownTm.end.tms[0].move='tackle';
  assert.throws(()=>decode(JSON.stringify(envelope({current:unknownTm}))),/损坏/);
 });

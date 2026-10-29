@@ -90,5 +90,5 @@ Species folders and credited authors:
   0041: CHUNSOFT
   0074: CHUNSOFT
 
-Generated environment art (public/assets/tiles, public/assets/props): original images made for this project with OpenAI
+Generated environment art (public/assets/tiles, public/assets/props, public/assets/effects): original images made for this project with OpenAI
 gpt-image-2.5 models and pixelised locally; prompts and parameters are listed in public/assets/manifest.json.

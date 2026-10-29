@@ -1201,6 +1201,132 @@
       ],
       "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
     },
+    "effects/fx-guard.png": {
+      "bytes": 1108,
+      "sha256": "bb8e7547f31563f7205583e4f2ccd35998844fc546ed22906d559e41bcf00565",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "fx-guard",
+      "prompt": "A single protective barrier effect centred on a plain transparent background: a round translucent pale-blue hexagon-patterned shield bubble outline, readable at small size. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "54c0df41c148e9c27d5432bcf77e3f0df0024ca1ddb259b198d83a173f99b2f2",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "effects/fx-heal.png": {
+      "bytes": 673,
+      "sha256": "f83d9c1759fae6d4c15cd78e4b92c0dc585266db6880affd4d06a3ce5ea0a803",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "fx-heal",
+      "prompt": "A single healing sparkle effect centred on a plain transparent background: a cluster of small green plus signs and white twinkles rising upward, readable at small size. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "d2df417b944e3cd8dbaee3918bf670b863259d93c50b495c723cec708032ebb0",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "effects/fx-line.png": {
+      "bytes": 565,
+      "sha256": "db3382c49bede3da64d0bc80acfb8f88306f2258df93147f12d960c9c8e2b374",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "fx-line",
+      "prompt": "A single short energy projectile effect centred on a plain transparent background, travelling to the right: a glowing yellow-white bolt with a short trailing streak, readable at small size. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "941fd5ddadcfb9be5472a56a7c53251d858a0f2d87c32f0a35ce383386cf8ad2",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "effects/fx-push.png": {
+      "bytes": 882,
+      "sha256": "b9185f64ff28a89ca48ec604a9cb4437cb67a363ba902fd8d540d020e1273d5c",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "fx-push",
+      "prompt": "A single gust-of-wind push effect centred on a plain transparent background, blowing to the right: three curved pale-green wind swirls, readable at small size. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "9df8b15565900097230b49f1aaf529791f73ded33f7cf1c514ca34673d2ce13d",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "effects/fx-strong.png": {
+      "bytes": 993,
+      "sha256": "60c93794d6c23b19e74989719bede04234f166362d5149514feb7f6caa45c714",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "fx-strong",
+      "prompt": "A single bright impact burst effect centred on a plain transparent background: a jagged white-and-orange star-shaped hit flash with short speed lines, readable at small size. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "6d14845bd9361417e7cdee752a99ed92df1946d81c805c15584e2db24a3ebbb2",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "props/item-berry.png": {
+      "bytes": 701,
+      "sha256": "2e278149c2125b4ed3487dba2b7ea3c225e8949b7a662d3d4584ad1db543c2e4",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "item-berry",
+      "prompt": "A single small round blue berry with a short green stem and leaf, centred on a plain transparent background, readable at small size. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "444a56dd5e31ac418ddb69fcee36691ed1e4a248d03447a72ee8261e4cd45eba",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "props/item-tonic.png": {
+      "bytes": 673,
+      "sha256": "d657920e0ba8ea87d7f85b64481fd8a2798d7ff98d8a79eb4a92357a7500fcbf",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "item-tonic",
+      "prompt": "A single small corked glass tonic bottle with glowing violet liquid, centred on a plain transparent background, readable at small size. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "b3e0efa689b1e4669824aa9e3f9dc6c0631ddbbfeec7182366edeefbcd1c09d2",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
     "props/marker-goal.png": {
       "bytes": 627,
       "sha256": "17a1f7424c5f5dd508a43131908b300cf1112a9ff304681c1ce74ece89d89abe",
@@ -1263,6 +1389,42 @@
       "card": "marker-exit",
       "prompt": "A single square floor tile that fills the whole image: stone stairs leading down into darkness, seen from above, framed by worn stone. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
       "rawSha256": "a539f24534c61dc3cc79cf0b4022ae4be8cef596b9bf08c2354ce6bc56aa40fa",
+      "postprocess": {
+        "crop": null,
+        "trim": false,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/stairs-down.png": {
+      "bytes": 967,
+      "sha256": "892a91ac218f120081bd13f3ef03b36659b41ea34224c134876fc60d70fba5d9",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "stairs-down",
+      "prompt": "A single square floor tile that fills the whole image: a dark stone stairway descending downward into shadow, seen from above, framed by worn stone, a faint cool blue tint. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "25ac75346792f5a85c55162191241cab12c06a7f88a8fc97311cb8fec8c90f99",
+      "postprocess": {
+        "crop": null,
+        "trim": false,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/stairs-up.png": {
+      "bytes": 1139,
+      "sha256": "b80330782177238c931b2e106d594c7b67537e1a6032593b8ae9beb5d0799f36",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "stairs-up",
+      "prompt": "A single square floor tile that fills the whole image: a stone stairway rising upward toward a faint warm light, seen from above, framed by worn stone. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+      "rawSha256": "d939393c7d330460d913ea8d32617b765cede69bc339e0faa39ca62b75c44a36",
       "postprocess": {
         "crop": null,
         "trim": false,

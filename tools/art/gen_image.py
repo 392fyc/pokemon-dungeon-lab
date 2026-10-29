@@ -1,0 +1,91 @@
+"""Generate one image from a prompt card with gpt-image, under a hard spending ledger.
+
+Usage: python tools/art/gen_image.py cards/<card>.json --batch <tag> [--stage stage6] [--quality low] [--model gpt-image-2.5-flare]
+
+The project's OpenAI credit is 50 USD in total (user, 2026-10-30). Stage 6 may spend at most 15 USD and one
+batch at most 2 USD. Each call is estimated before it is sent and refused if a cap would be exceeded; the
+actual usage returned by the API is then appended to usage-ledger.json. Raw output goes to the ignored
+.artifacts/art-gen/<card>/ directory; it becomes a game asset only through pixelize.py.
+"""
+import argparse, base64, json, time, urllib.request, urllib.error
+from datetime import datetime, timezone
+from pathlib import Path
+from common import RAW, openai_key
+
+HERE = Path(__file__).resolve().parent
+LEDGER = HERE / 'usage-ledger.json'
+PRICE = {'image_out': 30e-6, 'image_in': 8e-6, 'text_in': 5e-6}  # USD per token, official model pages 2026-10-30
+CAPS = {'project': 50.0, 'stage6': 15.0, 'batch': 2.0}
+# Conservative output-token guesses per call, used only for the pre-call check.
+GUESS = {'low': 400, 'medium': 2000, 'high': 7000, 'xhigh': 12000, 'max': 20000, 'auto': 7000}
+
+
+def cost(usage: dict) -> float:
+    det = usage.get('input_tokens_details', {})
+    return (usage.get('output_tokens', 0) * PRICE['image_out'] + det.get('image_tokens', 0) * PRICE['image_in']
+            + det.get('text_tokens', 0) * PRICE['text_in'])
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument('card')
+    ap.add_argument('--quality')
+    ap.add_argument('--model')
+    ap.add_argument('--batch', required=True, help='name of this batch; one batch may spend at most 2 USD')
+    ap.add_argument('--stage', default='stage6')
+    a = ap.parse_args()
+    card = json.loads(Path(a.card).read_text(encoding='utf-8'))
+    model = a.model or card.get('model', 'gpt-image-2.5-flare')
+    quality = a.quality or card.get('quality', 'low')
+    size = card.get('size', '1024x1024')
+    ledger = json.loads(LEDGER.read_text(encoding='utf-8')) if LEDGER.exists() else {'caps': CAPS, 'entries': []}
+    spent = sum(e['usd'] for e in ledger['entries'])
+    stage = sum(e['usd'] for e in ledger['entries'] if e.get('stage') == a.stage)
+    batch = sum(e['usd'] for e in ledger['entries'] if e.get('batch') == a.batch)
+    w, h = (int(v) for v in size.split('x')) if 'x' in size else (1536, 1536)
+    area = max(1.0, w * h / (1024 * 1024))
+    guess = GUESS[quality] * area * PRICE['image_out'] + len(card['prompt']) * PRICE['text_in']
+    caps = {'project': CAPS['project'], a.stage: CAPS['stage6'], 'batch': CAPS['batch']}
+    for name, used in (('project', spent), (a.stage, stage), ('batch', batch)):
+        if used + guess > caps[name]:
+            raise SystemExit(f'refused: {name} spend {used:.3f} + estimate {guess:.3f} USD exceeds cap {caps[name]}')
+    body = {'model': model, 'prompt': card['prompt'], 'size': size, 'quality': quality, 'n': 1}
+    if card.get('background'):
+        body['background'] = card['background']
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    # Record the call before sending it, at the estimated cost, so a timeout or crash after the server has
+    # charged still leaves a ledger entry. Success replaces the estimate with the reported usage.
+    entry = {'at': stamp, 'card': card['id'], 'model': model, 'quality': quality, 'size': size, 'stage': a.stage,
+             'batch': a.batch, 'status': 'pending', 'usage': None, 'usd': round(guess, 5)}
+    ledger['entries'].append(entry)
+    save = lambda: LEDGER.write_text(json.dumps(ledger, ensure_ascii=False, indent=1) + chr(10), encoding='utf-8', newline=chr(10))
+    save()
+    req = urllib.request.Request('https://api.openai.com/v1/images/generations', data=json.dumps(body).encode(),
+                                 headers={'Authorization': 'Bearer ' + openai_key(), 'Content-Type': 'application/json'})
+    t = time.time()
+    try:
+        d = json.load(urllib.request.urlopen(req, timeout=300))
+    except urllib.error.HTTPError as e:
+        # The API rejected the request; no image was produced, so no charge is expected.
+        entry.update(status=f'http-{e.code}', usd=0.0)
+        save()
+        raise SystemExit(f'HTTP {e.code}: {e.read()[:300].decode("utf-8", "replace")}')
+    except Exception as e:
+        entry.update(status=f'unknown-{type(e).__name__}')  # keeps the estimate: the server may have charged
+        save()
+        raise
+    usage = d.get('usage')
+    entry.update(status='ok' if usage else 'ok-no-usage', usage=usage, usd=round(cost(usage), 5) if usage else entry['usd'],
+                 seconds=round(time.time() - t, 1))
+    save()
+    out = RAW / card['id']
+    out.mkdir(parents=True, exist_ok=True)
+    png = out / f'{stamp}-{model}-{quality}.png'
+    png.write_bytes(base64.b64decode(d['data'][0]['b64_json']))
+    entry['raw'] = png.name
+    save()
+    print(f'{png.relative_to(RAW.parent.parent).as_posix()}  {entry["usd"]:.4f} USD  (project total {spent + entry["usd"]:.3f})')
+
+
+if __name__ == '__main__':
+    main()

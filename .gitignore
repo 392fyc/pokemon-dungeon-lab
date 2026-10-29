@@ -19,3 +19,4 @@ playwright-report/
 /docs/.trash/
 /docs/.handoff/
 /docs/.tmp/
+__pycache__/

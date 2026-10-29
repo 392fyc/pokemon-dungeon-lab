@@ -1,0 +1,1589 @@
+{
+ "source": {
+  "project": "Pokémon Showdown",
+  "files": {
+   "learnsets.json": "cedbe661968e2d69abe9f317e9a3f5d4f2dcf989e1f937cb0cdd72e7af29ab8f",
+   "moves.json": "26909a321a7e4528d14a7dffd24173aa03a6845776cf41c39cc3d76f8e14616b",
+   "pokedex.json": "e74d0364b230001fc086cefb4259e051f1d16a4730eb89f7d6336a88a0d9a47e"
+  },
+  "url": "https://play.pokemonshowdown.com/data/<name>.json",
+  "downloaded": "2026-10-30",
+  "githubCommit": "ccfaa20f32af363569cd21a9d501b2bc1ded26b1",
+  "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建",
+  "note": "工作候选：名单、maxHp 公式、pp 换算与行为映射均待后续平衡决定"
+ },
+ "species": [
+  {
+   "id": "bulbasaur",
+   "dex": "0001",
+   "name": "Bulbasaur",
+   "starter": true,
+   "types": [
+    "Grass",
+    "Poison"
+   ],
+   "baseStats": {
+    "hp": 45,
+    "atk": 49,
+    "def": 49,
+    "spa": 65,
+    "spd": 65,
+    "spe": 45
+   },
+   "maxHp": 21,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "seedbomb",
+     "behavior": "line",
+     "pp": 1
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "falseswipe",
+     "behavior": "strong",
+     "pp": 4
+    },
+    {
+     "move": "grassyglide",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "knockoff",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "powerwhip",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "trailblaze",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "vinewhip",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "acidspray",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "bulletseed",
+     "behavior": "line",
+     "pp": 3
+    },
+    {
+     "move": "energyball",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "gigadrain",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "grasspledge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "leafstorm",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "magicalleaf",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "seedbomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "sludgebomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "solarbeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "venoshock",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "weatherball",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[bulbasaur]; learnsets.json[bulbasaur] 第9世代; moves.json"
+  },
+  {
+   "id": "charmander",
+   "dex": "0004",
+   "name": "Charmander",
+   "starter": true,
+   "types": [
+    "Fire"
+   ],
+   "baseStats": {
+    "hp": 39,
+    "atk": 52,
+    "def": 43,
+    "spa": 60,
+    "spd": 50,
+    "spe": 65
+   },
+   "maxHp": 19,
+   "kit": [
+    {
+     "move": "scratch",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bite",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "crunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dragonclaw",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dragonrush",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "falseswipe",
+     "behavior": "strong",
+     "pp": 4
+    },
+    {
+     "move": "firefang",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "firepunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "flamecharge",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "flareblitz",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "irontail",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "metalclaw",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "scratch",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "shadowclaw",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "slash",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "temperflare",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "thunderpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "ancientpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "dragonbreath",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "dragonpulse",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "fireblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "firepledge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "flamethrower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "focusblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "inferno",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "overheat",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "weatherball",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "dragontail",
+     "behavior": "push",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "source": "pokedex.json[charmander]; learnsets.json[charmander] 第9世代; moves.json"
+  },
+  {
+   "id": "squirtle",
+   "dex": "0007",
+   "name": "Squirtle",
+   "starter": true,
+   "types": [
+    "Water"
+   ],
+   "baseStats": {
+    "hp": 44,
+    "atk": 48,
+    "def": 65,
+    "spa": 50,
+    "spd": 64,
+    "spe": 43
+   },
+   "maxHp": 20,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "watergun",
+     "behavior": "line",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aquajet",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "aquatail",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bite",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "fakeout",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "icepunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "icespinner",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "liquidation",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "rapidspin",
+     "behavior": "strong",
+     "pp": 4
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "wavecrash",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "zenheadbutt",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "chillingwater",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "hydropump",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "waterpledge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "waterpulse",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "weatherball",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "whirlpool",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "irondefense",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "withdraw",
+     "behavior": "guard",
+     "pp": 4
+    }
+   ],
+   "source": "pokedex.json[squirtle]; learnsets.json[squirtle] 第9世代; moves.json"
+  },
+  {
+   "id": "pidgey",
+   "dex": "0016",
+   "name": "Pidgey",
+   "starter": false,
+   "types": [
+    "Normal",
+    "Flying"
+   ],
+   "baseStats": {
+    "hp": 40,
+    "atk": 45,
+    "def": 40,
+    "spa": 35,
+    "spd": 35,
+    "spe": 56
+   },
+   "maxHp": 20,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "gust",
+     "behavior": "line",
+     "pp": 3
+    }
+   ],
+   "learnable": [
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "feintattack",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "pursuit",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "quickattack",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "steelwing",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "airslash",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "gust",
+     "behavior": "line",
+     "pp": 3
+    },
+    {
+     "move": "hiddenpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "hurricane",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "round",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "skyattack",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "snore",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "detect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "whirlwind",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "source": "pokedex.json[pidgey]; learnsets.json[pidgey] 第7世代; moves.json"
+  },
+  {
+   "id": "rattata",
+   "dex": "0019",
+   "name": "Rattata",
+   "starter": false,
+   "types": [
+    "Normal"
+   ],
+   "baseStats": {
+    "hp": 30,
+    "atk": 56,
+    "def": 35,
+    "spa": 25,
+    "spd": 35,
+    "spe": 72
+   },
+   "maxHp": 18,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    }
+   ],
+   "learnable": [
+    {
+     "move": "assurance",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bite",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "covet",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "crunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "flamewheel",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "headbutt",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "hyperfang",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "irontail",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "lastresort",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "pursuit",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "quickattack",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "revenge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "rocksmash",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "skullbash",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "suckerpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "wildcharge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "zenheadbutt",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bubblebeam",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "chargebeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "hiddenpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "round",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "shadowball",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "shockwave",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "snore",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thunder",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thunderbolt",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "defensecurl",
+     "behavior": "guard",
+     "pp": 4
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[rattata]; learnsets.json[rattata] 第7世代; moves.json"
+  },
+  {
+   "id": "spearow",
+   "dex": "0021",
+   "name": "Spearow",
+   "starter": false,
+   "types": [
+    "Normal",
+    "Flying"
+   ],
+   "baseStats": {
+    "hp": 40,
+    "atk": 60,
+    "def": 30,
+    "spa": 31,
+    "spd": 31,
+    "spe": 70
+   },
+   "maxHp": 20,
+   "kit": [
+    {
+     "move": "pursuit",
+     "behavior": "strong",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "assurance",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "drillrun",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "falseswipe",
+     "behavior": "strong",
+     "pp": 4
+    },
+    {
+     "move": "feintattack",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "pursuit",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "quickattack",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "steelwing",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "echoedvoice",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "hiddenpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "round",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "skyattack",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "snore",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "triattack",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "detect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "whirlwind",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "source": "pokedex.json[spearow]; learnsets.json[spearow] 第7世代; moves.json"
+  },
+  {
+   "id": "pikachu",
+   "dex": "0025",
+   "name": "Pikachu",
+   "starter": false,
+   "types": [
+    "Electric"
+   ],
+   "baseStats": {
+    "hp": 35,
+    "atk": 55,
+    "def": 40,
+    "spa": 50,
+    "spd": 50,
+    "spe": 90
+   },
+   "maxHp": 19,
+   "kit": [
+    {
+     "move": "quickattack",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "thundershock",
+     "behavior": "line",
+     "pp": 3
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "focuspunch",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "irontail",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "knockoff",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "playrough",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "spark",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thunderpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "trailblaze",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "upperhand",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "wildcharge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "alluringvoice",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "chargebeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "feint",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thunder",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thunderbolt",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thundershock",
+     "behavior": "line",
+     "pp": 3
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[pikachu]; learnsets.json[pikachu] 第9世代; moves.json"
+  },
+  {
+   "id": "zubat",
+   "dex": "0041",
+   "name": "Zubat",
+   "starter": false,
+   "types": [
+    "Poison",
+    "Flying"
+   ],
+   "baseStats": {
+    "hp": 40,
+    "atk": 45,
+    "def": 35,
+    "spa": 30,
+    "spd": 40,
+    "spe": 55
+   },
+   "maxHp": 20,
+   "kit": [
+    {
+     "move": "absorb",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "poisonfang",
+     "behavior": "strong",
+     "pp": 1
+    }
+   ],
+   "learnable": [
+    {
+     "move": "assurance",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bite",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "crunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dualwingbeat",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "headbutt",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "leechlife",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "payback",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "poisonfang",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "steelwing",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "zenheadbutt",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "absorb",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "airslash",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "gigadrain",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "gust",
+     "behavior": "line",
+     "pp": 3
+    },
+    {
+     "move": "megadrain",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "round",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "shadowball",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "sludgebomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "snore",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "venoshock",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "whirlwind",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "source": "pokedex.json[zubat]; learnsets.json[zubat] 第8世代; moves.json"
+  },
+  {
+   "id": "geodude",
+   "dex": "0074",
+   "name": "Geodude",
+   "starter": false,
+   "types": [
+    "Rock",
+    "Ground"
+   ],
+   "baseStats": {
+    "hp": 40,
+    "atk": 80,
+    "def": 100,
+    "spa": 30,
+    "spd": 30,
+    "spe": 20
+   },
+   "maxHp": 20,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "defensecurl",
+     "behavior": "guard",
+     "pp": 4
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dynamicpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "firepunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "hammerarm",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "highhorsepower",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "megapunch",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "stompingtantrum",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thunderpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "earthpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "fireblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "flamethrower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rockblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rockthrow",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "smackdown",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "stoneedge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "defensecurl",
+     "behavior": "guard",
+     "pp": 4
+    },
+    {
+     "move": "irondefense",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[geodude]; learnsets.json[geodude] 第9世代; moves.json"
+  }
+ ]
+}

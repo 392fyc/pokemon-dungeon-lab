@@ -52,6 +52,7 @@ def main() -> None:
     body = {'model': model, 'prompt': card['prompt'], 'size': size, 'quality': quality, 'n': 1}
     if card.get('background'):
         body['background'] = card['background']
+    key = openai_key()  # read first: a missing key must not leave a pending ledger entry
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     # Record the call before sending it, at the estimated cost, so a timeout or crash after the server has
     # charged still leaves a ledger entry. Success replaces the estimate with the reported usage.
@@ -61,7 +62,7 @@ def main() -> None:
     save = lambda: LEDGER.write_text(json.dumps(ledger, ensure_ascii=False, indent=1) + chr(10), encoding='utf-8', newline=chr(10))
     save()
     req = urllib.request.Request('https://api.openai.com/v1/images/generations', data=json.dumps(body).encode(),
-                                 headers={'Authorization': 'Bearer ' + openai_key(), 'Content-Type': 'application/json'})
+                                 headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
     t = time.time()
     try:
         d = json.load(urllib.request.urlopen(req, timeout=300))

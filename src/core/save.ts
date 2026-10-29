@@ -1,8 +1,11 @@
 import {applyCommand,clone,levelFor,PROG,RULE_VERSION,CONTENT_VERSION,type World,type Command,type Result,type StoredFloor,type Dungeon} from './engine.ts';
 import {WILD_SPECIES} from './dungeon.ts';
-import {speciesOf} from './roster.ts';
+import {speciesOf,TM_MOVES,learnableMove} from './roster.ts';
+import {profileProblem,profileFitsWorld,settleRun,applyBase,squadOf,type Profile,type BaseAction} from './base.ts';
+import {createExpedition} from './engine.ts';
 export interface StoragePort {getItem(key:string):string|null;setItem(key:string,value:string):void|Promise<void>;}
-export type Envelope={format:1;rules:string;content:string;build:string;sequence:number;current:World;recent:World|null};
+/** `current` is null while the player is at the base (6.5); `profile` exists only for expedition players and is written in the same record as `current` and `recent`. */
+export type Envelope={format:1;rules:string;content:string;build:string;sequence:number;current:World|null;recent:World|null;profile?:Profile};
 export type SaveStatus='empty'|'ready'|'saving'|'failed'|'blocked';
 export const SAVE_KEY='dungeon-trial.player.v1';
 export const BUILD_ID='trial-0.1.0';
@@ -20,13 +23,15 @@ function validUnit(v:unknown,depth=0):boolean {
   if(v.damage!==undefined&&(!integer(v.damage)||(v.damage as number)<0))return false;
   if(v.range!==undefined&&(!integer(v.range)||(v.range as number)<1))return false;
   if(v.species!==undefined&&(typeof v.species!=='string'||!speciesOf(v.species)))return false;
+  if((v.inst===undefined)!==(v.moves===undefined)||(v.inst!==undefined&&(v.side!=='friend'||typeof v.inst!=='string'||!v.inst||!strings(v.moves)||v.species===undefined)))return false;
   // Expedition enemies are always wild species; a starter on the enemy side is a contradictory save.
   if(v.side==='enemy'&&v.species!==undefined&&!(String(v.species) in WILD_SPECIES))return false;
   return v.recruit===undefined||(depth<1&&validUnit(v.recruit,depth+1));
 }
 const keyOf=(p:{x:number;y:number})=>`${p.x},${p.y}`;
-const pointKinds=['goal','item','exit','down','up','berry','tonic'];
-const isPickup=(k:unknown)=>k==='berry'||k==='tonic';
+const pointKinds=['goal','item','exit','down','up','berry','tonic','rest'];
+/** Points that exist only in 6.4+ expeditions (pickups and the 6.5 rest point). */
+const isPickup=(k:unknown)=>k==='berry'||k==='tonic'||k==='rest';
 const validPoint=(p:unknown,cells:Set<string>)=>object(p)&&position(p.pos)&&pointKinds.includes(String(p.kind))&&typeof p.used==='boolean'&&cells.has(keyOf(p.pos));
 /** A stored (non-current) floor: terrain, revealed cells, real enemies and points. Ids are claimed in `taken` so none repeats across floors. */
 function validStored(f:unknown,d:Dungeon,taken:Set<string>,run:boolean):f is StoredFloor {
@@ -51,24 +56,32 @@ function validRooms(rooms:unknown,cells:Set<string>,d:Dungeon):boolean {
 /** Which point kinds a floor may hold: no stairs outside an expedition, no 'up' on the first floor, no 'down' on the last, exits only on floor 1. */
 function pointsFitLevel(points:{kind:string}[],level:number|null,floors:number):boolean {
   if(level===null)return points.every(p=>p.kind!=='down'&&p.kind!=='up');
-  return points.every(p=>!(p.kind==='up'&&level===1)&&!(p.kind==='down'&&level===floors)&&!(p.kind==='exit'&&level!==1));
+  return points.every(p=>!(p.kind==='up'&&level===1)&&!(p.kind==='down'&&level===floors)&&!(p.kind==='exit'&&level!==1)&&!(p.kind==='rest'&&level!==2));
 }
 /** 6.4 run level, counters, pickups and rooms of an expedition. All of it is absent together for expeditions saved before 6.4. */
 function validProgress(s:World,d:Dungeon):boolean {
   const p=s.prog,here=new Set(s.floor.map(keyOf));
   if((s.rooms!==undefined)!==(p!==undefined)||(s.rooms!==undefined&&!validRooms(s.rooms,here,d)))return false;
   const points=[...s.points,...Object.values(d.stored).flatMap(f=>f.points)];
-  if(p===undefined)return !points.some(q=>isPickup(q.kind));
+  if(p===undefined)return !points.some(q=>isPickup(q.kind))&&s.tm===undefined;
   if(!object(p)||!integer(p.level)||!integer(p.exp)||!integer(p.rng)||!integer(p.made)||!Array.isArray(p.kills)||!object(p.items))return false;
   if(p.exp<0||p.level<1||p.level>PROG.maxLevel||p.level!==levelFor(p.exp)||p.rng<0||p.rng>4294967295||p.made<0||p.made>999||p.kills.length>0)return false;
   if(Object.keys(p.items).sort().join()!=='berry,tonic')return false;
   for(const k of ['berry','tonic'] as const){const n=p.items[k];if(!integer(n)||n<0||n>points.filter(q=>q.kind===k&&q.used).length)return false;}
   if(s.goal&&p.exp<PROG.goalExp)return false;
+  if(points.filter(q=>q.kind==='rest').length>(d.base?1:0))return false;
+  if(s.tm!==undefined&&(!(TM_MOVES as readonly string[]).includes(s.tm)||s.bag<1))return false;
   return true;
 }
 /** A roster unit of a 6.4 run must keep its species' kit exactly; max HP follows the run level (queue: exactly; camp: from the base up to it). */
-function validSpeciesUnit(u:{species?:string;maxHp:number;learned:string[];pp:Partial<Record<string,number>>;maxPp:Partial<Record<string,number>>},level:number,tier:'queue'|'camp'|'any'):boolean {
+function validSpeciesUnit(u:{species?:string;maxHp:number;learned:string[];pp:Partial<Record<string,number>>;maxPp:Partial<Record<string,number>>;moves?:string[]},level:number,tier:'queue'|'camp'|'any'):boolean {
   const sp=u.species?speciesOf(u.species):undefined;if(!sp)return false;
+  if(u.moves){ // 6.5 roster unit: its carried moves (at most two, distinct behaviors) are learnable by its species, at the roster's max PP
+    const m=u.moves.map(n=>learnableMove(sp.id,n));
+    if(m.length>2||m.some(x=>!x)||new Set(u.moves).size!==m.length||new Set(m.map(x=>x!.behavior)).size!==m.length||u.learned.join()!==m.map(x=>x!.behavior).join()||Object.keys(u.maxPp).sort().join()!==[...u.learned].sort().join())return false;
+    for(const x of m)if(u.maxPp[x!.behavior]!==x!.pp||!integer(u.pp[x!.behavior]))return false;
+    const top=sp.maxHp+PROG.hpPerLevel*(level-1);return tier==='queue'?u.maxHp===top:u.maxHp>=sp.maxHp&&u.maxHp<=top;
+  }
   const kit=Object.fromEntries(sp.kit.map(k=>[k.behavior,k.pp]));
   if([...u.learned].sort().join()!==Object.keys(kit).sort().join()||Object.keys(u.maxPp).sort().join()!==Object.keys(kit).sort().join())return false;
   for(const [k,n] of Object.entries(kit))if(u.maxPp[k]!==n||!integer(u.pp[k]))return false;
@@ -98,7 +111,7 @@ function validDungeon(s:World):boolean {
   const stairs=point?.kind==='down'||point?.kind==='up';
   if(r&&stairs!==(r.to!==undefined))return false;
   if(d===undefined)return s.scenario!=='expedition'&&s.phase!=='transit'&&!stairs&&pointsFitLevel(s.points,null,0)&&s.prog===undefined&&s.rooms===undefined&&!s.points.some(p=>isPickup(p.kind));
-  if(!object(d)||s.scenario!=='expedition')return false;
+  if(!object(d)||s.scenario!=='expedition'||(d.base!==undefined&&(d.base!==true||s.prog===undefined)))return false;
   if(![d.seed,d.width,d.height,d.floors,d.level].every(integer)||d.seed<0||d.seed>4294967295||d.width<8||d.height<8||d.width>64||d.height>64||d.floors<2||d.floors>9||d.level<1||d.level>d.floors||!object(d.stored))return false;
   if(s.floor.some(p=>p.x<0||p.y<0||p.x>=d.width||p.y>=d.height))return false;
   const taken=new Set(Object.keys(s.units));
@@ -124,7 +137,8 @@ function validWorld(v:unknown):v is World {
   if(s.anchor!==null&&!position(s.anchor))return false;
   if(s.request!==null&&(!object(s.request)||typeof s.request.actor!=='string'||!s.units[s.request.actor]||!position(s.request.pos)||typeof s.request.locked!=='boolean'))return false;
   if(s.invitations.some(i=>!object(i)||typeof i.id!=='string'||!validUnit(i.unit)||!['pending','accepted','rejected','cancelled'].includes(i.status)))return false;
-  if(s.phase==='ended'){const e=s.end;if(!object(e)||e.id!==`${s.runId}:end`||!['normal','wipe'].includes(e.outcome)||!strings(e.team)||!strings(e.camp)||e.team.join()!==s.queue.join()||e.camp.join()!==s.camp.join()||e.goal!==s.goal||e.acquired!==s.bag||e.brought!==(e.outcome==='normal'?s.bag:0))return false;}else if(s.end!==null)return false;
+  if(s.phase==='ended'){const e=s.end;if(!object(e)||e.id!==`${s.runId}:end`||!['normal','wipe'].includes(e.outcome)||!strings(e.team)||!strings(e.camp)||e.team.join()!==s.queue.join()||e.camp.join()!==s.camp.join()||e.goal!==s.goal||e.acquired!==s.bag||e.brought!==(e.outcome==='normal'?s.bag:0))return false;
+    if(s.tm===undefined?e.tm!==undefined:(!object(e.tm)||e.tm.move!==s.tm||e.tm.brought!==(e.outcome==='normal')||Object.keys(e.tm).length!==2))return false;}else if(s.end!==null)return false;
   // Only complete processing checkpoints may be loaded. A phase tag cannot
   // bypass a pending invitation or revive an unfinished/contradictory result.
   const pending=s.invitations.some(i=>i.status==='pending');
@@ -137,6 +151,7 @@ function validWorld(v:unknown):v is World {
   if(s.phase==='exit'&&(pending||cancelled||s.anchor!==null||!s.request?.locked||s.request.to!==undefined))return false;
   if(s.phase==='transit'&&(pending||cancelled||s.anchor!==null||!s.request?.locked||s.request.to===undefined))return false;
   if(!validDungeon(s)||!validRun(s))return false;
+  if(s.tm!==undefined&&!s.prog)return false;
   if(s.phase==='ended'&&(pending||s.anchor!==null||s.request!==null||
     (s.end!.outcome==='wipe'?living:!living||cancelled)))return false;
   // Sequential invitation handling allows a processed prefix, never a
@@ -147,7 +162,10 @@ function validWorld(v:unknown):v is World {
 export function decode(raw:string):Envelope {
   const e=JSON.parse(raw) as Envelope;
   if(e.format!==1||e.rules!==RULE_VERSION||e.content!==CONTENT_VERSION)throw Error('存档版本不兼容；原记录已保留');
-  if(typeof e.build!=='string'||!Number.isInteger(e.sequence)||e.sequence<1||!validWorld(e.current)||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('存档结构损坏；原记录已保留');
+  if(typeof e.build!=='string'||!Number.isInteger(e.sequence)||e.sequence<1||(e.current!==null&&!validWorld(e.current))||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('存档结构损坏；原记录已保留');
+  // 6.5: the profile is validated on its own and against the run that uses it; at the base (no current run) a profile is required.
+  if(e.profile!==undefined&&profileProblem(e.profile)!==null)throw Error('存档结构损坏；原记录已保留');
+  if(e.current===null?e.profile===undefined:((e.profile!==undefined&&e.current.scenario!=='expedition')||!profileFitsWorld(e.profile,e.current)))throw Error('存档结构损坏；原记录已保留');
   return e;
 }
 /** One complete JSON record per atomic setItem; failures freeze this controller. */
@@ -163,8 +181,11 @@ export class TrialStore {
   }
   private port:StoragePort;readonly key:string;
   get envelope():Envelope|null{return this.record?clone(this.record):null;}
-  get state():World|null{return this.record?clone(this.record.current):null;}
-  private label():string|null {return this.record?`${this.record.current.runId} · 第${this.record.current.round}轮 · ${this.record.current.phase} · 保存${this.record.sequence}`:null;}
+  get state():World|null{return this.record?.current?clone(this.record.current):null;}
+  /** 6.5: the base profile (null for records that have none yet), and whether the player is at the base screen (a record with no current run). */
+  get profile():Profile|null{return this.record?.profile?clone(this.record.profile):null;}
+  get atBase():boolean{return !!this.record&&this.record.current===null;}
+  private label():string|null {if(!this.record)return null;const c=this.record.current;return c?`${c.runId} · 第${c.round}轮 · ${c.phase} · 保存${this.record.sequence}`:`基地 · 待出发 · 保存${this.record.sequence}`;}
   private async persist():Promise<boolean> {
     this.status='saving';try{const text=JSON.stringify(this.record);await this.port.setItem(this.key,text);this.raw=text;this.status='ready';this.error='';this.lastSaved=this.label();return true;}
     catch(e){this.status='failed';this.error=String(e);return false;}
@@ -181,8 +202,30 @@ export class TrialStore {
   }
   async retry():Promise<boolean> {return this.status==='failed'?this.persist():false;}
   async newTrial(s:World):Promise<boolean> {
-    if(this.status!=='ready'||this.record?.current.phase!=='ended'||s.runId===this.record.current.runId||s.phase!=='playing'||s.round!==0)return false;
-    this.record={...this.record,sequence:this.record.sequence+1,recent:clone(this.record.current),current:clone(s)};return this.persist();
+    const cur=this.record?.current;
+    if(this.status!=='ready'||!cur||cur.phase!=='ended'||s.runId===cur.runId||s.phase!=='playing'||s.round!==0)return false;
+    if(this.record!.profile&&cur.scenario==='expedition')return false; // with a base, a finished expedition goes back to the base first
+    this.record={...this.record!,sequence:this.record!.sequence+1,recent:clone(cur),current:clone(s)};return this.persist();
+  }
+  /** 6.5 settlement: one write moves the finished expedition into `recent`, clears `current` and updates the profile. */
+  async returnToBase():Promise<boolean> {
+    const cur=this.record?.current;if(this.status!=='ready'||!cur)return false;
+    const profile=settleRun(this.record!.profile??null,cur);if(!profile)return false;
+    this.record={...this.record!,sequence:this.record!.sequence+1,recent:clone(cur),current:null,profile};return this.persist();
+  }
+  /** 6.5 base edits (learn / carry / team). Each one is one write; the next edit is accepted only after it succeeded. */
+  async baseAction(a:BaseAction):Promise<{ok:true;saved:boolean}|{ok:false;error:string}> {
+    if(!this.record||this.record.current!==null||!this.record.profile)return {ok:false,error:'现在不在基地'};
+    if(this.status!=='ready')return {ok:false,error:'保存未完成；仅可查看或重试'};
+    const r=applyBase(this.record.profile,a);if(!r.ok)return r;
+    this.record={...this.record,sequence:this.record.sequence+1,profile:r.profile};
+    // ok: the edit is valid and is now the in-memory result; saved: whether that result reached storage (else retry).
+    return {ok:true,saved:await this.persist()};
+  }
+  /** 6.5 departure: a new seeded expedition from the saved squad, full HP and PP, run level 1. One write. */
+  async depart(runId:string,seed:number):Promise<boolean> {
+    if(this.status!=='ready'||!this.record||this.record.current!==null||!this.record.profile)return false;
+    this.record={...this.record,sequence:this.record.sequence+1,current:createExpedition(runId,seed,2,squadOf(this.record.profile))};return this.persist();
   }
   exportRaw():string|null {this.exported=true;return this.raw;}
   async resetAfterExport(s:World,confirmed:boolean):Promise<boolean> {

@@ -87,7 +87,7 @@ P = 来源威力；缺失时取 70
 
 `root` 是本作的减速状态：所查正常敌人更新把移动速度乘以 0.35，具体施加仍受状态条件影响。[E10](PokéBonk—普通招式执行路径—证据索引—mvnpa0xv.md#E10)
 
-表格依据与计算记录：[E03](PokéBonk—普通招式执行路径—证据索引—mvnpa0xv.md#E03)、[三招数据与算术结果](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/move-examples.json)。三个招式有显式原型映射；本轮检查的 `Fv` 及合并 SPECIAL 表中没有它们的逐招参数覆盖条目。
+表格依据与计算记录：[E03](PokéBonk—普通招式执行路径—证据索引—mvnpa0xv.md#E03)、[三招数据与算术结果](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/move-examples.json)。三个招式有显式原型映射；本轮检查的 `Fv` 及合并 SPECIAL 表中没有它们的逐招参数覆盖条目。
 
 ### 十万伏特：连锁选择后直接结算
 

@@ -17,3 +17,5 @@ playwright-report/
 # docs/ is the Obsidian vault (formerly pokemon-game-research): keep per-machine vault state out
 /docs/.obsidian/
 /docs/.trash/
+/docs/.handoff/
+/docs/.tmp/

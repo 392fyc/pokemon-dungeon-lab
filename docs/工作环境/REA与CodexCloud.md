@@ -19,7 +19,7 @@ updated: 2026-10-26
 
 | 用途 | 入口 |
 | --- | --- |
-| Obsidian 研究主库 | `D:\Project\Pokemon_Game_Research`，从[总索引](../README.md)检索 |
+| Obsidian 研究库 | pokemon-dungeon-lab 的 `docs/`（2026-10-29 起；本表其余行为 2026-10-26 时的状态），从[总索引](../README.md)检索 |
 | 游戏私有准备仓库 | [392fyc/pokemon-dungeon-lab](https://github.com/392fyc/pokemon-dungeon-lab)，本机 `D:\Project\Pokemon_Dungeon_Lab` |
 | 已发布环境 | `pokemon-dungeon-lab`，仅绑定上述仓库，Who can use 为 Only me |
 | 环境说明及配置 | [cloud 目录](https://github.com/392fyc/pokemon-dungeon-lab/tree/main/cloud) |

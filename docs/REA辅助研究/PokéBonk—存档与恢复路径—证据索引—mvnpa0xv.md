@@ -14,18 +14,18 @@ build: mvnpa0xv
 
 ### 目标与输入
 
-- 版本 0.8.47，构建 mvnpa0xv。2026-10-25 再次核对官网 HTML 构建和主模块内容；[本轮来源核对记录](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/input-provenance.json)保留时间、URL、摘要和复用路径。
-- [主模块原始捕获](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/raw/assets/main-DasJJ4XQ-mvnpa0xv.js)：SHA-256 `4E050B55FF580A8B85FB5E6CFFFBDD5A9A168F30192AC80AB359704C353D95F1`，2,239,152 字节。
-- [显示文本](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/main.formatted.js)：SHA-256 `EF80663AC5EFCA3E54A76FC865D21108D70E17B2682F024BF3CD0AA68AB75998`。沿用上轮 Babel 惰性解析与排版，没有执行脚本。
-- [原始捕获清单](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/capture-manifest.json)、[上轮排版来源记录](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/format-provenance.json)、[生成的显示映射](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/main.formatted.js.map)。
-- [本轮函数与对象形状索引](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/derived/evidence-index.json)，由[只读索引脚本](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/derived/index-save-path.mjs)生成，列出 63 个选定锚点及 47 处对象结构。脚本使用现有 Babel，仅分析语法树，不导入或执行目标模块。
+- 版本 0.8.47，构建 mvnpa0xv。2026-10-25 再次核对官网 HTML 构建和主模块内容；[本轮来源核对记录](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/input-provenance.json)保留时间、URL、摘要和复用路径。
+- [主模块原始捕获](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/raw/assets/main-DasJJ4XQ-mvnpa0xv.js)：SHA-256 `4E050B55FF580A8B85FB5E6CFFFBDD5A9A168F30192AC80AB359704C353D95F1`，2,239,152 字节。
+- [显示文本](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/main.formatted.js)：SHA-256 `EF80663AC5EFCA3E54A76FC865D21108D70E17B2682F024BF3CD0AA68AB75998`。沿用上轮 Babel 惰性解析与排版，没有执行脚本。
+- [原始捕获清单](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/capture-manifest.json)、[上轮排版来源记录](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/format-provenance.json)、[生成的显示映射](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/main.formatted.js.map)。
+- [本轮函数与对象形状索引](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/derived/evidence-index.json)，由[只读索引脚本](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/derived/index-save-path.mjs)生成，列出 63 个选定锚点及 47 处对象结构。脚本使用现有 Babel，仅分析语法树，不导入或执行目标模块。
 - 原始范围是 UTF-16 字符索引，起点包含、终点不包含；原始列从 0 开始、行从 1 开始。不要视为字节偏移。
 
 ### REA 的实际使用
 
 工具为 REA 6.7.0，源码提交 `475f09d5ca4f854cbc634074d5534717d58c6664`；Node.js 24.22.1。本轮仓库命令以 `D:\Project\rea` 为工作目录，未安装、构建或升级工具。
 
-由于当前官方主模块摘要没有变化，复用[上轮完整应用 Evidence](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.evidence.json)，没有重做整份大型分析。父记录：
+由于当前官方主模块摘要没有变化，复用[上轮完整应用 Evidence](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.evidence.json)，没有重做整份大型分析。父记录：
 
 `ev_8368982231071ab2b35aea9779b0e0d8114e34d86400f3128325c616efcf70ff`
 
@@ -39,14 +39,14 @@ node scripts/rea.mjs trace-application-feature D:\Project\Pokemon_REA_Workbench\
 
 | 记录 | 实际结果 |
 | --- | --- |
-| [最终追踪结果](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature-v2.result.json)、[退出码](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature-v2.exitcode.txt)、[日志](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature-v2.stderr.log) | 退出码 0；Evidence ID 为 `ev_66b1dba5e7b3ba6a28fb8f3a37665c860ac240fe4cf71a80d85ad991e6fc653f` |
+| [最终追踪结果](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature-v2.result.json)、[退出码](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature-v2.exitcode.txt)、[日志](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature-v2.stderr.log) | 退出码 0；Evidence ID 为 `ev_66b1dba5e7b3ba6a28fb8f3a37665c860ac240fe4cf71a80d85ad991e6fc653f` |
 | 匹配与覆盖 | 1 个 seed、1 个节点、0 条边；coverage=partial，source_graph_status=partial |
 | 节点含义 | 节点标签为 pb.live，工具将其分类为 endpoint；这不是它已被证明为网络端点。源码显示本轮所查用法是本地存储包装器的键 |
 | 可用范围 | 该追踪只提供一个字面量定位线索，没有自动证明完整字段传递和恢复调用链；具体链路由源码核对 |
-| 父分析限制 | 原应用图为部分覆盖；语义图曾触及每文件 20,000 节点及 20,000 未知记录上限。见[父摘要](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.summary.json)，不能用零条边作不存在调用的证明 |
-| 输入修正记录 | [首次结果](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature.result.json)退出码 1：将整个 bundle 当成单条 Evidence，触发结构校验。后续改为精确选取父记录后成功；没有改写父证据或重跑源分析 |
+| 父分析限制 | 原应用图为部分覆盖；语义图曾触及每文件 20,000 节点及 20,000 未知记录上限。见[父摘要](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.summary.json)，不能用零条边作不存在调用的证明 |
+| 输入修正记录 | [首次结果](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature.result.json)退出码 1：将整个 bundle 当成单条 Evidence，触发结构校验。后续改为精确选取父记录后成功；没有改写父证据或重跑源分析 |
 
-[最终输入](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature-v2.input.json)含完整父记录，体积较大，默认先读结果与索引。上述证据都属于静态分析，未产生目标运行观察。
+[最终输入](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-save/evidence/trace-live-feature-v2.input.json)含完整父记录，体积较大，默认先读结果与索引。上述证据都属于静态分析，未产生目标运行观察。
 
 ## S01
 
@@ -82,7 +82,7 @@ node scripts/rea.mjs trace-application-feature D:\Project\Pokemon_REA_Workbench\
 记录触发、模拟时间与检查点：
 
 - 主模块 MO=30：65748；nextCp/nextLive：65977–65978；WO.simulate：67363–67368。
-- 配置 heartbeat=60：[news 显示文本](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/news.formatted.js) 3625 行。与主模块导入配置及 S.heartbeat 使用共同核对。
+- 配置 heartbeat=60：[news 显示文本](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/news.formatted.js) 3625 行。与主模块导入配置及 S.heartbeat 使用共同核对。
 - WO.checkpoint：66812–66821。t/stage/kills/level/damage/splits，再 keepLive。
 - AV.checkpoint/flushCps：92472–92490。内存排队、发送 checkpoints，成功后从队列删除该批。
 - 页面 pagehide：93399；freeze/visibilitychange：93422–93423。

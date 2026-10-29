@@ -12,10 +12,10 @@ build: mvnpa0xv
 
 ## 输入与工具身份
 
-- [原始捕获清单](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/capture-manifest.json)：9 份公开文件的 URL、捕获时间、HTTP 状态和 SHA-256；只捕获所需入口、模块和数据，没有打包全站资源。
-- [原始主模块](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/raw/assets/main-DasJJ4XQ-mvnpa0xv.js)：`4E050B55FF580A8B85FB5E6CFFFBDD5A9A168F30192AC80AB359704C353D95F1`，2,239,152 字节。
-- [显示文本](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/main.formatted.js)：`EF80663AC5EFCA3E54A76FC865D21108D70E17B2682F024BF3CD0AA68AB75998`。由现有 Babel parser 8.0.4 / generator 8.0.6 排版，没有执行目标脚本；不是恢复出作者的原始工程。
-- [排版来源记录](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/format-provenance.json)、[生成的映射](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/main.formatted.js.map)、[符号原始范围](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/symbol-index.json)、[本轮重点证据位置](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/evidence-index.json)。
+- [原始捕获清单](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/capture-manifest.json)：9 份公开文件的 URL、捕获时间、HTTP 状态和 SHA-256；只捕获所需入口、模块和数据，没有打包全站资源。
+- [原始主模块](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/raw/assets/main-DasJJ4XQ-mvnpa0xv.js)：`4E050B55FF580A8B85FB5E6CFFFBDD5A9A168F30192AC80AB359704C353D95F1`，2,239,152 字节。
+- [显示文本](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/main.formatted.js)：`EF80663AC5EFCA3E54A76FC865D21108D70E17B2682F024BF3CD0AA68AB75998`。由现有 Babel parser 8.0.4 / generator 8.0.6 排版，没有执行目标脚本；不是恢复出作者的原始工程。
+- [排版来源记录](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/format-provenance.json)、[生成的映射](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/main.formatted.js.map)、[符号原始范围](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/symbol-index.json)、[本轮重点证据位置](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/evidence-index.json)。
 - 原始范围使用 UTF-16 字符索引，起点包含、终点不包含；原始列号从 0 开始、行号从 1 开始，不能当作字节偏移。
 - REA 6.7.0，提交 `475f09d5ca4f854cbc634074d5534717d58c6664`；Node.js 24.22.1。所有 REA 仓库命令显式以 `D:\Project\rea` 为工作目录。
 
@@ -33,17 +33,17 @@ node scripts/rea.mjs trace-javascript-semantics D:\Project\Pokemon_REA_Workbench
 
 | 产物 | 实际结果与适用范围 |
 | --- | --- |
-| [完整应用 Evidence](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.evidence.json) | 主记录 `ev_8368982231071ab2b35aea9779b0e0d8114e34d86400f3128325c616efcf70ff`；保存原输入身份、解析事实和不完整覆盖信息 |
-| [摘要](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.summary.json)与[过程日志](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.stderr.log) | 9 文件编目；选定 3 份 JS 解析，0 解析失败；其余 6 个输入不在该轮源码分析选择中。JSON 数据另由本轮只读解析，不冒称 REA 已解释全部数据语义 |
+| [完整应用 Evidence](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.evidence.json) | 主记录 `ev_8368982231071ab2b35aea9779b0e0d8114e34d86400f3128325c616efcf70ff`；保存原输入身份、解析事实和不完整覆盖信息 |
+| [摘要](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.summary.json)与[过程日志](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/application.stderr.log) | 9 文件编目；选定 3 份 JS 解析，0 解析失败；其余 6 个输入不在该轮源码分析选择中。JSON 数据另由本轮只读解析，不冒称 REA 已解释全部数据语义 |
 | 自动语义图 | 每文件 20,000 节点与 20,000 未知记录上限被触及；语义图 `partial/truncated`，共保留 24,732 项语义未知。摘要自身的 complete-within-view 只表示摘要视图读完，不能改写为目标完整 |
-| [Hv 调用者查询](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/trace-Hv.result.json) | `ev_40bdbef0528a40ec05af5ac2fc3af935cab79861fdbac238064a33bca015b38f`；找到 1 个种子、0 条调用关系，coverage=partial。源码可直接见 Wv/Gv 等调用 Hv，因此不据零条关系断言“没有调用者” |
-| [REA 函数锚点](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/rea-function-anchors.json) | Hv、Vv、Kv、py、mv、hh 的返回节点与原始位置；保留父证据 ID，避免凭压缩名跨构建匹配 |
+| [Hv 调用者查询](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/evidence/trace-Hv.result.json) | `ev_40bdbef0528a40ec05af5ac2fc3af935cab79861fdbac238064a33bca015b38f`；找到 1 个种子、0 条调用关系，coverage=partial。源码可直接见 Wv/Gv 等调用 Hv，因此不据零条关系断言“没有调用者” |
+| [REA 函数锚点](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/rea-function-anchors.json) | Hv、Vv、Kv、py、mv、hh 的返回节点与原始位置；保留父证据 ID，避免凭压缩名跨构建匹配 |
 
 原始目录整体摘要为 `358bb3a1a979589067d19bcd0e8ff6934d6c92d6ea6bdf3bc1dd044c4e7f8ae0`，只标识本次选择的本地捕获集合，不是完整网站摘要。没有提高工具资源上限或重跑相同大型分析。后续语义由源码逐段核对补足，明确属于静态解释，不是 REA 自动图或运行证明。
 
 ## E01
 
-目标身份与入口：`raw/index.html` 的 pokebonk-build；入口脚本的动态 import；[news 显示文本](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/news.formatted.js) 第 2–5 行及第 6287–6288 行的版本/构建。原站链接：[首页](https://pokebonk.com/)、[入口](https://pokebonk.com/assets/main-D1tqSJkl-mvnpa0xv.js)、[主模块](https://pokebonk.com/assets/main-DasJJ4XQ-mvnpa0xv.js)、[共享与更新模块](https://pokebonk.com/assets/news-BchkQ1Jv-mvnpa0xv.js)。
+目标身份与入口：`raw/index.html` 的 pokebonk-build；入口脚本的动态 import；[news 显示文本](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/news.formatted.js) 第 2–5 行及第 6287–6288 行的版本/构建。原站链接：[首页](https://pokebonk.com/)、[入口](https://pokebonk.com/assets/main-D1tqSJkl-mvnpa0xv.js)、[主模块](https://pokebonk.com/assets/main-DasJJ4XQ-mvnpa0xv.js)、[共享与更新模块](https://pokebonk.com/assets/news-BchkQ1Jv-mvnpa0xv.js)。
 
 ## E02
 
@@ -55,7 +55,7 @@ node scripts/rea.mjs trace-javascript-semantics D:\Project\Pokemon_REA_Workbench
 
 适配：`Av` 33338–33651；`Pv` 33661–34089，三例映射位于 33695、33768–33769；`Fv` 34090–34189，之后合并 SPECIAL；`Vv` 34222–34232；`Hv` 34233–34275；状态默认表 `dv` 32239–32258、`pv` 32274–32303。
 
-Hv 原始 UTF-16 范围为 [769195, 770268)，原始第 883 行，列 [462419, 463492)。Vv 范围 [768722, 769195)，py 范围 [776064, 788359)。原型与三例数据/算术记录见 [move-examples.json](../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/move-examples.json)，其中明确区分表值、转录公式与运行验证。
+Hv 原始 UTF-16 范围为 [769195, 770268)，原始第 883 行，列 [462419, 463492)。Vv 范围 [768722, 769195)，py 范围 [776064, 788359)。原型与三例数据/算术记录见 [move-examples.json](../../../Pokemon_REA_Workbench/pokebonk/2026-10-25-mvnpa0xv-moves/derived/move-examples.json)，其中明确区分表值、转录公式与运行验证。
 
 ## E04
 

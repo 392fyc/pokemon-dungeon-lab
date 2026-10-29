@@ -383,6 +383,136 @@
    "usd": 0.00637,
    "seconds": 9.3,
    "raw": "20261029T173447Z-gpt-image-2.5-flare-low.png"
+  },
+  {
+   "at": "20261029T203659Z",
+   "card": "floor-wet",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "size": "1024x1024",
+   "stage": "stage7",
+   "batch": "7.3-theme-draft",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 107,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 107
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 303
+   },
+   "usd": 0.00641,
+   "seconds": 11.6,
+   "raw": "20261029T203659Z-gpt-image-2.5-flare-low.png"
+  },
+  {
+   "at": "20261029T203711Z",
+   "card": "wall-wet",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "size": "1024x1024",
+   "stage": "stage7",
+   "batch": "7.3-theme-draft",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 111,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 111
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 307
+   },
+   "usd": 0.00643,
+   "seconds": 9.7,
+   "raw": "20261029T203711Z-gpt-image-2.5-flare-low.png"
+  },
+  {
+   "at": "20261029T203721Z",
+   "card": "floor-ash",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "size": "1024x1024",
+   "stage": "stage7",
+   "batch": "7.3-theme-draft",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 102,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 102
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 298
+   },
+   "usd": 0.00639,
+   "seconds": 10.9,
+   "raw": "20261029T203721Z-gpt-image-2.5-flare-low.png"
+  },
+  {
+   "at": "20261029T203732Z",
+   "card": "wall-basalt",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "size": "1024x1024",
+   "stage": "stage7",
+   "batch": "7.3-theme-draft",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 118,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 118
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 314
+   },
+   "usd": 0.00647,
+   "seconds": 9.2,
+   "raw": "20261029T203732Z-gpt-image-2.5-flare-low.png"
+  },
+  {
+   "at": "20261029T203741Z",
+   "card": "floor-arena",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "size": "1024x1024",
+   "stage": "stage7",
+   "batch": "7.3-theme-draft",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 102,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 102
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 298
+   },
+   "usd": 0.00639,
+   "seconds": 11.6,
+   "raw": "20261029T203741Z-gpt-image-2.5-flare-low.png"
   }
  ]
 }

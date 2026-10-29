@@ -8,8 +8,10 @@ const results=[];
 const base=process.env.TRIAL_URL;
 if(!base) throw Error('Set TRIAL_URL to the local running trial.');
 const artifact='.artifacts/trial/';
-async function setup(fixture,mode='pass'){
+async function setup(fixture,mode='pass',animate=false){
  const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
+ // Stage 6.4: the 22 existing checks run with animations off; only the animation check turns them on.
+ await context.addInitScript(({animate})=>{if(!animate)window.__trialNoAnim=true;},{animate});
  await context.addInitScript(({mode})=>{
   const original=Storage.prototype.setItem;
   window.__fault={mode,pending:[],writes:[]};
@@ -102,7 +104,7 @@ await test('补充 S4/S6/S8：终局写失败恢复、重开写失败保持旧�
  await p.reload();await ready(p);assert.equal((await state(p)).phase,'ended');assert.equal((await state(p)).end.id,id);const terminal=await raw(p);await p.evaluate(()=>window.__fault.mode='fail');await p.locator('#new').click();await p.waitForFunction(()=>window.trial.store.status==='failed');const candidate=await state(p);assert.equal(candidate.round,0);assert.equal(await raw(p),terminal);await p.keyboard.press('ArrowRight');assert.deepEqual(await state(p),candidate);const failed=await p.evaluate(()=>window.__fault.writes.at(-1).value);await p.evaluate(()=>window.__fault.mode='pass');await click(p,'retry');assert.equal(await raw(p),failed);assert.equal(await p.evaluate(()=>window.trial.store.envelope.recent.end.id),id);assert.deepEqual(errors,[]);return {terminalIdStable:true,restartOldDiskRetained:true,retrySameRunId:true};}finally{await context.close();}
 });
 await test('补充 加载失败：脚本请求失败显示原因并保留原记录',async()=>{
- const context=await browser.newContext();const p=await context.newPage();try{await p.goto(base);await p.locator('#start').waitFor();await p.evaluate(()=>localStorage.setItem('dungeon-trial.player.v1','untouched-original'));await p.route(/\/src\/main\.ts|\/assets\/index-.*\.js/,route=>route.abort('failed'));await p.reload();await p.getByText('试验脚本加载失败',{exact:false}).waitFor();assert.equal(await p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),'untouched-original');return {failedModuleRequest:true,originalRecordPreserved:true};}finally{await context.close();}
+ const context=await browser.newContext();await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();try{await p.goto(base);await p.locator('#start').waitFor();await p.evaluate(()=>localStorage.setItem('dungeon-trial.player.v1','untouched-original'));await p.route(/\/src\/main\.ts|\/assets\/index-.*\.js/,route=>route.abort('failed'));await p.reload();await p.getByText('试验脚本加载失败',{exact:false}).waitFor();assert.equal(await p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),'untouched-original');return {failedModuleRequest:true,originalRecordPreserved:true};}finally{await context.close();}
 });
 await test('补充 S9：阶段矛盾记录阻止自动退出并保留原字节',async()=>{
  const {context,page:p,errors}=await setup('V13');try{await start(p);await click(p,'take-exit');await click(p,'exit-confirm');const bytes=await p.evaluate(()=>{const key=window.trial.store.key;const record=JSON.parse(localStorage.getItem(key));record.current.phase='exit';const bytes=JSON.stringify(record);localStorage.setItem(key,bytes);return bytes;});await p.reload();await p.waitForFunction(()=>window.trial.store.status==='blocked');assert.equal(await raw(p),bytes);assert.equal(await state(p),null);assert.equal(await p.locator('#new').count(),0);assert.match(await p.locator('#save').innerText(),/记录无法载入/);assert.deepEqual(errors,[]);return {invalidPhaseBlocked:true,noAutomaticExit:true,originalBytesPreserved:true};}finally{await context.close();}
@@ -233,7 +235,7 @@ async function walkTo(p,target,{mouseFirst=false}={}){
 }
 async function viaStairs(p){await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='playing');}
 await test('远征：随机楼层真实键鼠，下楼、返回旧层、重载一致',async()=>{
- const context=await browser.newContext({viewport:{width:1440,height:1100}});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
   await p.goto(base+'?seed='+EXPEDITION_SEED);await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
   let s=await state(p);assert.equal(s.scenario,'expedition');assert.equal(s.dungeon.level,1);assert.equal(s.dungeon.seed,Number(EXPEDITION_SEED));
@@ -256,7 +258,7 @@ await test('远征：随机楼层真实键鼠，下楼、返回旧层、重载�
 });
 /* Stage 6.4: real keys and clicks on a fixed seed. The route reads the state only to choose the next key; invitations are refused by button. */
 await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用物品回复并重载一致',async()=>{
- const context=await browser.newContext({viewport:{width:1440,height:1100}});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
   await p.goto(base+'?seed=3');await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
   let s=await state(p);assert.equal(s.prog.level,1);assert.deepEqual(s.queue.map(i=>s.units[i].species),['charmander','squirtle','bulbasaur']);
@@ -297,6 +299,28 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   await p.reload();await ready(p);assert.deepEqual(await state(p),after);assert.deepEqual(errors,[]);
   return {seed:3,pickedUp:true,refusedWhenFull:full,healed:[near,before,after.units[near].hp,max]};
  }finally{await context.close();}
+});
+await test('6.4 动画：演出期间世界不推进、输入不积压，结束后新输入生效；关闭开关不演出',async()=>{
+ const on=await setup('K1','pass',true),off=await setup('K1');
+ try{const p=on.page;await start(p);assert.equal(await p.evaluate(()=>window.trial.animationEnabled()),true);
+  const s0=await state(p);await p.keyboard.press('.'); // wait: the melee enemy H hits back, so a hit step is played
+  assert.equal(await p.evaluate(()=>window.trial.animating()),true,'animation is playing right after the round');
+  const s1=await state(p);assert.equal(s1.round,s0.round+1);
+  const during=await p.evaluate(()=>{const r=[],ev=k=>document.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));
+   for(const k of ['.','ArrowRight','ArrowLeft','1','2','3'])ev(k);
+   for(const id of ['wait','arrange','swap','leader-1']){const b=document.getElementById(id);if(!b)throw Error('missing control '+id);b.click();}
+   return {animating:window.trial.animating(),round:window.trial.getState().round};});
+  assert.equal(during.animating,true);assert.equal(during.round,s1.round,'inputs during the animation do not advance the world');
+  if(await p.evaluate(()=>window.trial.animating())){const box=await p.locator('canvas').boundingBox();await p.mouse.click(box.x+box.width/2,box.y+box.height/2);assert.equal((await state(p)).round,s1.round,'a board click during the animation does not advance the world');}
+  await p.waitForFunction(()=>!window.trial.animating());await p.waitForTimeout(500);
+  assert.deepEqual(await state(p),s1,'nothing was queued while animating');
+  await p.keyboard.press('.');await ready(p);assert.equal((await state(p)).round,s1.round+1,'a new input after the animation takes effect');
+  await p.waitForFunction(()=>!window.trial.animating());
+  await p.reload();await ready(p);assert.equal(await p.evaluate(()=>window.trial.animating()),false,'reload shows the final state without replay');
+  const q=off.page;await start(q);assert.equal(await q.evaluate(()=>window.trial.animationEnabled()),false);
+  await q.keyboard.press('.');assert.equal(await q.evaluate(()=>window.trial.animating()),false);await ready(q);
+  assert.deepEqual(on.errors,[]);assert.deepEqual(off.errors,[]);return {blockedWhileAnimating:true,notQueued:true,reloadNoReplay:true,switchOff:true};
+ }finally{await on.context.close();await off.context.close();}
 });
 await browser.close();
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

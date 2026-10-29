@@ -1,28 +1,44 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
 import {generateFloor,type GeneratedFloor} from './dungeon.ts';
+import {SPECIES,speciesOf} from './roster.ts';
 export type Pos = {x:number;y:number};
 export type Skill = 'strong'|'line'|'guard'|'push';
 export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; pos:Pos|null;
   pp:Partial<Record<Skill,number>>; maxPp:Partial<Record<Skill,number>>; learned:Skill[];
   ai?:'melee'|'ranged'|'chase'; damage?:number; range?:number; recruit?:Unit; species?:string};
+// Precondition: generated expedition enemies never carry `recruit`; expedition invitations come only from the
+// round-end draw. A preset `recruit` would issue a species-less invitation that save.ts rejects.
 export type Action = {type:'move';to:Pos}|{type:'basic';target:string}|{type:'skill';skill:Skill;target:string}
-  |{type:'wait'}|{type:'swap';target:string}|{type:'interact';exit:boolean};
+  |{type:'wait'}|{type:'swap';target:string}|{type:'interact';exit:boolean}|{type:'use';item:Item;target:string};
 export type Command = {type:'switch';actor:string}|{type:'round';action:Action;override?:{actor:string;action:Action}}
   |{type:'invite';choice:'accept'|'reject';outgoing?:string}|{type:'finishExit'}|{type:'finishTransit'};
 export type Invitation = {id:string;unit:Unit;status:'pending'|'accepted'|'rejected'|'cancelled'};
 /** `to` is set only for a stairs request (the target floor number); a plain exit request has no `to`. */
 export type ExitRequest = {actor:string;pos:Pos;locked:boolean;to?:number};
-export type PointKind='goal'|'item'|'exit'|'down'|'up';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic';
+/** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
+export type Item='berry'|'tonic';
+export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP补剂'};
+export type Rect={x:number;y:number;w:number;h:number};
+/**
+ * 6.4 shared run level and counters (expedition only; absent in the fixed map and in expeditions saved before 6.4).
+ * `rng` is the recruit-draw state (a 32-bit integer, separate from `dungeon.seed`); `kills` holds defeated enemies of the current round
+ * until the round-end settlement and is empty at every checkpoint; `made` counts recruits created so far (ids N1, N2...).
+ */
+export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:Record<Item,number>};
+/** 6.4 WORKING CANDIDATES (not final balance); see docs/玩法研究/招募等级与恢复品.md. */
+export const PROG={recruitChance:0.3,thresholds:[0,3,7,12,18],maxLevel:5,hpPerLevel:2,damagePerLevel:1,killExp:1,goalExp:2,berryHeal:8,tonicPp:1};
+export const levelFor=(exp:number)=>PROG.thresholds.filter(t=>exp>=t).length;
 export type Point={pos:Pos;kind:PointKind;used:boolean};
 /** A floor that is not the current one: its terrain, revealed cells, real enemies (with their HP and positions) and points. */
-export type StoredFloor={floor:Pos[];seen:string[];enemies:string[];units:Record<string,Unit>;points:Point[]};
+export type StoredFloor={floor:Pos[];seen:string[];enemies:string[];units:Record<string,Unit>;points:Point[];rooms?:Rect[]};
 /** Expedition-only data. `stored` holds every visited floor except the current one; unvisited floors are generated from `seed` on first entry. */
 export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>};
 export type End = {id:string;outcome:'normal'|'wipe';team:string[];camp:string[];goal:boolean;acquired:number;brought:number};
 export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:string[];units:Record<string,Unit>;
   queue:string[];enemies:string[];camp:string[];leader:string;points:Point[];
   goal:boolean;bag:number;phase:'playing'|'invitation'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
-  request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon};
+  request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;prog?:Progress;rooms?:Rect[]};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
 export const RULE_VERSION='trial-rules-1';
 export const CONTENT_VERSION='trial-content-1';
@@ -40,6 +56,22 @@ export function enemy(id:string,x:number,y:number,hp:number,ai:Unit['ai'],damage
   return {id,side:'enemy',hp,maxHp:hp,pos:{x,y},pp:{},maxPp:{},learned:[],ai,damage,range};
 }
 export function newcomer(id='N'):Unit {return friend(id,0,0,10,{strong:1,push:1});}
+/** 6.4: a real roster unit at the given run level: roster maxHp plus 2 per level above 1, full HP, kit moves at full kit PP. */
+export function speciesUnit(id:string,speciesId:string,level=1,pos:Pos|null=null):Unit {
+  const sp=SPECIES[speciesId],maxHp=sp.maxHp+PROG.hpPerLevel*(level-1);
+  return {id,side:'friend',hp:maxHp,maxHp,pos,pp:Object.fromEntries(sp.kit.map(k=>[k.behavior,k.pp])),maxPp:Object.fromEntries(sp.kit.map(k=>[k.behavior,k.pp])),learned:sp.kit.map(k=>k.behavior),species:speciesId};
+}
+/** R07 half snapshot of a new recruit: HP floor(max/2) (at least 1); each kit move PP floor(max/2) (at least 1, at most max). */
+export function recruitUnit(id:string,speciesId:string,level:number):Unit {
+  const u=speciesUnit(id,speciesId,level);u.hp=Math.max(1,Math.floor(u.maxHp/2));
+  for(const k of Object.keys(u.maxPp) as Skill[])u.pp[k]=Math.min(u.maxPp[k]!,Math.max(1,Math.floor(u.maxPp[k]!/2)));
+  return u;
+}
+/** Recoverable recruit-draw stream: mulberry32 stepped from an explicit state, so the state can be saved and resumed without redrawing. */
+export function rngStep(state:number):{value:number;state:number} {
+  const a=(state+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;
+  return {value:((t^(t>>>14))>>>0)/4294967296,state:a>>>0};
+}
 export function createMain(runId:string,invitation=true):World {
   const e=enemy('E',4,1,16,'melee',4);if(invitation)e.recruit=newcomer();
   const s:World={runId,scenario:invitation?'main-invite':'main-none',round:0,
@@ -57,7 +89,10 @@ const note=(s:World,t:string)=>{s.log.push(t);s.log=s.log.slice(-80);};
 export function reveal(s:World):void {
   const seen=new Set(s.seen);
   for(const id of s.queue){const u=s.units[id];if(!alive(u))continue;seen.add(key(u.pos));
-    for(const d of DIRS){let p=u.pos;for(let n=0;n<4;n++){p=plus(p,d);if(!walk(s,p))break;seen.add(key(p));}}}
+    for(const d of DIRS){let p=u.pos;for(let n=0;n<4;n++){p=plus(p,d);if(!walk(s,p))break;seen.add(key(p));}}
+    // 6.4 working candidate: standing inside a generated room shows the whole room (corridors keep the 4-cell straight rule).
+    for(const r of s.rooms??[])if(u.pos.x>=r.x&&u.pos.x<r.x+r.w&&u.pos.y>=r.y&&u.pos.y<r.y+r.h)
+      for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)if(walk(s,{x,y}))seen.add(`${x},${y}`);}
   s.seen=[...seen].sort();
 }
 /** BFS insertion order is also the right/down/left/up final tie break. */
@@ -111,7 +146,19 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
     const point=s.points.find(p=>same(p.pos,u.pos));
     if(id!==s.leader||!point)return '主控必须站在交互点';
     if(point.kind==='down'||point.kind==='up')return a.exit?null:'楼梯只能请求跨层，不能取得';
+    if(point.kind==='berry'||point.kind==='tonic'){if(a.exit)return '这里不是出口，不能请求撤离';return point.used?`${ITEM_NAMES[point.kind]}已拾取`:null;}
     if(!a.exit&&(point.used||point.kind==='exit'))return point.kind==='goal'?'G已记录，仅可请求撤离':point.kind==='item'?'T已取得，仅可请求撤离':'此处是纯出口，仅可请求撤离';
+    return null;
+  }
+  if(a.type==='use'){
+    if(!s.prog)return '这里没有可用的背包物品';
+    if(s.prog.items[a.item]<1)return `背包里没有${ITEM_NAMES[a.item]}`;
+    const w=s.units[a.target];
+    if(!w||w.side!=='friend'||!s.queue.includes(w.id))return '物品只能对同行伙伴使用';
+    if(!alive(w))return `${w.id}已倒下，物品不能救起倒下的伙伴`;
+    if(w.id!==id&&distance(u.pos,w.pos)!==1)return `${w.id}不在相邻格，物品只能对自己或相邻同行使用`;
+    if(a.item==='berry'&&w.hp>=w.maxHp)return `${w.id}的HP已满，${ITEM_NAMES.berry}不会有效果`;
+    if(a.item==='tonic'&&!w.learned.some(k=>(w.pp[k]??0)<(w.maxPp[k]??0)))return `${w.id}的所有招式PP已满，${ITEM_NAMES.tonic}不会有效果`;
     return null;
   }
   const t=s.units[a.target];if(!alive(t)||(!s.queue.includes(t.id)&&!s.enemies.includes(t.id)))return '目标不存在或已倒下';
@@ -128,24 +175,32 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
 }
 function hit(s:World,id:string,n:number):void {
   const u=s.units[id];u.hp=Math.max(0,u.hp-n);note(s,`${id}受到${n}伤害，HP ${u.hp}`);
-  if(u.hp===0){u.pos=null;note(s,`${id}倒下退图`);if(u.side==='enemy'&&u.recruit){
+  if(u.hp===0){u.pos=null;note(s,`${id}倒下退图`);if(u.side==='enemy'&&s.prog)s.prog.kills.push(u.recruit?'':(u.species??''));
+    if(u.side==='enemy'&&u.recruit){
     const unit=clone(u.recruit);unit.id=`${u.recruit.id}`; // fixture IDs are stable; each event initializes once
     if(s.units[unit.id]||s.invitations.some(i=>i.unit.id===unit.id))unit.id=`${unit.id}-${s.invitations.length+1}`;
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});}}
 }
 function execute(s:World,id:string,a:Action,guards:Record<string,number>):void {
-  const u=s.units[id];
+  const u=s.units[id],bonus=s.prog?(s.prog.level-1)*PROG.damagePerLevel:0;
   if(a.type==='move'){u.pos=clone(a.to);reveal(s);note(s,`${id}移动到${key(a.to)}`);}
-  else if(a.type==='basic')hit(s,a.target,6);
+  else if(a.type==='basic')hit(s,a.target,6+bonus);
+  else if(a.type==='use'){
+    const t=s.units[a.target];s.prog!.items[a.item]--;
+    if(a.item==='berry'){const before=t.hp;t.hp=Math.min(t.maxHp,t.hp+PROG.berryHeal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);}
+    else{for(const k of t.learned)t.pp[k]=Math.min(t.maxPp[k]??0,(t.pp[k]??0)+PROG.tonicPp);note(s,`${id}对${t.id}使用${ITEM_NAMES.tonic}，每招PP+${PROG.tonicPp}（不超上限）`);}
+  }
   else if(a.type==='skill'){u.pp[a.skill]=(u.pp[a.skill]??0)-1;
     if(a.skill==='guard')guards[a.target]=4;
     else if(a.skill==='push'){const t=s.units[a.target];t.pos=plus(t.pos!,{x:t.pos!.x-u.pos!.x,y:t.pos!.y-u.pos!.y});reveal(s);note(s,`${id}推退${t.id}`);}
-    else hit(s,a.target,10);
+    else hit(s,a.target,10+bonus);
   } else if(a.type==='interact'){
     const p=s.points.find(p=>same(p.pos,u.pos))!;const stairs=p.kind==='down'||p.kind==='up';
-    if(!stairs&&!p.used){if(p.kind==='goal')s.goal=true;if(p.kind==='item')s.bag++;p.used=true;}
-    if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
-    note(s,stairs?`${id}请求${p.kind==='down'?'下':'上'}楼梯跨层`:`${id}交互${a.exit?'并请求撤离':''}`);
+    if(!stairs&&!p.used){if(p.kind==='goal'){s.goal=true;if(s.prog)s.prog.exp+=PROG.goalExp;}if(p.kind==='item')s.bag++;
+      if((p.kind==='berry'||p.kind==='tonic')&&s.prog){s.prog.items[p.kind]++;note(s,`${id}拾取${ITEM_NAMES[p.kind]}，背包共${s.prog.items[p.kind]}`);}p.used=true;}
+    if(p.kind==='berry'||p.kind==='tonic'){/* a pickup is never an exit */}
+    else if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
+    if(p.kind!=='berry'&&p.kind!=='tonic')note(s,stairs?`${id}请求${p.kind==='down'?'下':'上'}楼梯跨层`:`${id}交互${a.exit?'并请求撤离':''}`);
   }else note(s,`${id}等待`);
 }
 function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean):string|null {
@@ -190,8 +245,30 @@ function end(s:World,outcome:End['outcome']):void {
 }
 /** After invitations are done: a locked plain request waits as `exit`, a locked stairs request as `transit`. */
 const settled=(s:World):World['phase']=>s.request?.locked?(s.request.to!==undefined?'transit':'exit'):'playing';
+/**
+ * 6.4 round-end settlement, in one fixed order: experience from this round's defeats, level-ups, then the recruit draws in defeat order.
+ * A level-up raises every current member's max HP (current HP unchanged, R07); recruit snapshots are taken after it, at the settled level.
+ */
+function settle(s:World):void {
+  const p=s.prog;if(!p)return;
+  const kills=p.kills;p.kills=[];p.exp+=kills.length*PROG.killExp;
+  while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level]){
+    p.level++;for(const id of s.queue)s.units[id].maxHp+=PROG.hpPerLevel;
+    note(s,`本局等级升到Lv${p.level}：同行最大HP+${PROG.hpPerLevel}（当前HP不变），普攻／强击／直线伤害+${PROG.damagePerLevel}`);
+  }
+  for(const sp of kills){
+    if(!speciesOf(sp))continue;
+    const r=rngStep(p.rng);p.rng=r.state;
+    if(r.value>=PROG.recruitChance){note(s,`${sp}被击败，没有发出邀请`);continue;}
+    do p.made++;while(s.units[`N${p.made}`]||s.invitations.some(i=>i.unit.id===`N${p.made}`));
+    const unit=recruitUnit(`N${p.made}`,sp,p.level);
+    s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});
+    note(s,`${sp}被击败并发出邀请：${unit.id} Lv${p.level} ${unit.hp}/${unit.maxHp}HP`);
+  }
+}
 function afterRound(s:World):void {
-  if(!s.queue.some(i=>alive(s.units[i]))){s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});end(s,'wipe');return;}
+  if(!s.queue.some(i=>alive(s.units[i]))){s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});if(s.prog)s.prog.kills=[];end(s,'wipe');return;}
+  settle(s);
   if(!alive(s.units[s.leader]))s.leader=s.queue.find(i=>alive(s.units[i]))!;
   if(s.request){const u=s.units[s.request.actor];if(alive(u)&&same(u.pos,s.request.pos))s.request.locked=true;else s.request=null;}
   if(s.invitations.some(i=>i.status==='pending')){s.anchor=clone(s.units[s.leader].pos);s.phase='invitation';}
@@ -247,17 +324,19 @@ function floorUnits(g:GeneratedFloor):{units:Record<string,Unit>;enemies:string[
   for(const e of g.enemies){const u=enemy(e.id,e.pos.x,e.pos.y,e.hp,e.ai,e.damage,e.range);u.species=e.species;units[e.id]=u;}
   return {units,enemies:g.enemies.map(e=>e.id)};
 }
-function freshFloor(d:Dungeon,level:number):StoredFloor {
+/** `run` is true for 6.4 expeditions (with `prog`): they also get pickups and room rectangles; older expeditions generate the 6.3 floor. */
+function freshFloor(d:Dungeon,level:number,run:boolean):StoredFloor {
   const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors});
-  return {floor:g.floor,seen:[],points:g.points.map(p=>({...p})),...floorUnits(g)};
+  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[])].map(p=>({...p})),...floorUnits(g),...(run?{rooms:g.rooms.map(r=>({...r}))}:{})};
 }
 function stashFloor(s:World):StoredFloor {
   const units:Record<string,Unit>={};for(const id of s.enemies)units[id]=s.units[id];
-  return clone({floor:s.floor,seen:s.seen,enemies:s.enemies,units,points:s.points});
+  return clone({floor:s.floor,seen:s.seen,enemies:s.enemies,units,points:s.points,...(s.rooms?{rooms:s.rooms}:{})});
 }
 function loadFloor(s:World,f:StoredFloor):void {
   for(const id of s.enemies)delete s.units[id];
   s.floor=f.floor;s.seen=f.seen;s.enemies=f.enemies;s.points=f.points;Object.assign(s.units,f.units);
+  if(f.rooms)s.rooms=f.rooms;else delete s.rooms;
 }
 /**
  * WORKING CANDIDATE (R10 leaves the exact order open): the leader takes the entry cell; each other living member, in queue order,
@@ -283,20 +362,24 @@ function transit(original:World):World {
   const s=clone(original),d=s.dungeon!,to=s.request!.to!,from=d.level;
   const cancelled=(why:string)=>{const c=clone(original);c.request=null;c.phase='playing';note(c,`跨层取消：${why}；动作已用，留在原层`);return c;};
   const cur=stashFloor(s);
-  loadFloor(s,clone(d.stored[to]??freshFloor(d,to)));
+  loadFloor(s,clone(d.stored[to]??freshFloor(d,to,!!s.prog)));
   const stair=s.points.find(p=>p.kind===(to>from?'up':'down'));
   if(!stair)return cancelled('目标层没有对应楼梯');
   if(!placeTeam(s,stair.pos))return cancelled('目标层入口附近没有合法位置');
   delete d.stored[to];d.stored[String(from)]=cur;d.level=to;s.request=null;s.phase='playing';
   note(s,`同行抵达第${to}层`);return s;
 }
-/** The expedition: `floors` (2) seeded floors; team A/B/C as on the main map, C leads. The start cell is the ordinary exit of floor 1. */
+/**
+ * The expedition: `floors` (2) seeded floors. 6.4 team (WORKING CANDIDATE): A charmander, B squirtle, C bulbasaur, three roster starters at run level 1;
+ * C leads, as before (so entry placement and the drawn skins are unchanged). The start cell is the ordinary exit of floor 1.
+ */
 export function createExpedition(runId:string,seed:number,floors=2):World {
   const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{}};
-  const f=freshFloor(d,1);
+  const f=freshFloor(d,1,true);
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,seen:[],
-    units:{A:friend('A',0,0,20,{strong:2}),B:friend('B',0,0,20,{guard:2}),C:friend('C',0,0,20,{strong:2,line:2}),...f.units},
-    queue:['A','B','C'],enemies:f.enemies,camp:[],leader:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d};
+    units:{A:speciesUnit('A','charmander'),B:speciesUnit('B','squirtle'),C:speciesUnit('C','bulbasaur'),...f.units},
+    queue:['A','B','C'],enemies:f.enemies,camp:[],leader:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d,
+    rooms:f.rooms,prog:{level:1,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}}};
   for(const id of s.queue)s.units[id].pos=null;
   if(!placeTeam(s,f.points.find(p=>p.kind==='exit')!.pos))throw Error('expedition start has no legal cells');
   return s;

@@ -33,6 +33,10 @@ async function key(p,k){await p.keyboard.press(k);await ready(p);}
 async function click(p,id){await p.locator('#'+id).click();await ready(p);}
 async function cell(p,x,y){
  const s=await state(p),b=await p.locator('canvas').boundingBox();
+ if(s.dungeon){ // expedition: fixed 40 px cells, camera follows the leader
+  const cam=await p.evaluate(()=>window.trial.camera());
+  await p.mouse.click(b.x+(x*40+20-cam.x)*b.width/680,b.y+(y*40+20-cam.y)*b.height/350);await ready(p);return;
+ }
  const xs=s.floor.map(q=>q.x),ys=s.floor.map(q=>q.y),minX=Math.min(...xs),minY=Math.min(...ys);
  const w=Math.max(...xs)-minX+1,h=Math.max(...ys)-minY+1,c=Math.min(66,600/w,270/h);
  await p.mouse.click(b.x+(340-w*c/2+(x-minX+.5)*c)*b.width/680,b.y+(175-h*c/2+(y-minY+.5)*c)*b.height/350);await ready(p);
@@ -208,6 +212,46 @@ await test('阶段5 换位草稿不被方向键、句点或点地图改写',asyn
   assert.equal(s.round,before.round+1);assert.deepEqual(s.units.A.pos,{x:3,y:1});assert.deepEqual(s.units.B.pos,{x:2,y:1});
   assert.ok(s.log.some(t=>t==='B与A换位'));assert.deepEqual(errors,[]);
   return {swapKept:true,executedSwap:true};
+ }finally{await context.close();}
+});
+
+/* Stage 6.3 expedition: fixed seed, real keyboard and mouse. Route finding below only reads the state to choose the next key. */
+const EXPEDITION_SEED=process.env.EXPEDITION_SEED??'3';
+async function walkTo(p,target,{mouseFirst=false}={}){
+ const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
+ for(let step=0;step<150;step++){
+  const s=await state(p),c=s.units[s.leader].pos;if(c.x===target.x&&c.y===target.y)return step;
+  const floor=new Set(s.floor.map(q=>q.x+','+q.y)),dist=new Map([[target.x+','+target.y,0]]),q=[target];
+  for(let i=0;i<q.length;i++)for(const d of Object.keys(arrows)){const [dx,dy]=d.split(',').map(Number),n={x:q[i].x+dx,y:q[i].y+dy},k=n.x+','+n.y;if(floor.has(k)&&!dist.has(k)){dist.set(k,dist.get(q[i].x+','+q[i].y)+1);q.push(n);}}
+  const taken=new Set([...s.queue,...s.enemies].map(id=>s.units[id]).filter(u=>u.hp>0&&u.pos).map(u=>u.pos.x+','+u.pos.y));
+  const options=Object.keys(arrows).map(d=>{const [dx,dy]=d.split(',').map(Number),k=(c.x+dx)+','+(c.y+dy);return {d,dx,dy,k};})
+   .filter(o=>s.seen.includes(o.k)&&!taken.has(o.k)&&dist.has(o.k)).sort((a,b)=>dist.get(a.k)-dist.get(b.k));
+  assert.ok(options.length,'no step available at '+JSON.stringify(c));
+  if(mouseFirst&&step===0)await cell(p,c.x+options[0].dx,c.y+options[0].dy);else await key(p,arrows[options[0].d]);
+ }
+ throw Error('route not finished');
+}
+async function viaStairs(p){await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='playing');}
+await test('远征：随机楼层真实键鼠，下楼、返回旧层、重载一致',async()=>{
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ try{
+  await p.goto(base+'?seed='+EXPEDITION_SEED);await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
+  let s=await state(p);assert.equal(s.scenario,'expedition');assert.equal(s.dungeon.level,1);assert.equal(s.dungeon.seed,Number(EXPEDITION_SEED));
+  const down=s.points.find(q=>q.kind==='down').pos;
+  const steps=await walkTo(p,down,{mouseFirst:true});
+  const cam=await p.evaluate(()=>window.trial.camera());
+  await p.screenshot({path:artifact+'windows-expedition-floor1.png',fullPage:true});
+  s=await state(p);const roundBeforeStairs=s.round;
+  await viaStairs(p);s=await state(p);const stored1=s.dungeon.stored['1'],floor1Enemies=stored1.enemies.map(id=>[id,stored1.units[id].hp,stored1.units[id].pos]); // floor 1 as it was left
+  assert.equal(s.dungeon.level,2);assert.equal(s.round,roundBeforeStairs+1);
+  const up=s.points.find(q=>q.kind==='up').pos;assert.deepEqual(s.units[s.leader].pos,up);
+  assert.ok(s.queue.every(id=>s.units[id].hp<=0||s.units[id].pos));
+  await p.screenshot({path:artifact+'windows-expedition-floor2.png',fullPage:true});
+  const away=await raw(p);await p.reload();await ready(p);assert.deepEqual(await state(p),s);assert.equal(await raw(p),away);
+  await viaStairs(p);s=await state(p);
+  assert.equal(s.dungeon.level,1);assert.deepEqual(s.units[s.leader].pos,down);
+  assert.deepEqual(s.enemies.map(id=>[id,s.units[id].hp,s.units[id].pos]),floor1Enemies);
+  assert.deepEqual(errors,[]);return {seed:EXPEDITION_SEED,steps,cameraAtStairs:cam,crossed:'1->2->1'};
  }finally{await context.close();}
 });
 await browser.close();

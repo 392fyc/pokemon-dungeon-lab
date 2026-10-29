@@ -3,7 +3,8 @@
   "packs": [
     "core",
     "deploy",
-    "plan"
+    "plan",
+    "git-safe"
   ],
   "params": {
     "integration_branch": "main",

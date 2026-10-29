@@ -21,11 +21,20 @@ bounded scope, test relevance, evidence reuse, provenance-check triggers,
 review, and completion. Read its details when needed for these decisions;
 it does not add a mandatory workflow or weaken governing requirements.
 
+## Waiting on long-running work
+
+These rules bind the main agent and every subagent in both Codex and Claude Code (Mercury #706). A local Claude Code session puts no time limit on background commands, so a wait whose condition never comes true runs until someone notices.
+
+- **Every wait has a deadline set before it starts.** Wrap a shell wait loop or a follow command such as `tail -f` in `timeout <duration>`, give a PowerShell loop a `Get-Date` or `Stopwatch` deadline, or use a watch the host bounds itself (Claude Code `Monitor` with `timeout_ms`). To learn when a background command finishes, rely on the host's completion notice instead of a second loop that polls its output.
+- **End the wait on the watched process's exit and on every failure state**, not on counting success lines. When the deadline passes, report that the work did not finish and what it last showed; do not simply wait again.
+- **Delegate with the deadline, and clean up before reporting.** Put the deadline in the delegation prompt. Before you report completion, check the background tasks you and your subagents started and stop any that ran past its deadline or is no longer needed.
+- In Claude Code every role Mercury generates runs a `PreToolUse` guard (`.mercury/packs/core/hooks/wait_guard.sh`) that blocks a Bash or PowerShell wait loop or follow command without such a deadline. It is a heuristic check, not a time limit, and it does not cover the main session; details are in the task contract.
+
 ## Mercury roles and Git safety rules
 
 - Mercury installs five roles for both hosts: `mercury-dev`, `mercury-reviewer`, `mercury-acceptance`, `mercury-design` and `mercury-research`, as `.claude/agents/mercury-*.md` and `.codex/agents/mercury-*.toml`. They are generated from `.mercury/packs/core/roles/`; change the source in Mercury, not the generated files. A project role of the same name in `.claude/agents/` takes priority over a user-level one, so these project roles apply in this project.
 - `mercury-reviewer`, `mercury-acceptance`, `mercury-design` and `mercury-research` are read-only. Codex enforces this with the sandbox; the Claude roles run a `PreToolUse` guard (`.mercury/packs/core/hooks/readonly_guard.sh`) that blocks write commands in Bash and PowerShell. The guard is best-effort, not an operating-system sandbox. A project can name more write-type scripts in `params.guard_write_scripts` in `.mercury/config.json`, and scripts that write only for some `-Action` values in `params.guard_write_actions`.
-- A project's own roles and skills live in its project area: declared in `.mercury/local.json`, with role sources in `.mercury/local/roles/`. Mercury's installer (`tools/mercury.py apply`, run from a Mercury checkout) generates their `.claude/agents/`, `.codex/agents/` and skill entry files without the `mercury-` prefix; change the source or the manifest, never the generated files. Mercury updates do not touch this area.
+- A project's own roles and skills live in its project area: declared in `.mercury/local.json`, with role sources in `.mercury/local/roles/`. Mercury's installer (`tools/mercury.py apply`, run from a Mercury checkout) generates their `.claude/agents/`, `.codex/agents/` and skill entry files without the `mercury-` prefix; change the source or the manifest, never the generated files. Mercury updates never change the manifest or the sources; they only regenerate the outputs of unchanged sources when Mercury's renderer changes.
 - `.codex/rules/mercury-git-safety.rules` forbids raw `git push` and direct switching to `develop`, `main` or `master` in Codex. Perform Git writes through the controlled entry point that this project's own instructions name; never bypass a denial through another shell.
 
 ## Mercury updates (deploy pack)
@@ -33,6 +42,12 @@ it does not add a mandatory workflow or weaken governing requirements.
 - `.github/workflows/mercury-update.yml` and `.github/workflows/mercury-verify.yml` are managed files: Mercury renders them from `params` in `.mercury/config.json` (`integration_branch`, `required_checks`, `update_schedule`). Do not edit them by hand; change the params and run the installer from a released Mercury commit.
 - Updates arrive on their own. GitHub runs scheduled workflows only from the default branch, so when that is not the integration branch the scheduled run only starts the same workflow on the integration branch (`gh workflow run`); the update itself always runs from the integration branch's own copy. A scheduled job takes the latest released Mercury commit (`origin/master` of Mercury), and when the managed files differ it opens one pull request from a `mercury/update-*` branch into the integration branch. The same job merges that pull request (squash) only when every condition holds: the source commit is on Mercury's `master` and descends from the recorded one, only Mercury-managed paths changed, and the project's required checks plus the `Mercury verify` check (a GitHub Actions check run, not a status) are green on the exact head. Paths the new release stops shipping may only be deleted. Otherwise it stops and says why.
 - Do not push to, force-push or rebase a `mercury/update-*` branch, do not edit `.mercury/config.json` inside an update pull request, and do not merge an update pull request by hand to get around a failed condition; fix the cause or ask the project owner.
+
+## Controlled Git entry
+
+- Perform Git writes in this project through `powershell -ExecutionPolicy Bypass -File .mercury/packs/git-safe/scripts/git-safe.ps1 <action>`: `add <files>` (explicit files only), `commit -Message "<message>"`, `push <args>`, `sync` (merge `origin/<integration branch>` into the task branch without committing; resolve, stage with `add`, review, conclude with `commit`) and `abort-sync` (abandon that merge). Raw `git push`, `git merge` and similar writes are not the project's route even where a host would allow them.
+- Before `commit`, stage the intended files, inspect the staged diff, complete the required checks and review, then run `guard.ps1 mark-review` from the same directory. Changed staged content needs a fresh mark; the mark is a snapshot, not review evidence.
+- The scripts act on the Git work tree that holds them, never on the caller's current directory: call the copy inside the task worktree you are working in, and give `add` paths relative to that work tree's root. Task branches are named `<type>/<purpose>[-<lane>]-<agent>` (for example `feature/TASK-7-claude`); `develop`, `main`, `master` and the integration branch are protected. The integration branch for `sync` and `guard.ps1 pre-merge` is `params.integration_branch` in `.mercury/config.json`.
 <!-- MERCURY:END -->
 
 # 代理工作约定
@@ -67,4 +82,4 @@ it does not add a mandatory workflow or weaken governing requirements.
 
 ## Git 写入
 
-Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。本次授权工作通过[当前规格的受控发布约定](docs/trial-spec/README.md)交付：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。
+Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。在本机（含从其他仓库启动的会话）提交与推送任务分支，经受管段「Controlled Git entry」所述的 `.mercury/packs/git-safe/scripts/git-safe.ps1`；调用任务 worktree 中的那一份。阶段3—4试开发在云端通过[当前规格的受控发布约定](docs/trial-spec/README.md)交付：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。

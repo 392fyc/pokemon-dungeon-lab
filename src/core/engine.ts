@@ -1,11 +1,13 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
 import {generateFloor,type GeneratedFloor} from './dungeon.ts';
-import {SPECIES,speciesOf} from './roster.ts';
+import {SPECIES,speciesOf,TM_MOVES,learnableMove,type KitMove} from './roster.ts';
 export type Pos = {x:number;y:number};
 export type Skill = 'strong'|'line'|'guard'|'push';
 export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; pos:Pos|null;
   pp:Partial<Record<Skill,number>>; maxPp:Partial<Record<Skill,number>>; learned:Skill[];
-  ai?:'melee'|'ranged'|'chase'; damage?:number; range?:number; recruit?:Unit; species?:string};
+  ai?:'melee'|'ranged'|'chase'; damage?:number; range?:number; recruit?:Unit; species?:string;
+  /** 6.5: base-roster instance this unit was made from, and the names of its carried moves (aligned with `learned`). Absent for recruits made in the run and for fixtures. */
+  inst?:string; moves?:string[]};
 // Precondition: generated expedition enemies never carry `recruit`; expedition invitations come only from the
 // round-end draw. A preset `recruit` would issue a species-less invitation that save.ts rejects.
 export type Action = {type:'move';to:Pos}|{type:'basic';target:string}|{type:'skill';skill:Skill;target:string}
@@ -15,9 +17,10 @@ export type Command = {type:'switch';actor:string}|{type:'round';action:Action;o
 export type Invitation = {id:string;unit:Unit;status:'pending'|'accepted'|'rejected'|'cancelled'};
 /** `to` is set only for a stairs request (the target floor number); a plain exit request has no `to`. */
 export type ExitRequest = {actor:string;pos:Pos;locked:boolean;to?:number};
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
 export type Item='berry'|'tonic';
+export const SKILL_CN:Record<Skill,string>={strong:'强击',line:'直线',guard:'保护',push:'推退'};
 export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP补剂'};
 export type Rect={x:number;y:number;w:number;h:number};
 /**
@@ -27,18 +30,22 @@ export type Rect={x:number;y:number;w:number;h:number};
  */
 export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:Record<Item,number>};
 /** 6.4 WORKING CANDIDATES (not final balance); see docs/玩法研究/招募等级与恢复品.md. */
-export const PROG={recruitChance:0.3,thresholds:[0,3,7,12,18],maxLevel:5,hpPerLevel:2,damagePerLevel:1,killExp:1,goalExp:2,berryHeal:8,tonicPp:1};
+export const PROG={recruitChance:0.3,thresholds:[0,3,7,12,18],maxLevel:5,hpPerLevel:2,damagePerLevel:1,killExp:1,goalExp:2,berryHeal:8,tonicPp:1,restPp:2};
 export const levelFor=(exp:number)=>PROG.thresholds.filter(t=>exp>=t).length;
 export type Point={pos:Pos;kind:PointKind;used:boolean};
 /** A floor that is not the current one: its terrain, revealed cells, real enemies (with their HP and positions) and points. */
 export type StoredFloor={floor:Pos[];seen:string[];enemies:string[];units:Record<string,Unit>;points:Point[];rooms?:Rect[]};
 /** Expedition-only data. `stored` holds every visited floor except the current one; unvisited floors are generated from `seed` on first entry. */
-export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>};
-export type End = {id:string;outcome:'normal'|'wipe';team:string[];camp:string[];goal:boolean;acquired:number;brought:number};
+/** `base` (6.5): true for a run started from the base; only those runs get the floor-2 rest point (older generated runs keep their exact floors). */
+export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true};
+/** `tm` (6.5, expedition only): which technique machine this run obtained and whether it was brought out (normal exit only). */
+export type End = {id:string;outcome:'normal'|'wipe';team:string[];camp:string[];goal:boolean;acquired:number;brought:number;tm?:{move:string;brought:boolean}};
 export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:string[];units:Record<string,Unit>;
   queue:string[];enemies:string[];camp:string[];leader:string;points:Point[];
   goal:boolean;bag:number;phase:'playing'|'invitation'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
-  request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;prog?:Progress;rooms?:Rect[]};
+  request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;prog?:Progress;rooms?:Rect[];
+  /** 6.5: the technique machine drawn when T was taken (expedition runs with `prog` only); drawn once from `prog.rng` and never redrawn. */
+  tm?:string};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
 export const RULE_VERSION='trial-rules-1';
 export const CONTENT_VERSION='trial-content-1';
@@ -147,6 +154,8 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
     if(id!==s.leader||!point)return '主控必须站在交互点';
     if(point.kind==='down'||point.kind==='up')return a.exit?null:'楼梯只能请求跨层，不能取得';
     if(point.kind==='berry'||point.kind==='tonic'){if(a.exit)return '这里不是出口，不能请求撤离';return point.used?`${ITEM_NAMES[point.kind]}已拾取`:null;}
+    if(point.kind==='rest'){if(a.exit)return '这里不是出口，不能请求撤离';if(point.used)return '休整点已使用，每局只能用一次';
+      return restTargets(s).length?null:'在场成员的所有招式PP都已满，没有可整理的补给；休整机会没有消耗';}
     if(!a.exit&&(point.used||point.kind==='exit'))return point.kind==='goal'?'G已记录，仅可请求撤离':point.kind==='item'?'T已取得，仅可请求撤离':'此处是纯出口，仅可请求撤离';
     return null;
   }
@@ -173,6 +182,15 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(a.skill==='push'){const p=plus(t.pos,{x:t.pos.x-u.pos.x,y:t.pos.y-u.pos.y});if(!walk(s,p)||!s.seen.includes(key(p))||occupied(s,p))return '推退后格不可用';}
   return null;
 }
+/** 6.5 rest point: for each living member on the map, the move with the lowest remaining PP ratio (first in learned order on ties) if it is below its maximum. */
+function restTargets(s:World):{id:string;skill:Skill}[] {
+  const out:{id:string;skill:Skill}[]=[];
+  for(const id of s.queue){const u=s.units[id];if(!alive(u))continue;
+    let best:Skill|null=null,ratio=2;
+    for(const k of u.learned){const max=u.maxPp[k]??0,cur=u.pp[k]??0;if(max<=0||cur>=max)continue;if(cur/max<ratio){ratio=cur/max;best=k;}}
+    if(best)out.push({id,skill:best});}
+  return out;
+}
 function hit(s:World,id:string,n:number):void {
   const u=s.units[id];u.hp=Math.max(0,u.hp-n);note(s,`${id}受到${n}伤害，HP ${u.hp}`);
   if(u.hp===0){u.pos=null;note(s,`${id}倒下退图`);if(u.side==='enemy'&&s.prog)s.prog.kills.push(u.recruit?'':(u.species??''));
@@ -196,7 +214,13 @@ function execute(s:World,id:string,a:Action,guards:Record<string,number>):void {
     else hit(s,a.target,10+bonus);
   } else if(a.type==='interact'){
     const p=s.points.find(p=>same(p.pos,u.pos))!;const stairs=p.kind==='down'||p.kind==='up';
-    if(!stairs&&!p.used){if(p.kind==='goal'){s.goal=true;if(s.prog)s.prog.exp+=PROG.goalExp;}if(p.kind==='item')s.bag++;
+    if(p.kind==='rest'){
+      const parts:string[]=[];
+      for(const t of restTargets(s)){const m=s.units[t.id],before=m.pp[t.skill]??0;m.pp[t.skill]=Math.min(m.maxPp[t.skill]??0,before+PROG.restPp);parts.push(`${t.id}的${SKILL_CN[t.skill]}PP ${before}→${m.pp[t.skill]}`);}
+      p.used=true;note(s,`休整点：整理招式补给，${parts.join('，')}`);return;
+    }
+    if(!stairs&&!p.used){if(p.kind==='goal'){s.goal=true;if(s.prog)s.prog.exp+=PROG.goalExp;}
+      if(p.kind==='item'){s.bag++;if(s.prog){const r=rngStep(s.prog.rng);s.prog.rng=r.state;s.tm=TM_MOVES[Math.floor(r.value*TM_MOVES.length)];note(s,`${id}取得招式机：${s.tm}`);}}
       if((p.kind==='berry'||p.kind==='tonic')&&s.prog){s.prog.items[p.kind]++;note(s,`${id}拾取${ITEM_NAMES[p.kind]}，背包共${s.prog.items[p.kind]}`);}p.used=true;}
     if(p.kind==='berry'||p.kind==='tonic'){/* a pickup is never an exit */}
     else if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
@@ -240,7 +264,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean)
   return null;
 }
 function end(s:World,outcome:End['outcome']):void {
-  s.end={id:`${s.runId}:end`,outcome,team:[...s.queue],camp:[...s.camp],goal:s.goal,acquired:s.bag,brought:outcome==='normal'?s.bag:0};
+  s.end={id:`${s.runId}:end`,outcome,team:[...s.queue],camp:[...s.camp],goal:s.goal,acquired:s.bag,brought:outcome==='normal'?s.bag:0,...(s.tm!==undefined?{tm:{move:s.tm,brought:outcome==='normal'}}:{})};
   s.phase='ended';s.request=null;s.anchor=null;note(s,outcome==='normal'?'正常撤离':'全队倒下，本试验结束');
 }
 /** After invitations are done: a locked plain request waits as `exit`, a locked stairs request as `transit`. */
@@ -327,7 +351,7 @@ function floorUnits(g:GeneratedFloor):{units:Record<string,Unit>;enemies:string[
 /** `run` is true for 6.4 expeditions (with `prog`): they also get pickups and room rectangles; older expeditions generate the 6.3 floor. */
 function freshFloor(d:Dungeon,level:number,run:boolean):StoredFloor {
   const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors});
-  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[])].map(p=>({...p})),...floorUnits(g),...(run?{rooms:g.rooms.map(r=>({...r}))}:{})};
+  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[])].map(p=>({...p})),...floorUnits(g),...(run?{rooms:g.rooms.map(r=>({...r}))}:{})};
 }
 function stashFloor(s:World):StoredFloor {
   const units:Record<string,Unit>={};for(const id of s.enemies)units[id]=s.units[id];
@@ -373,12 +397,19 @@ function transit(original:World):World {
  * The expedition: `floors` (2) seeded floors. 6.4 team (WORKING CANDIDATE): A charmander, B squirtle, C bulbasaur, three roster starters at run level 1;
  * C leads, as before (so entry placement and the drawn skins are unchanged). The start cell is the ordinary exit of floor 1.
  */
-export function createExpedition(runId:string,seed:number,floors=2):World {
-  const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{}};
+export type SquadMember={inst:string;species:string;carry:KitMove[]};
+/** 6.5: a roster instance entering a run: species base HP at run level 1, full HP, and exactly its carried moves at full PP. */
+export function carriedUnit(id:string,m:SquadMember):Unit {
+  const sp=SPECIES[m.species];
+  return {id,side:'friend',hp:sp.maxHp,maxHp:sp.maxHp,pos:null,pp:Object.fromEntries(m.carry.map(k=>[k.behavior,k.pp])),maxPp:Object.fromEntries(m.carry.map(k=>[k.behavior,k.pp])),
+    learned:m.carry.map(k=>k.behavior),species:m.species,inst:m.inst,moves:m.carry.map(k=>k.move)};
+}
+export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number}):World {
+  const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{},...(squad?{base:true as const}:{})};
   const f=freshFloor(d,1,true);
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,seen:[],
-    units:{A:speciesUnit('A','charmander'),B:speciesUnit('B','squirtle'),C:speciesUnit('C','bulbasaur'),...f.units},
-    queue:['A','B','C'],enemies:f.enemies,camp:[],leader:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d,
+    units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m)])):{A:speciesUnit('A','charmander'),B:speciesUnit('B','squirtle'),C:speciesUnit('C','bulbasaur')}),...f.units},
+    queue:squad?squad.members.map((_,i)=>'ABC'[i]):['A','B','C'],enemies:f.enemies,camp:[],leader:squad?'ABC'[squad.leader]:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d,
     rooms:f.rooms,prog:{level:1,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}}};
   for(const id of s.queue)s.units[id].pos=null;
   if(!placeTeam(s,f.points.find(p=>p.kind==='exit')!.pos))throw Error('expedition start has no legal cells');

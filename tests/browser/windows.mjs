@@ -322,5 +322,94 @@ await test('6.4 动画：演出期间世界不推进、输入不积压，结束�
   assert.deepEqual(on.errors,[]);assert.deepEqual(off.errors,[]);return {blockedWhileAnimating:true,notQueued:true,reloadNoReplay:true,switchOff:true};
  }finally{await on.context.close();await off.context.close();}
 });
+/* Stage 6.5: the whole base loop with real clicks. CHECK ENTRY: the record is pre-seeded with a FINISHED expedition holding a protect machine
+   (written to the page's own storage before it loads), because walking a whole random expedition is covered by the earlier checks and is slow.
+   Everything after that is real clicks: return to base, learn, carry (one refusal), team, departure, reload, and using the learned move in the new run. */
+await test('基地6.5：回到基地、学习招式机、配招、编队、出发，新一局用上学到的招式',async()=>{
+ const {createExpedition}=await import('../../src/core/engine.ts');
+ const {RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
+ const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
+ const w=createExpedition('seeded-run',4242);w.goal=true;w.prog.exp=2;w.bag=1;w.tm='protect';w.phase='ended';
+ w.end={id:'seeded-run:end',outcome:'normal',team:[...w.queue],camp:[],goal:true,acquired:1,brought:1,tm:{move:'protect',brought:true}};
+ const record=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:5,current:w,recent:null});
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});
+ await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;
+  const original=Storage.prototype.setItem;try{if(!localStorage.getItem(k))original.call(localStorage,k,v);}catch{}
+  window.__failWrites=false;
+  Storage.prototype.setItem=function(key,val){if(window.__failWrites&&key.startsWith('dungeon-trial.'))throw new DOMException('Injected disk quota failure','QuotaExceededError');return original.call(this,key,val);};
+ },{k:SAVE_KEY,v:record});
+ const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ try{
+  await p.goto(base+'?seed=4243');await p.locator('#to-base').waitFor();await ready(p);
+  assert.equal(await p.locator('#new').count(),0,'an expedition result offers the base, not a new independent trial');
+  assert.match(await p.locator('#tm-line').innerText(),/保护.*已带出/);
+  await click(p,'to-base');
+  let s=await state(p);assert.equal(s,null);
+  const prof=()=>p.evaluate(()=>window.trial.profile());
+  let pr=await prof();assert.deepEqual(pr.vault,{protect:1});assert.equal(pr.expeditions,1);assert.deepEqual(pr.roster.map(i=>i.species),['charmander','squirtle','bulbasaur']);
+  assert.deepEqual(await p.evaluate(()=>window.trial.store.envelope.recent.end.tm),{move:'protect',brought:true});
+  await p.screenshot({path:artifact+'windows-base-1.png',fullPage:true});
+  // learning
+  await click(p,'tm-protect');await click(p,'learn-P3');pr=await prof();
+  assert.deepEqual(pr.vault,{});assert.deepEqual(pr.roster[2].learned.map(l=>l.move),['tackle','seedbomb','protect']);
+  assert.equal(await p.locator('#tm-protect').isDisabled(),true,'no machine left to use twice');
+  // carry: a third move is refused with a reason and nothing changes; then swap seedbomb for protect
+  const before=await raw(p);await click(p,'carry-P3-protect');
+  assert.match(await p.locator('#message').innerText(),/最多携带2招/);assert.equal(await raw(p),before);
+  await click(p,'carry-P3-seedbomb');await click(p,'carry-P3-protect');pr=await prof();assert.deepEqual(pr.roster[2].carry,['tackle','protect']);
+  // team: remove and re-add P1 so the order becomes P2, P3, P1; P3 stays the leader; "设为主控" is disabled for the current leader
+  await click(p,'team-P1');await click(p,'team-P1');pr=await prof();
+  assert.deepEqual(pr.team,['P2','P3','P1']);assert.equal(pr.leader,'P3');assert.equal(await p.locator('#lead-P3').isDisabled(),true);await click(p,'lead-P1');assert.equal((await prof()).leader,'P1');await click(p,'lead-P3');
+  assert.match(await p.locator('#squad').innerText(),/1\. P2.*2\. P3.*主控.*3\. P1/);
+  // a failed write freezes the base until the same write is retried
+  await p.evaluate(()=>{window.__failWrites=true;});await click(p,'team-P1').catch(()=>{});
+  await p.waitForFunction(()=>window.trial.store.status==='failed');
+  assert.equal(await p.locator('#depart').isDisabled(),true);assert.equal(await p.locator('#retry').count(),1);
+  await p.evaluate(()=>{window.__failWrites=false;});await click(p,'retry');
+  pr=await prof();assert.deepEqual(pr.team,['P2','P3']);
+  await click(p,'team-P1');pr=await prof();assert.deepEqual(pr.team,['P2','P3','P1']);
+  await p.reload();await ready(p);assert.deepEqual(await prof(),pr);
+  await p.screenshot({path:artifact+'windows-base-2.png',fullPage:true});
+  // departure
+  await click(p,'depart');s=await state(p);
+  assert.deepEqual(s.queue,['A','B','C']);assert.equal(s.leader,'B');assert.equal(s.round,0);assert.equal(s.prog.level,1);assert.equal(s.dungeon.seed,4243);
+  assert.deepEqual(s.units.B.moves,['tackle','protect']);assert.deepEqual(s.units.B.pp,{strong:3,guard:1});assert.equal(s.units.B.hp,s.units.B.maxHp);
+  assert.deepEqual(s.units.A.species,'squirtle');assert.equal(await p.evaluate(()=>window.trial.store.envelope.recent.runId),'seeded-run');
+  await p.reload();await ready(p);assert.deepEqual(await state(p),s);
+  // the learned move is usable: B protects an adjacent ally
+  const ally=['A','C'].find(id=>Math.abs(s.units[id].pos.x-s.units.B.pos.x)+Math.abs(s.units[id].pos.y-s.units.B.pos.y)===1);assert.ok(ally,'an ally stands next to the leader');
+  await click(p,'skill-guard');await cell(p,s.units[ally].pos.x,s.units[ally].pos.y);
+  s=await state(p);assert.equal(s.round,1);assert.equal(s.units.B.pp.guard,0);
+  assert.deepEqual(errors,[]);return {learned:'protect',carried:['tackle','protect'],squad:['P2','P3','P1'],usedInRun:true,writeFailureFrozeAndRetried:true};
+ }finally{await context.close();}
+});
+/* Stage 6.5 rest point. CHECK ENTRY: a saved floor-2 world (built by the rule code, leader standing on the rest point, one move low) is written to the page's storage before it loads; the rest is real clicks. */
+await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消耗机会',async()=>{
+ const {createExpedition,applyCommand,RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
+ const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
+ const {initialProfile,squadOf}=await import('../../src/core/base.ts');
+ let w=createExpedition('rest-run',3,2,squadOf(initialProfile()));w.units.C.pos=w.points.find(q=>q.kind==='down').pos;
+ w=applyCommand(w,{type:'round',action:{type:'interact',exit:true}}).state;w=applyCommand(w,{type:'finishTransit'}).state;
+ for(const id of ['A','B']){w.units[id].hp=0;w.units[id].pos=null;}
+ w.units.C.pos={x:14,y:9};
+ const full=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:5,current:w,recent:null,profile:initialProfile()});
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});
+ await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;try{if(!localStorage.getItem(k))localStorage.setItem(k,v);}catch{}},{k:SAVE_KEY,v:full});
+ const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ try{
+  await p.goto(base);await p.locator('#rest').waitFor();await ready(p);
+  const s0=await state(p);assert.equal(s0.points.find(q=>q.kind==='rest').used,false);
+  await p.locator('#rest').click();await ready(p);          // PP are full: refused with the reason, nothing changes
+  assert.deepEqual(await state(p),s0);assert.match(await p.locator('#message').innerText(),/PP都已满.*没有消耗/);
+  // lower one move through the saved record, as if a fight had spent it, then reload
+  await p.evaluate(()=>{const k=window.trial.store.key,e=JSON.parse(localStorage.getItem(k));e.current.units.C.pp.line=0;localStorage.setItem(k,JSON.stringify(e));});
+  await p.reload();await ready(p);
+  await click(p,'rest');const s1=await state(p);
+  assert.equal(s1.units.C.pp.line,1);assert.equal(s1.points.find(q=>q.kind==='rest').used,true);assert.equal(s1.round,s0.round+1);
+  assert.equal(await p.locator('#rest').isDisabled(),true);
+  await p.reload();await ready(p);assert.deepEqual(await state(p),s1);assert.deepEqual(errors,[]);
+  return {refusedWhenFull:true,usedOnce:true};
+ }finally{await context.close();}
+});
 await browser.close();
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

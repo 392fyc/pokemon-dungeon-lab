@@ -4,3 +4,11 @@ export type KitMove={move:string;behavior:'strong'|'line'|'guard'|'push';pp:numb
 export type Species={id:string;dex:string;name:string;starter?:boolean;maxHp:number;kit:KitMove[]};
 export const SPECIES:Record<string,Species>=Object.fromEntries((data.species as Species[]).map(s=>[s.id,s]));
 export const speciesOf=(id:string):Species|undefined=>Object.prototype.hasOwnProperty.call(SPECIES,id)?SPECIES[id]:undefined;
+/** 6.5 technique machines (workable candidates): the three moves that fill the "pin" and "reposition" gaps found in 6.2. A machine teaches one move to a compatible species. */
+export const TM_MOVES=['protect','whirlwind','roar'] as const;
+export const TM_NAMES:Record<string,string>={protect:'保护',whirlwind:'旋风（推退）',roar:'吼叫（推退）'};
+/** The move as the species can learn it (behavior and max PP from the roster's learnable list), or undefined when the species cannot learn it. */
+export function learnableMove(speciesId:string,move:string):KitMove|undefined {
+  const sp=(data.species as unknown as {id:string;learnable:KitMove[]}[]).find(s=>s.id===speciesId);
+  const m=sp?.learnable.find(l=>l.move===move);return m?{move:m.move,behavior:m.behavior,pp:m.pp}:undefined;
+}

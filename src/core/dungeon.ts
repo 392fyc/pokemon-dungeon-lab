@@ -7,7 +7,7 @@
 export type Cell={x:number;y:number};
 export type FloorParams={width:number;height:number;floors:number};
 export const DEFAULT_PARAMS:FloorParams={width:20,height:14,floors:2};
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest';
 export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
 export type EnemyAi='melee'|'ranged'|'chase';
 export type EnemySpec={id:string;species:string;ai:EnemyAi;hp:number;damage:number;range:number;pos:Cell};
@@ -16,7 +16,9 @@ export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[]
   /** Where the team first arrives from outside (level 1: the ordinary exit) or from above (the up stairs). */
   arrival:Cell;up:Cell|null;down:Cell|null;points:PointSpec[];enemies:EnemySpec[];
   /** 6.4 recovery pickups (berry on every floor, tonic on floor 2). Kept apart from `points` and drawn from their own random stream, so the layout above is unchanged. */
-  pickups:PointSpec[]};
+  pickups:PointSpec[];
+  /** 6.5 one-use rest point, floor 2 only, in the arrival room next to the up stairs. Kept apart from `pickups` and `points` so those lists are unchanged. */
+  rest:PointSpec|null};
 /**
  * Wild species used for display and ids only; battle numbers stay on the manual tiers below.
  * Must stay a subset of the non-starter species in src/data/roster.json (checked by a test); values are dex numbers.
@@ -94,5 +96,9 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const pool=outside.length?outside:floor.filter(c=>!used.has(k(c)));
     const pos=pool[Math.floor(prng()*pool.length)];used.add(k(pos));pickups.push({pos:{x:pos.x,y:pos.y},kind,used:false});
   }
-  return {level,width:W,height:H,floor,rooms,arrival:level===1?start:up!,up,down,points,enemies,pickups};
+  // 7. Rest point (6.5): floor 2, the free cell of the arrival room nearest to the up stairs (ties: top row first, then left).
+  let rest:PointSpec|null=null;
+  if(level===2){const near=roomCells(rooms[0]).filter(c=>!used.has(k(c))).sort((a,b)=>dist(a,start)-dist(b,start)||a.y-b.y||a.x-b.x)[0];
+    if(near){used.add(k(near));rest={pos:{x:near.x,y:near.y},kind:'rest',used:false};}}
+  return {level,width:W,height:H,floor,rooms,arrival:level===1?start:up!,up,down,points,enemies,pickups,rest};
 }

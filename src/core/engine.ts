@@ -78,6 +78,15 @@ function clearRay(s:World,a:Pos,b:Pos,range:number):boolean {
   const d={x:Math.sign(b.x-a.x),y:Math.sign(b.y-a.y)};let p=plus(a,d);
   while(!same(p,b)){if(!walk(s,p)||occupied(s,p))return false;p=plus(p,d);}return true;
 }
+/** Names the first reason a straight-line skill cannot reach its target. */
+function rayProblem(s:World,a:Pos,b:Pos,range:number):string|null {
+  if(a.x!==b.x&&a.y!==b.y)return '直线只能指定同排或同列的目标';
+  if(distance(a,b)<1)return '直线不能指定自己所在的格';
+  if(distance(a,b)>range)return `目标相距${distance(a,b)}格，超出直线射程${range}格`;
+  const d={x:Math.sign(b.x-a.x),y:Math.sign(b.y-a.y)};let p=plus(a,d);
+  while(!same(p,b)){if(!walk(s,p))return `射线在(${p.x},${p.y})被墙挡住`;const blocker=active(s).find(v=>same(v.pos,p));if(blocker)return `射线被${blocker.id}挡住`;p=plus(p,d);}
+  return null;
+}
 function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set()):string|null {
   const u=s.units[id];if(!alive(u))return `${id}已倒下，不能行动`;
   if(a.type==='wait')return null;
@@ -103,7 +112,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(!u.learned.includes(a.skill)||(u.pp[a.skill]??0)<1)return '未装备该招式或PP不足';
   if(a.skill==='guard')return !s.queue.includes(t.id)||id===t.id||distance(u.pos,t.pos)!==1?'保护需要相邻另一名存活伙伴':null;
   if(t.side!=='enemy')return '该招式只能指定敌人';
-  if(a.skill==='line')return clearRay(s,u.pos,t.pos,3)?null:'射线被挡或目标不在射程内';
+  if(a.skill==='line')return rayProblem(s,u.pos,t.pos,3);
   if(distance(u.pos,t.pos)!==1)return '目标不相邻';
   if(a.skill==='push'){const p=plus(t.pos,{x:t.pos.x-u.pos.x,y:t.pos.y-u.pos.y});if(!walk(s,p)||!s.seen.includes(key(p))||occupied(s,p))return '推退后格不可用';}
   return null;

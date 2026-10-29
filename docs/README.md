@@ -21,7 +21,7 @@ PR #3路线方案已以[06cf1c0](https://github.com/392fyc/pokemon-game-research
 
 本次范围与核验条件见[准备包审核入口](审核请求/2026-10-29-试开发准备包.md)，准确文件身份见[当前文件清单](审核请求/当前文件清单.json)。[路线图审核记录](审核请求/2026-10-29-阶段路线图.md)、[PR #2研究与修复记录](审核请求/2026-10-28-返程与招募研究.md)、[首轮R1—R8](审核请求/2026-10-26-首轮全库审核.md)、[修复记录](审核请求/2026-10-28-全库审核修复与复审.md)及[首次清单](审核请求/首轮文件清单.json)作为历史依据，不替代对新变化的检查。
 
-研究主库为私人仓库[392fyc/pokemon-game-research](https://github.com/392fyc/pokemon-game-research)，本地路径为D:\Project\Pokemon\Pokemon_Game_Research；准备仓为D:\Project\Pokemon\Pokemon_Dungeon_Lab。私有交接、Obsidian状态及临时材料由Git忽略。
+研究库自2026-10-29起是[392fyc/pokemon-dungeon-lab](https://github.com/392fyc/pokemon-dungeon-lab)的`docs/`；原私人仓库[392fyc/pokemon-game-research](https://github.com/392fyc/pokemon-game-research)已归档，保留此前的提交历史和PR审核记录，文中指向它的链接按历史固定提交理解。私有交接、Obsidian状态及临时材料由Git忽略。
 
 ## 地牢候选资料与研究路线
 

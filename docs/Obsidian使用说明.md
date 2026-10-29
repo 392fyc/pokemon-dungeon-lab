@@ -7,13 +7,13 @@ updated: 2026-10-26
 ---
 # Obsidian 研究库使用说明
 
-本库当前位于 D:\Project\Pokemon\Pokemon_Game_Research，用于管理 PokéBonk 和 Big Kid Nation 的 Pokémon Arena 2D 研究。
+本库是 pokemon-dungeon-lab 仓库的 `docs/`（用 Obsidian 打开主 checkout 的 `docs/` 文件夹），用于管理 PokéBonk 和 Big Kid Nation 的 Pokémon Arena 2D 研究以及本作设计。
 
 从 [研究总索引](README.md) 进入，先阅读[当前创作目标](项目框架/创作目标与地牢研究重点.md)，再结合 [[项目目标与当前决策]] 查找具体规则。标准 Markdown 链接与 Obsidian 双向链接共同连接笔记；反向链接和关系图可用于追踪结论与来源。
 
 标签按项目和主题分类。事实依据、静态代码观察、分析建议和待决定事项保持区分。当前为初期框架构建，整理用户方向、补充规则、反例和制作流程，尚未开始游戏功能实现。
 
-笔记操作使用 MCP 或命令行。命令行直接读写本库的 UTF-8 Markdown，完成后读回核对；Obsidian 自动读取这些本地笔记。不使用 Computer Use 编辑文档。
+代理在任务 worktree 中直接读写 UTF-8 Markdown，与相关改动一起提交 PR；合并后 Obsidian 读到主 checkout 的新内容。在 Obsidian 中的直接修改由代理收录到任务分支后提交。不使用 Computer Use 编辑文档。
 
 ## 当前审核与路线
 
@@ -26,4 +26,4 @@ updated: 2026-10-26
 - [[pokemon-arena-2d/视觉样式参考与素材规格|竞技场视觉参考]]
 - [[制作流程/内容制作卡模板|内容制作卡模板]]
 
-当前 MCP 若仍绑定其他库，不能直接对同名 README 写入。本库的命令行文件操作明确限定在 D:\Project\Pokemon\Pokemon_Game_Research，并在覆盖前核对已读内容；打开笔记可用官方 URI 的 open 操作，明确指定 vault=Pokemon_Game_Research 和库内 file。[官方 URI 说明](https://obsidian.md/help/uri)
+Obsidian MCP 只用于检索主 checkout 中已合并的内容，不经它写入。打开笔记可用官方 URI 的 open 操作，指定本 vault 和库内 file。[官方 URI 说明](https://obsidian.md/help/uri)

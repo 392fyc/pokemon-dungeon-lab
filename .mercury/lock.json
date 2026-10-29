@@ -1,5 +1,5 @@
 {
-  "config_sha256": "df62670ac02d722e7c5519e557d222e6241acc500ec9c0a456517c8fd57e95f7",
+  "config_sha256": "63b13e6542e965a59818c91292a203ee124b8cc1c914cb615421ddd165ce9441",
   "executable": [],
   "files": {
     ".agents/skills/mercury-html-plan-zh/SKILL.md": "826343868fda7d1751c7258bed2bedd7267f26da0853282ab88fea2996290c11",
@@ -51,7 +51,7 @@
   "mercury_json_sha256": "877b2181bd46fddd25f74cc29f873f7ee97b7bde72795e00f48ac81f2ce391c2",
   "schema_version": 1,
   "sections": {
-    "AGENTS.md": "cea5fe571e16a10a09004943aed65cc517d6ea29949f919a9727607958d3ffbf",
+    "AGENTS.md": "b48c018c58840e6dc9d999612e4daafffba2353c0d7eba7fe77ed87dd1408721",
     "CLAUDE.md": "b4d4b612c77319b4538ee98217cfe3081c059f349baac9d3965cfedae75a0c59"
   },
   "source": "mercury@88c2967f2917e539d76acbbf509a0d3570751dbd",

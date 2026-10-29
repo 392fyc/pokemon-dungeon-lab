@@ -12,7 +12,7 @@
 
 ## 文档关联
 
-研究主库D:\Project\Pokemon\Pokemon_Game_Research是设计资料权威位置；D:\Project\Pokemon\Pokemon_Dungeon_Lab是准备仓，旧快照不能覆盖新结论。原v0.1—v0.7及其摘要保留原字节；v0.7来源按审核请求/v0.7来源定位.json从固定提交核验，仅其中声明的现行决策入口允许更新。归并规则不改写冻结史稿。
+本目录是 pokemon-dungeon-lab 仓库的 `docs/`，即设计资料权威位置（2026-10-29 由独立研究库并入，旧仓库已归档）；仓库根 AGENTS.md 的规则同样适用。原v0.1—v0.7及其摘要保留原字节；v0.7来源按审核请求/v0.7来源定位.json从固定提交核验，仅其中声明的现行决策入口允许更新。归并规则不改写冻结史稿。
 
 新增研究按主题命名，在总索引、现行决策、当前分工和相应路线中维护入口，使用相对链接。玩法候选、纸面核算、技术运行、独立审核和用户采纳分开。变更核验复用已有检查，发布时核对固定提交、远端文件树及干净状态。
 
@@ -29,4 +29,4 @@ pokebonk、pokemon-arena-2d、pokemon-autochess-mod保留参考证据范围；�
 
 ## Obsidian 操作与检索
 
-本目录是独立 vault。笔记使用项目与主题标签，并可使用带完整库内路径的双向链接，避免多个 README 的同名歧义。MCP 写入前先核实连接的库；命令行以本库绝对路径读写 UTF-8 Markdown，并核对目标与保存结果；通过官方 URI 打开笔记时明确指定 vault=Pokemon_Game_Research 和库内 file。遵守用户要求，不使用 Computer Use 编辑文档。现有内容发生外部修改时先读取并整合，不能用旧副本覆盖。
+本目录是 Obsidian vault。笔记使用项目与主题标签，并可使用带完整库内路径的双向链接，避免多个 README 的同名歧义。代理在任务 worktree 中直接读写 UTF-8 Markdown，与相关改动一起走 PR；Obsidian 与其 MCP 指向主 checkout，只用于浏览和检索。遵守用户要求，不使用 Computer Use 编辑文档。现有内容发生外部修改时先读取并整合，不能用旧副本覆盖。

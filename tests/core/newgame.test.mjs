@@ -16,8 +16,8 @@ const memory=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k
 
 test('N1 the roster has nine starters: the original three plus six generation 2-3 starters, in a fixed order',()=>{
  assert.deepEqual(STARTER_IDS,['bulbasaur','charmander','squirtle','chikorita','cyndaquil','totodile','treecko','torchic','mudkip']);
- assert.deepEqual(roster.species.slice(9).map(s=>[s.id,s.dex]),[['chikorita','0152'],['cyndaquil','0155'],['totodile','0158'],['treecko','0252'],['torchic','0255'],['mudkip','0258']]);
- for(const s of roster.species.slice(9)){assert.equal(s.starter,true);assert.ok(s.kit.length>=1&&s.kit.length<=2);assert.ok(s.learnable.length>0);}
+ assert.deepEqual(roster.species.slice(9,15).map(s=>[s.id,s.dex]),[['chikorita','0152'],['cyndaquil','0155'],['totodile','0158'],['treecko','0252'],['torchic','0255'],['mudkip','0258']]);
+ for(const s of roster.species.slice(9,15)){assert.equal(s.starter,true);assert.ok(s.kit.length>=1&&s.kit.length<=2);assert.ok(s.learnable.length>0);}
 });
 
 test('N2 the original nine species are unchanged: their JSON text hashes to the value recorded before 7.1',()=>{

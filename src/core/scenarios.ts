@@ -1,5 +1,17 @@
-import {createMain,friend,enemy,newcomer,reveal,clone,key,applyCommand,type World,type Pos} from './engine.ts';
-export const SCENARIOS=['main-invite','main-none','V1','V3','V4','V5','V6','V7','V8','V9','V10','V11','V12','V13','K1','K2','K3','K4','K5'] as const;
+import {createMain,createExpedition,jumpToFloor,friend,enemy,newcomer,reveal,clone,key,applyCommand,type World,type Pos} from './engine.ts';
+import {newGameProfile,learnTm,setCarry,squadOf,type Profile} from './base.ts';
+export const SCENARIOS=['main-invite','main-none','V1','V3','V4','V5','V6','V7','V8','V9','V10','V11','V12','V13','K1','K2','K3','K4','K5','BOSS','BOSSX'] as const;
+/** Developer menu names for the scenarios that have one (the others show their id). */
+export const SCENARIO_LABEL:Partial<Record<string,string>>={BOSS:'首领层（紧邻首领）',BOSSX:'首领层·前庭撤离'};
+/** Scenarios that stand in for a base run need the profile their units come from. */
+/** The boss scenes' profile: cyndaquil (leader, carries tackle and the machine move roar, so a push can be tried on the boss) and mudkip. */
+function bossProfile():Profile {
+  const made=newGameProfile('cyndaquil','mudkip');if(!made.ok)throw Error(made.error);let p=made.profile;p={...p,vault:{...p.vault,roar:1}};
+  const learned=learnTm(p,'P1','roar');if(!learned.ok)throw Error(learned.error);
+  const carried=setCarry(learned.profile,'P1',['tackle','roar']);if(!carried.ok)throw Error(carried.error);
+  return carried.profile;
+}
+export const scenarioProfile=(id:ScenarioId):Profile|undefined=>id==='BOSS'||id==='BOSSX'?bossProfile():undefined;
 export type ScenarioId=typeof SCENARIOS[number];
 const row=(a:number,b:number):Pos[]=>Array.from({length:b-a+1},(_,i)=>({x:a+i,y:1}));
 const rect=(n:number):Pos[]=>Array.from({length:n*n},(_,i)=>({x:i%n+1,y:Math.floor(i/n)+1}));
@@ -11,6 +23,20 @@ export function createScenario(id:ScenarioId,runId:string):World {
   if(id==='main-invite'||id==='main-none')return createMain(runId,id==='main-invite');
   if(id==='V1'){
     let s=createMain(runId,false);for(const action of [{type:'move',to:{x:3,y:1}},{type:'basic',target:'E'},{type:'basic',target:'E'},{type:'basic',target:'E'},{type:'move',to:{x:4,y:1}},{type:'interact',exit:false},{type:'move',to:{x:5,y:1}}] as const){const r=applyCommand(s,{type:'round',action});if(!r.ok)throw Error(r.error);s=r.state;}s.scenario=id;return s;
+  }
+  if(id==='BOSS'||id==='BOSSX'){
+    // 7.3 developer scene: the last floor of a boss-marked 3 floor run. BOSS: the whole floor revealed, the team beside the boss. BOSSX: the team standing on the lobby exit.
+    let w=jumpToFloor(createExpedition(runId,7,3,squadOf(bossProfile()),0),3);w.scenario='expedition';
+    const ids=w.queue,boss=w.units.boss;
+    if(id==='BOSS'){
+      const spots=[{x:boss.pos!.x-1,y:boss.pos!.y},{x:boss.pos!.x+1,y:boss.pos!.y},{x:boss.pos!.x,y:boss.pos!.y-1}];
+      ids.forEach((u,i)=>{w.units[u].pos=spots[i];});w.leader=ids[0];w.seen=w.floor.map(key);
+    }else{
+      const exit=w.points.find(p=>p.kind==='exit')!.pos;w.units[w.leader].pos=clone(exit);
+      const near=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}].map(d=>({x:exit.x+d.x,y:exit.y+d.y})).find(c=>w.floor.some(f=>f.x===c.x&&f.y===c.y)&&!ids.some(u=>w.units[u].pos&&w.units[u].pos!.x===c.x&&w.units[u].pos!.y===c.y));
+      ids.filter(u=>u!==w.leader).forEach(u=>{w.units[u].pos=near??null;});reveal(w);
+    }
+    return w;
   }
   const open=['V8','V9','V10','K1','K2','K3'].includes(id);
   const s=fixture(runId,id,open?rect(id==='V8'?5:4):row(0,id.startsWith('K')?5:9));

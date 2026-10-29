@@ -2662,6 +2662,1504 @@
     }
    ],
    "source": "pokedex.json[mudkip]; learnsets.json[mudkip] 第9世代; moves.json"
+  },
+  {
+   "id": "sandshrew",
+   "dex": "0027",
+   "name": "Sandshrew",
+   "starter": false,
+   "types": [
+    "Ground"
+   ],
+   "baseStats": {
+    "hp": 50,
+    "atk": 75,
+    "def": 85,
+    "spa": 20,
+    "spd": 30,
+    "spe": 40
+   },
+   "maxHp": 22,
+   "kit": [
+    {
+     "move": "scratch",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "defensecurl",
+     "behavior": "guard",
+     "pp": 4
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "falseswipe",
+     "behavior": "strong",
+     "pp": 4
+    },
+    {
+     "move": "focuspunch",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "furycutter",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "highhorsepower",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "knockoff",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "leechlife",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "metalclaw",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "nightslash",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "poisonjab",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "rapidspin",
+     "behavior": "strong",
+     "pp": 4
+    },
+    {
+     "move": "scratch",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "shadowclaw",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "slash",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "stompingtantrum",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "throatchop",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "xscissor",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "earthpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "sandtomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "scorchingsands",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "smackdown",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "stoneedge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "defensecurl",
+     "behavior": "guard",
+     "pp": 4
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[sandshrew]; learnsets.json[sandshrew] 第9世代; moves.json"
+  },
+  {
+   "id": "growlithe",
+   "dex": "0058",
+   "name": "Growlithe",
+   "starter": false,
+   "types": [
+    "Fire"
+   ],
+   "baseStats": {
+    "hp": 55,
+    "atk": 70,
+    "def": 45,
+    "spa": 70,
+    "spd": 50,
+    "spe": 60
+   },
+   "maxHp": 23,
+   "kit": [
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "bite",
+     "behavior": "strong",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bite",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "closecombat",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "covet",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "crunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "firefang",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "flamecharge",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "flamewheel",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "flareblitz",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "playrough",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "psychicfangs",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "retaliate",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "temperflare",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thunderfang",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "wildcharge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "fireblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "flamethrower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "overheat",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "source": "pokedex.json[growlithe]; learnsets.json[growlithe] 第9世代; moves.json"
+  },
+  {
+   "id": "magnemite",
+   "dex": "0081",
+   "name": "Magnemite",
+   "starter": false,
+   "types": [
+    "Electric",
+    "Steel"
+   ],
+   "baseStats": {
+    "hp": 25,
+    "atk": 35,
+    "def": 70,
+    "spa": 95,
+    "spd": 55,
+    "spe": 45
+   },
+   "maxHp": 17,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "thundershock",
+     "behavior": "line",
+     "pp": 3
+    }
+   ],
+   "learnable": [
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "ironhead",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "spark",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "wildcharge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "chargebeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "flashcannon",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "steelbeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thunder",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thunderbolt",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thundershock",
+     "behavior": "line",
+     "pp": 3
+    },
+    {
+     "move": "zapcannon",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "irondefense",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[magnemite]; learnsets.json[magnemite] 第9世代; moves.json"
+  },
+  {
+   "id": "onix",
+   "dex": "0095",
+   "name": "Onix",
+   "starter": false,
+   "types": [
+    "Rock",
+    "Ground"
+   ],
+   "baseStats": {
+    "hp": 35,
+    "atk": 45,
+    "def": 160,
+    "spa": 30,
+    "spd": 45,
+    "spe": 70
+   },
+   "maxHp": 19,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "harden",
+     "behavior": "guard",
+     "pp": 3
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodypress",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "drillrun",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "headbutt",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "headsmash",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "highhorsepower",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "ironhead",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "irontail",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "payback",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "slam",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "stompingtantrum",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "dragonbreath",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "dragonpulse",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "earthpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "flashcannon",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "meteorbeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rockblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rockthrow",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "round",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "sandtomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "scorchingsands",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "smackdown",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "snore",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "stoneedge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "defensecurl",
+     "behavior": "guard",
+     "pp": 4
+    },
+    {
+     "move": "harden",
+     "behavior": "guard",
+     "pp": 3
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "dragontail",
+     "behavior": "push",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[onix]; learnsets.json[onix] 第8世代; moves.json"
+  },
+  {
+   "id": "dratini",
+   "dex": "0147",
+   "name": "Dratini",
+   "starter": false,
+   "types": [
+    "Dragon"
+   ],
+   "baseStats": {
+    "hp": 41,
+    "atk": 64,
+    "def": 45,
+    "spa": 50,
+    "spd": 50,
+    "spe": 50
+   },
+   "maxHp": 20,
+   "kit": [
+    {
+     "move": "dragontail",
+     "behavior": "push",
+     "pp": 1
+    },
+    {
+     "move": "slam",
+     "behavior": "strong",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aquajet",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "aquatail",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dragonrush",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "extremespeed",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "gigaimpact",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "ironhead",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "slam",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "waterfall",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "chillingwater",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "dracometeor",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "dragonbreath",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "dragonpulse",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "fireblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "flamethrower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "hydropump",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "hyperbeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "scaleshot",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thunder",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "thunderbolt",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "waterpulse",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "dragontail",
+     "behavior": "push",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[dratini]; learnsets.json[dratini] 第9世代; moves.json"
+  },
+  {
+   "id": "wooper",
+   "dex": "0194",
+   "name": "Wooper",
+   "starter": false,
+   "types": [
+    "Water",
+    "Ground"
+   ],
+   "baseStats": {
+    "hp": 55,
+    "atk": 45,
+    "def": 45,
+    "spa": 25,
+    "spd": 25,
+    "spe": 15
+   },
+   "maxHp": 23,
+   "kit": [
+    {
+     "move": "watergun",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "slam",
+     "behavior": "strong",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aquatail",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "avalanche",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "liquidation",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "slam",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "stompingtantrum",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "trailblaze",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "waterfall",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "acidspray",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "ancientpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "chillingwater",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "earthpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "hydropump",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "sludgebomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "stoneedge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "waterpulse",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "whirlpool",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[wooper]; learnsets.json[wooper] 第9世代; moves.json"
+  },
+  {
+   "id": "houndour",
+   "dex": "0228",
+   "name": "Houndour",
+   "starter": false,
+   "types": [
+    "Dark",
+    "Fire"
+   ],
+   "baseStats": {
+    "hp": 45,
+    "atk": 60,
+    "def": 30,
+    "spa": 80,
+    "spd": 50,
+    "spe": 65
+   },
+   "maxHp": 21,
+   "kit": [
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "roar",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bite",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "crunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "firefang",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "flamecharge",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "flareblitz",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "foulplay",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "lashout",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "psychicfangs",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "suckerpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "temperflare",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thunderfang",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "trailblaze",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "darkpulse",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "feint",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "fireblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "flamethrower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "inferno",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "overheat",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "shadowball",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "sludgebomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "smog",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "solarbeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "source": "pokedex.json[houndour]; learnsets.json[houndour] 第9世代; moves.json"
+  },
+  {
+   "id": "makuhita",
+   "dex": "0296",
+   "name": "Makuhita",
+   "starter": false,
+   "types": [
+    "Fighting"
+   ],
+   "baseStats": {
+    "hp": 72,
+    "atk": 60,
+    "def": 30,
+    "spa": 20,
+    "spd": 30,
+    "spe": 25
+   },
+   "maxHp": 26,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "whirlwind",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodypress",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bulletpunch",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "closecombat",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "crosschop",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "drainpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dynamicpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "fakeout",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "firepunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "forcepalm",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "icepunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "knockoff",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "lowsweep",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "poisonjab",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "stompingtantrum",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thunderpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "upperhand",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "zenheadbutt",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "chillingwater",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "feint",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "focusblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "smackdown",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "stoneedge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "vacuumwave",
+     "behavior": "line",
+     "pp": 3
+    },
+    {
+     "move": "detect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "whirlwind",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "source": "pokedex.json[makuhita]; learnsets.json[makuhita] 第9世代; moves.json"
   }
  ]
 }

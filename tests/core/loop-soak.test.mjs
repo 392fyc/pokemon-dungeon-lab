@@ -4,6 +4,7 @@ import {createExpedition,createMain,PROG,RULE_VERSION,CONTENT_VERSION} from '../
 import {initialProfile,newGameProfile,profileProblem} from '../../src/core/base.ts';
 import {TrialStore,BUILD_ID} from '../../src/core/save.ts';
 import {ECON} from '../../src/core/economy.ts';
+import {TM_MOVES} from '../../src/core/roster.ts';
 
 /*
  * Stage 6.6 (automatic part): full-loop soak.
@@ -13,7 +14,7 @@ import {ECON} from '../../src/core/economy.ts';
  * Every accepted step is read back through a brand-new TrialStore and compared with deepEqual; every rejected command must leave state and bytes unchanged.
  * Statistics are printed, never asserted (this is a soak, not a balance test). Specification: docs/项目框架/阶段6—完整循环自测报告.md.
  */
-const SEEDS=+(process.env.SOAK_SEEDS??30),GAMES=3,ROUND_CAP=400,COMMAND_CAP=1500;
+const SEEDS=+(process.env.SOAK_SEEDS??30),GAMES=5,ROUND_CAP=400,COMMAND_CAP=1500;
 const key=p=>`${p.x},${p.y}`;
 const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 const dist=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
@@ -57,7 +58,7 @@ function roundTrip(port,store,where){
 }
 
 /* ---------- the bot ---------- */
-const stats=()=>({wipes:0,lostPartners:0,paid:0,returned:0,goneForGood:0,bought:0,exchanged:0,doomedWipes:0,invites:0,accepted:0,rejected:0,swapped:0,levelUps:0,tmGot:0,tmBrought:0,transits:0,cancelledTransits:0,berries:0,tonics:0,rests:0,guards:0,lines:0,switches:0,declined:0,rejections:0,probes:0,learned:0});
+const stats=()=>({reachedBoss:0,bossDefeated:0,bossWipes:0,lobbyExits:0,wipes:0,lostPartners:0,paid:0,returned:0,goneForGood:0,bought:0,exchanged:0,doomedWipes:0,invites:0,accepted:0,rejected:0,swapped:0,levelUps:0,tmGot:0,tmBrought:0,transits:0,cancelledTransits:0,berries:0,tonics:0,rests:0,guards:0,lines:0,switches:0,declined:0,rejections:0,probes:0,learned:0});
 const adjacentEnemies=s=>s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&dist(u.pos,s.units[s.leader].pos)===1);
 function ppDeficit(u){return u.learned.some(k=>(u.pp[k]??0)<(u.maxPp[k]??0));}
 /** BFS over revealed floor cells only. Allies and enemies do not block the search (the bot swaps with allies and attacks enemies in the way). */
@@ -80,7 +81,17 @@ function objective(s,memo){
  const pick=near(["berry","tonic",...(affordable(s).length?['shop']:[]),...(s.exchange&&!s.exchange.used&&memo.useExchange?['exchange']:[])],8)??(members.some(m=>ppDeficit(m))||members.some(m=>m.hp<m.maxHp)?near(["rest"],6):undefined);
  if(pick)return pick;
  let want;
- if(level===1)want=!s.goal?'goal':s.bag>0?'exit':'down';else want=s.bag===0?'item':'up';
+ const floors=s.dungeon.floors;
+ if(floors===2){if(level===1)want=!s.goal?'goal':s.bag>0?'exit':'down';else want=s.bag===0?'item':'up';}
+ else if(level===1)want=!s.goal?'goal':'down';
+ else if(level<floors)want='down';
+ else{ // last floor of a boss run: T first; then either the lobby exit or (by the run's seed) the boss, then the lobby exit
+  if(s.bag>0&&memo.fightBoss){
+   const boss=s.enemies.map(i=>s.units[i]).find(u=>u.boss&&aliveU(u));
+   if(boss)return seen.has(key(boss.pos))?{kind:'boss',pos:boss.pos,used:false}:null; // not seen yet: keep exploring
+  }
+  want=s.bag===0?'item':'exit';
+ }
  return pts.find(p=>p.kind===want&&(want!=='goal'&&want!=='item'||!p.used))||null;
 }
 function stepToward(s,memo,target){
@@ -170,9 +181,9 @@ async function probe(port,store,st,where){
  for(const cmd of bad){const r=await send(port,store,cmd,st,where+' probe');assert.equal(r.ok,false,`${where}: ${JSON.stringify(cmd)} was accepted in phase ${s.phase}`);}
 }
 
-async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchange=false){
+async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchange=false,fightBoss=false){
  let store=ref.store;
- const memo={visited:{},declined:new Set(),lastSwitch:-99,fullInvites:0,reckless,doomed,useExchange,suicidal:false};
+ const memo={visited:{},declined:new Set(),lastSwitch:-99,fullInvites:0,reckless,doomed,useExchange,suicidal:false,fightBoss};
  let rounds=0,commands=0,levelBefore=1;const where=`${gameId}`;
  for(;;){
   const s=store.state;
@@ -181,6 +192,13 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    for(const t of s.end.tms){st.tmGot++;if(t.fate==='brought'||t.fate==='sent')st.tmBrought++;}
    if(s.end.outcome==='wipe')st.wipes++;
    if(s.end.outcome==='wipe'&&doomed)st.doomedWipes++;
+   if(s.dungeon.boss){ // 7.3 statistics for 7.4: reached the boss floor, defeated the boss, wiped on the boss floor, left by the lobby exit
+    if(s.dungeon.level===3||'3' in s.dungeon.stored)st.reachedBoss++;
+    if(s.end.boss)st.bossDefeated++;
+    if(s.end.outcome==='wipe'&&s.dungeon.level===3)st.bossWipes++;
+    if(s.end.outcome==='normal'&&s.dungeon.level===3)st.lobbyExits++;
+    assert.equal(s.end.boss,s.units.boss?.hp===0||Object.values(s.dungeon.stored).some(f=>f.units.boss?.hp===0),`${where}: end.boss disagrees with the boss unit`);
+   }
    await probe(port,store,st,where+' ended');
    if(store.envelope.profile){const before=store.envelope; // with a base, a finished expedition must go back to the base, not straight into a new trial
     assert.equal(await store.newTrial(createMain('soak-direct')),false,where+': newTrial accepted over a based expedition');assert.deepEqual(store.envelope,before);}
@@ -326,7 +344,7 @@ async function playSeed(i){
  }
  for(let g=0;g<GAMES;g++){
   const id=`seed ${seed} game ${g}`;
-  ref.store=store;const r=await playRun(port,ref,id,st,i%3===2&&!doomed,doomed,g%2===0);store=ref.store;games.push({seed,game:g,reckless:i%3===2,legacy:i%2===0&&g===0,doomed,...r});
+  ref.store=store;const r=await playRun(port,ref,id,st,i%3===2&&!doomed,doomed,g%2===0,(i*5+g*3)%4<2);store=ref.store;games.push({seed,game:g,reckless:i%3===2,legacy:i%2===0&&g===0,doomed,...r});
   if(r.outcome==='timeout')break;
   const before=store.envelope.profile;const endRecord=structuredClone(store.state.end);
   assert.equal(await store.returnToBase(),true,`${id}: returnToBase refused`);roundTrip(port,store,`${id} return`);
@@ -354,7 +372,8 @@ test('S66 loop soak: base -> expedition -> base -> expedition, many seeds, every
   `seeds ${SEEDS}, games ${total}, wall time ${((Date.now()-t0)/1000).toFixed(1)} s`,
   `outcome: normal exit ${by('normal').length} (${pct(by('normal').length,total)}), wipe ${by('wipe').length} (${pct(by('wipe').length,total)}), timeout/stuck ${stuck.length} (${pct(stuck.length,total)})`,
   `rounds per game: mean ${(sum(games,g=>g.rounds)/total).toFixed(1)}, median ${rounds[Math.floor(total/2)]}, min ${rounds[0]}, max ${rounds[total-1]}`,
-  `goal G reached in ${games.filter(g=>g.goal).length} games; ended on floor 2 in ${games.filter(g=>g.floor===2).length}`,
+  `goal G reached in ${games.filter(g=>g.goal).length} games; ended on floor 2 in ${games.filter(g=>g.floor===2).length}, on floor 3 in ${games.filter(g=>g.floor===3).length}`,
+  `boss (7.3, for 7.4 calibration, no threshold): runs that reached the boss floor ${st.reachedBoss}, boss defeated ${st.bossDefeated}, wiped on the boss floor ${st.bossWipes}, left by the lobby exit ${st.lobbyExits}`,
   `recruit invitations ${st.invites}: accepted ${st.accepted} (with a swap-out ${st.swapped}), rejected ${st.rejected}`,
   `run level-ups ${st.levelUps} (mean final level ${(sum(games,g=>g.level)/total).toFixed(2)})`,
   `technique machines obtained ${st.tmGot}, brought out ${st.tmBrought}, learned at base ${st.learned}`,
@@ -362,7 +381,7 @@ test('S66 loop soak: base -> expedition -> base -> expedition, many seeds, every
   `backpack: berries used ${st.berries}, tonics used ${st.tonics}, rest point used ${st.rests}, guard used ${st.guards}, line used ${st.lines}, lead switches ${st.switches}`,
   `failure and rescue: wipes ${st.wipes} (forced-wipe seeds ${st.doomedWipes}), partners gone missing ${st.lostPartners}, rescues paid ${st.paid}, paid partners returned ${st.returned}, lost for good ${st.goneForGood}; shop purchases ${st.bought}, exchanger uses ${st.exchanged}`,
   `commands refused (state verified unchanged) ${st.rejections}, deliberate illegal probes ${st.probes}`,
-  `final rosters: mean ${(sum(results,r=>r.roster)/SEEDS).toFixed(1)}, max ${Math.max(...results.map(r=>r.roster))}; unused vault machines at the end ${sum(results,r=>sum(Object.values(r.vault),n=>n))} (${['protect','whirlwind','roar'].map(m=>m+' '+sum(results,r=>r.vault[m]??0)).join(', ')})`,
+  `final rosters: mean ${(sum(results,r=>r.roster)/SEEDS).toFixed(1)}, max ${Math.max(...results.map(r=>r.roster))}; unused vault machines at the end ${sum(results,r=>sum(Object.values(r.vault),n=>n))} (${TM_MOVES.map(m=>m+' '+sum(results,r=>r.vault[m]??0)).join(', ')})`,
   `seeds with at least 2 completed games: ${results.filter(r=>r.games.filter(g=>g.outcome!=='timeout').length>=2).length}/${SEEDS}`,
   `stuck games (round cap ${ROUND_CAP}): ${stuck.length?stuck.map(g=>`seed ${g.seed} game ${g.game}: ${g.reason}`).join(' | '):'none'}`,
  ];
@@ -373,6 +392,9 @@ test('S66 loop soak: base -> expedition -> base -> expedition, many seeds, every
  assert.ok(total>=SEEDS,'every seed must complete at least one game');
  assert.ok(st.probes>0&&st.rejections>0);
  assert.ok(st.doomedWipes>=1,'the forced-wipe variant must produce at least one wipe');
+ // 7.3: no stuck game; every finished game went back to the base (checked in playSeed) and the boss floor was reached by someone.
+ assert.equal(stuck.length,0,'stuck games: '+stuck.map(g=>g.reason).join(' | '));
+ assert.ok(st.reachedBoss>=1,'at least one run must reach the boss floor');
 });
 
 test('S66 the soak is deterministic: the same seed replays to the same game records',async()=>{

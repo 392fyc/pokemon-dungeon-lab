@@ -1,7 +1,7 @@
-import {applyCommand,clone,levelFor,PROG,RULE_VERSION,CONTENT_VERSION,closeOut,isProtected,reasonsOf,type World,type Command,type Result,type StoredFloor,type Dungeon} from './engine.ts';
-import {WILD_SPECIES,serviceRoll} from './dungeon.ts';
+import {applyCommand,clone,levelFor,PROG,RULE_VERSION,CONTENT_VERSION,closeOut,isProtected,reasonsOf,bossDefeated,type World,type Command,type Result,type StoredFloor,type Dungeon} from './engine.ts';
+import {WILD_SPECIES,BOSS,serviceRoll} from './dungeon.ts';
 import {ECON} from './economy.ts';
-import {speciesOf,TM_MOVES,learnableMove} from './roster.ts';
+import {speciesOf,tmPool,learnableMove,BOSS_SPECIES} from './roster.ts';
 import {profileProblem,profileFitsWorld,settleRun,applyBase,squadOf,migrateProfile,purseProblem,type Profile,type BaseAction} from './base.ts';
 import {createExpedition} from './engine.ts';
 export interface StoragePort {getItem(key:string):string|null;setItem(key:string,value:string):void|Promise<void>;}
@@ -16,6 +16,8 @@ const strings=(v:unknown):v is string[]=>Array.isArray(v)&&v.every(x=>typeof x==
 const position=(v:unknown):v is {x:number;y:number}=>object(v)&&integer(v.x)&&integer(v.y);
 const skillNames=['strong','line','guard','push'];
 function validUnit(v:unknown,depth=0):boolean {
+  // 7.3 H1: a nested unit (a recruit) never carries the boss mark or the boss species.
+  if(depth>0&&object(v)&&(v.boss!==undefined||(typeof v.species==='string'&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species))))return false;
   if(!object(v)||typeof v.id!=='string'||!['friend','enemy'].includes(String(v.side))||!integer(v.hp)||!integer(v.maxHp)||(v.maxHp as number)<=0||(v.hp as number)<0||(v.hp as number)>(v.maxHp as number)||(v.pos!==null&&!position(v.pos))||!object(v.pp)||!object(v.maxPp)||!strings(v.learned))return false;
   if(v.learned.some(k=>!skillNames.includes(k)))return false;
   for(const [k,n] of Object.entries(v.pp)){if(!skillNames.includes(k)||!integer(n)||(n as number)<0||!integer(v.maxPp[k])||(n as number)>(v.maxPp[k] as number))return false;}
@@ -24,10 +26,12 @@ function validUnit(v:unknown,depth=0):boolean {
   if(v.protected!==undefined&&(v.protected!==true||v.side!=='friend'||v.inst===undefined))return false;
   if(v.damage!==undefined&&(!integer(v.damage)||(v.damage as number)<0))return false;
   if(v.range!==undefined&&(!integer(v.range)||(v.range as number)<1))return false;
-  if(v.species!==undefined&&(typeof v.species!=='string'||!speciesOf(v.species)))return false;
+  // 7.3 boss: the only unit that may carry a species outside the roster, and only with the boss mark (arcanine, enemy side, fixed numbers, no recruit, no base instance).
+  if(v.boss!==undefined&&(v.boss!==true||v.side!=='enemy'||v.species!==BOSS.species||v.maxHp!==BOSS.hp||v.damage!==BOSS.damage||v.range!==BOSS.range||v.ai!=='melee'||v.recruit!==undefined||v.inst!==undefined))return false;
+  if(v.species!==undefined&&(typeof v.species!=='string'||!(speciesOf(v.species)||(v.boss===true&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species)))))return false;
   if((v.inst===undefined)!==(v.moves===undefined)||(v.inst!==undefined&&(v.side!=='friend'||typeof v.inst!=='string'||!v.inst||!strings(v.moves)||v.species===undefined)))return false;
   // Expedition enemies are always wild species; a starter on the enemy side is a contradictory save.
-  if(v.side==='enemy'&&v.species!==undefined&&!(String(v.species) in WILD_SPECIES))return false;
+  if(v.side==='enemy'&&v.species!==undefined&&v.boss!==true&&!(String(v.species) in WILD_SPECIES))return false;
   return v.recruit===undefined||(depth<1&&validUnit(v.recruit,depth+1));
 }
 const keyOf=(p:{x:number;y:number})=>`${p.x},${p.y}`;
@@ -56,9 +60,9 @@ function validRooms(rooms:unknown,cells:Set<string>,d:Dungeon):boolean {
     for(let y=r.y as number;y<(r.y as number)+(r.h as number);y++)for(let x=r.x as number;x<(r.x as number)+(r.w as number);x++)if(!cells.has(`${x},${y}`))return false;return true;});
 }
 /** Which point kinds a floor may hold: no stairs outside an expedition, no 'up' on the first floor, no 'down' on the last, exits only on floor 1. */
-function pointsFitLevel(points:{kind:string}[],level:number|null,floors:number):boolean {
+function pointsFitLevel(points:{kind:string}[],level:number|null,floors:number,boss=false):boolean {
   if(level===null)return points.every(p=>p.kind!=='down'&&p.kind!=='up');
-  return points.every(p=>!(p.kind==='up'&&level===1)&&!(p.kind==='down'&&level===floors)&&!(p.kind==='exit'&&level!==1)&&!(p.kind==='rest'&&level!==2));
+  return points.every(p=>!(p.kind==='up'&&level===1)&&!(p.kind==='down'&&level===floors)&&!(p.kind==='exit'&&level!==1&&!(boss&&level===floors))&&!(p.kind==='rest'&&level!==2));
 }
 /** 6.4 run level, counters, pickups and rooms of an expedition. All of it is absent together for expeditions saved before 6.4. */
 function validProgress(s:World,d:Dungeon):boolean {
@@ -78,8 +82,10 @@ const fates=['held','brought','sent','lost'];
 /** The run's technique machines: known moves, source and fate in range; fates agree with the phase (held only while playing, brought only after a normal exit, lost only after a wipe). */
 function validTms(s:World):boolean {
   const t=s.tms;if(!Array.isArray(t)||t.length>12)return false;
-  for(const m of t){if(!object(m)||!(TM_MOVES as readonly string[]).includes(String(m.move))||!['target','shop'].includes(String(m.source))||!fates.includes(String(m.fate))||Object.keys(m).length!==3)return false;}
+  for(const m of t){if(!object(m)||!tmPool(s.dungeon).includes(String(m.move))||!['target','shop','boss'].includes(String(m.source))||!fates.includes(String(m.fate))||Object.keys(m).length!==3)return false;}
   if(t.filter(m=>m.source==='target').length>s.bag)return false;
+  // 7.3: a boss machine exists only in a boss-marked run, at most once, and only after the boss was defeated.
+  const fromBoss=t.filter(m=>m.source==='boss').length;if(fromBoss>1||(fromBoss>0&&!(s.dungeon?.boss&&bossDefeated(s))))return false;
   if(s.phase==='ended'){const wipe=s.end?.outcome==='wipe';if(t.some(m=>m.fate==='held'||(wipe?m.fate==='brought':m.fate==='lost')))return false;}
   else if(t.some(m=>m.fate!=='held'&&m.fate!=='sent'))return false;
   return true;
@@ -98,7 +104,7 @@ function validServices(s:World,d:Dungeon):boolean {
   if(!!roll.shop!==!!shop||!!roll.exchange!==!!ex)return false;
   const generated=(lv:number)=>lv===d.level||String(lv) in d.stored;
   if(roll.shop&&shop){
-    const want=TM_MOVES[Math.floor(roll.shop.tmDraw*TM_MOVES.length)];
+    const pool=tmPool(d),want=pool[Math.floor(roll.shop.tmDraw*pool.length)];
     if(!object(shop)||shop.level!==roll.shop.level||!object(shop.stock)||!Array.isArray(shop.trades))return false;
     const n=(item:string)=>shop.trades.filter(t=>t.item===item).length;
     if(shop.trades.some(t=>!object(t)||!(t.item in ECON.price)||t.price!==ECON.price[t.item]))return false;
@@ -154,15 +160,20 @@ function validDungeon(s:World):boolean {
   // A request is a stairs request exactly when it was made on a stairs point, and then it names the adjacent floor.
   const stairs=point?.kind==='down'||point?.kind==='up';
   if(r&&stairs!==(r.to!==undefined))return false;
-  if(d===undefined)return s.scenario!=='expedition'&&s.phase!=='transit'&&!stairs&&pointsFitLevel(s.points,null,0)&&s.prog===undefined&&s.rooms===undefined&&!s.points.some(p=>isPickup(p.kind));
-  if(!object(d)||s.scenario!=='expedition'||(d.base!==undefined&&(d.base!==true||s.prog===undefined))||(d.services!==undefined&&(d.services!==true||d.base!==true)))return false;
+  if(d===undefined)return s.scenario!=='expedition'&&s.phase!=='transit'&&!stairs&&pointsFitLevel(s.points,null,0)&&s.prog===undefined&&s.rooms===undefined&&!s.points.some(p=>isPickup(p.kind))&&!Object.values(s.units).some(u=>u.boss!==undefined);
+  if(!object(d)||s.scenario!=='expedition'||(d.base!==undefined&&(d.base!==true||s.prog===undefined))||(d.services!==undefined&&(d.services!==true||d.base!==true))||(d.boss!==undefined&&(d.boss!==true||d.base!==true||d.services!==true||d.floors!==3)))return false;
   if(![d.seed,d.width,d.height,d.floors,d.level].every(integer)||d.seed<0||d.seed>4294967295||d.width<8||d.height<8||d.width>64||d.height>64||d.floors<2||d.floors>9||d.level<1||d.level>d.floors||!object(d.stored))return false;
   if(s.floor.some(p=>p.x<0||p.y<0||p.x>=d.width||p.y>=d.height))return false;
   const taken=new Set(Object.keys(s.units));
   for(const [name,f] of Object.entries(d.stored)){const level=Number(name);
-    if(!integer(level)||String(level)!==name||level<1||level>d.floors||level===d.level||!validStored(f,d,taken,s.prog!==undefined)||!pointsFitLevel(f.points,level,d.floors))return false;}
+    if(!integer(level)||String(level)!==name||level<1||level>d.floors||level===d.level||!validStored(f,d,taken,s.prog!==undefined)||!pointsFitLevel(f.points,level,d.floors,d.boss===true))return false;}
+  // 7.3: the boss mark and the boss unit agree: no unit carries the mark without it, at most one does, it stands on the last floor and is that floor's last enemy.
+  const here=Object.values(s.units).filter(u=>u.boss),away=Object.entries(d.stored).flatMap(([n,f])=>Object.values(f.units).filter(u=>u.boss).map(u=>({n,u,f})));
+  if(!d.boss?(here.length>0||away.length>0):here.length+away.length>1)return false;
+  if(here.length&&(d.level!==d.floors||s.enemies[s.enemies.length-1]!==here[0].id))return false;
+  if(away.length&&(away[0].n!==String(d.floors)||away[0].f.enemies[away[0].f.enemies.length-1]!==away[0].u.id))return false;
   if(!validProgress(s,d))return false;
-  if(!pointsFitLevel(s.points,d.level,d.floors))return false;
+  if(!pointsFitLevel(s.points,d.level,d.floors,d.boss===true))return false;
   if(r&&stairs){
     if(!integer(r.to)||(r.to as number)<1||(r.to as number)>d.floors||r.to!==d.level+(point!.kind==='down'?1:-1))return false;
   }
@@ -170,10 +181,12 @@ function validDungeon(s:World):boolean {
 }
 /** The 7.2 fields of an end record against the world it closes: only runs with `prog` have them, and every judgement can be recomputed from the final state except the draw itself. */
 function validEnd(s:World,e:NonNullable<World['end']>):boolean {
-  const extra=[e.tms,e.lost,e.effective,e.reasons,e.reward,e.purse,e.refund];
+  const extra=[e.boss,e.tms,e.lost,e.effective,e.reasons,e.reward,e.purse,e.refund];
   if(!s.prog)return extra.every(x=>x===undefined);
   if(!Array.isArray(e.tms)||!Array.isArray(e.lost)||!Array.isArray(e.reasons)||typeof e.effective!=='boolean')return false;
   if(JSON.stringify(e.tms)!==JSON.stringify(s.tms))return false;
+  // 7.3: a boss-marked run records whether the boss fell, recomputed from the final state; any other run has no such field.
+  if(e.boss!==(s.dungeon?.boss?bossDefeated(s):undefined))return false;
   const wipe=e.outcome==='wipe';
   if(!strings(e.lost)||new Set(e.lost).size!==e.lost.length||(!wipe&&e.lost.length>0)||e.lost.some(id=>!s.queue.includes(id)||isProtected(s,id)))return false;
   if(JSON.stringify(e.reasons)!==JSON.stringify(reasonsOf(s))||e.effective!==(e.reasons.length>0))return false;
@@ -192,7 +205,7 @@ function validWorld(v:unknown):v is World {
   if(s.points.some(p=>!object(p)||!position(p.pos)||!pointKinds.includes(p.kind)||typeof p.used!=='boolean'||!cells.has(`${p.pos.x},${p.pos.y}`)))return false;
   if(s.anchor!==null&&!position(s.anchor))return false;
   if(s.request!==null&&(!object(s.request)||typeof s.request.actor!=='string'||!s.units[s.request.actor]||!position(s.request.pos)||typeof s.request.locked!=='boolean'))return false;
-  if(s.invitations.some(i=>!object(i)||typeof i.id!=='string'||!validUnit(i.unit)||!['pending','accepted','rejected','cancelled'].includes(i.status)))return false;
+  if(s.invitations.some(i=>!object(i)||typeof i.id!=='string'||!validUnit(i.unit)||(i.unit as unknown as Record<string,unknown>).boss!==undefined||(typeof i.unit.species==='string'&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,i.unit.species))||!['pending','accepted','rejected','cancelled'].includes(i.status)))return false;
   if(s.phase==='ended'){const e=s.end;if(!object(e)||e.id!==`${s.runId}:end`||!['normal','wipe'].includes(e.outcome)||!strings(e.team)||!strings(e.camp)||e.team.join()!==s.queue.join()||e.camp.join()!==s.camp.join()||e.goal!==s.goal||e.acquired!==s.bag||e.brought!==(e.outcome==='normal'?s.bag:0))return false;
     if(!validEnd(s,e))return false;}else if(s.end!==null)return false;
   // Only complete processing checkpoints may be loaded. A phase tag cannot
@@ -269,9 +282,10 @@ export class TrialStore {
     this.status='saving';try{const text=JSON.stringify(this.record);await this.port.setItem(this.key,text);this.raw=text;this.status='ready';this.error='';this.lastSaved=this.label();return true;}
     catch(e){this.status='failed';this.error=String(e);return false;}
   }
-  async start(s:World):Promise<boolean> {
+  /** `profile` is for developer scenarios that stand in for a base run (their units come from a profile); an ordinary start has none. */
+  async start(s:World,profile?:Profile):Promise<boolean> {
     if(this.status!=='empty')return false;
-    this.record={format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:clone(s),recent:null};return this.persist();
+    this.record={format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:clone(s),recent:null,...(profile?{profile:clone(profile)}:{})};return this.persist();
   }
   async dispatch(cmd:Command):Promise<Result> {
     const s=this.record?.current;if(!s)throw Error('没有已加载试验');
@@ -307,7 +321,7 @@ export class TrialStore {
     if(purseProblem(this.record.profile,purse)!==null)return false;
     // One write: the purse leaves the account and goes into the new run.
     const profile=clone(this.record.profile);profile.account-=purse;
-    this.record={...this.record,sequence:this.record.sequence+1,profile,current:createExpedition(runId,seed,2,squadOf(profile),purse)};return this.persist();
+    this.record={...this.record,sequence:this.record.sequence+1,profile,current:createExpedition(runId,seed,3,squadOf(profile),purse)};return this.persist();
   }
   /**
    * Stage 7.1: writes a brand-new record that holds only a base profile (the player is at the base, no run). An empty store needs no consent;

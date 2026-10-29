@@ -1,7 +1,7 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
-import {generateFloor,serviceRoll,type GeneratedFloor} from './dungeon.ts';
+import {generateFloor,serviceRoll,BOSS,type GeneratedFloor} from './dungeon.ts';
 import {ECON} from './economy.ts';
-import {SPECIES,speciesOf,TM_MOVES,learnableMove,type KitMove} from './roster.ts';
+import {SPECIES,speciesOf,tmPool,learnableMove,type KitMove} from './roster.ts';
 export type Pos = {x:number;y:number};
 export type Skill = 'strong'|'line'|'guard'|'push';
 export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; pos:Pos|null;
@@ -10,7 +10,9 @@ export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; p
   /** 6.5: base-roster instance this unit was made from, and the names of its carried moves (aligned with `learned`). Absent for recruits made in the run and for fixtures. */
   inst?:string; moves?:string[];
   /** 7.2: true for a founding member of the base profile (the initial two, or the three starters of an old profile); never goes missing in a wipe. */
-  protected?:true};
+  protected?:true;
+  /** 7.3: the regional boss. Only the generator sets it (an enemy of species arcanine, 80 HP, never moves, attacks twice, cannot be pushed or recruited). */
+  boss?:true};
 // Precondition: generated expedition enemies never carry `recruit`; expedition invitations come only from the
 // round-end draw. A preset `recruit` would issue a species-less invitation that save.ts rejects.
 export type Action = {type:'move';to:Pos}|{type:'basic';target:string}|{type:'skill';skill:Skill;target:string}
@@ -38,7 +40,7 @@ export type Rect={x:number;y:number;w:number;h:number};
  */
 export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:Record<Item,number>};
 /** 6.4 WORKING CANDIDATES (not final balance); see docs/玩法研究/招募等级与恢复品.md. */
-export const PROG={recruitChance:0.3,thresholds:[0,3,7,12,18],maxLevel:5,hpPerLevel:2,damagePerLevel:1,killExp:1,goalExp:2,berryHeal:8,tonicPp:1,restPp:2};
+export const PROG={recruitChance:0.3,thresholds:[0,3,7,12,18],maxLevel:5,hpPerLevel:2,damagePerLevel:1,killExp:1,goalExp:2,bossExp:2,berryHeal:8,tonicPp:1,restPp:2};
 export const levelFor=(exp:number)=>PROG.thresholds.filter(t=>exp>=t).length;
 export type Point={pos:Pos;kind:PointKind;used:boolean};
 /** A floor that is not the current one: its terrain, revealed cells, real enemies (with their HP and positions) and points. */
@@ -46,9 +48,10 @@ export type StoredFloor={floor:Pos[];seen:string[];enemies:string[];units:Record
 /** Expedition-only data. `stored` holds every visited floor except the current one; unvisited floors are generated from `seed` on first entry. */
 /** `base` (6.5): true for a run started from the base; only those runs get the floor-2 rest point (older generated runs keep their exact floors). */
 /** `services` (7.2): true for a run that may hold a shop and an exchanger (decided by `serviceRoll` from the seed). Older runs never get them. */
-export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true};
+/** `boss` (7.3): the run is 3 floors with themes, a lobby exit and the regional boss on floor 3 (needs `base` and `services`). Runs without it generate exactly as before. */
+export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true};
 /** 7.2 a technique machine obtained in this run (from T or the shop) and where it ended up: held while the run goes on, then brought home (normal exit), sent home safely (exchanger) or lost (wipe, not sent). */
-export type TmItem={move:string;source:'target'|'shop';fate:'held'|'brought'|'sent'|'lost'};
+export type TmItem={move:string;source:'target'|'shop'|'boss';fate:'held'|'brought'|'sent'|'lost'};
 /** 7.2 the shop of this run: fixed stock decided at the start, and every sale so far. `tm` is null once sold. */
 export type Shop={level:number;stock:{berry:number;tonic:number;tm:string|null};trades:{item:ShopItem;price:number}[]};
 /** 7.2 the exchanger of this run: used at most once; `sent` is the companion it took home. */
@@ -59,7 +62,8 @@ export type Exchange={level:number;used:boolean;sent:string|null};
  * (reasons: 'goal' | 'recruit' | 'tm'), `reward` the base reward owed, `purse` the purse balance at the end and `refund` how much of it returns to the account.
  */
 export type End = {id:string;outcome:'normal'|'wipe';team:string[];camp:string[];goal:boolean;acquired:number;brought:number;
-  tms?:TmItem[];lost?:string[];effective?:boolean;reasons?:string[];reward?:number;purse?:number;refund?:number};
+  /** 7.3 (boss-marked runs only): whether the boss was defeated (its HP is 0 in the final state). */
+  boss?:boolean;tms?:TmItem[];lost?:string[];effective?:boolean;reasons?:string[];reward?:number;purse?:number;refund?:number};
 export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:string[];units:Record<string,Unit>;
   queue:string[];enemies:string[];camp:string[];leader:string;points:Point[];
   goal:boolean;bag:number;phase:'playing'|'invitation'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
@@ -211,6 +215,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(!u.learned.includes(a.skill)||(u.pp[a.skill]??0)<1)return '未装备该招式或PP不足';
   if(a.skill==='guard')return !s.queue.includes(t.id)||id===t.id||distance(u.pos,t.pos)!==1?'保护需要相邻另一名存活伙伴':null;
   if(t.side!=='enemy')return '该招式只能指定敌人';
+  if(a.skill==='push'&&t.boss)return '首领不会被推退';
   if(a.skill==='line')return rayProblem(s,u.pos,t.pos,3);
   if(distance(u.pos,t.pos)!==1)return '目标不相邻';
   if(a.skill==='push'){const p=plus(t.pos,{x:t.pos.x-u.pos.x,y:t.pos.y-u.pos.y});if(!walk(s,p)||!s.seen.includes(key(p))||occupied(s,p))return '推退后格不可用';}
@@ -227,7 +232,7 @@ function restTargets(s:World):{id:string;skill:Skill}[] {
 }
 function hit(s:World,id:string,n:number):void {
   const u=s.units[id];u.hp=Math.max(0,u.hp-n);note(s,`${id}受到${n}伤害，HP ${u.hp}`);
-  if(u.hp===0){u.pos=null;note(s,`${id}倒下退图`);if(u.side==='enemy'&&s.prog)s.prog.kills.push(u.recruit?'':(u.species??''));
+  if(u.hp===0){u.pos=null;note(s,`${id}倒下退图`);if(u.side==='enemy'&&s.prog)s.prog.kills.push(u.recruit||u.boss?'':(u.species??''));
     if(u.side==='enemy'&&u.recruit){
     const unit=clone(u.recruit);unit.id=`${u.recruit.id}`; // fixture IDs are stable; each event initializes once
     if(s.units[unit.id]||s.invitations.some(i=>i.unit.id===unit.id))unit.id=`${unit.id}-${s.invitations.length+1}`;
@@ -262,7 +267,7 @@ function execute(s:World,id:string,a:Action,guards:Record<string,number>):void {
       p.used=true;note(s,`休整点：整理招式补给，${parts.join('，')}`);return;
     }
     if(!stairs&&!p.used){if(p.kind==='goal'){s.goal=true;if(s.prog)s.prog.exp+=PROG.goalExp;}
-      if(p.kind==='item'){s.bag++;if(s.prog){const r=rngStep(s.prog.rng);s.prog.rng=r.state;const move=TM_MOVES[Math.floor(r.value*TM_MOVES.length)];(s.tms??=[]).push({move,source:'target',fate:'held'});note(s,`${id}取得招式机：${move}`);}}
+      if(p.kind==='item'){s.bag++;if(s.prog){const r=rngStep(s.prog.rng);s.prog.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];(s.tms??=[]).push({move,source:'target',fate:'held'});note(s,`${id}取得招式机：${move}`);}}
       if((p.kind==='berry'||p.kind==='tonic')&&s.prog){s.prog.items[p.kind]++;note(s,`${id}拾取${ITEM_NAMES[p.kind]}，背包共${s.prog.items[p.kind]}`);}p.used=true;}
     if(p.kind==='berry'||p.kind==='tonic'){/* a pickup is never an exit */}
     else if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
@@ -295,6 +300,16 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   }
   if(preflight)return null;
   for(const id of s.enemies){const e=s.units[id];if(!alive(e))continue;
+    if(e.boss){
+      // 7.3 boss: never moves; BOSS.attacks attacks, each choosing its target afresh: the first living adjacent member in queue order, else the nearest member in a clear ray within its range (ties: queue order).
+      for(let n=0;n<BOSS.attacks&&alive(e);n++){
+        const cands=s.queue.map(i=>s.units[i]).filter(alive);
+        const t=cands.find(c=>distance(e.pos!,c.pos)===1)??cands.filter(c=>clearRay(s,e.pos!,c.pos,e.range??BOSS.range)).sort((a,b)=>distance(e.pos!,a.pos)-distance(e.pos!,b.pos))[0];
+        if(!t)break;
+        const amount=Math.max(0,(e.damage??0)-(guards[t.id]??0));delete guards[t.id];hit(s,t.id,amount);
+      }
+      continue;
+    }
     const candidates=s.queue.map(i=>s.units[i]).filter(alive);
     const targets=candidates.filter(t=>e.ai==='ranged'?clearRay(s,e.pos!,t.pos,e.range??3):distance(e.pos!,t.pos)===1);
     if(e.ai==='ranged')targets.sort((a,b)=>distance(e.pos!,a.pos)-distance(e.pos!,b.pos));
@@ -312,6 +327,13 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   }
   return null;
 }
+/** 7.3: the boss unit of a boss-marked run, wherever its floor is kept (current floor or stored), or undefined (not marked, or its floor was never generated). */
+export function bossUnit(s:World):Unit|undefined {
+  if(!s.dungeon?.boss)return undefined;
+  return Object.values(s.units).find(u=>u.boss)??Object.values(s.dungeon.stored).flatMap(f=>Object.values(f.units)).find(u=>u.boss);
+}
+/** 7.3 "defeated": the boss exists and its HP is 0. */
+export const bossDefeated=(s:World):boolean=>bossUnit(s)?.hp===0;
 /** 7.2: a run started before the base existed has no profile; its A, B and C are the three founding starters and count as protected. */
 const legacyStarter=(s:World,id:string)=>!s.dungeon?.base&&s.units[id].inst===undefined&&(id==='A'||id==='B'||id==='C');
 export const isProtected=(s:World,id:string)=>s.units[id].protected===true||legacyStarter(s,id);
@@ -339,7 +361,7 @@ export function closeOut(s:World,outcome:End['outcome'],draw=true):End {
     if(wipe&&draw)for(const id of s.queue){if(isProtected(s,id))continue;const r=rngStep(s.prog.rng);s.prog.rng=r.state;if(r.value<ECON.loseChance)lost.push(id);}
     const reasons=reasonsOf(s);
     const purse=s.purse??0;
-    Object.assign(e,{tms:clone(tms),lost,effective:reasons.length>0,reasons,reward:s.goal?ECON.reward:0,purse,refund:wipe?0:purse});
+    Object.assign(e,{...(s.dungeon?.boss?{boss:bossDefeated(s)}:{}),tms:clone(tms),lost,effective:reasons.length>0,reasons,reward:s.goal?ECON.reward:0,purse,refund:wipe?0:purse});
   }
   return e;
 }
@@ -355,10 +377,17 @@ const settled=(s:World):World['phase']=>s.request?.locked?(s.request.to!==undefi
  */
 function settle(s:World):void {
   const p=s.prog;if(!p)return;
-  const kills=p.kills;p.kills=[];p.exp+=kills.length*PROG.killExp;
+  const kills=p.kills;p.kills=[];
+  // 7.3 boss reward is settled once, in the round the boss falls: 2 extra experience here, then (after level-ups) one machine drawn from the pool.
+  const bossNew=!!s.dungeon?.boss&&bossDefeated(s)&&!(s.tms??[]).some(t=>t.source==='boss');
+  p.exp+=kills.length*PROG.killExp+(bossNew?PROG.bossExp:0);
   while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level]){
     p.level++;for(const id of s.queue)s.units[id].maxHp+=PROG.hpPerLevel;
     note(s,`本局等级升到Lv${p.level}：同行最大HP+${PROG.hpPerLevel}（当前HP不变），普攻／强击／直线伤害+${PROG.damagePerLevel}`);
+  }
+  if(bossNew){
+    const r=rngStep(p.rng);p.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];
+    (s.tms??=[]).push({move,source:'boss',fate:'held'});note(s,`区域首领被讨伐，掉落招式机：${move}（持有中）`);
   }
   for(const sp of kills){
     if(!speciesOf(sp))continue;
@@ -455,12 +484,12 @@ export function applyCommand(original:World,cmd:Command):Result {
 /* ---------- 6.3 expedition: seeded floors, stairs, crossing and return (R09 step 5, R10) ---------- */
 function floorUnits(g:GeneratedFloor):{units:Record<string,Unit>;enemies:string[]} {
   const units:Record<string,Unit>={};
-  for(const e of g.enemies){const u=enemy(e.id,e.pos.x,e.pos.y,e.hp,e.ai,e.damage,e.range);u.species=e.species;units[e.id]=u;}
+  for(const e of g.enemies){const u=enemy(e.id,e.pos.x,e.pos.y,e.hp,e.ai,e.damage,e.range);u.species=e.species;if(e.boss)u.boss=true;units[e.id]=u;}
   return {units,enemies:g.enemies.map(e=>e.id)};
 }
 /** `run` is true for 6.4 expeditions (with `prog`): they also get pickups and room rectangles; older expeditions generate the 6.3 floor. */
 function freshFloor(d:Dungeon,level:number,run:boolean):StoredFloor {
-  const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors});
+  const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors,...(d.boss?{boss:true}:{})});
   return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),...(run?{rooms:g.rooms.map(r=>({...r}))}:{})};
 }
 function stashFloor(s:World):StoredFloor {
@@ -504,6 +533,14 @@ function transit(original:World):World {
   note(s,`同行抵达第${to}层`);return s;
 }
 /**
+ * Developer and test helper: the same crossing as a stairs request, but to any floor of the run and without walking there (the team lands on that floor's arrival stairs).
+ * Returns the world unchanged when the crossing would be cancelled.
+ */
+export function jumpToFloor(original:World,to:number):World {
+  const s=clone(original);s.request={actor:s.leader,pos:clone(s.units[s.leader].pos!),locked:true,to};
+  const r=transit(s);r.request=null;r.phase='playing';return r;
+}
+/**
  * The expedition: `floors` (2) seeded floors. 6.4 team (WORKING CANDIDATE): A charmander, B squirtle, C bulbasaur, three roster starters at run level 1;
  * C leads, as before (so entry placement and the drawn skins are unchanged). The start cell is the ordinary exit of floor 1.
  */
@@ -514,8 +551,9 @@ export function carriedUnit(id:string,m:SquadMember):Unit {
   return {id,side:'friend',hp:sp.maxHp,maxHp:sp.maxHp,pos:null,pp:Object.fromEntries(m.carry.map(k=>[k.behavior,k.pp])),maxPp:Object.fromEntries(m.carry.map(k=>[k.behavior,k.pp])),
     learned:m.carry.map(k=>k.behavior),species:m.species,inst:m.inst,moves:m.carry.map(k=>k.move),...(m.protected?{protected:true as const}:{})};
 }
-export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number},purse=0):World {
-  const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{},...(squad?{base:true as const,services:true as const}:{})};
+/** `boss` (7.3) defaults to true for a base run of 3 floors (what departures use); a run with another floor count or no base never has it. */
+export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number},purse=0,boss=!!squad&&floors===3):World {
+  const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{},...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{})};
   const f=freshFloor(d,1,true);
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,seen:[],
     units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m)])):{A:speciesUnit('A','charmander'),B:speciesUnit('B','squirtle'),C:speciesUnit('C','bulbasaur')}),...f.units},
@@ -523,7 +561,7 @@ export function createExpedition(runId:string,seed:number,floors=2,squad?:{membe
     rooms:f.rooms,prog:{level:1,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}},purse:squad?purse:0,tms:[]};
   if(squad){
     const roll=serviceRoll(d.seed,floors);
-    if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,tm:TM_MOVES[Math.floor(roll.shop.tmDraw*TM_MOVES.length)]},trades:[]};
+    if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};
     if(roll.exchange)s.exchange={level:roll.exchange.level,used:false,sent:null};
   }
   for(const id of s.queue)s.units[id].pos=null;

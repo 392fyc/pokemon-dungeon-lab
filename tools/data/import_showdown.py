@@ -47,6 +47,15 @@ ROSTER = [
     ("treecko", 252, True),
     ("torchic", 255, True),
     ("mudkip", 258, True),
+    # 阶段7.3：新增 8 种非御三家，追加在末尾，前 15 种的生成结果逐字节不变。区域首领风速狗不进名单（见 BOSS_SPECIES）。
+    ("sandshrew", 27, False),
+    ("growlithe", 58, False),
+    ("magnemite", 81, False),
+    ("onix", 95, False),
+    ("dratini", 147, False),
+    ("wooper", 194, False),
+    ("houndour", 228, False),
+    ("makuhita", 296, False),
 ]
 
 BEHAVIORS = ["strong", "line", "guard", "push"]  # 与 src/core/engine.ts 的 Skill 一致

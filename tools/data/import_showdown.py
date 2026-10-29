@@ -29,7 +29,7 @@ SOURCE_URL = "https://play.pokemonshowdown.com/data/<name>.json"
 SOURCE_DATE = "2026-10-30"
 SOURCE_COMMIT = "ccfaa20f32af363569cd21a9d501b2bc1ded26b1"
 
-# ---- 首批名单（工作候选）：(Showdown id, 图鉴编号, 是否可选主控) ----
+# ---- 名单（工作候选）：(Showdown id, 图鉴编号, 是否可选主控) ----
 ROSTER = [
     ("bulbasaur", 1, True),
     ("charmander", 4, True),
@@ -40,6 +40,13 @@ ROSTER = [
     ("pikachu", 25, False),
     ("zubat", 41, False),
     ("geodude", 74, False),
+    # 阶段7.1：第二、第三世代御三家。追加在原 9 种之后，原 9 种的生成结果逐字节不变。
+    ("chikorita", 152, True),
+    ("cyndaquil", 155, True),
+    ("totodile", 158, True),
+    ("treecko", 252, True),
+    ("torchic", 255, True),
+    ("mudkip", 258, True),
 ]
 
 BEHAVIORS = ["strong", "line", "guard", "push"]  # 与 src/core/engine.ts 的 Skill 一致

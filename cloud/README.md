@@ -42,4 +42,4 @@
 - [环境准备会话](https://chatgpt.com/local/01a1718c-7389-76ce-ad04-9d2242aa40ba)
 - [新任务复用验证](https://chatgpt.com/local/01a17197-73b0-70db-bac7-7a80702b60b7)
 
-研究快照仍以 `docs/research-snapshot.json` 的原始清单为准；本目录记录后续建立的环境状态，不自动回写或覆盖本机研究主库。
+研究库已并入本仓库 `docs/`，云端直接读取，不再需要快照清单；本目录记录后续建立的环境状态。

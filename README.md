@@ -28,9 +28,9 @@ npm run dev
 - [当前授权、固定规格与分工](docs/trial-spec/README.md)
 - [规则与输入](docs/trial-spec/玩法研究/单层试开发短规格.md)
 - [验收与观察场景](docs/trial-spec/玩法研究/试开发验收与观察场景.md)
-- [2026-10-25历史研究快照](docs/research/README.md)
+- [研究库总索引](docs/README.md)
 - [云端环境准备说明](cloud/README.md)
 
-研究主库的定位方式见AGENTS.md。当前12份精选规格来自已合入研究PR #4的固定提交5f35478，来源和派生摘要见[当前来源清单](docs/trial-spec/source-manifest.json)。`docs/research/`与`docs/research-snapshot.json`保留2026-10-25原字节，仅作历史参考。私有运行证据在被忽略的`.artifacts/trial/`，凭据不进入仓库。
+研究库就是本仓库的`docs/`（Obsidian vault，用Obsidian打开主checkout的`docs/`文件夹），2026-10-29由独立仓库pokemon-game-research并入。当前12份精选规格来自研究库固定提交5f35478，来源和派生摘要见[当前来源清单](docs/trial-spec/source-manifest.json)。原2026-10-25研究快照已随并入退役，其内容即`docs/`中的同名文件。私有运行证据在被忽略的`.artifacts/trial/`，凭据不进入仓库。
 
 本仓库名称是准备阶段的工作名称，不代表游戏名称或发行决定。

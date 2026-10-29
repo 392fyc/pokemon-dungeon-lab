@@ -33,17 +33,6 @@ it does not add a mandatory workflow or weaken governing requirements.
 - `.github/workflows/mercury-update.yml` and `.github/workflows/mercury-verify.yml` are managed files: Mercury renders them from `params` in `.mercury/config.json` (`integration_branch`, `required_checks`, `update_schedule`). Do not edit them by hand; change the params and run the installer from a released Mercury commit.
 - Updates arrive on their own. GitHub runs scheduled workflows only from the default branch, so when that is not the integration branch the scheduled run only starts the same workflow on the integration branch (`gh workflow run`); the update itself always runs from the integration branch's own copy. A scheduled job takes the latest released Mercury commit (`origin/master` of Mercury), and when the managed files differ it opens one pull request from a `mercury/update-*` branch into the integration branch. The same job merges that pull request (squash) only when every condition holds: the source commit is on Mercury's `master` and descends from the recorded one, only Mercury-managed paths changed, and the project's required checks plus the `Mercury verify` check (a GitHub Actions check run, not a status) are green on the exact head. Paths the new release stops shipping may only be deleted. Otherwise it stops and says why.
 - Do not push to, force-push or rebase a `mercury/update-*` branch, do not edit `.mercury/config.json` inside an update pull request, and do not merge an update pull request by hand to get around a failed condition; fix the cause or ask the project owner.
-
-## Linked repositories
-
-Declared in `linked_repos` in `.mercury/config.json`; Mercury renders this section from it. Each entry says what the repository is for, how to find it without a machine path, how to use it quickly (skills, scripts, commands) and the rules that bind work in it. Anything its rules do not allow needs its own authorized scope.
-
-### Pokemon_Game_Research
-
-- Purpose: Obsidian vault with the main research library (PokéBonk, Pokémon Arena 2D, data and asset pipeline, decisions); docs/research in this repository is a dated snapshot of it.
-- Locate: PDL_RESEARCH_ROOT, else the research_root key of the ignored .local/roots.json in the main checkout. Stop when neither is set; never guess from a parent directory.
-- Use: Start from its README.md, which indexes the research by question, and 项目目标与当前决策.md for what is decided; docs/research-snapshot.json here lists the snapshotted sources with SHA-256.
-- Rules: Read and write only through Obsidian MCP or CLI after verifying the vault; never edit notes with Computer Use. The snapshot here never overwrites the vault automatically; a sync compares source and target and records the actual file list.
 <!-- MERCURY:END -->
 
 # 代理工作约定
@@ -52,7 +41,7 @@ Declared in `linked_repos` in `.mercury/config.json`; Mercury renders this secti
 
 2026-10-29用户已批准按研究PR #4准备包开始阶段3—4试开发，并采用Vite。固定来源为pokemon-game-research@5f3547889b30e59f6cdfebc5af8c91e46cba4ee4。范围内同步规格、安装锁定依赖、建立工程、运行规则／保存／浏览器检查和交付私有可玩片段连续执行，不逐步询问。正式平衡、公开发布、网络扩权及第三方素材／数据引入不在本次范围。
 
-先读README.md、docs/trial-spec/README.md，再读其中的当前规则、短规格和验收场景。docs/research/及其清单仅为2026-10-25历史快照。云端范围以本文件和用户较新的指令为准；不需要访问本机vault才能读取本仓固定规格。
+先读README.md、docs/trial-spec/README.md，再读其中的当前规则、短规格和验收场景。docs/trial-spec/是本轮获准试验的固定规格副本；研究库的现行版本在docs/。云端范围以本文件和用户较新的指令为准；本仓已包含完整研究库，不需要访问本机vault。
 
 ## 设计边界
 
@@ -70,11 +59,11 @@ Declared in `linked_repos` in `.mercury/config.json`; Mercury renders this secti
 
 ## 文件维护
 
-保留用户已有改动，修改前读当前内容。研究文档按主题命名并维护相对链接与总索引。Obsidian 资料只通过 MCP 或 CLI 操作；MCP 写入前先核实 vault，不使用 Computer Use 编辑笔记。
+保留用户已有改动，修改前读当前内容。研究文档按主题命名并维护相对链接与总索引（入口为docs/README.md）。
 
-研究主库的位置只在本机配置，不写进仓库：先读环境变量 `PDL_RESEARCH_ROOT`，没有时读主 checkout 中被 Git 忽略的 `.local/roots.json`，格式为 `{"research_root": "<研究库的绝对路径>"}`，由在本机工作的用户或代理创建。两者都没有时停止并说明缺少哪一项，不从父目录或相邻目录猜测。云端环境没有本机 vault，需要主库时同样停止。
+研究库就是本仓库的 `docs/`，同时是 Obsidian vault（2026-10-29 由独立仓库 pokemon-game-research 的 main `5f35478` 以当前快照并入，旧仓库已归档）。文档与代码在同一个任务 worktree 中一起修改、一起走 PR；用 Obsidian 打开主 checkout 的 `docs/` 浏览，代理直接编辑任务 worktree 中的文件，不经 Obsidian MCP 写入，不使用 Computer Use 编辑笔记。`docs/审核版本/` 等冻结史稿与带 SHA 清单的文件保持原字节，`docs/.gitattributes` 中标为 `-text` 的文件不做换行转换。
 
-本仓库的研究快照不自动覆盖本机主库。需要同步时核对来源和目标的当前内容，并保存实际同步清单。环境验证产物写入忽略目录，不能提交凭据或整个环境。
+环境验证产物写入忽略目录，不能提交凭据或整个环境。
 
 ## Git 写入
 

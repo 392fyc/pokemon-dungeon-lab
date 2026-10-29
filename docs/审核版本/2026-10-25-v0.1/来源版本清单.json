@@ -1,0 +1,207 @@
+{
+  "version": "v0.1",
+  "reviewDate": "2026-10-25",
+  "capturedAt": "2026-10-25T11:27:04.7715097Z",
+  "status": "awaiting_user_review",
+  "scope": "审核包正文及本轮所用来源文件身份；不代表玩法批准或目标运行验证",
+  "package": [
+    {
+      "path": "审核版本/2026-10-25-v0.1/审核入口.md",
+      "sha256": "0332B9778958A9A84173B4BA32C1EAE5A9383F59B1387E340E88D142D19C10C0"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.1/游戏框架与候选决策.md",
+      "sha256": "D4204B5E0FB4FF5B5AA86B45D227711DA112EEA254B1133FF663A74E81B4C8AE"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.1/REA研究范围与证据.md",
+      "sha256": "BB617EF22582EC976432547C08A7229748B3FF2289E34F9C275B33DB5917CE84"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.1/审核记录.md",
+      "sha256": "B1D08BD2A4F2043C8C455DE5B1AFE0ECD7A6C5C1099403B4179CCD0E17808617"
+    }
+  ],
+  "supportingNotes": [
+    {
+      "path": "README.md",
+      "sha256": "C6504C4D20FFE488F0BF4A80FE1E95AFFCAC15765D6D47EC1E1E56623F824A6B"
+    },
+    {
+      "path": "项目目标与当前决策.md",
+      "sha256": "F55CC56D4EE729F9153630841D12A824629D0179D9B4FEE6D7103C5107ED5866"
+    },
+    {
+      "path": "工作环境/REA与CodexCloud.md",
+      "sha256": "BDF3C51CEC7302EB50158457FF3315A1C59E78B65C1CAB5355D46404A58489DC"
+    },
+    {
+      "path": "项目框架/分阶段范围与扩展顺序.md",
+      "sha256": "FDA8086BBE04015D02C19AEBC5CEBBEBDE58DAFE4E7763DBE9B95D50F61EF3A1"
+    },
+    {
+      "path": "技术选型/二维迷宫引擎决策.md",
+      "sha256": "1A646DC3338C1DC76810B7D23DBB686E14070CED32CB928E440282995E1537A9"
+    },
+    {
+      "path": "pokebonk/资料来源与验证范围.md",
+      "sha256": "07B11032DB66D5EFF4E7687580CC305D97E46DF3BC34BAF971BC2A0B0E0B392A"
+    },
+    {
+      "path": "pokebonk/融合资格与强化继承.md",
+      "sha256": "4151A17F7FE2D65823A7BC3058146CBA16B4DBD5046408CF19880139AD7E1505"
+    },
+    {
+      "path": "pokemon-arena-2d/资料来源与验证范围.md",
+      "sha256": "723F1939FDE92A47F65AA89260C22A841E8A5CF95C6827DCDD2A93B6FD905DCB"
+    },
+    {
+      "path": "制作流程/数据整理与招式适配流程.md",
+      "sha256": "117CC03F52A6739B94589CD7321F830E80C120631886E94603E0BC7F24BD50CD"
+    },
+    {
+      "path": "制作流程/角色素材与招式特效流程.md",
+      "sha256": "F60792D317349F7B918EE26E53241662EF0E5A5193A3C071470E6582F55183DB"
+    },
+    {
+      "path": "项目框架/研究与制作运行方式.md",
+      "sha256": "AE457116EA3EA836ADCB4D9716BC2CB63CA9F01BA8A9A02AB240014B1A701A22"
+    },
+    {
+      "path": "玩法研究/核心循环与撤离规则.md",
+      "sha256": "BC0A00A5C694BF7196F11C73EDE87E5CF2AAE771B2F18BBBD38A2389CFA29D21"
+    },
+    {
+      "path": "玩法研究/队伍人数与满员招募.md",
+      "sha256": "43C0BFD4697B226A1C34610A54B90D05E03D1453F2278B737BB6FCC779568D8B"
+    },
+    {
+      "path": "玩法研究/伙伴招募与委托救援框架.md",
+      "sha256": "2BE3083A9CD3EB2C1939E585B614AD3A6C00B228E7914153A1BADF73F70B80B7"
+    },
+    {
+      "path": "玩法研究/有效探险与基础收入.md",
+      "sha256": "73324C87E7EE47D6CBC08CB111729803BD591F266E24D191F797B4948C022944"
+    },
+    {
+      "path": "玩法研究/救援费用与等待次数推演.md",
+      "sha256": "BC9767414E8F8F516424EC1572A9A0D8C4004756A9FB47B253116B6907D34B16"
+    },
+    {
+      "path": "玩法研究/新伙伴入队状态与基地培养.md",
+      "sha256": "30CF4157464CA566FD372C3E26E80A4E5206475B1791AD816F4B3A03E7B2CE12"
+    },
+    {
+      "path": "玩法研究/无尽迷宫恢复与局内成长.md",
+      "sha256": "38FA5AC20729468A758FF5D5861D9B2A2DB551AF514A09ABCA0059C3E0EBE21A"
+    },
+    {
+      "path": "玩法研究/无尽迷宫分区与守关规则.md",
+      "sha256": "82245D959CE4E0F803C9BE9256A173FEF18DDCAD7719DE648176C4DC81BA51A2"
+    },
+    {
+      "path": "玩法研究/救援机制案例与风险验证.md",
+      "sha256": "0562E4503A8528F37730CEB3AFFAFECFF4EE04728A6A6DE12CD9E6A1F78BF647"
+    },
+    {
+      "path": "制作流程/数据素材与内容制作总览.md",
+      "sha256": "FF6D41060624E1F6C2055E67FECC6C348C3301CC9115004845B8AD1E60FC8DD3"
+    },
+    {
+      "path": "pokebonk/README.md",
+      "sha256": "7BB82238127AF48FA572F8C4D6E56293838E9B92A5C58290F118CE25E186DF24"
+    },
+    {
+      "path": "pokemon-arena-2d/README.md",
+      "sha256": "30D141244518D3D8F5BB8B1B9C62BC796A5C24E7E44CE281A54D2DA6F00012EA"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "9491F8C368D148D1430C3AF480FD6BF956801C9684026FDD4488975A21970359"
+    },
+    {
+      "path": "Obsidian使用说明.md",
+      "sha256": "E792EFA3AEDAFADACF1934BEA2A9279893E69443AB8651FAAA21247361C75ACB"
+    },
+    {
+      "path": "项目框架/游戏项目路线.md",
+      "sha256": "D0AD21B6CAC4E52DBBD0A92AAC35D36FB73E3CF4FF1D9EF9CD24CEAD8A599D19"
+    },
+    {
+      "path": "项目框架/REA辅助研究路线.md",
+      "sha256": "FB9A7FE65EFA42071B96222C4EC7F54F52C27D39D98355932D3C5BDEB9BD2EF5"
+    },
+    {
+      "path": "REA辅助研究/README.md",
+      "sha256": "C6C1E30FDF6B43ABC67CCDA1F70313831F0FDF4F80355F6EE643C0DA56940638"
+    },
+    {
+      "path": "玩法研究/迷宫商店与伙伴交换机.md",
+      "sha256": "31CC4A87497779E161756319082AF015131E1B525418EF9CD3CBB33621318FC0"
+    }
+  ],
+  "localTool": {
+    "name": "REA",
+    "version": "6.7.0",
+    "commit": "475f09d5ca4f854cbc634074d5534717d58c6664",
+    "verification": "只读源码身份与文档；没有重跑构建、doctor或游戏目标",
+    "files": [
+      {
+        "path": "../rea/README.md",
+        "sha256": "3A7F76363E62C0E188CC93261FC5292D734B23E2139F087885AD90296D7F3B32"
+      },
+      {
+        "path": "../rea/docs/javascript-artifact-reconstruction.md",
+        "sha256": "EFEC1D8ED9C69C8C58E541DF75DF454CEAD5B72BDE48A72A55EEDA4E88F0103A"
+      },
+      {
+        "path": "../rea/docs/javascript-application-workflows.md",
+        "sha256": "B2EA1CA72177CB5394BBC648DC80B9CDAB2D6FD5E661389CFF38A77849DA40CD"
+      },
+      {
+        "path": "../rea/docs/managed-code-analysis.md",
+        "sha256": "69034E24D331773A7C4D201DC7F604EC5C7A7DB7669C32E9D1199944F4467050"
+      }
+    ]
+  },
+  "externalSources": [
+    {
+      "url": "https://github.com/pret/pmd-red/blob/master/README.md",
+      "kind": "维护方仓库说明",
+      "checkedDate": "2026-10-25",
+      "scope": "确认反编译项目与目标身份；未构建游戏"
+    },
+    {
+      "url": "https://github.com/UsernameFodder/pmdsky-debug/blob/master/README.md",
+      "kind": "维护方仓库说明",
+      "checkedDate": "2026-10-25",
+      "scope": "确认符号、结构与文档范围；未分析ROM"
+    },
+    {
+      "url": "https://github.com/SkyTemple/skytemple/blob/master/README.rst",
+      "kind": "维护方仓库说明",
+      "checkedDate": "2026-10-25",
+      "scope": "确认编辑工具及关联库；未安装或运行"
+    },
+    {
+      "url": "https://github.com/UsernameFodder/pmdsky-debug/blob/master/docs/ghidra-setup.md",
+      "kind": "维护方指南",
+      "checkedDate": "2026-10-25",
+      "scope": "确认NDS拆分和装载上下文；不是REA目标兼容验证"
+    }
+  ],
+  "cloudSnapshot": {
+    "path": "D:\\Project\\Pokemon_Dungeon_Lab\\docs\\research-snapshot.json",
+    "sha256": "786524EF8F70F78FB2565AEF62CEB16BD6F8DB7E4DCFDC39B25882496056E77D",
+    "capturedAt": "2026-10-25T05:32:25.5561396Z",
+    "fileCount": 23,
+    "currentPackageIncluded": false
+  },
+  "notes": [
+    "本清单不是来源内容的完整副本。",
+    "本版审核记录允许追加真实用户裁决；追加后更新清单，不静默改变候选正文。",
+    "网页来源没有完整镜像，后续具体分析须固定修订或样本摘要。",
+    "2026-10-25 追加用户确认的会话职责分离，更新当前决策、两条路线与审核记录的身份；游戏候选正文和 REA 范围正文未改。"
+  ],
+  "lastUpdatedAt": "2026-10-25T20:46:31+09:00"
+}

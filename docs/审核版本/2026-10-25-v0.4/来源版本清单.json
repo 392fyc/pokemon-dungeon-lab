@@ -1,0 +1,89 @@
+{
+  "version": "v0.4",
+  "reviewDate": "2026-10-25",
+  "capturedAt": "2026-10-25T22:23:48.771303+09:00",
+  "status": "awaiting_user_review",
+  "scope": "单格走廊进入同一房间的明示动作账本、操作比较及优化候选；不代表玩法批准或运行体验",
+  "package": [
+    {
+      "path": "审核版本/2026-10-25-v0.4/审核入口.md",
+      "sha256": "5177FEA181B0B17295695312003306E1A50BD17ED16344830DCC3A5B44CBCCDF"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.4/走廊入场与操作负担.md",
+      "sha256": "57051D1AC45519E1F7458CF579D390C58D54855A1882D14BA7F3FF8286B9DC5B"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.4/审核记录.md",
+      "sha256": "9BE295223369547DADB47F331663CF6E6187F55B90D9BD4A0FF7E5AED003DDC4"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.4/逐回合账本.json",
+      "sha256": "7425E9E9DB5A583195E2291AFACCD3161B0B9CDCF72A9DA602BA9AEBA989717B"
+    }
+  ],
+  "supportingNotes": [
+    {
+      "path": "审核版本/2026-10-25-v0.3/审核入口.md",
+      "sha256": "EBAD2B8A45DF2FABB601ED518E9472F139767DC6CEFD74B634F54648FC9B14AA"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.3/伙伴控制与代表房间推演.md",
+      "sha256": "EC257384F575411930917B7D78CD4FE8490CB8BB6B7E4D117D21C9A4572916B2"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.3/审核记录.md",
+      "sha256": "1E9D8DE5BAC8EFFBF02E0EB6C63DD938F41277830052AA5FEC3248F4CEC52C06"
+    },
+    {
+      "path": "项目目标与当前决策.md",
+      "sha256": "4C266E85F8662D5312AEAE16D2351AA916A905F2935038585234B42E5B86D02B"
+    },
+    {
+      "path": "玩法研究/核心循环与撤离规则.md",
+      "sha256": "7319E6110FC71DB3C0C4CE45D847EFB17C73320213BFF93C850909C61314E753"
+    },
+    {
+      "path": "项目框架/分阶段范围与扩展顺序.md",
+      "sha256": "FDA8086BBE04015D02C19AEBC5CEBBEBDE58DAFE4E7763DBE9B95D50F61EF3A1"
+    },
+    {
+      "path": "项目框架/研究与制作运行方式.md",
+      "sha256": "3F59F0B65E59C66CBB8FAAD5BE745362F3A381BB3C92F40215C476D5845AA341"
+    }
+  ],
+  "externalSources": [
+    {
+      "url": "https://cdn02.nintendo-europe.com/media/downloads/games_8/emanuals/nintendo_ds_21/Manual_NintendoDS_PokemonMysteryDungeonExplorersOfSky_EN.pdf",
+      "kind": "Nintendo 官方手册",
+      "version": "Explorers of Sky 2009",
+      "checkedDate": "2026-10-25",
+      "locations": "PDF 阅读器第8、11页",
+      "scope": "队员战术、招式开关和交换位置操作；未核实具体跟随算法或换位行动成本"
+    },
+    {
+      "url": "https://www.nintendo.com/eu/media/downloads/games_8/emanuals/nintendo_3ds_2/pok_mon_mystery_dungeon_gates_to_infinity/ElectronicManual_Nintendo3DS_PokemonMysteryDungeonGTI_EN.pdf",
+      "kind": "Nintendo 官方手册",
+      "version": "Gates to Infinity 2013",
+      "checkedDate": "2026-10-25",
+      "locations": "PDF 阅读器第48、49页",
+      "scope": "队员行为设置与单招式使用开关；未运行原作"
+    },
+    {
+      "url": "https://mysterydungeon.pokemon.com/en-us/gameplay/",
+      "kind": "Pokémon 官方玩法页",
+      "version": "Rescue Team DX 2020",
+      "checkedDate": "2026-10-25",
+      "locations": "Auto Mode",
+      "scope": "自动移动及敌人接近时退出；未证明路径算法、自动展开或点位功能"
+    }
+  ],
+  "notes": [
+    "v0.3 三份审核正文保持原身份。",
+    "逐回合账本是确定性动作核对，不是游戏工程或最优策略搜索。",
+    "所有本轮文档和账本均位于研究主库内，未新建用户主目录项目产物。",
+    "独立只读审查九项通过；仅覆盖文档、官方静态资料及明示动作路径，不代表用户批准或实际体验通过。",
+    "用户已裁决首版以三人队为基准，当前范围见v0.5；本版其他人数材料仅作历史，正文和账本未改。支持笔记身份保留为本版原采集时点，不宣称随后仍未变化。"
+  ],
+  "lastUpdatedAt": "2026-10-25T22:51:01.901912+09:00"
+}

@@ -1,0 +1,2 @@
+# Asset files carry SHA-256 digests in public/assets/manifest.json; keep their exact bytes.
+public/assets/** -text

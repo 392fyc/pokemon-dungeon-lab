@@ -1,0 +1,7 @@
+{
+ "id": "marker-exit",
+ "model": "gpt-image-2.5-flare",
+ "quality": "low",
+ "size": "1024x1024",
+ "prompt": "A single square floor tile that fills the whole image: stone stairs leading down into darkness, seen from above, framed by worn stone. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette, soft ambient light from the top-left. No text, no letters, no characters, no creatures."
+}

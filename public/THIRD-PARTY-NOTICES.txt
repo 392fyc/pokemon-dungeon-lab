@@ -73,3 +73,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+SpriteCollab character sprites (PMDCollab/SpriteCollab @ 448d3af85e2cfa85a8c5ead076eddb145251b473)
+https://github.com/PMDCollab/SpriteCollab
+Community submissions are licensed CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/): non-commercial use with attribution.
+Sheets credited to CHUNSOFT are official Pokemon Mystery Dungeon sprites; no licence is granted for them. Pokemon is a trademark of
+Nintendo, Creatures Inc. and GAME FREAK inc.; this private build is not affiliated with or endorsed by them.
+Species folders and credited authors:
+  0001: CHUNSOFT
+  0004: CHUNSOFT
+  0007: CHUNSOFT
+  0016: <@!702275233125630042>, CHUNSOFT
+  0019: CHUNSOFT
+  0021: CHUNSOFT
+  0025: CHUNSOFT
+  0041: CHUNSOFT
+  0074: CHUNSOFT
+
+Generated environment art (public/assets/tiles, public/assets/props): original images made for this project with OpenAI
+gpt-image-2.5 models and pixelised locally; prompts and parameters are listed in public/assets/manifest.json.

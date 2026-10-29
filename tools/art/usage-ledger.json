@@ -1,0 +1,154 @@
+{
+ "caps": {
+  "project": 50.0,
+  "stage6": 15.0,
+  "batch": 2.0
+ },
+ "entries": [
+  {
+   "at": "20261029T1645Z (approximate; recorded after the fact)",
+   "card": "probe-floor",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "stage": "stage6",
+   "batch": "probe",
+   "usage": {
+    "input_tokens": 41,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 41
+    },
+    "output_tokens": 196
+   },
+   "usd": 0.00609,
+   "seconds": 10.9,
+   "raw": "floor-flare-low.png (end-to-end API check before the ledger existed)",
+   "status": "ok"
+  },
+  {
+   "at": "20261029T165826Z",
+   "card": "floor-stone",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "stage": "stage6",
+   "batch": "6.1-env-draft",
+   "usage": {
+    "input_tokens": 102,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 102
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 298
+   },
+   "usd": 0.00639,
+   "seconds": 12.1,
+   "raw": "20261029T165826Z-gpt-image-2.5-flare-low.png",
+   "status": "ok"
+  },
+  {
+   "at": "20261029T165838Z",
+   "card": "wall-rock",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "stage": "stage6",
+   "batch": "6.1-env-draft",
+   "usage": {
+    "input_tokens": 107,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 107
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 303
+   },
+   "usd": 0.00641,
+   "seconds": 11.7,
+   "raw": "20261029T165838Z-gpt-image-2.5-flare-low.png",
+   "status": "ok"
+  },
+  {
+   "at": "20261029T165848Z",
+   "card": "marker-goal",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "stage": "stage6",
+   "batch": "6.1-env-draft",
+   "usage": {
+    "input_tokens": 96,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 96
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 292
+   },
+   "usd": 0.00636,
+   "seconds": 9.4,
+   "raw": "20261029T165848Z-gpt-image-2.5-flare-low.png",
+   "status": "ok"
+  },
+  {
+   "at": "20261029T165858Z",
+   "card": "marker-item",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "stage": "stage6",
+   "batch": "6.1-env-draft",
+   "usage": {
+    "input_tokens": 94,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 94
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 290
+   },
+   "usd": 0.00635,
+   "seconds": 10.4,
+   "raw": "20261029T165858Z-gpt-image-2.5-flare-low.png",
+   "status": "ok"
+  },
+  {
+   "at": "20261029T165909Z",
+   "card": "marker-exit",
+   "model": "gpt-image-2.5-flare",
+   "quality": "low",
+   "stage": "stage6",
+   "batch": "6.1-env-draft",
+   "usage": {
+    "input_tokens": 95,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 95
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+     "image_tokens": 196,
+     "text_tokens": 0
+    },
+    "total_tokens": 291
+   },
+   "usd": 0.00635,
+   "seconds": 10.2,
+   "raw": "20261029T165909Z-gpt-image-2.5-flare-low.png",
+   "status": "ok"
+  }
+ ]
+}

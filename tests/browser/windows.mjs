@@ -191,5 +191,24 @@ await test('PR5 伙伴草稿切主控提示取消，无草稿不误报',async()=
  return observations;
 });
 
+/* Stage 5 maker self-test (2026-10-30): a swap draft stays a swap.
+   Before the fix, a direction key, the period key or a map click rewrote the leader card into a move or wait
+   while the partner card still read "换位", and submitting then ran the move instead of the swap. */
+await test('阶段5 换位草稿不被方向键、句点或点地图改写',async()=>{
+ const {context,page:p,errors}=await setup('V1');
+ try{
+  await start(p);await key(p,'2');const before=await state(p);assert.equal(before.leader,'B');
+  await click(p,'swap');await click(p,'partner-A');
+  const plan=await p.locator('#controls .draft').innerText();assert.match(plan,/与A换位/);
+  await key(p,'ArrowRight');await key(p,'.');await cell(p,4,1);
+  assert.equal(await p.locator('#controls .draft').innerText(),plan,'swap draft must not change');
+  assert.match(await p.locator('#message').innerText(),/先取消组合/);
+  assert.deepEqual(await state(p),before);
+  await click(p,'submit');const s=await state(p);
+  assert.equal(s.round,before.round+1);assert.deepEqual(s.units.A.pos,{x:3,y:1});assert.deepEqual(s.units.B.pos,{x:2,y:1});
+  assert.ok(s.log.some(t=>t==='B与A换位'));assert.deepEqual(errors,[]);
+  return {swapKept:true,executedSwap:true};
+ }finally{await context.close();}
+});
 await browser.close();
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

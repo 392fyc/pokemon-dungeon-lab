@@ -30,6 +30,7 @@ async function transition(p:Promise<unknown>,clearDraft=true){if(clearDraft)clea
 async function send(command:Parameters<typeof applyCommand>[1]){if(store.status!=='ready'){notice='保存未完成，当前只可查看或重试；本轮未执行。';render();return;}const predicted=applyCommand(live()!,command);if(!predicted.ok){notice=predicted.error;render();return;}const cancelledCombination=command.type==='switch'&&draft!==null;const pending=store.dispatch(command);clear();notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;inviteReject=false;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(store.status==='ready'&&store.state?.phase==='exit')await transition(store.dispatch({type:'finishExit'}));}
 function act(action:Action){if(!live()||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
  selectedSkill=null;
+ if(draft?.swap){notice='换位已占双方动作卡；要改成其他动作，请先取消组合。';render();return;}
  if(draft){if(draft.editor===live()!.leader)draft.main=action;else draft.action=action;render();return;}
  if(action.type==='interact'&&action.exit){confirmExit=true;render();return;}
  void send({type:'round',action});

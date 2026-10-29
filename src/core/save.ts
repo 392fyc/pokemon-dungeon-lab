@@ -1,4 +1,6 @@
-import {applyCommand,clone,RULE_VERSION,CONTENT_VERSION,type World,type Command,type Result,type StoredFloor,type Dungeon} from './engine.ts';
+import {applyCommand,clone,levelFor,PROG,RULE_VERSION,CONTENT_VERSION,type World,type Command,type Result,type StoredFloor,type Dungeon} from './engine.ts';
+import {WILD_SPECIES} from './dungeon.ts';
+import {speciesOf} from './roster.ts';
 export interface StoragePort {getItem(key:string):string|null;setItem(key:string,value:string):void|Promise<void>;}
 export type Envelope={format:1;rules:string;content:string;build:string;sequence:number;current:World;recent:World|null};
 export type SaveStatus='empty'|'ready'|'saving'|'failed'|'blocked';
@@ -17,14 +19,17 @@ function validUnit(v:unknown,depth=0):boolean {
   if(v.ai!==undefined&&!['melee','ranged','chase'].includes(String(v.ai)))return false;
   if(v.damage!==undefined&&(!integer(v.damage)||(v.damage as number)<0))return false;
   if(v.range!==undefined&&(!integer(v.range)||(v.range as number)<1))return false;
-  if(v.species!==undefined&&typeof v.species!=='string')return false;
+  if(v.species!==undefined&&(typeof v.species!=='string'||!speciesOf(v.species)))return false;
+  // Expedition enemies are always wild species; a starter on the enemy side is a contradictory save.
+  if(v.side==='enemy'&&v.species!==undefined&&!(String(v.species) in WILD_SPECIES))return false;
   return v.recruit===undefined||(depth<1&&validUnit(v.recruit,depth+1));
 }
 const keyOf=(p:{x:number;y:number})=>`${p.x},${p.y}`;
-const pointKinds=['goal','item','exit','down','up'];
+const pointKinds=['goal','item','exit','down','up','berry','tonic'];
+const isPickup=(k:unknown)=>k==='berry'||k==='tonic';
 const validPoint=(p:unknown,cells:Set<string>)=>object(p)&&position(p.pos)&&pointKinds.includes(String(p.kind))&&typeof p.used==='boolean'&&cells.has(keyOf(p.pos));
 /** A stored (non-current) floor: terrain, revealed cells, real enemies and points. Ids are claimed in `taken` so none repeats across floors. */
-function validStored(f:unknown,d:Dungeon,taken:Set<string>):f is StoredFloor {
+function validStored(f:unknown,d:Dungeon,taken:Set<string>,run:boolean):f is StoredFloor {
   if(!object(f)||!Array.isArray(f.floor)||!f.floor.length||!f.floor.every(position)||!strings(f.seen)||!strings(f.enemies)||!object(f.units)||!Array.isArray(f.points))return false;
   if(f.floor.some(p=>p.x<0||p.y<0||p.x>=d.width||p.y>=d.height))return false;
   const cells=new Set(f.floor.map(keyOf));if(cells.size!==f.floor.length||f.seen.some(k=>!cells.has(k)))return false;
@@ -33,12 +38,58 @@ function validStored(f:unknown,d:Dungeon,taken:Set<string>):f is StoredFloor {
   for(const id of ids){const u=f.units[id];if(taken.has(id)||!validUnit(u)||(u as {id:string}).id!==id||(u as {side:string}).side!=='enemy')return false;taken.add(id);
     const e=u as {hp:number;pos:{x:number;y:number}|null};
     if(e.hp===0){if(e.pos!==null)return false;}else{if(!e.pos||!cells.has(keyOf(e.pos))||occupied.has(keyOf(e.pos)))return false;occupied.add(keyOf(e.pos));}}
+  if((f.rooms!==undefined)!==run||(run&&!validRooms(f.rooms,cells,d)))return false;
+  if(!run&&f.points.some(p=>isPickup((p as {kind:unknown}).kind)))return false;
   return f.points.every(p=>validPoint(p,cells));
+}
+/** Generated room rectangles: whole-number boxes inside the map whose every cell is floor (rooms are carved in full). */
+function validRooms(rooms:unknown,cells:Set<string>,d:Dungeon):boolean {
+  if(!Array.isArray(rooms)||!rooms.length||rooms.length>16)return false;
+  return rooms.every(r=>{if(!object(r)||![r.x,r.y,r.w,r.h].every(integer)||(r.w as number)<1||(r.h as number)<1||(r.x as number)<0||(r.y as number)<0||(r.x as number)+(r.w as number)>d.width||(r.y as number)+(r.h as number)>d.height)return false;
+    for(let y=r.y as number;y<(r.y as number)+(r.h as number);y++)for(let x=r.x as number;x<(r.x as number)+(r.w as number);x++)if(!cells.has(`${x},${y}`))return false;return true;});
 }
 /** Which point kinds a floor may hold: no stairs outside an expedition, no 'up' on the first floor, no 'down' on the last, exits only on floor 1. */
 function pointsFitLevel(points:{kind:string}[],level:number|null,floors:number):boolean {
   if(level===null)return points.every(p=>p.kind!=='down'&&p.kind!=='up');
   return points.every(p=>!(p.kind==='up'&&level===1)&&!(p.kind==='down'&&level===floors)&&!(p.kind==='exit'&&level!==1));
+}
+/** 6.4 run level, counters, pickups and rooms of an expedition. All of it is absent together for expeditions saved before 6.4. */
+function validProgress(s:World,d:Dungeon):boolean {
+  const p=s.prog,here=new Set(s.floor.map(keyOf));
+  if((s.rooms!==undefined)!==(p!==undefined)||(s.rooms!==undefined&&!validRooms(s.rooms,here,d)))return false;
+  const points=[...s.points,...Object.values(d.stored).flatMap(f=>f.points)];
+  if(p===undefined)return !points.some(q=>isPickup(q.kind));
+  if(!object(p)||!integer(p.level)||!integer(p.exp)||!integer(p.rng)||!integer(p.made)||!Array.isArray(p.kills)||!object(p.items))return false;
+  if(p.exp<0||p.level<1||p.level>PROG.maxLevel||p.level!==levelFor(p.exp)||p.rng<0||p.rng>4294967295||p.made<0||p.made>999||p.kills.length>0)return false;
+  if(Object.keys(p.items).sort().join()!=='berry,tonic')return false;
+  for(const k of ['berry','tonic'] as const){const n=p.items[k];if(!integer(n)||n<0||n>points.filter(q=>q.kind===k&&q.used).length)return false;}
+  if(s.goal&&p.exp<PROG.goalExp)return false;
+  return true;
+}
+/** A roster unit of a 6.4 run must keep its species' kit exactly; max HP follows the run level (queue: exactly; camp: from the base up to it). */
+function validSpeciesUnit(u:{species?:string;maxHp:number;learned:string[];pp:Partial<Record<string,number>>;maxPp:Partial<Record<string,number>>},level:number,tier:'queue'|'camp'|'any'):boolean {
+  const sp=u.species?speciesOf(u.species):undefined;if(!sp)return false;
+  const kit=Object.fromEntries(sp.kit.map(k=>[k.behavior,k.pp]));
+  if([...u.learned].sort().join()!==Object.keys(kit).sort().join()||Object.keys(u.maxPp).sort().join()!==Object.keys(kit).sort().join())return false;
+  for(const [k,n] of Object.entries(kit))if(u.maxPp[k]!==n||!integer(u.pp[k]))return false;
+  const top=sp.maxHp+PROG.hpPerLevel*(level-1);
+  return tier==='queue'?u.maxHp===top:tier==='camp'?u.maxHp>=sp.maxHp&&u.maxHp<=top:u.maxHp>=sp.maxHp&&u.maxHp<=top;
+}
+/** Every roster member and invitation of a 6.4 run; a pending invitation is exactly the R07 half snapshot at the current run level. */
+function validRun(s:World):boolean {
+  const p=s.prog;if(!p)return true;
+  for(const id of s.queue)if(!validSpeciesUnit(s.units[id],p.level,'queue'))return false;
+  for(const id of s.camp)if(!validSpeciesUnit(s.units[id],p.level,'camp'))return false;
+  if(new Set(s.invitations.map(i=>i.unit.id)).size!==s.invitations.length)return false;
+  for(const i of s.invitations){
+    if(!validSpeciesUnit(i.unit,p.level,'any'))return false;
+    if(i.status==='pending'){
+      const u=i.unit,top=speciesOf(u.species!)!.maxHp+PROG.hpPerLevel*(p.level-1);
+      if(u.maxHp!==top||u.hp!==Math.max(1,Math.floor(top/2)))return false;
+      for(const [k,m] of Object.entries(u.maxPp))if((u.pp as Record<string,number>)[k]!==Math.min(m,Math.max(1,Math.floor(m/2))))return false;
+    }
+  }
+  return true;
 }
 /** Expedition data, the stairs request and the phase-specific rules that depend on them. */
 function validDungeon(s:World):boolean {
@@ -46,13 +97,14 @@ function validDungeon(s:World):boolean {
   // A request is a stairs request exactly when it was made on a stairs point, and then it names the adjacent floor.
   const stairs=point?.kind==='down'||point?.kind==='up';
   if(r&&stairs!==(r.to!==undefined))return false;
-  if(d===undefined)return s.scenario!=='expedition'&&s.phase!=='transit'&&!stairs&&pointsFitLevel(s.points,null,0);
+  if(d===undefined)return s.scenario!=='expedition'&&s.phase!=='transit'&&!stairs&&pointsFitLevel(s.points,null,0)&&s.prog===undefined&&s.rooms===undefined&&!s.points.some(p=>isPickup(p.kind));
   if(!object(d)||s.scenario!=='expedition')return false;
   if(![d.seed,d.width,d.height,d.floors,d.level].every(integer)||d.seed<0||d.seed>4294967295||d.width<8||d.height<8||d.width>64||d.height>64||d.floors<2||d.floors>9||d.level<1||d.level>d.floors||!object(d.stored))return false;
   if(s.floor.some(p=>p.x<0||p.y<0||p.x>=d.width||p.y>=d.height))return false;
   const taken=new Set(Object.keys(s.units));
   for(const [name,f] of Object.entries(d.stored)){const level=Number(name);
-    if(!integer(level)||String(level)!==name||level<1||level>d.floors||level===d.level||!validStored(f,d,taken)||!pointsFitLevel(f.points,level,d.floors))return false;}
+    if(!integer(level)||String(level)!==name||level<1||level>d.floors||level===d.level||!validStored(f,d,taken,s.prog!==undefined)||!pointsFitLevel(f.points,level,d.floors))return false;}
+  if(!validProgress(s,d))return false;
   if(!pointsFitLevel(s.points,d.level,d.floors))return false;
   if(r&&stairs){
     if(!integer(r.to)||(r.to as number)<1||(r.to as number)>d.floors||r.to!==d.level+(point!.kind==='down'?1:-1))return false;
@@ -84,7 +136,7 @@ function validWorld(v:unknown):v is World {
   if(s.phase==='invitation'&&(!pending||cancelled||!s.anchor||!cells.has(`${s.anchor.x},${s.anchor.y}`)||!s.seen.includes(`${s.anchor.x},${s.anchor.y}`)))return false;
   if(s.phase==='exit'&&(pending||cancelled||s.anchor!==null||!s.request?.locked||s.request.to!==undefined))return false;
   if(s.phase==='transit'&&(pending||cancelled||s.anchor!==null||!s.request?.locked||s.request.to===undefined))return false;
-  if(!validDungeon(s))return false;
+  if(!validDungeon(s)||!validRun(s))return false;
   if(s.phase==='ended'&&(pending||s.anchor!==null||s.request!==null||
     (s.end!.outcome==='wipe'?living:!living||cancelled)))return false;
   // Sequential invitation handling allows a processed prefix, never a

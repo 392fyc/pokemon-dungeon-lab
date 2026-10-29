@@ -7,14 +7,16 @@
 export type Cell={x:number;y:number};
 export type FloorParams={width:number;height:number;floors:number};
 export const DEFAULT_PARAMS:FloorParams={width:20,height:14,floors:2};
-export type PointKind='goal'|'item'|'exit'|'down'|'up';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic';
 export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
 export type EnemyAi='melee'|'ranged'|'chase';
 export type EnemySpec={id:string;species:string;ai:EnemyAi;hp:number;damage:number;range:number;pos:Cell};
 export type Room={x:number;y:number;w:number;h:number};
 export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[];rooms:Room[];
   /** Where the team first arrives from outside (level 1: the ordinary exit) or from above (the up stairs). */
-  arrival:Cell;up:Cell|null;down:Cell|null;points:PointSpec[];enemies:EnemySpec[]};
+  arrival:Cell;up:Cell|null;down:Cell|null;points:PointSpec[];enemies:EnemySpec[];
+  /** 6.4 recovery pickups (berry on every floor, tonic on floor 2). Kept apart from `points` and drawn from their own random stream, so the layout above is unchanged. */
+  pickups:PointSpec[]};
 /**
  * Wild species used for display and ids only; battle numbers stay on the manual tiers below.
  * Must stay a subset of the non-starter species in src/data/roster.json (checked by a test); values are dex numbers.
@@ -84,5 +86,13 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const pos=pick(far);used.add(k(pos));
     enemies.push({id:`w${level}${'abc'[n]}`,species:pick(species),ai,...TIERS[ai],pos});
   });
-  return {level,width:W,height:H,floor,rooms,arrival:level===1?start:up!,up,down,points,enemies};
+  // 6. Pickups (6.4 working candidate): one berry per floor, plus one tonic on floor 2. Own random stream; never on a point or an enemy; outside the arrival room when possible.
+  const prng=mulberry32((Math.imul(seed>>>0,0x7FEB352D)^Math.imul(level,0x846CA68B)^0x1B873593)>>>0);
+  const pickups:PointSpec[]=[];
+  for(const kind of (level===2?['berry','tonic']:['berry']) as PointKind[]){
+    const outside=rooms.slice(1).flatMap(roomCells).filter(c=>!used.has(k(c)));
+    const pool=outside.length?outside:floor.filter(c=>!used.has(k(c)));
+    const pos=pool[Math.floor(prng()*pool.length)];used.add(k(pos));pickups.push({pos:{x:pos.x,y:pos.y},kind,used:false});
+  }
+  return {level,width:W,height:H,floor,rooms,arrival:level===1?start:up!,up,down,points,enemies,pickups};
 }

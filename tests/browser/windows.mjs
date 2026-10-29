@@ -254,5 +254,49 @@ await test('远征：随机楼层真实键鼠，下楼、返回旧层、重载�
   assert.deepEqual(errors,[]);return {seed:EXPEDITION_SEED,steps,cameraAtStairs:cam,crossed:'1->2->1'};
  }finally{await context.close();}
 });
+/* Stage 6.4: real keys and clicks on a fixed seed. The route reads the state only to choose the next key; invitations are refused by button. */
+await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用物品回复并重载一致',async()=>{
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+ try{
+  await p.goto(base+'?seed=3');await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
+  let s=await state(p);assert.equal(s.prog.level,1);assert.deepEqual(s.queue.map(i=>s.units[i].species),['charmander','squirtle','bulbasaur']);
+  assert.match(await p.locator('#party').innerText(),/小火龙.*Lv1/s);assert.match(await p.locator('#goal-label').innerText(),/橙橙果×0/);
+  const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
+  const settleInvite=async()=>{while((await state(p)).phase==='invitation')await reject(p);};
+  async function go(target){
+   for(let step=0;step<80;step++){
+    await settleInvite();const t=await state(p),c=t.units[t.leader].pos;if(c.x===target.x&&c.y===target.y)return;
+    const floor=new Set(t.floor.map(q=>q.x+','+q.y)),dist=new Map([[target.x+','+target.y,0]]),q=[target];
+    for(let i=0;i<q.length;i++)for(const d of Object.keys(arrows)){const [dx,dy]=d.split(',').map(Number),n={x:q[i].x+dx,y:q[i].y+dy},k=n.x+','+n.y;if(floor.has(k)&&!dist.has(k)){dist.set(k,dist.get(q[i].x+','+q[i].y)+1);q.push(n);}}
+    const taken=new Set([...t.queue,...t.enemies].map(id=>t.units[id]).filter(u=>u.hp>0&&u.pos).map(u=>u.pos.x+','+u.pos.y));
+    const opts=Object.keys(arrows).map(d=>{const [dx,dy]=d.split(',').map(Number);return {d,k:(c.x+dx)+','+(c.y+dy)};}).filter(o=>t.seen.includes(o.k)&&!taken.has(o.k)&&dist.has(o.k)).sort((a,b)=>dist.get(a.k)-dist.get(b.k));
+    assert.ok(opts.length,'no step at '+JSON.stringify(c));await key(p,arrows[opts[0].d]);
+   }
+   throw Error('route not finished');
+  }
+  const berry=s.points.find(q=>q.kind==='berry').pos;
+  await go(berry);await settleInvite();s=await state(p);
+  await click(p,'take');s=await state(p);assert.deepEqual(s.prog.items,{berry:1,tonic:0});assert.equal(s.points.find(q=>q.kind==='berry').used,true);
+  assert.match(await p.locator('#goal-label').innerText(),/橙橙果×1/);assert.equal(await p.locator('#take').count(),0);
+  // refusal: everyone is still at full HP (or the user is healthy), so the berry is refused with its reason
+  const full=s.queue.every(i=>s.units[i].hp===s.units[i].maxHp);
+  if(full){await click(p,'use-berry');await p.locator('#item-target-C').click();await ready(p);assert.match(await p.locator('#message').innerText(),/HP已满.*本轮未执行/);assert.deepEqual(await state(p),s);}
+  // get hurt: walk next to the melee enemy and hold the line until someone is below max HP
+  const foe=s.units[s.enemies.find(i=>s.units[i].ai==='melee')];
+  await go(await (async()=>{const t=await state(p);const f=t.units[t.enemies.find(i=>t.units[i].ai==='melee')].pos;const floor=new Set(t.floor.map(q=>q.x+','+q.y));return [{x:f.x+1,y:f.y},{x:f.x-1,y:f.y},{x:f.x,y:f.y+1},{x:f.x,y:f.y-1}].find(c=>floor.has(c.x+','+c.y));})());
+  for(let i=0;i<8;i++){await settleInvite();s=await state(p);if(s.queue.some(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp))break;await key(p,'.');}
+  await settleInvite();s=await state(p);
+  const hurt=s.queue.filter(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp);assert.ok(hurt.length,'someone was hurt');
+  const lead=s.units[s.leader].pos,near=hurt.find(id=>Math.abs(s.units[id].pos.x-lead.x)+Math.abs(s.units[id].pos.y-lead.y)<=1);
+  assert.ok(near,'hurt member within reach of the leader: '+JSON.stringify({hurt,lead}));
+  const before=s.units[near].hp,max=s.units[near].maxHp,rounds=s.round;
+  await click(p,'use-berry');assert.match(await p.locator('#controls').innerText(),/对谁使用橙橙果/);await p.locator('#item-target-'+near).click();await ready(p);
+  const after=await state(p);assert.equal(after.prog.items.berry,0);assert.equal(after.round,rounds+1);
+  assert.ok(after.log.some(t=>t.includes('使用橙橙果')&&t.includes(`HP ${before}→${Math.min(max,before+8)}`)),'berry restores 8 HP up to the maximum (an enemy hit in the same round is separate)');
+  await p.screenshot({path:artifact+'windows-expedition-items.png',fullPage:true});
+  await p.reload();await ready(p);assert.deepEqual(await state(p),after);assert.deepEqual(errors,[]);
+  return {seed:3,pickedUp:true,refusedWhenFull:full,healed:[near,before,after.units[near].hp,max]};
+ }finally{await context.close();}
+});
 await browser.close();
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

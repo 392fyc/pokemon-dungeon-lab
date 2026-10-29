@@ -227,6 +227,23 @@ export class TrialStore {
     if(this.status!=='ready'||!this.record||this.record.current!==null||!this.record.profile)return false;
     this.record={...this.record,sequence:this.record.sequence+1,current:createExpedition(runId,seed,2,squadOf(this.record.profile))};return this.persist();
   }
+  /**
+   * Stage 7.1: writes a brand-new record that holds only a base profile (the player is at the base, no run). An empty store needs no consent;
+   * a store that holds a record needs `confirmed` (the UI asks first), and a record that could not be read also needs its original bytes exported.
+   * Nothing is changed when this returns false.
+   */
+  async beginNewGame(profile:Profile,confirmed:boolean):Promise<boolean> {
+    if(profileProblem(profile)!==null)return false;
+    const overwrite=this.status==='ready'||this.status==='blocked';
+    if(this.status!=='empty'&&!overwrite)return false;
+    if(overwrite&&!confirmed)return false;
+    if(this.status==='blocked'&&(this.raw===null||!this.exported))return false;
+    const previous={record:this.record,raw:this.raw,status:this.status,error:this.error,lastSaved:this.lastSaved};
+    this.record={format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:null,recent:null,profile:clone(profile)};
+    if(await this.persist())return true;
+    // A failed write must leave the old record in memory and on disk exactly as it was.
+    const failure=this.error;this.record=previous.record;this.raw=previous.raw;this.lastSaved=previous.lastSaved;this.status=previous.status;this.error=failure||previous.error;return false;
+  }
   exportRaw():string|null {this.exported=true;return this.raw;}
   async resetAfterExport(s:World,confirmed:boolean):Promise<boolean> {
     if(this.status!=='blocked'||this.raw===null||!this.exported||!confirmed)return false;

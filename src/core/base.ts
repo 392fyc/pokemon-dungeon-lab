@@ -2,8 +2,9 @@
  * 6.5 base profile: the part of the player's progress that outlives one run. Pure data and pure functions; no storage, no renderer.
  * Specification: docs/玩法研究/基地与培养.md. All numbers (two carried moves, three-member squads) are working candidates.
  */
-import {SPECIES,speciesOf,learnableMove,TM_MOVES,type KitMove} from './roster.ts';
+import {SPECIES,speciesOf,learnableMove,TM_MOVES,STARTER_IDS,type KitMove} from './roster.ts';
 import type {World,SquadMember} from './engine.ts';
+import {speciesZh,moveZh} from './names.ts';
 /** One roster member. `learned` is everything it has permanently learned; `carry` names the (at most two) moves it brings into a run. */
 export type Instance={id:string;species:string;learned:KitMove[];carry:string[]};
 export type Profile={expeditions:number;next:number;roster:Instance[];vault:Record<string,number>;team:string[];leader:string};
@@ -19,15 +20,25 @@ const fail=(error:string):BaseResult=>({ok:false,error});
 export function initialProfile():Profile {
   return {expeditions:0,next:4,roster:[newInstance('P1','charmander'),newInstance('P2','squirtle'),newInstance('P3','bulbasaur')],vault:{},team:['P1','P2','P3'],leader:'P3'};
 }
+/**
+ * Stage 7.1 new game (WORKING CANDIDATE, docs/玩法研究/新游戏流程与界面.md): the player picks a main character from the nine starters and one
+ * deputy from the other eight. The profile starts with these two only (P1 main and leader, P2 deputy); a third member has to be recruited.
+ */
+export function newGameProfile(mainSpecies:string,deputySpecies:string):BaseResult {
+  if(!STARTER_IDS.includes(mainSpecies))return fail(`${mainSpecies}不是可选的主控`);
+  if(!STARTER_IDS.includes(deputySpecies))return fail(`${deputySpecies}不是可选的副手`);
+  if(mainSpecies===deputySpecies)return fail('副手须与主控不同');
+  return {ok:true,profile:{expeditions:0,next:3,roster:[newInstance('P1',mainSpecies),newInstance('P2',deputySpecies)],vault:{},team:['P1','P2'],leader:'P1'}};
+}
 export const instanceOf=(p:Profile,id:string)=>p.roster.find(i=>i.id===id);
 
 export function learnTm(original:Profile,instId:string,move:string):BaseResult {
-  if(!(TM_MOVES as readonly string[]).includes(move))return fail(`${move}不是招式机`);
-  if((original.vault[move]??0)<1)return fail(`仓库里没有${move}招式机`);
+  if(!(TM_MOVES as readonly string[]).includes(move))return fail(`${moveZh(move)}不是招式机`);
+  if((original.vault[move]??0)<1)return fail(`仓库里没有${moveZh(move)}招式机`);
   const inst=instanceOf(original,instId);if(!inst)return fail('没有这只伙伴');
   const m=learnableMove(inst.species,move);
-  if(!m)return fail(`${inst.species}不能学习${move}（不在它的可学清单里）；招式机没有消耗`);
-  if(inst.learned.some(l=>l.move===move))return fail(`${instId}已经学会${move}，不能重复学习；招式机没有消耗`);
+  if(!m)return fail(`${speciesZh(inst.species)}不能学习${moveZh(move)}（不在它的可学清单里）；招式机没有消耗`);
+  if(inst.learned.some(l=>l.move===move))return fail(`${instId}已经学会${moveZh(move)}，不能重复学习；招式机没有消耗`);
   const p=clone(original);instanceOf(p,instId)!.learned.push(m);
   p.vault[move]--;if(p.vault[move]===0)delete p.vault[move];
   return {ok:true,profile:p};
@@ -38,7 +49,7 @@ export function setCarry(original:Profile,instId:string,moves:string[]):BaseResu
   if(moves.length>MAX_CARRY)return fail(`最多携带${MAX_CARRY}招`);
   if(new Set(moves).size!==moves.length)return fail('同一招不能携带两次');
   const picked:KitMove[]=[];
-  for(const name of moves){const m=inst.learned.find(l=>l.move===name);if(!m)return fail(`${instId}还没有学会${name}，不能携带`);picked.push(m);}
+  for(const name of moves){const m=inst.learned.find(l=>l.move===name);if(!m)return fail(`${instId}还没有学会${moveZh(name)}，不能携带`);picked.push(m);}
   if(new Set(picked.map(m=>m.behavior)).size!==picked.length)return fail('携带的两招行为相同（例如两招都是保护），请换一招');
   const p=clone(original);instanceOf(p,instId)!.carry=[...moves];return {ok:true,profile:p};
 }

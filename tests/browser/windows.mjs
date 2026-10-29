@@ -24,7 +24,7 @@ async function setup(fixture,mode='pass',animate=false){
   };
  },{mode});
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base+(fixture?'?fixture='+fixture:''));await page.locator('#start').waitFor();
+ await page.goto(base+(fixture?'?fixture='+fixture:'?dev=1'));await page.locator('#start').waitFor();
  return {context,page,errors};
 }
 const ready=p=>p.waitForFunction(()=>window.trial?.store.status==='ready');
@@ -57,7 +57,7 @@ await test('M1、S2、S5、S8：真实输入、待邀请与终局重载、独立
 });
 await test('M2、S1：探看返回及关闭页面后同源恢复',async()=>{
  const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await reject(p);await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');let s=await state(p);assert.equal(s.round,7);assert.ok(s.seen.includes('9,1'));const saved=s;
- await p.close();const q=await context.newPage();await q.goto(base);await ready(q);assert.deepEqual(await state(q),saved);await key(q,'2');await key(q,'ArrowRight');await exit(q);s=await state(q);assert.equal(s.round,9);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,20,8]);assert.deepEqual(errors,[]);return {rounds:9,restoredRevealedR:true};}finally{await context.close();}
+ await p.close();const q=await context.newPage();await q.goto(base+'?dev=1');await ready(q);assert.deepEqual(await state(q),saved);await key(q,'2');await key(q,'ArrowRight');await exit(q);s=await state(q);assert.equal(s.round,9);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,20,8]);assert.deepEqual(errors,[]);return {rounds:9,restoredRevealedR:true};}finally{await context.close();}
 });
 await test('M3：直线技能取物与一次结算',async()=>{
  const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await reject(p);await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await click(p,'skill-line');await cell(p,9,1);await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,11);assert.equal(s.units.C.hp,2);assert.equal(s.units.C.pp.line,1);assert.equal(s.end.brought,1);assert.equal(s.units.R.hp,0);await p.screenshot({path:artifact+'windows-m3-terminal.png',fullPage:true});assert.deepEqual(errors,[]);return {rounds:11,brought:1,C:2,linePP:1};}finally{await context.close();}
@@ -104,7 +104,7 @@ await test('补充 S4/S6/S8：终局写失败恢复、重开写失败保持旧�
  await p.reload();await ready(p);assert.equal((await state(p)).phase,'ended');assert.equal((await state(p)).end.id,id);const terminal=await raw(p);await p.evaluate(()=>window.__fault.mode='fail');await p.locator('#new').click();await p.waitForFunction(()=>window.trial.store.status==='failed');const candidate=await state(p);assert.equal(candidate.round,0);assert.equal(await raw(p),terminal);await p.keyboard.press('ArrowRight');assert.deepEqual(await state(p),candidate);const failed=await p.evaluate(()=>window.__fault.writes.at(-1).value);await p.evaluate(()=>window.__fault.mode='pass');await click(p,'retry');assert.equal(await raw(p),failed);assert.equal(await p.evaluate(()=>window.trial.store.envelope.recent.end.id),id);assert.deepEqual(errors,[]);return {terminalIdStable:true,restartOldDiskRetained:true,retrySameRunId:true};}finally{await context.close();}
 });
 await test('补充 加载失败：脚本请求失败显示原因并保留原记录',async()=>{
- const context=await browser.newContext();await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();try{await p.goto(base);await p.locator('#start').waitFor();await p.evaluate(()=>localStorage.setItem('dungeon-trial.player.v1','untouched-original'));await p.route(/\/src\/main\.ts|\/assets\/index-.*\.js/,route=>route.abort('failed'));await p.reload();await p.getByText('试验脚本加载失败',{exact:false}).waitFor();assert.equal(await p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),'untouched-original');return {failedModuleRequest:true,originalRecordPreserved:true};}finally{await context.close();}
+ const context=await browser.newContext();await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();try{await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await p.evaluate(()=>localStorage.setItem('dungeon-trial.player.v1','untouched-original'));await p.route(/\/src\/main\.ts|\/assets\/index-.*\.js/,route=>route.abort('failed'));await p.reload();await p.getByText('试验脚本加载失败',{exact:false}).waitFor();assert.equal(await p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),'untouched-original');return {failedModuleRequest:true,originalRecordPreserved:true};}finally{await context.close();}
 });
 await test('补充 S9：阶段矛盾记录阻止自动退出并保留原字节',async()=>{
  const {context,page:p,errors}=await setup('V13');try{await start(p);await click(p,'take-exit');await click(p,'exit-confirm');const bytes=await p.evaluate(()=>{const key=window.trial.store.key;const record=JSON.parse(localStorage.getItem(key));record.current.phase='exit';const bytes=JSON.stringify(record);localStorage.setItem(key,bytes);return bytes;});await p.reload();await p.waitForFunction(()=>window.trial.store.status==='blocked');assert.equal(await raw(p),bytes);assert.equal(await state(p),null);assert.equal(await p.locator('#new').count(),0);assert.match(await p.locator('#save').innerText(),/记录无法载入/);assert.deepEqual(errors,[]);return {invalidPhaseBlocked:true,noAutomaticExit:true,originalBytesPreserved:true};}finally{await context.close();}
@@ -237,7 +237,7 @@ async function viaStairs(p){await click(p,'take-exit');await click(p,'exit-confi
 await test('远征：随机楼层真实键鼠，下楼、返回旧层、重载一致',async()=>{
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
-  await p.goto(base+'?seed='+EXPEDITION_SEED);await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
+  await p.goto(base+'?dev=1&seed='+EXPEDITION_SEED);await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
   let s=await state(p);assert.equal(s.scenario,'expedition');assert.equal(s.dungeon.level,1);assert.equal(s.dungeon.seed,Number(EXPEDITION_SEED));
   const down=s.points.find(q=>q.kind==='down').pos;
   const steps=await walkTo(p,down,{mouseFirst:true});
@@ -260,7 +260,7 @@ await test('远征：随机楼层真实键鼠，下楼、返回旧层、重载�
 await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用物品回复并重载一致',async()=>{
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
-  await p.goto(base+'?seed=3');await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
+  await p.goto(base+'?dev=1&seed=3');await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
   let s=await state(p);assert.equal(s.prog.level,1);assert.deepEqual(s.queue.map(i=>s.units[i].species),['charmander','squirtle','bulbasaur']);
   assert.match(await p.locator('#party').innerText(),/小火龙.*Lv1/s);assert.match(await p.locator('#goal-label').innerText(),/橙橙果×0/);
   const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
@@ -340,7 +340,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
  },{k:SAVE_KEY,v:record});
  const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
-  await p.goto(base+'?seed=4243');await p.locator('#to-base').waitFor();await ready(p);
+  await p.goto(base+'?dev=1&seed=4243');await p.locator('#to-base').waitFor();await ready(p);
   assert.equal(await p.locator('#new').count(),0,'an expedition result offers the base, not a new independent trial');
   assert.match(await p.locator('#tm-line').innerText(),/保护.*已带出/);
   await click(p,'to-base');
@@ -397,7 +397,7 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
  await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;try{if(!localStorage.getItem(k))localStorage.setItem(k,v);}catch{}},{k:SAVE_KEY,v:full});
  const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
-  await p.goto(base);await p.locator('#rest').waitFor();await ready(p);
+  await p.goto(base+'?dev=1');await p.locator('#rest').waitFor();await ready(p);
   const s0=await state(p);assert.equal(s0.points.find(q=>q.kind==='rest').used,false);
   await p.locator('#rest').click();await ready(p);          // PP are full: refused with the reason, nothing changes
   assert.deepEqual(await state(p),s0);assert.match(await p.locator('#message').innerText(),/PP都已满.*没有消耗/);
@@ -409,6 +409,85 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
   assert.equal(await p.locator('#rest').isDisabled(),true);
   await p.reload();await ready(p);assert.deepEqual(await state(p),s1);assert.deepEqual(errors,[]);
   return {refusedWhenFull:true,usedOnce:true};
+ }finally{await context.close();}
+});
+/* Stage 7.1: title, new game, overwrite confirmation and readability. (a) and (b) use no developer parameter at all. */
+async function plainContext(){
+ const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
+ await context.addInitScript(()=>{window.__trialNoAnim=true;});
+ const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ return {context,page,errors};
+}
+async function newGameClicks(p,main,deputy){
+ await p.locator('#pick-main-'+main).click();await p.locator('#main-next').click();
+ await p.locator('#pick-deputy-'+deputy).click();await p.locator('#newgame-start').click();
+ await p.locator('#depart').waitFor();await ready(p);
+}
+await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基地→出发，只用真实点击与按键',async()=>{
+ const {context,page:p,errors}=await plainContext();
+ try{
+  await p.goto(base);await p.locator('#title-new').waitFor();
+  for(const sel of ['#start','#fixture','#config','#coords-toggle','#title-continue','#open-fixture'])assert.equal(await p.locator(sel).count(),0,sel+' must not exist on the player path');
+  await p.locator('#title-new').click();
+  assert.equal(await p.locator('.starter-card').count(),9);
+  const text=await p.locator('#title-screen').innerText();
+  for(const n of ['妙蛙种子','小火龙','杰尼龟','菊草叶','火球鼠','小锯鳄','木守宫','火稚鸡','水跃鱼'])assert.ok(text.includes(n),n);
+  assert.match(text,/撞击/);assert.doesNotMatch(text,/tackle/);
+  assert.equal(await p.locator('#main-next').isDisabled(),true);
+  await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
+  assert.equal(await p.locator('.starter-card').count(),8);assert.equal(await p.locator('#pick-deputy-treecko').count(),0);
+  assert.equal(await p.locator('#newgame-start').isDisabled(),true);
+  await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();
+  await p.locator('#depart').waitFor();await ready(p);
+  const pr=await p.evaluate(()=>window.trial.profile());
+  assert.deepEqual(pr.roster.map(i=>i.species),['treecko','mudkip']);assert.deepEqual(pr.team,['P1','P2']);assert.equal(pr.leader,'P1');assert.equal(pr.expeditions,0);
+  const base1=await p.locator('#base').innerText()+await p.locator('#party').innerText();assert.match(base1,/木守宫/);assert.match(base1,/水跃鱼/);assert.match(base1,/树叶/);assert.doesNotMatch(base1,/leafage|watergun/);
+  await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
+  const s=await state(p);assert.equal(s.scenario,'expedition');assert.deepEqual(s.queue,['A','B']);assert.equal(s.units.A.species,'treecko');assert.equal(s.leader,'A');
+  assert.equal(await p.locator('#guide-card').count(),1);assert.equal(await p.locator('#enemy-hint').count(),1);
+  await p.locator('#guide-close').click();assert.equal(await p.locator('#guide-card').count(),0);
+  for(const k of ['ArrowRight','ArrowDown','ArrowLeft','ArrowUp']){await p.keyboard.press(k);await ready(p);if((await state(p)).round>0)break;}
+  assert.ok((await state(p)).round>0,'a real key press advanced the run');
+  assert.ok((await p.locator('#recent-list li').count())>0,'recent events are visible');
+  await p.reload();await p.locator('#title-continue').waitFor();
+  await p.locator('#title-continue').click();await ready(p);assert.equal(await p.locator('#guide-card').count(),0,'the guide stays closed');
+  assert.deepEqual(errors,[]);return {roster:pr.roster.map(i=>i.species),guideOnce:true};
+ }finally{await context.close();}
+});
+await test('7.1(b) 已有存档：新游戏需要确认，取消后原存档不变，可导出原记录',async()=>{
+ const {context,page:p,errors}=await plainContext();
+ try{
+  await p.goto(base);await p.locator('#title-new').click();await newGameClicks(p,'chikorita','totodile');
+  const original=await raw(p);assert.ok(original);
+  await p.reload();await p.locator('#title-continue').waitFor();
+  await p.locator('#title-new').click();await p.locator('#overwrite-box').waitFor();
+  assert.equal(await raw(p),original);
+  await p.locator('#overwrite-cancel').click();assert.equal(await p.locator('#overwrite-box').count(),0);assert.equal(await raw(p),original);
+  await p.locator('#title-new').click();
+  const [download]=await Promise.all([p.waitForEvent('download'),p.locator('#overwrite-export').click()]);
+  assert.equal(fs.readFileSync(await download.path(),'utf8'),original);
+  await p.locator('#overwrite-yes').click();await p.locator('#pick-main-torchic').click();await p.locator('#main-next').click();
+  await p.locator('#pick-deputy-cyndaquil').click();assert.equal(await raw(p),original);
+  await p.locator('#deputy-back').click();await p.locator('#newgame-cancel').click();await p.locator('#title-continue').waitFor();assert.equal(await raw(p),original);
+  await p.locator('#title-continue').click();assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(i=>i.species),['chikorita','totodile']);
+  await p.locator('#to-title').click();await p.locator('#title-new').click();await p.locator('#overwrite-yes').click();await newGameClicks(p,'torchic','cyndaquil');
+  const after=await raw(p);assert.notEqual(after,original);assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(i=>i.species),['torchic','cyndaquil']);
+  assert.deepEqual(errors,[]);return {cancelKeptOriginal:true,exportMatches:true,overwriteAfterConfirm:true};
+ }finally{await context.close();}
+});
+await test('7.1 可读性：悬停敌人看信息、组合草稿显示执行顺序与默认行为',async()=>{
+ const {context,page:p,errors}=await setup('K1');
+ try{
+  await start(p);const s=await state(p);const h=s.units.H;
+  const b=await p.locator('canvas').boundingBox();
+  const xs=s.floor.map(q=>q.x),ys=s.floor.map(q=>q.y),minX=Math.min(...xs),minY=Math.min(...ys),w=Math.max(...xs)-minX+1,hh=Math.max(...ys)-minY+1,c=Math.min(66,600/w,270/hh);
+  await p.mouse.move(b.x+(340-w*c/2+(h.pos.x-minX+.5)*c)*b.width/680,b.y+(175-hh*c/2+(h.pos.y-minY+.5)*c)*b.height/350);
+  await p.waitForSelector('#enemy-info');const info=await p.locator('#enemy-info').innerText();
+  assert.match(info,/H/);assert.match(info,/24\/24/);assert.match(info,/追击/);assert.match(info,/8/);
+  await click(p,'arrange');await click(p,'partner-B');
+  const order=await p.locator('#draft-order').innerText();assert.match(order,/→.*敌方/);
+  assert.match(await p.locator('#draft-steps').innerText(),/默认行为/);
+  assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {inspect:true,orderLine:order};
  }finally{await context.close();}
 });
 await browser.close();

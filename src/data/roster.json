@@ -1584,6 +1584,1084 @@
     }
    ],
    "source": "pokedex.json[geodude]; learnsets.json[geodude] 第9世代; moves.json"
+  },
+  {
+   "id": "chikorita",
+   "dex": "0152",
+   "name": "Chikorita",
+   "starter": true,
+   "types": [
+    "Grass"
+   ],
+   "baseStats": {
+    "hp": 45,
+    "atk": 49,
+    "def": 65,
+    "spa": 49,
+    "spd": 65,
+    "spe": 45
+   },
+   "maxHp": 21,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "magicalleaf",
+     "behavior": "line",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "grassyglide",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "solarblade",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "trailblaze",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "vinewhip",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "ancientpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "bulletseed",
+     "behavior": "line",
+     "pp": 3
+    },
+    {
+     "move": "energyball",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "gigadrain",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "grasspledge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "leafstorm",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "magicalleaf",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "seedbomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "solarbeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[chikorita]; learnsets.json[chikorita] 第9世代; moves.json"
+  },
+  {
+   "id": "cyndaquil",
+   "dex": "0155",
+   "name": "Cyndaquil",
+   "starter": true,
+   "types": [
+    "Fire"
+   ],
+   "baseStats": {
+    "hp": 39,
+    "atk": 52,
+    "def": 43,
+    "spa": 60,
+    "spd": 50,
+    "spe": 65
+   },
+   "maxHp": 19,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "covet",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "firefang",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "flamecharge",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "flamewheel",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "flareblitz",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "ironhead",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "playrough",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "temperflare",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "wildcharge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "zenheadbutt",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "extrasensory",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "fireblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "firepledge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "flamethrower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "inferno",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "overheat",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "defensecurl",
+     "behavior": "guard",
+     "pp": 4
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "source": "pokedex.json[cyndaquil]; learnsets.json[cyndaquil] 第9世代; moves.json"
+  },
+  {
+   "id": "totodile",
+   "dex": "0158",
+   "name": "Totodile",
+   "starter": true,
+   "types": [
+    "Water"
+   ],
+   "baseStats": {
+    "hp": 50,
+    "atk": 65,
+    "def": 64,
+    "spa": 44,
+    "spd": 48,
+    "spe": 43
+   },
+   "maxHp": 22,
+   "kit": [
+    {
+     "move": "scratch",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "watergun",
+     "behavior": "line",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aquajet",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "aquatail",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bite",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "brickbreak",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "crunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dragonclaw",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "focuspunch",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "icefang",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "icepunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "liquidation",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "metalclaw",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "scratch",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "shadowclaw",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "slash",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "superpower",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "trailblaze",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "waterfall",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "ancientpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "chillingwater",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "hydropump",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "waterpledge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "waterpulse",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "whirlpool",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[totodile]; learnsets.json[totodile] 第9世代; moves.json"
+  },
+  {
+   "id": "treecko",
+   "dex": "0252",
+   "name": "Treecko",
+   "starter": true,
+   "types": [
+    "Grass"
+   ],
+   "baseStats": {
+    "hp": 40,
+    "atk": 45,
+    "def": 35,
+    "spa": 65,
+    "spd": 55,
+    "spe": 70
+   },
+   "maxHp": 20,
+   "kit": [
+    {
+     "move": "pound",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "leafage",
+     "behavior": "line",
+     "pp": 4
+    }
+   ],
+   "learnable": [
+    {
+     "move": "assurance",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "crunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "drainpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "grassyglide",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "nightslash",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "pound",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "quickattack",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "slam",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "slash",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thief",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "thunderpunch",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "trailblaze",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "upperhand",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "absorb",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "bulletseed",
+     "behavior": "line",
+     "pp": 3
+    },
+    {
+     "move": "dragonbreath",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "energyball",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "gigadrain",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "grasspledge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "leafage",
+     "behavior": "line",
+     "pp": 4
+    },
+    {
+     "move": "leafstorm",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "magicalleaf",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "megadrain",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "seedbomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "solarbeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "detect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "dragontail",
+     "behavior": "push",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[treecko]; learnsets.json[treecko] 第9世代; moves.json"
+  },
+  {
+   "id": "torchic",
+   "dex": "0255",
+   "name": "Torchic",
+   "starter": true,
+   "types": [
+    "Fire"
+   ],
+   "baseStats": {
+    "hp": 45,
+    "atk": 60,
+    "def": 40,
+    "spa": 70,
+    "spd": 50,
+    "spe": 45
+   },
+   "maxHp": 21,
+   "kit": [
+    {
+     "move": "scratch",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "crushclaw",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "flamecharge",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "flareblitz",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "lastresort",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "nightslash",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "scratch",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "shadowclaw",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "slash",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "temperflare",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "ember",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "feint",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "fireblast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "firepledge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "flamethrower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "overheat",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "detect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "behavior": "guard",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[torchic]; learnsets.json[torchic] 第9世代; moves.json"
+  },
+  {
+   "id": "mudkip",
+   "dex": "0258",
+   "name": "Mudkip",
+   "starter": true,
+   "types": [
+    "Water"
+   ],
+   "baseStats": {
+    "hp": 50,
+    "atk": 70,
+    "def": 50,
+    "spa": 50,
+    "spd": 50,
+    "spe": 40
+   },
+   "maxHp": 22,
+   "kit": [
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "watergun",
+     "behavior": "line",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "avalanche",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "bite",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "dig",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "doubleedge",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "liquidation",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "rocksmash",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "stomp",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "behavior": "strong",
+     "pp": 3
+    },
+    {
+     "move": "takedown",
+     "behavior": "strong",
+     "pp": 2
+    },
+    {
+     "move": "waterfall",
+     "behavior": "strong",
+     "pp": 1
+    },
+    {
+     "move": "ancientpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "chillingwater",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "earthpower",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "hydropump",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rockthrow",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "sludge",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "terablast",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "waterpledge",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "waterpulse",
+     "behavior": "line",
+     "pp": 2
+    },
+    {
+     "move": "whirlpool",
+     "behavior": "line",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "behavior": "guard",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "behavior": "push",
+     "pp": 2
+    }
+   ],
+   "source": "pokedex.json[mudkip]; learnsets.json[mudkip] 第9世代; moves.json"
   }
  ]
 }

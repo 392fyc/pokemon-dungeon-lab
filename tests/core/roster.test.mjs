@@ -4,14 +4,14 @@ import {readFileSync} from 'node:fs';
 const roster=JSON.parse(readFileSync(new URL('../../src/data/roster.json',import.meta.url),'utf8'));
 const by=Object.fromEntries(roster.species.map(s=>[s.id,s]));
 const BEHAVIORS=['strong','line','guard','push'];
-const ids=['bulbasaur','charmander','squirtle','pidgey','rattata','spearow','pikachu','zubat','geodude'];
-const dexes=['0001','0004','0007','0016','0019','0021','0025','0041','0074'];
+const ids=['bulbasaur','charmander','squirtle','pidgey','rattata','spearow','pikachu','zubat','geodude','chikorita','cyndaquil','totodile','treecko','torchic','mudkip']; // stage 7.1 appended the six generation 2-3 starters after the original nine
+const dexes=['0001','0004','0007','0016','0019','0021','0025','0041','0074','0152','0155','0158','0252','0255','0258'];
 
-test('R1 roster has the nine species with four-digit dex numbers and starters',()=>{
+test('R1 roster has the fifteen species (nine original + six stage 7.1 starters) with four-digit dex numbers and starters',()=>{
  assert.deepEqual(roster.species.map(s=>s.id),ids);
  assert.deepEqual(roster.species.map(s=>s.dex),dexes);
  for(const s of roster.species)assert.match(s.dex,/^\d{4}$/);
- assert.deepEqual(roster.species.filter(s=>s.starter).map(s=>s.id),['bulbasaur','charmander','squirtle']);
+ assert.deepEqual(roster.species.filter(s=>s.starter).map(s=>s.id),['bulbasaur','charmander','squirtle','chikorita','cyndaquil','totodile','treecko','torchic','mudkip']);
  assert.deepEqual(roster.source.files['moves.json'],'26909a321a7e4528d14a7dffd24173aa03a6845776cf41c39cc3d76f8e14616b');
  assert.equal(roster.source.githubCommit,'ccfaa20f32af363569cd21a9d501b2bc1ded26b1');
 });

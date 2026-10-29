@@ -227,7 +227,9 @@ function execute(s:World,id:string,a:Action,guards:Record<string,number>):void {
     if(p.kind!=='berry'&&p.kind!=='tonic')note(s,stairs?`${id}请求${p.kind==='down'?'下':'上'}楼梯跨层`:`${id}交互${a.exit?'并请求撤离':''}`);
   }else note(s,`${id}等待`);
 }
-function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean):string|null {
+/** One member's turn in a round, as the rules would run it (stage 7.1 preview). `explicit` is false for the default behaviour; `failed` means the action no longer applied and the member waited. */
+export type TraceStep={id:string;action:Action;explicit:boolean;failed:boolean;swapWith?:string};
+function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,trace?:TraceStep[]):string|null {
   const guards:Record<string,number>={};const lead=s.leader;const moved=new Set<string>();
   if(cmd.override&&(cmd.override.actor===lead||!s.queue.includes(cmd.override.actor)||!alive(s.units[cmd.override.actor])))return '只能安排另一名存活伙伴';
   if(cmd.override?.action.type==='swap')return '换位须从主控发起';
@@ -238,11 +240,11 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean)
   for(let i=0;i<s.queue.length;i++){const id=s.queue[i];if(!alive(s.units[id]))continue;
     if(swap&&(id===lead||id===swap)){
       if(i===later){const err=invalid(s,lead,cmd.action);if(err){if(preflight)return err;continue;}
-        const p=s.units[lead].pos;s.units[lead].pos=s.units[swap].pos;s.units[swap].pos=p;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);}continue;}
+        const p=s.units[lead].pos;s.units[lead].pos=s.units[swap].pos;s.units[swap].pos=p;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
     const explicit=id===lead?cmd.action:cmd.override?.actor===id?cmd.override.action:null;
     const a=explicit??defaultAction(s,id);const err=invalid(s,id,a,moved);
-    if(err){if(explicit&&preflight)return err;note(s,`${id}动作失效，等待，未扣PP`);continue;}
-    execute(s,id,a,guards);if(a.type==='move')moved.add(id);
+    if(err){if(explicit&&preflight)return err;note(s,`${id}动作失效，等待，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
+    execute(s,id,a,guards);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false});
   }
   if(preflight)return null;
   for(const id of s.enemies){const e=s.units[id];if(!alive(e))continue;
@@ -309,6 +311,15 @@ export function previewInvitation(s:World,outgoing?:string):InvitationPreview {
   if(!pos)return {ok:false,error:'集结格附近没有合法位置；可改选或拒绝'};
   const queue=[...q,invite.unit.id];const leader=outgoing===s.leader?q.find(i=>alive(s.units[i]))??invite.unit.id:s.leader;
   return {ok:true,pos:clone(pos),queue,leader};
+}
+/**
+ * Stage 7.1: what each member would do this round, in execution order, by running the same round code on a copy. Nothing is executed on `original`.
+ * Returns null when the command would be refused. The enemy phase always follows the last step.
+ */
+export function traceRound(original:World,cmd:Command):TraceStep[]|null {
+  if(cmd.type!=='round'||original.phase!=='playing')return null;
+  if(ownPhase(clone(original),cmd,true)!==null)return null;
+  const steps:TraceStep[]=[];ownPhase(clone(original),cmd,false,steps);return steps;
 }
 export function applyCommand(original:World,cmd:Command):Result {
   const fail=(error:string):Result=>({ok:false,state:original,error:`${error}；本轮未执行`});

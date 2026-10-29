@@ -24,6 +24,7 @@ export function actionText(s:World,actor:string,a:Action):string {
     case 'swap':return `与${who(a.target)}换位`;
     case 'use':return `使用${itemZh(a.item)} → ${who(a.target)}`;
     case 'interact':return a.exit?'交互并请求撤离／跨层':'取得并继续';
+    case 'exchange':return `启动交换机，把${who(a.target)}送回基地，运走${a.cargo.length}份招式机`;
     default:return '等待';
   }
 }

@@ -20,7 +20,7 @@ function run({level=1,exp=0,rng=7,enemies=[wild('w',3,6)],points=[],items={berry
  s.scenario='expedition';s.runId='prog';
  s.dungeon={seed:1,width:10,height:8,floors:2,level:1,stored:{}};
  s.rooms=[{x:0,y:1,w:10,h:1}];
- s.prog={level,exp,rng,made:0,kills:[],items:{...items}};
+ s.prog={level,exp,rng,made:0,kills:[],items:{...items}};s.purse=0;s.tms=[];
  return s;
 }
 const port=(raw=null)=>{let value=raw,writes=0;return {getItem:()=>value,setItem:(k,v)=>{value=v;writes++;},raw:()=>value,writes:()=>writes};};

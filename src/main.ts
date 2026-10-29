@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import {applyCommand,traceRound,previewInvitation,createMain,createExpedition,key,same,plus,clone,SPEC_SOURCE,ITEM_NAMES,PROG,type World,type Action,type Skill,type Pos,type Item,type Unit} from './core/engine.ts';
+import {applyCommand,traceRound,previewInvitation,createMain,createExpedition,key,same,plus,clone,SPEC_SOURCE,ITEM_NAMES,PROG,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point} from './core/engine.ts';
+import {ECON} from './core/economy.ts';
 import {SPECIES,TM_MOVES,STARTER_IDS,learnableMove} from './core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh} from './core/names.ts';
 import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog} from './core/describe.ts';
 import {renderTitle,renderNewGame,portraitTick,type NewGameState} from './ui/title.ts';
-import {learnTm,newGameProfile,MAX_TEAM,type BaseAction} from './core/base.ts';
+import {learnTm,newGameProfile,settleSummary,purseProblem,MAX_TEAM,type BaseAction} from './core/base.ts';
 import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from './core/save.ts';
 import {createScenario,SCENARIOS,type ScenarioId} from './core/scenarios.ts';
 import './style.css';
@@ -18,12 +19,16 @@ const TM_BEHAVIOR:Record<string,Skill>={protect:'guard',whirlwind:'push',roar:'p
 const tmName=(m:string)=>`${tmZh(m)}（${names[TM_BEHAVIOR[m]]}）`;
 const spName=(id:string)=>speciesZh(id);
 const nextExp=(s:World)=>s.prog&&s.prog.level<PROG.maxLevel?String(PROG.thresholds[s.prog.level]):'满级';
+const FATE:Record<TmItem['fate'],string>={held:'持有中',brought:'已带回',sent:'已安全送回',lost:'已取得、未带出'};
+const SRC:Record<TmItem['source'],string>={target:'成果 T',shop:'商店'};
+const REASON:Record<string,string>={goal:'完成了基础目标 G',recruit:'保留了本局新招募的伙伴',tm:'带回或安全送回了招式机'};
+const tmLine=(t:TmItem)=>`${tmName(t.move)}（${SRC[t.source]}）：${FATE[t.fate]}`;
 const hints:Record<Skill,string>={strong:'相邻敌人，伤害10',line:'同排／列三格，伤害10；墙和存活单位挡线',guard:'相邻另一伙伴，本次敌方阶段首次伤害减4，不治疗',push:'相邻敌人，推出一格；后格须已见且空置，无伤害无眩晕'};
 const params=new URLSearchParams(location.search);
 /** Developer mode (stage 7.1): `?dev=1` or `?fixture=`. Only here do the fixed map, the no-invitation control, fixtures, `?seed=` and coordinates exist; the title screen is skipped. */
 const dev=params.get('dev')==='1'||(params.get('fixture')!==null&&(SCENARIOS as readonly string[]).includes(params.get('fixture')!));
 const app=document.querySelector<HTMLDivElement>('#app')!;
-app.innerHTML=`<header><div class="brand">同行<span>FIELD TRIAL / 01</span></div><div class="build">${BUILD_ID} · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'完成G的记录即可结束。也可以探看后段，再决定是否带回T的成果。':'探索迷宫、击败敌人、招募伙伴；在合适的时候回到出口撤离，把成果带回基地。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未开始</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标／出口</span><span>T 成果／出口</span><span>下／上 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP补剂 · 休 休整点（每局一次）</span><span>暗格尚未揭示</span><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section><details><summary>操作说明与试验边界</summary><p>方向键移动；点相邻敌人普攻；句点等待。普通动作合法即推进完整一轮。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑主控动作并提交。切主控不改变队列。倒下退图但仍占名额。</p><p>出口使用也占一轮，敌人仍会行动。关闭不是撤离；恢复最后成功保存点。</p><p>远征模式为随机两层迷宫：走到楼梯格后点击楼梯按钮请求跨层，可返回旧层。本试验不含救援经济与永久培养（远征含本局等级）；所有数值均为人工参数。</p></details>${dev?`<details><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option>${id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button></details>`:''}<footer>规则源 ${SPEC_SOURCE.slice(0,7)}<br>几何占位 · 无账号 · 同一网页来源本地保存</footer></aside></main><div id="title-screen" class="screen" hidden></div>`;
+app.innerHTML=`<header><div class="brand">同行<span>FIELD TRIAL / 01</span></div><div class="build">${BUILD_ID} · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'完成G的记录即可结束。也可以探看后段，再决定是否带回T的成果。':'探索迷宫、击败敌人、招募伙伴；在合适的时候回到出口撤离，把成果带回基地。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未开始</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标／出口</span><span>T 成果／出口</span><span>下／上 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section><details><summary>操作说明与试验边界</summary><p>方向键移动；点相邻敌人普攻；句点等待。普通动作合法即推进完整一轮。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑主控动作并提交。切主控不改变队列。倒下退图但仍占名额。</p><p>出口使用也占一轮，敌人仍会行动。关闭不是撤离；恢复最后成功保存点。</p><p>远征模式为随机两层迷宫：走到楼梯格后点击楼梯按钮请求跨层，可返回旧层。远征含本局等级、基地培养、失败回归与稀有服务点（商店、交换机）；所有数值均为人工参数。</p></details>${dev?`<details><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option>${id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button></details>`:''}<footer>规则源 ${SPEC_SOURCE.slice(0,7)}<br>几何占位 · 无账号 · 同一网页来源本地保存</footer></aside></main><div id="title-screen" class="screen" hidden></div>`;
 const fixture=params.get('fixture') as ScenarioId|null;
 const checkMode=fixture!==null&&SCENARIOS.includes(fixture);
 /** `?seed=<integer>` fixes the expedition seed (browser checks); otherwise every expedition draws a fresh one. */
@@ -41,6 +46,8 @@ let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
 let inviteChoice:string|undefined,inviteReject=false,notice='',recentVisible=false,detailsId:string|null=null;
 let tmPick:string|null=null;
+/** 7.2: the purse chosen at the base, and the exchanger choices (companion to send, indexes of the machines to carry) before they are confirmed. */
+let purseDraft=0,exTarget:string|null=null,exCargo:number[]=[];
 let scene:BoardScene|null=null;
 /** Stage 7.1 screens: the title and the new-game pages sit on top of the game view; developer mode starts in the game view as before. */
 let screen:'title'|'newgame'|'play'=dev?'play':'title';
@@ -65,7 +72,7 @@ const button=(id:string,label:string,disabled=false,extra='')=>`<button id="${id
 const live=()=>store.state;
 const resources=(s:World,id:string)=>{const u=s.units[id];return `${id} ${u.hp}/${u.maxHp}HP · ${u.learned.map(k=>`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普攻'}`;};
 function bind(id:string,fn:()=>void){const el=document.getElementById(id);if(el)el.addEventListener('click',fn);}
-function clear(){draft=null;selectedSkill=null;choosingItem=null;choosingPartner=false;choosingSwap=false;confirmExit=false;}
+function clear(){exTarget=null;exCargo=[];draft=null;selectedSkill=null;choosingItem=null;choosingPartner=false;choosingSwap=false;confirmExit=false;}
 /** A saved pending exit or pending crossing is completed once, automatically, after the save succeeded. */
 const finishing=():Parameters<typeof applyCommand>[1]|null=>{const p=store.state?.phase;return store.status!=='ready'?null:p==='exit'?{type:'finishExit'}:p==='transit'?{type:'finishTransit'}:null;};
 async function transition(p:Promise<unknown>,clearDraft=true){if(clearDraft)clear();render();await p;render();const next=finishing();if(next){const done=store.dispatch(next);render();await done;render();}}
@@ -90,7 +97,7 @@ function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'
 }
 function actionLabel(a:Action|null){if(!a)return '尚未选择';if(a.type==='move')return `移动到(${a.to.x},${a.to.y})`;if(a.type==='skill')return `${names[a.skill]} → ${a.target}`;if(a.type==='basic')return `普攻 → ${a.target}`;if(a.type==='swap')return `与${a.target}换位`;if(a.type==='use')return `使用${ITEM_NAMES[a.item]} → ${a.target}`;if(a.type==='interact')return a.exit?'取得／请求撤离':'取得并继续';return '等待';}
 function render(){renderOverlay();renderMain();renderExtras();}
-function renderMain(){const s=live();$('legend-items').hidden=!s?.prog;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 轮 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'单层探索试验');$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:s?`目标 ${s.goal?'已完成':'未完成'} · 背包 ${s.bag}${s.prog?` · 本局Lv${s.prog.level} 经验${s.prog.exp}/${nextExp(s)} · 橙橙果×${s.prog.items.berry} PP补剂×${s.prog.items.tonic}`:''}`:'';
+function renderMain(){const s=live();$('legend-items').hidden=!s?.prog;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 轮 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'单层探索试验');$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:s?`目标 ${s.goal?'已完成':'未完成'} · 背包 ${s.bag}${s.prog?` · 本局Lv${s.prog.level} 经验${s.prog.exp}/${nextExp(s)} · 橙橙果×${s.prog.items.berry} PP补剂×${s.prog.items.tonic}${s.dungeon?.base?` · 钱袋 ${s.purse??0}`:''}`:''}`:'';
  $('message').textContent=notice;
  const saveText={empty:'尚无可恢复记录',ready:'已保存',saving:'正在保存，请稍候再关闭',failed:'最新结果未保存；关闭可能丢失本次变化',blocked:'记录无法载入，原字节已保留'}[store.status];
  $('save').innerHTML=`<div class="save-state ${store.status}">${saveText}</div><small>${esc(store.lastSaved?.replace(/^[^·]+ · /,'').replace('playing','完整轮末').replace('invitation','待邀请').replace('ended','终局').replace('exit','待撤离').replace('transit','待跨层')??'尚无成功保存点')}</small>${store.error?`<p class="error">${esc(store.error)}</p>`:''}${store.status==='failed'?button('retry','重试保存'):''}${store.status==='blocked'?button('export','导出原记录')+button('reset','导出后明确重置'):''}`;
@@ -101,11 +108,11 @@ function renderMain(){const s=live();$('legend-items').hidden=!s?.prog;scene?.pa
  if(!s&&store.atBase){renderBase();return;}
  if(!s){$('party').innerHTML='<p class="muted">开始后显示三个实例与独立资源。</p>';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>还没有存档。请返回标题开始新游戏。</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>进度保存在此浏览器、此网页来源。首次探索无需照路线答案操作。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（随机 2 层）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(store.start(checkMode?createScenario(fixture!,newId()):begin(selectedConfig)));});return;}
  const ready=store.status==='ready',playing=s.phase==='playing',editable=ready||store.status==='saving';
- $('party').innerHTML=s.queue.map((id,i)=>{const u=s.units[id];const down=u.hp===0;return `<article class="unit ${id===s.leader?'leader':''}"><div><strong>${esc(id)}</strong><span>${down?'倒下 · 仍占名额':id===s.leader?'主控':'同行'} · ${u.hp}/${u.maxHp}${u.species?` · ${esc(specName(u))}${s.prog?` Lv${s.prog.level}`:''}`:''}</span></div><div class="hp"><i style="width:${u.hp/u.maxHp*100}%"></i></div><p>${u.learned.map(k=>`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普攻，不耗PP'}</p>${button('leader-'+i,'设为主控',!ready||!playing||down||s.leader===id)}${button('detail-'+i,'详情')}</article>`;}).join('')+(s.camp.length?`<p class="muted">此前已回营：${s.camp.map(id=>esc(resources(s,id))).join('；')}（本局不可调回）</p>`:'');
+ $('party').innerHTML=s.queue.map((id,i)=>{const u=s.units[id];const down=u.hp===0;return `<article class="unit ${id===s.leader?'leader':''}"><div><strong>${esc(id)}</strong><span>${down?'倒下 · 仍占名额':id===s.leader?'主控':'同行'}${u.protected?' · 初始成员':''} · ${u.hp}/${u.maxHp}${u.species?` · ${esc(specName(u))}${s.prog?` Lv${s.prog.level}`:''}`:''}</span></div><div class="hp"><i style="width:${u.hp/u.maxHp*100}%"></i></div><p>${u.learned.map(k=>`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普攻，不耗PP'}</p>${button('leader-'+i,'设为主控',!ready||!playing||down||s.leader===id)}${button('detail-'+i,'详情')}</article>`;}).join('')+(s.camp.length?`<p class="muted">此前已回营：${s.camp.map(id=>esc(resources(s,id))).join('；')}（本局不可调回）</p>`:'');
  s.queue.forEach((id,i)=>{bind('leader-'+i,()=>{void send({type:'switch',actor:id});});bind('detail-'+i,()=>{detailsId=detailsId===id?null:id;render();});});
  if(detailsId&&s.units[detailsId]){$('party').insertAdjacentHTML('beforeend',`<p class="detail">${esc(detailsId)} 已学：${s.units[detailsId].learned.map(k=>skillLabel(s.units[detailsId!],k)).join('、')||'无特殊招式'}。普攻6，强击10／相邻，直线10／三格且单位挡线，保护减首次伤害4，推退无伤害无眩晕。详情不改变草稿。</p>`);}
  if(s.phase==='ended'){
-  const end=s.end!;$('controls').innerHTML='';$('flow').innerHTML=`<div class="result"><small>本次试验结果</small><h2>${end.outcome==='normal'?'正常撤离':'全队倒下'}</h2><p>目标${end.goal?'已完成':'未完成'} · 已取得 ${end.acquired} · 正常带出 ${end.brought}</p><p>${end.team.map(id=>`${esc(resources(s,id))}，${end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。资源与已学招式保留终局值，不治疗。</p><p>报酬／救援未启用。${end.outcome==='wipe'?'普通背包已取得但未带出，不进入跨局库存。':''}</p>${end.tm?`<p id="tm-line">招式机：${esc(tmName(end.tm.move))}，${end.tm.brought?'已带出，回到基地后进入仓库':'已取得、未带出，不进入仓库'}。</p>`:''}${s.scenario==='expedition'&&s.prog?button('to-base','回到基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}${store.envelope?.recent?button('recent','查看最近结束记录'):''}<p class="muted">重开使用新初态，不是原局复活。终局ID ${esc(end.id)}</p>${recentVisible?`<pre>${esc(JSON.stringify(store.envelope?.recent?.end,null,2))}</pre>`:''}</div>`;
+  const end=s.end!;$('controls').innerHTML='';$('flow').innerHTML=`<div class="result"><small>本次试验结果</small><h2>${end.outcome==='normal'?'正常撤离':'全队倒下'}</h2><p>目标${end.goal?'已完成':'未完成'} · 已取得 ${end.acquired} · 正常带出 ${end.brought}</p><p>${end.team.map(id=>`${esc(resources(s,id))}，${end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。资源与已学招式保留终局值，不治疗。</p>${resultDetails(s)}${s.scenario==='expedition'&&s.prog?button('to-base','回到基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}${store.envelope?.recent?button('recent','查看最近结束记录'):''}<p class="muted">重开使用新初态，不是原局复活。终局ID ${esc(end.id)}</p>${recentVisible?`<pre>${esc(JSON.stringify(store.envelope?.recent?.end,null,2))}</pre>`:''}</div>`;
   bind('to-base',()=>{if(anim.active)return;clear();notice='';void transition(store.returnToBase());});
   bind('new',()=>{const next=checkMode?createScenario(fixture!,newId()):begin(s.scenario==='main-invite'||s.scenario==='expedition'?s.scenario:'main-none');void transition(store.newTrial(next));});bind('recent',()=>{recentVisible=!recentVisible;render();});return;
  }
@@ -120,11 +127,12 @@ function renderMain(){const s=live();$('legend-items').hidden=!s?.prog;scene?.pa
  $('flow').innerHTML=confirmExit?`<h2>${onStairs?'本轮请求跨层？':'本轮请求撤离？'}</h2><p>消耗主控行动，敌人仍会行动。使用者轮末存活且仍在交互格才成立。</p>${button('exit-confirm',onStairs?'确认本轮跨层':'确认本轮撤离',!ready,'data-confirm="true" class="primary"')}${button('cancel-exit','继续查看')}`:'';
  bind('exit-confirm',()=>void send({type:'round',action:{type:'interact',exit:true}}));bind('cancel-exit',()=>{confirmExit=false;render();});
  const editor=draft?.editor??s.leader;const u=s.units[editor];
- const point=s.points.find(p=>same(p.pos,u.pos));const stairKind=point?.kind==='down'||point?.kind==='up';const restPoint=point?.kind==='rest';const canCollect=!!point&&!point.used&&point.kind!=='exit'&&!stairKind&&!restPoint;const pickup=point?.kind==='berry'||point?.kind==='tonic';
+ const point=s.points.find(p=>same(p.pos,u.pos));const stairKind=point?.kind==='down'||point?.kind==='up';const restPoint=point?.kind==='rest';const serviceCell=point?.kind==='shop'||point?.kind==='exchange';const canCollect=!!point&&!point.used&&point.kind!=='exit'&&!stairKind&&!restPoint&&!serviceCell;const pickup=point?.kind==='berry'||point?.kind==='tonic';
  let draftText='';if(draft){const valid=draft.main&&(draft.swap||draft.action)?applyCommand(s,{type:'round',action:draft.main,...(!draft.swap?{override:{actor:draft.partner,action:draft.action!}}:{})}):null;
  draftText=`<div class="draft"><strong>本轮草稿中 · 正在编辑 ${esc(editor)}</strong><p>${button('edit-main',`${s.leader}：${actionLabel(draft.main)}`,draft.swap)}${button('edit-partner',`${draft.partner}：${draft.swap?'换位（双方行动）':actionLabel(draft.action)}`,draft.swap)}</p><p>之后：敌方阶段</p>${draftOrder(s,draft)}${valid&&!valid.ok?`<p class="error">${esc(valid.error)}</p>`:''}${button('submit',draft.main?.type==='interact'&&draft.main.exit?'提交整轮并请求撤离':'提交整轮',!ready||!valid?.ok,'data-confirm="true" class="primary"')}${button('cancel-draft','取消组合')}</div>`;
  }
- $('controls').innerHTML=`<h2>${draft?'组合安排':'主控行动'} <small>${esc(editor)}</small></h2>${draftText}<div class="button-row">${button('wait','等待（.）',!editable||(!ready&&!draft)||!!draft?.swap)}${button('arrange','安排伙伴',!editable||!!draft)}${button('swap','换位',!editable||!!draft)}</div>${choosingPartner||choosingSwap?`<p>选择另一名伙伴：</p>${s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0).map(id=>button('partner-'+id,id,!editable)).join('')}`:''}<div class="skills">${u.learned.map(k=>button('skill-'+k,`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`,!editable||(!ready&&!draft)||!!draft?.swap||(u.pp[k]??0)<1,selectedSkill===k?'class="selected"':'')).join('')}</div>${s.prog?`<div class="items"><p class="muted">背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）。占该成员一次行动，对自己或相邻同行。</p>${(['berry','tonic'] as Item[]).map(k=>button('use-'+k,`使用${ITEM_NAMES[k]}`,!editable||(!ready&&!draft)||!!draft?.swap,choosingItem===k?'class="selected"':'')).join('')}${choosingItem&&u.pos?`<p>对谁使用${ITEM_NAMES[choosingItem]}？</p>${s.queue.filter(id=>s.units[id].hp>0&&s.units[id].pos&&(id===editor||Math.abs(s.units[id].pos!.x-u.pos!.x)+Math.abs(s.units[id].pos!.y-u.pos!.y)===1)).map(id=>button('item-target-'+id,id===editor?`${id}（自己）`:id,!editable)).join('')}`:''}</div>`:''}<p class="muted">${selectedSkill?`已选${names[selectedSkill]}：${hints[selectedSkill]}${s.prog&&s.prog.level>1?`（本局等级加成：伤害+${s.prog.level-1}）`:''}。耗1PP；金圈按当前计划标出合法目标。`:draft?'点地图或方向键只编辑动作，尚未执行。':'方向键移动；点相邻敌人普攻；K选技能。'}</p>${point&&editor===s.leader&&restPoint?button('rest',point.used?'休整点已使用':'整理招式补给（休整点，每局一次）',!editable||(!ready&&!draft)||!!draft?.swap||point.used):''}${point&&editor===s.leader&&!restPoint?(canCollect?button('take',pickup?`拾取${ITEM_NAMES[point!.kind as Item]}`:'取得并继续',!editable||(!ready&&!draft)||!!draft?.swap):'')+(pickup?'':button('take-exit',stairKind?(point!.kind==='down'?'走下楼梯（请求跨层）':'走上楼梯（请求跨层）'):canCollect?'取得／请求撤离':'请求撤离',!editable||(!ready&&!draft)||!!draft?.swap)):''}`;
+ $('controls').innerHTML=`<h2>${draft?'组合安排':'主控行动'} <small>${esc(editor)}</small></h2>${draftText}<div class="button-row">${button('wait','等待（.）',!editable||(!ready&&!draft)||!!draft?.swap)}${button('arrange','安排伙伴',!editable||!!draft)}${button('swap','换位',!editable||!!draft)}</div>${choosingPartner||choosingSwap?`<p>选择另一名伙伴：</p>${s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0).map(id=>button('partner-'+id,id,!editable)).join('')}`:''}<div class="skills">${u.learned.map(k=>button('skill-'+k,`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`,!editable||(!ready&&!draft)||!!draft?.swap||(u.pp[k]??0)<1,selectedSkill===k?'class="selected"':'')).join('')}</div>${s.prog?`<div class="items"><p class="muted">背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）。占该成员一次行动，对自己或相邻同行。</p>${(['berry','tonic'] as Item[]).map(k=>button('use-'+k,`使用${ITEM_NAMES[k]}`,!editable||(!ready&&!draft)||!!draft?.swap,choosingItem===k?'class="selected"':'')).join('')}${choosingItem&&u.pos?`<p>对谁使用${ITEM_NAMES[choosingItem]}？</p>${s.queue.filter(id=>s.units[id].hp>0&&s.units[id].pos&&(id===editor||Math.abs(s.units[id].pos!.x-u.pos!.x)+Math.abs(s.units[id].pos!.y-u.pos!.y)===1)).map(id=>button('item-target-'+id,id===editor?`${id}（自己）`:id,!editable)).join('')}`:''}</div>`:''}<p class="muted">${selectedSkill?`已选${names[selectedSkill]}：${hints[selectedSkill]}${s.prog&&s.prog.level>1?`（本局等级加成：伤害+${s.prog.level-1}）`:''}。耗1PP；金圈按当前计划标出合法目标。`:draft?'点地图或方向键只编辑动作，尚未执行。':'方向键移动；点相邻敌人普攻；K选技能。'}</p>${point&&editor===s.leader&&restPoint?button('rest',point.used?'休整点已使用':'整理招式补给（休整点，每局一次）',!editable||(!ready&&!draft)||!!draft?.swap||point.used):''}${point&&editor===s.leader&&!restPoint&&!serviceCell?(canCollect?button('take',pickup?`拾取${ITEM_NAMES[point!.kind as Item]}`:'取得并继续',!editable||(!ready&&!draft)||!!draft?.swap):'')+(pickup?'':button('take-exit',stairKind?(point!.kind==='down'?'走下楼梯（请求跨层）':'走上楼梯（请求跨层）'):canCollect?'取得／请求撤离':'请求撤离',!editable||(!ready&&!draft)||!!draft?.swap)):''}`;
+ if(!draft&&editor===s.leader){$('controls').insertAdjacentHTML('beforeend',servicePanel(s,point,ready));bindService(s);}
  bind('wait',()=>act({type:'wait'}));bind('arrange',()=>{choosingPartner=true;choosingSwap=false;selectedSkill=null;render();});bind('swap',()=>{choosingSwap=true;choosingPartner=false;selectedSkill=null;render();});
  for(const id of s.queue.filter(id=>id!==s.leader))bind('partner-'+id,()=>{const swap=choosingSwap;draft={partner:id,action:null,main:swap?{type:'swap',target:id}:null,editor:swap?s.leader:id,swap};choosingPartner=false;choosingSwap=false;render();});
  u.learned.forEach(k=>bind('skill-'+k,()=>{selectedSkill=k;choosingItem=null;render();}));
@@ -139,18 +147,26 @@ function renderBase(){
  const mv=(i:typeof p.roster[number],n:string)=>i.learned.find(l=>l.move===n)!;
  $('party').innerHTML=`<h2>名册 <small>${p.roster.length}只 · 每只最多携带2招，两招行为须不同</small></h2>`+p.roster.map(i=>{const pos=p.team.indexOf(i.id);
   return `<article class="unit ${i.id===p.leader&&pos>=0?'leader':''}" id="inst-${i.id}"><div><strong>${esc(i.id)}</strong><span>${esc(spName(i.species))} · ${pos>=0?`出发第${pos+1}位${i.id===p.leader?' · 主控':''}`:'留守'}</span></div>
-  <p>已学：${i.learned.map(l=>`${esc(moveZh(l.move))}（${names[l.behavior]} PP${l.pp}）`).join('、')}</p>
+  ${i.protected?'<p class="muted">初始成员：全灭时不会走失</p>':''}<p>已学：${i.learned.map(l=>`${esc(moveZh(l.move))}（${names[l.behavior]} PP${l.pp}）`).join('、')}</p>
   <p>携带：${i.carry.length?i.carry.map(n=>`${esc(moveZh(n))}（${names[mv(i,n).behavior]}）`).join('、'):'无'}</p>
   <div>${i.learned.map(l=>button(`carry-${i.id}-${l.move}`,`${i.carry.includes(l.move)?'卸下':'携带'} ${esc(moveZh(l.move))}`,!ready,i.carry.includes(l.move)?'class="selected"':'')).join('')}</div>
   <div>${button(`team-${i.id}`,pos>=0?'移出队伍':'加入队伍',!ready)}${button(`lead-${i.id}`,'设为主控',!ready||pos<0||i.id===p.leader)}</div></article>`;}).join('');
  const vault=TM_MOVES.map(m=>button(`tm-${m}`,`${esc(tmName(m))}招式机 ×${p.vault[m]??0}`,!ready||(p.vault[m]??0)<1,tmPick===m?'class="selected"':'')).join('');
  const learnRows=tmPick?`<p>把${esc(tmName(tmPick))}招式机教给：</p>${p.roster.map(i=>{const r=learnTm(p,i.id,tmPick!);return button(`learn-${i.id}`,`${esc(i.id)} ${esc(spName(i.species))}：${r.ok?'可学习':esc(r.error.split('；')[0])}`,!ready);}).join('')}`:'';
  const recent=store.envelope?.recent;
+ purseDraft=Math.min(purseDraft,Math.floor(Math.min(ECON.purseMax,p.account)/ECON.purseStep)*ECON.purseStep);
+ const poolHtml=p.rescue.length?p.rescue.map(r=>{const warn=!r.paid&&r.left===1;
+  return `<article class="unit rescue${warn?' warn':''}" id="rescue-${esc(r.inst.id)}"><div><strong>${esc(r.inst.id)}</strong><span>${esc(spName(r.inst.species))} · ${r.paid?`已付费 · 再经过 ${r.left} 次有效探险后回归`:`未付费 · 剩余期限 ${r.left} 次有效探险`}</span></div>${warn?'<p class="warn-text" style="color:#ffd27a;font-weight:700">下次有效探险后失去！请在出发前付费。</p>':''}<p>已学：${r.inst.learned.map(l=>esc(moveZh(l.move))).join('、')}</p>${r.paid?'':button(`rescue-pay-${r.inst.id}`,`付救援费 ${ECON.rescueCost}`,!ready)}</article>`;}).join(''):'<p class="muted" id="rescue-empty">救援池是空的。</p>';
+ const lostHtml=p.lost.length?`<ul id="lost-list">${p.lost.map(l=>`<li>${esc(l.id)} ${esc(spName(l.species))}：第${l.expedition}次远征后永久失去</li>`).join('')}</ul>`:'<p class="muted">还没有永久失去的伙伴。</p>';
  $('flow').innerHTML=`<div class="result" id="base"><small>基地</small><h2>整备后再出发</h2>
   <p>已完成远征 ${p.expeditions} 次。招式机在这里永久教给一只伙伴；换下的招式不会丢，也不会退还招式机。</p>
+  <h2>账户与救援</h2><p id="account">账户余额：<strong>${p.account}</strong>（只在基地使用：付救援费 ${ECON.rescueCost}，或装进出发的钱袋）</p>
+  <div id="rescue-pool">${poolHtml}</div>
+  <h2>已失去的伙伴</h2>${lostHtml}
   <h2>仓库（招式机）</h2><div>${vault}</div>${learnRows}
   <h2>出发队伍</h2><p id="squad">${p.team.map((id,n)=>`${n+1}. ${esc(id)} ${esc(spName(p.roster.find(i=>i.id===id)!.species))}${id===p.leader?'（主控）':''}`).join(' → ')}（选择顺序即队列顺序，最多${MAX_TEAM}只）</p>
   <p class="muted">出发是免费的基本整备：全员HP、PP全满；本局等级从1开始；新的随机地图。</p>
+  <h2>出发前：钱袋</h2><p id="purse-picker">钱袋：<strong id="purse-value">${purseDraft}</strong>（0到${Math.min(ECON.purseMax,p.account)}，每档${ECON.purseStep}；出发时从账户扣除，只能在局内商店花；正常撤离退回，全灭丢失）</p>${button('purse-down','减少',!ready||purseDraft<=0)}${button('purse-up','增加',!ready||purseDraft+ECON.purseStep>Math.min(ECON.purseMax,p.account))}
   ${button('depart','出发',!ready,'data-confirm="true" class="primary"')}${recent?.end?button('recent','查看最近结束记录'):''}${recentVisible?`<pre>${esc(JSON.stringify(recent?.end,null,2))}</pre>`:''}</div>`;
  $('controls').innerHTML='';
  const edit=async(a:BaseAction,after?:()=>void)=>{if(anim.active||store.status!=='ready')return;const pending=store.baseAction(a);render();const r=await pending;notice=r.ok?(r.saved?'':'这次改动尚未保存；请重试保存'):r.error;if(r.ok&&r.saved)after?.();render();};
@@ -161,9 +177,62 @@ function renderBase(){
   bind(`lead-${i.id}`,()=>void edit({type:'team',team:p.team,leader:i.id}));
   bind(`learn-${i.id}`,()=>{const m=tmPick;if(m)void edit({type:'learn',inst:i.id,move:m},()=>{tmPick=null;});});
  }
+ for(const r of p.rescue)bind(`rescue-pay-${r.inst.id}`,()=>void edit({type:'rescue',inst:r.inst.id}));
+ bind('purse-down',()=>{purseDraft=Math.max(0,purseDraft-ECON.purseStep);render();});bind('purse-up',()=>{purseDraft+=ECON.purseStep;render();});
  for(const m of TM_MOVES)bind(`tm-${m}`,()=>{tmPick=tmPick===m?null:m;notice='';render();});
  bind('recent',()=>{recentVisible=!recentVisible;render();});
- bind('depart',()=>{if(anim.active||store.status!=='ready')return;clear();tmPick=null;notice='';const pending=store.depart(newId(),newSeed());render();void pending.then(()=>{render();});});
+ bind('depart',()=>{if(anim.active||store.status!=='ready')return;const bad=purseProblem(p,purseDraft);if(bad){notice=bad;render();return;}clear();tmPick=null;notice='';const amount=purseDraft;purseDraft=0;const pending=store.depart(newId(),newSeed(),amount);render();void pending.then(()=>{render();});});
+}
+
+/* ---------- stage 7.2: result details, shop and exchanger panels ---------- */
+/** The end-of-run record in plain words: effective or not and why, reward, purse, who went missing, where each machine went, and what the pool will do on return. */
+function resultDetails(s:World):string{
+ const end=s.end!;
+ if(!s.prog||end.effective===undefined)return `<p>报酬／救援未启用。${end.outcome==='wipe'?'普通背包已取得但未带出，不进入跨局库存。':''}</p>`;
+ const label=(id:string)=>esc(unitLabel(s.units[id],id));
+ const sum=s.scenario==='expedition'?settleSummary(store.profile,s):null;
+ const sp=(x:{id:string;species:string})=>`${esc(x.id)} ${esc(spName(x.species))}`;
+ const pool=sum?`<ul id="pool-change">${sum.returned.length?`<li>回归名册：${sum.returned.map(sp).join('、')}</li>`:''}${sum.gone.length?`<li>永久失去（期限用完且未付费）：${sum.gone.map(sp).join('、')}</li>`:''}${sum.missing.length?`<li>本局走失、进入救援池（期限 ${ECON.window} 次有效探险，从下一局起计）：${sum.missing.map(sp).join('、')}</li>`:''}${sum.advanced.map(a=>`<li>${sp(a)}：${a.paid?'等待':'期限'} ${a.from} → ${a.to}</li>`).join('')}${!sum.returned.length&&!sum.gone.length&&!sum.missing.length&&!sum.advanced.length?'<li>救援池没有变化。</li>':''}</ul><p>账户：${sum.account.before} → ${sum.account.after}（回到基地时入账）</p>`:'';
+ return `<div id="settle"><h2>结算</h2>
+ <p id="eff-line">本局${end.effective?'算':'不算'}有效探险${end.reasons!.length?`：${end.reasons!.map(r=>REASON[r]).join('；')}`:'：没有完成基础目标，也没有保留新成果'}。${end.effective?'出发前就在救援池里的伙伴，等待次数各减1。':'救援池的等待次数不变。'}</p>
+ <p id="reward-line">基础报酬：${end.reward}${end.reward?'（完成了 G，全灭也照付）':'（没有完成 G，不发）'}。钱袋余额 ${end.purse}：${end.outcome==='normal'?`退回账户 ${end.refund}`:'全灭，丢失'}。</p>
+ <p id="lost-line">走失的伙伴：${end.lost!.length?end.lost!.map(label).join('、'):'无'}${end.outcome==='wipe'?'（初始成员不会走失；其余伙伴各以一半概率走失，结果已随终局保存，读档不变）':''}。</p>
+ <ul id="tm-list">${end.tms!.length?end.tms!.map(t=>`<li>${esc(tmLine(t))}</li>`).join(''):'<li>本局没有取得招式机。</li>'}</ul>
+ <h2>救援池的变化</h2>${pool||'<p class="muted">没有基地档案，无救援池。</p>'}</div>`;
+}
+/** Shop and exchanger panels, shown when the leader stands on the cell. Buying takes no round; the exchanger takes the leader's action. */
+function servicePanel(s:World,point:Point|undefined,ready:boolean):string{
+ if(!point||!s.prog)return '';
+ if(point.kind==='shop'&&s.shop){
+  const sh=s.shop,purse=s.purse??0;
+  const row=(item:ShopItem,label:string,left:number)=>{const price=ECON.price[item];const short=purse<price;
+   return `<li>${esc(label)} · 价格 ${price} · 库存 ${left}${button('buy-'+item,left<1?'售罄':'购买',!ready||left<1||short)}${left>0&&short?`<small>钱袋不足，还差${price-purse}</small>`:''}</li>`;};
+  return `<div class="service" id="shop-panel"><h2>商店 <small>只能用钱袋付款；买东西不占回合；库存固定，读档不会刷新；首版不收购</small></h2><p id="purse-line">钱袋余额：${purse}</p><ul>${row('berry',ITEM_NAMES.berry,sh.stock.berry)}${row('tonic',ITEM_NAMES.tonic,sh.stock.tonic)}${row('tm',sh.stock.tm?`招式机：${tmName(sh.stock.tm)}`:'招式机',sh.stock.tm?1:0)}</ul></div>`;
+ }
+ if(point.kind==='exchange'&&s.exchange){
+  const ex=s.exchange;
+  if(ex.used)return `<div class="service" id="exchange-panel"><h2>伙伴交换机</h2><p>本局已经使用：${esc(unitLabel(s.units[ex.sent!],ex.sent!))}安全回到基地。每局只能用一次。</p></div>`;
+  const cands=s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0);
+  const held=(s.tms??[]).map((t,i)=>({t,i})).filter(x=>x.t.fate==='held');
+  return `<div class="service" id="exchange-panel"><h2>伙伴交换机 <small>每局只能用一次；占主控一次行动；不回血、不补PP；被送回的伙伴本局不再参战，空位只能靠再次击败敌人、触发邀请来补</small></h2>
+  <p>选择送回基地的同行伙伴（须存活，不能是主控）：</p>${cands.length?cands.map(id=>button('ex-target-'+id,esc(unitLabel(s.units[id],id)),!ready,exTarget===id?'class="selected"':'')).join(''):'<p class="muted">没有可送回的伙伴。</p>'}
+  <p>随行运送招式机（最多${ECON.exchangeCargo}份；送回后全灭也不丢）：</p>${held.length?held.map(x=>button('ex-cargo-'+x.i,esc(tmLine(x.t).split('：')[0]),!ready,exCargo.includes(x.i)?'class="selected"':'')).join(''):'<p class="muted">本局没有持有的招式机。</p>'}
+  ${button('ex-confirm','确认送回',!ready||!exTarget,'data-confirm="true" class="primary"')}</div>`;
+ }
+ return '';
+}
+function bindService(s:World){
+ for(const item of ['berry','tonic','tm'] as ShopItem[])bind('buy-'+item,()=>void buyItem(item));
+ for(const id of s.queue)bind('ex-target-'+id,()=>{exTarget=exTarget===id?null:id;render();});
+ (s.tms??[]).forEach((_,i)=>bind('ex-cargo-'+i,()=>{exCargo=exCargo.includes(i)?exCargo.filter(n=>n!==i):exCargo.length<ECON.exchangeCargo?[...exCargo,i]:exCargo;if(exCargo.length===ECON.exchangeCargo&&!exCargo.includes(i))notice=`最多运送${ECON.exchangeCargo}份`;render();}));
+ bind('ex-confirm',()=>{if(exTarget)void send({type:'round',action:{type:'exchange',target:exTarget,cargo:[...exCargo]}});});
+}
+/** A purchase: no round, no animation; one complete save per sale. */
+async function buyItem(item:ShopItem){
+ if(anim.active||!live()||store.status!=='ready')return;
+ const predicted=applyCommand(live()!,{type:'buy',item});
+ if(!predicted.ok){notice=predicted.error;render();return;}
+ notice='';const pending=store.dispatch({type:'buy',item});render();const r=await pending;if(!r.ok)notice=r.error;render();
 }
 
 /* ---------- stage 7.1: title, new game, readability panels ---------- */
@@ -259,7 +328,7 @@ class BoardScene extends Phaser.Scene {
  const g=this.geometry(s);const fog=g.dungeon;if(fog){this.graphics.fillStyle(0x101c1b);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
  const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){if(fog&&!s.seen.includes(key(p)))continue;walls.add(key(q));img('wall',center(q),s.seen.includes(key(p))?.85:.3,1);}}
- for(const p of s.floor){const c=center(p),seen=s.seen.includes(key(p));if(fog&&!seen)continue;img('floor',c,seen?1:.28,1);if(seen){const point=s.points.find(q=>same(p,q.pos));if(point&&point.kind==='rest'){this.overlay.fillStyle(0x6ec3ff,point.used?.18:.4);this.overlay.fillCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(2,0x9fdcff,point.used?.3:1);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);text(c.x,c.y,'休','#e4f4ff',16);}else if(point&&(point.kind==='berry'||point.kind==='tonic')){img(point.kind==='berry'?'item-berry':'item-tonic',c,point.used?.3:1,2,.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='berry'?'果':'剂','#e4efb0',11);}else if(point){const stairs=point.kind==='down'||point.kind==='up';img(point.kind==='goal'?'goal':point.kind==='item'?'item':point.kind==='down'?'stairs-down':point.kind==='up'?'stairs-up':'exit',c,point.used?.45:1,2,point.kind==='exit'||stairs?1:.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='goal'?'G':point.kind==='item'?'T':point.kind==='down'?'下':point.kind==='up'?'上':'出口','#e4efb0',11);}}if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,`${p.x},${p.y}`,'#8fa89c',9);}
+ for(const p of s.floor){const c=center(p),seen=s.seen.includes(key(p));if(fog&&!seen)continue;img('floor',c,seen?1:.28,1);if(seen){const point=s.points.find(q=>same(p,q.pos));if(point&&point.kind==='rest'){this.overlay.fillStyle(0x6ec3ff,point.used?.18:.4);this.overlay.fillCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(2,0x9fdcff,point.used?.3:1);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);text(c.x,c.y,'休','#e4f4ff',16);}else if(point&&(point.kind==='shop'||point.kind==='exchange')){const col=point.kind==='shop'?0xf2b84b:0xc58bff;this.overlay.fillStyle(col,point.used?.2:.4);this.overlay.fillCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(2,col,point.used?.3:1);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);text(c.x,c.y,point.kind==='shop'?'商':'换','#fff4dc',16);}else if(point&&(point.kind==='berry'||point.kind==='tonic')){img(point.kind==='berry'?'item-berry':'item-tonic',c,point.used?.3:1,2,.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='berry'?'果':'剂','#e4efb0',11);}else if(point){const stairs=point.kind==='down'||point.kind==='up';img(point.kind==='goal'?'goal':point.kind==='item'?'item':point.kind==='down'?'stairs-down':point.kind==='up'?'stairs-up':'exit',c,point.used?.45:1,2,point.kind==='exit'||stairs?1:.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='goal'?'G':point.kind==='item'?'T':point.kind==='down'?'下':point.kind==='up'?'上':'出口','#e4efb0',11);}}if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,`${p.x},${p.y}`,'#8fa89c',9);}
  const shown=new Set<string>();const visible=(id:string)=>{const u=s.units[id];return u.pos&&u.hp>0&&s.seen.includes(key(u.pos))?u:null;};
  for(const id of [...s.enemies,...s.queue]){const u=visible(id);if(!u||!u.pos)continue;shown.add(id);const c=center(u.pos);
   // Shadow and leader ring live in a per-unit Graphics (local origin = cell centre, depth 3: above floor tiles and props, below sprites, highlights and labels) so animation can move them with the sprite.

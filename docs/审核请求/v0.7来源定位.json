@@ -1,0 +1,10 @@
+{
+  "version": "v0.7",
+  "sourceManifest": "审核版本/2026-10-26-v0.7/来源版本清单.json",
+  "sourceCommit": "eaac665b451bcef00280362164f6cd6fd1fa2a68",
+  "sourceUrl": "https://github.com/392fyc/pokemon-game-research/tree/eaac665b451bcef00280362164f6cd6fd1fa2a68",
+  "scope": "冻结清单中的路径指采集时的逻辑路径。冻结清单和其10项来源的原字节，从该固定提交读取并与原有字节数、SHA-256逐项比较。现行入口另由当前文件清单记录。",
+  "currentPathsUpdatedAfterSnapshot": ["项目目标与当前决策.md"],
+  "reason": "2026-10-28审核要求同步现行决策入口。原清单、历史正文与固定提交均不改写；上列现行路径允许更新，其余冻结来源的工作副本继续要求与固定来源相同。",
+  "historyRetention": "后续合并优先保留提交历史。若采用squash，须先保留这些固定提交的可访问引用或导出同字节证据，不将改写当前文件视为更新历史来源。"
+}

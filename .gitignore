@@ -13,3 +13,7 @@ playwright-report/
 
 # Task worktrees (Mercury worktree rule)
 .worktrees/
+
+# docs/ is the Obsidian vault (formerly pokemon-game-research): keep per-machine vault state out
+/docs/.obsidian/
+/docs/.trash/

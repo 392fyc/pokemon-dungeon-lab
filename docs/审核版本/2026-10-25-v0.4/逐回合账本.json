@@ -1,0 +1,5456 @@
+{
+  "version": "v0.4",
+  "scope": "走廊至房间的确定动作账本；不是游戏工程或最优策略搜索",
+  "baselinePackage": [
+    {
+      "path": "审核版本/2026-10-25-v0.3/审核入口.md",
+      "sha256": "EBAD2B8A45DF2FABB601ED518E9472F139767DC6CEFD74B634F54648FC9B14AA"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.3/伙伴控制与代表房间推演.md",
+      "sha256": "EC257384F575411930917B7D78CD4FE8490CB8BB6B7E4D117D21C9A4572916B2"
+    },
+    {
+      "path": "审核版本/2026-10-25-v0.3/审核记录.md",
+      "sha256": "1E9D8DE5BAC8EFFBF02E0EB6C63DD938F41277830052AA5FEC3248F4CEC52C06"
+    }
+  ],
+  "initialPositions": {
+    "A": [
+      0,
+      3
+    ],
+    "B": [
+      -1,
+      3
+    ],
+    "V": [
+      -2,
+      3
+    ],
+    "N": [
+      -3,
+      3
+    ],
+    "H": [
+      4,
+      3
+    ],
+    "R": [
+      6,
+      5
+    ]
+  },
+  "cases": {
+    "三人默认": {
+      "members": 3,
+      "guard": false,
+      "flank": false,
+      "waypoint": false,
+      "rounds": 11,
+      "primaryActions": 11,
+      "newPartnerOrders": 0,
+      "orders": [],
+      "PPused": 3,
+      "HP": {
+        "A": 4,
+        "B": 80,
+        "V": 55
+      },
+      "firstRoomEntryTurn": {
+        "A": 5,
+        "B": 6,
+        "V": 7
+      },
+      "waiting": {
+        "A": {
+          "commanded": 1
+        },
+        "B": {
+          "adjacent_to_leader": 3
+        },
+        "V": {
+          "blocked": 3
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              3,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 2,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 3,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 8,
+            "R": 10
+          },
+          "PPused": {
+            "A": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "enemy_attack",
+              "target": "A"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": [
+            {
+              "source": "H",
+              "target": "A",
+              "damage": 8
+            }
+          ]
+        },
+        {
+          "turn": 4,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 5,
+          "positions": {
+            "A": [
+              2,
+              3
+            ],
+            "B": [
+              1,
+              3
+            ],
+            "V": [
+              0,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 6,
+          "positions": {
+            "A": [
+              3,
+              3
+            ],
+            "B": [
+              2,
+              3
+            ],
+            "V": [
+              1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 7,
+          "positions": {
+            "A": [
+              3,
+              4
+            ],
+            "B": [
+              3,
+              3
+            ],
+            "V": [
+              2,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 8,
+          "positions": {
+            "A": [
+              4,
+              4
+            ],
+            "B": [
+              4,
+              3
+            ],
+            "V": [
+              3,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 9,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 10,
+          "positions": {
+            "A": [
+              6,
+              4
+            ],
+            "B": [
+              5,
+              4
+            ],
+            "V": [
+              4,
+              4
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 4,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                6,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "enemy_attack",
+              "target": "A"
+            }
+          ],
+          "damage": [
+            {
+              "source": "R",
+              "target": "A",
+              "damage": 8
+            }
+          ]
+        },
+        {
+          "turn": 11,
+          "positions": {
+            "A": [
+              6,
+              4
+            ],
+            "B": [
+              5,
+              4
+            ],
+            "V": [
+              4,
+              4
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 4,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 0
+          },
+          "PPused": {
+            "A": 3
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "R"
+            }
+          ],
+          "damage": []
+        }
+      ]
+    },
+    "四人默认": {
+      "members": 4,
+      "guard": false,
+      "flank": false,
+      "waypoint": false,
+      "rounds": 11,
+      "primaryActions": 11,
+      "newPartnerOrders": 0,
+      "orders": [],
+      "PPused": 3,
+      "HP": {
+        "A": 4,
+        "B": 80,
+        "V": 55,
+        "N": 60
+      },
+      "firstRoomEntryTurn": {
+        "A": 5,
+        "B": 6,
+        "V": 7,
+        "N": 8
+      },
+      "waiting": {
+        "A": {
+          "commanded": 1
+        },
+        "B": {
+          "adjacent_to_leader": 3
+        },
+        "V": {
+          "blocked": 3
+        },
+        "N": {
+          "blocked": 3
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              3,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                -2,
+                3
+              ]
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 2,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 3,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 8,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "enemy_attack",
+              "target": "A"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": [
+            {
+              "source": "H",
+              "target": "A",
+              "damage": 8
+            }
+          ]
+        },
+        {
+          "turn": 4,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 5,
+          "positions": {
+            "A": [
+              2,
+              3
+            ],
+            "B": [
+              1,
+              3
+            ],
+            "V": [
+              0,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -1,
+              3
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 6,
+          "positions": {
+            "A": [
+              3,
+              3
+            ],
+            "B": [
+              2,
+              3
+            ],
+            "V": [
+              1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              0,
+              3
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 7,
+          "positions": {
+            "A": [
+              3,
+              4
+            ],
+            "B": [
+              3,
+              3
+            ],
+            "V": [
+              2,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              1,
+              3
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 8,
+          "positions": {
+            "A": [
+              4,
+              4
+            ],
+            "B": [
+              4,
+              3
+            ],
+            "V": [
+              3,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 9,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              3
+            ]
+          },
+          "HP": {
+            "A": 12,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 10,
+          "positions": {
+            "A": [
+              6,
+              4
+            ],
+            "B": [
+              5,
+              4
+            ],
+            "V": [
+              4,
+              4
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              4,
+              3
+            ]
+          },
+          "HP": {
+            "A": 4,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                6,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "enemy_attack",
+              "target": "A"
+            }
+          ],
+          "damage": [
+            {
+              "source": "R",
+              "target": "A",
+              "damage": 8
+            }
+          ]
+        },
+        {
+          "turn": 11,
+          "positions": {
+            "A": [
+              6,
+              4
+            ],
+            "B": [
+              5,
+              4
+            ],
+            "V": [
+              4,
+              4
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              4,
+              3
+            ]
+          },
+          "HP": {
+            "A": 4,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 0,
+            "N": 60
+          },
+          "PPused": {
+            "A": 3
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "R"
+            }
+          ],
+          "damage": []
+        }
+      ]
+    },
+    "三人单指令": {
+      "members": 3,
+      "guard": true,
+      "flank": false,
+      "waypoint": false,
+      "rounds": 11,
+      "primaryActions": 11,
+      "newPartnerOrders": 1,
+      "orders": [
+        {
+          "turn": 3,
+          "actor": "B",
+          "kind": "guard",
+          "target": "A"
+        }
+      ],
+      "PPused": 4,
+      "HP": {
+        "A": 8,
+        "B": 80,
+        "V": 55
+      },
+      "firstRoomEntryTurn": {
+        "A": 5,
+        "B": 6,
+        "V": 7
+      },
+      "waiting": {
+        "A": {
+          "commanded": 1
+        },
+        "B": {
+          "adjacent_to_leader": 2
+        },
+        "V": {
+          "blocked": 3
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              3,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 2,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 3,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 8,
+            "R": 10
+          },
+          "PPused": {
+            "A": 1,
+            "B": 1
+          },
+          "newPartnerOrders": [
+            [
+              "B",
+              "guard",
+              "A"
+            ]
+          ],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "guard",
+              "target": "A"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "enemy_attack",
+              "target": "A"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": [
+            {
+              "source": "H",
+              "target": "A",
+              "damage": 4
+            }
+          ]
+        },
+        {
+          "turn": 4,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 5,
+          "positions": {
+            "A": [
+              2,
+              3
+            ],
+            "B": [
+              1,
+              3
+            ],
+            "V": [
+              0,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 6,
+          "positions": {
+            "A": [
+              3,
+              3
+            ],
+            "B": [
+              2,
+              3
+            ],
+            "V": [
+              1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 7,
+          "positions": {
+            "A": [
+              3,
+              4
+            ],
+            "B": [
+              3,
+              3
+            ],
+            "V": [
+              2,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 8,
+          "positions": {
+            "A": [
+              4,
+              4
+            ],
+            "B": [
+              4,
+              3
+            ],
+            "V": [
+              3,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 9,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 10,
+          "positions": {
+            "A": [
+              6,
+              4
+            ],
+            "B": [
+              5,
+              4
+            ],
+            "V": [
+              4,
+              4
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 8,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                6,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "enemy_attack",
+              "target": "A"
+            }
+          ],
+          "damage": [
+            {
+              "source": "R",
+              "target": "A",
+              "damage": 8
+            }
+          ]
+        },
+        {
+          "turn": 11,
+          "positions": {
+            "A": [
+              6,
+              4
+            ],
+            "B": [
+              5,
+              4
+            ],
+            "V": [
+              4,
+              4
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ]
+          },
+          "HP": {
+            "A": 8,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 0
+          },
+          "PPused": {
+            "A": 3,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "R"
+            }
+          ],
+          "damage": []
+        }
+      ]
+    },
+    "四人单指令保守": {
+      "members": 4,
+      "guard": true,
+      "flank": false,
+      "waypoint": false,
+      "rounds": 11,
+      "primaryActions": 11,
+      "newPartnerOrders": 1,
+      "orders": [
+        {
+          "turn": 3,
+          "actor": "B",
+          "kind": "guard",
+          "target": "A"
+        }
+      ],
+      "PPused": 4,
+      "HP": {
+        "A": 8,
+        "B": 80,
+        "V": 55,
+        "N": 60
+      },
+      "firstRoomEntryTurn": {
+        "A": 5,
+        "B": 6,
+        "V": 7,
+        "N": 8
+      },
+      "waiting": {
+        "A": {
+          "commanded": 1
+        },
+        "B": {
+          "adjacent_to_leader": 2
+        },
+        "V": {
+          "blocked": 3
+        },
+        "N": {
+          "blocked": 3
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              3,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                -2,
+                3
+              ]
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 2,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 3,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 8,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 1,
+            "B": 1
+          },
+          "newPartnerOrders": [
+            [
+              "B",
+              "guard",
+              "A"
+            ]
+          ],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "guard",
+              "target": "A"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "enemy_attack",
+              "target": "A"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": [
+            {
+              "source": "H",
+              "target": "A",
+              "damage": 4
+            }
+          ]
+        },
+        {
+          "turn": 4,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 5,
+          "positions": {
+            "A": [
+              2,
+              3
+            ],
+            "B": [
+              1,
+              3
+            ],
+            "V": [
+              0,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -1,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 6,
+          "positions": {
+            "A": [
+              3,
+              3
+            ],
+            "B": [
+              2,
+              3
+            ],
+            "V": [
+              1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              0,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 7,
+          "positions": {
+            "A": [
+              3,
+              4
+            ],
+            "B": [
+              3,
+              3
+            ],
+            "V": [
+              2,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              1,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 8,
+          "positions": {
+            "A": [
+              4,
+              4
+            ],
+            "B": [
+              4,
+              3
+            ],
+            "V": [
+              3,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 9,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 10,
+          "positions": {
+            "A": [
+              6,
+              4
+            ],
+            "B": [
+              5,
+              4
+            ],
+            "V": [
+              4,
+              4
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              4,
+              3
+            ]
+          },
+          "HP": {
+            "A": 8,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                6,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "enemy_attack",
+              "target": "A"
+            }
+          ],
+          "damage": [
+            {
+              "source": "R",
+              "target": "A",
+              "damage": 8
+            }
+          ]
+        },
+        {
+          "turn": 11,
+          "positions": {
+            "A": [
+              6,
+              4
+            ],
+            "B": [
+              5,
+              4
+            ],
+            "V": [
+              4,
+              4
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              4,
+              3
+            ]
+          },
+          "HP": {
+            "A": 8,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 0,
+            "N": 60
+          },
+          "PPused": {
+            "A": 3,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "R"
+            }
+          ],
+          "damage": []
+        }
+      ]
+    },
+    "四人单指令展开": {
+      "members": 4,
+      "guard": true,
+      "flank": true,
+      "waypoint": false,
+      "rounds": 12,
+      "primaryActions": 12,
+      "newPartnerOrders": 4,
+      "orders": [
+        {
+          "turn": 3,
+          "actor": "B",
+          "kind": "guard",
+          "target": "A"
+        },
+        {
+          "turn": 10,
+          "actor": "N",
+          "kind": "move",
+          "target": [
+            3,
+            4
+          ]
+        },
+        {
+          "turn": 11,
+          "actor": "N",
+          "kind": "move",
+          "target": [
+            3,
+            5
+          ]
+        },
+        {
+          "turn": 12,
+          "actor": "N",
+          "kind": "shot",
+          "target": "R"
+        }
+      ],
+      "PPused": 4,
+      "HP": {
+        "A": 16,
+        "B": 80,
+        "V": 55,
+        "N": 52
+      },
+      "firstRoomEntryTurn": {
+        "A": 5,
+        "B": 6,
+        "V": 7,
+        "N": 8
+      },
+      "waiting": {
+        "A": {
+          "commanded": 4
+        },
+        "B": {
+          "adjacent_to_leader": 5
+        },
+        "V": {
+          "blocked": 6
+        },
+        "N": {
+          "blocked": 3
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              3,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                -2,
+                3
+              ]
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 2,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 3,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 8,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 1,
+            "B": 1
+          },
+          "newPartnerOrders": [
+            [
+              "B",
+              "guard",
+              "A"
+            ]
+          ],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "guard",
+              "target": "A"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "enemy_attack",
+              "target": "A"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": [
+            {
+              "source": "H",
+              "target": "A",
+              "damage": 4
+            }
+          ]
+        },
+        {
+          "turn": 4,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 5,
+          "positions": {
+            "A": [
+              2,
+              3
+            ],
+            "B": [
+              1,
+              3
+            ],
+            "V": [
+              0,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -1,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 6,
+          "positions": {
+            "A": [
+              3,
+              3
+            ],
+            "B": [
+              2,
+              3
+            ],
+            "V": [
+              1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              0,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 7,
+          "positions": {
+            "A": [
+              3,
+              4
+            ],
+            "B": [
+              3,
+              3
+            ],
+            "V": [
+              2,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              1,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 8,
+          "positions": {
+            "A": [
+              4,
+              4
+            ],
+            "B": [
+              4,
+              3
+            ],
+            "V": [
+              3,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 9,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 10,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              4
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [
+            [
+              "N",
+              "move",
+              [
+                3,
+                4
+              ]
+            ]
+          ],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                3,
+                4
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 11,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 52
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [
+            [
+              "N",
+              "move",
+              [
+                3,
+                5
+              ]
+            ]
+          ],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                3,
+                5
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "enemy_attack",
+              "target": "N"
+            }
+          ],
+          "damage": [
+            {
+              "source": "R",
+              "target": "N",
+              "damage": 8
+            }
+          ]
+        },
+        {
+          "turn": 12,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 0,
+            "N": 52
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1,
+            "N": 1
+          },
+          "newPartnerOrders": [
+            [
+              "N",
+              "shot",
+              "R"
+            ]
+          ],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "shot",
+              "target": "R"
+            }
+          ],
+          "damage": []
+        }
+      ]
+    },
+    "四人到位指令优化": {
+      "members": 4,
+      "guard": true,
+      "flank": true,
+      "waypoint": true,
+      "rounds": 12,
+      "primaryActions": 12,
+      "newPartnerOrders": 3,
+      "orders": [
+        {
+          "turn": 3,
+          "actor": "B",
+          "kind": "guard",
+          "target": "A"
+        },
+        {
+          "turn": 10,
+          "actor": "N",
+          "kind": "point",
+          "target": [
+            3,
+            5
+          ]
+        },
+        {
+          "turn": 12,
+          "actor": "N",
+          "kind": "shot",
+          "target": "R"
+        }
+      ],
+      "PPused": 4,
+      "HP": {
+        "A": 16,
+        "B": 80,
+        "V": 55,
+        "N": 52
+      },
+      "firstRoomEntryTurn": {
+        "A": 5,
+        "B": 6,
+        "V": 7,
+        "N": 8
+      },
+      "waiting": {
+        "A": {
+          "commanded": 4
+        },
+        "B": {
+          "adjacent_to_leader": 5
+        },
+        "V": {
+          "blocked": 6
+        },
+        "N": {
+          "blocked": 3
+        }
+      },
+      "trace": [
+        {
+          "turn": 1,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              3,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                -2,
+                3
+              ]
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 2,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 20,
+            "B": 80,
+            "V": 55,
+            "H": 18,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {},
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 3,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 8,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 1,
+            "B": 1
+          },
+          "newPartnerOrders": [
+            [
+              "B",
+              "guard",
+              "A"
+            ]
+          ],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "guard",
+              "target": "A"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "H",
+              "kind": "enemy_attack",
+              "target": "A"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": [
+            {
+              "source": "H",
+              "target": "A",
+              "damage": 4
+            }
+          ]
+        },
+        {
+          "turn": 4,
+          "positions": {
+            "A": [
+              1,
+              3
+            ],
+            "B": [
+              0,
+              3
+            ],
+            "V": [
+              -1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "hit",
+              "target": "H"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 5,
+          "positions": {
+            "A": [
+              2,
+              3
+            ],
+            "B": [
+              1,
+              3
+            ],
+            "V": [
+              0,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              -1,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                -1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 6,
+          "positions": {
+            "A": [
+              3,
+              3
+            ],
+            "B": [
+              2,
+              3
+            ],
+            "V": [
+              1,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              0,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                0,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 7,
+          "positions": {
+            "A": [
+              3,
+              4
+            ],
+            "B": [
+              3,
+              3
+            ],
+            "V": [
+              2,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              1,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                3,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                1,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 8,
+          "positions": {
+            "A": [
+              4,
+              4
+            ],
+            "B": [
+              4,
+              3
+            ],
+            "V": [
+              3,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              2,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                2,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 9,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              3
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "move",
+              "target": [
+                5,
+                4
+              ]
+            },
+            {
+              "actor": "B",
+              "kind": "move",
+              "target": [
+                4,
+                4
+              ]
+            },
+            {
+              "actor": "V",
+              "kind": "move",
+              "target": [
+                4,
+                3
+              ]
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                3,
+                3
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 10,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              4
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 60
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [
+            [
+              "N",
+              "point",
+              [
+                3,
+                5
+              ]
+            ]
+          ],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                3,
+                4
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "wait",
+              "target": "no_target"
+            }
+          ],
+          "damage": []
+        },
+        {
+          "turn": 11,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 10,
+            "N": 52
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1
+          },
+          "newPartnerOrders": [],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "move",
+              "target": [
+                3,
+                5
+              ]
+            },
+            {
+              "actor": "R",
+              "kind": "enemy_attack",
+              "target": "N"
+            }
+          ],
+          "damage": [
+            {
+              "source": "R",
+              "target": "N",
+              "damage": 8
+            }
+          ]
+        },
+        {
+          "turn": 12,
+          "positions": {
+            "A": [
+              5,
+              4
+            ],
+            "B": [
+              4,
+              4
+            ],
+            "V": [
+              4,
+              3
+            ],
+            "H": [
+              2,
+              3
+            ],
+            "R": [
+              6,
+              5
+            ],
+            "N": [
+              3,
+              5
+            ]
+          },
+          "HP": {
+            "A": 16,
+            "B": 80,
+            "V": 55,
+            "H": 0,
+            "R": 0,
+            "N": 52
+          },
+          "PPused": {
+            "A": 2,
+            "B": 1,
+            "N": 1
+          },
+          "newPartnerOrders": [
+            [
+              "N",
+              "shot",
+              "R"
+            ]
+          ],
+          "actions": [
+            {
+              "actor": "A",
+              "kind": "wait",
+              "target": "commanded"
+            },
+            {
+              "actor": "B",
+              "kind": "wait",
+              "target": "adjacent_to_leader"
+            },
+            {
+              "actor": "V",
+              "kind": "wait",
+              "target": "blocked"
+            },
+            {
+              "actor": "N",
+              "kind": "shot",
+              "target": "R"
+            }
+          ],
+          "damage": []
+        }
+      ]
+    }
+  }
+}

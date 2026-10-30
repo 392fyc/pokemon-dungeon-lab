@@ -1,7 +1,7 @@
 /** Stage 7.1 title screen and new-game pages: HTML builders and the portrait animation tick. No game rules and no storage here. */
 import {SPECIES,STARTER_IDS} from '../core/roster.ts';
 import {speciesZh,moveZh,typeZh} from '../core/names.ts';
-import {SKILL_CN} from '../core/engine.ts';
+import {moveSummary} from '../core/describe.ts';
 import {sheet} from '../render/sprites.ts';
 
 export type NewGameState={step:1|2;main:string|null;deputy:string|null;overwrite:boolean};
@@ -25,7 +25,7 @@ export function portraitTick(nowMs:number,animated:boolean):void {
     el.style.backgroundPosition=`${-frame*w*SCALE}px 0`;
   });
 }
-const moves=(id:string)=>SPECIES[id].kit.map(k=>`${esc(moveZh(k.move))}（${SKILL_CN[k.behavior]} PP${k.pp}）`).join('、');
+const moves=(id:string)=>SPECIES[id].kit.map(k=>`${esc(moveZh(k.move))}（${esc(moveSummary(k.move))}；PP${k.pp}）`).join('、');
 function card(id:string,kind:'main'|'deputy',selected:boolean):string {
   const sp=SPECIES[id];
   return `<button class="starter-card${selected?' selected':''}" id="pick-${kind}-${id}" aria-pressed="${selected}">${portrait(id)}<strong>${esc(speciesZh(id))}</strong><small>${(sp.types??[]).map(typeZh).join('／')}属性 · 生命 ${sp.maxHp}</small><span>初始招式：${moves(id)}</span></button>`;

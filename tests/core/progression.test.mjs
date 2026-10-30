@@ -9,13 +9,13 @@ import {TrialStore} from '../../src/core/save.ts';
 import {enemy,world,pos,row,doCmd,reject,round,interact,basic,skill,wait,accept,refuse} from '../acceptance/fixtures.mjs';
 
 /* Roster kits (src/data/roster.json): charmander 19 HP strong3 line2; squirtle 20 HP strong3 line2; bulbasaur 21 HP strong3 line1. */
-const mon=(id,species,x,hp,maxHp,pp,maxPp)=>({id,side:'friend',hp,maxHp,pos:hp>0?pos(x):null,pp:{...pp},maxPp:{...maxPp},learned:Object.keys(maxPp),species});
+const mon=(id,species,x,hp,maxHp,pp,maxPp)=>({id,side:'friend',stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,hp,maxHp,pos:hp>0?pos(x):null,pp:{...pp},maxPp:{...maxPp},learned:Object.keys(maxPp),species});
 const wild=(id,x,hp,species='rattata',damage=0)=>{const e=enemy(id,x,1,hp,'melee',damage);e.species=species;return e;};
 /** A hand-built 6.4 expedition on one row: A(0) charmander, B(1) squirtle, C(2) bulbasaur leads. `level` raises max HP by 2 per level above 1. */
 function run({level=1,exp=0,rng=7,enemies=[wild('w',3,6)],points=[],items={berry:0,tonic:0},floor=row(9)}={}){
  const up=2*(level-1);
- const s=world({A:mon('A','charmander',0,19+up,19+up,{strong:3,line:2},{strong:3,line:2}),B:mon('B','squirtle',1,20+up,20+up,{strong:3,line:2},{strong:3,line:2}),
-  C:mon('C','bulbasaur',2,21+up,21+up,{strong:3,line:1},{strong:3,line:1}),...Object.fromEntries(enemies.map(e=>[e.id,e]))},
+ const s=world({A:mon('A','charmander',0,19+up,19+up,{scratch:3,ember:2},{scratch:3,ember:2}),B:mon('B','squirtle',1,20+up,20+up,{tackle:3,watergun:2},{tackle:3,watergun:2}),
+  C:mon('C','bulbasaur',2,21+up,21+up,{tackle:3,seedbomb:1},{tackle:3,seedbomb:1}),...Object.fromEntries(enemies.map(e=>[e.id,e]))},
   {floor,leader:'C',enemies:enemies.map(e=>e.id),points});
  s.scenario='expedition';s.runId='prog';
  s.dungeon={seed:1,width:10,height:8,floors:2,level:1,stored:{}};
@@ -31,9 +31,9 @@ test('P1 a new expedition starts three roster starters at run level 1 with roste
  const s=createExpedition('start',777);
  assert.deepEqual(s.queue,['A','B','C']);assert.equal(s.leader,'C');
  const brief=id=>{const u=s.units[id];return [u.species,u.hp,u.maxHp,u.learned,u.pp,u.maxPp];};
- assert.deepEqual(brief('A'),['charmander',19,19,['strong','line'],{strong:3,line:2},{strong:3,line:2}]);
- assert.deepEqual(brief('B'),['squirtle',20,20,['strong','line'],{strong:3,line:2},{strong:3,line:2}]);
- assert.deepEqual(brief('C'),['bulbasaur',21,21,['strong','line'],{strong:3,line:1},{strong:3,line:1}]);
+ assert.deepEqual(brief('A'),['charmander',19,19,['scratch','ember'],{scratch:3,ember:2},{scratch:3,ember:2}]);
+ assert.deepEqual(brief('B'),['squirtle',20,20,['tackle','watergun'],{tackle:3,watergun:2},{tackle:3,watergun:2}]);
+ assert.deepEqual(brief('C'),['bulbasaur',21,21,['tackle','seedbomb'],{tackle:3,seedbomb:1},{tackle:3,seedbomb:1}]);
  assert.deepEqual(s.prog,{level:1,exp:0,rng:2779116292,made:0,kills:[],items:{berry:0,tonic:0}});   // 777 xor 0xA5A5F00D
  const wildSet=new Set(['pidgey','rattata','spearow','zubat','geodude']);
  assert.ok(s.enemies.every(id=>wildSet.has(s.units[id].species)),'wild enemies are non-starter roster species');
@@ -52,7 +52,7 @@ test('P2 rngStep walks the same sequence as the floor generator stream and retur
 test('P3 a defeated wild enemy invites when the draw is under 0.3: R07 half snapshot of its species at the run level',()=>{
  const s=round(run({rng:7}),basic('w'));          // first draw from state 7 is 0.0117
  assert.equal(s.phase,'invitation');assert.equal(s.invitations.length,1);
- assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',hp:9,maxHp:18,pos:null,pp:{strong:1},maxPp:{strong:3},learned:['strong'],species:'rattata'});
+ assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,hp:9,maxHp:18,pos:null,pp:{tackle:1},maxPp:{tackle:3},learned:['tackle'],species:'rattata'});
  assert.deepEqual(s.prog,{level:1,exp:1,rng:1831565820,made:1,kills:[],items:{berry:0,tonic:0}});
 });
 test('P3b no invitation when the draw is 0.3 or more; the draw is still spent',()=>{
@@ -62,11 +62,11 @@ test('P3b no invitation when the draw is 0.3 or more; the draw is still spent',(
 });
 test('P3c a wild species with two moves halves each, never below 1: pidgey 20 HP, strong3/line3 gives 10 HP, 1/1',()=>{
  const s=round(run({rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));
- assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',hp:10,maxHp:20,pos:null,pp:{strong:1,line:1},maxPp:{strong:3,line:3},learned:['strong','line'],species:'pidgey'});
+ assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,hp:10,maxHp:20,pos:null,pp:{tackle:1,gust:1},maxPp:{tackle:3,gust:3},learned:['tackle','gust'],species:'pidgey'});
 });
 test('P3d geodude keeps its guard move: guard 4 gives 2, strong 3 gives 1, 20 HP gives 10',()=>{
  const s=round(run({rng:7,enemies:[wild('w',3,6,'geodude')]}),basic('w'));
- const u=s.invitations[0].unit;assert.deepEqual([u.hp,u.maxHp,u.pp,u.maxPp],[10,20,{strong:1,guard:2},{strong:3,guard:4}]);
+ const u=s.invitations[0].unit;assert.deepEqual([u.hp,u.maxHp,u.pp,u.maxPp],[10,20,{tackle:1,defensecurl:2},{tackle:3,defensecurl:4}]);
 });
 test('P3e two defeats in one round draw in defeat order (queue order): B kills pidgey first, then C kills rattata',()=>{
  const floor=[...row(5),...row(5).map(p=>({x:p.x,y:2}))];
@@ -89,7 +89,7 @@ test('P4 level 2 at 3 exp: every member +2 max HP, current HP unchanged; the inv
  const s=round(run({exp:2,rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));
  assert.deepEqual([s.prog.level,s.prog.exp],[2,3]);
  assert.deepEqual(s.queue.map(i=>[s.units[i].hp,s.units[i].maxHp]),[[19,21],[20,22],[21,23]]);
- assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',hp:11,maxHp:22,pos:null,pp:{strong:1,line:1},maxPp:{strong:3,line:3},learned:['strong','line'],species:'pidgey'});
+ assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,hp:11,maxHp:22,pos:null,pp:{tackle:1,gust:1},maxPp:{tackle:3,gust:3},learned:['tackle','gust'],species:'pidgey'});
  const up=s.log.findIndex(t=>/升到Lv2/.test(t)),inv=s.log.findIndex(t=>/发出邀请/.test(t));
  assert.ok(up>=0&&inv>up,'level-up is settled before the invitation appears');
 });
@@ -126,7 +126,7 @@ test('P4e a new member joins at the current level; a member sent back to camp no
 test('P5 damage grows with the run level: basic 6+(L-1), strong and line 10+(L-1); level 1 keeps 6 and 10',()=>{
  const hits=(level,action)=>{const s=round(run({level,rng:1,enemies:[wild('w',3,40)]}),action);return 40-s.units.w.hp;};
  assert.equal(hits(1,basic('w')),6);assert.equal(hits(2,basic('w')),7);assert.equal(hits(5,basic('w')),10);
- assert.equal(hits(1,skill('strong','w')),10);assert.equal(hits(3,skill('strong','w')),12);assert.equal(hits(5,skill('line','w')),14);
+ assert.equal(hits(1,skill('tackle','w')),9);assert.equal(hits(3,skill('tackle','w')),11);assert.equal(hits(5,skill('seedbomb','w')),18);
 });
 
 /* ---------- pickups and items ---------- */
@@ -152,9 +152,9 @@ test('P7b a partner may use an item as the single intervention while the leader 
  assert.deepEqual([s.units.A.hp,s.prog.items.berry],[12,0]);
 });
 test('P8 tonic gives every move +1 PP up to its maximum',()=>{
- const w=run({enemies:[],items:{tonic:1}});w.units.B.pp={strong:1,line:2};w.units.C.pp={strong:0,line:0};
+ const w=run({enemies:[],items:{tonic:1}});w.units.B.pp={tackle:1,watergun:2};w.units.C.pp={tackle:0,seedbomb:0};
  const s=round(w,{type:'use',item:'tonic',target:'C'});
- assert.deepEqual(s.units.C.pp,{strong:1,line:1});assert.equal(s.prog.items.tonic,0);
+ assert.deepEqual(s.units.C.pp,{tackle:1,seedbomb:1});assert.equal(s.prog.items.tonic,0);
 });
 test('P8b an item that cannot work is refused before anything runs, with the reason and 本轮未执行',()=>{
  const full=run({enemies:[],items:{berry:1,tonic:1}});
@@ -279,8 +279,8 @@ const mutations=[
  ['species not in the roster',s=>{s.units.A.species='mewtwo';}],
  ['species whose kit differs from the unit',s=>{s.units.A.species='bulbasaur';}],
  ['max HP off the level formula',s=>{s.units.A.maxHp+=1;s.units.A.hp+=1;}],
- ['max PP off the kit',s=>{s.units.A.maxPp.strong=9;s.units.A.pp.strong=9;}],
- ['extra learned move',s=>{s.units.A.learned.push('push');s.units.A.pp.push=1;s.units.A.maxPp.push=1;}],
+ ['max PP off the kit',s=>{s.units.A.maxPp.tackle=9;s.units.A.pp.tackle=9;}],
+ ['extra learned move',s=>{s.units.A.learned.push('roar');s.units.A.pp.roar=1;s.units.A.maxPp.roar=1;}],
  ['pickup point in a world with no prog',s=>{delete s.prog;delete s.rooms;s.points.push({pos:pos(2),kind:'berry',used:false});}],
 ];
 for(const [name,mutate] of mutations)test('P12 rejects '+name+' and preserves bytes',async()=>{
@@ -292,7 +292,7 @@ for(const [name,mutate] of mutations)test('P12 rejects '+name+' and preserves by
 const pendingMutations=[
  ['invitation HP is not the half snapshot',u=>{u.hp=u.hp+1;}],
  ['invitation max HP ignores the run level',u=>{u.maxHp=u.maxHp+2;u.hp=u.maxHp/2;}],
- ['invitation PP is not the half snapshot',u=>{u.pp.strong=3;}],
+ ['invitation PP is not the half snapshot',u=>{u.pp.tackle=3;}],
  ['invitation species missing',u=>{delete u.species;}],
 ];
 for(const [name,mutate] of pendingMutations)test('P12b rejects '+name,async()=>{

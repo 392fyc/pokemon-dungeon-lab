@@ -41,7 +41,7 @@ test('other explicit action rejections also state that the round did not execute
  const s=createMain('other-reasons',false);
  denied(s,round({type:'basic',target:'E'}),/普攻需要相邻敌人/);
  denied(s,round({type:'move',to:{x:5,y:1}}),/只能移动到相邻格/);
- denied(s,round({type:'skill',skill:'guard',target:'B'}),/未装备该招式或PP不足/);
+ denied(s,round({type:'skill',skill:'protect',target:'B'}),/未装备该招式或PP不足/);
  denied(s,round({type:'swap',target:'A'}),/只能与相邻存活伙伴换位/);
  denied(s,{type:'round',action:{type:'wait'},override:{actor:'C',action:{type:'wait'}}},/只能安排另一名存活伙伴/);
 });

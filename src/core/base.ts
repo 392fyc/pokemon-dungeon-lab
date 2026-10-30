@@ -4,6 +4,7 @@
  */
 import {SPECIES,speciesOf,learnableMove,TM_MOVES,STARTER_IDS,type KitMove} from './roster.ts';
 import type {World,SquadMember} from './engine.ts';
+import {legacySpeciesMove} from './legacy-moves.ts';
 import {speciesZh,moveZh} from './names.ts';
 import {ECON} from './economy.ts';
 /**
@@ -23,7 +24,7 @@ export type Profile={expeditions:number;next:number;roster:Instance[];vault:Reco
 export type BaseAction={type:'learn';inst:string;move:string}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string};
 export type BaseResult={ok:true;profile:Profile}|{ok:false;error:string};
 export const MAX_CARRY=2,MAX_TEAM=3;
-const kitOf=(species:string):KitMove[]=>SPECIES[species].kit.map(k=>({move:k.move,behavior:k.behavior,pp:k.pp}));
+const kitOf=(species:string):KitMove[]=>SPECIES[species].kit.map(k=>({move:k.move,pp:k.pp}));
 const newInstance=(id:string,species:string,isProtected=false):Instance=>({id,species,learned:kitOf(species),carry:SPECIES[species].kit.map(k=>k.move),protected:isProtected});
 const clone=<T>(v:T):T=>structuredClone(v);
 const fail=(error:string):BaseResult=>({ok:false,error});
@@ -62,7 +63,6 @@ export function setCarry(original:Profile,instId:string,moves:string[]):BaseResu
   if(new Set(moves).size!==moves.length)return fail('同一招不能携带两次');
   const picked:KitMove[]=[];
   for(const name of moves){const m=inst.learned.find(l=>l.move===name);if(!m)return fail(`${instId}还没有学会${moveZh(name)}，不能携带`);picked.push(m);}
-  if(new Set(picked.map(m=>m.behavior)).size!==picked.length)return fail('携带的两招行为相同（例如两招都是保护），请换一招');
   const p=clone(original);instanceOf(p,instId)!.carry=[...moves];return {ok:true,profile:p};
 }
 /** 1 to 3 distinct roster members; the order is the queue order; the leader is one of them. */
@@ -179,28 +179,53 @@ export function migrateProfile(v:unknown):unknown {
   return p;
 }
 
+/** Convert the old profile's frozen (move, behavior, PP) rows after 7.2 fields have been migrated. */
+export function migrateProfileMoves(v:unknown):unknown {
+  if(!obj(v))return v;
+  const profile=v as Record<string,unknown>;
+  const oldInstance=(raw:unknown):unknown=>{
+    if(!obj(raw))throw Error('旧档案里的伙伴结构无法迁移');
+    const inst=raw as Record<string,unknown>;
+    if(!Array.isArray(inst.learned))throw Error('旧档案里的伙伴招式清单无法迁移');
+    const learned=inst.learned.map((value:unknown)=>{
+      if(!obj(value)||Object.keys(value).sort().join()!=='behavior,move,pp'||typeof value.move!=='string'||typeof value.behavior!=='string'||!Number.isInteger(value.pp))
+        throw Error(`旧档案里的${String(inst.id??'伙伴')}招式记录无法迁移`);
+      const old=typeof inst.species==='string'?legacySpeciesMove(inst.species,value.move):undefined;
+      if(!old||old.behavior!==value.behavior||old.pp!==value.pp)
+        throw Error(`旧档案里的${String(inst.id??'伙伴')}招式${value.move}与冻结的旧名单不符`);
+      return {move:value.move,pp:value.pp};
+    });
+    return {...inst,learned};
+  };
+  if(Array.isArray(profile.roster))profile.roster=profile.roster.map(oldInstance);
+  if(Array.isArray(profile.rescue))profile.rescue=profile.rescue.map((entry:unknown)=>{
+    if(!obj(entry))throw Error('旧档案的救援池条目无法迁移');
+    return {...entry,inst:oldInstance(entry.inst)};
+  });
+  return profile;
+}
+
 /* ---------- validation ---------- */
 const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const nat=(v:unknown):v is number=>Number.isInteger(v)&&(v as number)>=0;
 /** One instance (roster or pool): structure, species, learned moves from the species' learnable list, carried moves. Returns the problem text, or null. */
 function instProblem(i:unknown,ids:Set<string>,wantProtected:boolean|null):string|null {
   if(!obj(i)||typeof i.id!=='string'||typeof i.species!=='string'||!Array.isArray(i.learned)||!Array.isArray(i.carry)||typeof i.protected!=='boolean')return '名册实例结构错误';
+  if(Object.keys(i).some(k=>!['id','species','learned','carry','protected'].includes(k)))return `实例${i.id}含有不认识的字段`;
   if(ids.has(i.id))return `实例编号${i.id}重复`;ids.add(i.id);
   if(!/^P(\d+)$/.test(i.id))return `实例编号${i.id}格式错误`;
   if(wantProtected===false&&i.protected)return `救援池里的${i.id}不能带受保护标记`;
   if(!speciesOf(i.species))return `实例${i.id}的物种不在名册数据中`;
   const names=new Set<string>();
   for(const l of i.learned as unknown[]){
-    if(!obj(l)||typeof l.move!=='string'||typeof l.behavior!=='string'||!Number.isInteger(l.pp))return `实例${i.id}的已学招式结构错误`;
+    if(!obj(l)||Object.keys(l).sort().join()!=='move,pp'||typeof l.move!=='string'||!Number.isInteger(l.pp)||(l.pp as number)<1)return `实例${i.id}的已学招式结构错误`;
     const ok=learnableMove(i.species,l.move);
-    if(!ok||ok.behavior!==l.behavior||ok.pp!==l.pp)return `实例${i.id}的已学招式${l.move}不在该物种的可学清单里`;
+    if(!ok||ok.pp!==l.pp)return `实例${i.id}的已学招式${l.move}不在该物种的可学清单里`;
     if(names.has(l.move))return `实例${i.id}重复学会${l.move}`;names.add(l.move);
   }
   const carry=i.carry as unknown[];
   if(carry.length>MAX_CARRY||carry.some(c=>typeof c!=='string'||!names.has(c)))return `实例${i.id}携带的招式不是已学招式的子集，或超过${MAX_CARRY}招`;
   if(new Set(carry).size!==carry.length)return `实例${i.id}重复携带同一招`;
-  const behaviors=carry.map(c=>(i.learned as {move:string;behavior:string}[]).find(l=>l.move===c)!.behavior);
-  if(new Set(behaviors).size!==behaviors.length)return `实例${i.id}携带的两招行为相同`;
   return null;
 }
 /** Structure checks listed in the spec "存档与兼容" and "失败回归与服务点", plus the team and counters. Returns an error text, or null when the profile is sound. */
@@ -234,11 +259,12 @@ export function profileProblem(v:unknown):string|null {
 /** A run's units that came from the roster must match their instance: same species, and carried moves taken from its learned moves. */
 export function profileFitsWorld(p:Profile|undefined,w:World):boolean {
   const seen=new Set<string>();
-  for(const id of [...w.queue,...w.camp]){
+  for(const id of [...w.queue,...w.camp,...(w.exchange?.sent?[w.exchange.sent]:[])]){
     const u=w.units[id];if(u.inst===undefined)continue;
     if(!p||seen.has(u.inst))return false;seen.add(u.inst);
     const inst=instanceOf(p,u.inst);if(!inst||inst.species!==u.species||!u.moves||(u.protected===true)!==inst.protected)return false;
-    for(let n=0;n<u.moves.length;n++){const l=inst.learned.find(x=>x.move===u.moves![n]);if(!l||l.behavior!==u.learned[n]||u.maxPp[l.behavior]!==l.pp)return false;}
+    if(u.moves.length!==u.learned.length||new Set(u.moves).size!==u.moves.length)return false;
+    for(let n=0;n<u.moves.length;n++){const move=u.moves[n],l=inst.learned.find(x=>x.move===move);if(!l||u.learned[n]!==move||u.maxPp[move]!==l.pp)return false;}
   }
   return true;
 }

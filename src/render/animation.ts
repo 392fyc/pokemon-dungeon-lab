@@ -1,4 +1,5 @@
 import {distance,key,type Command,type Item,type Pos,type World} from '../core/engine.ts';
+import {moveOf} from '../core/moves.ts';
 /**
  * Stage 6.4 presentation: works out what happened in one round from the two saved states and the new log lines.
  * Pure data in, pure data out. It never touches rule code and never changes either state.
@@ -12,8 +13,8 @@ export type AnimEvent =
   | {k:'move'; by:string; id:string; from:Pos; to:Pos}
   | {k:'swap'; by:string; a:string; b:string; pa:Pos; pb:Pos}
   | {k:'hit'; by:string; attacker:string|null; target:string; from:Pos|null; at:Pos; fx:Fx; amount:number; dead:boolean}
-  | {k:'guard'; by:string; target:string; from:Pos; at:Pos}
-  | {k:'push'; by:string; target:string; actorAt:Pos; from:Pos; to:Pos}
+  | {k:'protect'; by:string; target:string; from:Pos; at:Pos}
+  | {k:'blowaway'; by:string; target:string; actorAt:Pos; from:Pos; to:Pos}
   | {k:'heal'; by:string; target:string; item:Item; amount:number; at:Pos; actorAt:Pos};
 
 /** Log lines added by the last command. The log keeps only the last 80 lines, so the old and new logs may be shifted. */
@@ -49,16 +50,16 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
   const used = new Set<string>();
   let enemyCursor = -1;
 
-  // A guard writes no log line, so it is placed by queue position: right before the first later actor's event.
-  const guards:{idx:number; ev:AnimEvent}[] = [];
+  // Protect's shield log has no position of its own, so place the effect by queue order.
+  const protects:{idx:number; ev:AnimEvent}[] = [];
   for (const id of b.queue) {
     const e = explicit(id), u = b.units[id];
-    if (e?.type === 'skill' && e.skill === 'guard' && u.hp > 0 && !lines.some(t => t.startsWith(`${id}动作失效`))) guards.push({idx:b.queue.indexOf(id), ev:{k:'guard', by:id, target:e.target, from:{x:0, y:0}, at:{x:0, y:0}}});
+    if (e?.type === 'skill' && moveOf(e.skill)?.effects.includes('protect') && u.hp > 0) protects.push({idx:b.queue.indexOf(id), ev:{k:'protect', by:id, target:e.target, from:{x:0, y:0}, at:{x:0, y:0}}});
   }
   const flush = (upTo:number) => {
-    while (guards.length && guards[0].idx < upTo) {
-      const g = guards.shift()!.ev;
-      if (g.k !== 'guard') continue;
+    while (protects.length && protects[0].idx < upTo) {
+      const g = protects.shift()!.ev;
+      if (g.k !== 'protect') continue;
       const from = pos[g.by], at = pos[g.target];
       used.add(g.by);
       if (from && at) events.push({...g, from, at});
@@ -71,8 +72,8 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       if (used.has(id) || b.units[id].hp <= 0 || !pos[id]) continue;
       const e = explicit(id);
       if (e) {
-        if ((e.type === 'basic' || (e.type === 'skill' && (e.skill === 'strong' || e.skill === 'line'))) && e.target === target)
-          return {id, fx:e.type === 'skill' && e.skill === 'line' ? 'line' : 'strong'};
+        if (e.type === 'basic' && e.target === target)return {id,fx:'strong'};
+        if (e.type === 'skill' && e.target === target){const range=moveOf(e.skill)?.range;return {id,fx:range==='front2'||range==='line10'?'line':'strong'};}
       } else if (pos[target] && distance(pos[id]!, pos[target]!) === 1) return {id, fx:'strong'};
     }
     return null;
@@ -104,12 +105,11 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       const from = pos[id], to = a.units[id]?.pos ?? null;
       if (from && to && vis(from) && vis(to)) emit({k:'move', by:id, id, from, to});
       if (to) pos[id] = to;
-    } else if (rest.startsWith('推退')) {
-      const t = head(`${rest.slice(2)}。`)?.id ?? null;
-      const from = t ? pos[t] : null, actorAt = pos[id];
+    } else if ((m = rest.match(/^吹飞(.+?)到(-?\d+),(-?\d+)$/))) {
+      const t = head(`${m[1]}。`)?.id ?? null;
+      const from = t ? pos[t] : null, actorAt = pos[id], to={x:Number(m[2]),y:Number(m[3])};
       if (t && from && actorAt) {
-        const to = {x:from.x + (from.x - actorAt.x), y:from.y + (from.y - actorAt.y)};
-        if (unit.side === 'friend' && (a.units[t]?.side === 'friend' || vis(from))) emit({k:'push', by:id, target:t, actorAt, from, to});
+        if (unit.side === 'friend' && (a.units[t]?.side === 'friend' || vis(from))) emit({k:'blowaway', by:id, target:t, actorAt, from, to});
         pos[t] = to;
       }
     } else if (/^与.+换位$/.test(rest)) {
@@ -139,7 +139,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
 }
 
 /** Base duration of each step in ms; the whole round is scaled down together if it would exceed the cap. */
-export const BASE_MS:Record<AnimEvent['k'], number> = {move:180, swap:200, hit:320, guard:240, push:220, heal:260};
+export const BASE_MS:Record<AnimEvent['k'], number> = {move:180, swap:200, hit:320, protect:240, blowaway:220, heal:260};
 export const ROUND_CAP_MS = 1500;
 /** Below this speed-up the round is not played at all, which keeps pathological rounds from being unreadably fast. */
 export const MIN_SCALE = 0.3;

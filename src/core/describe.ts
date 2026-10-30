@@ -1,18 +1,31 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
 import {SKILL_CN,key,type Action,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
-import {SPECIES,TM_MOVES} from './roster.ts';
-import {speciesZh,moveZh,typeZh,tmZh,itemZh} from './names.ts';
+import {SPECIES} from './roster.ts';
+import {MOVE_DEFS,moveOf,type MoveRange} from './moves.ts';
+import {speciesZh,moveZh,typeZh,itemZh} from './names.ts';
 
 /** Chinese species name, or the unit id when the unit has no species (fixed-map fixtures). */
 export const unitName=(u:Unit|undefined,fallback=''):string=>u?.species?speciesZh(u.species):fallback;
 /** "A 小火龙": the id players see on the board plus the species. */
 export const unitLabel=(u:Unit|undefined,id:string):string=>{const n=unitName(u);return n?`${id} ${n}`:id;};
-/** The Chinese name of the move behind a behavior (roster units carry named moves; fixtures only have the behavior). */
-export function moveName(u:Unit|undefined,skill:Skill):string|null {
-  const i=u?.learned.indexOf(skill)??-1;const m=i>=0?u?.moves?.[i]:undefined;return m?moveZh(m):null;
+/** A skill is a move id, so its label is the move's Chinese name with no behavior suffix. */
+export const skillLabel=(_u:Unit|undefined,skill:Skill):string=>SKILL_CN[skill]??moveZh(skill);
+const RANGE_CN:Record<MoveRange,string>={front:'上下左右相邻',front2:'同排／列1–2格，无遮挡',line10:'同排／列至多10格，命中首个单位（队友也会被命中）',around:'使用者周围8格',room:'同房间；走廊或无房间数据时周围2格',user:'自身'};
+export function moveRangeLabel(id:string):string{const spec=moveOf(id);return spec?RANGE_CN[spec.range]:'未知射程';}
+export function moveEffectLabel(id:string):string{
+  const spec=moveOf(id);if(!spec)return '招式数据缺失';
+  const parts:string[]=[];
+  for(const effect of spec.effects){
+    if(effect==='damage')parts.push(spec.power===null?'造成伤害':`造成${6+Math.ceil(spec.power/2)}点基础伤害`);
+    else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
+    else if(effect==='protect')parts.push('自身受到敌方攻击伤害为0（3个敌方阶段）');
+    else if(effect==='counter')parts.push('反击相邻敌人的有效伤害（3个敌方阶段）');
+    else if(effect==='blowaway')parts.push(spec.effects.includes('damage')?'伤害后沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害':'沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害');
+    else {const stage=/^stage:(atk|def):([+-]\d+)$/.exec(effect);if(stage){const who=spec.range==='room'&&spec.target==='teammates'?'同房间队友':spec.range==='user'?'自身':'目标';parts.push(`${who}${stage[1]==='atk'?'攻击':'防御'}${stage[2]}（上限±3）`);}}
+  }
+  return parts.join('；')||'无效果说明';
 }
-/** "撞击（强击）" for a named move, else just the behavior name. */
-export const skillLabel=(u:Unit|undefined,skill:Skill):string=>{const m=moveName(u,skill);return m?`${m}（${SKILL_CN[skill]}）`:SKILL_CN[skill];};
+export const moveSummary=(id:string):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id)}`;
 
 /** Short plain text for one action. `s` is the state before the round, so ids can be turned into species names. */
 export function actionText(s:World,actor:string,a:Action):string {
@@ -20,7 +33,7 @@ export function actionText(s:World,actor:string,a:Action):string {
   switch(a.type){
     case 'move':return `移动到(${a.to.x},${a.to.y})`;
     case 'basic':return `普攻 ${who(a.target)}`;
-    case 'skill':return `${skillLabel(s.units[actor],a.skill)} → ${who(a.target)}`;
+    case 'skill':return `${skillLabel(s.units[actor],a.skill)} → ${a.target===actor?'自身':who(a.target)}`;
     case 'swap':return `与${who(a.target)}换位`;
     case 'use':return `使用${itemZh(a.item)} → ${who(a.target)}`;
     case 'interact':return a.exit?'交互并请求撤离／跨层':'取得并继续';
@@ -45,10 +58,10 @@ export function enemyInfo(s:World,id:string):EnemyInfo|null {
   const sp=u.species?SPECIES[u.species]:undefined;
   const range=u.range??3;
   if(u.boss)return {id,name:`${unitName(u)}（首领）`,types:'',hp:u.hp,maxHp:u.maxHp,behavior:`首领：不移动；每个敌方阶段攻击2次，每次先打相邻的同行（按队列顺序），没有相邻目标时打${range}格内射线无遮挡的最近同行；第一次打倒目标后，第二次重新选目标`,
-    damage:`${u.damage}，每个敌方阶段2次（“保护”只为被保护者挡掉本阶段的首次4点）`,note:'不可招募、不会被推退。击败后得到一张招式机，带回基地才算数。'};
+    damage:`${u.damage}，每个敌方阶段2次（守住可保护自身）`,note:'不可招募、不会被吹飞。击败后得到一张招式机，带回基地才算数。'};
   const behavior=u.ai==='ranged'?`远程：同一行或列、${range}格以内、中间没有墙和单位时射击；不移动`
     :u.ai==='chase'?'追击：够不着时每轮向最近的同行走一步；相邻后近战攻击':'近战：只攻击上下左右相邻的同行；不移动';
-  const damage=u.damage===undefined?'未知':`${u.damage}（“保护”可为被保护者挡掉首次的4点）`;
+  const damage=u.damage===undefined?'未知':`${u.damage}（守住可保护自身）`;
   return {id,name:unitLabel(u,id),types:sp?(sp.types??[]).map(typeZh).join('／'):'',hp:u.hp,maxHp:u.maxHp,behavior,damage,
     note:u.species?'击败后有概率发出加入邀请。':''};
 }
@@ -63,8 +76,8 @@ export function localizeLog(s:World,line:string):string {
   const guard=(from:string,to:string)=>{const token=`@@${swaps.length}@@`;swaps.push([token,to]);out=out.replace(new RegExp(`(?<!${edge})${escapeRe(from)}(?!${edge})`,'g'),token);};
   for(const id of ids){const u=s.units[id];const n=unitName(u);if(n)guard(id,`${id} ${n}`);}
   for(const id of Object.keys(SPECIES))guard(id,speciesZh(id));
-  for(const tm of TM_MOVES)guard(tm,tmZh(tm));
+  for(const move of Object.keys(MOVE_DEFS))guard(move,moveZh(move));
   for(const [token,to] of swaps)out=out.split(token).join(to);
   return out;
 }
-export const behaviorSummary=(u:Unit):string=>u.learned.length?u.learned.map(k=>skillLabel(u,k)).join('、'):'普攻';
+export const skillSummary=(u:Unit):string=>u.learned.length?u.learned.map(k=>skillLabel(u,k)).join('、'):'普攻';

@@ -20,9 +20,9 @@ test('N1 the roster has nine starters: the original three plus six generation 2-
  for(const s of roster.species.slice(9,15)){assert.equal(s.starter,true);assert.ok(s.kit.length>=1&&s.kit.length<=2);assert.ok(s.learnable.length>0);}
 });
 
-test('N2 the original nine species are unchanged: their JSON text hashes to the value recorded before 7.1',()=>{
- // sha256 of JSON.stringify(species) of the nine entries in the roster.json that existed at main 8df7fa9 (computed from git, not from this code).
- assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,9))).digest('hex'),'bdb12dab6b7865d686c358dfef0bba28da5299151aef6c6ee9c8a1569a5b64c1');
+test('N2 the original nine species retain the approved 7.7a frozen kit and filtered learnable snapshot',()=>{
+ // Independently checked against f757d51: remove behavior, retain frozen kits, filter learnable to kit + TM and sort by move.
+ assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,9))).digest('hex'),'5fdc4c3c8fd4cb9355b019f985d0f68457a6284763ce1cbfec0e73194b1b9167');
 });
 
 test('N3 every species, type, kit move, learnable move and technique-machine move has a Chinese name',()=>{

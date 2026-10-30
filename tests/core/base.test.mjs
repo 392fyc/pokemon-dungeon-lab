@@ -23,7 +23,7 @@ const envelope=(over)=>({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,bui
 test('B1 the initial profile: three starters, their kits learned and carried, empty vault',()=>{
  const p=initialProfile();
  assert.deepEqual(p.roster.map(i=>[i.id,i.species,i.carry]),[['P1','charmander',['scratch','ember']],['P2','squirtle',['tackle','watergun']],['P3','bulbasaur',['tackle','seedbomb']]]);
- assert.deepEqual(p.roster[0].learned,[{move:'scratch',behavior:'strong',pp:3},{move:'ember',behavior:'line',pp:2}]);
+ assert.deepEqual(p.roster[0].learned,[{move:'scratch',pp:3},{move:'ember',pp:2}]);
  assert.deepEqual(p.vault,{});assert.equal(p.expeditions,0);assert.deepEqual(p.team,['P1','P2','P3']);assert.equal(p.leader,'P3');
  assert.equal(profileProblem(p),null);
 });
@@ -31,7 +31,7 @@ test('B1 the initial profile: three starters, their kits learned and carried, em
 test('B2 normal exit: the new recruit joins the roster, the brought machine enters the vault, old members keep what they had',()=>{
  const p=settleRun(initialProfile(),ended({camp:[['N1','pidgey']]}));
  assert.deepEqual(p.roster.map(i=>[i.id,i.species]),[['P1','charmander'],['P2','squirtle'],['P3','bulbasaur'],['P4','pidgey']]);
- assert.deepEqual(p.roster[3].learned,[{move:'tackle',behavior:'strong',pp:3},{move:'gust',behavior:'line',pp:3}]);
+ assert.deepEqual(p.roster[3].learned,[{move:'tackle',pp:3},{move:'gust',pp:3}]);
  assert.deepEqual(p.roster[3].carry,['tackle','gust']);
  assert.deepEqual(p.vault,{protect:1});assert.equal(p.expeditions,1);assert.equal(p.next,5);
  assert.deepEqual(p.roster[0],initialProfile().roster[0]);
@@ -53,7 +53,7 @@ test('B3b a run saved before the base existed: its A/B/C are the starters, not t
 test('B4 learning: a compatible machine teaches and is used up; incompatible or known ones are refused and not used up',()=>{
  const p=withVault({protect:1,roar:1,whirlwind:1});
  const ok=learnTm(p,'P1','protect');assert.equal(ok.ok,true);
- assert.deepEqual(ok.profile.roster[0].learned.at(-1),{move:'protect',behavior:'guard',pp:1});
+ assert.deepEqual(ok.profile.roster[0].learned.at(-1),{move:'protect',pp:1});
  assert.deepEqual(ok.profile.vault,{roar:1,whirlwind:1});
  assert.deepEqual(p.vault,{protect:1,roar:1,whirlwind:1},'input untouched');
  for(const [inst,move] of [['P2','roar'],['P1','whirlwind'],['P3','roar']]){
@@ -66,7 +66,7 @@ test('B4 learning: a compatible machine teaches and is used up; incompatible or 
  assert.equal(learnTm(p,'P9','protect').ok,false);
 });
 
-test('B5 carry: at most two moves of different behavior, only learned ones; taking one off keeps it learned',()=>{
+test('B5 carry: at most two distinct learned moves, only learned ones; taking one off keeps it learned',()=>{
  let p=learnTm(withVault({protect:1}),'P1','protect').profile;
  const c=setCarry(p,'P1',['scratch','protect']);assert.equal(c.ok,true);
  assert.deepEqual(c.profile.roster[0].carry,['scratch','protect']);
@@ -74,11 +74,8 @@ test('B5 carry: at most two moves of different behavior, only learned ones; taki
  assert.equal(setCarry(p,'P1',['scratch','ember','protect']).ok,false,'three moves');
  assert.equal(setCarry(p,'P1',['scratch','whirlwind']).ok,false,'not learned');
  assert.equal(setCarry(p,'P1',['scratch','scratch']).ok,false,'same move twice');
- // two moves of one behavior: give bulbasaur a second strong move by hand, then try to carry both
- const q=structuredClone(p);q.roster[2].learned.push({move:'falseswipe',behavior:'strong',pp:4});
- assert.equal(profileProblem(q),null);
- const same=setCarry(q,'P3',['tackle','falseswipe']);assert.equal(same.ok,false);assert.match(same.error,/行为相同/);
- assert.equal(setCarry(q,'P3',['falseswipe','seedbomb']).ok,true);
+ // Scratch and Ember both deal front damage, but are distinct moves and may be carried together.
+ assert.equal(setCarry(p,'P1',['scratch','ember']).ok,true);
  assert.equal(setCarry(p,'P1',[]).ok,true);
 });
 
@@ -100,9 +97,9 @@ test('B7 departure: the squad in selection order, full HP and PP, carried moves 
  assert.deepEqual(s.queue,['A','B']);assert.equal(s.leader,'B');
  assert.deepEqual([s.units.A.species,s.units.B.species],['bulbasaur','charmander']);
  assert.deepEqual([s.units.A.inst,s.units.B.inst],['P3','P1']);
- assert.deepEqual([s.units.B.hp,s.units.B.maxHp,s.units.B.learned,s.units.B.moves],[19,19,['strong','guard'],['scratch','protect']]);
- assert.deepEqual([s.units.B.pp,s.units.B.maxPp],[{strong:3,guard:1},{strong:3,guard:1}]);
- assert.deepEqual([s.units.A.hp,s.units.A.pp],[21,{strong:3,line:1}]);
+ assert.deepEqual([s.units.B.hp,s.units.B.maxHp,s.units.B.learned,s.units.B.moves],[19,19,['scratch','protect'],['scratch','protect']]);
+ assert.deepEqual([s.units.B.pp,s.units.B.maxPp],[{scratch:3,protect:1},{scratch:3,protect:1}]);
+ assert.deepEqual([s.units.A.hp,s.units.A.pp],[21,{tackle:3,seedbomb:1}]);
  assert.equal(s.prog.level,1);assert.equal(s.prog.exp,0);assert.equal(s.dungeon.base,true);
 });
 
@@ -154,9 +151,9 @@ test('B12 rest point: lowest-ratio move of each living member gets +2 PP once; f
  const full=applyCommand(s,{type:'round',action:{type:'interact',exit:false}});
  assert.equal(full.ok,false);assert.match(full.error,/PP都已满/);assert.match(full.error,/没有消耗/);
  assert.deepEqual(full.state,s);assert.equal(s.points.find(p=>p.kind==='rest').used,false);
- s.units.C.pp={strong:1,line:0};
+ s.units.C.pp={tackle:1,seedbomb:0};
  const r=applyCommand(s,{type:'round',action:{type:'interact',exit:false}});assert.equal(r.ok,true);
- assert.deepEqual(r.state.units.C.pp,{strong:1,line:1});// line 0/1 is lowest; +2 stops at the maximum 1
+ assert.deepEqual(r.state.units.C.pp,{tackle:1,seedbomb:1});// line 0/1 is lowest; +2 stops at the maximum 1
  assert.equal(r.state.points.find(p=>p.kind==='rest').used,true);assert.equal(r.state.round,s.round+1);
  const again=applyCommand(r.state,{type:'round',action:{type:'interact',exit:false}});
  assert.equal(again.ok,false);assert.match(again.error,/已使用/);
@@ -166,17 +163,17 @@ test('B13 rest point with two living members: each picks its own lowest ratio; t
  const s=atFloor2(3);
  s.units.B.hp=0;s.units.B.pos=null;
  s.units.A.pos={x:14,y:11};s.units.C.pos={x:14,y:9};
- s.units.A.pp={strong:2,line:1};   // 2/3 and 1/2: line is lower
- s.units.B.pp={strong:0,line:0};   // fallen: untouched
- s.units.C.pp={strong:1,line:1};   // 1/3 and 1/1: strong is lower
+ s.units.A.pp={scratch:2,ember:1};   // 2/3 and 1/2: line is lower
+ s.units.B.pp={tackle:0,watergun:0};   // fallen: untouched
+ s.units.C.pp={tackle:1,seedbomb:1};   // 1/3 and 1/1: strong is lower
  const r=applyCommand(s,{type:'round',action:{type:'interact',exit:false}});assert.equal(r.ok,true);
- assert.deepEqual(r.state.units.A.pp,{strong:2,line:2});
- assert.deepEqual(r.state.units.B.pp,{strong:0,line:0});
- assert.deepEqual(r.state.units.C.pp,{strong:3,line:1});
+ assert.deepEqual(r.state.units.A.pp,{scratch:2,ember:2});
+ assert.deepEqual(r.state.units.B.pp,{tackle:0,watergun:0});
+ assert.deepEqual(r.state.units.C.pp,{tackle:3,seedbomb:1});
 });
 
 test('B14 rest point cannot be used as an exit',()=>{
- const s=atFloor2(3);s.units.C.pos={x:14,y:9};s.units.C.pp={strong:0,line:0};
+ const s=atFloor2(3);s.units.C.pos={x:14,y:9};s.units.C.pp={tackle:0,seedbomb:0};
  const r=applyCommand(s,{type:'round',action:{type:'interact',exit:true}});assert.equal(r.ok,false);assert.match(r.error,/不是出口/);
 });
 
@@ -230,11 +227,11 @@ test('B19 tampered profiles and records are refused on load',()=>{
  const refused=[
   ['duplicate instance id',e=>{e.profile.roster[1].id='P1';}],
   ['unknown species',e=>{e.profile.roster[0].species='mew';}],
-  ['learned move not learnable',e=>{e.profile.roster[0].learned.push({move:'hyperbeam',behavior:'strong',pp:1});}],
-  ['learned move with wrong behavior',e=>{e.profile.roster[0].learned[0].behavior='line';}],
+  ['learned move not learnable',e=>{e.profile.roster[0].learned.push({move:'hyperbeam',pp:1});}],
+  ['learned move outside the species list',e=>{e.profile.roster[0].learned[0].move='quickattack';}],
   ['carry not learned',e=>{e.profile.roster[0].carry=['scratch','protect'];}],
-  ['carry three',e=>{e.profile.roster[0].learned.push({move:'protect',behavior:'guard',pp:1});e.profile.roster[0].carry=['scratch','ember','protect'];}],
-  ['carry two of one behavior',e=>{e.profile.roster[2].learned.push({move:'falseswipe',behavior:'strong',pp:4});e.profile.roster[2].carry=['tackle','falseswipe'];}],
+  ['carry three',e=>{e.profile.roster[0].learned.push({move:'protect',pp:1});e.profile.roster[0].carry=['scratch','ember','protect'];}],
+  ['carry a move removed from the supported list',e=>{e.profile.roster[2].learned.push({move:'falseswipe',pp:4});e.profile.roster[2].carry=['tackle','falseswipe'];}],
   ['negative machine count',e=>{e.profile.vault={protect:-1};}],
   ['fractional machine count',e=>{e.profile.vault={protect:1.5};}],
   ['unknown machine',e=>{e.profile.vault={tackle:1};}],

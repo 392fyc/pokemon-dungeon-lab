@@ -9,28 +9,31 @@ const round=(s,action,override)=>command(s,{type:'round',action,override});
 const reject=s=>s.phase==='invitation'?command(s,{type:'invite',choice:'reject'}):s;
 const finish=s=>s.phase==='exit'?command(s,{type:'finishExit'}):s;
 const positions=s=>s.queue.map(id=>s.units[id].pos?.x??null);
-function prefix(invite=true){let s=createMain('main',invite);s=round(s,move(3));for(let i=0;i<3;i++)s=round(s,basic('E'));return s;}
+/** The scripted fixed-map route needs fixed targets: E and R only wait (the old harmless-block behaviour) and E has 16 HP, so three basic attacks (6 each) defeat it and nobody takes damage. */
+function still(s){for(const id of s.enemies)s.units[id].waitOnly=true;s.units.E.hp=16;s.units.E.maxHp=16;return s;}
+function prefix(invite=true){let s=still(createMain('main',invite));s=round(s,move(3));for(let i=0;i<3;i++)s=round(s,basic('E'));return s;}
 test('M1/M2 and no-invitation routes preserve terminal resources',()=>{
  for(const invited of [true,false])for(const route of [1,2]){
  let s=reject(prefix(invited));s=round(s,move(4));s=round(s,interact(route===1));
  if(route!==1){s=round(s,move(5));assert.equal(s.seen.includes('9,1'),true);
  s=command(s,{type:'switch',actor:'B'});s=round(s,move(4));s=round(s,interact(true));}
- s=finish(s);assert.equal(s.round,route===1?6:9);assert.equal(s.end.outcome,'normal');assert.deepEqual(positions(s),route===1?[1,3,4]:[3,4,5]);assert.equal(s.units.C.hp,8);assert.equal(s.units.C.pp.quickattack,2);assert.equal(s.bag,0);
+ s=finish(s);assert.equal(s.round,route===1?6:9);assert.equal(s.end.outcome,'normal');assert.deepEqual(positions(s),route===1?[1,3,4]:[3,4,5]);assert.equal(s.units.C.hp,20);assert.equal(s.units.C.pp.quickattack,2);assert.equal(s.bag,0);
  }});
 test('M5/M6 B damage belongs to B, both plans 11 rounds',()=>{
- for(const accept of [false,true]){let s=prefix();s=command(s,{type:'invite',choice:accept?'accept':'reject',...(accept?{outgoing:'C'}:{})});s=command(s,{type:'switch',actor:'B'});const p=accept?'N':'C';s=round(s,{type:'swap',target:p});assert.deepEqual(positions(s),[1,3,2]);for(const a of [move(4),interact(false),move(5),move(6),move(7),interact(true)])s=round(s,a);s=finish(s);assert.equal(s.round,11);assert.deepEqual(positions(s),[5,7,6]);assert.equal(s.units.B.hp,2);assert.equal(s.units[p].hp,accept?10:8);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(s.camp,accept?['C']:[]);}
+ for(const accept of [false,true]){let s=prefix();s=command(s,{type:'invite',choice:accept?'accept':'reject',...(accept?{outgoing:'C'}:{})});s=command(s,{type:'switch',actor:'B'});const p=accept?'N':'C';s=round(s,{type:'swap',target:p});assert.deepEqual(positions(s),[1,3,2]);for(const a of [move(4),interact(false),move(5),move(6),move(7),interact(true)])s=round(s,a);s=finish(s);assert.equal(s.round,11);assert.deepEqual(positions(s),[5,7,6]);assert.equal(s.units.B.hp,20);assert.equal(s.units[p].hp,accept?10:20);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(s.camp,accept?['C']:[]);}
 });
 test('V1/V2 refusal is immutable and explicit waiting fixes known conflict',()=>{
  const s=createScenario('V1','v1'),before=JSON.stringify(s);const r=applyCommand(s,{type:'round',action:move(4)});assert.equal(r.ok,false);assert.strictEqual(r.state,s);assert.equal(JSON.stringify(s),before);
  const fixed=round(s,move(4),{actor:'B',action:wait});assert.deepEqual(positions(fixed),[2,3,4]);
 });
 test('M4 B already on exit; no extra return damage',()=>{
- let s=createScenario('V1','m4');s=round(s,move(6));s=command(s,{type:'switch',actor:'B'});s=finish(round(s,interact(true)));assert.deepEqual(positions(s),[3,4,5]);assert.equal(s.units.C.hp,2);assert.equal(s.round,9);
+ let s=createScenario('V1','m4');s.units.R.waitOnly=true;s=round(s,move(6));s=command(s,{type:'switch',actor:'B'});s=finish(round(s,interact(true)));assert.deepEqual(positions(s),[3,4,5]);assert.equal(s.units.C.hp,20);assert.equal(s.round,9);
 });
 test('V3/V4 follow and V5/V6/V7 down membership',()=>{
  let s=createScenario('V3','v3');s=round(s,move(0));assert.deepEqual(positions(s),[3,2,0]);assert.equal(finish(round(s,interact(true))).phase,'ended');
  s=createScenario('V4','v4');s=round(s,wait,{actor:'C',action:{type:'move',to:{x:2,y:2}}});s=round(s,wait);assert.deepEqual(s.units.B.pos,{x:2,y:1});assert.deepEqual(s.units.C.pos,{x:3,y:2});
- s=createScenario('V5','v5');s=round(s,move(2));assert.equal(s.units.B.hp,5);assert.equal(s.units.C.pos.x,1);s=round(s,basic('E'));assert.equal(s.units.C.pos.x,1);assert.equal(s.queue.length,3);
+ s=createScenario('V5','v5');s=round(s,move(2));assert.equal(s.units.B.hp,8);   // V5's E only waits, so B beside it takes nothing
+ assert.equal(s.units.C.pos.x,1);s=round(s,basic('E'));assert.equal(s.units.C.pos.x,1);assert.equal(s.queue.length,3);
  s=round(createScenario('V6','v6'),move(2));assert.equal(s.leader,'C');assert.equal(s.units.B.pos,null);
  s=finish(round(createScenario('V7','v7'),interact(true)));assert.equal(s.units.A.hp,0);assert.equal(s.end.outcome,'normal');
 });
@@ -48,7 +51,8 @@ test('K1 rejects protecting another unit and tackle uses move power',()=>{
  let s=createScenario('K1','k1');
  const refused=applyCommand(s,{type:'round',action:skill('tackle','H'),override:{actor:'B',action:skill('protect','A')}});
  assert.equal(refused.ok,false);assert.deepEqual(refused.state,s);
- s=round(s,skill('tackle','H'),{actor:'B',action:skill('protect','B')});assert.equal(s.units.H.hp,9);assert.equal(s.units.A.hp,4);assert.equal(s.units.B.pp.protect,0);
+ s=round(s,skill('tackle','H'),{actor:'B',action:skill('protect','B')});assert.equal(s.units.H.hp,6);assert.equal(s.units.A.hp,2);   // A tackle 9 + C's default tackle 9 (24-18); H ember or bite (10, tie to ember by move order) hits A first in queue order (12-10)
+ assert.equal(s.units.B.pp.protect,0);
  s=round(s,skill('tackle','H'));assert.equal(s.units.H.hp,0);
 });
 test('K1 protect blocks a real enemy attack on its user',()=>{

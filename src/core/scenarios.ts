@@ -24,7 +24,11 @@ function waiting(s:World,ids=['N']):World {s.phase='invitation';s.anchor=clone(s
 export function createScenario(id:ScenarioId,runId:string):World {
   if(id==='main-invite'||id==='main-none')return createMain(runId,id==='main-invite');
   if(id==='V1'){
-    let s=createMain(runId,false);for(const action of [{type:'move',to:{x:3,y:1}},{type:'basic',target:'E'},{type:'basic',target:'E'},{type:'basic',target:'E'},{type:'move',to:{x:4,y:1}},{type:'interact',exit:false},{type:'move',to:{x:5,y:1}}] as const){const r=applyCommand(s,{type:'round',action});if(!r.ok)throw Error(r.error);s=r.state;}s.scenario=id;return s;
+    let s=createMain(runId,false);
+    // The scripted route needs fixed targets: both enemies only wait while it runs, and E has 16 HP so three basic attacks (6 each) defeat it. Afterwards they act normally again.
+    for(const id of s.enemies)s.units[id].waitOnly=true;s.units.E.hp=16;s.units.E.maxHp=16;
+    for(const action of [{type:'move',to:{x:3,y:1}},{type:'basic',target:'E'},{type:'basic',target:'E'},{type:'basic',target:'E'},{type:'move',to:{x:4,y:1}},{type:'interact',exit:false},{type:'move',to:{x:5,y:1}}] as const){const r=applyCommand(s,{type:'round',action});if(!r.ok)throw Error(r.error);s=r.state;}
+    for(const id of s.enemies)delete s.units[id].waitOnly;s.scenario=id;return s;
   }
   if(id==='BOSS'||id==='BOSSX'){
     // 7.3 developer scene: the last floor of a boss-marked 3 floor run. BOSS: the whole floor revealed, the team beside the boss. BOSSX: the team standing on the lobby exit.

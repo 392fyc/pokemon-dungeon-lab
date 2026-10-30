@@ -51,6 +51,106 @@
    ]
   }
  },
+ "0002": {
+  "Idle": {
+   "file": "characters/0002/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    40,
+    12,
+    12,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0002/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0002/Attack-Anim.png",
+   "w": 64,
+   "h": 64,
+   "durations": [
+    4,
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0002/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0003": {
+  "Idle": {
+   "file": "characters/0003/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    30,
+    16,
+    12,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0003/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    16,
+    8,
+    16
+   ]
+  },
+  "Attack": {
+   "file": "characters/0003/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    4,
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0003/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0004": {
   "Idle": {
    "file": "characters/0004/Idle-Anim.png",
@@ -96,6 +196,116 @@
    "file": "characters/0004/Hurt-Anim.png",
    "w": 48,
    "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0005": {
+  "Idle": {
+   "file": "characters/0005/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    40,
+    2,
+    3,
+    3,
+    3,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0005/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0005/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0005/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0006": {
+  "Idle": {
+   "file": "characters/0006/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    15,
+    15,
+    15,
+    15
+   ]
+  },
+  "Walk": {
+   "file": "characters/0006/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0006/Attack-Anim.png",
+   "w": 80,
+   "h": 88,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0006/Hurt-Anim.png",
+   "w": 64,
+   "h": 64,
    "durations": [
     2,
     8
@@ -156,6 +366,453 @@
    ]
   }
  },
+ "0008": {
+  "Idle": {
+   "file": "characters/0008/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    40,
+    2,
+    2,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0008/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0008/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    4,
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0008/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0009": {
+  "Idle": {
+   "file": "characters/0009/Idle-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    32,
+    12,
+    4,
+    4,
+    4,
+    4,
+    4,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0009/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    14,
+    8,
+    14
+   ]
+  },
+  "Attack": {
+   "file": "characters/0009/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0009/Hurt-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0010": {
+  "Idle": {
+   "file": "characters/0010/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    4,
+    10,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0010/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    10,
+    10,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0010/Attack-Anim.png",
+   "w": 64,
+   "h": 64,
+   "durations": [
+    4,
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0010/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0011": {
+  "Idle": {
+   "file": "characters/0011/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    10,
+    14,
+    10,
+    14
+   ]
+  },
+  "Walk": {
+   "file": "characters/0011/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    4,
+    2,
+    2,
+    2,
+    2,
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Attack": {
+   "file": "characters/0011/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0011/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0012": {
+  "Idle": {
+   "file": "characters/0012/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0012/Walk-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0012/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0012/Hurt-Anim.png",
+   "w": 56,
+   "h": 72,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0013": {
+  "Idle": {
+   "file": "characters/0013/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    40,
+    8,
+    8,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0013/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0013/Attack-Anim.png",
+   "w": 64,
+   "h": 64,
+   "durations": [
+    4,
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0013/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0014": {
+  "Idle": {
+   "file": "characters/0014/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    40,
+    1,
+    1,
+    4,
+    1,
+    1
+   ]
+  },
+  "Walk": {
+   "file": "characters/0014/Walk-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    8,
+    4,
+    4,
+    4,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0014/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0014/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0015": {
+  "Idle": {
+   "file": "characters/0015/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0015/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Attack": {
+   "file": "characters/0015/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    4,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0015/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0016": {
   "Idle": {
    "file": "characters/0016/Idle-Anim.png",
@@ -206,6 +863,114 @@
    "file": "characters/0016/Hurt-Anim.png",
    "w": 48,
    "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0017": {
+  "Idle": {
+   "file": "characters/0017/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    40,
+    2,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0017/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    6,
+    10,
+    6,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0017/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0017/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0018": {
+  "Idle": {
+   "file": "characters/0018/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    40,
+    2,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0018/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0018/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0018/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
    "durations": [
     2,
     8
@@ -269,6 +1034,63 @@
    ]
   }
  },
+ "0020": {
+  "Idle": {
+   "file": "characters/0020/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    30,
+    6,
+    3,
+    4,
+    3,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0020/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    4,
+    6,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Attack": {
+   "file": "characters/0020/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    4,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0020/Hurt-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0021": {
   "Idle": {
    "file": "characters/0021/Idle-Anim.png",
@@ -319,6 +1141,170 @@
   "Hurt": {
    "file": "characters/0021/Hurt-Anim.png",
    "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0022": {
+  "Idle": {
+   "file": "characters/0022/Idle-Anim.png",
+   "w": 40,
+   "h": 72,
+   "durations": [
+    40,
+    20,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0022/Walk-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    4,
+    5,
+    6,
+    4,
+    5,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0022/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0022/Hurt-Anim.png",
+   "w": 48,
+   "h": 72,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0023": {
+  "Idle": {
+   "file": "characters/0023/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    16,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0023/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0023/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    4,
+    2,
+    4,
+    6,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0023/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0024": {
+  "Idle": {
+   "file": "characters/0024/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    32,
+    14
+   ]
+  },
+  "Walk": {
+   "file": "characters/0024/Walk-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    6,
+    6,
+    8,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0024/Attack-Anim.png",
+   "w": 80,
+   "h": 88,
+   "durations": [
+    2,
+    4,
+    6,
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0024/Hurt-Anim.png",
+   "w": 48,
    "h": 56,
    "durations": [
     2,
@@ -378,6 +1364,58 @@
    ]
   }
  },
+ "0026": {
+  "Idle": {
+   "file": "characters/0026/Idle-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    40,
+    2,
+    4,
+    4,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0026/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0026/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0026/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0027": {
   "Idle": {
    "file": "characters/0027/Idle-Anim.png",
@@ -423,6 +1461,700 @@
    "file": "characters/0027/Hurt-Anim.png",
    "w": 40,
    "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0028": {
+  "Idle": {
+   "file": "characters/0028/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    25,
+    10,
+    25,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0028/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0028/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0028/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0029": {
+  "Idle": {
+   "file": "characters/0029/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    24,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0029/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    6,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Attack": {
+   "file": "characters/0029/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0029/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0030": {
+  "Idle": {
+   "file": "characters/0030/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    40,
+    2,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0030/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    6,
+    8,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0030/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0030/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0031": {
+  "Idle": {
+   "file": "characters/0031/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    20,
+    6,
+    6,
+    6,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0031/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0031/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0031/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0032": {
+  "Idle": {
+   "file": "characters/0032/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    30,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0032/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    6,
+    6,
+    5,
+    6,
+    6,
+    4
+   ]
+  },
+  "Attack": {
+   "file": "characters/0032/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0032/Hurt-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0033": {
+  "Idle": {
+   "file": "characters/0033/Idle-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    40,
+    10,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0033/Walk-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    6,
+    12,
+    6,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0033/Attack-Anim.png",
+   "w": 72,
+   "h": 88,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0033/Hurt-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0034": {
+  "Idle": {
+   "file": "characters/0034/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    35,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0034/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    8,
+    14,
+    8,
+    14
+   ]
+  },
+  "Attack": {
+   "file": "characters/0034/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0034/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0035": {
+  "Idle": {
+   "file": "characters/0035/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    30,
+    3,
+    4,
+    5,
+    4,
+    3
+   ]
+  },
+  "Walk": {
+   "file": "characters/0035/Walk-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    8,
+    4,
+    8,
+    4,
+    8,
+    4,
+    8,
+    4
+   ]
+  },
+  "Attack": {
+   "file": "characters/0035/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0035/Hurt-Anim.png",
+   "w": 56,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0036": {
+  "Idle": {
+   "file": "characters/0036/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    30,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0036/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    6,
+    6,
+    6,
+    8,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0036/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0036/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0037": {
+  "Idle": {
+   "file": "characters/0037/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    40,
+    12,
+    20,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0037/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    6,
+    4,
+    4,
+    4,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0037/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    4,
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0037/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0038": {
+  "Idle": {
+   "file": "characters/0038/Idle-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    60,
+    10,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0038/Walk-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0038/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0038/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0039": {
+  "Idle": {
+   "file": "characters/0039/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    25,
+    8,
+    15,
+    8,
+    15
+   ]
+  },
+  "Walk": {
+   "file": "characters/0039/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    6,
+    4,
+    4,
+    4,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0039/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0039/Hurt-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0040": {
+  "Idle": {
+   "file": "characters/0040/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    40,
+    4,
+    6,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0040/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0040/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0040/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
    "durations": [
     2,
     8
@@ -482,6 +2214,887 @@
    "file": "characters/0041/Hurt-Anim.png",
    "w": 40,
    "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0042": {
+  "Idle": {
+   "file": "characters/0042/Idle-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0042/Walk-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0042/Attack-Anim.png",
+   "w": 72,
+   "h": 88,
+   "durations": [
+    2,
+    3,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0042/Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0043": {
+  "Idle": {
+   "file": "characters/0043/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    30,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0043/Walk-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    8,
+    4,
+    8,
+    6,
+    8,
+    4,
+    8,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0043/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0043/Hurt-Anim.png",
+   "w": 56,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0044": {
+  "Idle": {
+   "file": "characters/0044/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    30,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0044/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    6,
+    8,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0044/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0044/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0045": {
+  "Idle": {
+   "file": "characters/0045/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    30,
+    3,
+    3,
+    8,
+    3,
+    3,
+    30,
+    3,
+    3,
+    8,
+    3,
+    3
+   ]
+  },
+  "Walk": {
+   "file": "characters/0045/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0045/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0045/Hurt-Anim.png",
+   "w": 56,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0046": {
+  "Idle": {
+   "file": "characters/0046/Idle-Anim.png",
+   "w": 24,
+   "h": 24,
+   "durations": [
+    24,
+    6,
+    6,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0046/Walk-Anim.png",
+   "w": 32,
+   "h": 24,
+   "durations": [
+    6,
+    8,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0046/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    4,
+    1,
+    3,
+    3,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0046/Hurt-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0047": {
+  "Idle": {
+   "file": "characters/0047/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    40,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0047/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0047/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0047/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0048": {
+  "Idle": {
+   "file": "characters/0048/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    16,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0048/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    6,
+    6,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0048/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    1,
+    1,
+    2,
+    3,
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0048/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0049": {
+  "Idle": {
+   "file": "characters/0049/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0049/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0049/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0049/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0050": {
+  "Idle": {
+   "file": "characters/0050/Idle-Anim.png",
+   "w": 24,
+   "h": 24,
+   "durations": [
+    16,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0050/Walk-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0050/Attack-Anim.png",
+   "w": 64,
+   "h": 56,
+   "durations": [
+    2,
+    6,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0050/Hurt-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0051": {
+  "Idle": {
+   "file": "characters/0051/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    12,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0051/Walk-Anim.png",
+   "w": 56,
+   "h": 48,
+   "durations": [
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0051/Attack-Anim.png",
+   "w": 80,
+   "h": 72,
+   "durations": [
+    2,
+    6,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0051/Hurt-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0052": {
+  "Idle": {
+   "file": "characters/0052/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0052/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    6,
+    10,
+    6,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0052/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0052/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0053": {
+  "Idle": {
+   "file": "characters/0053/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0053/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0053/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    6,
+    2,
+    2,
+    1,
+    2,
+    2,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0053/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0054": {
+  "Idle": {
+   "file": "characters/0054/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    16,
+    20,
+    16,
+    20
+   ]
+  },
+  "Walk": {
+   "file": "characters/0054/Walk-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0054/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    4,
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0054/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0055": {
+  "Idle": {
+   "file": "characters/0055/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    40,
+    20,
+    40,
+    20
+   ]
+  },
+  "Walk": {
+   "file": "characters/0055/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0055/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0055/Hurt-Anim.png",
+   "w": 56,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0056": {
+  "Idle": {
+   "file": "characters/0056/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    40,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0056/Walk-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    8,
+    4,
+    4,
+    4,
+    8,
+    4,
+    4,
+    4
+   ]
+  },
+  "Attack": {
+   "file": "characters/0056/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    4,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0056/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0057": {
+  "Idle": {
+   "file": "characters/0057/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    22,
+    4,
+    6,
+    4,
+    22,
+    4,
+    6,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0057/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    6,
+    8,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0057/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0057/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
    "durations": [
     2,
     8
@@ -590,6 +3203,759 @@
    ]
   }
  },
+ "0060": {
+  "Idle": {
+   "file": "characters/0060/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    30,
+    8,
+    6,
+    6,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0060/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0060/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0060/Hurt-Anim.png",
+   "w": 48,
+   "h": 40,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0061": {
+  "Idle": {
+   "file": "characters/0061/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    40,
+    2,
+    4,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0061/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0061/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0061/Hurt-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0062": {
+  "Idle": {
+   "file": "characters/0062/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    40,
+    2,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0062/Walk-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0062/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0062/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0063": {
+  "Idle": {
+   "file": "characters/0063/Idle-Anim.png",
+   "w": 24,
+   "h": 48,
+   "durations": [
+    24,
+    8,
+    8,
+    24,
+    8,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0063/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10,
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0063/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    4,
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0063/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0064": {
+  "Idle": {
+   "file": "characters/0064/Idle-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    4,
+    4,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0064/Walk-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0064/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0064/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0065": {
+  "Idle": {
+   "file": "characters/0065/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0065/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0065/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0065/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0066": {
+  "Idle": {
+   "file": "characters/0066/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    40,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0066/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0066/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0066/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0067": {
+  "Idle": {
+   "file": "characters/0067/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    40,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0067/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0067/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    3,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0067/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0068": {
+  "Idle": {
+   "file": "characters/0068/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    40,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0068/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0068/Attack-Anim.png",
+   "w": 72,
+   "h": 88,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0068/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0069": {
+  "Idle": {
+   "file": "characters/0069/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    20,
+    22
+   ]
+  },
+  "Walk": {
+   "file": "characters/0069/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0069/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0069/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0070": {
+  "Idle": {
+   "file": "characters/0070/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    16,
+    8,
+    16,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0070/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0070/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0070/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0071": {
+  "Idle": {
+   "file": "characters/0071/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    35,
+    3,
+    3,
+    5,
+    5,
+    5,
+    3,
+    3,
+    3
+   ]
+  },
+  "Walk": {
+   "file": "characters/0071/Walk-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    6,
+    8,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0071/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0071/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0072": {
+  "Idle": {
+   "file": "characters/0072/Idle-Anim.png",
+   "w": 24,
+   "h": 48,
+   "durations": [
+    4,
+    8,
+    8,
+    4,
+    8,
+    8,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0072/Walk-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0072/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0072/Hurt-Anim.png",
+   "w": 48,
+   "h": 72,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0073": {
+  "Idle": {
+   "file": "characters/0073/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    6,
+    10,
+    10,
+    6,
+    10,
+    10,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0073/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0073/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0073/Hurt-Anim.png",
+   "w": 48,
+   "h": 72,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0074": {
   "Idle": {
    "file": "characters/0074/Idle-Anim.png",
@@ -638,6 +4004,345 @@
    "file": "characters/0074/Hurt-Anim.png",
    "w": 40,
    "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0075": {
+  "Idle": {
+   "file": "characters/0075/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    60,
+    10,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0075/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    6,
+    10,
+    6,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0075/Attack-Anim.png",
+   "w": 80,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0075/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0076": {
+  "Idle": {
+   "file": "characters/0076/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    30,
+    25
+   ]
+  },
+  "Walk": {
+   "file": "characters/0076/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0076/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    6,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0076/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0077": {
+  "Idle": {
+   "file": "characters/0077/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    60,
+    10,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0077/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0077/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0077/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0078": {
+  "Idle": {
+   "file": "characters/0078/Idle-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    60,
+    10,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0078/Walk-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0078/Attack-Anim.png",
+   "w": 72,
+   "h": 88,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0078/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0079": {
+  "Idle": {
+   "file": "characters/0079/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    40,
+    8,
+    8,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0079/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0079/Attack-Anim.png",
+   "w": 64,
+   "h": 64,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0079/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0080": {
+  "Idle": {
+   "file": "characters/0080/Idle-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    30,
+    30
+   ]
+  },
+  "Walk": {
+   "file": "characters/0080/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0080/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    6,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    1
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0080/Hurt-Anim.png",
+   "w": 56,
+   "h": 56,
    "durations": [
     2,
     8
@@ -705,6 +4410,721 @@
    ]
   }
  },
+ "0082": {
+  "Idle": {
+   "file": "characters/0082/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    14,
+    10,
+    14,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0082/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0082/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0082/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0083": {
+  "Idle": {
+   "file": "characters/0083/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    30,
+    12,
+    30,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0083/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    6,
+    12,
+    6,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0083/Attack-Anim.png",
+   "w": 88,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0083/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0084": {
+  "Idle": {
+   "file": "characters/0084/Idle-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    40,
+    6,
+    12,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0084/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0084/Attack-Anim.png",
+   "w": 80,
+   "h": 72,
+   "durations": [
+    1,
+    2,
+    4,
+    3,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0084/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0085": {
+  "Idle": {
+   "file": "characters/0085/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    40,
+    10,
+    16,
+    10,
+    16,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0085/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0085/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    1,
+    2,
+    4,
+    3,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0085/Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0086": {
+  "Idle": {
+   "file": "characters/0086/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    30,
+    20
+   ]
+  },
+  "Walk": {
+   "file": "characters/0086/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    6,
+    8,
+    10,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0086/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0086/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0087": {
+  "Idle": {
+   "file": "characters/0087/Idle-Anim.png",
+   "w": 48,
+   "h": 40,
+   "durations": [
+    30,
+    12,
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0087/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    8,
+    6,
+    6,
+    6,
+    10,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0087/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0087/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0088": {
+  "Idle": {
+   "file": "characters/0088/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    40,
+    8,
+    30,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0088/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0088/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0088/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0089": {
+  "Idle": {
+   "file": "characters/0089/Idle-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    40,
+    8,
+    30,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0089/Walk-Anim.png",
+   "w": 48,
+   "h": 40,
+   "durations": [
+    10,
+    8,
+    6,
+    10,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0089/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0089/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0090": {
+  "Idle": {
+   "file": "characters/0090/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    14,
+    40,
+    14,
+    30
+   ]
+  },
+  "Walk": {
+   "file": "characters/0090/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    10,
+    6,
+    10,
+    10,
+    6,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0090/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0090/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0091": {
+  "Idle": {
+   "file": "characters/0091/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    12,
+    12,
+    12,
+    14,
+    12,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0091/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    8,
+    8,
+    10,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0091/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0091/Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0092": {
+  "Idle": {
+   "file": "characters/0092/Idle-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    10,
+    10,
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0092/Walk-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0092/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    2,
+    2,
+    2,
+    3
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0092/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0093": {
+  "Idle": {
+   "file": "characters/0093/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    14,
+    8,
+    14,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0093/Walk-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    6,
+    6,
+    6,
+    10,
+    6,
+    6,
+    6,
+    6,
+    10,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0093/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    6,
+    2,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0093/Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0094": {
+  "Idle": {
+   "file": "characters/0094/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    40,
+    4,
+    3,
+    3,
+    3,
+    3,
+    3,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0094/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0094/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    4,
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0094/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0095": {
   "Idle": {
    "file": "characters/0095/Idle-Anim.png",
@@ -756,6 +5176,2694 @@
    ]
   }
  },
+ "0096": {
+  "Idle": {
+   "file": "characters/0096/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    40,
+    10,
+    6,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0096/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0096/Attack-Anim.png",
+   "w": 80,
+   "h": 72,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0096/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0097": {
+  "Idle": {
+   "file": "characters/0097/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    30,
+    1,
+    2,
+    3,
+    3,
+    3,
+    2,
+    1
+   ]
+  },
+  "Walk": {
+   "file": "characters/0097/Walk-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0097/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0097/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0098": {
+  "Idle": {
+   "file": "characters/0098/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    30,
+    30
+   ]
+  },
+  "Walk": {
+   "file": "characters/0098/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0098/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    1,
+    2,
+    3,
+    2,
+    1,
+    3,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    4,
+    2,
+    1
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0098/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0099": {
+  "Idle": {
+   "file": "characters/0099/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    30,
+    30
+   ]
+  },
+  "Walk": {
+   "file": "characters/0099/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0099/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    1,
+    2,
+    3,
+    2,
+    1,
+    3,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    4,
+    2,
+    1
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0099/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0100": {
+  "Idle": {
+   "file": "characters/0100/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    22,
+    6,
+    2,
+    6,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0100/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    6,
+    6,
+    10,
+    4,
+    4,
+    4,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0100/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0100/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0101": {
+  "Idle": {
+   "file": "characters/0101/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    10,
+    18,
+    10,
+    18
+   ]
+  },
+  "Walk": {
+   "file": "characters/0101/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    4,
+    4,
+    6,
+    8,
+    6,
+    4,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0101/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0101/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0102": {
+  "Idle": {
+   "file": "characters/0102/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    30,
+    2,
+    4,
+    4,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0102/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    6,
+    8,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0102/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0102/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0103": {
+  "Idle": {
+   "file": "characters/0103/Idle-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    40,
+    12,
+    8,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0103/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0103/Attack-Anim.png",
+   "w": 88,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0103/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0104": {
+  "Idle": {
+   "file": "characters/0104/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    40,
+    1,
+    2,
+    3,
+    2,
+    1
+   ]
+  },
+  "Walk": {
+   "file": "characters/0104/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0104/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0104/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0105": {
+  "Idle": {
+   "file": "characters/0105/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    40,
+    6,
+    16,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0105/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0105/Attack-Anim.png",
+   "w": 72,
+   "h": 88,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0105/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0106": {
+  "Idle": {
+   "file": "characters/0106/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    40,
+    20
+   ]
+  },
+  "Walk": {
+   "file": "characters/0106/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    10,
+    12,
+    10,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0106/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0106/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0107": {
+  "Idle": {
+   "file": "characters/0107/Idle-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    30,
+    6,
+    8,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0107/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0107/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0107/Hurt-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0108": {
+  "Idle": {
+   "file": "characters/0108/Idle-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    36,
+    12,
+    10,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0108/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    10,
+    14,
+    10,
+    14
+   ]
+  },
+  "Attack": {
+   "file": "characters/0108/Attack-Anim.png",
+   "w": 80,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0108/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0109": {
+  "Idle": {
+   "file": "characters/0109/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    10,
+    10,
+    8,
+    10,
+    10,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0109/Walk-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    6,
+    6,
+    6,
+    6,
+    8,
+    6,
+    6,
+    6,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0109/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    4,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0109/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0110": {
+  "Idle": {
+   "file": "characters/0110/Idle-Anim.png",
+   "w": 32,
+   "h": 64,
+   "durations": [
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0110/Walk-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0110/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0110/Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0111": {
+  "Idle": {
+   "file": "characters/0111/Idle-Anim.png",
+   "w": 40,
+   "h": 32,
+   "durations": [
+    40,
+    20,
+    15
+   ]
+  },
+  "Walk": {
+   "file": "characters/0111/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0111/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0111/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0112": {
+  "Idle": {
+   "file": "characters/0112/Idle-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    40,
+    26
+   ]
+  },
+  "Walk": {
+   "file": "characters/0112/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0112/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0112/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0113": {
+  "Idle": {
+   "file": "characters/0113/Idle-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    40,
+    2,
+    3,
+    4,
+    3,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0113/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0113/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0113/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0114": {
+  "Idle": {
+   "file": "characters/0114/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    34,
+    6,
+    6,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0114/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0114/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    4,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0114/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0115": {
+  "Idle": {
+   "file": "characters/0115/Idle-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    30,
+    3,
+    4,
+    3,
+    20
+   ]
+  },
+  "Walk": {
+   "file": "characters/0115/Walk-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    16,
+    10,
+    16,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0115/Attack-Anim.png",
+   "w": 72,
+   "h": 96,
+   "durations": [
+    1,
+    2,
+    3,
+    2,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0115/Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0116": {
+  "Idle": {
+   "file": "characters/0116/Idle-Anim.png",
+   "w": 24,
+   "h": 48,
+   "durations": [
+    8,
+    16,
+    8,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0116/Walk-Anim.png",
+   "w": 24,
+   "h": 48,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0116/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0116/Hurt-Anim.png",
+   "w": 48,
+   "h": 72,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0117": {
+  "Idle": {
+   "file": "characters/0117/Idle-Anim.png",
+   "w": 32,
+   "h": 64,
+   "durations": [
+    12,
+    12,
+    12,
+    12,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0117/Walk-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    8,
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0117/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0117/Hurt-Anim.png",
+   "w": 48,
+   "h": 72,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0118": {
+  "Idle": {
+   "file": "characters/0118/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    16,
+    10,
+    16,
+    10,
+    16,
+    10,
+    16,
+    2,
+    4,
+    4,
+    4,
+    12,
+    10,
+    16,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0118/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0118/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0118/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0119": {
+  "Idle": {
+   "file": "characters/0119/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    16,
+    10,
+    16,
+    10,
+    16,
+    10,
+    16,
+    2,
+    4,
+    4,
+    4,
+    12,
+    10,
+    16,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0119/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    10,
+    8,
+    10,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0119/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0119/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0120": {
+  "Idle": {
+   "file": "characters/0120/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    36,
+    10,
+    6,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0120/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0120/Attack-Anim.png",
+   "w": 64,
+   "h": 64,
+   "durations": [
+    2,
+    2,
+    4,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0120/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0121": {
+  "Idle": {
+   "file": "characters/0121/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    60,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0121/Walk-Anim.png",
+   "w": 24,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0121/Attack-Anim.png",
+   "w": 64,
+   "h": 64,
+   "durations": [
+    2,
+    2,
+    4,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0121/Hurt-Anim.png",
+   "w": 56,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0122": {
+  "Idle": {
+   "file": "characters/0122/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    20,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0122/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0122/Attack-Anim.png",
+   "w": 72,
+   "h": 88,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0122/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0123": {
+  "Idle": {
+   "file": "characters/0123/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    40,
+    10,
+    14,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0123/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0123/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0123/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0124": {
+  "Idle": {
+   "file": "characters/0124/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    30,
+    14,
+    30,
+    14
+   ]
+  },
+  "Walk": {
+   "file": "characters/0124/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0124/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0124/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0125": {
+  "Idle": {
+   "file": "characters/0125/Idle-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    28,
+    18,
+    28,
+    18
+   ]
+  },
+  "Walk": {
+   "file": "characters/0125/Walk-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0125/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0125/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0126": {
+  "Idle": {
+   "file": "characters/0126/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    40,
+    6,
+    12,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0126/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0126/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0126/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0127": {
+  "Idle": {
+   "file": "characters/0127/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    40,
+    2,
+    6,
+    3,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0127/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0127/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0127/Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0128": {
+  "Idle": {
+   "file": "characters/0128/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    40,
+    3,
+    6,
+    3,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0128/Walk-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    8,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0128/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    1,
+    2,
+    4,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0128/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0129": {
+  "Idle": {
+   "file": "characters/0129/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    10,
+    10,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0129/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    6,
+    2,
+    4,
+    6,
+    4,
+    2,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0129/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0129/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0130": {
+  "Idle": {
+   "file": "characters/0130/Idle-Anim.png",
+   "w": 72,
+   "h": 128,
+   "durations": [
+    18,
+    8,
+    18,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0130/Walk-Anim.png",
+   "w": 88,
+   "h": 128,
+   "durations": [
+    10,
+    14,
+    10,
+    14
+   ]
+  },
+  "Attack": {
+   "file": "characters/0130/Attack-Anim.png",
+   "w": 104,
+   "h": 136,
+   "durations": [
+    4,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0130/Hurt-Anim.png",
+   "w": 72,
+   "h": 120,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0131": {
+  "Idle": {
+   "file": "characters/0131/Idle-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    40,
+    12,
+    16,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0131/Walk-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    10,
+    12,
+    10,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0131/Attack-Anim.png",
+   "w": 88,
+   "h": 88,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0131/Hurt-Anim.png",
+   "w": 56,
+   "h": 96,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0132": {
+  "Idle": {
+   "file": "characters/0132/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    16,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0132/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    10,
+    8,
+    10,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0132/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0132/Hurt-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0133": {
+  "Idle": {
+   "file": "characters/0133/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    16,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0133/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    4,
+    4,
+    4,
+    4,
+    6,
+    2,
+    2
+   ]
+  },
+  "Attack": {
+   "file": "characters/0133/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4,
+    4,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0133/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0134": {
+  "Idle": {
+   "file": "characters/0134/Idle-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    60,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0134/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0134/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0134/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0135": {
+  "Idle": {
+   "file": "characters/0135/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    60,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0135/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0135/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0135/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0136": {
+  "Idle": {
+   "file": "characters/0136/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    12,
+    16,
+    12,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0136/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0136/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    4,
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0136/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0137": {
+  "Idle": {
+   "file": "characters/0137/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    12,
+    8,
+    12,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0137/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    10,
+    10,
+    10,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0137/Attack-Anim.png",
+   "w": 64,
+   "h": 64,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0137/Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0138": {
+  "Idle": {
+   "file": "characters/0138/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    30,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0138/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0138/Attack-Anim.png",
+   "w": 80,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0138/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0139": {
+  "Idle": {
+   "file": "characters/0139/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    30,
+    20
+   ]
+  },
+  "Walk": {
+   "file": "characters/0139/Walk-Anim.png",
+   "w": 40,
+   "h": 40,
+   "durations": [
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0139/Attack-Anim.png",
+   "w": 80,
+   "h": 88,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0139/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0140": {
+  "Idle": {
+   "file": "characters/0140/Idle-Anim.png",
+   "w": 24,
+   "h": 24,
+   "durations": [
+    40,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0140/Walk-Anim.png",
+   "w": 24,
+   "h": 24,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0140/Attack-Anim.png",
+   "w": 64,
+   "h": 64,
+   "durations": [
+    4,
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0140/Hurt-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0141": {
+  "Idle": {
+   "file": "characters/0141/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    20,
+    10,
+    20,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0141/Walk-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    6,
+    4,
+    8,
+    4,
+    6,
+    4,
+    8,
+    4
+   ]
+  },
+  "Attack": {
+   "file": "characters/0141/Attack-Anim.png",
+   "w": 64,
+   "h": 64,
+   "durations": [
+    4,
+    2,
+    4,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    4
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0141/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0142": {
+  "Idle": {
+   "file": "characters/0142/Idle-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0142/Walk-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0142/Attack-Anim.png",
+   "w": 64,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0142/Hurt-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0143": {
+  "Idle": {
+   "file": "characters/0143/Idle-Anim.png",
+   "w": 32,
+   "h": 64,
+   "durations": [
+    40,
+    1,
+    3,
+    4,
+    3,
+    1
+   ]
+  },
+  "Walk": {
+   "file": "characters/0143/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0143/Attack-Anim.png",
+   "w": 64,
+   "h": 88,
+   "durations": [
+    2,
+    8,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0143/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0144": {
+  "Idle": {
+   "file": "characters/0144/Idle-Anim.png",
+   "w": 88,
+   "h": 88,
+   "durations": [
+    8,
+    10,
+    8,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0144/Walk-Anim.png",
+   "w": 88,
+   "h": 88,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0144/Attack-Anim.png",
+   "w": 88,
+   "h": 120,
+   "durations": [
+    2,
+    2,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0144/Hurt-Anim.png",
+   "w": 64,
+   "h": 120,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0145": {
+  "Idle": {
+   "file": "characters/0145/Idle-Anim.png",
+   "w": 56,
+   "h": 96,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0145/Walk-Anim.png",
+   "w": 56,
+   "h": 96,
+   "durations": [
+    6,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0145/Attack-Anim.png",
+   "w": 80,
+   "h": 88,
+   "durations": [
+    2,
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0145/Hurt-Anim.png",
+   "w": 80,
+   "h": 104,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0146": {
+  "Idle": {
+   "file": "characters/0146/Idle-Anim.png",
+   "w": 80,
+   "h": 96,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Walk": {
+   "file": "characters/0146/Walk-Anim.png",
+   "w": 80,
+   "h": 96,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0146/Attack-Anim.png",
+   "w": 104,
+   "h": 136,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0146/Hurt-Anim.png",
+   "w": 80,
+   "h": 120,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0147": {
   "Idle": {
    "file": "characters/0147/Idle-Anim.png",
@@ -800,6 +7908,231 @@
   "Hurt": {
    "file": "characters/0147/Hurt-Anim.png",
    "w": 48,
+   "h": 64,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0148": {
+  "Idle": {
+   "file": "characters/0148/Walk-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    8,
+    6,
+    6,
+    8,
+    6,
+    6,
+    6
+   ]
+  },
+  "Walk": {
+   "file": "characters/0148/Walk-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    8,
+    6,
+    6,
+    8,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0148/Attack-Anim.png",
+   "w": 80,
+   "h": 80,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0148/Hurt-Anim.png",
+   "w": 48,
+   "h": 72,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0149": {
+  "Idle": {
+   "file": "characters/0149/Idle-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    40,
+    2,
+    2,
+    3,
+    3,
+    2,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0149/Walk-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    8,
+    12,
+    8,
+    12
+   ]
+  },
+  "Attack": {
+   "file": "characters/0149/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0149/Hurt-Anim.png",
+   "w": 48,
+   "h": 72,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0150": {
+  "Idle": {
+   "file": "characters/0150/Idle-Anim.png",
+   "w": 32,
+   "h": 64,
+   "durations": [
+    40,
+    2,
+    4,
+    6,
+    8,
+    6,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0150/Walk-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    12,
+    6,
+    6,
+    12,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0150/Attack-Anim.png",
+   "w": 80,
+   "h": 88,
+   "durations": [
+    2,
+    3,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0150/Hurt-Anim.png",
+   "w": 48,
+   "h": 72,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0151": {
+  "Idle": {
+   "file": "characters/0151/Idle-Anim.png",
+   "w": 32,
+   "h": 56,
+   "durations": [
+    12,
+    8,
+    12,
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0151/Walk-Anim.png",
+   "w": 40,
+   "h": 64,
+   "durations": [
+    8,
+    8,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0151/Attack-Anim.png",
+   "w": 64,
+   "h": 88,
+   "durations": [
+    2,
+    2,
+    1,
+    3,
+    1,
+    3,
+    2,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0151/Hurt-Anim.png",
+   "w": 40,
    "h": 64,
    "durations": [
     2,

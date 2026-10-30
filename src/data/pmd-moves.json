@@ -1,8 +1,10 @@
 {
- "note": "阶段7.7 官方招式与图鉴扩展招式数据，由 tools/data/import_pokedex.py 合并生成；旧25招对象按固定基线保留。仅用于私有构建。",
+ "note": "阶段7.8 官方招式与图鉴扩展招式数据，由 tools/data/import_pokedex.py 合并生成；旧25招对象按固定基线保留。仅用于私有构建。",
  "source": "https://bulbapedia.bulbagarden.net/wiki/<Move>_(move)，“Pokémon Mystery Dungeon series”一节的表格",
  "retrieved": "2026-10-30T04:40Z（主会话内置浏览器读取）",
  "snapshotSha256": "12436b4fd16aa726e2d06e1ccfdf3f9836c4c63ce5f82a853825494f5d4fda0f",
+ "supplementalSnapshotFile": "wiki-2026-10-30-extra.json",
+ "supplementalSnapshotSha256": "ca1883a2005e2e57c9347001a72d24be649e99a6cd1607723650cc88fa72ec49",
  "gamePriority": [
   "MDTDS",
   "MDSky",

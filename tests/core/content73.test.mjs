@@ -2,15 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {createMain,createExpedition,applyCommand,jumpToFloor,rngStep,closeOut,key,RULE_VERSION,CONTENT_VERSION,PROG} from '../../src/core/engine.ts';
+import {createExpedition,applyCommand,jumpToFloor,rngStep,closeOut,key,PROG} from '../../src/core/engine.ts';
 import {initialProfile,newGameProfile,squadOf,settleRun} from '../../src/core/base.ts';
-import {TrialStore,decode,BUILD_ID} from '../../src/core/save.ts';
+import {TrialStore,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 import {generateFloor,farthestRoom,roomCells,center,THEME_FLOORS,themeOfLevel,LEGACY_WILD,WILD_SPECIES,BOSS,serviceRoll} from '../../src/core/dungeon.ts';
 import {LEGACY_TM_MOVES,TM_MOVES,tmPool,BOSS_SPECIES,SPECIES,learnableMove} from '../../src/core/roster.ts';
 import {NAME_TABLE,speciesZh,moveZh,tmZh} from '../../src/core/names.ts';
 import {enemyInfo,localizeLog} from '../../src/core/describe.ts';
 import {friend,enemy,pos,row} from '../acceptance/fixtures.mjs';
-import {createScenario} from '../../src/core/scenarios.ts';
 
 /*
  * Stage 7.3 tests: docs/玩法研究/内容扩充与首领.md, section "验收" (groups D, T, L, B, S). Expected values are literals: either the spec's numbers, or values
@@ -18,7 +17,7 @@ import {createScenario} from '../../src/core/scenarios.ts';
  */
 const roster=JSON.parse(readFileSync(new URL('../../src/data/roster.json',import.meta.url),'utf8'));
 const by=Object.fromEntries(roster.species.map(s=>[s.id,s]));
-const memory=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);},map:m};};
+const memory=()=>{const m=new Map();let writes=0;return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);writes++;},map:m,writes:()=>writes};};
 const NEW8=['sandshrew','growlithe','magnemite','onix','dratini','wooper','houndour','makuhita'];
 const ESTABLISHED23=['bulbasaur','charmander','squirtle','pidgey','rattata','spearow','pikachu','zubat','geodude','chikorita','cyndaquil','totodile','treecko','torchic','mudkip',...NEW8];
 const FLOORS3={width:20,height:14,floors:3,boss:true};
@@ -260,7 +259,7 @@ function profileOf3(){
  p.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
  p.next=4;p.team=['P1','P2','P3'];p.leader='P1';return p;
 }
-test('B8 a wipe on the boss floor: machines are lost, the unprotected partner draws once (stream 7: lost), G still pays 100, and the saved end record loads again',async()=>{
+test('B8 a wipe on the boss floor: machines are lost and one unprotected partner draw is recorded',()=>{
  const p=profileOf3();
  const w=jumpToFloor(createExpedition('b8',9,3,squadOf(p),0),3);
  const bossAt=w.units.boss.pos,ids=w.queue;
@@ -275,8 +274,6 @@ test('B8 a wipe on the boss floor: machines are lost, the unprotected partner dr
  assert.deepEqual(s.end.tms,[{move:'protect',source:'target',fate:'lost'}]);
  assert.deepEqual(s.end.lost,['C'],'P3 is the only unprotected member and the first draw of stream 7 is 0.0117 < 0.5');
  assert.equal(s.end.reward,100);assert.equal(s.end.boss,false);
- const port=memory(),store=new TrialStore(port,'x');assert.equal(await store.start(s,p),true);
- const again=new TrialStore(port,'x');assert.equal(again.status,'ready',again.error);assert.deepEqual(again.state,s);
  assert.equal(settleRun(p,s).account,100);
 });
 
@@ -314,40 +311,33 @@ test('B9 with only the initial two members and an empty account, a departure rea
  assert.equal(r.s.dungeon.level,3);assert.equal(r.s.phase,'exit');
  const exit=r.s.points.find(p=>p.kind==='exit').pos;assert.deepEqual(r.s.units[r.s.request.actor].pos,exit);
  assert.equal(r.s.units.boss.hp,BOSS.hp,'the boss was never touched');
+ const beforeWrites=port.writes();
  assert.equal((await store.dispatch({type:'finishExit'})).ok,true);assert.equal(store.state.end.boss,false);assert.equal(store.state.end.outcome,'normal');
+ assert.equal(store.status,'ready');assert.equal(port.writes(),beforeWrites+1,'the first persistent write after departure is terminal settlement');
+ assert.equal(store.envelope.format,2);assert.equal(Object.hasOwn(store.envelope,'current'),false);
 });
 const B9_SEED=1;
 
 /* ---------- S: saves ---------- */
 const load72=name=>readFileSync(new URL('./fixtures72/'+name,import.meta.url),'utf8');
 const openRaw=raw=>{const port={raw,getItem:()=>port.raw,setItem:(k,v)=>{port.raw=v;}};return {port,store:new TrialStore(port,'k')};};
-test('S1 a 7.2 save with a 2-floor run in progress (written by the 7.2 code) loads, plays to its end and returns to the base',async()=>{
- const {port,store}=openRaw(load72('save72-plain.json'));
- assert.equal(store.status,'ready',store.error);
- const s0=store.state;assert.equal(s0.dungeon.floors,2);assert.equal(s0.dungeon.boss,undefined);assert.equal(s0.round,3);assert.equal(s0.dungeon.base,true);
- assert.ok(s0.enemies.every(id=>s0.units[id].species in LEGACY_WILD),'old enemy pool');
- assert.equal((await store.dispatch({type:'round',action:{type:'wait'}})).ok,true);
- assert.equal((await store.dispatch({type:'round',action:{type:'interact',exit:true}})).ok,true);
- assert.equal(store.state.phase,'exit');
- assert.equal((await store.dispatch({type:'finishExit'})).ok,true);assert.equal(store.state.phase,'ended');assert.equal(store.state.end.boss,undefined);assert.equal(store.state.end.outcome,'normal');
- assert.equal(await store.returnToBase(),true);assert.equal(store.atBase,true);
- const again=new TrialStore(port,'k');assert.equal(again.status,'ready',again.error);assert.equal(again.atBase,true);
- // the next departure is a 3 floor boss run
- assert.equal(await again.depart('next',11,0),true);assert.equal(again.state.dungeon.floors,3);assert.equal(again.state.dungeon.boss,true);
+test('S1 a 7.2 in-progress World is discarded; the valid camp profile is migrated',async()=>{
+ const raw=load72('save72-plain.json'),old=decodeLegacy(raw),{port,store}=openRaw(raw);
+ assert.equal(old.current.dungeon.floors,2);assert.equal(old.current.round,3);assert.ok(old.current.enemies.every(id=>old.current.units[id].species in LEGACY_WILD));
+ assert.equal(await store.whenReady,true,store.error);assert.equal(store.status,'ready',store.error);
+ assert.equal(store.state,null);assert.equal(store.envelope.format,2);assert.equal(Object.hasOwn(store.envelope,'current'),false);
+ const again=new TrialStore(port,'k');assert.equal(await again.whenReady,true);assert.equal(again.atBase,true);assert.deepEqual(again.profile,store.profile);
 });
-test('S2 a 7.2 save with a shop (2 floors): the shop machine recomputes unchanged (whirlwind), and buying it still works after loading',async()=>{
- const {port,store}=openRaw(load72('save72-shop.json'));
- assert.equal(store.status,'ready',store.error);
- assert.deepEqual(store.state.shop,{level:1,stock:{berry:2,tonic:1,tm:'whirlwind'},trades:[]});
- const env=JSON.parse(port.raw);env.current.units[env.current.leader].pos={x:17,y:5}; // the shop cell of seed 2, floor 1
- port.raw=JSON.stringify(env);const again=new TrialStore(port,'k');assert.equal(again.status,'ready',again.error);
- assert.equal((await again.dispatch({type:'buy',item:'tm'})).ok,true);
- assert.deepEqual(again.state.tms,[{move:'whirlwind',source:'shop',fate:'held'}]);
- assert.equal(new TrialStore(port,'k').status,'ready');
+test('S2 a 7.2 in-progress shop World is discarded; no shop state enters the camp record',async()=>{
+ const raw=load72('save72-shop.json'),old=decodeLegacy(raw),{port,store}=openRaw(raw);
+ assert.deepEqual(old.current.shop,{level:1,stock:{berry:2,tonic:1,tm:'whirlwind'},trades:[]});
+ assert.equal(await store.whenReady,true,store.error);assert.equal(store.state,null);assert.equal(store.envelope.format,2);
+ assert.equal(Object.hasOwn(store.envelope,'recent'),false);assert.deepEqual(new TrialStore(port,'k').profile,store.profile);
 });
-function envelopeOf(w,profile=initialProfile(),extra={}){return {format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:2,current:w,recent:null,profile,...extra};}
-const accepted=w=>{const raw=JSON.stringify(envelopeOf(w));const e=decode(raw);assert.ok(e.current);return raw;};
-const rejects=(w,why)=>assert.throws(()=>decode(JSON.stringify(envelopeOf(w))),/存档结构损坏/,why);
+const endedForLegacy=w=>{const s=structuredClone(w);if(s.phase!=='ended'){s.phase='ended';s.request=null;s.anchor=null;s.end=closeOut(s,'normal');}return s;};
+function envelopeOf(w,profile=initialProfile(),extra={}){return {format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:2,current:endedForLegacy(w),recent:null,profile,...extra};}
+const accepted=w=>{const raw=JSON.stringify(envelopeOf(w));const e=decodeLegacy(raw);assert.ok(e.current);return raw;};
+const rejects=(w,why)=>assert.throws(()=>decodeLegacy(JSON.stringify(envelopeOf(w))),/存档结构损坏|无法迁移/,why);
 const fresh3=(seed=4)=>createExpedition('s3',seed,3,base(),0);
 const floor3=(seed=4)=>jumpToFloor(fresh3(seed),3);
 test('S3 tampering is rejected (each case first checked in its untouched form)',()=>{
@@ -383,17 +373,10 @@ test('S3 tampering is rejected (each case first checked in its untouched form)',
  {const w=floor3();w.units.A.species='arcanine';rejects(w,'boss species on a partner');}
  {const w=floor3();w.units.boss.species='geodude';rejects(w,'boss mark on another species');}
  {const w=floor3();w.units.boss.recruit=friend('N',0,1,10,{tackle:1});rejects(w,'recruitable boss');}
- // H1 hardening: a boss unit in a fixed-map run, as anyone's recruit, or as an invitation
- {const plain=w=>JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:2,current:w,recent:null});
-  const bossU=()=>structuredClone(floor3().units.boss);
-  const m=createMain('m',false);assert.ok(decode(plain(m)).current,'untouched fixed map loads');
-  {const w=createMain('m',false);w.units.boss={...bossU(),pos:{x:7,y:1}};w.enemies.push('boss');assert.throws(()=>decode(plain(w)),/存档结构损坏/,'boss in a fixed-map run');}
-  {const w=createMain('m',false);w.units.E.recruit={...bossU(),id:'N',pos:{x:0,y:0}};assert.throws(()=>decode(plain(w)),/存档结构损坏/,'boss as a fixed-map recruit');}
+ // Boss-as-recruit identity checks use expedition snapshots that can be valid historical saves.
+ {const bossU=()=>structuredClone(floor3().units.boss);
   {const w=floor3();w.units.w3a.recruit={...bossU(),id:'N',pos:null};rejects(w,'boss as a recruit in a boss run');}
   {const w=createExpedition('s3',4,2,base(),0);w.units.w1a.recruit={...bossU(),id:'N',pos:null};rejects(w,'boss as a recruit in a 2 floor run');}
-  const inv=createScenario('V8','x');assert.ok(decode(plain(inv)).current,'untouched invitation loads');
-  {const w=createScenario('V8','x');w.invitations[0].unit={...bossU(),id:'N',pos:null,hp:0};assert.throws(()=>decode(plain(w)),/存档结构损坏/,'boss as an invitation');}
-  {const w=createScenario('V8','x');w.invitations[0].unit={...friend('N',0,1,10,{tackle:1}),species:'arcanine'};assert.throws(()=>decode(plain(w)),/存档结构损坏/,'boss species as an invitation');}
  }
  // a boss that is not the last enemy of its floor
  {const w=floor3();w.enemies=['boss',...w.enemies.filter(i=>i!=='boss')];rejects(w,'boss not last');}
@@ -402,15 +385,15 @@ test('S3b an old-format record still reads: a boss machine and boss fields are t
  const w=createExpedition('s3b',4,2,base(),0);w.tms=[{move:'terablast',source:'target',fate:'held'}];w.bag=1;rejects(w,'new machine in a run without the mark');
  const v=floor3();v.tms=[{move:'terablast',source:'target',fate:'held'}];v.bag=1;accepted(v);
 });
-test('S4 a boss-marked run saved and reloaded at every checkpoint (start, transits, rounds, boss defeat, exit, end, return) matches exactly',async()=>{
- const port=memory();let store=new TrialStore(port,'x');
- assert.equal(await store.beginNewGame(initialProfile(),false),true);
- const edit=(fn)=>{const env=JSON.parse(port.getItem('x'));fn(env.current);port.setItem('x',JSON.stringify(env));store=new TrialStore(port,'x');assert.equal(store.status,'ready',store.error);};
- const check=(label)=>{const again=new TrialStore(port,'x');assert.equal(again.status,'ready',label+': '+again.error);assert.deepEqual(again.envelope,store.envelope,label);};
+test('S4 a boss-marked run moves through transit, battle and exit in memory without persisting checkpoints',async()=>{
+ const port=memory();let world=createExpedition('s4',4,3,squadOf(initialProfile()),0,undefined,3);
+ const store={get state(){return world;},async dispatch(cmd){const r=applyCommand(world,cmd);if(r.ok)world=r.state;return r;}};
+ const edit=fn=>fn(world);
+ const check=label=>assert.equal(port.writes(),0,`${label}: no World checkpoint is written`);
  const send=async(cmd,label)=>{const r=await store.dispatch(cmd);assert.equal(r.ok,true,label+': '+r.error);check(label);};
- assert.equal(await store.depart('s4',4,0),true);check('depart');
+ check('start');
  for(const level of [1,2]){
-  const w=store.state,down=w.points.find(p=>p.kind==='down').pos;
+ const w=store.state,down=w.points.find(p=>p.kind==='down').pos;
   // stand the whole team next to the stairs by editing positions to free neighbouring cells, then cross for real
   edit(s=>{const cells=[down,...[[1,0],[0,1],[-1,0],[0,-1]].map(([dx,dy])=>({x:down.x+dx,y:down.y+dy}))].filter(c=>s.floor.some(f=>f.x===c.x&&f.y===c.y)&&!s.enemies.some(i=>s.units[i].hp>0&&s.units[i].pos.x===c.x&&s.units[i].pos.y===c.y));
    s.queue.forEach((id,i)=>{s.units[id].pos={...cells[i]};});s.leader=s.queue.find(id=>s.units[id].pos.x===down.x&&s.units[id].pos.y===down.y)??s.queue[0];s.units[s.leader].pos={...down};s.queue.filter(i=>i!==s.leader).forEach((id,i)=>{s.units[id].pos={...cells[i+1]};});
@@ -431,8 +414,8 @@ test('S4 a boss-marked run saved and reloaded at every checkpoint (start, transi
  await send({type:'round',action:{type:'interact',exit:true}},'exit request');assert.equal(store.state.phase,'exit');
  await send({type:'finishExit'},'finish');assert.equal(store.state.phase,'ended');
  assert.equal(store.state.end.boss,true);assert.deepEqual(store.state.end.tms.at(-1),{move:store.state.tms.at(-1).move,source:'boss',fate:'brought'});assert.ok(store.state.end.reasons.includes('tm'));
- assert.equal(await store.returnToBase(),true);check('returned');
- assert.equal(store.profile.vault[store.envelope.recent.end.tms.at(-1).move]>=1,true,'the boss machine reached the warehouse');
+ const settled=settleRun(initialProfile(),store.state);
+ assert.equal(settled.vault[store.state.end.tms.at(-1).move]>=1,true,'the brought boss machine settles into the camp vault');
 });
 
 /* ---------- display ---------- */

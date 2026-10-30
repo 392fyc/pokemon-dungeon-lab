@@ -30,8 +30,10 @@ async function setup(fixture,mode='pass',animate=false){
 }
 // 7.5: entering play loads Phaser on demand; canvas assertions also need the scene ready.
 const ready=p=>p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+const emptyReady=p=>p.waitForFunction(()=>window.trial?.store.status==='empty'&&window.trial.view());
 const state=p=>p.evaluate(()=>window.trial.getState());
 const raw=p=>p.evaluate(()=>localStorage.getItem(window.trial.store.key));
+async function startMemory(p,world,profile=null){await p.evaluate(({world,profile})=>window.trial.store.start(world,profile),{world,profile});await p.evaluate(()=>window.dispatchEvent(new Event('blur')));await ready(p);}
 async function start(p){await p.locator('#start').click();await ready(p);}
 async function key(p,k){await p.keyboard.press(k);await ready(p);}
 async function click(p,id){await p.locator('#'+id).click();await ready(p);}
@@ -55,17 +57,17 @@ async function defeatMainEAndRecordG(p){
 async function reject(p){await click(p,'reject');await click(p,'reject-confirm');}
 async function exit(p){await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='ended');}
 async function test(name,fn){if(process.env.TRIAL_CHECK_FILTER&&!name.includes(process.env.TRIAL_CHECK_FILTER))return;let r={name,status:'FAIL'};try{r.details=await fn();r.status='PASS';}catch(e){r.error=String(e.stack??e);}results.push(r);console.log(r.status,name,r.error??'');fs.writeFileSync(artifact+(process.env.TRIAL_CHECK_FILTER?'windows-browser-extra-results.json':'windows-browser-results.json'),JSON.stringify({origin:base,browser:await browser.version(),results},null,2));}
-await test('M1、S2、S5、S8：真实输入、待邀请与终局重载、独立重开',async()=>{
- const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);const invited=await state(p),before=await raw(p);
- await p.reload();await ready(p);assert.deepEqual(await state(p),invited);await click(p,'detail-0');await click(p,'detail-0');assert.equal(await raw(p),before);
+await test('M1、S2、S5、S8：开发场景真实输入、待邀请、终局与独立重开仅在内存',async()=>{
+ const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);const invited=await state(p);assert.equal(await raw(p),null);
+ await click(p,'detail-0');await click(p,'detail-0');assert.equal(await raw(p),null);
  await reject(p);await key(p,'ArrowRight');await exit(p);let s=await state(p);assert.equal(s.round,6);assert.deepEqual(s.queue.map(i=>s.units[i].pos.x),[1,3,4]);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,20,8]);assert.equal(s.end.brought,0);const terminal=s;
- await p.screenshot({path:artifact+'windows-m1-terminal.png',fullPage:true});await p.reload();await ready(p);assert.deepEqual(await state(p),terminal);
- await click(p,'new');s=await state(p);assert.equal(s.round,0);assert.notEqual(s.runId,terminal.runId);assert.deepEqual(await p.evaluate(()=>window.trial.store.envelope.recent),terminal);
- await p.reload();await ready(p);assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {rounds:6,invitationStable:true,terminalStable:true,newRunPreservesPrevious:true,pageErrors:errors};}finally{await context.close();}
+ await p.screenshot({path:artifact+'windows-m1-terminal.png',fullPage:true});assert.equal(await raw(p),null);
+ await click(p,'new');s=await state(p);assert.equal(s.round,0);assert.notEqual(s.runId,terminal.runId);assert.equal(await raw(p),null);
+ await p.reload();await emptyReady(p);assert.equal(await state(p),null);assert.equal(await raw(p),null);assert.equal(invited.phase,'invitation');assert.deepEqual(errors,[]);return {rounds:6,invitationStable:true,terminalMemoryOnly:true,reloadDropsDeveloperRun:true,pageErrors:errors};}finally{await context.close();}
 });
-await test('M2、S1：探看返回及关闭页面后同源恢复',async()=>{
- const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await reject(p);await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');let s=await state(p);assert.equal(s.round,7);assert.ok(s.seen.includes('9,1'));const saved=s;
- await p.close();const q=await context.newPage();await q.goto(base+'?dev=1');await ready(q);assert.deepEqual(await state(q),saved);await key(q,'2');await key(q,'ArrowRight');await exit(q);s=await state(q);assert.equal(s.round,9);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,20,8]);assert.deepEqual(errors,[]);return {rounds:9,restoredRevealedR:true};}finally{await context.close();}
+await test('M2、S1：开发场景探看与关闭后回到空的内存状态',async()=>{
+ const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await reject(p);await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');let s=await state(p);assert.equal(s.round,7);assert.ok(s.seen.includes('9,1'));assert.equal(await raw(p),null);
+ await p.close();const q=await context.newPage();await q.goto(base+'?dev=1');await q.locator('#start').waitFor();await emptyReady(q);assert.equal(await state(q),null);assert.equal(await raw(q),null);await start(q);await prefix(q);await reject(q);await key(q,'ArrowRight');await exit(q);s=await state(q);assert.equal(s.round,6);assert.deepEqual(errors,[]);return {revealedRBeforeClose:true,closeDropsDeveloperRun:true,freshRunStarts:true};}finally{await context.close();}
 });
 await test('M3：电光一闪两格射程、合法目标提示与T撤离',async()=>{
  const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
@@ -96,19 +98,19 @@ await test('V1/V2、I1：直接预检、草稿取消、切主控清空、长按�
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await click(p,'submit');let s=await state(p);assert.equal(s.round,8);assert.deepEqual(s.queue.map(i=>s.units[i].pos.x),[2,3,4]);
  await p.keyboard.down('.');await ready(p);const once=await state(p);await p.keyboard.down('.');await p.keyboard.down('.');await p.keyboard.up('.');assert.deepEqual(await state(p),once);assert.deepEqual(errors,[]);return {directRejected:true,combinedRound:8,repeatedKeyIgnored:true};}finally{await context.close();}
 });
-await test('V10、S3、I1：连续邀请不跨面板、固定集结格',async()=>{
- const {context,page:p,errors}=await setup('V10');try{await start(p);await click(p,'out-0');await click(p,'accept');const first=await state(p);assert.deepEqual(first.queue,['B','C','N1']);await p.keyboard.press('Enter');assert.deepEqual(await state(p),first);await p.reload();await ready(p);assert.deepEqual(await state(p),first);await click(p,'out-1');await click(p,'accept');const s=await state(p);assert.deepEqual(s.queue,['B','N1','N2']);assert.deepEqual(s.units.N2.pos,{x:3,y:2});assert.deepEqual(s.camp,['A','C']);assert.deepEqual(errors,[]);return {anchorStable:true,noCarriedConfirmation:true};}finally{await context.close();}
+await test('V10、S3、I1：连续邀请不跨面板、固定集结格，开发场景不写存档',async()=>{
+ const {context,page:p,errors}=await setup('V10');try{await start(p);await click(p,'out-0');await click(p,'accept');const first=await state(p);assert.deepEqual(first.queue,['B','C','N1']);await p.keyboard.press('Enter');assert.deepEqual(await state(p),first);assert.equal(await raw(p),null);await click(p,'out-1');await click(p,'accept');const s=await state(p);assert.deepEqual(s.queue,['B','N1','N2']);assert.deepEqual(s.units.N2.pos,{x:3,y:2});assert.deepEqual(s.camp,['A','C']);assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {anchorStable:true,noCarriedConfirmation:true,memoryOnly:true};}finally{await context.close();}
 });
-await test('V12、S5：全灭优先、此前回营与未带出物品',async()=>{
- const {context,page:p,errors}=await setup('V12');try{await start(p);await exit(p);const s=await state(p);assert.equal(s.end.outcome,'wipe');assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.deepEqual(s.end.camp,['C']);assert.equal(s.units.C.hp,8);await p.reload();await ready(p);assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {outcome:'wipe',acquired:1,brought:0,campC:8};}finally{await context.close();}
+await test('V12、S5：开发场景全灭优先、此前回营与未带出物品',async()=>{
+ const {context,page:p,errors}=await setup('V12');try{await start(p);await exit(p);const s=await state(p);assert.equal(s.end.outcome,'wipe');assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.deepEqual(s.end.camp,['C']);assert.equal(s.units.C.hp,8);assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {outcome:'wipe',acquired:1,brought:0,campC:8,memoryOnly:true};}finally{await context.close();}
 });
-await test('S6/S7：初次保存失败、冻结与相同记录重试',async()=>{
- const {context,page:p,errors}=await setup(undefined,'fail');try{await p.locator('#start').click();await p.waitForFunction(()=>window.trial.store.status==='failed');const s=await state(p);assert.equal(await raw(p),null);assert.match(await p.locator('#save').innerText(),/尚无成功保存点/);await p.keyboard.press('ArrowRight');assert.deepEqual(await state(p),s);const first=await p.evaluate(()=>window.__fault.writes[0].value);await p.evaluate(()=>window.__fault.mode='pass');await click(p,'retry');assert.equal(await raw(p),first);assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {failedInitialNoDiskRecord:true,retrySamePayload:true};}finally{await context.close();}
+await test('S6/S7：开发场景启动与行动不写存档，也不受磁盘写失败影响',async()=>{
+ const {context,page:p,errors}=await setup(undefined,'fail');try{await start(p);const before=await state(p);assert.equal(await raw(p),null);assert.equal(await p.evaluate(()=>window.trial.store.status),'ready');await key(p,'ArrowRight');assert.equal((await state(p)).round,before.round+1);assert.equal(await raw(p),null);assert.deepEqual(await p.evaluate(()=>window.__fault.writes),[]);assert.deepEqual(errors,[]);return {startMemoryOnly:true,roundMemoryOnly:true,noStorageWrites:true};}finally{await context.close();}
 });
-await test('S6、I1：异步保存冻结、编辑草稿不排队执行',async()=>{
- const {context,page:p,errors}=await setup('V1');try{await start(p);const disk=await raw(p);await p.evaluate(()=>window.__fault.mode='pending');await p.locator('#wait').click();await p.waitForFunction(()=>window.trial.store.status==='saving');const during=await state(p);assert.equal(await raw(p),disk);
- assert.equal(await p.locator('#arrange').isEnabled(),true);await p.locator('#arrange').click();await p.locator('#partner-B').click();await p.locator('#wait').click();await p.locator('#edit-main').click();await p.keyboard.press('.');assert.equal(await p.locator('#submit').isEnabled(),false);assert.deepEqual(await state(p),during);
- await p.evaluate(()=>{window.__fault.mode='pass';window.__fault.pending.shift().release();});await ready(p);assert.deepEqual(await state(p),during);assert.equal(await p.locator('#submit').isEnabled(),true);assert.deepEqual(errors,[]);return {pendingFreeze:true,draftEditable:true,noAutomaticSubmit:true};}finally{await context.close();}
+await test('S6、I1：开发场景行动不等待写入，草稿取消后不自动提交',async()=>{
+ const {context,page:p,errors}=await setup('V1');try{await start(p);await p.evaluate(()=>window.__fault.mode='pending');await click(p,'wait');const during=await state(p);assert.equal(await p.evaluate(()=>window.trial.store.status),'ready');assert.equal(await raw(p),null);
+ await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await click(p,'wait');assert.equal(await p.locator('#submit').isEnabled(),true);assert.equal((await state(p)).round,during.round,'draft actions remain uncommitted');await click(p,'cancel-draft');assert.deepEqual(await state(p),during);
+ assert.deepEqual(await p.evaluate(()=>window.__fault.writes),[]);assert.deepEqual(errors,[]);return {memoryActionDoesNotWaitForStorage:true,draftEditable:true,cancelDoesNotSubmit:true};}finally{await context.close();}
 });
 await test('S9：损坏记录保留、导出后明确重置',async()=>{
  const {context,page:p,errors}=await setup();try{const bad='{broken save bytes';await p.evaluate(v=>localStorage.setItem('dungeon-trial.player.v1',v),bad);await p.reload();await p.waitForFunction(()=>window.trial.store.status==='blocked');assert.equal(await raw(p),bad);const downloaded=p.waitForEvent('download');await p.locator('#export').click();const file=await downloaded;const filePath=await file.path();assert.equal(fs.readFileSync(filePath,'utf8'),bad);p.once('dialog',d=>d.accept());await p.locator('#reset').click();await ready(p);assert.equal((await state(p)).round,0);assert.deepEqual(errors,[]);return {rawExportExact:true,explicitReset:true};}finally{await context.close();}
@@ -118,20 +120,51 @@ await test('补充 I1：浏览器失焦事件后选招提示同步',async()=>{
  await p.evaluate(()=>window.dispatchEvent(new Event('blur')));
  assert.equal(await p.locator('#skill-tackle').evaluate(el=>el.classList.contains('selected')),false);assert.doesNotMatch(await p.locator('#controls').innerText(),/已选撞击/);assert.deepEqual(await state(p),before);assert.deepEqual(errors,[]);return {browserBlurEventInjected:true,selectionAndPromptAgree:true};}finally{await context.close();}
 });
-await test('补充 S4/S6：待退出写失败重试不重放邀请或世界轮',async()=>{
- const {context,page:p,errors}=await setup('V13');try{await start(p);await click(p,'take-exit');await click(p,'exit-confirm');assert.equal((await state(p)).phase,'invitation');const savedInvite=await raw(p);await p.reload();await ready(p);assert.equal(await raw(p),savedInvite);
- await click(p,'out-1');await p.evaluate(()=>window.__fault.mode='fail');await p.locator('#accept').click();await p.waitForFunction(()=>window.trial.store.status==='failed');const exitState=await state(p);assert.equal(exitState.phase,'exit');assert.deepEqual(exitState.queue,['A','C','N']);assert.equal(await raw(p),savedInvite);await p.keyboard.press('Enter');assert.deepEqual(await state(p),exitState);
- const failed=await p.evaluate(()=>window.__fault.writes.at(-1).value);await p.evaluate(()=>window.__fault.mode='pass');await click(p,'retry');const s=await state(p);assert.equal(s.phase,'ended');assert.equal(s.round,1);assert.deepEqual(s.queue,['A','C','N']);assert.deepEqual(s.camp,['B']);assert.equal(await p.evaluate(()=>window.__fault.writes.at(-2).value),failed);assert.deepEqual(errors,[]);return {exitRetrySamePayload:true,rounds:1,invitationOnce:true};}finally{await context.close();}
-});
-await test('补充 S4/S6/S8：终局写失败恢复、重开写失败保持旧记录',async()=>{
- const {context,page:p,errors}=await setup('V13');try{await start(p);await click(p,'take-exit');await click(p,'exit-confirm');await click(p,'out-1');await p.evaluate(()=>{const old=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(JSON.parse(v).current.phase==='ended')throw Error('Injected terminal failure');return old.call(this,k,v);};});await p.locator('#accept').click();await p.waitForFunction(()=>window.trial.store.status==='failed');assert.equal((await state(p)).phase,'ended');assert.equal(JSON.parse(await raw(p)).current.phase,'exit');assert.equal(await p.locator('#new').isEnabled(),false);const id=(await state(p)).end.id;
- await p.reload();await ready(p);assert.equal((await state(p)).phase,'ended');assert.equal((await state(p)).end.id,id);const terminal=await raw(p);await p.evaluate(()=>window.__fault.mode='fail');await p.locator('#new').click();await p.waitForFunction(()=>window.trial.store.status==='failed');const candidate=await state(p);assert.equal(candidate.round,0);assert.equal(await raw(p),terminal);await p.keyboard.press('ArrowRight');assert.deepEqual(await state(p),candidate);const failed=await p.evaluate(()=>window.__fault.writes.at(-1).value);await p.evaluate(()=>window.__fault.mode='pass');await click(p,'retry');assert.equal(await raw(p),failed);assert.equal(await p.evaluate(()=>window.trial.store.envelope.recent.end.id),id);assert.deepEqual(errors,[]);return {terminalIdStable:true,restartOldDiskRetained:true,retrySameRunId:true};}finally{await context.close();}
+await test('营地存档：终局写入失败可重试，回营不再写入或重复结算',async()=>{
+ const {newGameProfile}=await import('../../src/core/base.ts');
+ const {context,page:p,errors}=await setup(undefined,'pass');
+ try{
+  const profile=newGameProfile('treecko','mudkip').profile;
+  assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),profile),true);
+  await p.reload();await ready(p);const campRaw=await raw(p),camp=JSON.parse(campRaw);assert.equal(camp.format,2);assert.equal(camp.profile.expeditions,0);
+  await click(p,'depart');const run=await state(p);assert.equal(run.phase,'playing');assert.equal(await raw(p),campRaw,'departure keeps the complete pre-run camp bytes');
+  await p.evaluate(()=>window.__fault.mode='fail');await click(p,'take-exit');await p.locator('#exit-confirm').click();await p.waitForFunction(()=>window.trial.store.status==='failed');
+  const ended=await state(p),summary=await p.evaluate(()=>window.trial.store.settlementSummary),candidate=await p.evaluate(()=>window.trial.store.envelope);
+  assert.equal(ended.phase,'ended');assert.equal(candidate.format,2);assert.equal(candidate.profile.expeditions,1);assert.equal(await raw(p),campRaw,'failed terminal write leaves the old camp bytes intact');
+  assert.equal(await p.locator('#to-base').isDisabled(),true,'cannot return before a successful terminal save');assert.equal(await p.evaluate(()=>window.trial.store.status),'failed');
+  const attempted=await p.evaluate(()=>window.__fault.writes.at(-1).value);await p.evaluate(()=>window.__fault.mode='pass');await click(p,'retry');
+  assert.equal(await raw(p),attempted);assert.deepEqual(await state(p),ended);assert.deepEqual(await p.evaluate(()=>window.trial.store.settlementSummary),summary);assert.equal((await JSON.parse(await raw(p))).profile.expeditions,1,'retry writes the cached settled result once');
+  const settledRaw=await raw(p);await click(p,'to-base');assert.equal(await state(p),null);assert.equal(await raw(p),settledRaw,'returnToBase only changes the screen');assert.deepEqual(errors,[]);
+  return {departureUnchanged:true,terminalFailureKeepsResult:true,retrySettlesOnce:true,returnDoesNotWrite:true};
+ }finally{await context.close();}
 });
 await test('补充 加载失败：脚本请求失败显示原因并保留原记录',async()=>{
  const context=await browser.newContext();await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();try{await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await p.evaluate(()=>localStorage.setItem('dungeon-trial.player.v1','untouched-original'));await p.route(/\/src\/main\.ts|\/assets\/index-.*\.js/,route=>route.abort('failed'));await p.reload();await p.getByText('试验脚本加载失败',{exact:false}).waitFor();assert.equal(await p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),'untouched-original');return {failedModuleRequest:true,originalRecordPreserved:true};}finally{await context.close();}
 });
-await test('补充 S9：阶段矛盾记录阻止自动退出并保留原字节',async()=>{
- const {context,page:p,errors}=await setup('V13');try{await start(p);await click(p,'take-exit');await click(p,'exit-confirm');const bytes=await p.evaluate(()=>{const key=window.trial.store.key;const record=JSON.parse(localStorage.getItem(key));record.current.phase='exit';const bytes=JSON.stringify(record);localStorage.setItem(key,bytes);return bytes;});await p.reload();await p.waitForFunction(()=>window.trial.store.status==='blocked');assert.equal(await raw(p),bytes);assert.equal(await state(p),null);assert.equal(await p.locator('#new').count(),0);assert.match(await p.locator('#save').innerText(),/记录无法载入/);assert.deepEqual(errors,[]);return {invalidPhaseBlocked:true,noAutomaticExit:true,originalBytesPreserved:true};}finally{await context.close();}
+await test('旧档迁移：进行中的远征丢弃，营地档案写成仅含营地的新格式',async()=>{
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});
+ const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
+ try{
+  const legacy=fs.readFileSync(new URL('../core/fixtures77/v1-camp-unit.json',import.meta.url),'utf8');
+  await context.addInitScript(({key,value})=>localStorage.setItem(key,value),{key:'dungeon-trial.player.v1',value:legacy});
+  await p.goto(base+'?dev=1');await ready(p);const env=await p.evaluate(()=>window.trial.store.envelope);
+  assert.equal(await state(p),null);assert.equal(await p.evaluate(()=>window.trial.store.atBase),true);assert.equal(env.format,2);assert.deepEqual(Object.keys(env).sort(),['build','content','format','profile','rules','sequence']);assert.equal(env.profile.expeditions,0);assert.equal(env.sequence,5);
+  assert.deepEqual(JSON.parse(await raw(p)),env);assert.equal(await p.locator('#depart').isEnabled(),true);assert.deepEqual(errors,[]);
+  return {oldActiveRunDiscarded:true,campOnlyFormat2:true,sequenceAdvanced:true,baseReady:true};
+ }finally{await context.close();}
+});
+await test('旧档迁移：旧终局只结算一次，刷新后不会重复记账',async()=>{
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});
+ const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
+ try{
+  const record=JSON.parse(fs.readFileSync(new URL('../core/fixtures77/v1-profile-current.json',import.meta.url),'utf8'));
+  record.current=JSON.parse(fs.readFileSync(new URL('../core/fixtures77/v1-recent-world.json',import.meta.url),'utf8'));record.recent=null;
+  const legacy=JSON.stringify(record);await context.addInitScript(({key,value})=>localStorage.setItem(key,value),{key:'dungeon-trial.player.v1',value:legacy});
+  await p.goto(base+'?dev=1');await ready(p);let env=await p.evaluate(()=>window.trial.store.envelope);
+  assert.equal(await state(p),null);assert.equal(env.format,2);assert.equal(env.profile.expeditions,1);assert.deepEqual(Object.keys(env).sort(),['build','content','format','profile','rules','sequence']);
+  const migrated=await raw(p);assert.deepEqual(JSON.parse(migrated),env);await p.reload();await ready(p);env=await p.evaluate(()=>window.trial.store.envelope);assert.equal(env.profile.expeditions,1);assert.equal(await raw(p),migrated);assert.equal(await state(p),null);assert.deepEqual(errors,[]);
+  return {legacyTerminalSettled:true,expeditionCountOnce:true,refreshDoesNotRepeat:true};
+ }finally{await context.close();}
 });
 
 /* PR5 targeted regression. Only button/keyboard interaction changes the world.
@@ -258,7 +291,7 @@ async function walkTo(p,target,{mouseFirst=false}={}){
  throw Error('route not finished');
 }
 async function viaStairs(p){await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='playing');}
-await test('远征：随机楼层真实键鼠，下楼、返回旧层、重载一致',async()=>{
+await test('远征：随机楼层真实键鼠，下楼并返回旧层；进度只在内存',async()=>{
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
   await p.goto(base+'?dev=1&seed='+EXPEDITION_SEED);await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
@@ -273,7 +306,7 @@ await test('远征：随机楼层真实键鼠，下楼、返回旧层、重载�
   const up=s.points.find(q=>q.kind==='up').pos;assert.deepEqual(s.units[s.leader].pos,up);
   assert.ok(s.queue.every(id=>s.units[id].hp<=0||s.units[id].pos));
   await p.screenshot({path:artifact+'windows-expedition-floor2.png',fullPage:true});
-  const away=await raw(p);await p.reload();await ready(p);assert.deepEqual(await state(p),s);assert.equal(await raw(p),away);
+  assert.equal(await raw(p),null);assert.match(await p.locator('#save').innerText(),/开发者远征只在内存中/);
   await viaStairs(p);s=await state(p);
   assert.equal(s.dungeon.level,1);assert.deepEqual(s.units[s.leader].pos,down);
   assert.deepEqual(s.enemies.map(id=>[id,s.units[id].hp,s.units[id].pos]),floor1Enemies);
@@ -281,7 +314,7 @@ await test('远征：随机楼层真实键鼠，下楼、返回旧层、重载�
  }finally{await context.close();}
 });
 /* Stage 6.4: real keys and clicks on a fixed seed. The route reads the state only to choose the next key; invitations are refused by button. */
-await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用物品回复并重载一致',async()=>{
+await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用物品回复；进度只在内存',async()=>{
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
   await p.goto(base+'?dev=1&seed=3');await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
@@ -320,7 +353,7 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   const after=await state(p);assert.equal(after.prog.items.berry,0);assert.equal(after.round,rounds+1);
   assert.ok(after.log.some(t=>t.includes('使用橙橙果')&&t.includes(`HP ${before}→${Math.min(max,before+8)}`)),'berry restores 8 HP up to the maximum (an enemy hit in the same round is separate)');
   await p.screenshot({path:artifact+'windows-expedition-items.png',fullPage:true});
-  await p.reload();await ready(p);assert.deepEqual(await state(p),after);assert.deepEqual(errors,[]);
+   assert.equal(await raw(p),null);assert.match(await p.locator('#save').innerText(),/开发者远征只在内存中/);assert.deepEqual(errors,[]);
   return {seed:3,pickedUp:true,refusedWhenFull:full,healed:[near,before,after.units[near].hp,max]};
  }finally{await context.close();}
 });
@@ -340,40 +373,30 @@ await test('6.4 动画：演出期间世界不推进、输入不积压，结束�
   assert.deepEqual(await state(p),s1,'nothing was queued while animating');
   await p.keyboard.press('.');await ready(p);assert.equal((await state(p)).round,s1.round+1,'a new input after the animation takes effect');
   await p.waitForFunction(()=>!window.trial.animating());
-  await p.reload();await ready(p);assert.equal(await p.evaluate(()=>window.trial.animating()),false,'reload shows the final state without replay');
+   await p.reload();await emptyReady(p);assert.equal(await p.evaluate(()=>window.trial.animating()),false,'reload returns to an empty developer session without replaying a run');assert.equal(await state(p),null);
   const q=off.page;await start(q);assert.equal(await q.evaluate(()=>window.trial.animationEnabled()),false);
   await q.keyboard.press('.');assert.equal(await q.evaluate(()=>window.trial.animating()),false);await ready(q);
   assert.deepEqual(on.errors,[]);assert.deepEqual(off.errors,[]);return {blockedWhileAnimating:true,notQueued:true,reloadNoReplay:true,switchOff:true};
  }finally{await on.context.close();await off.context.close();}
 });
-/* Stage 6.5: the whole base loop with real clicks. CHECK ENTRY: the record is pre-seeded with a FINISHED expedition holding a protect machine
-   (written to the page's own storage before it loads), because walking a whole random expedition is covered by the earlier checks and is slow.
-   Everything after that is real clicks: return to base, learn, carry (one refusal), team, departure, reload, and using the learned move in the new run. */
+/* Stage 6.5: the base loop with real clicks. A camp-only profile with one protect machine is installed through TrialStore.beginNewGame;
+   departure and the learned move's use are then exercised in a memory-only run. */
 await test('基地6.5：回到基地、学习招式机、配招、编队、出发，新一局用上学到的招式',async()=>{
- const {createExpedition}=await import('../../src/core/engine.ts');
- const {RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
- const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
- const {closeOut}=await import('../../src/core/engine.ts');
- const w=createExpedition('seeded-run',4242);w.goal=true;w.prog.exp=2;w.bag=1;w.tms=[{move:'protect',source:'target',fate:'held'}];w.phase='ended';
- w.end=closeOut(w,'normal');
- const record=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:5,current:w,recent:null});
+  const {initialProfile}=await import('../../src/core/base.ts');
+  const profile=initialProfile();profile.vault={protect:1};profile.expeditions=1;
  const context=await browser.newContext({viewport:{width:1440,height:1100}});
- await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;
-  const original=Storage.prototype.setItem;try{if(!localStorage.getItem(k))original.call(localStorage,k,v);}catch{}
-  window.__failWrites=false;
-  Storage.prototype.setItem=function(key,val){if(window.__failWrites&&key.startsWith('dungeon-trial.'))throw new DOMException('Injected disk quota failure','QuotaExceededError');return original.call(this,key,val);};
- },{k:SAVE_KEY,v:record});
+  await context.addInitScript(()=>{window.__trialNoAnim=true;window.__failWrites=false;
+   const original=Storage.prototype.setItem;
+   Storage.prototype.setItem=function(key,val){if(window.__failWrites&&key.startsWith('dungeon-trial.'))throw new DOMException('Injected disk quota failure','QuotaExceededError');return original.call(this,key,val);};
+  });
  const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
-  await p.goto(base+'?dev=1&seed=4243');await p.locator('#to-base').waitFor();await ready(p);
-  assert.equal(await p.locator('#new').count(),0,'an expedition result offers the base, not a new independent trial');
-  assert.match(await p.locator('#tm-list').innerText(),/守住.*已带回/);
-  await click(p,'to-base');
-  let s=await state(p);assert.equal(s,null);
+   await p.goto(base+'?dev=1&seed=4243');await p.locator('#start').waitFor();
+   assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),profile),true);await p.reload();await ready(p);
+   let s=await state(p);assert.equal(s,null);
   const baseMoves=await p.locator('#party').innerText();assert.match(baseMoves,/上下左右相邻/);assert.match(baseMoves,/基础伤害/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
   const prof=()=>p.evaluate(()=>window.trial.profile());
   let pr=await prof();assert.deepEqual(pr.vault,{protect:1});assert.equal(pr.expeditions,1);assert.deepEqual(pr.roster.map(i=>i.species),['charmander','squirtle','bulbasaur']);
-  assert.deepEqual(await p.evaluate(()=>window.trial.store.envelope.recent.end.tms),[{move:'protect',source:'target',fate:'brought'}]);
   await p.screenshot({path:artifact+'windows-base-1.png',fullPage:true});
   // learning
   await click(p,'tm-protect');await click(p,'learn-P3');pr=await prof();
@@ -397,56 +420,51 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
   await p.reload();await ready(p);assert.deepEqual(await prof(),pr);
   await p.screenshot({path:artifact+'windows-base-2.png',fullPage:true});
   // departure
+   const campBeforeDeparture=await raw(p);
   await click(p,'depart');s=await state(p);
   assert.deepEqual(s.queue,['A','B','C']);assert.equal(s.leader,'B');assert.equal(s.round,0);assert.equal(s.prog.level,1);assert.equal(s.dungeon.seed,4243);
   assert.deepEqual(s.units.B.moves,['tackle','protect']);assert.deepEqual(s.units.B.pp,{tackle:3,protect:1});assert.equal(s.units.B.hp,s.units.B.maxHp);
-  assert.deepEqual(s.units.A.species,'squirtle');assert.equal(await p.evaluate(()=>window.trial.store.envelope.recent.runId),'seeded-run');
-  await p.reload();await ready(p);assert.deepEqual(await state(p),s);
+   assert.deepEqual(s.units.A.species,'squirtle');assert.equal(await raw(p),campBeforeDeparture,'departure leaves the camp record byte-for-byte unchanged');
   // The learned protect applies to B itself; the nearby ally gets no protection state.
   const ally=['A','C'].find(id=>Math.abs(s.units[id].pos.x-s.units.B.pos.x)+Math.abs(s.units[id].pos.y-s.units.B.pos.y)===1);assert.ok(ally,'an ally stands next to the leader');
   await click(p,'skill-protect');await cell(p,s.units.B.pos.x,s.units.B.pos.y);
   s=await state(p);assert.equal(s.round,1);assert.equal(s.units.B.pp.protect,0);assert.ok(s.units.B.protect>0,'守住保护使用者本人');assert.equal(s.units[ally].protect,0,'相邻队友没有获得守住状态');assert.ok(s.log.includes('B进入守住状态'));
   assert.match(await p.locator('[data-unit-status="B"]').innerText(),/守住：剩余2个敌方阶段/);
+   assert.equal(await raw(p),campBeforeDeparture,'turn actions remain in memory until terminal settlement');
   assert.deepEqual(errors,[]);return {learned:'protect',carried:['tackle','protect'],selfProtected:'B',adjacentAllyUnaffected:ally,squad:['P2','P3','P1'],usedInRun:true,writeFailureFrozeAndRetried:true};
  }finally{await context.close();}
 });
-/* Stage 6.5 rest point. CHECK ENTRY: a saved floor-2 world (built by the rule code, leader standing on the rest point, one move low) is written to the page's storage before it loads; the rest is real clicks. */
+/* Stage 6.5 rest point: fixed memory worlds are made by the rule code, then actions use real clicks. */
 await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消耗机会',async()=>{
- const {createExpedition,applyCommand,RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
- const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
+ const {createExpedition,applyCommand}=await import('../../src/core/engine.ts');
  const {initialProfile,squadOf}=await import('../../src/core/base.ts');
- let w=createExpedition('rest-run',3,2,squadOf(initialProfile()));w.units.C.pos=w.points.find(q=>q.kind==='down').pos;
- const spentMove=w.units.C.learned[0];assert.ok(spentMove,'the rest fixture needs one learned move');
- w=applyCommand(w,{type:'round',action:{type:'interact',exit:true}}).state;w=applyCommand(w,{type:'finishTransit'}).state;
- for(const id of ['A','B']){w.units[id].hp=0;w.units[id].pos=null;}
- w.units.C.pos={x:14,y:9};
- const full=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:5,current:w,recent:null,profile:initialProfile()});
+ const profile=initialProfile();let spentMove='';
+ const makeWorld=(spent)=>{let w=createExpedition('rest-run',3,2,squadOf(profile));w.units.C.pos=w.points.find(q=>q.kind==='down').pos;
+  spentMove=w.units.C.learned[0];assert.ok(spentMove,'the rest fixture needs one learned move');
+  w=applyCommand(w,{type:'round',action:{type:'interact',exit:true}}).state;w=applyCommand(w,{type:'finishTransit'}).state;
+  for(const id of ['A','B']){w.units[id].hp=0;w.units[id].pos=null;}w.units.C.pos={x:14,y:9};if(spent)w.units.C.pp[spentMove]=0;return w;};
+ const full=makeWorld(false),spent=makeWorld(true);
  const context=await browser.newContext({viewport:{width:1440,height:1100}});
- await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;try{if(!localStorage.getItem(k))localStorage.setItem(k,v);}catch{}},{k:SAVE_KEY,v:full});
+ await context.addInitScript(()=>{window.__trialNoAnim=true;});
  const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
-  await p.goto(base+'?dev=1');await p.locator('#rest').waitFor();await ready(p);
+  await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,full,profile);await p.locator('#rest').waitFor();
   const s0=await state(p);assert.equal(s0.points.find(q=>q.kind==='rest').used,false);
   await p.locator('#rest').click();await ready(p);          // PP are full: refused with the reason, nothing changes
   assert.deepEqual(await state(p),s0);assert.match(await p.locator('#message').innerText(),/PP都已满.*没有消耗/);
-  // lower one move through the saved record, as if a fight had spent it, then reload
-  await p.evaluate(move=>{const k=window.trial.store.key,e=JSON.parse(localStorage.getItem(k));e.current.units.C.pp[move]=0;localStorage.setItem(k,JSON.stringify(e));},spentMove);
-  await p.reload();await ready(p);
+  // Reload discards the first developer world; create a second in-memory fixture with one PP spent.
+  await p.reload();await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,spent,profile);
   await click(p,'rest');const s1=await state(p);
   assert.equal(s1.units.C.pp[spentMove],Math.min(2,s0.units.C.maxPp[spentMove]));assert.equal(s1.points.find(q=>q.kind==='rest').used,true);assert.equal(s1.round,s0.round+1);
   assert.equal(await p.locator('#rest').isDisabled(),true);
-  await p.reload();await ready(p);assert.deepEqual(await state(p),s1);assert.deepEqual(errors,[]);
-  return {refusedWhenFull:true,usedOnce:true};
+  assert.equal(await raw(p),null);assert.deepEqual(errors,[]);
+  return {refusedWhenFull:true,usedOnce:true,fixturesMemoryOnly:true};
  }finally{await context.close();}
 });
-/* Stage 7.2: failure, rescue and return, with real clicks. CHECK ENTRY: the record is pre-seeded (written to the page's own storage before it loads) with a run
-   in progress: the leader stands on G, every member has 1 HP, and a chasing enemy with 200 HP is next to them; random state 7 makes the third member
-   (P3, an ordinary partner) go missing. After that saved entry, real clicks and movement inputs take G, wait until the wipe, read the result,
-   return to base, pay the rescue, set a purse, depart, walk the next expedition to G and return; then the rescued partner must be back on the roster. */
+/* Stage 7.2: create a wipe fixture in memory through TrialStore.start; only its settled camp profile is installed for the real base UI. */
 await test('失败与救援7.2：完成G→全灭→伙伴走失→基地付费→下一局有效探险后回归',async()=>{
- const {createExpedition,reveal,RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
+ const {createExpedition,reveal}=await import('../../src/core/engine.ts');
  const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
- const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
  const profile=newGameProfile('chikorita','cyndaquil').profile;
  profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
  profile.next=4;profile.team=['P1','P2','P3'];profile.leader='P1';
@@ -458,12 +476,11 @@ await test('失败与救援7.2：完成G→全灭→伙伴走失→基地付费�
  for(const id of w.queue)w.units[id].hp=1;
  const foe=w.units[w.enemies[0]];foe.pos=near[0];foe.hp=200;foe.maxHp=200;foe.ai='chase';foe.damage=4;foe.range=1;
  w.prog.rng=7;reveal(w);
- const record=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:5,current:w,recent:null,profile});
  const context=await browser.newContext({viewport:{width:1440,height:1100}});
- await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;const original=Storage.prototype.setItem;try{if(!localStorage.getItem(k))original.call(localStorage,k,v);}catch{}},{k:SAVE_KEY,v:record});
+ await context.addInitScript(()=>{window.__trialNoAnim=true;});
  const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
-  await p.goto(base+'?dev=1&seed=4300');await p.locator('#take').waitFor();await ready(p);
+  await p.goto(base+'?dev=1&seed=4300');await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,w,profile);await p.locator('#take').waitFor();
   await click(p,'take');assert.equal((await state(p)).goal,true);
   for(let i=0;i<30&&(await state(p)).phase!=='ended';i++)await click(p,'wait');
   let s=await state(p);assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');
@@ -475,10 +492,11 @@ await test('失败与救援7.2：完成G→全灭→伙伴走失→基地付费�
   assert.match(await p.locator('#pool-change').innerText(),/P3 波波/);
   assert.match(await p.locator('#pool-change').innerText(),/进入救援池/);
   await p.screenshot({path:artifact+'windows-rescue-1-result.png',fullPage:true});
-   await p.reload();await ready(p);assert.deepEqual(await state(p),s,'the settled wipe is unchanged after a reload');
-  await click(p,'to-base');
   let pr=await p.evaluate(()=>window.trial.profile());
   assert.equal(pr.account,100);assert.deepEqual(pr.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P3',false,4]]);assert.deepEqual(pr.team,['P1','P2']);
+  assert.equal(await raw(p),null,'the developer world and settlement remain in memory until a camp-only fixture is made');
+  assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),pr),true);
+  await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),pr);
   assert.match(await p.locator('#account').innerText(),/100/);assert.match(await p.locator('#rescue-P3').innerText(),/未付费.*4/);
   await p.screenshot({path:artifact+'windows-rescue-2-base.png',fullPage:true});
    const unpaidBase=structuredClone(pr);await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),unpaidBase);
@@ -488,43 +506,40 @@ await test('失败与救援7.2：完成G→全灭→伙伴走失→基地付费�
    const paidBase=structuredClone(pr);await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),paidBase);
    assert.equal(await p.locator('#depart').isEnabled(),true,'the base remains able to start an expedition after rescue payment');
   await click(p,'purse-up');await click(p,'purse-up');assert.equal(await p.locator('#purse-value').innerText(),'40');assert.equal(await p.locator('#purse-up').isDisabled(),true,'no more than the account holds');
-  await click(p,'depart');await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
+  const paidCampRaw=await raw(p);await click(p,'depart');await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   s=await state(p);assert.equal(s.purse,40);assert.deepEqual(s.queue,['A','B']);
-  assert.equal((await p.evaluate(()=>window.trial.profile())).account,0);
-   const secondRun=structuredClone(s);await p.reload();await ready(p);assert.deepEqual(await state(p),secondRun,'the next expedition is saved before it is played');
+  assert.equal((await p.evaluate(()=>window.trial.profile())).account,0);assert.equal(await raw(p),paidCampRaw,'departure preserves the paid camp wallet');
    const goal=s.points.find(q=>q.kind==='goal').pos;assert.deepEqual(s.units.A.pos,{x:16,y:6});assert.deepEqual(goal,{x:8,y:5});
    for(let i=0;i<s.units.A.pos.x-goal.x;i++)await key(p,'ArrowLeft');await key(p,'ArrowUp');
    assert.deepEqual((await state(p)).units.A.pos,goal,'real movement reaches G');await click(p,'take');assert.equal((await state(p)).goal,true);
    await exit(p);
   s=await state(p);assert.equal(s.end.outcome,'normal');assert.equal(s.end.effective,true);assert.equal(s.end.refund,40);
   assert.match(await p.locator('#pool-change').innerText(),/P3 波波/);
-   const secondEnd=structuredClone(s);await p.reload();await ready(p);assert.deepEqual(await state(p),secondEnd,'the completed effective run is unchanged after a reload');
+   const secondEnd=structuredClone(s),settledRaw=await raw(p);assert.equal(JSON.parse(settledRaw).profile.expeditions,2,'the completed effective run is settled before returning to base');
   await click(p,'to-base');
   pr=await p.evaluate(()=>window.trial.profile());
   assert.equal(pr.account,140);assert.deepEqual(pr.rescue,[]);assert.deepEqual(pr.roster.map(i=>i.id),['P1','P2','P3']);assert.deepEqual(pr.roster[2].carry,['tackle','gust']);
   assert.equal(await p.locator('#rescue-empty').count(),1);
   await p.screenshot({path:artifact+'windows-rescue-3-returned.png',fullPage:true});
-   await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),pr);assert.equal(await p.locator('#depart').isEnabled(),true,'the base can start another expedition after P3 returns');
+   assert.equal(await raw(p),settledRaw,'returnToBase does not write the already settled camp record');await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),pr);assert.equal(await p.locator('#depart').isEnabled(),true,'the base can start another expedition after P3 returns');
   assert.deepEqual(errors,[]);return {wipe:true,lost:['C'],paid:60,returnedAfterEffectiveRun:true,account:pr.account};
  }finally{await context.close();}
 });
-/* Stage 7.2: shop and exchanger panels with real clicks. CHECK ENTRY: seed 103 has a shop (3,10) and an exchanger (7,3) on floor 1; the record is pre-seeded
-   with the leader on the shop cell, a 100 purse and one held machine. Buying takes no round; each sale is one save; the exchanger takes the leader's action. */
-await test('服务点7.2：商店购买不占回合且读档不刷新；交换机送回伙伴与招式机',async()=>{
- const {createExpedition,reveal,RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
+/* Stage 7.2: shop and exchanger panels use separate memory fixtures on seed 103, with real clicks for every service action. */
+await test('服务点7.2：商店购买不占回合；交换机送回伙伴与招式机',async()=>{
+ const {createExpedition,reveal}=await import('../../src/core/engine.ts');
  const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
- const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
  const profile=newGameProfile('chikorita','cyndaquil').profile;
  profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
  profile.next=4;profile.team=['P1','P2','P3'];profile.leader='P1';
- const w=createExpedition('svc-run',103,2,squadOf(profile),100);
- w.units.A.pos={x:3,y:10};w.tms=[{move:'protect',source:'target',fate:'held'}];w.bag=1;reveal(w);
- const record=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:5,current:w,recent:null,profile});
+ const makeWorld=(where,items)=>{const w=createExpedition('svc-run',103,2,squadOf(profile),100);w.units.A.pos=where;w.tms=items;w.bag=1;reveal(w);return w;};
+ const shopWorld=makeWorld({x:3,y:10},[{move:'protect',source:'target',fate:'held'}]);
+ const exchangeWorld=makeWorld({x:7,y:3},[{move:'protect',source:'target',fate:'held'},{move:'roar',source:'shop',fate:'held'}]);
  const context=await browser.newContext({viewport:{width:1440,height:1100}});
- await context.addInitScript(({k,v})=>{window.__trialNoAnim=true;const original=Storage.prototype.setItem;try{if(!localStorage.getItem(k))original.call(localStorage,k,v);}catch{}},{k:SAVE_KEY,v:record});
+ await context.addInitScript(()=>{window.__trialNoAnim=true;});
  const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
-  await p.goto(base+'?dev=1&seed=4300');await p.locator('#shop-panel').waitFor();await ready(p);
+  await p.goto(base+'?dev=1&seed=4300');await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,shopWorld,profile);await p.locator('#shop-panel').waitFor();
   assert.match(await p.locator('#shop-panel').innerText(),/橙橙果.*价格 20.*库存 2/s);
   assert.equal(await p.locator('#take').count(),0,'no pickup button on a shop cell');
   await click(p,'buy-berry');
@@ -532,15 +547,14 @@ await test('服务点7.2：商店购买不占回合且读档不刷新；交换�
   await click(p,'buy-tm');s=await state(p);assert.equal(s.purse,0);assert.deepEqual(s.tms.map(t=>[t.move,t.source,t.fate]),[['protect','target','held'],['roar','shop','held']]);
   assert.equal(await p.locator('#buy-tonic').isDisabled(),true);assert.match(await p.locator('#shop-panel').innerText(),/钱袋不足，还差30/);
   await p.screenshot({path:artifact+'windows-service-1-shop.png',fullPage:true});
-  await p.reload();await ready(p);assert.deepEqual((await state(p)).shop,s.shop,'a reload does not refresh the stock');
-  await p.evaluate(()=>{const key=window.trial.store.key,e=JSON.parse(localStorage.getItem(key));e.current.units.A.pos={x:7,y:3};localStorage.setItem(key,JSON.stringify(e));});
-  await p.reload();await ready(p);await p.locator('#exchange-panel').waitFor();
+  assert.equal(await raw(p),null);assert.match(await p.locator('#shop-panel').innerText(),/本次远征期间库存固定/);
+  await p.reload();await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,exchangeWorld,profile);await p.locator('#exchange-panel').waitFor();
   assert.equal(await p.locator('#ex-target-A').count(),0,'the leader cannot be chosen');assert.equal(await p.locator('#ex-confirm').isDisabled(),true);
   await click(p,'ex-target-C');await click(p,'ex-cargo-1');await p.screenshot({path:artifact+'windows-service-2-exchange.png',fullPage:true});
   await click(p,'ex-confirm');await p.waitForFunction(()=>window.trial.getState().exchange.used);await ready(p);
   s=await state(p);assert.deepEqual(s.queue,['A','B']);assert.deepEqual(s.exchange,{level:1,used:true,sent:'C'});assert.deepEqual(s.tms.map(t=>t.fate),['held','sent']);assert.equal(s.round,1);
   assert.match(await p.locator('#exchange-panel').innerText(),/本局已经使用/);
-  await p.reload();await ready(p);assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {boughtWithoutRound:true,exchangeOnce:true};
+  assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {boughtWithoutRound:true,exchangeOnce:true,fixturesMemoryOnly:true};
  }finally{await context.close();}
 });
 /* Stage 7.1: title, new game, overwrite confirmation and readability. (a) and (b) use no developer parameter at all. */
@@ -574,16 +588,17 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   const pr=await p.evaluate(()=>window.trial.profile());
   assert.deepEqual(pr.roster.map(i=>i.species),['treecko','mudkip']);assert.deepEqual(pr.team,['P1','P2']);assert.equal(pr.leader,'P1');assert.equal(pr.expeditions,0);
   const base1=await p.locator('#base').innerText()+await p.locator('#party').innerText();assert.match(base1,/木守宫/);assert.match(base1,/水跃鱼/);assert.match(base1,/树叶/);assert.doesNotMatch(base1,/leafage|watergun/);
-  await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
+   const campBeforeRun=await raw(p);await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   const s=await state(p);assert.equal(s.scenario,'expedition');assert.deepEqual(s.queue,['A','B']);assert.equal(s.units.A.species,'treecko');assert.equal(s.leader,'A');
   assert.equal(await p.locator('#guide-card').count(),1);assert.equal(await p.locator('#enemy-hint').count(),1);
   await p.locator('#guide-close').click();assert.equal(await p.locator('#guide-card').count(),0);
   for(const k of ['ArrowRight','ArrowDown','ArrowLeft','ArrowUp']){await p.keyboard.press(k);await ready(p);if((await state(p)).round>0)break;}
-  assert.ok((await state(p)).round>0,'a real key press advanced the run');
+   assert.ok((await state(p)).round>0,'a real key press advanced the run');assert.equal(await raw(p),campBeforeRun,'run actions do not change the camp record');
   assert.ok((await p.locator('#recent-list li').count())>0,'recent events are visible');
   await p.reload();await p.locator('#title-continue').waitFor();
-  await p.locator('#title-continue').click();await ready(p);assert.equal(await p.locator('#guide-card').count(),0,'the guide stays closed');
-  assert.deepEqual(errors,[]);return {roster:pr.roster.map(i=>i.species),guideOnce:true};
+   assert.equal(await raw(p),campBeforeRun,'refresh preserves the exact pre-departure camp bytes');
+   await p.locator('#title-continue').click();await ready(p);assert.equal(await state(p),null);assert.equal(await p.locator('#depart').isEnabled(),true);assert.equal(await p.locator('#guide-card').count(),0,'the guide stays closed');
+   assert.deepEqual(errors,[]);return {roster:pr.roster.map(i=>i.species),guideOnce:true,refreshReturnsToCamp:true};
  }finally{await context.close();}
 });
 await test('7.1(b) 已有存档：新游戏需要确认，取消后原存档不变，可导出原记录',async()=>{
@@ -673,40 +688,33 @@ await test('7.3 新游戏→出发→第1层：苔石主题（原石地与岩壁
   assert.deepEqual(errors,[]);return {tiles:v.tiles,floors:s.dungeon.floors};
  }finally{await context.close();}
 });
-await test('7.7a 状态卡片：守住与反击递减、攻防阶段显示、重载一致',async()=>{
+await test('7.7a 状态卡片：守住与反击递减、攻防阶段显示；开发场景仅在内存',async()=>{
  const {context,page:p,errors}=await setup('K1');
  try{
-  await start(p);await key(p,'2');const before=await state(p);
+  const {createScenario}=await import('../../src/core/scenarios.ts');const fixture=createScenario('K1','status-card');fixture.units.B.protect=2;fixture.units.B.counter=1;fixture.units.B.stages={atk:1,def:-2};
+  await startMemory(p,fixture);await key(p,'2');const before=await state(p);
   await click(p,'skill-protect');await cell(p,before.units.A.pos.x,before.units.A.pos.y);
   assert.deepEqual(await state(p),before);
   assert.equal(await p.locator('#message').innerText(),'这个招式需要选择自己作为目标；本轮未执行');
-  // Explicit display fixture: combine saved combat states, then use real waits to check their countdown.
-  // This does not claim that the combination was obtained by playing through this fixture.
-  await p.evaluate(()=>{const k=window.trial.store.key,e=JSON.parse(localStorage.getItem(k)),u=e.current.units.B;u.protect=2;u.counter=1;u.stages={atk:1,def:-2};localStorage.setItem(k,JSON.stringify(e));});
-  await p.reload();await ready(p);
   const status=p.locator('[data-unit-status="B"]');
   assert.equal(await status.innerText(),'守住：剩余2个敌方阶段 · 反击：剩余1个敌方阶段 · 攻击+1 · 防御-2');
   assert.equal(await p.locator('[data-unit-status="C"]').innerText(),'');
   await p.screenshot({path:artifact+'windows-move-status.png',fullPage:true});
   await click(p,'wait');assert.equal(await status.innerText(),'守住：剩余1个敌方阶段 · 攻击+1 · 防御-2');
   await click(p,'wait');assert.equal(await status.innerText(),'攻击+1 · 防御-2');
-  const saved=await state(p);await p.reload();await ready(p);assert.deepEqual(await state(p),saved);
-  assert.equal(await status.innerText(),'攻击+1 · 防御-2');assert.deepEqual(errors,[]);
-  return {countdowns:true,zeroStatusesHidden:true,stages:true,reloaded:true};
+  assert.equal(await raw(p),null);assert.deepEqual(errors,[]);
+  return {countdowns:true,zeroStatusesHidden:true,stages:true,memoryOnly:true};
  }finally{await context.close();}
 });
 await test('7.7b 仓库：三招可见、学习、配招，新远征使用新版招式机清单',async()=>{
  const {newGameProfile}=await import('../../src/core/base.ts');
- const {RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
- const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
  const profile=newGameProfile('treecko','chikorita').profile;
  // Explicit inventory fixture: this check tests learning and equipping, not earning the machines.
  profile.vault={quickguard:1,reflect:1,lightscreen:1};
- const record=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:null,recent:null,profile});
  const {context,page:p,errors}=await plainContext();
- await context.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:SAVE_KEY,value:record});
  try{
-  await p.goto(base+'?dev=1&seed=16763');await p.locator('#depart').waitFor();await ready(p);
+  await p.goto(base+'?dev=1&seed=16763');await p.locator('#start').waitFor();
+  assert.equal(await p.evaluate(pr=>window.trial.store.beginNewGame(pr,true),profile),true);await p.reload();await ready(p);
   for(const [move,label,inst] of [['quickguard','快速防守','P1'],['reflect','反射壁','P2'],['lightscreen','光墙','P2']]){
    assert.match(await p.locator('#tm-'+move).innerText(),new RegExp(label));
    await click(p,'tm-'+move);await click(p,'learn-'+inst);
@@ -719,36 +727,31 @@ await test('7.7b 仓库：三招可见、学习、配招，新远征使用新版
   assert.deepEqual(prepared.roster[0].carry,['leafage','quickguard']);
   assert.deepEqual(prepared.roster[1].carry,['reflect','lightscreen']);
   await p.screenshot({path:artifact+'windows-team-guard-warehouse.png',fullPage:true});
-  await p.reload();await ready(p);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),prepared);
-  await click(p,'depart');const s=await state(p);assert.equal(s.dungeon.tmPool,3);
+  await p.reload();await ready(p);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),prepared);const campBytes=await raw(p);
+  await click(p,'depart');const s=await state(p);assert.equal(await raw(p),campBytes,'departure does not save the expedition world');assert.equal(s.dungeon.tmPool,3);
   assert.ok(s.units.A.learned.includes('quickguard'));assert.deepEqual(s.units.B.learned,['reflect','lightscreen']);
-  assert.deepEqual(errors,[]);return {injectedInventory:true,learnedAndEquipped:true,newPool:3,reloaded:true};
+  assert.deepEqual(errors,[]);return {injectedCampInventory:true,learnedAndEquipped:true,newPool:3,expeditionMemoryOnly:true};
  }finally{await context.close();}
 });
 
-await test('7.7b 状态：实际施放团队保护、倒计时与重载、快速防守不写存档',async()=>{
+await test('7.7b 状态：实际施放团队保护、倒计时与快速防守；开发场景只在内存',async()=>{
  const {context,page:p,errors}=await setup('K1');
  try{
-  await start(p);
-  // Display fixture supplies learned moves and harmless enemies; real clicks below cast the moves.
-  await p.evaluate(()=>{const k=window.trial.store.key,e=JSON.parse(localStorage.getItem(k)),u=e.current.units.B;
-   for(const move of ['reflect','lightscreen','quickguard']){u.learned.push(move);u.pp[move]=3;u.maxPp[move]=3;}
-   for(const id of e.current.enemies)e.current.units[id].damage=0;
-   localStorage.setItem(k,JSON.stringify(e));});
-  await p.reload();await ready(p);await key(p,'2');
+  const {createScenario}=await import('../../src/core/scenarios.ts');const fixture=createScenario('K1','team-guard-status'),unit=fixture.units.B;
+  for(const move of ['reflect','lightscreen','quickguard']){unit.learned.push(move);unit.pp[move]=3;unit.maxPp[move]=3;}
+  for(const id of fixture.enemies)fixture.units[id].damage=0;
+  await startMemory(p,fixture);await key(p,'2');
   for(const move of ['reflect','lightscreen']){const s=await state(p);await click(p,'skill-'+move);await cell(p,s.units.B.pos.x,s.units.B.pos.y);}
   const guarded=await state(p);
   assert.equal(guarded.units.B.reflect,8);assert.equal(guarded.units.B.lightscreen,9);
   const status=p.locator('[data-unit-status="B"]');
   assert.match(await status.innerText(),/反射壁：剩余8个敌方阶段/);assert.match(await status.innerText(),/光墙：剩余9个敌方阶段/);
   await p.screenshot({path:artifact+'windows-team-guard-status.png',fullPage:true});
-  await p.reload();await ready(p);assert.deepEqual(await state(p),guarded);
   await click(p,'skill-quickguard');await cell(p,guarded.units.B.pos.x,guarded.units.B.pos.y);
   const quick=await state(p);assert.equal(quick.units.B.lastMove,'quickguard');
   for(const u of Object.values(quick.units))assert.equal(Object.hasOwn(u,'quickguard'),false);
   assert.match(await p.locator('#history').textContent(),/快速防守/);
-  await p.reload();await ready(p);assert.deepEqual(await state(p),quick);
-  assert.deepEqual(errors,[]);return {fixtureMoves:true,realCasts:true,reflect:8,lightscreen:9,quickGuardTransient:true,reloaded:true};
+  assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {fixtureMoves:true,realCasts:true,reflect:8,lightscreen:9,quickGuardTransient:true,memoryOnly:true};
  }finally{await context.close();}
 });
 await browser.close();

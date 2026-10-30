@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createExpedition,createMain,applyCommand,recruitUnit,closeOut,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {initialProfile,learnTm,setCarry,setTeam,squadOf,settleRun,profileProblem} from '../../src/core/base.ts';
-import {TrialStore,decode,BUILD_ID} from '../../src/core/save.ts';
+import {TrialStore,decode,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 import {SPECIES} from '../../src/core/roster.ts';
 // Stage 6.5 rule tests. Every expected value below is a literal written from docs/玩法研究/基地与培养.md and the roster data
 // (charmander kit scratch+ember, squirtle tackle+watergun, bulbasaur tackle+seedbomb); none is computed with the code under test.
@@ -19,7 +19,8 @@ function ended({outcome='normal',tm='protect',camp=[],wipe=outcome==='wipe',lega
  s.end=closeOut(s,outcome);
  return s;
 }
-const envelope=(over)=>({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:3,current:null,recent:null,profile:initialProfile(),...over});
+const envelope=(over)=>({format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:3,profile:initialProfile(),...over});
+const legacyEnvelope=(current,profile=initialProfile())=>({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:3,current,recent:null,profile});
 
 test('B1 the initial profile: three starters, their kits learned and carried, empty vault',()=>{
  const p=initialProfile();
@@ -200,28 +201,28 @@ test('B14 rest point cannot be used as an exit',()=>{
  const r=applyCommand(s,{type:'round',action:{type:'interact',exit:true}});assert.equal(r.ok,false);assert.match(r.error,/不是出口/);
 });
 
-/* ---------- save: profile ---------- */
-test('B15 the base flow round-trips through storage: return, learn, carry, team and depart each reload equal',async()=>{
+/* ---------- save: camp profile ---------- */
+test('B15 camp edits persist; departure keeps the saved camp and leaves the new World in memory',async()=>{
+ const profile=settleRun(initialProfile(),ended({camp:[['N1','pidgey']]}));
  const port=memory(),store=new TrialStore(port);
- assert.equal(await store.start(ended({camp:[['N1','pidgey']]})),true);
- assert.equal(await store.returnToBase(),true);
- assert.equal(store.atBase,true);assert.equal(store.state,null);
+ assert.equal(await store.beginNewGame(profile,false),true);
  assert.deepEqual(store.profile.vault,{protect:1});assert.equal(store.profile.roster.length,4);
- assert.deepEqual(store.envelope.recent.end.tms,[{move:'protect',source:'target',fate:'brought'}]);
  let reopened=new TrialStore(port);assert.equal(reopened.status,'ready');assert.deepEqual(reopened.profile,store.profile);
  assert.deepEqual((await store.baseAction({type:'learn',inst:'P4',move:'whirlwind'})).ok,false);
  assert.equal((await store.baseAction({type:'learn',inst:'P4',move:'protect'})).ok,true);
  assert.deepEqual(store.profile.vault,{});assert.equal((await store.baseAction({type:'carry',inst:'P4',moves:['gust','protect']})).ok,true);
  assert.equal((await store.baseAction({type:'team',team:['P4','P1'],leader:'P4'})).ok,true);
  reopened=new TrialStore(port);assert.deepEqual(reopened.profile,store.profile);
+ const campRaw=port.map.get('dungeon-trial.player.v1');
  assert.equal(await store.depart('run-b',99),true);
  const s=store.state;assert.deepEqual(s.queue,['A','B']);assert.equal(s.units.A.species,'pidgey');assert.deepEqual(s.units.A.moves,['gust','protect']);
- reopened=new TrialStore(port);assert.deepEqual(reopened.state,s);assert.deepEqual(reopened.profile,store.profile);
- assert.equal(reopened.envelope.recent.runId,'run-a');
+ assert.equal(port.map.get('dungeon-trial.player.v1'),campRaw,'departure does not save a new World or deduct the persisted account');
+ reopened=new TrialStore(port);assert.equal(reopened.status,'ready');assert.equal(reopened.state,null);assert.deepEqual(reopened.profile,store.profile);
+ assert.deepEqual(Object.keys(reopened.envelope).sort(),['build','content','format','profile','rules','sequence']);
 });
 
 test('B16 a write that fails freezes base edits; retry saves the same record',async()=>{
- const port=memory(),store=new TrialStore(port);await store.start(ended());await store.returnToBase();
+ const port=memory(),store=new TrialStore(port);await store.beginNewGame(initialProfile(),false);
  const real=port.setItem;port.setItem=()=>{throw Error('quota');};
  assert.deepEqual(await store.baseAction({type:'team',team:['P1'],leader:'P1'}),{ok:true,saved:false});
  assert.equal(store.status,'failed');
@@ -230,18 +231,23 @@ test('B16 a write that fails freezes base edits; retry saves the same record',as
  assert.deepEqual(new TrialStore(port).profile.team,['P1']);
 });
 
-test('B17 legacy: a record with no profile returns to the base from the initial profile; the starters are not duplicated',async()=>{
- const port=memory(),store=new TrialStore(port);await store.start(ended({legacy:true}));
- assert.equal(await store.returnToBase(),true);
- assert.deepEqual(store.profile.roster.map(i=>i.species),['charmander','squirtle','bulbasaur']);
- assert.deepEqual(store.profile.vault,{protect:1});
+test('B17 a legacy World without a camp profile is preserved and must be exported',async()=>{
+ const old=legacyEnvelope(ended({legacy:true}));delete old.profile;
+ const raw=JSON.stringify(old),port=memory();port.map.set('dungeon-trial.player.v1',raw);
+ const store=new TrialStore(port);assert.equal(await store.whenReady,false);
+ assert.equal(store.status,'blocked');assert.equal(store.exportRaw(),raw);
+ assert.equal(port.map.get('dungeon-trial.player.v1'),raw);assert.equal(port.map.size,1);
 });
 
-test('B18 newTrial: allowed for a record without a profile (older path), refused once a base exists',async()=>{
- const st=new TrialStore(memory());await st.start(ended());
- assert.equal(await st.newTrial(createExpedition('run-z',5)),true);
- const based=new TrialStore(memory());await based.start(ended());assert.equal(await based.returnToBase(),true);
- assert.equal(await based.newTrial(createExpedition('run-y',5)),false);
+test('B18 developer newTrial replaces an in-memory run without changing the saved camp',async()=>{
+ const port=memory(),store=new TrialStore(port);
+ assert.equal(await store.start(ended()),true);
+ const terminal=store.state;
+ assert.equal(await store.newTrial(createExpedition('run-z',5)),true);
+ assert.equal(store.state.runId,'run-z');assert.equal(store.state.phase,'playing');
+ assert.notDeepEqual(store.state,terminal);assert.equal(port.map.size,0);
+ const based=new TrialStore(memory());await based.beginNewGame(initialProfile(),false);assert.equal(await based.depart('run-y',5),true);
+ assert.equal(await based.newTrial(createExpedition('run-y2',5)),false);
 });
 
 test('B19 tampered profiles and records are refused on load',()=>{
@@ -263,25 +269,25 @@ test('B19 tampered profiles and records are refused on load',()=>{
   ['leader off the team',e=>{e.profile.team=['P1','P2'];e.profile.leader='P3';}],
   ['id counter behind',e=>{e.profile.next=3;}],
   ['at base without a profile',e=>{delete e.profile;}],
-  ['profile on a fixed-map record',e=>{e.current=createMain('m',false);}],
  ];
  for(const [name,edit] of refused)assert.throws(()=>decode(bad(edit)),/损坏|不兼容/,name);
+ assert.throws(()=>decode(JSON.stringify({...good,current:createMain('m',false)})),/损坏/,'camp records cannot embed a fixed-map World');
 });
 
-test('B20 a run unit must match its profile instance; a machine in the record must match the end record',()=>{
+test('B20 decodeLegacy validates old ended unit/profile agreement and terminal machine records',()=>{
  const run=createExpedition('r',5,2,squadOf(initialProfile()));
- assert.doesNotThrow(()=>decode(JSON.stringify(envelope({current:run}))));
- const noProfile=envelope({current:run});delete noProfile.profile;
- assert.throws(()=>decode(JSON.stringify(noProfile)),/损坏/);
- const wrongSpecies=structuredClone(run);wrongSpecies.units.A.species='squirtle';
- assert.throws(()=>decode(JSON.stringify(envelope({current:wrongSpecies}))),/损坏/);
- const wrongMoves=structuredClone(run);wrongMoves.units.A.moves=['ember','scratch'];
- assert.throws(()=>decode(JSON.stringify(envelope({current:wrongMoves}))),/损坏/);
- const finished=ended();assert.doesNotThrow(()=>decode(JSON.stringify(envelope({current:finished}))));
- const wrongTm=structuredClone(finished);wrongTm.end.tms[0].move='roar';
- assert.throws(()=>decode(JSON.stringify(envelope({current:wrongTm}))),/损坏/);
- const missingTm=structuredClone(finished);delete missingTm.end.tms;
- assert.throws(()=>decode(JSON.stringify(envelope({current:missingTm}))),/损坏/);
- const unknownTm=structuredClone(finished);unknownTm.tms[0].move='tackle';unknownTm.end.tms[0].move='tackle';
- assert.throws(()=>decode(JSON.stringify(envelope({current:unknownTm}))),/损坏/);
+ const finished=structuredClone(run);finished.phase='ended';finished.end=closeOut(finished,'normal');
+ const raw=world=>JSON.stringify(legacyEnvelope(world));
+ assert.doesNotThrow(()=>decodeLegacy(raw(finished)));
+ const wrongSpecies=structuredClone(finished);wrongSpecies.units.A.species='squirtle';
+ assert.throws(()=>decodeLegacy(raw(wrongSpecies)),/结构损坏/);
+ const wrongMoves=structuredClone(finished);wrongMoves.units.A.moves=['ember','scratch'];
+ assert.throws(()=>decodeLegacy(raw(wrongMoves)),/结构损坏/);
+ const withTm=ended();assert.doesNotThrow(()=>decodeLegacy(raw(withTm)));
+ const wrongTm=structuredClone(withTm);wrongTm.end.tms[0].move='roar';
+ assert.throws(()=>decodeLegacy(raw(wrongTm)),/结构损坏/);
+ const missingTm=structuredClone(withTm);delete missingTm.end.tms;
+ assert.throws(()=>decodeLegacy(raw(missingTm)),/结构损坏/);
+ const unknownTm=structuredClone(withTm);unknownTm.tms[0].move='tackle';unknownTm.end.tms[0].move='tackle';
+ assert.throws(()=>decodeLegacy(raw(unknownTm)),/结构损坏/);
 });

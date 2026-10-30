@@ -77,8 +77,8 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
   purse?:number;tms?:TmItem[];shop?:Shop;exchange?:Exchange};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
-export const RULE_VERSION='trial-rules-2';
-export const CONTENT_VERSION='trial-content-2';
+export const RULE_VERSION='trial-rules-3';
+export const CONTENT_VERSION='trial-content-3';
 export const SPEC_SOURCE='5f3547889b30e59f6cdfebc5af8c91e46cba4ee4';
 export const key=(p:Pos)=>`${p.x},${p.y}`;
 export const same=(a:Pos|null,b:Pos|null)=>!!a&&!!b&&a.x===b.x&&a.y===b.y;

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMain,applyCommand,previewInvitation,clone} from '../../src/core/engine.ts';
 import {createScenario} from '../../src/core/scenarios.ts';
-import {TrialStore,decode} from '../../src/core/save.ts';
+import {TrialStore} from '../../src/core/save.ts';
 const move=x=>({type:'move',to:{x,y:1}}), basic=target=>({type:'basic',target}), skill=(skill,target)=>({type:'skill',skill,target}), wait={type:'wait'}, interact=exit=>({type:'interact',exit});
 function command(s,c){const r=applyCommand(s,c);assert.equal(r.ok,true,r.error);return r.state;}
 const round=(s,action,override)=>command(s,{type:'round',action,override});
@@ -63,27 +63,36 @@ test('K4/K5 quickattack retains obstruction and two-cell range limits',()=>{
  let s=createScenario('K5','k5');s=command(s,{type:'invite',choice:'reject'});
  const r=applyCommand(s,{type:'round',action:skill('quickattack','R')});assert.equal(r.ok,false);assert.deepEqual(r.state,s);assert.equal(s.units.C.pp.quickattack,1);
 });
-class Memory {raw=null;fail=false;getItem(){return this.raw;}setItem(k,v){if(this.fail)throw Error('quota');this.raw=v;}}
-test('S2/S3/S4/S5 restore invitations and locked request exactly once',async()=>{
- const port=new Memory();let store=new TrialStore(port,'test');await store.start(createScenario('V13','save'));await store.dispatch({type:'round',action:interact(true)});store=new TrialStore(port,'test');assert.equal(store.state.phase,'invitation');await store.dispatch({type:'invite',choice:'accept',outgoing:'B'});store=new TrialStore(port,'test');assert.equal(store.state.phase,'exit');await store.dispatch({type:'finishExit'});const ended=store.state;assert.equal((await store.dispatch({type:'finishExit'})).ok,false);assert.deepEqual(store.state,ended);
- await store.newTrial(createMain('next'));assert.equal(store.envelope.recent.end.id,'save:end');assert.equal(store.state.round,0);assert.equal(new TrialStore(port,'test').envelope.recent.runId,'save');
+class Memory {raw=null;writes=0;fail=false;getItem(){return this.raw;}setItem(_k,v){this.writes++;if(this.fail)throw Error('quota');this.raw=v;}}
+test('S2/S3/S4/S5 process invitations and exit in memory, then developer restart leaves storage unchanged',async()=>{
+ const port=new Memory(),store=new TrialStore(port,'test');
+ assert.equal(await store.start(createScenario('V13','save')),true);
+ const started=store.state;assert.equal(started.phase,'playing');assert.equal(store.envelope,null);
+ assert.equal((await store.dispatch({type:'round',action:interact(true)})).ok,true);assert.equal(store.state.phase,'invitation');
+ assert.equal((await store.dispatch({type:'invite',choice:'accept',outgoing:'B'})).ok,true);assert.equal(store.state.phase,'exit');
+ assert.equal((await store.dispatch({type:'finishExit'})).ok,true);assert.equal(store.state.phase,'ended');
+ assert.equal((await store.dispatch({type:'finishExit'})).ok,false);
+ assert.equal(port.raw,null);assert.equal(port.writes,0);
+ assert.equal(await store.newTrial(createMain('next')),true);assert.equal(store.state.runId,'next');assert.equal(store.state.round,0);
+ const reopened=new TrialStore(port,'test');assert.equal(reopened.status,'empty');assert.equal(reopened.state,null);assert.equal(port.writes,0);
 });
-test('S6/S7/S8 asynchronous pending write freezes all subsequent changes',async()=>{
- let release;const port={getItem:()=>null,setItem:()=>new Promise(r=>release=r)};const store=new TrialStore(port,'isolated');const first=store.start(createMain('async'));assert.equal(store.status,'saving');assert.equal((await store.dispatch({type:'round',action:move(3)})).ok,false);assert.equal(await store.newTrial(createMain('other')),false);release();assert.equal(await first,true);assert.equal(store.status,'ready');
- const mem=new Memory();const failed=new TrialStore(mem,'other');mem.fail=true;await failed.start(createMain('fail'));assert.equal(failed.status,'failed');assert.equal(failed.lastSaved,null);assert.equal(mem.raw,null);mem.fail=false;await failed.retry();await failed.dispatch({type:'round',action:move(3)});const raw=mem.raw;mem.fail=true;await failed.dispatch({type:'round',action:basic('E')});assert.equal(failed.state.round,2);assert.equal(mem.raw,raw);mem.fail=false;await failed.retry();assert.equal(decode(mem.raw).current.round,2);
+test('S6 a blocked record needs export before memory-only developer reset; original bytes stay on disk',async()=>{
+ const port=new Memory();port.raw='{"format":999}';const store=new TrialStore(port,'broken');
+ assert.equal(store.status,'blocked');assert.equal(await store.resetAfterExport(createMain('reset'),true),false);
+ assert.equal(store.exportRaw(),'{"format":999}');assert.equal(port.raw,'{"format":999}');
+ assert.equal(await store.resetAfterExport(createMain('reset'),false),false);
+ assert.equal(await store.resetAfterExport(createMain('reset'),true),true);
+ assert.equal(store.status,'ready');assert.equal(store.state.runId,'reset');
+ assert.equal(port.raw,'{"format":999}');assert.equal(port.writes,0);
+ const reopened=new TrialStore(port,'broken');assert.equal(reopened.status,'blocked');assert.equal(reopened.exportRaw(),'{"format":999}');
 });
-test('S9 incompatible raw is preserved until export and explicit reset',async()=>{
- const mem=new Memory();mem.raw='{"format":999}';const store=new TrialStore(mem,'broken');assert.equal(store.status,'blocked');assert.equal(await store.resetAfterExport(createMain('reset'),true),false);assert.equal(store.exportRaw(),'{"format":999}');assert.equal(mem.raw,'{"format":999}');assert.equal(await store.resetAfterExport(createMain('reset'),false),false);assert.equal(await store.resetAfterExport(createMain('reset'),true),true);
-});
-test('S1/S3/S6 failure at each real processing boundary retries identical state',async()=>{
- const cases=[
-  ['V13',[],{type:'round',action:interact(true)},'invitation'],
-  ['V10',[],{type:'invite',choice:'accept',outgoing:'A'},'invitation'],
-  ['V13',[{type:'round',action:interact(true)}],{type:'invite',choice:'accept',outgoing:'B'},'exit'],
-  ['V12',[],{type:'round',action:interact(true)},'ended'],
- ];
- for(const [id,prep,last,phase] of cases){const mem=new Memory(),st=new TrialStore(mem,'boundary');await st.start(createScenario(id,'bound'+id));for(const c of prep)await st.dispatch(c);const prior=mem.raw;mem.fail=true;await st.dispatch(last);const inMemory=st.envelope;assert.equal(st.status,'failed');assert.equal(st.state.phase,phase);assert.equal(mem.raw,prior);assert.equal((await st.dispatch({type:'finishExit'})).ok,false);mem.fail=false;await st.retry();assert.deepEqual(st.envelope,inMemory);assert.deepEqual(new TrialStore(mem,'boundary').state,st.state);}
- const mem=new Memory(),st=new TrialStore(mem,'ordinary');await st.start(createScenario('V1','ordinary'));assert.deepEqual(new TrialStore(mem,'ordinary').state,st.state);
- const before=JSON.parse(mem.raw);delete before.current.points;mem.raw=JSON.stringify(before);const malformed=new TrialStore(mem,'ordinary');assert.equal(malformed.status,'blocked');assert.equal(malformed.exportRaw(),mem.raw);
- const restartMem=new Memory(),rs=new TrialStore(restartMem,'restart');await rs.start(createScenario('V7','ended'));await rs.dispatch({type:'round',action:interact(true)});await rs.dispatch({type:'finishExit'});const old=restartMem.raw;restartMem.fail=true;await rs.newTrial(createMain('brand-new'));assert.equal(rs.status,'failed');assert.equal(restartMem.raw,old);assert.equal(rs.state.runId,'brand-new');assert.equal(await rs.newTrial(createMain('must-not-replace')),false);restartMem.fail=false;await rs.retry();assert.equal(rs.state.runId,'brand-new');assert.equal(rs.envelope.recent.runId,'ended');
+test('S7 rejected developer actions preserve their in-memory state and never write a World',async()=>{
+ const port=new Memory();port.fail=true;const store=new TrialStore(port,'isolated');
+ const world=createScenario('V1','memory-only');assert.equal(await store.start(world),true);
+ const before=store.state;
+ const rejected=await store.dispatch({type:'round',action:move(99)});
+ assert.equal(rejected.ok,false);assert.deepEqual(store.state,before);
+ assert.equal(port.raw,null);assert.equal(port.writes,0);assert.equal(store.status,'ready');
+ assert.equal((await store.dispatch({type:'round',action:wait})).ok,true);
+ assert.equal(store.state.round,before.round+1);assert.equal(port.raw,null);assert.equal(port.writes,0);
 });

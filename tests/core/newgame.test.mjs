@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {createExpedition,traceRound,closeOut,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {newGameProfile,squadOf,profileProblem,settleRun} from '../../src/core/base.ts';
-import {TrialStore,decode,BUILD_ID,SAVE_KEY} from '../../src/core/save.ts';
+import {TrialStore,decode,SAVE_KEY} from '../../src/core/save.ts';
 import {SPECIES,STARTER_IDS,ALL_TM_MOVES} from '../../src/core/roster.ts';
 import {speciesZh,moveZh,typeZh,tmZh,itemZh,NAME_TABLE} from '../../src/core/names.ts';
 import {enemyInfo,localizeLog,orderLine,stepRows} from '../../src/core/describe.ts';
@@ -52,13 +52,16 @@ test('N4 a new game profile has exactly two members: the main (leader) and a dif
  assert.equal(newGameProfile('mudkip','geodude').ok,false,'a non-starter cannot be the deputy');
 });
 
-test('N5 a two-member squad runs: queue A,B; a run saved from it decodes; settling keeps the two and adds recruits only',()=>{
+test('N5 a two-member squad runs in memory; the stored record contains only the camp profile',async()=>{
  const p=newGameProfile('chikorita','cyndaquil').profile;
  const w=createExpedition('r1',11,2,squadOf(p));
  assert.deepEqual(w.queue,['A','B']);assert.equal(w.leader,'A');assert.equal(w.units.A.species,'chikorita');assert.equal(w.units.B.species,'cyndaquil');
  assert.ok(w.units.A.pos&&w.units.B.pos);
- const env={format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:w,recent:null,profile:p};
- assert.ok(decode(JSON.stringify(env)));
+ const port=memory(),store=new TrialStore(port);assert.equal(await store.beginNewGame(p,false),true);
+ assert.deepEqual(decode(port.map.get(SAVE_KEY)),store.envelope);
+ assert.equal(Object.hasOwn(store.envelope,'current'),false);assert.equal(Object.hasOwn(store.envelope,'recent'),false);
+ assert.equal(await store.depart('r1-live',11),true);assert.deepEqual(store.state.queue,['A','B']);
+ assert.deepEqual(new TrialStore(port).state,null,'reopening returns to the saved camp');
  const done=structuredClone(w);done.phase='ended';done.end=closeOut(done,'normal');
  const after=settleRun(p,done);assert.deepEqual(after.roster.map(i=>i.species),['chikorita','cyndaquil']);assert.equal(after.expeditions,1);
 });

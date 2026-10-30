@@ -41,16 +41,21 @@ try{
  await p.locator('#open-settings').click();await p.keyboard.press('ArrowRight');assert.equal(await raw(),before,'settings keys must not advance the world');
  await p.screenshot({path:'.artifacts/trial/web-ea-settings.png',fullPage:true});
  await p.locator('#settings-close').click();
+ const camp=await p.evaluate(()=>window.trial.profile());await p.keyboard.press('.');await ready();
+ assert.equal(await p.evaluate(()=>window.trial.getState().round),1);assert.equal(await raw(),before,'world actions do not write the camp record');
+ await p.reload();await p.locator('#title-continue').waitFor();assert.equal(await raw(),before,'refresh returns to the exact pre-departure bytes');
+ await p.locator('#title-continue').click();await ready();assert.equal(await p.evaluate(()=>window.trial.getState()),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),camp);
+ await p.locator('#depart').click();await ready();assert.equal(await raw(),before,'a new departure again leaves the camp record unchanged');
  // The first-floor entrance is an ordinary exit. This is a real one-round expedition,
  // not an effective expedition or a three-floor clear; the fixed-map full route below is separate.
  await p.locator('#take-exit').click();await p.locator('#exit-confirm').click();
  await p.waitForFunction(()=>window.trial.getState()?.phase==='ended');
  assert.equal(await p.evaluate(()=>window.trial.getState().end.outcome),'normal');
  await p.locator('#to-base').click();await ready();
- const original=JSON.parse(await raw());assert.equal(original.current,null);assert.equal(original.recent.phase,'ended');
+ const original=JSON.parse(await raw());assert.equal(original.format,2);assert.deepEqual(Object.keys(original).sort(),['build','content','format','profile','rules','sequence']);assert.equal(await p.evaluate(()=>window.trial.getState()),null);
  await p.locator('#open-settings').click();const backup=await exported();assert.deepEqual(JSON.parse(backup),original);
  for(const k of ['format','rules','content','build'])assert.ok(Object.hasOwn(original,k));
- const bad=JSON.parse(backup);bad.recent.round=-1;
+ const bad=JSON.parse(backup);bad.profile.account=-1;
  await upload(JSON.stringify(bad));assert.match(await p.locator('#transfer-message').innerText(),/损坏/);assert.deepEqual(JSON.parse(await raw()),original);
  assert.equal(await p.evaluate(()=>window.trial.store.error),'');assert.equal(await p.locator('#save .error').count(),0,'bad import must not mark the current save as broken');
  // Oversized files must be rejected before file.text() or the overwrite confirmation.
@@ -64,7 +69,7 @@ try{
  await upload(backup,false);assert.match(await p.locator('#transfer-message').innerText(),/已取消/);assert.deepEqual(JSON.parse(await raw()),original);
  await upload(backup);assert.match(await p.locator('#transfer-message').innerText(),/已导入并保存/);assert.deepEqual(JSON.parse(await raw()),original);
  await p.locator('#settings-close').click();await p.reload();await p.locator('#title-continue').click();await ready();assert.deepEqual(JSON.parse(await raw()),original);
- result.checks.push('玩家新游戏→基地→出发→入口撤离→结算回基地；导出导入及重载完全一致；非法篡改拒绝；取消导入不写入；设置内方向键不推进回合');
+ result.checks.push('玩家新游戏→基地→出发→中途刷新回基地→再次出发→入口撤离并自动结算；导出导入及重载完全一致；非法营地数据拒绝；取消导入不写入；设置内方向键不推进回合');
  // An incompatible save is injected only to exercise the recovery UI.
  const incompatible=JSON.stringify({...original,format:999},null,2);
  await p.evaluate(text=>localStorage.setItem('dungeon-trial.player.v1',text),incompatible);await p.reload();

@@ -2,7 +2,7 @@
  * 6.5 base profile: the part of the player's progress that outlives one run. Pure data and pure functions; no storage, no renderer.
  * Specification: docs/玩法研究/基地与培养.md. All numbers (two carried moves, three-member squads) are working candidates.
  */
-import {SPECIES,speciesOf,learnableMove,TM_MOVES,STARTER_IDS,type KitMove} from './roster.ts';
+import {SPECIES,speciesOf,learnableMove,TM_MOVES,STARTER_IDS,BOSS_SPECIES,type KitMove} from './roster.ts';
 import type {World,SquadMember} from './engine.ts';
 import {legacySpeciesMove} from './legacy-moves.ts';
 import {speciesZh,moveZh} from './names.ts';
@@ -215,7 +215,9 @@ function instProblem(i:unknown,ids:Set<string>,wantProtected:boolean|null):strin
   if(ids.has(i.id))return `实例编号${i.id}重复`;ids.add(i.id);
   if(!/^P(\d+)$/.test(i.id))return `实例编号${i.id}格式错误`;
   if(wantProtected===false&&i.protected)return `救援池里的${i.id}不能带受保护标记`;
+  if(Object.prototype.hasOwnProperty.call(BOSS_SPECIES,i.species))return `首领物种${i.species}不能作为普通伙伴`;
   if(!speciesOf(i.species))return `实例${i.id}的物种不在名册数据中`;
+  if(speciesOf(i.species)?.availability==='暂不出场')return `物种${i.species}暂不出场，不能作为伙伴`;
   const names=new Set<string>();
   for(const l of i.learned as unknown[]){
     if(!obj(l)||Object.keys(l).sort().join()!=='move,pp'||typeof l.move!=='string'||!Number.isInteger(l.pp)||(l.pp as number)<1)return `实例${i.id}的已学招式结构错误`;
@@ -243,7 +245,7 @@ export function profileProblem(v:unknown):string|null {
     if(left<1||left>(r.paid?ECON.paidWait:ECON.window))return `救援池里${(r.inst as Instance).id}的剩余次数不合法`;
   }
   for(const l of v.lost as unknown[]){
-    if(!obj(l)||typeof l.id!=='string'||typeof l.species!=='string'||!nat(l.expedition)||!speciesOf(l.species))return '失去记录结构错误';
+    if(!obj(l)||typeof l.id!=='string'||typeof l.species!=='string'||!nat(l.expedition)||!speciesOf(l.species)||Object.prototype.hasOwnProperty.call(BOSS_SPECIES,l.species))return '失去记录结构错误';
     if(!/^P(\d+)$/.test(l.id)||ids.has(l.id))return `失去记录的编号${l.id}不合法或重复`;ids.add(l.id);
   }
   let maxNo=0;for(const id of ids)maxNo=Math.max(maxNo,Number(id.slice(1)));

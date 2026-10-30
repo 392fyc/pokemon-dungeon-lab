@@ -1,0 +1,559 @@
+{
+  "baselineCommit": "4dd2b02",
+  "legacySpecies": [
+    {
+      "id": "bulbasaur",
+      "starter": true,
+      "maxHp": 21,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "seedbomb",
+          "pp": 1
+        }
+      ],
+      "oldLearnableIds": [
+        "helpinghand",
+        "protect",
+        "seedbomb",
+        "tackle",
+        "terablast"
+      ]
+    },
+    {
+      "id": "charmander",
+      "starter": true,
+      "maxHp": 19,
+      "kit": [
+        {
+          "move": "scratch",
+          "pp": 3
+        },
+        {
+          "move": "ember",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "dragontail",
+        "ember",
+        "helpinghand",
+        "protect",
+        "roar",
+        "scratch",
+        "terablast"
+      ]
+    },
+    {
+      "id": "squirtle",
+      "starter": true,
+      "maxHp": 20,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "watergun",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "helpinghand",
+        "protect",
+        "tackle",
+        "terablast",
+        "watergun"
+      ]
+    },
+    {
+      "id": "pidgey",
+      "starter": false,
+      "maxHp": 20,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "gust",
+          "pp": 3
+        }
+      ],
+      "oldLearnableIds": [
+        "gust",
+        "mudslap",
+        "protect",
+        "tackle",
+        "whirlwind"
+      ]
+    },
+    {
+      "id": "rattata",
+      "starter": false,
+      "maxHp": 18,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        }
+      ],
+      "oldLearnableIds": [
+        "mudslap",
+        "protect",
+        "tackle"
+      ]
+    },
+    {
+      "id": "spearow",
+      "starter": false,
+      "maxHp": 20,
+      "kit": [
+        {
+          "move": "pursuit",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "mudslap",
+        "protect",
+        "pursuit",
+        "whirlwind"
+      ]
+    },
+    {
+      "id": "pikachu",
+      "starter": false,
+      "maxHp": 19,
+      "kit": [
+        {
+          "move": "quickattack",
+          "pp": 3
+        },
+        {
+          "move": "thundershock",
+          "pp": 3
+        }
+      ],
+      "oldLearnableIds": [
+        "helpinghand",
+        "protect",
+        "quickattack",
+        "terablast",
+        "thundershock"
+      ]
+    },
+    {
+      "id": "zubat",
+      "starter": false,
+      "maxHp": 20,
+      "kit": [
+        {
+          "move": "absorb",
+          "pp": 2
+        },
+        {
+          "move": "poisonfang",
+          "pp": 1
+        }
+      ],
+      "oldLearnableIds": [
+        "absorb",
+        "poisonfang",
+        "protect",
+        "whirlwind"
+      ]
+    },
+    {
+      "id": "geodude",
+      "starter": false,
+      "maxHp": 20,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "defensecurl",
+          "pp": 4
+        }
+      ],
+      "oldLearnableIds": [
+        "defensecurl",
+        "mudslap",
+        "protect",
+        "tackle",
+        "terablast"
+      ]
+    },
+    {
+      "id": "chikorita",
+      "starter": true,
+      "maxHp": 21,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "magicalleaf",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "helpinghand",
+        "magicalleaf",
+        "mudslap",
+        "protect",
+        "tackle",
+        "terablast"
+      ]
+    },
+    {
+      "id": "cyndaquil",
+      "starter": true,
+      "maxHp": 19,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "ember",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "ember",
+        "protect",
+        "roar",
+        "tackle",
+        "terablast"
+      ]
+    },
+    {
+      "id": "totodile",
+      "starter": true,
+      "maxHp": 22,
+      "kit": [
+        {
+          "move": "scratch",
+          "pp": 3
+        },
+        {
+          "move": "watergun",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "mudslap",
+        "protect",
+        "scratch",
+        "terablast",
+        "watergun"
+      ]
+    },
+    {
+      "id": "treecko",
+      "starter": true,
+      "maxHp": 20,
+      "kit": [
+        {
+          "move": "pound",
+          "pp": 3
+        },
+        {
+          "move": "leafage",
+          "pp": 4
+        }
+      ],
+      "oldLearnableIds": [
+        "dragontail",
+        "helpinghand",
+        "leafage",
+        "pound",
+        "protect",
+        "terablast"
+      ]
+    },
+    {
+      "id": "torchic",
+      "starter": true,
+      "maxHp": 21,
+      "kit": [
+        {
+          "move": "scratch",
+          "pp": 3
+        },
+        {
+          "move": "ember",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "ember",
+        "helpinghand",
+        "protect",
+        "scratch",
+        "terablast"
+      ]
+    },
+    {
+      "id": "mudkip",
+      "starter": true,
+      "maxHp": 22,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "watergun",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "mudslap",
+        "protect",
+        "roar",
+        "tackle",
+        "terablast",
+        "watergun"
+      ]
+    },
+    {
+      "id": "sandshrew",
+      "starter": false,
+      "maxHp": 22,
+      "kit": [
+        {
+          "move": "scratch",
+          "pp": 3
+        },
+        {
+          "move": "defensecurl",
+          "pp": 4
+        }
+      ],
+      "oldLearnableIds": [
+        "defensecurl",
+        "mudslap",
+        "protect",
+        "scratch",
+        "terablast"
+      ]
+    },
+    {
+      "id": "growlithe",
+      "starter": false,
+      "maxHp": 23,
+      "kit": [
+        {
+          "move": "ember",
+          "pp": 2
+        },
+        {
+          "move": "bite",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "bite",
+        "ember",
+        "helpinghand",
+        "protect",
+        "roar",
+        "terablast"
+      ]
+    },
+    {
+      "id": "magnemite",
+      "starter": false,
+      "maxHp": 17,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "thundershock",
+          "pp": 3
+        }
+      ],
+      "oldLearnableIds": [
+        "helpinghand",
+        "protect",
+        "tackle",
+        "terablast",
+        "thundershock"
+      ]
+    },
+    {
+      "id": "onix",
+      "starter": false,
+      "maxHp": 19,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "harden",
+          "pp": 3
+        }
+      ],
+      "oldLearnableIds": [
+        "dragontail",
+        "harden",
+        "protect",
+        "tackle"
+      ]
+    },
+    {
+      "id": "dratini",
+      "starter": false,
+      "maxHp": 20,
+      "kit": [
+        {
+          "move": "dragontail",
+          "pp": 1
+        },
+        {
+          "move": "slam",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "dragontail",
+        "helpinghand",
+        "protect",
+        "slam",
+        "terablast"
+      ]
+    },
+    {
+      "id": "wooper",
+      "starter": false,
+      "maxHp": 23,
+      "kit": [
+        {
+          "move": "watergun",
+          "pp": 2
+        },
+        {
+          "move": "slam",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "helpinghand",
+        "mudslap",
+        "protect",
+        "slam",
+        "terablast",
+        "watergun"
+      ]
+    },
+    {
+      "id": "houndour",
+      "starter": false,
+      "maxHp": 21,
+      "kit": [
+        {
+          "move": "ember",
+          "pp": 2
+        },
+        {
+          "move": "roar",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "ember",
+        "helpinghand",
+        "mudslap",
+        "protect",
+        "roar",
+        "terablast"
+      ]
+    },
+    {
+      "id": "makuhita",
+      "starter": false,
+      "maxHp": 26,
+      "kit": [
+        {
+          "move": "tackle",
+          "pp": 3
+        },
+        {
+          "move": "whirlwind",
+          "pp": 2
+        }
+      ],
+      "oldLearnableIds": [
+        "helpinghand",
+        "mudslap",
+        "protect",
+        "tackle",
+        "terablast",
+        "whirlwind"
+      ]
+    }
+  ],
+  "oldMoveObjectRawSha256": {
+    "absorb": "a62ec18031a259d30d47e6d06a818ea65da3304bcc0b9e34372997c46d6572a8",
+    "bite": "518951d899f3c237987c43423daa654cc1a8489ad76f83780283e58b37e43cec",
+    "defensecurl": "d571d7ba20c592df39b02263364613cd825e3ca489b464f76df6c48e6c4cc4b1",
+    "dragontail": "d4d913c7c9147e6a19a21bf5bdbad6690d63a11a0e07f43f3a856dc3bbc773e3",
+    "ember": "bf154c831ef978161b81056db584bde05aaa4dccb10cf8ccea3e9ac5158e4fbb",
+    "gust": "0ab890095f08eab9a34ea4d4684e6da083695ba3e0651a2288ae644c704c9b7c",
+    "harden": "d571d7ba20c592df39b02263364613cd825e3ca489b464f76df6c48e6c4cc4b1",
+    "helpinghand": "188cf2806e1d5f8637bf7ce77d56a52a1c00c8dd824757de294d2207197d8c9e",
+    "leafage": "7ebb6ad5561ebcbc7cf8c8c3501fbb759e20ba4a055a80f5a8a38a52cbadcb09",
+    "magicalleaf": "5d770d3775a1b363752092c40e81ac95cd3c0cb2a8c9f0409051a28fd6bd943e",
+    "mudslap": "445019731366bd32052a0f22fc1ee88715bfbf2a00a60c065cd94cdd8ba188c1",
+    "poisonfang": "4446e3039bff2d43f30f5d5a0b3faadb391d1e7b9beee51cebee8df80c8587c1",
+    "pound": "459b69d827ad0eed6a8377b443673a5f3388a7bfa2da12a23179fb29d2268bd4",
+    "protect": "51ce1a21a768a4f0a00d359ed8347e1aa190b8283922fe5ba6ad29fa74abba0f",
+    "pursuit": "8811a20d67e369ba9a48d95fcbc1eac8eb1f9670a059c5d7c92beafee5ad2ee5",
+    "quickattack": "cc58a5a0d0580a5d3d39333530207ccecf6b0de13b72d6973f0d6d7c9dafaeee",
+    "roar": "042dbc303068ed47e553010c758f4482e59c21b39203b326cb20667537f8368e",
+    "scratch": "95e5cc80782b6b6bdc7033dcac58f1ac2abdc3a730e393eb8ca43054f09e8115",
+    "seedbomb": "1bf8e74ed6183fa3fa62e720b6fd4cf003d74b961e935d5e2a9b77b939f77c15",
+    "slam": "15d6f82eca91c8a81d68d493277a5408ea0fd22e672f9621dba847bb2a044dd9",
+    "tackle": "bdf9e367dda0ef6f7fd00b350446b1ac435edc874d02c319466ef11969488292",
+    "terablast": "9d572ad9d0c32d7fee541487d8995da8c0c8e3f917cc663c34c7af05dac28733",
+    "thundershock": "1c896539bc26cb03ee600d1745f6b3c0ef6b319a5784b636f5823a184f8411a4",
+    "watergun": "1c466a7f449ac93b7f133d5b148f4677ba99ffd818530bc99c724886c83f8a41",
+    "whirlwind": "59c479a850a454cef612bde59f43362d221247eb732774cece5d5fcef9f834ed"
+  },
+  "legacyOfficialGameByMove": {
+    "absorb": "MDTDS",
+    "bite": "MDTDS",
+    "defensecurl": "MDTDS",
+    "dragontail": "MDGtI",
+    "ember": "MDTDS",
+    "gust": "MDTDS",
+    "harden": "MDTDS",
+    "helpinghand": "MDTDS",
+    "magicalleaf": "MDTDS",
+    "mudslap": "MDTDS",
+    "poisonfang": "MDTDS",
+    "pound": "MDTDS",
+    "protect": "MDTDS",
+    "pursuit": "MDTDS",
+    "quickattack": "MDTDS",
+    "roar": "MDTDS",
+    "scratch": "MDTDS",
+    "seedbomb": "MDTDS",
+    "slam": "MDTDS",
+    "tackle": "MDTDS",
+    "thundershock": "MDTDS",
+    "watergun": "MDTDS",
+    "whirlwind": "MDTDS"
+  }
+}

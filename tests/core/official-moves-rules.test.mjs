@@ -34,7 +34,7 @@ function withMove(id,spec,run){
 
 test('首批 25 个官方招式都有可用的射程、目标、威力和效果字段',()=>{
   const ids=['absorb','bite','defensecurl','dragontail','ember','gust','harden','helpinghand','leafage','magicalleaf','mudslap','poisonfang','pound','protect','pursuit','quickattack','roar','scratch','seedbomb','slam','tackle','terablast','thundershock','watergun','whirlwind'];
-  assert.deepEqual(Object.keys(MOVE_DEFS).sort(),ids.sort());
+  for(const id of ids)assert.ok(Object.hasOwn(MOVE_DEFS,id),`首批招式必须保留：${id}`);
   for(const id of ids){const m=moveOf(id);assert.ok(m,id);assert.ok(m.range);assert.ok(m.target);assert.ok(Array.isArray(m.effects));}
   assert.equal(moveOf('protect').effects[0],'protect');
   assert.equal(moveOf('absorb').effects.includes('drain'),true);

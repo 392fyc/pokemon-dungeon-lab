@@ -68,9 +68,11 @@ The full lane contract is `.mercury/packs/lanes/docs/mercury-lane-contract.md`; 
 
 先读README.md、docs/trial-spec/README.md，再读其中的当前规则、短规格和验收场景。docs/trial-spec/是本轮获准试验的固定规格副本；研究库的现行版本在docs/。云端范围以本文件和用户较新的指令为准；本仓已包含完整研究库，不需要访问本机vault。
 
-阶段3—4已以PR #5合并（03e0c2b）。阶段5完成制作者自测；2026-10-30用户决定暂不请独立体验者，并授权自主推进阶段6（`docs/项目框架/阶段6—完整首版最小循环计划.md`）：自主规划与测试，合并PR、删除废弃worktree与分支无需另行询问；可用gpt-image生成原创场景、界面与特效，角色素材按计划取自SpriteCollab并逐文件记录来源与许可，数据取自固定提交的Pokémon Showdown，均只用于私有构建。OpenAI API key只从主checkout被忽略的`.env`读取，不复制、不打印、不提交；该API总额度为50美元，按阶段计划的预算与账本控制用量。目标是把demo推进到可试玩的EA阶段，计划定好后自主执行。危险操作（运行来源不明的代码、改动系统或全局环境、可能破坏用户数据的批量删除等）不直接在本机执行，改用云环境或其他隔离方式。公开发布、联系体验者、扩大网络权限和新增付费服务仍需用户决定。2026-10-30起由本机Claude主会话接手：实现交给`mercury-dev`子代理，独立验收交给只读的`mercury-acceptance`与`mercury-reviewer`，两个Codex云只由用户手动派发；Claude云环境等确有需要时再建。详见`docs/工作环境/Claude作业方式.md`。
+阶段3—4已以PR #5合并（03e0c2b）。阶段5完成制作者自测；2026-10-30用户决定暂不请独立体验者，并授权自主推进阶段6（`docs/项目框架/阶段6—完整首版最小循环计划.md`）：自主规划与测试，合并PR、删除废弃worktree与分支无需另行询问；可用gpt-image生成原创场景、界面与特效，角色素材按计划取自SpriteCollab并逐文件记录来源与许可，数据取自固定提交的Pokémon Showdown，均只用于私有构建。OpenAI API key只从主checkout被忽略的`.env`读取，不复制、不打印、不提交；该API总额度为50美元，按阶段计划的预算与账本控制用量。目标是把demo推进到可试玩的EA阶段，计划定好后自主执行。危险操作（运行来源不明的代码、改动系统或全局环境、可能破坏用户数据的批量删除等）不直接在本机执行，改用云环境或其他隔离方式。公开发布、联系体验者、扩大网络权限和新增付费服务仍需用户决定。2026-10-30起由本机Claude主会话接手：实现交给`mercury-dev`子代理，独立验收交给只读的`mercury-acceptance`与`mercury-reviewer`，两个Codex云当时只由用户手动派发（本机Codex上线后的放宽见下文“另：”一段）；Claude云环境等确有需要时再建。详见`docs/工作环境/Claude作业方式.md`。
 
 2026-10-30用户决定本机Codex重新上线，与Claude并行推进，并登记lane：`main`由Claude主导（计划、规格、研究设计、平衡分析、图片生成、审查并合并PR），`dev`由Codex主导（按规格实现里程碑，不合并PR、不调用图片生成）。两条lane的位置、文件分工、认领、审查与合并方式以`docs/工作环境/多lane并行协作.md`为准；会话开始时必须从起始指令的`[LANE=<id>]`得知自己的lane，不能按任务猜。本月GitHub Actions停用期间，合并前按该文档手工运行Mercury检查。
+
+另：`main` lane应用户要求拟定了Codex云环境使用方针（工作候选，用户可随时修改），见`docs/工作环境/多lane并行协作.md`第11节：`dev` lane的本机Codex可为自己认领的issue派发云任务，云任务以`[WORKER-OF=dev ISSUE=#n]`标记，不作为lane会话；不得把凭据放进云端、不得改云环境设置。
 
 ## 设计边界
 
@@ -96,4 +98,4 @@ The full lane contract is `.mercury/packs/lanes/docs/mercury-lane-contract.md`; 
 
 ## Git 写入
 
-Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。在本机（含从其他仓库启动的会话）提交与推送任务分支，经受管段「Controlled Git entry」所述的 `.mercury/packs/git-safe/scripts/git-safe.ps1`；调用任务 worktree 中的那一份。用户手动派发的Codex云任务（阶段3—4曾采用）通过[当前规格的受控发布约定](docs/trial-spec/README.md)交付：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。
+Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。在本机（含从其他仓库启动的会话）提交与推送任务分支，经受管段「Controlled Git entry」所述的 `.mercury/packs/git-safe/scripts/git-safe.ps1`；调用任务 worktree 中的那一份。用户手动派发的Codex云任务（阶段3—4曾采用），以及`dev` lane派发、经核实能推送的云任务，通过[当前规格的受控发布约定](docs/trial-spec/README.md)交付（`dev`派发的云任务默认由本机Codex取回差异后经git-safe提交，见`docs/工作环境/多lane并行协作.md`第11节）：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。

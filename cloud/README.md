@@ -1,6 +1,6 @@
 # Codex Cloud 环境
 
-本目录的环境只属于 Codex（ChatGPT 账号）。2026-10-30 起后续工作由本机 Claude 主会话接手，这两个 Codex 云环境改为由用户手动派发的可选通道；Claude 侧的执行方式和待建的 Claude 云环境配置见 `docs/工作环境/Claude作业方式.md`。
+本目录的环境只属于 Codex（ChatGPT 账号）。2026-10-30 起后续工作由本机 Claude 主会话接手，这两个 Codex 云环境改为由用户手动派发的可选通道；同日稍后本机 Codex 重新上线，`dev` lane 的本机 Codex 也可为自己认领的 issue 派发云任务，方针见 `docs/工作环境/多lane并行协作.md` 第 11 节（`start-skill.md` 中阶段 3—4 的范围已过时，以任务说明为准）；Claude 侧的执行方式和待建的 Claude 云环境配置见 `docs/工作环境/Claude作业方式.md`。
 
 `pokemon-dungeon-lab` 已于 2026 年 10 月 25 日发布，并通过一个新云端任务的复用检查。环境仅连接私有仓库 [392fyc/pokemon-dungeon-lab](https://github.com/392fyc/pokemon-dungeon-lab)，访问范围为 **Only me**，没有添加秘密值。
 

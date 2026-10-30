@@ -1,0 +1,131 @@
+/*
+ * Stage 7.4 balance statistics. Plays the shared soak bot (tests/core/soak-bot.mjs) over many seeds with one or more policies and prints a Chinese Markdown summary;
+ * the full numbers (aggregates and every game record) go to a JSON file.
+ *
+ *   node --experimental-strip-types tools/soak/balance.mjs [--seeds 30] [--policy naive,tactical]  (tactical-stand = tactical without the retreat rule, for measuring the boss fight itself) [--out .tmp/lane-main/balance-<time>.json]
+ *
+ * `--seeds N` plays N seeds x 5 games per policy. Seeds with i % 4 === 3 are the forced-wipe seeds of the soak (HP is cut to 1 on purpose);
+ * they are summarised in their own section and never mixed into the ordinary seeds' wipe rate.
+ * Every step of every game still runs the soak's invariant checks (save round trip, refused commands change nothing); a violation throws and stops the run.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import {playSeed,stats,GAMES,ROUND_CAP} from '../../tests/core/soak-bot.mjs';
+import {TM_MOVES} from '../../src/core/roster.ts';
+import {BOSS} from '../../src/core/dungeon.ts';
+
+const args=process.argv.slice(2),opt=(name,def)=>{const i=args.indexOf('--'+name);return i>=0&&args[i+1]!==undefined?args[i+1]:def;};
+const SEEDS=+opt('seeds',30),POLICIES=opt('policy','naive,tactical').split(',').map(s=>s.trim()).filter(Boolean);
+for(const p of POLICIES)if(!['naive','tactical','tactical-stand'].includes(p)){console.error(`unknown policy ${p}`);process.exit(2);}
+// Experiment switches (this process only; the constants in src/ are never edited): --boss hp=60,damage=4,attacks=1  and  --sweep.
+// save.ts checks a boss unit's maxHp/damage/range against the same BOSS object, so mutating it in-process keeps saves and loads consistent (confirmed by the runs themselves: every save is read back).
+const BOSS_DEFAULT={hp:BOSS.hp,damage:BOSS.damage,attacks:BOSS.attacks};
+const parseBoss=s=>Object.fromEntries(String(s??'').split(',').filter(Boolean).map(kv=>{const [k,v]=kv.split('=');if(!(k in BOSS_DEFAULT)||!Number.isInteger(+v)||+v<1){console.error(`bad --boss entry ${kv}`);process.exit(2);}return [k,+v];}));
+const setBoss=o=>Object.assign(BOSS,BOSS_DEFAULT,o);
+const SWEEP=args.includes('--sweep'),BOSS_ARG=parseBoss(opt('boss',''));
+const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,15);
+const OUT=opt('out',`.tmp/lane-main/balance-${stamp}.json`);
+
+const sum=(xs,f=x=>x)=>xs.reduce((a,x)=>a+f(x),0);
+const pct=(n,d)=>d?`${(100*n/d).toFixed(1)}%`:'-';
+const mean=xs=>xs.length?sum(xs)/xs.length:null,fmt=(v,n=1)=>v===null||v===undefined?'-':(+v).toFixed(n);
+const median=xs=>{if(!xs.length)return null;const a=[...xs].sort((x,y)=>x-y),m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;};
+const count=(xs,f)=>xs.filter(f).length;
+
+/** Aggregates one group of seed results (a list of playSeed results). */
+function summarize(results){
+ const st=stats();for(const r of results)for(const k of Object.keys(st))st[k]+=r.st[k];
+ const games=results.flatMap(r=>r.games.map((g,n)=>({...g,x:r.extra[n]}))),total=games.length;
+ const by=o=>count(games,g=>g.outcome===o),rounds=games.map(g=>g.rounds);
+ const bossGames=games.filter(g=>g.x.bossRun),defeated=bossGames.filter(g=>g.x.defeated);
+ const accounts=results.map(r=>r.account).filter(a=>a!==null);
+ const vault=Object.fromEntries(TM_MOVES.map(m=>[m,sum(results,r=>r.vault[m]??0)]));
+ return {seeds:results.length,games:total,
+  outcome:{normal:by('normal'),wipe:by('wipe'),timeout:by('timeout')},goalDone:count(games,g=>g.goal),
+  rounds:{mean:mean(rounds),median:median(rounds),min:rounds.length?Math.min(...rounds):null,max:rounds.length?Math.max(...rounds):null},
+  levels:Object.fromEntries([1,2,3,4,5].map(l=>[l,count(games,g=>g.level===l)])),
+  boss:{runsWithBoss:bossGames.length,reached:count(bossGames,g=>g.x.reached),defeated:defeated.length,wipedOnBossFloor:count(bossGames,g=>g.x.bossWipe),
+   bossHpLeft:(h=>({mean:mean(h),min:h.length?Math.min(...h):null,max:h.length?Math.max(...h):null,games:h.length}))(bossGames.filter(g=>g.x.reached&&g.x.bossHpLeft!==null).map(g=>g.x.bossHpLeft)),
+   lobbyExit:count(bossGames,g=>g.x.lobbyExit),retreatDecided:count(bossGames,g=>g.x.retreat),
+   survivorsWhenDefeated:{0:count(defeated,g=>g.x.survivors===0),1:count(defeated,g=>g.x.survivors===1),2:count(defeated,g=>g.x.survivors===2),3:count(defeated,g=>g.x.survivors===3)}},
+  rescue:{lostPartners:st.lostPartners,paid:st.paid,returned:st.returned,goneForGood:st.goneForGood,
+   account:{mean:mean(accounts),min:accounts.length?Math.min(...accounts):null,max:accounts.length?Math.max(...accounts):null,seeds:accounts.length}},
+  tm:{got:st.tmGot,brought:st.tmBrought,learned:st.learned,vaultUnused:sum(Object.values(vault)),vaultByMove:vault},
+  invites:{total:st.invites,accepted:st.accepted,rejected:st.rejected,swappedOut:st.swapped},
+  usage:{berries:st.berries,tonics:st.tonics,rests:st.rests,guards:st.guards,lines:st.lines,switches:st.switches},
+  floor3:floor3(games),
+  stats:st};
+}
+/** Boss-floor statistics (boss-marked runs only): the team on arrival, at first contact with the boss, damage by ordinary enemies on that floor, and where wipes happened. */
+function floor3(games){
+ const bossGames=games.filter(g=>g.x.bossRun),dist=(xs,k)=>Object.fromEntries([0,1,2,3].map(n=>[n,count(xs,v=>v[k]===n)]));
+ const entry=bossGames.filter(g=>g.x.entry).map(g=>g.x.entry),contact=bossGames.filter(g=>g.x.contact).map(g=>g.x.contact);
+ const f3=bossGames.filter(g=>g.x.f3rounds);
+ const wipes=games.filter(g=>g.outcome==='wipe');
+ return {entry:{games:entry.length,alive:dist(entry,'alive'),memberHpRatio:mean(entry.flatMap(e=>e.ratios)),aliveMemberHpRatio:mean(entry.flatMap(e=>e.ratios.filter(r=>r>0))),teamHpRatio:mean(entry.map(e=>e.hp/e.max)),teamHpRatioMin:entry.length?Math.min(...entry.map(e=>e.hp/e.max)):null,teamHp:mean(entry.map(e=>e.hp)),teamMax:mean(entry.map(e=>e.max))},
+  contact:{games:contact.length,neverTouched:bossGames.filter(g=>g.x.reached).length-contact.length,alive:dist(contact,'alive'),teamHp:mean(contact.map(c=>c.hp)),teamMax:mean(contact.map(c=>c.max)),teamHpRatio:mean(contact.map(c=>c.hp/c.max)),teamHpRatioMin:contact.length?Math.min(...contact.map(c=>c.hp/c.max)):null},
+  otherDamage:{games:f3.length,meanPerGame:mean(f3.map(g=>g.x.f3dmg)),max:f3.length?Math.max(...f3.map(g=>g.x.f3dmg)):null,meanPerRound:f3.length?sum(f3,g=>g.x.f3dmg)/sum(f3,g=>g.x.f3rounds):null,rounds:sum(f3,g=>g.x.f3rounds)},
+  wipeFloor:{1:count(wipes,g=>g.x.wipeFloor===1),2:count(wipes,g=>g.x.wipeFloor===2),3:count(wipes,g=>g.x.wipeFloor===3),all:wipes.length}};
+}
+function section(title,s){
+ if(!s.games)return `#### ${title}\n\n没有对局。\n`;
+ const f=s.floor3,o=s.outcome,b=s.boss,lv=s.levels,r=s.rescue,t=s.tm,u=s.usage,i=s.invites;
+ return `#### ${title}（${s.seeds} 个种子，${s.games} 局）
+
+- 结局：正常撤离 ${o.normal}（${pct(o.normal,s.games)}），全灭 ${o.wipe}（${pct(o.wipe,s.games)}），超时/卡住 ${o.timeout}（${pct(o.timeout,s.games)}）；完成目标 G：${s.goalDone} 局（${pct(s.goalDone,s.games)}）。
+- 轮数：平均 ${fmt(s.rounds.mean)}，中位 ${fmt(s.rounds.median)}，最小 ${s.rounds.min}，最大 ${s.rounds.max}。
+- 结束时本局等级：Lv1 ${lv[1]}，Lv2 ${lv[2]}，Lv3 ${lv[3]}，Lv4 ${lv[4]}，Lv5 ${lv[5]}（局数）。
+- 首领（${b.runsWithBoss} 局带首领）：到达首领层 ${b.reached}，击败首领 ${b.defeated}（到达首领层的局结束时首领剩余 HP：平均 ${fmt(b.bossHpLeft.mean)}，最小 ${b.bossHpLeft.min??'-'}，最大 ${b.bossHpLeft.max??'-'}，满 ${BOSS.hp}），在首领层全灭 ${b.wipedOnBossFloor}，从大厅出口撤离 ${b.lobbyExit}（其中机器人判定“打不过”而撤退 ${b.retreatDecided} 局）；击败首领时存活成员数：1 人 ${b.survivorsWhenDefeated[1]}，2 人 ${b.survivorsWhenDefeated[2]}，3 人 ${b.survivorsWhenDefeated[3]}。
+- 走失与救援：走失伙伴 ${r.lostPartners}，支付救援 ${r.paid}，成功归来 ${r.returned}，永久失去 ${r.goneForGood}；每个种子 ${GAMES} 局后账户余额：平均 ${fmt(r.account.mean)}，最小 ${r.account.min??'-'}，最大 ${r.account.max??'-'}（${r.account.seeds} 个种子）。
+- 招式机：获得 ${t.got}，带回 ${t.brought}，基地学会 ${t.learned}，局后金库未用 ${t.vaultUnused}（${TM_MOVES.map(m=>`${m} ${t.vaultByMove[m]}`).join('，')}）。
+- 进入首领层时：${f.entry.games} 局有记录；存活 3 人 ${f.entry.alive[3]}，2 人 ${f.entry.alive[2]}，1 人 ${f.entry.alive[1]}；每名成员（含已倒下者按 0）HP 比例平均 ${fmt(f.entry.memberHpRatio,2)}，仅存活者平均 ${fmt(f.entry.aliveMemberHpRatio,2)}；全队 HP 平均 ${fmt(f.entry.teamHp)}/${fmt(f.entry.teamMax)}（${fmt(f.entry.teamHpRatio,2)}，最低 ${fmt(f.entry.teamHpRatioMin,2)}）。
+- 首次与首领相邻或进入首领射线时：${f.contact.games} 局发生，${f.contact.neverTouched} 局到达首领层却始终没接触；存活 3 人 ${f.contact.alive[3]}，2 人 ${f.contact.alive[2]}，1 人 ${f.contact.alive[1]}；全队 HP 平均 ${fmt(f.contact.teamHp)}/${fmt(f.contact.teamMax)}（${fmt(f.contact.teamHpRatio,2)}，最低 ${fmt(f.contact.teamHpRatioMin,2)}）。
+- 首领层上普通敌人（不含首领）造成的伤害：${f.otherDamage.games} 局共 ${f.otherDamage.rounds} 回合，平均每局 ${fmt(f.otherDamage.meanPerGame)}，最多 ${f.otherDamage.max??'-'}，平均每回合 ${fmt(f.otherDamage.meanPerRound,2)}。
+- 全灭发生的楼层（共 ${f.wipeFloor.all} 次）：第 1 层 ${f.wipeFloor[1]}，第 2 层 ${f.wipeFloor[2]}，第 3 层 ${f.wipeFloor[3]}。
+- 邀请与招募：邀请 ${i.total}，接受 ${i.accepted}（含换出 ${i.swappedOut}），拒绝 ${i.rejected}。
+- 背包与动作使用次数：树果 ${u.berries}，PP补剂 ${u.tonics}，休整点 ${u.rests}，保护 ${u.guards}，直线 ${u.lines}，领队切换 ${u.switches}。
+`;
+}
+
+async function runPolicy(policy){
+ const t0=Date.now(),results=[];
+ for(let i=0;i<SEEDS;i++)results.push(await playSeed(i,{policy}));
+ const normal=results.filter(r=>!r.doomed),forced=results.filter(r=>r.doomed);
+ return {results,secs:(Date.now()-t0)/1000,all:summarize(results),ordinary:summarize(normal),forcedWipeSeeds:summarize(forced)};
+}
+const rowGames=(results,policy)=>results.flatMap(r=>r.games.map((g,n)=>({policy,seed:r.seed,doomed:r.doomed,...g,boss:r.extra[n]})));
+fs.mkdirSync(path.dirname(OUT),{recursive:true});
+if(SWEEP){
+ const policies=args.includes('--policy')?POLICIES:['tactical-stand','tactical'];
+ const report={generated:new Date().toISOString(),mode:'sweep',seedsPerPolicy:SEEDS,gamesPerSeed:GAMES,roundCap:ROUND_CAP,cells:[]};
+ const rows=['| 策略 | attacks | hp | damage | 首领击败率（击败/到达） | 到达首领层率（到达/带首领局） | 普通种子全灭率 | 超时（卡住） | 平均轮数 |','|---|---|---|---|---|---|---|---|---|'],detail=[];
+ for(const policy of policies)for(const attacks of [2,1])for(const hp of [80,60,48])for(const damage of [6,4]){
+  setBoss({hp,damage,attacks});
+  const r=await runPolicy(policy),o=r.ordinary,b=o.boss;
+  rows.push(`| ${policy} | ${attacks} | ${hp} | ${damage} | ${pct(b.defeated,b.reached)}（${b.defeated}/${b.reached}） | ${pct(b.reached,b.runsWithBoss)}（${b.reached}/${b.runsWithBoss}） | ${pct(o.outcome.wipe,o.games)}（${o.outcome.wipe}/${o.games}） | ${o.outcome.timeout} | ${fmt(o.rounds.mean)} |`);
+  report.cells.push({policy,boss:{hp,damage,attacks},seconds:r.secs,ordinary:o,forcedWipeSeeds:r.forcedWipeSeeds,games:rowGames(r.results,policy)});
+  if(hp===80&&damage===6&&attacks===2)detail.push(`### 当前数值（hp 80 / damage 6 / attacks 2）策略 ${policy}\n\n`+section('普通种子',o));
+  console.error(`cell done ${policy} a${attacks} hp${hp} d${damage} ${r.secs.toFixed(0)}s`);
+ }
+ setBoss({});
+ fs.writeFileSync(OUT,JSON.stringify(report));
+ console.log(`## 首领数值扫描（每组 ${SEEDS} 个种子 × ${GAMES} 局，普通种子口径）\n\n`+rows.join('\n')+'\n\n'+detail.join('\n'));
+ console.log(`JSON 已写入 ${OUT}`);
+}else{
+ setBoss(BOSS_ARG);
+ const report={generated:new Date().toISOString(),seedsPerPolicy:SEEDS,gamesPerSeed:GAMES,roundCap:ROUND_CAP,boss:{hp:BOSS.hp,damage:BOSS.damage,attacks:BOSS.attacks},policies:{}};
+ const md=[`## 7.4 平衡长测（每种策略 ${SEEDS} 个种子 × ${GAMES} 局，回合上限 ${ROUND_CAP}；首领 hp ${BOSS.hp} / damage ${BOSS.damage} / attacks ${BOSS.attacks}）\n`];
+ for(const policy of POLICIES){
+  const r=await runPolicy(policy);
+  report.policies[policy]={seconds:r.secs,all:r.all,ordinary:r.ordinary,forcedWipeSeeds:r.forcedWipeSeeds,games:rowGames(r.results,policy),
+   seedAccounts:r.results.map(x=>({seed:x.seed,doomed:x.doomed,account:x.account,roster:x.roster}))};
+  md.push(`### 策略：${policy}（耗时 ${r.secs.toFixed(0)} 秒）\n`);
+  md.push(section('普通种子（不含强制全灭）',r.ordinary));
+  md.push(section('强制全灭种子（i%4===3，只用来检验失败回归，不代表全灭率）',r.forcedWipeSeeds));
+  const stuck=r.results.flatMap(x=>x.games.filter(g=>g.outcome==='timeout').map(g=>`种子 ${g.seed} 第 ${g.game} 局：${g.reason}`));
+  md.push(stuck.length?`卡住的局：\n${stuck.map(s=>'- '+s).join('\n')}\n`:'没有卡住的局。\n');
+ }
+ fs.writeFileSync(OUT,JSON.stringify(report));
+ console.log(md.join('\n'));
+ console.log(`JSON 已写入 ${OUT}`);
+}

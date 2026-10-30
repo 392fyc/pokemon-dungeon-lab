@@ -36,6 +36,8 @@ updated: 2026-10-30
 
 lane 状态与工作区只放本机，不进提交，不放凭据。
 
+**在 Windows 上运行 lane 脚本用 Git Bash，不用 WSL。** 本机 PATH 里的 `bash.exe`（`C:\WINDOWS\system32\bash.exe`）是 WSL 入口，而本机没有安装 Linux 发行版，调用会报 `WSL_E_DEFAULT_DISTRO_NOT_FOUND`（2026-10-30 `dev` 开工时实际遇到）。改用 Git for Windows 自带的 bash，例如在 PowerShell 中 `& '<Git 安装目录>\bin\bash.exe' -lc 'cd <主 checkout> && bash .mercury/packs/lanes/scripts/lane-paths.sh memory-dir'`；Git 安装目录可由 `(Get-Command git).Source` 推出（本机在 D 盘）。在 Git Bash 内部调用的 `bash` 即是它自己。
+
 **绑定必须先于任何 lane 脚本。** 没有 `.mercury/memory/lane-home` 时，lane 脚本会回退到用户主目录下的 `~/.claude/projects/...`，这违反“项目产物放在项目内”的规则。初始化顺序：
 
 1. 引入本页的 PR 合并，主 checkout 用 `git pull --ff-only` 快进到包含 `/.mercury/memory/` 忽略规则的提交（主 checkout 只停在 `main`，只做快进，不在其中提交）。

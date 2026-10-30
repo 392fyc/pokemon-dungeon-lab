@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
+import {BOSS} from '../../src/core/dungeon.ts';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser=await chromium.launch({...(process.env.BROWSER_EXECUTABLE ? {executablePath:process.env.BROWSER_EXECUTABLE} : {channel:'msedge'}),headless:true});
@@ -632,7 +633,7 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
  try{
   const options=await p.locator('#fixture option').allTextContents();assert.ok(options.includes('首领层（紧邻首领）'),'the developer menu offers the boss scene: '+options);
   await start(p);
-  const s=await state(p);assert.equal(s.dungeon.level,3);assert.equal(s.dungeon.boss,true);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
+  const s=await state(p);assert.equal(s.dungeon.level,3);assert.equal(s.dungeon.boss,true);assert.equal(s.units.boss.maxHp,BOSS.hp);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
   const v=await p.evaluate(()=>window.trial.view());
   assert.deepEqual(v.tiles.filter(t=>/^(floor|wall)/.test(t)),['floor-arena','floor-ash','wall-basalt'],'ash theme tiles and the arena tile, no stone tiles');
   assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01,'the boss is drawn 1.5 times larger: '+v.boss.scale/v.leader.scale);assert.ok(v.boss.labels.includes('首领'),'the boss carries a name tag');
@@ -651,7 +652,7 @@ await test('7.3 首领层：不挑战首领，从前庭普通出口撤离，看�
  const {context,page:p,errors}=await setup('BOSSX');
  try{
   await start(p);
-  const s=await state(p),exitPos=s.points.find(q=>q.kind==='exit').pos;assert.deepEqual(s.units[s.leader].pos,exitPos);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
+  const s=await state(p),exitPos=s.points.find(q=>q.kind==='exit').pos;assert.deepEqual(s.units[s.leader].pos,exitPos);assert.equal(s.units.boss.maxHp,BOSS.hp);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
   await exit(p);
   const end=await state(p);assert.equal(end.phase,'ended');assert.equal(end.end.outcome,'normal');assert.equal(end.end.boss,false);
   const text=await p.locator('.result').innerText();assert.match(text,/讨伐首领：未挑战/);assert.match(text,/结算/);

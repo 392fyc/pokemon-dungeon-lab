@@ -282,7 +282,12 @@ function attackableTargets(s:World,id:string,spec:MoveSpec):Unit[] {
 function tacticalTargetAllowed(s:World,actor:Unit,target:Unit,tactic:Tactic):boolean {
   if(tactic==='avoid')return false;
   if(tactic==='followme')return distance(actor.pos!,target.pos!)===1;
-  if(tactic==='together'||tactic==='nomoves')return distance(actor.pos!,target.pos!)===1||distance(s.units[s.leader].pos!,target.pos!)<=3;
+  if(tactic==='together'||tactic==='nomoves'){
+    // The leader may already have fallen during this phase: fall back to the first living queue member, then to no restriction.
+    const anchor=alive(s.units[s.leader])?s.units[s.leader]:s.queue.map(i=>s.units[i]).find(alive);
+    const anchorPos=anchor?.pos;
+    return distance(actor.pos!,target.pos!)===1||!anchorPos||distance(anchorPos,target.pos!)<=3;
+  }
   return true;
 }
 type ScoredAction={action:Action;score:number;pp:number;moveIndex:number;distance:number;targetIndex:number};
@@ -537,6 +542,11 @@ function hit(s:World,id:string,n:number):void {
     if(s.units[unit.id]||s.invitations.some(i=>i.unit.id===unit.id))unit.id=`${unit.id}-${s.invitations.length+1}`;
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});}}
 }
+/** Spec 3.1: a basic attack is Special when the actor's species has the higher base Sp. Atk than Atk, otherwise Physical (ties and units without a species count as Physical). */
+function basicCategory(u:Unit):'Physical'|'Special' {
+  const b=u.species?speciesOf(u.species)?.baseStats:undefined;
+  return b&&b.spa>b.atk?'Special':'Physical';
+}
 /** Apply defence, the matching ally screen, then protect/quickguard; return actual HP lost for drain and counter. */
 function resolveDamage(s:World,sourceId:string,targetId:string,base:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set()):number {
   const source=s.units[sourceId],target=s.units[targetId];
@@ -554,7 +564,7 @@ function resolveDamage(s:World,sourceId:string,targetId:string,base:number,categ
   const hpBefore=target.hp;
   hit(s,targetId,amount);
   const actual=hpBefore-target.hp;
-  if(opposing&&category==='Physical'&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&distance(source.pos,target.pos)===1)
+  if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&distance(source.pos,target.pos)===1)
     hit(s,sourceId,actual);
   return actual;
 }
@@ -637,7 +647,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
   const u=s.units[id],level=u.side==='friend'?(s.prog?.level??u.level??INITIAL_LEVEL):(u.level??INITIAL_LEVEL),bonus=levelDamageBonus(level);
   if(a.type!=='skill')u.lastMove=null;
   if(a.type==='move'){u.pos=clone(a.to);reveal(s);note(s,`${id}移动到${key(a.to)}`);}
-  else if(a.type==='basic')resolveDamage(s,id,a.target,6+bonus,'Physical',blockingGuard);
+  else if(a.type==='basic')resolveDamage(s,id,a.target,6+bonus,basicCategory(u),blockingGuard);
   else if(a.type==='use'){
     const t=s.units[a.target];s.prog!.items[a.item]--;
     if(a.item==='berry'){const before=t.hp;t.hp=Math.min(t.maxHp,t.hp+PROG.berryHeal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);}

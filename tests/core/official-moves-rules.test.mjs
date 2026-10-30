@@ -1,13 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  applyCommand, createExpedition, createMain, enemy, friend, jumpToFloor, key, newcomer,
+  applyCommand, createExpedition, createMain, friend, speciesUnit, jumpToFloor, key, newcomer,
   skillTargets,
 } from '../../src/core/engine.ts';
+import {enemy,foeOf,bossOf} from './foe-fixture.mjs';
 import {MOVE_DEFS,moveOf} from '../../src/core/moves.ts';
-import {BOSS} from '../../src/core/dungeon.ts';
-/** The boss attack count is a shared constant (current value 1); these tests need several hits per enemy phase, so they set 2 and restore it. */
-function withBossAttacks(n,fn){const was=BOSS.attacks;BOSS.attacks=n;try{return fn();}finally{BOSS.attacks=was;}}
 
 const row=(from,to,y=1)=>Array.from({length:to-from+1},(_,i)=>({x:from+i,y}));
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));
@@ -64,8 +62,8 @@ test('front 只命中上下左右相邻；front2 到两格且要求直线无遮�
 test('伤害按威力、攻击阶段、本局等级和防御阶段结算；普攻也吃两项阶段加成',()=>{
   const a=friend('A',0,1,20,{tackle:2});a.stages.atk=2;
   const e=enemy('E',1,1,50,'melee',0);e.stages.def=1;
-  const s=world({floor:row(0,3),friends:[a],enemies:[e],level:3});
-  const moveHit=use(s,'tackle','E');assert.equal(moveHit.units.E.hp,38); // 9 + 2 攻击 + 2 等级 - 1 防御
+  const s=world({floor:row(0,3),friends:[a],enemies:[e],level:13});
+  const moveHit=use(s,'tackle','E');assert.equal(moveHit.units.E.hp,38); // 9 + 2 攻击 + 2 等级(floor((13-5)/4)) - 1 防御
   const basicHit=play(moveHit,{type:'basic',target:'E'});assert.equal(basicHit.units.E.hp,29); // 6 + 2 + 2 - 1
 });
 
@@ -97,16 +95,17 @@ test('能力阶段有 ±3 上下限；帮助只提升房间内队友，走廊退
   })
 ));
 
-test('守住覆盖施用当回合的敌方阶段并持续三次；连续使用拒绝且不扣 PP',()=>withBossAttacks(2,()=>{
+test('守住覆盖施用当回合的敌方阶段并持续三次；连续使用拒绝且不扣 PP',()=>{
+  // Enemies attack only with roster moves: geodude tackle (front, 6+ceil(6/2)=9) and a quickattack user two cells away (front2, 6+ceil(4/2)=8).
   const a=friend('A',2,1,20,{protect:5}),e=enemy('E',3,1,30,'melee',4);
-  const ranged=enemy('R',2,4,30,'ranged',5,3),boss=enemy('Boss',1,1,40,'melee',3,3);boss.boss=true;
-  let s=world({floor:rect(0,5,0,5),friends:[a],enemies:[e,ranged,boss]});
+  const shooter=foeOf('R','pidgey',2,3,30,{quickattack:3});
+  let s=world({floor:rect(0,5,0,5),friends:[a],enemies:[e,shooter]});
   s=use(s,'protect','A');assert.equal(s.units.A.hp,20);assert.equal(s.units.A.protect,2);assert.equal(s.units.A.pp.protect,4);
   assert.deepEqual(skillTargets(s,'A','protect'),[]);assert.match(reject(s,'protect','A'),/不能连续使用/);assert.equal(s.units.A.pp.protect,4);
   s=play(s,{type:'wait'});assert.equal(s.units.A.hp,20);assert.equal(s.units.A.protect,1);
   s=play(s,{type:'wait'});assert.equal(s.units.A.hp,20);assert.equal(s.units.A.protect,0);
-  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,5); // melee 4 + ranged 5 + boss 两次各 3
-}));
+  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,3); // 20 - 9 (E tackle) - 8 (R quickattack)
+});
 
 test('守住后等待一回合即可再次使用',()=>{
   const a=friend('A',1,1,20,{protect:2}),e=enemy('E',2,1,20,'melee',4);
@@ -116,27 +115,28 @@ test('守住后等待一回合即可再次使用',()=>{
   s=use(s,'protect','A');assert.equal(s.units.A.protect,2);assert.equal(s.units.A.pp.protect,0);assert.equal(s.units.A.hp,20);
 });
 
-test('反击对每次相邻敌方命中各反射同额伤害；被守住挡掉或来自远处时不触发',()=>withBossAttacks(2,()=>{
+test('反击对每次相邻敌方命中各反射同额伤害；被守住挡掉或来自远处时不触发',()=>{
+  // Every enemy hit is a geodude tackle for 9 (6+ceil(6/2)); the reflected amount equals the HP actually lost.
   let a=friend('A',1,1,20,{pursuit:2}),e1=enemy('E1',2,1,1,'melee',2),e2=enemy('E2',1,2,20,'melee',3);
   let s=world({floor:rect(0,4,0,4),friends:[a],enemies:[e1,e2]});
-  s=use(s,'pursuit','A');assert.equal(s.units.E1.hp,0);assert.equal(s.units.E2.hp,17);assert.equal(s.units.A.hp,15);assert.equal(s.units.A.counter,2);
+  s=use(s,'pursuit','A');assert.equal(s.units.E1.hp,0);assert.equal(s.units.E2.hp,11);assert.equal(s.units.A.hp,2);assert.equal(s.units.A.counter,2);
 
   a=friend('A',1,1,20);a.counter=1;a.protect=1;e1=enemy('E',2,1,10,'melee',5);
   s=world({floor:rect(0,3,0,3),friends:[a],enemies:[e1]});s=play(s,{type:'wait'});
   assert.equal(s.units.A.hp,20);assert.equal(s.units.E.hp,10);
 
-  a=friend('A',1,1,20);a.counter=1;const r=enemy('R',1,3,10,'ranged',2,2);
+  a=friend('A',1,1,20);a.counter=1;const r=foeOf('R','pidgey',1,3,10,{quickattack:2});
   s=world({floor:rect(0,4,0,4),friends:[a],enemies:[r]});s=play(s,{type:'wait'});
-  assert.equal(s.units.A.hp,18);assert.equal(s.units.R.hp,10);
+  assert.equal(s.units.A.hp,12);assert.equal(s.units.R.hp,10); // 两格外的 quickattack 伤 8，不触发反击
 
   a=friend('A',1,1,20);a.counter=1;e1=enemy('E',2,1,10,'melee',0);
   s=world({floor:rect(0,3,0,3),friends:[a],enemies:[e1]});s=play(s,{type:'wait'});
   assert.equal(s.units.A.hp,20);assert.equal(s.units.E.hp,10); // 零伤害不触发反击
 
-  a=friend('A',2,1,20);a.counter=3;const boss=enemy('Boss',1,1,20,'melee',6,3);boss.boss=true;
+  a=friend('A',2,1,20);a.counter=3;const boss=bossOf('Boss',1,1,20,{bite:2});
   s=world({floor:rect(0,4,0,4),friends:[a],enemies:[boss]});s=play(s,{type:'wait'});
-  assert.equal(s.units.A.hp,8);assert.equal(s.units.Boss.hp,8);assert.equal(s.units.A.counter,2);
-}));
+  assert.equal(s.units.A.hp,10);assert.equal(s.units.Boss.hp,10);assert.equal(s.units.A.counter,2); // 咬 6+ceil(7/2)=10，反射 10
+});
 
 test('吹飞遇墙或单位各造成 5 点撞击伤害；撞击不受守住影响也不触发反击',()=>withMove('testBlow',{range:'front',target:'teammates',power:null,effects:['blowaway']},()=>{
   const a=friend('A',0,1,20),b=friend('B',1,1,20);b.protect=3;b.counter=3;b.stages.def=3;
@@ -158,9 +158,9 @@ test('吹飞遇墙或单位各造成 5 点撞击伤害；撞击不受守住影�
 }));
 
 test('吼叫不能吹飞首领且不扣 PP；龙尾可伤害首领但不移动首领',()=>{
-  const a=friend('A',1,1,20,{roar:2,dragontail:2}),boss=enemy('Boss',2,1,40,'melee',6,3);boss.boss=true;
+  const a=friend('A',1,1,20,{roar:2,dragontail:2}),boss=bossOf('Boss',2,1,40,{bite:2});
   const s=world({floor:rect(0,4,0,4),friends:[a],enemies:[boss]});
-  assert.deepEqual(skillTargets(s,'A','roar'),[]);assert.match(reject(s,'roar','Boss'),/首领不会被吹飞/);assert.equal(s.units.A.pp.roar,2);
+  assert.deepEqual(skillTargets(s,'A','roar'),[]);assert.match(reject(s,'roar','Boss'),/首领不能被吹飞/);assert.equal(s.units.A.pp.roar,2);
   assert.deepEqual(skillTargets(s,'A','dragontail'),['Boss']);
   const hit=use(s,'dragontail','Boss');assert.equal(hit.units.Boss.hp,32);assert.deepEqual(hit.units.Boss.pos,{x:2,y:1});assert.equal(hit.units.A.pp.dragontail,1);
 });
@@ -200,4 +200,24 @@ test('跨层、新伙伴加入和远征结束会清零战斗状态',()=>{
   const request=play(s,{type:'interact',exit:true});assert.equal(request.phase,'exit');
   const ended=applyCommand(request,{type:'finishExit'});assert.equal(ended.ok,true);
   for(const id of ended.state.queue){const u=ended.state.units[id];assert.deepEqual(u.stages,{atk:0,def:0});assert.equal(u.protect,0);assert.equal(u.counter,0);assert.equal(u.lastMove,null);assert.equal(u.reflect,0);assert.equal(u.lightscreen,0);}
+});
+
+test('普攻类别（规格3.1）：物攻高算物理，特攻高算特殊，相等算物理；反射壁与光墙各减半对应类别',()=>{
+  // Literal base stats from the roster: geodude atk 80 > spa 30; charmander atk 52 < spa 60; growlithe atk 70 = spa 70. Basic power at level 5 is 6.
+  const cases=[['geodude','reflect',3],['geodude','lightscreen',6],['charmander','reflect',6],['charmander','lightscreen',3],['growlithe','reflect',3],['growlithe','lightscreen',6]];
+  for(const [species,screen,expected] of cases){
+    const a=speciesUnit('A',species,5,{x:0,y:1}),e=enemy('E',1,1,30,'melee',0);e[screen]=5;
+    const s=play(world({floor:row(0,3),friends:[a],enemies:[e]}),{type:'basic',target:'E'});
+    assert.equal(30-s.units.E.hp,expected,`${species} basic against ${screen}`);
+  }
+});
+
+test('领队在本方阶段被反击打倒后，后面的“一起行动”队友仍能正常行动，不崩溃',()=>{
+  const a=friend('A',1,1,1,{tackle:2}),b=friend('B',2,3,20,{quickattack:2}),c=friend('C',0,1,20,{tackle:2}); // B reaches E only at distance 2, so its policy must read the leader's position
+  const e=enemy('E',2,1,30,'melee',0);e.counter=3;
+  const s=world({floor:rect(0,3,0,3),friends:[a,b,c],enemies:[e]});
+  const r=applyCommand(s,{type:'round',action:{type:'basic',target:'E'}});
+  assert.equal(r.ok,true,r.ok?'':r.error);
+  assert.equal(r.state.units.A.hp,0); // the basic attack (6) was reflected onto the 1 HP leader
+  assert.notEqual(r.state.leader,'A');
 });

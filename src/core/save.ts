@@ -26,7 +26,7 @@ const exactKeys=(v:Record<string,unknown>,keys:string[])=>Object.keys(v).sort().
 const LEGACY_PROG={thresholds:[0,3,7,12,18],maxLevel:5,hpPerLevel:2,goalExp:2} as const;
 const legacyLevelFor=(exp:number)=>LEGACY_PROG.thresholds.filter(t=>exp>=t).length;
 const LEGACY_WILD_SPECIES=new Set(['pidgey','rattata','spearow','zubat','geodude','sandshrew','growlithe','magnemite','onix','dratini','wooper','houndour','makuhita']);
-const LEGACY_BOSS_SPECIES=new Set([BOSS.species]);
+const LEGACY_BOSS_SPECIES=new Set<string>(['arcanine']);
 // 7.3 boss tuple and its earlier released tuple. BOSS in current dungeon data now contains identity only.
 const BOSS_HISTORY=[{hp:60,damage:4,range:3},{hp:80,damage:6,range:3}] as const;
 const validBossNumbers=(v:Record<string,unknown>)=>BOSS_HISTORY.some(b=>v.maxHp===b.hp&&v.damage===b.damage&&v.range===b.range);

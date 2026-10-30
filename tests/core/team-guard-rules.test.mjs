@@ -1,14 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  applyCommand, createExpedition, createMain, enemy, friend, jumpToFloor, key,
+  applyCommand, createExpedition, createMain, friend, jumpToFloor, key,
   skillTargets,
 } from '../../src/core/engine.ts';
 import {moveOf} from '../../src/core/moves.ts';
-import {BOSS} from '../../src/core/dungeon.ts';
+import {enemy,foeOf,bossOf} from './foe-fixture.mjs';
 
 function withGuardMoves(run){for(const id of ['quickguard','reflect','lightscreen'])assert.ok(moveOf(id),`正式数据必须包含${id}`);return run();}
-function withBossAttacks(n,fn){const was=BOSS.attacks;BOSS.attacks=n;try{return fn();}finally{BOSS.attacks=was;}}
+// Enemies attack only with roster moves. Literal damage (level 5, no stage): geodude tackle 9 (6+ceil(6/2)); quickattack 8 (6+ceil(4/2), distance 1-2);
+// bubblebeam 9 (6+ceil(6/2), Special, a ray up to 10 cells); bite 10 (6+ceil(7/2), Physical, adjacent).
+const shooter=(id,x,y,hp,move)=>foeOf(id,'pidgey',x,y,hp,{[move]:5});
 
 const row=(from,to,y=1)=>Array.from({length:to-from+1},(_,i)=>({x:from+i,y}));
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));
@@ -37,22 +39,23 @@ test('7.7b 三个正式招式取GTI同房间全队数据',()=>{
 test('快速防守按使用时的房间成员记入临时集合；本回合敌阶段有效，进房的后来者不受保护',()=>withGuardMoves(()=>{
   const a=friend('A',0,1,20),b=friend('B',2,2,20),c=friend('C',4,1,20);
   equip(a,'quickguard');
-  const r1=enemy('R1',0,4,20,'ranged',5,3),r2=enemy('R2',3,4,20,'ranged',5,3),r3=enemy('R3',2,6,20,'ranged',5,3);
+  const r1=shooter('R1',0,3,20,'quickattack'),r2=shooter('R2',5,1,20,'quickattack') /* adjacent to C: C stays at (4,1) */,r3=shooter('R3',2,5,20,'quickattack');
   let s=world({floor:rect(0,10,0,6),friends:[a,b,c],enemies:[r1,r2,r3],rooms:[{x:0,y:0,w:4,h:3}]});
   assert.deepEqual(skillTargets(s,'A','quickguard'),['A']);
   s=use(s,'quickguard','A',{actor:'B',action:{type:'move',to:{x:2,y:3}}});
-  assert.deepEqual(s.units.B.pos,{x:2,y:3});assert.deepEqual(s.units.C.pos,{x:3,y:1});
-  assert.equal(s.units.A.hp,20);assert.equal(s.units.B.hp,20);assert.equal(s.units.C.hp,15);
+  assert.deepEqual(s.units.B.pos,{x:2,y:3});assert.deepEqual(s.units.C.pos,{x:4,y:1}); // C stays beside R2 (it attacks instead of walking into the room)
+  assert.equal(s.units.A.hp,20);assert.equal(s.units.B.hp,20);assert.equal(s.units.C.hp,12); // C was outside the room when the move was used: R2's 8 reaches it
   assert.equal(Object.hasOwn(s.units.A,'quickguard'),false);
-  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,15); // 快速防守只覆盖施用当回合
+  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,12); // 快速防守只覆盖施用当回合：R1 的 8 点伤害到达 A
 }));
 
 test('快速防守挡两格外攻击，不挡相邻远程攻击',()=>withGuardMoves(()=>{
   const a=friend('A',1,1,20);equip(a,'quickguard');
-  const adjacent=enemy('Adjacent',2,1,20,'ranged',4,3),far=enemy('Far',1,3,20,'ranged',4,3);
+  const adjacent=shooter('Adjacent',2,1,20,'quickattack'),far=shooter('Far',1,3,20,'quickattack');
   let s=world({floor:rect(0,4,0,4),friends:[a],enemies:[adjacent,far]});
-  s=use(s,'quickguard','A');assert.equal(s.units.A.hp,16);
-  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,8);
+  s=use(s,'quickguard','A');assert.equal(s.units.A.hp,12); // Adjacent 的 8 点不被挡，Far（两格外）被挡
+  s.enemies=['Far']; // Adjacent 离开，只看快速防守过期后 Far 的 8 点
+  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,4);
 }));
 
 test('守住与快速防守互相视为连续使用；被拒绝不扣PP，等待后可用',()=>withGuardMoves(()=>{
@@ -70,7 +73,7 @@ test('反射壁护住同房间伙伴；物理伤害先减防御再向下减半�
   const a=friend('A',0,1,20),b=friend('B',2,1,20),c=friend('C',4,1,20);a.stages.def=1;equip(a,'reflect',2);
   const e=enemy('E',1,1,100,'melee',7);
   let s=world({floor:rect(0,5,0,3),friends:[a,b,c],enemies:[e],rooms:[{x:0,y:0,w:4,h:3}]});
-  s=use(s,'reflect','A');assert.equal(s.units.A.hp,17);assert.equal(s.units.A.reflect,9);
+  s=use(s,'reflect','A');assert.equal(s.units.A.hp,16);assert.equal(s.units.A.reflect,9); // (9-1)=8，向下减半 4
   assert.equal(s.units.B.reflect,9);assert.equal(s.units.C.reflect,0);
   s.enemies=[];
   for(let i=0;i<3;i++)s=play(s,{type:'wait'});
@@ -80,30 +83,30 @@ test('反射壁护住同房间伙伴；物理伤害先减防御再向下减半�
   assert.equal(s.units.A.reflect,0);assert.equal(s.units.B.reflect,0);
 }));
 
-test('光墙只减远程特殊攻击；首领按每次攻击距离分类',()=>withGuardMoves(()=>withBossAttacks(2,()=>{
+test('光墙只减特殊攻击；首领的物理与特殊招式分别按招式类别结算',()=>withGuardMoves(()=>{
   const a=friend('A',0,1,20),b=friend('B',2,1,20);a.stages.def=1;equip(a,'lightscreen',2);
-  const r=enemy('R',0,3,100,'ranged',7,3);
+  const r=shooter('R',0,3,100,'bubblebeam');
   let s=world({floor:rect(0,5,0,5),friends:[a,b],enemies:[r],rooms:[{x:0,y:0,w:4,h:3}]});
-  s=use(s,'lightscreen','A');assert.equal(s.units.A.hp,17);assert.equal(s.units.A.lightscreen,9);assert.equal(s.units.B.lightscreen,9);
+  s=use(s,'lightscreen','A');assert.equal(s.units.A.hp,16);assert.equal(s.units.A.lightscreen,9);assert.equal(s.units.B.lightscreen,9); // bubblebeam 9-1=8，光墙减半 4
 
   const target=friend('T',3,1,20);target.stages.def=1;target.lightscreen=10;target.counter=3;
-  const boss=enemy('Boss',0,1,100,'melee',7,3);boss.boss=true;
+  const boss=bossOf('Boss',1,1,100,{bubblebeam:3}); // 两格远：不在房间里的敌人只看得到路径距离 2 以内
   s=world({floor:rect(0,5,0,3),friends:[target],enemies:[boss]});s=play(s,{type:'wait'});
-  assert.equal(s.units.T.hp,14);assert.equal(s.units.Boss.hp,100); // 距离3按特殊，光墙每击减到3；远距离反击不触发
+  assert.equal(s.units.T.hp,16);assert.equal(s.units.Boss.hp,100); // 特殊招式 9-1=8，光墙减半 4；两格外不触发反击
   assert.equal(s.units.T.lightscreen,9);
 
   const adjacent=friend('Adj',1,1,20);adjacent.stages.def=1;adjacent.reflect=10;adjacent.counter=3;
-  const closeBoss=enemy('CloseBoss',0,1,100,'melee',7,3);closeBoss.boss=true;
+  const closeBoss=bossOf('CloseBoss',0,1,100,{bite:3});
   s=world({floor:rect(0,3,0,3),friends:[adjacent],enemies:[closeBoss]});s=play(s,{type:'wait'});
-  assert.equal(s.units.Adj.hp,14);assert.equal(s.units.CloseBoss.hp,94); // 相邻两击都按物理；每次反击同实际3伤害
+  assert.equal(s.units.Adj.hp,16);assert.equal(s.units.CloseBoss.hp,96); // 咬（物理）10-1=9，反射壁减半 4；相邻反击反射实际 4
   assert.equal(s.units.Adj.counter,2);assert.equal(s.units.Adj.reflect,9);
-})));
+}));
 
 test('反击读取屏障处理后的实际伤害；被保护或快速防守归零时不触发',()=>withGuardMoves(()=>{
   const a=friend('A',1,1,20);a.stages.def=1;a.reflect=10;a.counter=2;
   const e=enemy('E',2,1,20,'melee',7);
   let s=world({floor:rect(0,4,0,4),friends:[a],enemies:[e]});s=play(s,{type:'wait'});
-  assert.equal(s.units.A.hp,17);assert.equal(s.units.E.hp,17);
+  assert.equal(s.units.A.hp,16);assert.equal(s.units.E.hp,16); // 9-1=8，反射壁减半 4；反击反射实际 4
 
   const guarded=friend('G',1,1,20);guarded.protect=1;guarded.counter=2;
   const attacker=enemy('Attacker',2,1,20,'melee',7);
@@ -111,17 +114,17 @@ test('反击读取屏障处理后的实际伤害；被保护或快速防守归�
   assert.equal(s.units.G.hp,20);assert.equal(s.units.Attacker.hp,20);
 }));
 
-test('首领远距离攻击会被快速防守挡住；近距离首领攻击会被守住屏障保护',()=>withGuardMoves(()=>withBossAttacks(2,()=>{
+test('首领远距离攻击会被快速防守挡住；快速防守过期后命中',()=>withGuardMoves(()=>{
   const a=friend('A',3,1,20);equip(a,'quickguard');
-  const boss=enemy('Boss',0,1,100,'melee',7,3);boss.boss=true;
+  const boss=bossOf('Boss',1,1,100,{bubblebeam:3});
   let s=world({floor:row(0,5),friends:[a],enemies:[boss]});s=use(s,'quickguard','A');assert.equal(s.units.A.hp,20);
-  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,6);
-})));
+  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,11); // 一次 9 点
+}));
 
 test('7.7b状态初始为零，并在跨层与远征结束时清除',()=>{
   const a=friend('A',0,1);const e=enemy('E',2,1,10,'melee',1);
   assert.equal(a.reflect,0);assert.equal(a.lightscreen,0);
-  assert.equal(Object.hasOwn(e,'reflect'),false);assert.equal(Object.hasOwn(e,'lightscreen'),false);
+  assert.equal(e.reflect,0);assert.equal(e.lightscreen,0); // 7.8: enemies carry the same screens as friends
 
   let expedition=createExpedition('guard-reset',42,2);
   for(const id of expedition.queue){const u=expedition.units[id];u.reflect=4;u.lightscreen=7;}

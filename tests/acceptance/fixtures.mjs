@@ -11,7 +11,7 @@ export const friend=(id,x,y=1,hp=20,pp={},maxHp=20)=>({
  maxPp:Object.fromEntries(Object.keys(pp).map(k=>[k,2])),learned:Object.keys(pp)
 });
 // Independent explicit kits for the three approved developer-fixture mappings.
-const enemyKits={melee:{species:'geodude',kit:{tackle:3,harden:3}},ranged:{species:'pidgey',kit:{tackle:3,gust:3}},chase:{species:'growlithe',kit:{ember:2,bite:2}}};
+const enemyKits={melee:{species:'geodude',kit:{tackle:3,defensecurl:4}},ranged:{species:'pidgey',kit:{tackle:3,gust:3}},chase:{species:'growlithe',kit:{ember:2,bite:2}}};
 export const enemy=(id,x,y,hp,role,{waitOnly=false}={})=>{
  const {species,kit}=enemyKits[role];
  return {id,side:'enemy',species,entrySpecies:species,level:5,tactic:'gofoes',stages:{atk:0,def:0},protect:0,counter:0,reflect:0,lightscreen:0,lastMove:null,

@@ -2,7 +2,7 @@
 import data from '../data/roster.json' with {type:'json'};
 import bosses from '../data/boss.json' with {type:'json'};
 export type KitMove={move:string;pp:number};
-export type Species={id:string;dex:string;name:string;learnsetGen:number;starter?:boolean;types?:string[];maxHp:number;kit:KitMove[];learnable:KitMove[];availability?:'暂不出场';evoLevel:number;prevo?:string;evos?:string[];legendary:boolean};
+export type Species={id:string;dex:string;name:string;learnsetGen:number;starter?:boolean;types?:string[];baseStats?:{hp:number;atk:number;def:number;spa:number;spd:number;spe:number};maxHp:number;kit:KitMove[];learnable:KitMove[];availability?:'暂不出场';evoLevel:number;prevo?:string;evos?:string[];legendary:boolean};
 export const SPECIES:Record<string,Species>=Object.fromEntries((data.species as Species[]).map(s=>[s.id,s]));
 /** The species the player may pick as the main character (stage 7.1: generation 1-3 starters), in roster order. */
 export const STARTER_IDS:string[]=(data.species as Species[]).filter(s=>s.starter).map(s=>s.id);

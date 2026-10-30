@@ -52,6 +52,15 @@ try{
  for(const k of ['format','rules','content','build'])assert.ok(Object.hasOwn(original,k));
  const bad=JSON.parse(backup);bad.recent.round=-1;
  await upload(JSON.stringify(bad));assert.match(await p.locator('#transfer-message').innerText(),/损坏/);assert.deepEqual(JSON.parse(await raw()),original);
+ assert.equal(await p.evaluate(()=>window.trial.store.error),'');assert.equal(await p.locator('#save .error').count(),0,'bad import must not mark the current save as broken');
+ // Oversized files must be rejected before file.text() or the overwrite confirmation.
+ await p.evaluate(()=>{window.fileTextReads=0;const text=File.prototype.text;File.prototype.text=function(){window.fileTextReads++;return text.call(this);};});
+ const unexpectedDialogs=[];const onDialog=async d=>{unexpectedDialogs.push(d.message());await d.dismiss();};p.on('dialog',onDialog);
+ await p.locator('#save-file').setInputFiles({name:'too-large.json',mimeType:'application/json',buffer:Buffer.alloc(5*1024*1024+1,32)});
+ await p.waitForFunction(()=>document.querySelector('#transfer-message').textContent.includes('超过 5 MiB'));
+ p.off('dialog',onDialog);assert.deepEqual(unexpectedDialogs,[]);assert.equal(await p.evaluate(()=>window.fileTextReads),0);
+ assert.deepEqual(JSON.parse(await raw()),original);assert.equal(await p.evaluate(()=>window.trial.store.error),'');
+ result.checks.push('超过 5 MiB 的文件在读取和覆盖确认前被拒绝，当前记录及保存错误状态不变');
  await upload(backup,false);assert.match(await p.locator('#transfer-message').innerText(),/已取消/);assert.deepEqual(JSON.parse(await raw()),original);
  await upload(backup);assert.match(await p.locator('#transfer-message').innerText(),/已导入并保存/);assert.deepEqual(JSON.parse(await raw()),original);
  await p.locator('#settings-close').click();await p.reload();await p.locator('#title-continue').click();await ready();assert.deepEqual(JSON.parse(await raw()),original);
@@ -60,6 +69,11 @@ try{
  const incompatible=JSON.stringify({...original,format:999},null,2);
  await p.evaluate(text=>localStorage.setItem('dungeon-trial.player.v1',text),incompatible);await p.reload();
  await p.locator('#title-settings').click();assert.match(await p.locator('#transfer-message').innerText(),/版本不兼容/);
+ const diagnosis=await p.evaluate(()=>window.trial.store.error);
+ await upload(backup);assert.match(await p.locator('#transfer-message').innerText(),/先导出/);
+ assert.equal(await p.evaluate(()=>window.trial.store.error),diagnosis);assert.equal(await raw(),incompatible);
+ assert.match(await p.locator('#title-screen .error').innerText(),/版本不兼容/);
+ assert.doesNotMatch(await p.locator('#title-screen .error').innerText(),/先导出/);
  assert.equal(await exported(),incompatible);await upload(backup);assert.deepEqual(JSON.parse(await raw()),original);
  result.checks.push('不兼容存档有中文原因，可按原字节导出后导入有效记录');
  await p.locator('#settings-close').click();

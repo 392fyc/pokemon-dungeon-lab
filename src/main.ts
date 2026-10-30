@@ -419,6 +419,7 @@ $('save-file').addEventListener('change',async()=>{
  if(!file||transferBusy)return;
  transferBusy=true;refreshTransfer();
  try{
+  if(file.size>5*1024*1024){$('transfer-message').textContent='存档文件超过 5 MiB，未读取或导入。请选择较小的存档文件。';return;}
   const raw=await file.text();
   if(!window.confirm('导入会覆盖当前存档，覆盖后无法恢复。建议先导出备份。确认导入这个文件吗？')){
    $('transfer-message').textContent='已取消导入，当前存档没有改动。';return;
@@ -427,7 +428,7 @@ $('save-file').addEventListener('change',async()=>{
   const ok=await pending;
   if(ok){clear();inviteChoice=undefined;inviteReject=false;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;purseDraft=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
    $('transfer-message').textContent='存档已导入并保存，关闭设置后可继续游戏。';
-  }else $('transfer-message').textContent=store.error;
+  }else $('transfer-message').textContent=store.importError;
   render();
   const next=ok?finishing():null;if(next)await transition(store.dispatch(next));
  }catch{$('transfer-message').textContent='无法读取所选文件，请重新选择。当前存档没有改动。';}

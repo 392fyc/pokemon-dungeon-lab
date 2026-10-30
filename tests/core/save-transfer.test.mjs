@@ -49,7 +49,7 @@ test('a tampered record is rejected without replacing either the current memory 
  assert.deepEqual(current.store.envelope,before);
  assert.equal(current.storage.raw(),bytes);
  assert.equal(current.storage.writes(),writes);
- assert.match(current.store.error,/损坏|不兼容|有效/);
+ assert.match(current.store.importError,/损坏|不兼容|有效/);
 });
 
 test('an older supported profile schema migrates on import and an unsupported rules version is refused',async()=>{
@@ -68,7 +68,7 @@ test('an older supported profile schema migrates on import and an unsupported ru
  assert.deepEqual(current.store.envelope,before);
  assert.equal(current.storage.raw(),bytes);
  assert.equal(current.storage.writes(),writes);
- assert.match(current.store.error,/版本不兼容/);
+ assert.match(current.store.importError,/版本不兼容/);
 });
 
 test('overwriting a readable record requires explicit confirmation',async()=>{
@@ -79,8 +79,9 @@ test('overwriting a readable record requires explicit confirmation',async()=>{
  assert.deepEqual(current.store.envelope,before);
  assert.equal(current.storage.raw(),bytes);
  assert.equal(current.storage.writes(),writes);
- assert.match(current.store.error,/确认/);
+ assert.match(current.store.importError,/确认/);
  assert.equal(await current.store.importRecord(incoming.raw,true),true);
+ assert.equal(current.store.importError,'');
  assert.deepEqual(current.store.envelope,incoming.store.envelope);
 });
 
@@ -108,7 +109,7 @@ test('a failed storage write restores the old in-memory and disk records',async(
  assert.equal(storage.raw(),bytes);
  assert.equal(current.lastSaved,lastSaved);
  assert.equal(current.status,'ready');
- assert.match(current.error,/导入保存失败/);
+ assert.match(current.importError,/导入保存失败/);
  assert.notDeepEqual(source.store.envelope,current.envelope);
 });
 
@@ -132,9 +133,38 @@ test('saving and failed stores reject imports until the existing save is resolve
  assert.equal(await failed.importRecord(candidate,true),false);
  assert.deepEqual(failed.envelope,state);
  assert.equal(failed.status,'failed');
- assert.match(failed.error,/保存尚未完成/);
+ assert.match(failed.importError,/保存尚未完成/);
 });
 
 test('decode reports malformed JSON and JSON null in Chinese',()=>{
  for(const raw of ['{','null','"not a record"'])assert.throws(()=>decode(raw),/存档/);
+});
+
+test('failed imports preserve the blocked save diagnosis',async()=>{
+ const damaged='{"format":999}',storage=port(damaged),store=new TrialStore(storage,'transfer');
+ const incoming=await makeRecord('blocked-diagnosis');
+ const diagnosis=store.error;
+ assert.match(diagnosis,/版本不兼容/);
+ assert.equal(await store.importRecord(incoming.raw,true),false);
+ assert.equal(store.error,diagnosis);
+ store.exportRaw();
+ assert.equal(await store.importRecord('{',true),false);
+ assert.equal(store.error,diagnosis);
+ storage.setItem=()=>{throw Error('disk quota');};
+ assert.equal(await store.importRecord(incoming.raw,true),false);
+ assert.equal(store.error,diagnosis);
+ assert.equal(store.status,'blocked');assert.equal(storage.raw(),damaged);
+});
+
+test('failed imports preserve a ready save error state',async()=>{
+ const {store,storage,raw}=await makeRecord('ready-diagnosis');
+ const diagnosis=store.error;assert.equal(diagnosis,'');
+ assert.equal(await store.importRecord('{',true),false);
+ assert.equal(store.error,diagnosis);
+ assert.equal(await store.importRecord(raw,false),false);
+ assert.equal(store.error,diagnosis);
+ storage.setItem=()=>{throw Error('disk quota');};
+ assert.equal(await store.importRecord(raw,true),false);
+ assert.equal(store.error,diagnosis);
+ assert.equal(store.status,'ready');assert.equal(storage.raw(),raw);
 });

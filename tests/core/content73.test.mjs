@@ -129,7 +129,7 @@ test('L2 boss-marked runs go 苔石洞, 潮湿水窟, 灰烬裂谷, with the tie
  }
  // the enemy numbers stay on the tier table: no hit-point multiplier per theme
  const g2=generateFloor(1,2,FLOORS3);assert.deepEqual(g2.enemies.map(e=>[e.ai,e.hp,e.damage]),[['melee',16,4],['ranged',6,6],['ranged',6,6]]);
- const g3=generateFloor(1,3,FLOORS3);assert.deepEqual(g3.enemies.map(e=>[e.id,e.species,e.ai,e.hp,e.damage]),[['w3a','makuhita','melee',16,4],['w3b','growlithe','chase',6,3],['w3c','houndour','chase',6,3],['boss','arcanine','melee',80,6]]);
+ const g3=generateFloor(1,3,FLOORS3);assert.deepEqual(g3.enemies.map(e=>[e.id,e.species,e.ai,e.hp,e.damage]),[['w3a','makuhita','melee',16,4],['w3b','growlithe','chase',6,3],['w3c','houndour','chase',6,3],['boss','arcanine','melee',60,4]]);
 });
 const bossOf=g=>g.enemies.filter(e=>e.boss);
 test('L3 floor 3: exactly one exit in the lobby, no down stairs, one boss at the centre of the farthest room, nothing else in the boss room, T outside it (seeds 1-200)',()=>{
@@ -163,6 +163,10 @@ test('L4 floor 3: all floor cells are connected and the boss room can be reached
 
 /* ---------- B: boss rules ---------- */
 /** A boss floor on an open row: the real run's units are replaced by plain fixtures so every number is a literal. */
+/** Runs `fn` with the boss attack count set to `n` (the shared BOSS object), restoring it afterwards. */
+function withBossAttacks(n,fn){const was=BOSS.attacks;BOSS.attacks=n;try{return fn();}finally{BOSS.attacks=was;}}
+/* The hand-built boss below keeps the historical 80 HP / 6 damage on purpose: those are the numbers every literal in the B tests was written for, and they are
+ * still a legal saved boss (save.ts BOSS_HISTORY), so the fixtures also exercise that old saves keep loading. The current numbers are pinned in the generator test and 'boss constants'. */
 function arena({boss=[4],bossHp=80,units,floor=row(9),exit=null}={}){
  const s=jumpToFloor(createExpedition('b',1,3,base(),0),3);
  for(const id of s.enemies)delete s.units[id];
@@ -188,7 +192,7 @@ test('B2 push on the boss is refused with the Chinese reason and costs no PP',()
  const r=applyCommand(s,{type:'round',action:{type:'skill',skill:'roar',target:'boss'}});
  assert.equal(r.ok,false);assert.equal(r.error,'首领不会被吹飞；本轮未执行');assert.deepEqual(r.state,s);assert.equal(s.units.A.pp.roar,2);assert.equal(s.units.boss.pos.x,4);
 });
-test('B3 the boss attacks twice for 6, never moves, and does not attack when everyone is out of reach and out of line',()=>{
+test('B3 with two attacks per round the boss hits twice for 6, never moves, and does not attack when everyone is out of reach and out of line',()=>withBossAttacks(2,()=>{
  const s=arena({units:{A:A(3),B:B(0)}});
  const hit=round(s,{type:'wait'});
  assert.equal(hit.units.A.hp,8,'two attacks of 6 on the adjacent member');assert.equal(hit.units.B.hp,20);assert.deepEqual(hit.units.boss.pos,{x:4,y:1});
@@ -200,20 +204,25 @@ test('B3 the boss attacks twice for 6, never moves, and does not attack when eve
  const none=round(o,{type:'wait'});assert.equal(none.units.A.hp,20);assert.equal(none.units.B.hp,20);
  // within 3 cells on the row and clear: a ray attack, twice
  const ray=arena({units:{A:A(7),B:B(9)}});const shot=round(ray,{type:'wait'});assert.equal(shot.units.A.hp,8);
+}));
+test('B3b with the current BOSS the boss attacks once per round (same fixtures, one hit of 6 instead of two)',()=>{
+ assert.equal(BOSS.attacks,1);
+ const hit=round(arena({units:{A:A(3),B:B(0)}}),{type:'wait'});assert.equal(hit.units.A.hp,14);assert.equal(hit.units.B.hp,20);
+ const shot=round(arena({units:{A:A(7),B:B(9)}}),{type:'wait'});assert.equal(shot.units.A.hp,14);
 });
-test('B4 protect blocks both boss hits on its user for the first enemy phase',()=>{
+test('B4 protect blocks both boss hits on its user for the first enemy phase',()=>withBossAttacks(2,()=>{
  const s=arena({units:{A:A(3,20,{protect:2}),B:B(2)}});
  const r=round(s,{type:'skill',skill:'protect',target:'A'});
  assert.equal(r.units.A.hp,20);assert.equal(r.units.B.hp,20);assert.equal(r.units.A.pp.protect,1);assert.equal(r.units.A.protect,2);
-});
-test('B10 when the first attack defeats the adjacent target, the second attack chooses the next one (here by ray); nothing left means no attack',()=>{
+}));
+test('B10 when the first attack defeats the adjacent target, the second attack chooses the next one (here by ray); nothing left means no attack',()=>withBossAttacks(2,()=>{
  const s=arena({units:{A:A(3,6),B:B(2)}});
  const r=round(s,{type:'wait'});
  assert.equal(r.units.A.hp,0);assert.equal(r.units.B.hp,14,'second attack: 6 on the next member in the ray');
  const lone=arena({units:{A:A(3,6),B:B(0,20)}});lone.units.B.pos=null;lone.units.B.hp=0;
  const r2=round(lone,{type:'wait'});assert.equal(r2.phase,'ended');assert.equal(r2.end.outcome,'wipe');
  assert.equal(r2.log.filter(l=>l.includes('受到6伤害')).length,1,'one hit only: after the lone member fell the second attack found nothing');
-});
+}));
 const exitAt=3;
 test('B5 after the boss falls the last machine is the boss machine (held), the draw used one random step, experience rose by 3',()=>{
  const s=arena({bossHp:1,units:{A:A(3),B:B(2)}});
@@ -253,7 +262,7 @@ test('B8 a wipe on the boss floor: machines are lost, the unprotected partner dr
  const spots=[{x:bossAt.x-1,y:bossAt.y},{x:bossAt.x+1,y:bossAt.y},{x:bossAt.x,y:bossAt.y-1}];
  ids.forEach((id,i)=>{w.units[id].pos=spots[i];w.units[id].hp=1;});
  w.goal=true;w.prog.exp=2;w.tms=[{move:'protect',source:'target',fate:'held'}];w.bag=1;w.prog.rng=7;w.seen=w.floor.map(key);
- // the boss attacks twice per round: with 1 HP each it needs two rounds to fell three members; the third falls to a second round
+ // the boss attacks once per round (BOSS.attacks): with 1 HP each it fells one member per round, so the wipe takes three rounds
  let s=round(w,{type:'wait'});
  while(s.phase==='playing')s=round(s,{type:'wait'});
  assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');
@@ -298,7 +307,7 @@ test('B9 with only the initial two members and an empty account, a departure rea
  assert.equal(r.reached,true,JSON.stringify(r.error)+r.s.log.slice(-3));
  assert.equal(r.s.dungeon.level,3);assert.equal(r.s.phase,'exit');
  const exit=r.s.points.find(p=>p.kind==='exit').pos;assert.deepEqual(r.s.units[r.s.request.actor].pos,exit);
- assert.equal(r.s.units.boss.hp,80,'the boss was never touched');
+ assert.equal(r.s.units.boss.hp,BOSS.hp,'the boss was never touched');
  assert.equal((await store.dispatch({type:'finishExit'})).ok,true);assert.equal(store.state.end.boss,false);assert.equal(store.state.end.outcome,'normal');
 });
 const B9_SEED=1;
@@ -344,8 +353,13 @@ test('S3 tampering is rejected (each case first checked in its untouched form)',
  {const w=createExpedition('s3',4,2,base(),0),src=floor3().units.boss;w.units.boss={...src,pos:{...w.floor[w.floor.length-1]}};w.enemies.push('boss');rejects(w,'boss without the mark');}
  // 3. two bosses
  {const w=floor3();const b=w.units.boss;const spare=w.floor.find(c=>!Object.values(w.units).some(u=>u.pos&&u.pos.x===c.x&&u.pos.y===c.y));w.units.boss2={...b,id:'boss2',pos:{...spare}};w.enemies.push('boss2');rejects(w,'two bosses');}
- // 4. boss hit points above 80
- {const w=floor3();w.units.boss.maxHp=81;w.units.boss.hp=81;rejects(w,'boss HP above 80');}
+ // 4. boss numbers outside both legal sets: current (60 HP / 4) and the historical one (80 HP / 6). Above either maximum, and a mix of the two sets, are rejected; the historical set is still accepted.
+ {const w=floor3();w.units.boss.maxHp=61;w.units.boss.hp=61;rejects(w,'boss HP above the current 60');}
+ {const w=floor3();w.units.boss.maxHp=81;w.units.boss.hp=81;w.units.boss.damage=6;rejects(w,'boss HP above the historical 80');}
+ {const w=floor3();w.units.boss.maxHp=81;w.units.boss.hp=81;rejects(w,'boss HP 81 with the current damage');}
+ {const w=floor3();w.units.boss.maxHp=80;w.units.boss.hp=80;rejects(w,'historical HP with the current damage (mixed sets)');}
+ {const w=floor3();w.units.boss.damage=6;rejects(w,'current HP with the historical damage (mixed sets)');}
+ {const w=floor3();w.units.boss.maxHp=80;w.units.boss.hp=80;w.units.boss.damage=6;accepted(w);}
  // 5. a boss machine while the boss is alive
  {const w=floor3();w.tms=[{move:'protect',source:'boss',fate:'held'}];rejects(w,'boss machine without a defeat');}
  // 6. the end record's boss flag against the boss's final HP
@@ -422,4 +436,4 @@ test('boss info text names the species, HP, and the two refusals; log lines show
  assert.equal(info.name,'风速狗（首领）');assert.equal(info.hp,80);assert.equal(info.maxHp,80);assert.match(info.note,/不可招募、不会被吹飞/);
  assert.equal(localizeLog(s,'取得招式机：dragontail，mudslap，terablast，helpinghand'),'取得招式机：龙尾，掷泥，太晶爆发，帮助');
 });
-test('boss constants',()=>{assert.deepEqual(BOSS,{id:'boss',species:'arcanine',hp:80,damage:6,range:3,attacks:2});assert.equal(PROG.bossExp,2);});
+test('boss constants',()=>{assert.deepEqual(BOSS,{id:'boss',species:'arcanine',hp:60,damage:4,range:3,attacks:1});assert.equal(PROG.bossExp,2);});

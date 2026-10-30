@@ -44,7 +44,7 @@ export const ARENA_TILE='floor-arena';
  */
 export const WILD_SPECIES:Record<string,string>={...LEGACY_WILD,sandshrew:'0027',growlithe:'0058',magnemite:'0081',onix:'0095',dratini:'0147',wooper:'0194',houndour:'0228',makuhita:'0296'};
 /** 7.3 boss: fixed numbers (working candidates, calibrated in 7.4). */
-export const BOSS={id:'boss',species:'arcanine',hp:80,damage:6,range:3,attacks:2};
+export const BOSS={id:'boss',species:'arcanine',hp:60,damage:4,range:3,attacks:1};
 /** Manual stat tiers copied from the fixed main map: E (melee), R (ranged), V5 chaser. */
 const TIERS:Record<EnemyAi,{hp:number;damage:number;range:number}>={melee:{hp:16,damage:4,range:1},ranged:{hp:6,damage:6,range:3},chase:{hp:6,damage:3,range:1}};
 export function mulberry32(seed:number):()=>number {

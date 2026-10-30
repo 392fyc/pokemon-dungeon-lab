@@ -5,6 +5,9 @@ import {
   skillTargets,
 } from '../../src/core/engine.ts';
 import {MOVE_DEFS,moveOf} from '../../src/core/moves.ts';
+import {BOSS} from '../../src/core/dungeon.ts';
+/** The boss attack count is a shared constant (current value 1); these tests need several hits per enemy phase, so they set 2 and restore it. */
+function withBossAttacks(n,fn){const was=BOSS.attacks;BOSS.attacks=n;try{return fn();}finally{BOSS.attacks=was;}}
 
 const row=(from,to,y=1)=>Array.from({length:to-from+1},(_,i)=>({x:from+i,y}));
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));
@@ -94,7 +97,7 @@ test('能力阶段有 ±3 上下限；帮助只提升房间内队友，走廊退
   })
 ));
 
-test('守住覆盖施用当回合的敌方阶段并持续三次；连续使用拒绝且不扣 PP',()=>{
+test('守住覆盖施用当回合的敌方阶段并持续三次；连续使用拒绝且不扣 PP',()=>withBossAttacks(2,()=>{
   const a=friend('A',2,1,20,{protect:5}),e=enemy('E',3,1,30,'melee',4);
   const ranged=enemy('R',2,4,30,'ranged',5,3),boss=enemy('Boss',1,1,40,'melee',3,3);boss.boss=true;
   let s=world({floor:rect(0,5,0,5),friends:[a],enemies:[e,ranged,boss]});
@@ -103,7 +106,7 @@ test('守住覆盖施用当回合的敌方阶段并持续三次；连续使用�
   s=play(s,{type:'wait'});assert.equal(s.units.A.hp,20);assert.equal(s.units.A.protect,1);
   s=play(s,{type:'wait'});assert.equal(s.units.A.hp,20);assert.equal(s.units.A.protect,0);
   s=play(s,{type:'wait'});assert.equal(s.units.A.hp,5); // melee 4 + ranged 5 + boss 两次各 3
-});
+}));
 
 test('守住后等待一回合即可再次使用',()=>{
   const a=friend('A',1,1,20,{protect:2}),e=enemy('E',2,1,20,'melee',4);
@@ -113,7 +116,7 @@ test('守住后等待一回合即可再次使用',()=>{
   s=use(s,'protect','A');assert.equal(s.units.A.protect,2);assert.equal(s.units.A.pp.protect,0);assert.equal(s.units.A.hp,20);
 });
 
-test('反击对每次相邻敌方命中各反射同额伤害；被守住挡掉或来自远处时不触发',()=>{
+test('反击对每次相邻敌方命中各反射同额伤害；被守住挡掉或来自远处时不触发',()=>withBossAttacks(2,()=>{
   let a=friend('A',1,1,20,{pursuit:2}),e1=enemy('E1',2,1,1,'melee',2),e2=enemy('E2',1,2,20,'melee',3);
   let s=world({floor:rect(0,4,0,4),friends:[a],enemies:[e1,e2]});
   s=use(s,'pursuit','A');assert.equal(s.units.E1.hp,0);assert.equal(s.units.E2.hp,17);assert.equal(s.units.A.hp,15);assert.equal(s.units.A.counter,2);
@@ -133,7 +136,7 @@ test('反击对每次相邻敌方命中各反射同额伤害；被守住挡掉�
   a=friend('A',2,1,20);a.counter=3;const boss=enemy('Boss',1,1,20,'melee',6,3);boss.boss=true;
   s=world({floor:rect(0,4,0,4),friends:[a],enemies:[boss]});s=play(s,{type:'wait'});
   assert.equal(s.units.A.hp,8);assert.equal(s.units.Boss.hp,8);assert.equal(s.units.A.counter,2);
-});
+}));
 
 test('吹飞遇墙或单位各造成 5 点撞击伤害；撞击不受守住影响也不触发反击',()=>withMove('testBlow',{range:'front',target:'teammates',power:null,effects:['blowaway']},()=>{
   const a=friend('A',0,1,20),b=friend('B',1,1,20);b.protect=3;b.counter=3;b.stages.def=3;

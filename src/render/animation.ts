@@ -1,4 +1,4 @@
-import {distance,key,type Command,type Item,type Pos,type World} from '../core/engine.ts';
+import {distance,key,plus,same,type Command,type Item,type Pos,type World} from '../core/engine.ts';
 import {moveOf} from '../core/moves.ts';
 /**
  * Stage 6.4 presentation: works out what happened in one round from the two saved states and the new log lines.
@@ -46,6 +46,49 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
   const vis = (p:Pos|null):p is Pos => !!p && seen.has(key(p));
   const order = (id:string) => { const i = b.queue.indexOf(id); return i >= 0 ? i : ENEMY_ORDER; };
   const explicit = (id:string) => id === b.leader ? cmd.action : cmd.override?.actor === id ? cmd.override.action : null;
+  /** A PP decrease identifies the move that really ran, including a partner's default move. */
+  const spentMove = (id:string):string|null => {
+    const before=b.units[id],after=a.units[id];if(!before||!after)return null;
+    return before.learned.find(move=>(before.pp[move]??0)>(after.pp[move]??0))??null;
+  };
+  const fxForMove = (move:string):'strong'|'line' => {
+    const range=moveOf(move)?.range;
+    return range==='front2'||range==='line10'?'line':'strong';
+  };
+  const chebyshev=(x:Pos,y:Pos)=>Math.max(Math.abs(x.x-y.x),Math.abs(x.y-y.y));
+  const floorCells=new Set(b.floor.map(key));
+  const inRoom=(p:Pos,r:{x:number;y:number;w:number;h:number})=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
+  const canSkillHit=(actorId:string,targetId:string,move:string):boolean=>{
+    const actor=b.units[actorId],target=b.units[targetId],actorAt=pos[actorId],targetAt=pos[targetId],spec=moveOf(move);
+    if(!actor||!target||!actorAt||!targetAt||!spec?.effects.includes('damage'))return false;
+    const allies=actor.side==='friend'?b.queue:b.enemies,opponents=actor.side==='friend'?b.enemies:b.queue;
+    const category=spec.target==='enemy'?target.side!==actor.side&&opponents.includes(targetId):
+      spec.target==='user'?targetId===actorId:
+      spec.target==='teammates'?target.side===actor.side&&targetId!==actorId&&allies.includes(targetId):
+      spec.target==='party'?target.side===actor.side&&allies.includes(targetId):
+      allies.includes(targetId)||opponents.includes(targetId);
+    if(!category)return false;
+    switch(spec.range){
+      case 'user':return targetId===actorId;
+      case 'front':return distance(actorAt,targetAt)===1;
+      case 'around':return targetId!==actorId&&chebyshev(actorAt,targetAt)===1;
+      case 'room':{
+        const room=b.rooms?.find(r=>inRoom(actorAt,r));
+        return room?inRoom(targetAt,room):chebyshev(actorAt,targetAt)<=2;
+      }
+      case 'front2':case 'line10':{
+        const range=spec.range==='front2'?2:10;
+        if(actorAt.x!==targetAt.x&&actorAt.y!==targetAt.y)return false;
+        const d=distance(actorAt,targetAt);if(d<1||d>range)return false;
+        const step={x:Math.sign(targetAt.x-actorAt.x),y:Math.sign(targetAt.y-actorAt.y)};let p=plus(actorAt,step);
+        while(!same(p,targetAt)){
+          if(!floorCells.has(key(p))||[...b.queue,...b.enemies].some(id=>id!==actorId&&id!==targetId&&hp[id]>0&&same(pos[id],p)))return false;
+          p=plus(p,step);
+        }
+        return true;
+      }
+    }
+  };
   const events:AnimEvent[] = [];
   const used = new Set<string>();
   let enemyCursor = -1;
@@ -71,23 +114,35 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
 
   const friendAttacker = (target:string):{id:string; fx:'strong'|'line'}|null => {
     for (const id of b.queue) {
-      if (used.has(id) || b.units[id].hp <= 0 || !pos[id]) continue;
+      if (b.units[id].hp <= 0 || !pos[id]) continue;
       const e = explicit(id);
+      const move=spentMove(id),spec=move?moveOf(move):undefined;
+      if(move&&spec?.effects.includes('damage')){
+        const repeatable=spec.range==='around'||spec.range==='room';
+        if((!used.has(id)||repeatable)&&canSkillHit(id,target,move)&&(!e||e.type!=='skill'||e.skill===move))return {id,fx:fxForMove(move)};
+        continue;
+      }
+      if(used.has(id))continue;
       if (e) {
         if (e.type === 'basic' && e.target === target)return {id,fx:'strong'};
-        if (e.type === 'skill' && e.target === target){const range=moveOf(e.skill)?.range;return {id,fx:range==='front2'||range==='line10'?'line':'strong'};}
       } else if (pos[target] && distance(pos[id]!, pos[target]!) === 1) return {id, fx:'strong'};
     }
     return null;
   };
-  const enemyAttacker = (target:string):{id:string; ranged:boolean}|null => {
+  const enemyAttacker = (target:string):{id:string; move:string|null}|null => {
     const t = pos[target];
     if (!t) return null;
+    // Room and around moves can hit several units; retain the same actual move for each target.
+    if(enemyCursor>=0){
+      const id=b.enemies[enemyCursor],move=spentMove(id),range=move?moveOf(move)?.range:undefined;
+      if(move&&(range==='room'||range==='around')&&canSkillHit(id,target,move))return {id,move};
+    }
     for (let i = enemyCursor + 1; i < b.enemies.length; i++) {
-      const id = b.enemies[i], e = b.units[id], p = pos[id];
+      const id = b.enemies[i], p = pos[id];
       if (!p || hp[id] <= 0) continue;
-      const d = distance(p, t), ranged = e.ai === 'ranged';
-      if (ranged ? (p.x === t.x || p.y === t.y) && d >= 1 && d <= (e.range ?? 3) : d === 1) { enemyCursor = i; return {id, ranged}; }
+      const move=spentMove(id),spec=move?moveOf(move):undefined;
+      if(move&&spec?.effects.includes('damage')&&canSkillHit(id,target,move)){enemyCursor=i;return {id,move};}
+      if(!move&&distance(p,t)===1){enemyCursor=i;return {id,move:null};}
     }
     return null;
   };
@@ -123,7 +178,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       if (at && (unit.side === 'friend' || vis(at))) {
         let attacker:string|null = null, from:Pos|null = null, fx:Fx = 'strong', by = '';
         if (unit.side === 'enemy') { const f = friendAttacker(id); if (f) { attacker = f.id; fx = f.fx; from = pos[f.id]; by = f.id; } }
-        else { const f = enemyAttacker(id); if (f) { by = f.id; if (vis(pos[f.id])) { attacker = f.id; from = pos[f.id]; fx = f.ranged ? 'line' : 'strong'; } else fx = null; } }
+        else { const f = enemyAttacker(id); if (f) { by = f.id; if (vis(pos[f.id])) { attacker = f.id; from = pos[f.id]; fx = f.move?fxForMove(f.move):'strong'; } else fx = null; } }
         // An unknown friendly attacker still ranks by the earliest unused queue slot; an unknown enemy goes after all friends.
         if (!by) by = unit.side === 'enemy' ? (b.queue.find(q => !used.has(q) && b.units[q].hp > 0) ?? b.queue[0]) : b.enemies[0] ?? id;
         if (unit.side === 'friend' && !by) by = id;

@@ -585,11 +585,19 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   assert.equal(await p.locator('#newgame-start').isDisabled(),true);
   await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();
   await p.locator('#depart').waitFor();await ready(p);
-  const pr=await p.evaluate(()=>window.trial.profile());
+   await p.locator('#tactic-base-P1').selectOption('followme');await ready(p);
+   await p.locator('#tactic-base-P2').selectOption('avoid');await ready(p);
+   const pr=await p.evaluate(()=>window.trial.profile());
   assert.deepEqual(pr.roster.map(i=>i.species),['treecko','mudkip']);assert.deepEqual(pr.team,['P1','P2']);assert.equal(pr.leader,'P1');assert.equal(pr.expeditions,0);
+   assert.deepEqual(pr.roster.map(i=>i.tactic),['followme','avoid'],'base tactics are saved per instance');
   const base1=await p.locator('#base').innerText()+await p.locator('#party').innerText();assert.match(base1,/木守宫/);assert.match(base1,/水跃鱼/);assert.match(base1,/树叶/);assert.doesNotMatch(base1,/leafage|watergun/);
    const campBeforeRun=await raw(p);await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
-  const s=await state(p);assert.equal(s.scenario,'expedition');assert.deepEqual(s.queue,['A','B']);assert.equal(s.units.A.species,'treecko');assert.equal(s.leader,'A');
+    let s=await state(p);assert.equal(s.scenario,'expedition');assert.deepEqual(s.queue,['A','B']);assert.equal(s.units.A.species,'treecko');assert.equal(s.leader,'A');assert.equal(s.units.A.tactic,'followme');assert.equal(s.units.B.tactic,'avoid');
+    assert.match(await p.locator('#goal-label').innerText(),/本局等级 Lv5 · 升级经验 0\/5/);assert.match(await p.locator('#goal-label').innerText(),/升到下一级需当前等级经验/);
+   assert.equal(await raw(p),campBeforeRun,'departure leaves the selected camp tactics in the saved profile');
+   const beforeMenu=structuredClone(s);await p.locator('#tactic-run-B').selectOption('wait');await p.waitForFunction(()=>window.trial.getState().units.B.tactic==='wait');
+   beforeMenu.units.B.tactic='wait';assert.deepEqual(await state(p),beforeMenu,'changing a maze tactic changes only that unit and does not advance a round');assert.equal(await raw(p),campBeforeRun);
+   await p.locator('#unit-card-B').hover();await p.waitForSelector('#unit-info');assert.match(await p.locator('#unit-info').innerText(),/原地待命/);
   assert.equal(await p.locator('#guide-card').count(),1);assert.equal(await p.locator('#enemy-hint').count(),1);
   await p.locator('#guide-close').click();assert.equal(await p.locator('#guide-card').count(),0);
   for(const k of ['ArrowRight','ArrowDown','ArrowLeft','ArrowUp']){await p.keyboard.press(k);await ready(p);if((await state(p)).round>0)break;}
@@ -597,8 +605,9 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   assert.ok((await p.locator('#recent-list li').count())>0,'recent events are visible');
   await p.reload();await p.locator('#title-continue').waitFor();
    assert.equal(await raw(p),campBeforeRun,'refresh preserves the exact pre-departure camp bytes');
-   await p.locator('#title-continue').click();await ready(p);assert.equal(await state(p),null);assert.equal(await p.locator('#depart').isEnabled(),true);assert.equal(await p.locator('#guide-card').count(),0,'the guide stays closed');
-   assert.deepEqual(errors,[]);return {roster:pr.roster.map(i=>i.species),guideOnce:true,refreshReturnsToCamp:true};
+    await p.locator('#title-continue').click();await ready(p);assert.equal(await state(p),null);assert.equal(await p.locator('#depart').isEnabled(),true);assert.equal(await p.locator('#guide-card').count(),0,'the guide stays closed');
+    assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(i=>i.tactic),['followme','avoid'],'unsettled maze tactic edits are discarded by refresh');
+    assert.deepEqual(errors,[]);return {roster:pr.roster.map(i=>i.species),baseTactics:['followme','avoid'],mazeEditNoTurn:true,tacticHover:true,refreshReturnsToCamp:true};
  }finally{await context.close();}
 });
 await test('7.1(b) 已有存档：新游戏需要确认，取消后原存档不变，可导出原记录',async()=>{
@@ -622,7 +631,7 @@ await test('7.1(b) 已有存档：新游戏需要确认，取消后原存档不�
   assert.deepEqual(errors,[]);return {cancelKeptOriginal:true,exportMatches:true,overwriteAfterConfirm:true};
  }finally{await context.close();}
 });
-await test('7.1 可读性：悬停敌人看信息、组合草稿显示执行顺序与默认行为',async()=>{
+await test('7.1/7.8 可读性：悬停敌人看等级与招式、组合草稿显示执行顺序与默认行为',async()=>{
  const {context,page:p,errors}=await setup('K1');
  try{
   await start(p);const s=await state(p);const h=s.units.H;
@@ -630,12 +639,48 @@ await test('7.1 可读性：悬停敌人看信息、组合草稿显示执行顺�
   const xs=s.floor.map(q=>q.x),ys=s.floor.map(q=>q.y),minX=Math.min(...xs),minY=Math.min(...ys),w=Math.max(...xs)-minX+1,hh=Math.max(...ys)-minY+1,c=Math.min(66,600/w,270/hh);
   await p.mouse.move(b.x+(340-w*c/2+(h.pos.x-minX+.5)*c)*b.width/680,b.y+(175-hh*c/2+(h.pos.y-minY+.5)*c)*b.height/350);
   await p.waitForSelector('#enemy-info');const info=await p.locator('#enemy-info').innerText();
-  assert.match(info,/H/);assert.match(info,/24\/24/);assert.match(info,/追击/);assert.match(info,/8/);
+  const {moveZh}=await import('../../src/core/names.ts');assert.match(info,/H/);assert.match(info,new RegExp(`等级 Lv${h.level}`));assert.ok(info.includes(`${h.hp}/${h.maxHp}`));assert.match(info,/作战方针：主动出击/);assert.match(info,/招式：/);
+  assert.ok(h.learned.length>0);for(const move of h.learned)assert.ok(info.includes(moveZh(move)),`enemy info shows ${move}`);
   await click(p,'arrange');await click(p,'partner-B');
   const order=await p.locator('#draft-order').innerText();assert.match(order,/→.*敌方/);
   assert.match(await p.locator('#draft-steps').innerText(),/默认行为/);
-  assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {inspect:true,orderLine:order};
+  assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {inspect:true,enemyLevel:h.level,enemyMoves:h.learned.map(moveZh),orderLine:order};
  }finally{await context.close();}
+});
+/* UI-only fixture: this starts directly at the legal evolution prompt so the browser check
+   proves the choice/defer controls work. It is not evidence of a battle level-up trigger. */
+await test('7.8 UI夹具：伊布进化选择与暂缓按钮实际可点击',async()=>{
+ const {createScenario}=await import('../../src/core/scenarios.ts');
+ const {speciesUnit}=await import('../../src/core/engine.ts');
+ const evolutionWorld=()=>{
+  const w=createScenario('K1','evolution-ui-fixture');
+  const pos=w.units.A.pos;
+  w.units.A=speciesUnit('A','eevee',20,pos);
+  w.phase='evolution';
+  w.pendingEvolutions=[{actor:'A',choices:['vaporeon','jolteon','flareon']}];
+  return w;
+ };
+ const first=await setup('K1');
+ try{
+  await startMemory(first.page,evolutionWorld());
+  assert.equal((await state(first.page)).phase,'evolution');
+  assert.match(await first.page.locator('#evolution-choice').innerText(),/伊布可以进化/);
+  assert.match(await first.page.locator('#evolution-choice').innerText(),/下次升级时再询问/);
+  for(const id of ['vaporeon','jolteon','flareon'])assert.equal(await first.page.locator('#evolve-'+id).count(),1);
+  await click(first.page,'evolve-vaporeon');
+  const chosen=await state(first.page);
+  assert.equal(chosen.phase,'playing');assert.equal(chosen.units.A.species,'vaporeon');assert.equal(chosen.round,0);
+  assert.deepEqual(first.errors,[]);
+ }finally{await first.context.close();}
+ const second=await setup('K1');
+ try{
+  await startMemory(second.page,evolutionWorld());
+  await click(second.page,'evolution-close');
+  const deferred=await state(second.page);
+  assert.equal(deferred.phase,'playing');assert.equal(deferred.units.A.species,'eevee');assert.equal(deferred.round,0);
+  assert.deepEqual(second.errors,[]);
+  return {uiOnlyFixture:true,choiceButtonApplied:true,deferButtonApplied:true,notCombatLevelUpEvidence:true};
+ }finally{await second.context.close();}
 });
 /* Stage 7.3: the boss floor, through the developer menu scenes (isolated storage). BOSS: whole floor shown, the team beside the boss. BOSSX: the team on the lobby exit.
    The mouse is moved over canvas cells with the same fixed 40 px cell geometry the other dungeon checks use. */
@@ -654,7 +699,8 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
   assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01,'the boss is drawn 1.5 times larger: '+v.boss.scale/v.leader.scale);assert.ok(v.boss.labels.includes('首领'),'the boss carries a name tag');
   await hoverCell(p,s.units.boss.pos.x,s.units.boss.pos.y);await p.waitForSelector('#enemy-info');
   const info=await p.locator('#enemy-info').innerText();
-  assert.match(info,/风速狗（首领）/);assert.ok(info.includes(`${s.units.boss.hp}/${s.units.boss.maxHp}`));assert.match(info,/不可招募、不会被吹飞/);
+  const {moveZh}=await import('../../src/core/names.ts'),boss=s.units.boss;assert.match(info,/风速狗（首领）/);assert.ok(info.includes(`${boss.hp}/${boss.maxHp}`));assert.match(info,new RegExp(`等级 Lv${boss.level}`));assert.match(info,/区域首领/);
+  for(const move of boss.learned)assert.ok(info.includes(moveZh(move)),`boss info shows ${move}`);assert.doesNotMatch(info,/不可招募/);
   await p.screenshot({path:artifact+'windows-boss-1-floor.png',fullPage:true});
   await click(p,'skill-roar');await cell(p,s.units.boss.pos.x,s.units.boss.pos.y);
   await p.waitForFunction(()=>document.getElementById('message').textContent.includes('首领不会被吹飞'));

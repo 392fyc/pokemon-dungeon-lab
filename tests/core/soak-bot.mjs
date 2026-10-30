@@ -40,7 +40,7 @@ function checkWorld(s,where){
   assert.ok(cells.has(key(u.pos)),`${at}: ${id} stands off the floor`);
   assert.ok(!taken.has(key(u.pos)),`${at}: ${id} overlaps ${taken.get(key(u.pos))} at ${key(u.pos)}`);taken.set(key(u.pos),id);}
  assert.ok(s.bag>=0,`${at}: bag ${s.bag}`);
- assert.ok(s.prog.level>=1&&s.prog.level<=PROG.maxLevel,`${at}: level ${s.prog.level}`);
+ assert.ok(s.prog.level>=5&&s.prog.level<=PROG.maxLevel,`${at}: level ${s.prog.level}`);
  assert.ok(s.prog.items.berry>=0&&s.prog.items.tonic>=0,`${at}: negative item count`);
  assert.equal(s.queue.filter(id=>s.camp.includes(id)).length,0,`${at}: member both in queue and camp`);
 }
@@ -88,7 +88,7 @@ function injectMemoryWorld(store,world,where){
 }
 
 /* ---------- the bot ---------- */
-export const stats=()=>({reachedBoss:0,bossDefeated:0,bossWipes:0,lobbyExits:0,wipes:0,lostPartners:0,paid:0,returned:0,goneForGood:0,bought:0,exchanged:0,doomedWipes:0,invites:0,accepted:0,rejected:0,swapped:0,levelUps:0,tmGot:0,tmBrought:0,spent:0,income:0,refund:0,waitSum:0,waitN:0,purseZeroByRescue:0,transits:0,cancelledTransits:0,berries:0,tonics:0,rests:0,guards:0,lines:0,switches:0,declined:0,rejections:0,probes:0,learned:0});
+export const stats=()=>({reachedBoss:0,bossDefeated:0,bossWipes:0,lobbyExits:0,wipes:0,lostPartners:0,paid:0,returned:0,goneForGood:0,bought:0,exchanged:0,doomedWipes:0,invites:0,accepted:0,rejected:0,swapped:0,levelUps:0,evolutions:0,tmGot:0,tmBrought:0,spent:0,income:0,refund:0,waitSum:0,waitN:0,purseZeroByRescue:0,transits:0,cancelledTransits:0,berries:0,tonics:0,rests:0,guards:0,lines:0,switches:0,declined:0,rejections:0,probes:0,learned:0});
 const adjacentEnemies=s=>s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&dist(u.pos,s.units[s.leader].pos)===1);
 function ppDeficit(u){return u.learned.some(k=>(u.pp[k]??0)<(u.maxPp[k]??0));}
 /** BFS over revealed floor cells only. Allies and enemies do not block the search (the bot swaps with allies and attacks enemies in the way). */
@@ -143,7 +143,7 @@ function stepToward(s,memo,target){
  * (3) fights the boss from range with the straight line first and in melee second, (4) gives up and walks out of the lobby exit when the fight is lost.
  * It is a test bot: the numbers are plausible, not optimal. It never changes any rule.
  */
-const dmgBonus=s=>s.prog?(s.prog.level-1)*PROG.damagePerLevel:0;
+const dmgBonus=s=>s.prog?Math.floor(Math.max(0,s.prog.level-5)/4):0;
 const ratioOf=u=>u.hp/u.maxHp;
 /** Intent: the boss is a threat worth saving PP for only while it still stands somewhere in this run (floors 1-2: not generated yet; floor 3: alive). */
 const bossLive=s=>!!s.dungeon?.boss&&!bossDefeated(s);
@@ -172,7 +172,7 @@ function roomMates(s,L){
 /** Can the enemy `e` hit member `L` this round: adjacent, or a ranged enemy with a clear straight line within its range (what the player sees on the board). */
 function foeReaches(s,e,L){
  if(dist(e.pos,L.pos)===1)return true;
- return (e.ai==='ranged'||e.boss)&&(e.pos.x===L.pos.x||e.pos.y===L.pos.y)&&dist(e.pos,L.pos)<=(e.range??3)&&rayClear(s,e.pos,L.pos,null);
+ return !e.asleep&&!e.waitOnly&&hitMoves(s,e,L).length>0;
 }
 /** A blow from L pushes `e` straight away from L: safe when the path ends at a wall or an enemy (they take collision damage) and not at one of our own. */
 function blowSafe(s,L,e){
@@ -294,7 +294,7 @@ function bossTurn(s,memo,B){
 function tacticalFight(s,L,members,adj,visible,saveSkills,mayUse){
  const out=[],act=a=>out.push({type:'round',action:a}),b=dmgBonus(s);
  const guard=movesWith(L,isProtect)[0];
- if(guard&&ratioOf(L)<=0.4&&!(L.protect>0)&&L.lastMove!==guard&&visible.some(e=>foeReaches(s,e,L)&&(e.ai==='ranged'||e.boss)))act({type:'skill',skill:guard,target:L.id});
+ if(guard&&ratioOf(L)<=0.4&&!(L.protect>0)&&L.lastMove!==guard&&visible.some(e=>foeReaches(s,e,L)&&rangedMoves(e).length>0))act({type:'skill',skill:guard,target:L.id});
  const hurtMates=members.filter(m=>m.id!==L.id&&ratioOf(m)<0.6);
  for(const k of pureBlow(L))for(const e of adj)
   if(!e.boss&&e.hp>6+b&&hurtMates.some(m=>dist(m.pos,e.pos)===1)&&blowSafe(s,L,e))act({type:'skill',skill:k,target:e.id});
@@ -384,10 +384,10 @@ function chooseInvite(s,memo){
 
 /* ---------- observation only (7.4 statistics): none of this changes a command, a state or the order of anything ---------- */
 const hpSum=s=>s.queue.reduce((a,i)=>a+s.units[i].hp,0),maxSum=s=>s.queue.reduce((a,i)=>a+s.units[i].maxHp,0);
-/** Damage that ordinary enemies would deal in this round: the same round is replayed on a copy whose boss has damage 0 (berry healing is added back). Null when not measurable. */
+/** Damage that ordinary enemies would deal in this round: the same round is replayed on a copy whose boss is set to wait only (berry healing is added back). Null when not measurable. */
 function otherDamage(s,cmd){
  if(cmd.action.type==='exchange')return null; // the companion leaves the queue; its HP is not damage
- const c=structuredClone(s);for(const u of Object.values(c.units))if(u.boss)u.damage=0;
+ const c=structuredClone(s);for(const u of Object.values(c.units))if(u.boss)u.waitOnly=true;
  const before=hpSum(c),r=applyCommand(c,cmd);if(!r.ok)return null;
  let heal=0;if(cmd.action.type==='use'&&cmd.action.item==='berry'){const t=s.units[cmd.action.target];heal=Math.min(PROG.berryHeal,t.maxHp-t.hp);}
  return before-hpSum(r.state)+heal;
@@ -440,11 +440,12 @@ async function probe(port,store,st,where){
 async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchange=false,fightBoss=false,policy='naive',x={},noRetreat=false,use={}){
  let store=ref.store;
  const memo={visited:{},declined:new Set(),lastSwitch:-99,fullInvites:0,reckless,doomed,useExchange,suicidal:false,fightBoss,policy,noRetreat,engaged:false,retreat:false,prepWait:0,gatherWait:0};
- let rounds=0,commands=0,levelBefore=1;const where=`${gameId}`;
+ let rounds=0,commands=0,evolutions=0;const forms=new Map();const where=`${gameId}`;
  for(;;){
   const s=store.state;
+  for(const [id,u] of Object.entries(s.units))if(u.side==='friend'&&u.species){if(forms.has(id)&&forms.get(id)!==u.species){evolutions++;st.evolutions++;}forms.set(id,u.species);}
   if(s.phase==='ended'){
-   st.levelUps+=s.prog.level-1;
+   st.levelUps+=s.prog.level-5;
    for(const t of s.end.tms){st.tmGot++;if(t.fate==='brought'||t.fate==='sent')st.tmBrought++;}
    if(s.end.outcome==='wipe')st.wipes++;
    if(s.end.outcome==='wipe'&&doomed)st.doomedWipes++;
@@ -462,14 +463,14 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    if(store.envelope?.profile){const before=store.envelope; // with a saved camp, a finished expedition must return there before another trial
     assert.equal(await store.newTrial(createMain('soak-direct')),false,where+': newTrial accepted over a based expedition');assert.deepEqual(store.envelope,before);}
    x.wipeFloor=s.end.outcome==='wipe'?s.dungeon.level:null;
-   return {outcome:s.end.outcome,rounds,commands,goal:s.goal,level:s.prog.level,floor:s.dungeon.level};
+   return {outcome:s.end.outcome,rounds,commands,goal:s.goal,level:s.prog.level,evolutions,floor:s.dungeon.level};
   }
   if(rounds>=ROUND_CAP||commands>=COMMAND_CAP){
    const L=s.units[s.leader],seen=new Set(s.seen),visited=memo.visited[s.dungeon.level]??new Set();
    const unseenFloor=s.floor.filter(c=>!seen.has(key(c))).length;
    const obj=objective(s,memo);
    if(process.env.SOAK_DEBUG)console.log(where,memo.trail.slice(-30).join(' '),s.log.slice(-6));
-   return {outcome:'timeout',rounds,commands,goal:s.goal,level:s.prog.level,floor:s.dungeon.level,
+   return {outcome:'timeout',rounds,commands,goal:s.goal,level:s.prog.level,evolutions,floor:s.dungeon.level,
     reason:`phase=${s.phase} floor=${s.dungeon.level} goal=${s.goal} bag=${s.bag} leader@${key(L.pos)} objective=${obj?obj.kind+'@'+key(obj.pos):'none'} visited=${visited.size}/${s.seen.length} seenCells unseenFloor=${unseenFloor} enemiesAlive=${s.enemies.filter(i=>aliveU(s.units[i])).length} cancelledTransits=${st.cancelledTransits}`};
   }
   // Forced-wipe variant: once G is done (or after round 60) every living member is brought to 1 HP in memory, and the bot stops defending.
@@ -482,6 +483,7 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
   commands++;(memo.trail??=[]).push(`${s.round}:${key(s.units[s.leader].pos)}:${s.phase}`);
   if(s.phase==='playing'&&s.dungeon.boss&&s.dungeon.level===3)observeBossFloor(s,x);
   if(commands%9===0)await probe(port,store,st,where);
+  if(s.phase==='evolution'){const r=await send(port,store,{type:'evolve',species:s.pendingEvolutions[0].choices[0]},st,where+' evolution');assert.ok(r.ok,r.error);continue;}
   if(s.phase==='invitation'){
    const {out}=chooseInvite(s,memo);st.invites++;let done=false;
    for(const cmd of out){const r=await send(port,store,cmd,st,where+' invite');if(r.ok){done=true;cmd.choice==='accept'?st.accepted++:st.rejected++;if(cmd.outgoing)st.swapped++;break;}}
@@ -563,7 +565,7 @@ async function baseTurn(port,store,seed,game,st,where,pay=false){
 }
 
 /** Forced-wipe variant: a profile with two ordinary partners (P3 pidgey, P4 zubat) next to the protected founder P1, and some money for rescues. */
-const kit=(id,species,learned)=>({id,species,learned,carry:learned.map(l=>l.move),protected:false});
+const kit=(id,species,learned)=>({id,species,learned,carry:learned.map(l=>l.move),protected:false,tactic:'together'});
 function doomedProfile(){
  const p=newGameProfile('chikorita','cyndaquil').profile;
  p.roster.push(kit('P3','pidgey',[{move:'tackle',pp:3},{move:'gust',pp:3}]),kit('P4','zubat',[{move:'absorb',pp:2},{move:'poisonfang',pp:1}]));

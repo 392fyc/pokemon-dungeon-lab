@@ -401,6 +401,8 @@ test('图鉴正式静态产物覆盖175种，保留旧名单、25招原文字节
   assertLegacyAndRosterArtifacts(roster, moveDoc, 'production');
   assertTeamProtectionData(moveDoc, names);
   assert.deepEqual(evolutionIds.map(id => names.species[id]), ['月桂叶', '大竺葵', '火岩鼠', '火暴兽', '蓝鳄', '大力鳄', '森林蜥蜴', '蜥蜴王', '力壮鸡', '火焰鸡', '沼跃鱼', '巨沼怪', '沼王', '黑鲁加', '铁掌力士']);
+  assert.equal(moveDoc.categories.ember,'Special');assert.equal(moveDoc.categories.extremespeed,'Physical');assert.equal(moveDoc.categories.reflect,'Status');
+  assert.deepEqual(Object.keys(moveDoc.categories).sort(),Object.keys(moveDoc.moves).sort());
   assert.equal(Object.keys(moveDoc.moves).length, 217, 'committed move table must contain 217 admitted moves without requiring snapshots');
   const gen1Moves = new Set(roster.species.filter(entry => Number(entry.dex) <= 151).flatMap(entry => entry.learnable.map(item => item.move)));
   assert.equal([...gen1Moves].filter(id => Object.hasOwn(moveDoc.moves, id)).length, 215, 'committed generation-one learnable moves must contain 215 admitted moves');
@@ -482,6 +484,9 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   assertTeamProtectionWikiRows(generated.moveDoc, wiki);
   const expectedTeamLearners = { quickguard: 9, reflect: 30, lightscreen: 45 };
   const showdownMoves = readJson(path.join(showdown, 'moves.json'));
+  assert.deepEqual(Object.keys(generated.moveDoc.categories).sort(),Object.keys(generated.moveDoc.moves).sort());
+  for(const id of Object.keys(generated.moveDoc.moves))assert.equal(generated.moveDoc.categories[id],showdownMoves[id].category,`${id} category from pinned Showdown`);
+  assert.equal(generated.moveDoc.categorySource.sha256,createHash('sha256').update(fs.readFileSync(path.join(showdown,'moves.json'))).digest('hex'));
   const generationPattern = /^(\d+)([A-Z])/;
   for (const [moveId, expectedCount] of Object.entries(expectedTeamLearners)) {
     const expectedIds = expected.speciesIds.filter(speciesId => {
@@ -553,4 +558,33 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   assert.notEqual(badExtraResult.status, 0, 'modified extra snapshot must be rejected');
   assert.match(`${badExtraResult.stdout}\n${badExtraResult.stderr}`, /sha|校验|hash/i);
   assert.deepEqual(listFiles(badExtraOut), [], 'extra checksum failure must write no output files');
+});
+
+
+test('名单缺失中间进化阶段而保留前后代时，导入明确拒绝', () => {
+  const python = `
+import importlib.util
+spec = importlib.util.spec_from_file_location("evolution_gap_test", ${JSON.stringify(importerPath)})
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+dex = {
+ "a": {"name": "A", "evos": ["B"]},
+ "b": {"name": "B", "prevo": "A", "evos": ["C"], "evoLevel": 16},
+ "c": {"name": "C", "prevo": "B", "evoLevel": 36},
+}
+data = {"pokedex": dex}
+try:
+    module.evolution_fields(data, [{"id": "a"}, {"id": "c"}])
+except module.ImportFailure as error:
+    assert "进化链有缺口" in str(error)
+else:
+    raise AssertionError("missing intermediate stage was silently admitted")
+complete = module.evolution_fields(data, [{"id": key} for key in dex])
+assert complete["b"]["prevo"] == "a" and complete["b"]["evoLevel"] == 16
+assert complete["c"]["prevo"] == "b" and complete["c"]["evoLevel"] == 36
+# An outside-roster ancestor is permitted when no earlier ancestor is included.
+isolated = module.evolution_fields(data, [{"id": "c"}])
+assert isolated["c"]["evoLevel"] == 1 and "prevo" not in isolated["c"]
+`;
+  assertImporterSucceeded(spawnSync('python', ['-I', '-c', python], { cwd: repoRoot, encoding: 'utf8', timeout: 15000 }), 'evolution chain gap');
 });

@@ -12,20 +12,23 @@ const floor=Array.from({length:6*6},(_,i)=>({x:i%6,y:Math.floor(i/6)}));
 function battle(seed,move){
   const moveIndex=MOVES.indexOf(move);
   const maxHp=20+((seed*9+moveIndex*11)%40);
-  const physicalDamage=1+((seed*3+moveIndex*2)%5);
-  const specialDamage=1+((seed*2+moveIndex*3)%5);
+  const physicalLevel=5+((seed*3+moveIndex*2)%12);
+  const specialLevel=5+((seed*2+moveIndex*3)%12);
   const enemyHp=240+((seed*17+moveIndex*23)%80);
   assert.ok(maxHp>=20&&maxHp<=59);
-  assert.ok(physicalDamage>0&&specialDamage>0);
+  assert.ok(physicalLevel>=5&&specialLevel>=5);
   assert.ok(enemyHp>0);
 
   const s=createMain(`team-guard-soak-${move}-${seed}`,false);
   const actor=friend('A',1,2,maxHp,{[move]:1});actor.maxHp=maxHp;
   const allyB=friend('B',1,1,maxHp+11);allyB.maxHp=maxHp+11;
   const allyC=friend('C',0,2,maxHp+23);allyC.maxHp=maxHp+23;
-  const foe=enemy('E',2,2,enemyHp,'melee',physicalDamage,1);
+  const foe=enemy('E',2,2,enemyHp,'melee',1,1);
   const rangedHp=enemyHp+13;
-  const ranged=enemy('R',1,4,rangedHp,'ranged',specialDamage,3);
+  const ranged=enemy('R',1,4,rangedHp,'ranged',1,3);
+  // Isolated paired experiment: explicit HP/levels and formal attack moves; neither old AI labels nor arbitrary damage numbers drive it.
+  Object.assign(foe,{hp:enemyHp,maxHp:enemyHp,level:physicalLevel,learned:['tackle'],pp:{tackle:4},maxPp:{tackle:4}});
+  Object.assign(ranged,{hp:rangedHp,maxHp:rangedHp,level:specialLevel,learned:['flamethrower'],pp:{flamethrower:4},maxPp:{flamethrower:4}});
   Object.assign(s,{floor,seen:floor.map(p=>`${p.x},${p.y}`),units:{A:actor,B:allyB,C:allyC,E:foe,R:ranged},queue:['A','B','C'],enemies:['E','R'],camp:[],leader:'A',points:[],goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[]});
   delete s.rooms;delete s.dungeon;delete s.prog;delete s.tms;delete s.purse;delete s.shop;delete s.exchange;
   return s;
@@ -92,7 +95,7 @@ test('bounded paired battles use each team guard move through applyCommand and r
       const initial=battle(seed,move),sameInitial=structuredClone(initial);
       assert.deepEqual(initial,sameInitial,'each pair starts from the same world bytes');
       const memberHp=initial.queue.map(id=>initial.units[id].hp);
-      conditions.push({partyHpTotal:memberHp.reduce((sum,n)=>sum+n,0),memberHpMin:Math.min(...memberHp),memberHpMax:Math.max(...memberHp),physicalDamage:initial.units.E.damage,specialDamage:initial.units.R.damage,meleeHp:initial.units.E.hp,rangedHp:initial.units.R.hp});
+      conditions.push({partyHpTotal:memberHp.reduce((sum,n)=>sum+n,0),memberHpMin:Math.min(...memberHp),memberHpMax:Math.max(...memberHp),physicalLevel:initial.units.E.level,specialLevel:initial.units.R.level,meleeHp:initial.units.E.hp,rangedHp:initial.units.R.hp});
       const withGuard=await simulate(initial,move,true);
       const withoutGuard=await simulate(sameInitial,move,false);
       guarded.push(withGuard);waited.push(withoutGuard);
@@ -101,11 +104,11 @@ test('bounded paired battles use each team guard move through applyCommand and r
     const withProtection=summary(guarded),openingWait=summary(waited);
     results.push({
       move,pairs:PAIRS_PER_MOVE,
-      conditions:{partyHpTotal:range('partyHpTotal'),individualHp:[Math.min(...conditions.map(c=>c.memberHpMin)),Math.max(...conditions.map(c=>c.memberHpMax))],meleeHp:range('meleeHp'),rangedHp:range('rangedHp'),physicalDamage:range('physicalDamage'),specialDamage:range('specialDamage')},
+      conditions:{partyHpTotal:range('partyHpTotal'),individualHp:[Math.min(...conditions.map(c=>c.memberHpMin)),Math.max(...conditions.map(c=>c.memberHpMax))],meleeHp:range('meleeHp'),rangedHp:range('rangedHp'),physicalLevel:range('physicalLevel'),specialLevel:range('specialLevel')},
       withProtection,openingWait,
       observedDifference:{fewerFullTeamWipes:openingWait.fullTeamWipes-withProtection.fullTeamWipes,meanRemainingHp:Number((withProtection.remainingHp.mean-openingWait.remainingHp.mean).toFixed(2))},
     });
   }
-  const report={kind:'team-guard-bounded-paired-battles',pairs:MOVES.length*PAIRS_PER_MOVE,runs:MOVES.length*PAIRS_PER_MOVE*2,maxRoundsPerRun:MAX_ROUNDS,scenario:{fixedMap:'6x6 open floor',partySize:3,enemyTypes:['melee physical','ranged special'],sameOpeningSlot:'protection move vs wait',laterPolicy:'basic attack when the leader is adjacent to melee foe; otherwise wait'},results};
+  const report={kind:'team-guard-bounded-paired-battles',pairs:MOVES.length*PAIRS_PER_MOVE,runs:MOVES.length*PAIRS_PER_MOVE*2,maxRoundsPerRun:MAX_ROUNDS,scenario:{fixedMap:'6x6 open floor',partySize:3,enemyMoves:['tackle (Physical)','flamethrower (Special)'],sameOpeningSlot:'protection move vs wait',laterPolicy:'basic attack when the leader is adjacent to melee foe; otherwise wait'},results};
   console.log(JSON.stringify(report,null,2));
 });

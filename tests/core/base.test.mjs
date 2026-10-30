@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {createExpedition,createMain,applyCommand,recruitUnit,closeOut,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {initialProfile,learnTm,setCarry,setTeam,squadOf,settleRun,profileProblem} from '../../src/core/base.ts';
-import {TrialStore,decode,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 import {SPECIES} from '../../src/core/roster.ts';
+import {TrialStore,decode,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 // Stage 6.5 rule tests. Every expected value below is a literal written from docs/玩法研究/基地与培养.md and the roster data
 // (charmander kit scratch+ember, squirtle tackle+watergun, bulbasaur tackle+seedbomb); none is computed with the code under test.
 
@@ -30,10 +31,12 @@ test('B1 the initial profile: three starters, their kits learned and carried, em
  assert.equal(profileProblem(p),null);
 });
 
-test('the Pokédex Arcanine entry does not make the regional boss a regular roster partner',()=>{
- assert.ok(SPECIES.arcanine);
- const p=initialProfile();p.roster[0].species='arcanine';
- assert.match(profileProblem(p),/首领物种arcanine不能作为普通伙伴/);
+test('Arcanine can be an ordinary roster member and a lost partner',()=>{
+ const p=initialProfile(),sp=SPECIES.arcanine;
+ p.roster[0]={...p.roster[0],species:'arcanine',learned:sp.kit.map(k=>({move:k.move,pp:k.pp})),carry:sp.kit.map(k=>k.move)};
+ assert.equal(profileProblem(p),null);
+ p.next=5;p.lost=[{id:'P4',species:'arcanine',expedition:1}];
+ assert.equal(profileProblem(p),null);
 });
 
 test('暂不出场的图鉴物种不能通过手改存档进入名册或救援池',()=>{
@@ -41,7 +44,7 @@ test('暂不出场的图鉴物种不能通过手改存档进入名册或救援�
   assert.equal(SPECIES[species].availability,'暂不出场');
   for(const destination of ['roster','rescue']){
    const p=initialProfile();
-   const inst={id:'P4',species,protected:false,learned:[],carry:[]};
+   const inst={id:'P4',species,protected:false,tactic:'together',learned:[],carry:[]};
    p.next=5;
    if(destination==='roster')p.roster.push(inst);
    else p.rescue.push({inst,paid:false,left:1});
@@ -113,7 +116,7 @@ test('B6 team: 1 to 3 distinct roster members, the leader is one of them',()=>{
  assert.equal(setTeam(p,['P1','P2'],'P3').ok,false);
 });
 
-test('B7 departure: the squad in selection order, full HP and PP, carried moves only, run level 1',()=>{
+test('B7 departure: the squad in selection order, full HP and PP, carried moves only, run level 5',()=>{
  let p=learnTm(withVault({protect:1}),'P1','protect').profile;
  p=setCarry(p,'P1',['scratch','protect']).profile;
  p=setTeam(p,['P3','P1'],'P1').profile;
@@ -124,7 +127,7 @@ test('B7 departure: the squad in selection order, full HP and PP, carried moves 
  assert.deepEqual([s.units.B.hp,s.units.B.maxHp,s.units.B.learned,s.units.B.moves],[19,19,['scratch','protect'],['scratch','protect']]);
  assert.deepEqual([s.units.B.pp,s.units.B.maxPp],[{scratch:3,protect:1},{scratch:3,protect:1}]);
  assert.deepEqual([s.units.A.hp,s.units.A.pp],[21,{tackle:3,seedbomb:1}]);
- assert.equal(s.prog.level,1);assert.equal(s.prog.exp,0);assert.equal(s.dungeon.base,true);
+ assert.equal(s.prog.level,5);assert.equal(s.prog.exp,0);assert.equal(s.dungeon.base,true);
 });
 
 test('B8 the swapped-out member keeps what it learned: a machine learned, then left off the team, is still learned after another run',()=>{
@@ -275,15 +278,17 @@ test('B19 tampered profiles and records are refused on load',()=>{
 });
 
 test('B20 decodeLegacy validates old ended unit/profile agreement and terminal machine records',()=>{
- const run=createExpedition('r',5,2,squadOf(initialProfile()));
- const finished=structuredClone(run);finished.phase='ended';finished.end=closeOut(finished,'normal');
- const raw=world=>JSON.stringify(legacyEnvelope(world));
+ const frozen=JSON.parse(readFileSync(new URL('./fixtures78/legacy-worlds.json',import.meta.url),'utf8'));
+ const finished=structuredClone(frozen.floor1);finished.phase='ended';finished.request=null;finished.anchor=null;
+ finished.end=closeOut(finished,'normal');
+ const raw=world=>JSON.stringify({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:3,current:world,recent:null,profile:structuredClone(frozen.profile)});
  assert.doesNotThrow(()=>decodeLegacy(raw(finished)));
  const wrongSpecies=structuredClone(finished);wrongSpecies.units.A.species='squirtle';
  assert.throws(()=>decodeLegacy(raw(wrongSpecies)),/结构损坏/);
  const wrongMoves=structuredClone(finished);wrongMoves.units.A.moves=['ember','scratch'];
  assert.throws(()=>decodeLegacy(raw(wrongMoves)),/结构损坏/);
- const withTm=ended();assert.doesNotThrow(()=>decodeLegacy(raw(withTm)));
+ const withTm=structuredClone(finished);withTm.tms=[{move:'protect',source:'target',fate:'held'}];withTm.bag=1;withTm.end=closeOut(withTm,'normal');
+ assert.doesNotThrow(()=>decodeLegacy(raw(withTm)));
  const wrongTm=structuredClone(withTm);wrongTm.end.tms[0].move='roar';
  assert.throws(()=>decodeLegacy(raw(wrongTm)),/结构损坏/);
  const missingTm=structuredClone(withTm);delete missingTm.end.tms;

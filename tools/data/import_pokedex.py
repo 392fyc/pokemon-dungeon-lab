@@ -638,6 +638,19 @@ def evolution_fields(data: dict, all_species: list[dict]) -> dict[str, dict]:
                 fail(f"Showdown prevo 引用了不存在的物种：{species_id} -> {prevo_name}")
             if prevo_id in included_ids:
                 in_roster_prevo[species_id] = prevo_id
+            else:
+                # The current 175-species snapshot has no broken in-roster chain.
+                # Do not silently treat a future gap as an unevolved base form.
+                ancestor_id = prevo_id
+                visited = {species_id}
+                while ancestor_id:
+                    if ancestor_id in visited:
+                        fail(f"Showdown prevo 出现循环：{species_id}")
+                    visited.add(ancestor_id)
+                    if ancestor_id in included_ids:
+                        fail(f"名单内进化链有缺口：{ancestor_id} -> ... -> {species_id}；请先补齐图鉴或明确规则")
+                    ancestor_name = pokedex[ancestor_id].get("prevo")
+                    ancestor_id = name_to_id.get(ancestor_name) if ancestor_name else None
         evos = entry.get("evos", [])
         if not isinstance(evos, list):
             fail(f"Showdown evos 不是列表：{species_id}")
@@ -1017,9 +1030,13 @@ def build_exceptions(admission: dict, exclusions: dict, unavailable_power: dict,
     return "\n".join(lines).rstrip() + "\n"
 
 
-def serialize_pmd(old_pmd: dict, new_specs: dict, baseline_snippets: dict[str, bytes]) -> bytes:
+def serialize_pmd(old_pmd: dict, new_specs: dict, baseline_snippets: dict[str, bytes], showdown_moves: dict) -> bytes:
     moves = dict(old_pmd["moves"])
     moves.update(new_specs)
+    categories = {move_id: showdown_moves.get(move_id, {}).get("category") for move_id in sorted(moves)}
+    for move_id, category in categories.items():
+        if category not in ("Physical", "Special", "Status"):
+            fail(f"固定Showdown快照缺少合法招式类别：{move_id} / {category!r}")
     root = {
         "note": "阶段7.8 官方招式与图鉴扩展招式数据，由 tools/data/import_pokedex.py 合并生成；旧25招对象按固定基线保留。仅用于私有构建。",
         "source": old_pmd["source"], "retrieved": old_pmd["retrieved"],
@@ -1027,6 +1044,8 @@ def serialize_pmd(old_pmd: dict, new_specs: dict, baseline_snippets: dict[str, b
         "supplementalSnapshotFile": PMD_EXTRA_NAME,
         "supplementalSnapshotSha256": PMD_EXTRA_SHA,
         "gamePriority": [GAME_OUTPUT[g][0] for g in GAME_PRIORITY],
+        "categorySource": {"snapshot": "showdown/moves.json", "sha256": INPUT_SHA["showdown/moves.json"]},
+        "categories": categories,
         "moves": dict(sorted(moves.items())),
         "candidates77b": {
             move_id: candidate for move_id, candidate in old_pmd["candidates77b"].items()
@@ -1120,7 +1139,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "tms": tm_names,
         "items": baseline_names["items"],
     }
-    pmd_bytes = serialize_pmd(old_pmd, new_specs, baseline_snippets)
+    pmd_bytes = serialize_pmd(old_pmd, new_specs, baseline_snippets, data["moves"])
 
     gen1_ids = {sp["id"] for sp in gen1}
     gen1_sprite_rows = [row for row in sprite_rows if row["id"] in gen1_ids]

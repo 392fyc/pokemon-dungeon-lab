@@ -5,48 +5,49 @@
  * All numbers below are WORKING CANDIDATES (map size, room counts, enemy counts, enemy stats), not final balance.
  */
 export type Cell={x:number;y:number};
-/** `boss` (7.3): the run carries the boss mark: themed floors, the new enemy pools, a lobby exit and the regional boss on the last floor. Absent = the 6.3-7.2 generator, byte for byte. */
+/** `boss` (7.3): the run carries the boss mark: themed floors, the new enemy pools, a lobby exit and the regional boss on the last floor. Absent = developer expedition using the first theme at level 5. */
 export type FloorParams={width:number;height:number;floors:number;boss?:boolean};
 export const DEFAULT_PARAMS:FloorParams={width:20,height:14,floors:2};
 import {ECON} from './economy.ts';
+import {SPECIES,BOSS_CONFIG,speciesMaxHp} from './roster.ts';
+export {BOSS_CONFIG} from './roster.ts';
 export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest'|'shop'|'exchange';
 export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
-export type EnemyAi='melee'|'ranged'|'chase';
-export type EnemySpec={id:string;species:string;ai:EnemyAi;hp:number;damage:number;range:number;pos:Cell;boss?:true};
+export type EnemySpec={id:string;species:string;level:number;hp:number;pos:Cell;boss?:true;asleep?:boolean};
 export type Room={x:number;y:number;w:number;h:number};
 export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[];rooms:Room[];
   /** Where the team first arrives from outside (level 1: the ordinary exit) or from above (the up stairs). */
-  arrival:Cell;up:Cell|null;down:Cell|null;points:PointSpec[];enemies:EnemySpec[];
+  arrival:Cell;up:Cell|null;down:Cell|null;points:PointSpec[];enemies:EnemySpec[];enemyAiRng:number;
   /** 6.4 recovery pickups (berry on every floor, tonic on floor 2). Kept apart from `points` and drawn from their own random stream, so the layout above is unchanged. */
   pickups:PointSpec[];
   /** 6.5 one-use rest point, floor 2 only, in the arrival room next to the up stairs. Kept apart from `pickups` and `points` so those lists are unchanged. */
   rest:PointSpec|null;
   /** 7.2 rare service cells (shop, exchanger) of this floor, own random stream, never part of `points`. The caller adds them only for runs that carry the services. */
   services:PointSpec[];
-  /** 7.3 (boss-marked runs only): the floor theme, and on the last floor the index of the boss room. Absent on the old path so old floors serialise unchanged. */
+  /** 7.3 (boss-marked runs only): the floor theme, and on the last floor the index of the boss room. Absent on developer expeditions without a boss. */
   theme?:ThemeId;bossRoom?:number};
-/** The five species the pre-7.3 generator draws enemies from. Kept as its own list so runs without the boss mark generate byte-identical floors. */
-export const LEGACY_WILD:Record<string,string>={pidgey:'0016',rattata:'0019',spearow:'0021',zubat:'0041',geodude:'0074'};
 export type ThemeId='moss'|'wet'|'ash';
-/** 7.3 floor themes (working candidates). Enemy numbers stay on the manual tiers; the theme changes the tier mix and the species pool only. */
-export const THEME_FLOORS:{theme:ThemeId;name:string;ais:EnemyAi[];pool:Partial<Record<EnemyAi,string[]>>;floorTile:string;wallTile:string}[]=[
-  {theme:'moss',name:'苔石洞',ais:['melee','ranged'],pool:{melee:['rattata','sandshrew','geodude'],ranged:['pidgey','spearow']},floorTile:'floor-stone',wallTile:'wall-rock'},
-  {theme:'wet',name:'潮湿水窟',ais:['melee','ranged','ranged'],pool:{melee:['onix','wooper'],ranged:['magnemite','zubat','dratini']},floorTile:'floor-wet',wallTile:'wall-wet'},
-  {theme:'ash',name:'灰烬裂谷',ais:['melee','chase','chase'],pool:{melee:['makuhita','geodude'],chase:['growlithe','houndour']},floorTile:'floor-ash',wallTile:'wall-basalt'},
+export const INITIAL_LEVEL=5;
+export const NORMAL_HP_MULTIPLIER=1;
+/** First-type partitions and level bands from the 7.8 working specification. */
+export const THEME_FLOORS:{theme:ThemeId;name:string;types:string[];levels:[number,number];count:number;floorTile:string;wallTile:string}[]=[
+  {theme:'moss',name:'苔石洞',types:['Normal','Grass','Bug','Rock','Ground','Flying'],levels:[5,6],count:4,floorTile:'floor-stone',wallTile:'wall-rock'},
+  {theme:'wet',name:'潮湿水窟',types:['Water','Ice','Electric','Poison','Psychic','Fairy'],levels:[8,11],count:4,floorTile:'floor-wet',wallTile:'wall-wet'},
+  {theme:'ash',name:'灰烬裂谷',types:['Fire','Fighting','Dark','Ghost','Dragon','Steel'],levels:[12,20],count:4,floorTile:'floor-ash',wallTile:'wall-basalt'},
 ];
-/** The theme a floor uses: boss-marked runs go moss, wet, ash; every other run keeps the original stone look. */
 export const themeOfLevel=(boss:boolean|undefined,level:number):ThemeId=>boss?THEME_FLOORS[Math.min(Math.max(level,1),THEME_FLOORS.length)-1].theme:'moss';
-/** The arena floor tile key used inside the boss room. */
 export const ARENA_TILE='floor-arena';
-/**
- * Wild species used for display, ids and SAVE VALIDATION only (generation uses `LEGACY_WILD` or a theme pool; battle numbers stay on the manual tiers below).
- * The union of the legacy five and every theme pool; each must be a non-starter species of src/data/roster.json (checked by a test); values are dex numbers.
- */
-export const WILD_SPECIES:Record<string,string>={...LEGACY_WILD,sandshrew:'0027',growlithe:'0058',magnemite:'0081',onix:'0095',dratini:'0147',wooper:'0194',houndour:'0228',makuhita:'0296'};
-/** 7.3 boss: fixed numbers (working candidates, calibrated in 7.4). */
-export const BOSS={id:'boss',species:'arcanine',hp:60,damage:4,range:3,attacks:1};
-/** Manual stat tiers copied from the fixed main map: E (melee), R (ranged), V5 chaser. */
-const TIERS:Record<EnemyAi,{hp:number;damage:number;range:number}>={melee:{hp:16,damage:4,range:1},ranged:{hp:6,damage:6,range:3},chase:{hp:6,damage:3,range:1}};
+export const themeCandidates=(theme:ThemeId)=>Object.values(SPECIES).filter(sp=>sp.availability!=='暂不出场'&&!sp.legendary&&THEME_FLOORS.find(t=>t.theme===theme)!.types.includes(sp.types![0]));
+export const eligibleSpecies=(level:number,boss=true):string[]=>{
+  const config=THEME_FLOORS[boss?Math.min(Math.max(level,1),THEME_FLOORS.length)-1:0];
+  return themeCandidates(config.theme).filter(sp=>sp.evoLevel<=config.levels[1]).map(sp=>sp.id);
+};
+export const WILD_SPECIES:Record<string,string>=Object.fromEntries([...new Set([...THEME_FLOORS.flatMap((_,i)=>eligibleSpecies(i+1)), 'geodude','pidgey','growlithe'])].map(id=>[id,SPECIES[id].dex]));
+/** Only identity lives here. All boss modifiers come from main-owned boss.json. */
+export const BOSS={id:'boss',species:'arcanine'} as const;
+export type EnemyStream='enemy-ai'|'enemy-level'|'enemy-species';
+const STREAM_TAGS:Record<EnemyStream,number>={'enemy-ai':0xA24BAED5,'enemy-level':0x9FB21C65,'enemy-species':0xC13FA9A9};
+export const streamSeed=(seed:number,level:number,tag:EnemyStream)=>(Math.imul(seed>>>0,0x9E3779B1)^Math.imul(level,0x85EBCA6B)^STREAM_TAGS[tag])>>>0;
 export function mulberry32(seed:number):()=>number {
   let a=seed>>>0;
   return ()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};
@@ -132,17 +133,29 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
   if(level===1)place('goal',pick(free(pick(others))));
   if(level===floors){const spots=free(pick(others));place('item',spots.length?pick(spots):fallback());}
   // 5. Enemies: never in the arrival room, never next to the stairs or points; far from the arrival when room allows.
-  const themed=boss?THEME_FLOORS[Math.min(level,THEME_FLOORS.length)-1]:null;
-  const ais:EnemyAi[]=themed?themed.ais:level===1?['melee','ranged']:['melee','ranged','chase'];
-  const species=Object.keys(LEGACY_WILD);const enemies:EnemySpec[]=[];
+  const themed=THEME_FLOORS[boss?Math.min(level,THEME_FLOORS.length)-1:0];
+  const speciesPool=eligibleSpecies(level,boss);
+  if(!speciesPool.length)throw Error(`No eligible species for floor ${level}`);
+  const speciesRng=mulberry32(streamSeed(seed,level,'enemy-species'));
+  const levelRng=mulberry32(streamSeed(seed,level,'enemy-level'));
+  let enemyAiRng=streamSeed(seed,level,'enemy-ai');
+  const sleepRng=mulberry32(enemyAiRng);
+  const enemies:EnemySpec[]=[];
   const anchors=points.map(p=>p.pos);
-  ais.forEach((ai,n)=>{
+  for(let n=0;n<themed.count;n++){
     const pool=rooms.slice(1).flatMap(roomCells).filter(c=>!used.has(k(c))&&!inBoss(c)&&anchors.every(a=>dist(a,c)>=2));
     const far=[6,4,2].map(m=>pool.filter(c=>dist(c,start)>=m)).find(l=>l.length>0)??pool;
-    const pos=far.length||!bossFloor?pick(far):fallback();used.add(k(pos));
-    enemies.push({id:`w${level}${'abc'[n]}`,species:pick(themed?themed.pool[ai]!:species),ai,...TIERS[ai],pos});
-  });
-  if(bossPos)enemies.push({id:BOSS.id,species:BOSS.species,ai:'melee',hp:BOSS.hp,damage:BOSS.damage,range:BOSS.range,pos:bossPos,boss:true});
+    const pos=far.length?pick(far):fallback();used.add(k(pos));
+    const species=speciesPool[Math.floor(speciesRng()*speciesPool.length)];
+    const lower=Math.max(themed.levels[0],SPECIES[species].evoLevel),upper=themed.levels[1];
+    const enemyLevel=boss?lower+Math.floor(levelRng()*(upper-lower+1)):INITIAL_LEVEL;
+    const asleep=sleepRng()<0.25;enemyAiRng=(enemyAiRng+0x6D2B79F5)>>>0;
+    enemies.push({id:`w${level}${'abcd'[n]}`,species,level:enemyLevel,hp:speciesMaxHp(species,enemyLevel,NORMAL_HP_MULTIPLIER),pos,asleep});
+  }
+  if(bossPos){
+    const traits=BOSS_CONFIG[BOSS.species],enemyLevel=Math.max(themed.levels[1]+traits.levelBonus,SPECIES[BOSS.species].evoLevel);
+    enemies.push({id:BOSS.id,species:BOSS.species,level:enemyLevel,hp:speciesMaxHp(BOSS.species,enemyLevel,traits.hpMultiplier),pos:bossPos,boss:true,asleep:false});
+  }
   // 6. Pickups (6.4 working candidate): one berry per floor, plus one tonic on floor 2. Own random stream; never on a point or an enemy; outside the arrival room when possible.
   const prng=mulberry32((Math.imul(seed>>>0,0x7FEB352D)^Math.imul(level,0x846CA68B)^0x1B873593)>>>0);
   const pickups:PointSpec[]=[];
@@ -164,5 +177,5 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const pool=outside.length?outside:floor.filter(c=>!used.has(k(c))&&!inBoss(c));
     const pos=pool[Math.floor(srng()*pool.length)];used.add(k(pos));services.push({pos:{x:pos.x,y:pos.y},kind,used:false});
   }
-  return {level,width:W,height:H,floor,rooms,arrival:level===1?start:up!,up,down,points,enemies,pickups,rest,services,...(boss?{theme:themed!.theme}:{}),...(bossFloor?{bossRoom}:{})};
+  return {level,width:W,height:H,floor,rooms,arrival:level===1?start:up!,up,down,points,enemies,enemyAiRng,pickups,rest,services,...(boss?{theme:themed!.theme}:{}),...(bossFloor?{bossRoom}:{})};
 }

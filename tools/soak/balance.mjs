@@ -15,18 +15,14 @@ import path from 'node:path';
 import {playSeed,stats,GAMES,ROUND_CAP} from '../../tests/core/soak-bot.mjs';
 import {ECON} from '../../src/core/economy.ts';
 import {ALL_TM_MOVES} from '../../src/core/roster.ts';
-import {BOSS} from '../../src/core/dungeon.ts';
+import {BOSS_CONFIG} from '../../src/core/dungeon.ts';
 
 const args=process.argv.slice(2),opt=(name,def)=>{const i=args.indexOf('--'+name);return i>=0&&args[i+1]!==undefined?args[i+1]:def;};
 const SEEDS=+opt('seeds',30),POLICIES=opt('policy','naive,tactical').split(',').map(s=>s.trim()).filter(Boolean);
 for(const p of POLICIES)if(!['naive','tactical','tactical-stand'].includes(p)){console.error(`unknown policy ${p}`);process.exit(2);}
-// Experiment switches (this process only; the constants in src/ are never edited): --boss hp=60,damage=4,attacks=1  and  --sweep.
-// save.ts checks a boss unit's maxHp/damage/range against the same BOSS object, so mutating it in-process keeps saves and loads consistent (confirmed by the runs themselves: every save is read back).
-const BOSS_DEFAULT={hp:BOSS.hp,damage:BOSS.damage,attacks:BOSS.attacks};
-const parseBoss=s=>Object.fromEntries(String(s??'').split(',').filter(Boolean).map(kv=>{const [k,v]=kv.split('=');if(!(k in BOSS_DEFAULT)||!Number.isInteger(+v)||+v<1){console.error(`bad --boss entry ${kv}`);process.exit(2);}return [k,+v];}));
-const setBoss=o=>Object.assign(BOSS,BOSS_DEFAULT,o);
+// The old hp/damage/attacks sweep described a retired combat model. Do not silently report those switches as applied.
+if(args.includes('--boss')||args.includes('--sweep'))throw new Error('7.8已取消旧首领hp/damage/attacks扫描；本工具按当前boss.json共用招式模型运行');
 const NO_PAY=args.includes('--no-pay'),COMPARE=args.includes('--rescue-compare');
-const SWEEP=args.includes('--sweep'),BOSS_ARG=parseBoss(opt('boss',''));
 const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,15);
 const OUT=opt('out',`.tmp/lane-main/balance-${stamp}.json`);
 
@@ -47,7 +43,8 @@ function summarize(results){
  return {seeds:results.length,games:total,
   outcome:{normal:by('normal'),wipe:by('wipe'),timeout:by('timeout')},goalDone:count(games,g=>g.goal),
   rounds:{mean:mean(rounds),median:median(rounds),min:rounds.length?Math.min(...rounds):null,max:rounds.length?Math.max(...rounds):null},
-  levels:Object.fromEntries([1,2,3,4,5].map(l=>[l,count(games,g=>g.level===l)])),
+  levels:Object.fromEntries([...new Set(games.map(g=>g.level))].sort((a,b)=>a-b).map(l=>[l,count(games,g=>g.level===l)])),
+  evolutions:{total:sum(games,g=>g.evolutions??0),games:count(games,g=>(g.evolutions??0)>0)},
   boss:{runsWithBoss:bossGames.length,reached:count(bossGames,g=>g.x.reached),defeated:defeated.length,wipedOnBossFloor:count(bossGames,g=>g.x.bossWipe),
    bossHpLeft:(h=>({mean:mean(h),min:h.length?Math.min(...h):null,max:h.length?Math.max(...h):null,games:h.length}))(bossGames.filter(g=>g.x.reached&&g.x.bossHpLeft!==null).map(g=>g.x.bossHpLeft)),
    lobbyExit:count(bossGames,g=>g.x.lobbyExit),retreatDecided:count(bossGames,g=>g.x.retreat),
@@ -141,24 +138,7 @@ async function runPolicy(policy,payRescue=!NO_PAY){
 }
 const rowGames=(results,policy)=>results.flatMap(r=>r.games.map((g,n)=>({policy,seed:r.seed,doomed:r.doomed,...g,boss:r.extra[n]})));
 fs.mkdirSync(path.dirname(OUT),{recursive:true});
-if(SWEEP){
- const policies=args.includes('--policy')?POLICIES:['tactical-stand','tactical'];
- const report={generated:new Date().toISOString(),mode:'sweep',seedsPerPolicy:SEEDS,gamesPerSeed:GAMES,roundCap:ROUND_CAP,cells:[]};
- const rows=['| 策略 | attacks | hp | damage | 首领击败率（击败/到达） | 到达首领层率（到达/带首领局） | 普通种子全灭率 | 超时（卡住） | 平均轮数 |','|---|---|---|---|---|---|---|---|---|'],detail=[];
- for(const policy of policies)for(const attacks of [2,1])for(const hp of [80,60,48])for(const damage of [6,4]){
-  setBoss({hp,damage,attacks});
-  const r=await runPolicy(policy),o=r.ordinary,b=o.boss;
-  rows.push(`| ${policy} | ${attacks} | ${hp} | ${damage} | ${pct(b.defeated,b.reached)}（${b.defeated}/${b.reached}） | ${pct(b.reached,b.runsWithBoss)}（${b.reached}/${b.runsWithBoss}） | ${pct(o.outcome.wipe,o.games)}（${o.outcome.wipe}/${o.games}） | ${o.outcome.timeout} | ${fmt(o.rounds.mean)} |`);
-  report.cells.push({policy,boss:{hp,damage,attacks},seconds:r.secs,ordinary:o,forcedWipeSeeds:r.forcedWipeSeeds,games:rowGames(r.results,policy)});
-  if(hp===80&&damage===6&&attacks===2)detail.push(`### 当前数值（hp 80 / damage 6 / attacks 2）策略 ${policy}\n\n`+section('普通种子',o));
-  console.error(`cell done ${policy} a${attacks} hp${hp} d${damage} ${r.secs.toFixed(0)}s`);
- }
- setBoss({});
- fs.writeFileSync(OUT,JSON.stringify(report));
- console.log(`## 首领数值扫描（每组 ${SEEDS} 个种子 × ${GAMES} 局，普通种子口径）\n\n`+rows.join('\n')+'\n\n'+detail.join('\n'));
- console.log(`JSON 已写入 ${OUT}`);
-}else if(COMPARE){
- setBoss(BOSS_ARG);
+if(COMPARE){
  const runs={};for(const pay of [true,false])runs[pay?'pay':'nopay']=await runPolicy('tactical',pay);
  const row=(name,r)=>{const o=r.ordinary,b=o.boss,u=burden(r.results.filter(x=>!x.doomed)),t=u.st;
   return `| ${name} | ${o.games} | ${pct(o.outcome.normal,o.games)} | ${pct(o.outcome.wipe,o.games)} | ${o.outcome.timeout} | ${pct(b.defeated,b.reached)}（${b.defeated}/${b.reached}） | ${t.lost} | ${t.paid} | ${t.spent} | ${t.returned} | ${t.gone} | ${fmt(t.wait,2)} | ${fmt(o.rescue.account.mean)} | ${t.purseZero} | ${fmt(u.rosterLast,2)} |`;};
@@ -176,9 +156,8 @@ if(SWEEP){
  fs.writeFileSync(OUT,JSON.stringify(report));
  console.log(md.join('\n'));console.log(`JSON 已写入 ${OUT}`);
 }else{
- setBoss(BOSS_ARG);
- const report={generated:new Date().toISOString(),seedsPerPolicy:SEEDS,gamesPerSeed:GAMES,roundCap:ROUND_CAP,boss:{hp:BOSS.hp,damage:BOSS.damage,attacks:BOSS.attacks},policies:{}};
- const md=[`## 7.4 平衡长测（每种策略 ${SEEDS} 个种子 × ${GAMES} 局，回合上限 ${ROUND_CAP}；首领 hp ${BOSS.hp} / damage ${BOSS.damage} / attacks ${BOSS.attacks}）\n`];
+ const report={generated:new Date().toISOString(),seedsPerPolicy:SEEDS,gamesPerSeed:GAMES,roundCap:ROUND_CAP,boss:BOSS_CONFIG.arcanine,policies:{}};
+ const md=[`## 7.8 平衡长测（每种策略 ${SEEDS} 个种子 × ${GAMES} 局，回合上限 ${ROUND_CAP}；首领等级加值 ${BOSS_CONFIG.arcanine.levelBonus} / HP倍率 ${BOSS_CONFIG.arcanine.hpMultiplier} / 共用名单招式）\n`];
  for(const policy of POLICIES){
   const r=await runPolicy(policy);
   report.policies[policy]={seconds:r.secs,all:r.all,ordinary:r.ordinary,forcedWipeSeeds:r.forcedWipeSeeds,games:rowGames(r.results,policy),

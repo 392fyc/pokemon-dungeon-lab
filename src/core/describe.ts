@@ -3,6 +3,7 @@ import {SKILL_CN,key,type Action,type Skill,type TraceStep,type Unit,type World}
 import {SPECIES} from './roster.ts';
 import {MOVE_DEFS,moveOf,type MoveRange} from './moves.ts';
 import {speciesZh,moveZh,typeZh,itemZh} from './names.ts';
+import {TACTIC_LABELS,isTactic,type Tactic} from './tactics.ts';
 
 /** Chinese species name, or the unit id when the unit has no species (fixed-map fixtures). */
 export const unitName=(u:Unit|undefined,fallback=''):string=>u?.species?speciesZh(u.species):fallback;
@@ -53,20 +54,23 @@ export function stepRows(s:World,steps:TraceStep[]):{id:string;text:string}[] {
   return steps.map(t=>({id:t.id,text:`${unitLabel(s.units[t.id],t.id)}：${t.failed?`原定“${actionText(s,t.id,t.action)}”已不成立，改为等待`:actionText(s,t.id,t.action)}${t.explicit?'':'（默认行为）'}`}));
 }
 
-export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;behavior:string;damage:string;note:string};
+export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];note:string};
+export type TeammateInfo={id:string;name:string;level:number|null;tactic:Tactic;moves:string[]};
+const tacticFor=(u:Unit):Tactic=>isTactic(u.tactic)?u.tactic:u.side==='enemy'?'gofoes':'together';
+const moveRows=(u:Unit):string[]=>u.learned.map(m=>`${moveZh(m)}（${moveSummary(m)}） PP ${u.pp[m]??0}/${u.maxPp[m]??u.pp[m]??0}`);
 /** What a revealed enemy shows. Returns null for anything the player cannot see yet (unrevealed cell, fallen, or not an enemy). */
 export function enemyInfo(s:World,id:string):EnemyInfo|null {
   const u=s.units[id];
   if(!u||u.side!=='enemy'||u.hp<=0||!u.pos||!s.seen.includes(key(u.pos)))return null;
   const sp=u.species?SPECIES[u.species]:undefined;
-  const range=u.range??3;
-  if(u.boss)return {id,name:`${unitName(u)}（首领）`,types:'',hp:u.hp,maxHp:u.maxHp,behavior:`首领：不移动；每个敌方阶段攻击2次，每次先打相邻的同行（按队列顺序），没有相邻目标时打${range}格内射线无遮挡的最近同行；第一次打倒目标后，第二次重新选目标`,
-    damage:`${u.damage}，每个敌方阶段2次（守住可保护自身）`,note:'不可招募、不会被吹飞。击败后得到一张招式机，带回基地才算数。'};
-  const behavior=u.ai==='ranged'?`远程：同一行或列、${range}格以内、中间没有墙和单位时射击；不移动`
-    :u.ai==='chase'?'追击：够不着时每轮向最近的同行走一步；相邻后近战攻击':'近战：只攻击上下左右相邻的同行；不移动';
-  const damage=u.damage===undefined?'未知':`${u.damage}（守住可保护自身）`;
-  return {id,name:unitLabel(u,id),types:sp?(sp.types??[]).map(typeZh).join('／'):'',hp:u.hp,maxHp:u.maxHp,behavior,damage,
-    note:u.species?'击败后有概率发出加入邀请。':''};
+  const tactic=tacticFor(u),note=u.boss?'区域首领；招式与 PP 来自同物种名单数据。':u.species?'击败后有概率发出加入邀请。':'';
+  return {id,name:u.boss?`${unitName(u)}（首领）`:unitLabel(u,id),types:sp?(sp.types??[]).map(typeZh).join('／'):'',hp:u.hp,maxHp:u.maxHp,
+    level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:moveRows(u),note};
+}
+/** Read-only detail for a teammate card while it is hovered. */
+export function teammateInfo(s:World,id:string):TeammateInfo|null {
+  const u=s.units[id];if(!u||u.side!=='friend')return null;
+  return {id,name:unitLabel(u,id),level:typeof u.level==='number'?u.level:null,tactic:tacticFor(u),moves:moveRows(u)};
 }
 
 const escapeRe=(t:string)=>t.replace(/[.*+?^$|()[\]{}\\]/g,'\\$&');

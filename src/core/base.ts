@@ -2,8 +2,9 @@
  * 6.5 base profile: the part of the player's progress that outlives one run. Pure data and pure functions; no storage, no renderer.
  * Specification: docs/玩法研究/基地与培养.md. All numbers (two carried moves, three-member squads) are working candidates.
  */
-import {SPECIES,speciesOf,learnableMove,ALL_TM_MOVES,STARTER_IDS,BOSS_SPECIES,type KitMove} from './roster.ts';
+import {SPECIES,speciesOf,learnableMove,ALL_TM_MOVES,STARTER_IDS,type KitMove} from './roster.ts';
 import type {World,SquadMember} from './engine.ts';
+import {isTactic,type Tactic} from './tactics.ts';
 import {legacySpeciesMove} from './legacy-moves.ts';
 import {speciesZh,moveZh} from './names.ts';
 import {ECON} from './economy.ts';
@@ -11,7 +12,7 @@ import {ECON} from './economy.ts';
  * One roster member. `learned` is everything it has permanently learned; `carry` names the (at most two) moves it brings into a run.
  * `protected` (7.2) marks a founding member (the initial two, or the three starters of an old profile): it never goes missing in a wipe.
  */
-export type Instance={id:string;species:string;learned:KitMove[];carry:string[];protected:boolean};
+export type Instance={id:string;species:string;learned:KitMove[];carry:string[];protected:boolean;tactic:Tactic};
 /** 7.2 a partner waiting in the rescue pool: `left` is L (expeditions until it is lost, unpaid) or X (expeditions until it returns, paid). Its personal moves stay in `inst`. */
 export type RescueEntry={inst:Instance;paid:boolean;left:number};
 /** 7.2 a partner lost for good, and the expedition count when it happened. */
@@ -21,11 +22,11 @@ export type LostRecord={id:string;species:string;expedition:number};
  * instance id, used to refill an empty squad.
  */
 export type Profile={expeditions:number;next:number;roster:Instance[];vault:Record<string,number>;team:string[];leader:string;account:number;rescue:RescueEntry[];lost:LostRecord[];origin:string};
-export type BaseAction={type:'learn';inst:string;move:string}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string};
+export type BaseAction={type:'learn';inst:string;move:string}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string}|{type:'tactic';inst:string;tactic:Tactic};
 export type BaseResult={ok:true;profile:Profile}|{ok:false;error:string};
 export const MAX_CARRY=2,MAX_TEAM=3;
 const kitOf=(species:string):KitMove[]=>SPECIES[species].kit.map(k=>({move:k.move,pp:k.pp}));
-const newInstance=(id:string,species:string,isProtected=false):Instance=>({id,species,learned:kitOf(species),carry:SPECIES[species].kit.map(k=>k.move),protected:isProtected});
+const newInstance=(id:string,species:string,isProtected=false,tactic:Tactic='together'):Instance=>({id,species,learned:kitOf(species),carry:SPECIES[species].kit.map(k=>k.move),protected:isProtected,tactic});
 const clone=<T>(v:T):T=>structuredClone(v);
 const fail=(error:string):BaseResult=>({ok:false,error});
 
@@ -73,6 +74,12 @@ export function setTeam(original:Profile,team:string[],leader:string):BaseResult
   if(!team.includes(leader))return fail('主控必须在出发队伍中');
   const p=clone(original);p.team=[...team];p.leader=leader;return {ok:true,profile:p};
 }
+/** A partner's tactic is a camp setting. It is copied into a run and written back only at settlement. */
+export function setTactic(original:Profile,instId:string,tactic:unknown):BaseResult {
+  if(!isTactic(tactic))return fail('作战方针不合法');
+  const inst=instanceOf(original,instId);if(!inst)return fail('没有这只伙伴');
+  const p=clone(original);instanceOf(p,instId)!.tactic=tactic;return {ok:true,profile:p};
+}
 /** 7.2 rescue payment at the base: C from the account; the partner becomes "paid, waiting X". Refused (nothing changes) when the account falls short. */
 export function payRescue(original:Profile,instId:string):BaseResult {
   const entry=original.rescue.find(r=>r.inst.id===instId);
@@ -91,11 +98,11 @@ export function purseProblem(p:Profile,purse:number):string|null {
   return null;
 }
 export function applyBase(p:Profile,a:BaseAction):BaseResult {
-  return a.type==='learn'?learnTm(p,a.inst,a.move):a.type==='carry'?setCarry(p,a.inst,a.moves):a.type==='rescue'?payRescue(p,a.inst):setTeam(p,a.team,a.leader);
+  return a.type==='learn'?learnTm(p,a.inst,a.move):a.type==='carry'?setCarry(p,a.inst,a.moves):a.type==='rescue'?payRescue(p,a.inst):a.type==='tactic'?setTactic(p,a.inst,a.tactic):setTeam(p,a.team,a.leader);
 }
 /** The squad for a new run, in queue order. Carried moves come from the instance's learned list (max PP included). */
 export function squadOf(p:Profile):{members:SquadMember[];leader:number} {
-  const members=p.team.map(id=>{const i=instanceOf(p,id)!;return {inst:i.id,species:i.species,carry:i.carry.map(n=>i.learned.find(l=>l.move===n)!),protected:i.protected};});
+  const members=p.team.map(id=>{const i=instanceOf(p,id)!;return {inst:i.id,species:i.species,carry:i.carry.map(n=>i.learned.find(l=>l.move===n)!),protected:i.protected,tactic:i.tactic??'together'};});
   return {members,leader:p.team.indexOf(p.leader)};
 }
 /**
@@ -133,14 +140,17 @@ export function settleRun(profile:Profile|null,w:World):Profile|null {
   for(const id of members){
     const u=w.units[id];
     if(u.inst!==undefined){
+      const carried=instanceOf(p,u.inst);
+      if(carried)carried.tactic=u.tactic??'together';
       if(lost.has(id)){const at=p.roster.findIndex(i=>i.id===u.inst);if(at>=0){const [inst]=p.roster.splice(at,1);p.rescue.push({inst,paid:false,left:ECON.window});}}
       continue;
     }
     // A run started before the base existed: its A/B/C are the three initial starters, not new people.
     const old=fresh&&legacy[id]?instanceOf(p,legacy[id]):undefined;
-    if(old&&old.species===u.species)continue;
-    if(!u.species||!speciesOf(u.species))continue;
-    const inst=newInstance(`P${p.next}`,u.species);p.next++;
+    if(old&&(u.entrySpecies??u.species)===old.species){old.tactic=u.tactic??'together';continue;}
+    const species=u.entrySpecies??u.species;
+    if(!species||!speciesOf(species))continue;
+    const inst=newInstance(`P${p.next}`,species,false,u.tactic??'together');p.next++;
     if(lost.has(id))p.rescue.push({inst,paid:false,left:ECON.window});else p.roster.push(inst);
   }
   for(const t of e.tms??[])if(t.fate==='brought'||t.fate==='sent')p.vault[t.move]=(p.vault[t.move]??0)+1;
@@ -210,12 +220,11 @@ const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Ar
 const nat=(v:unknown):v is number=>Number.isInteger(v)&&(v as number)>=0;
 /** One instance (roster or pool): structure, species, learned moves from the species' learnable list, carried moves. Returns the problem text, or null. */
 function instProblem(i:unknown,ids:Set<string>,wantProtected:boolean|null):string|null {
-  if(!obj(i)||typeof i.id!=='string'||typeof i.species!=='string'||!Array.isArray(i.learned)||!Array.isArray(i.carry)||typeof i.protected!=='boolean')return '名册实例结构错误';
-  if(Object.keys(i).some(k=>!['id','species','learned','carry','protected'].includes(k)))return `实例${i.id}含有不认识的字段`;
+  if(!obj(i)||typeof i.id!=='string'||typeof i.species!=='string'||!Array.isArray(i.learned)||!Array.isArray(i.carry)||typeof i.protected!=='boolean'||(i.tactic!==undefined&&!isTactic(i.tactic)))return '名册实例结构错误';
+  if(Object.keys(i).some(k=>!['id','species','learned','carry','protected','tactic'].includes(k)))return `实例${i.id}含有不认识的字段`;
   if(ids.has(i.id))return `实例编号${i.id}重复`;ids.add(i.id);
   if(!/^P(\d+)$/.test(i.id))return `实例编号${i.id}格式错误`;
   if(wantProtected===false&&i.protected)return `救援池里的${i.id}不能带受保护标记`;
-  if(Object.prototype.hasOwnProperty.call(BOSS_SPECIES,i.species))return `首领物种${i.species}不能作为普通伙伴`;
   if(!speciesOf(i.species))return `实例${i.id}的物种不在名册数据中`;
   if(speciesOf(i.species)?.availability==='暂不出场')return `物种${i.species}暂不出场，不能作为伙伴`;
   const names=new Set<string>();
@@ -245,7 +254,7 @@ export function profileProblem(v:unknown):string|null {
     if(left<1||left>(r.paid?ECON.paidWait:ECON.window))return `救援池里${(r.inst as Instance).id}的剩余次数不合法`;
   }
   for(const l of v.lost as unknown[]){
-    if(!obj(l)||typeof l.id!=='string'||typeof l.species!=='string'||!nat(l.expedition)||!speciesOf(l.species)||Object.prototype.hasOwnProperty.call(BOSS_SPECIES,l.species))return '失去记录结构错误';
+    if(!obj(l)||typeof l.id!=='string'||typeof l.species!=='string'||!nat(l.expedition)||!speciesOf(l.species))return '失去记录结构错误';
     if(!/^P(\d+)$/.test(l.id)||ids.has(l.id))return `失去记录的编号${l.id}不合法或重复`;ids.add(l.id);
   }
   let maxNo=0;for(const id of ids)maxNo=Math.max(maxNo,Number(id.slice(1)));
@@ -264,7 +273,7 @@ export function profileFitsWorld(p:Profile|undefined,w:World):boolean {
   for(const id of [...w.queue,...w.camp,...(w.exchange?.sent?[w.exchange.sent]:[])]){
     const u=w.units[id];if(u.inst===undefined)continue;
     if(!p||seen.has(u.inst))return false;seen.add(u.inst);
-    const inst=instanceOf(p,u.inst);if(!inst||inst.species!==u.species||!u.moves||(u.protected===true)!==inst.protected)return false;
+    const inst=instanceOf(p,u.inst);if(!inst||inst.species!==(u.entrySpecies??u.species)||!u.moves||(u.protected===true)!==inst.protected||(u.tactic!==undefined&&!isTactic(u.tactic)))return false;
     if(u.moves.length!==u.learned.length||new Set(u.moves).size!==u.moves.length)return false;
     for(let n=0;n<u.moves.length;n++){const move=u.moves[n],l=inst.learned.find(x=>x.move===move);if(!l||u.learned[n]!==move||u.maxPp[move]!==l.pp)return false;}
   }

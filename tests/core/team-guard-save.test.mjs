@@ -1,12 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {createExpedition,jumpToFloor,applyCommand,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {createScenario} from '../../src/core/scenarios.ts';
 import {initialProfile,squadOf} from '../../src/core/base.ts';
 import {decodeLegacy,TrialStore,BUILD_ID} from '../../src/core/save.ts';
 import {ALL_TM_MOVES,LEGACY_TM_MOVES,TM_MOVES,TM_MOVES_V3,SPECIES,tmPool} from '../../src/core/roster.ts';
 
-const envelope=(current,profile=initialProfile())=>({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:3,current,recent:null,profile});
+const frozen=JSON.parse(readFileSync(new URL('./fixtures78/legacy-worlds.json',import.meta.url),'utf8'));
+const copy=value=>structuredClone(value);
+const envelope=(current,profile=frozen.profile)=>({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:3,current,recent:null,profile:copy(profile)});
 const rawOf=(current,profile)=>JSON.stringify(envelope(current,profile));
 function memory(raw=null){let value=raw,writes=0;return {getItem:()=>value,setItem:(_key,next)=>{value=next;writes++;},raw:()=>value,writes:()=>writes};}
 function targetRun(seed,tmPoolVersion){
@@ -24,7 +27,7 @@ function blocked(raw){
 }
 
 test('7.7b keeps both historical draw lists and enables the ten-move list only with a boss tmPool:3 mark',()=>{
-  assert.equal(RULE_VERSION,'trial-rules-3');assert.equal(CONTENT_VERSION,'trial-content-3');
+  assert.equal(RULE_VERSION,'trial-rules-4');assert.equal(CONTENT_VERSION,'trial-content-4');
   assert.deepEqual([...LEGACY_TM_MOVES],['protect','whirlwind','roar']);
   assert.deepEqual([...TM_MOVES],['protect','whirlwind','roar','dragontail','helpinghand','mudslap','terablast']);
   assert.deepEqual([...TM_MOVES_V3],[...TM_MOVES,'quickguard','reflect','lightscreen']);
@@ -68,7 +71,7 @@ test('a new base departure creates tmPool:3 in memory and leaves the saved camp 
 });
 
 test('friend guard durations load at zero when absent and preserve valid stored values through decode and reload',async()=>{
-  const old=targetRun(1,undefined);
+  const old=copy(frozen.floor1);
   for(const unit of Object.values(old.units))if(unit.side==='friend'){delete unit.reflect;delete unit.lightscreen;}
   const oldRaw=rawOf(old);
  const loadedOld=decodeLegacy(oldRaw);
@@ -88,23 +91,23 @@ test('friend guard durations load at zero when absent and preserve valid stored 
 test('guard durations reject invalid values and any enemy carrying either friend-only field',()=>{
   const invalid=[];
   for(const [field,value] of [['reflect',-1],['reflect',11],['reflect',1.5],['lightscreen',-1],['lightscreen',11],['lightscreen','1']]){
-    const world=targetRun(1,3);const friend=Object.values(world.units).find(u=>u.side==='friend');friend[field]=value;invalid.push(world);
+    const world=copy(frozen.floor1),friend=Object.values(world.units).find(u=>u.side==='friend');friend[field]=value;invalid.push(world);
   }
-  for(const field of ['reflect','lightscreen']){const world=targetRun(1,3);const enemy=Object.values(world.units).find(u=>u.side==='enemy');enemy[field]=0;invalid.push(world);}
+  for(const field of ['reflect','lightscreen']){const world=copy(frozen.floor1),enemy=world.units[world.enemies[0]];enemy[field]=0;invalid.push(world);}
   for(const world of invalid)blocked(rawOf(world));
 });
 
 test('tmPool only accepts version 3 on a boss run; old missing fields keep their current content and draw checks',()=>{
-  const old=targetRun(1,undefined);
+  const old=copy(frozen.floor1);old.tms=[{move:'protect',source:'target',fate:'held'}];old.bag=1;
   assert.doesNotThrow(()=>decodeLegacy(rawOf(old)));
   old.tms[0].move='terablast';assert.doesNotThrow(()=>decodeLegacy(rawOf(old)));
 
-  const unknown=targetRun(1,undefined);unknown.dungeon.tmPool=2;blocked(rawOf(unknown));
-  const ordinary=createExpedition('team-guard-no-boss-pool',12,2,squadOf(initialProfile()),0);
+  const unknown=copy(frozen.floor1);unknown.dungeon.tmPool=2;blocked(rawOf(unknown));
+  const ordinary=copy(frozen.twoFloor);
   ordinary.dungeon.tmPool=3;blocked(rawOf(ordinary));
-  const wrongMove=targetRun(1,undefined);wrongMove.tms=[{move:'reflect',source:'target',fate:'held'}];wrongMove.bag=1;blocked(rawOf(wrongMove));
+  const wrongMove=copy(frozen.floor1);wrongMove.tms=[{move:'reflect',source:'target',fate:'held'}];wrongMove.bag=1;blocked(rawOf(wrongMove));
 
-  const current=targetRun(1,3);assert.equal(current.tms[0].move,'lightscreen');
+  const current=copy(frozen.floor1);current.dungeon.tmPool=3;current.tms=[{move:'reflect',source:'target',fate:'held'}];current.bag=1;
   assert.doesNotThrow(()=>decodeLegacy(rawOf(current)));
 });
 
@@ -117,7 +120,7 @@ test('the warehouse accepts and learns each new machine through a persisted base
   });
   for(let i=0;i<picks.length;i++){
     const {move,species}=picks[i],id=`P${4+i}`;
-    profile.roster.push({id,species:species.id,learned:species.kit.map(k=>({...k})),carry:species.kit.map(k=>k.move),protected:false});
+    profile.roster.push({id,species:species.id,learned:species.kit.map(k=>({...k})),carry:species.kit.map(k=>k.move),protected:false,tactic:'together'});
     profile.vault[move]=1;
   }
   profile.next=7;

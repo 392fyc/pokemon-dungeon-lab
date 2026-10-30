@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {createExpedition,applyCommand,jumpToFloor,rngStep,closeOut,key,PROG} from '../../src/core/engine.ts';
+import {createExpedition,applyCommand,jumpToFloor,rngStep,closeOut,key,PROG,speciesUnit} from '../../src/core/engine.ts';
 import {initialProfile,newGameProfile,squadOf,settleRun} from '../../src/core/base.ts';
 import {TrialStore,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
-import {generateFloor,farthestRoom,roomCells,center,THEME_FLOORS,themeOfLevel,LEGACY_WILD,WILD_SPECIES,BOSS,serviceRoll} from '../../src/core/dungeon.ts';
+import {generateFloor,farthestRoom,roomCells,center,THEME_FLOORS,themeOfLevel,eligibleSpecies,WILD_SPECIES,BOSS,serviceRoll} from '../../src/core/dungeon.ts';
 import {LEGACY_TM_MOVES,TM_MOVES,tmPool,BOSS_SPECIES,SPECIES,learnableMove} from '../../src/core/roster.ts';
 import {NAME_TABLE,speciesZh,moveZh,tmZh} from '../../src/core/names.ts';
 import {enemyInfo,localizeLog} from '../../src/core/describe.ts';
@@ -42,21 +42,17 @@ test('D2 the eight new species are not starters, have a kit of 1-2 moves and a n
  assert.deepEqual(kitOf('houndour'),[['ember',2],['roar',2]]);
  assert.deepEqual(kitOf('makuhita'),[['tackle',3],['whirlwind',2]]);
 });
-test('D3 gate: at least 2 of the new species have push in the kit and at least 2 have guard (shellder failed the gate and onix replaced it)',()=>{
- const pools=new Set(THEME_FLOORS.flatMap(t=>Object.values(t.pool).flat()));
+test('D3 established push and guard kits remain available in the expanded type-based encounter pools',()=>{
  assert.deepEqual(NEW8.filter(id=>by[id].kit.some(k=>['dragontail','roar','whirlwind'].includes(k.move))),['dratini','houndour','makuhita']);
  assert.deepEqual(NEW8.filter(id=>by[id].kit.some(k=>['defensecurl','harden'].includes(k.move))),['sandshrew','onix']);
- assert.ok(by.shellder,'the full Pokédex now includes shellder');
- assert.ok(!NEW8.includes('shellder')&&!pools.has('shellder'),'the previous appearance-pool gate still selects onix instead of shellder');
-});
-test('D4 the established encounter pool stays fixed; Arcanine is in the Pokédex but remains boss-only',()=>{
- const pools=new Set(THEME_FLOORS.flatMap(t=>Object.values(t.pool).flat()));
+ const pools=new Set([1,2,3].flatMap(level=>eligibleSpecies(level)));
  for(const id of NEW8)assert.ok(pools.has(id),id);
- assert.deepEqual(Object.keys(LEGACY_WILD),['pidgey','rattata','spearow','zubat','geodude']);
- assert.deepEqual(Object.keys(WILD_SPECIES).sort(),[...new Set([...Object.keys(LEGACY_WILD),...pools])].sort());
- for(const id of Object.keys(LEGACY_WILD))assert.ok(id in WILD_SPECIES);
+ assert.ok(pools.has('shellder'),'the old eight-species appearance gate is superseded by first-type themes');
+});
+test('D4 Arcanine can be an ordinary encounter; the boss designation is a unit flag',()=>{
+ const pools=new Set([1,2,3].flatMap(level=>eligibleSpecies(level)));
  for(const id of pools)assert.equal(WILD_SPECIES[id],by[id].dex,id);
- assert.ok(!('arcanine' in WILD_SPECIES));assert.deepEqual(Object.keys(BOSS_SPECIES),['arcanine']);assert.equal(by.arcanine.dex,'0059');assert.equal(BOSS_SPECIES.arcanine,by.arcanine.dex);
+ assert.equal(WILD_SPECIES.arcanine,'0059');assert.deepEqual(Object.keys(BOSS_SPECIES),['arcanine']);
 });
 test('D5 the Chinese name table has the eight new species, the boss and the four new machine moves',()=>{
  assert.deepEqual(NEW8.map(speciesZh),['穿山鼠','卡蒂狗','小磁怪','大岩蛇','迷你龙','乌波','戴鲁比','幕下力士']);
@@ -107,12 +103,12 @@ test('T4 with the boss mark, T and the shop reach the four new machines (fixed s
 });
 
 /* ---------- L: floors and themes ---------- */
-test('L1 without the boss mark, 2-floor runs generate the same floors for seeds 1-50 (hash recorded before the change)',()=>{
- const out=[];
- for(let seed=1;seed<=50;seed++){const fl=[];for(const level of [1,2])fl.push(generateFloor(seed,level,{width:20,height:14,floors:2}));out.push(createHash('sha256').update(JSON.stringify(fl)).digest('hex'));}
- assert.deepEqual(out.slice(0,3),['41d9a6f6cd24fe78f5cf2264e4898b68e71c133745d37a5358417bade9f85a44','f64e7926e1dd87e604099735e4786fadfcd2457de816e95c65933ca434d9bf35','b75d81caaeebe18373ef2473d3c2bcbae50b3003afb60ce4bf295344a8048a9f']);
- assert.equal(createHash('sha256').update(out.join('\n')).digest('hex'),'9928ed52afc38563d9c9acddc23f9acf9b6c1b4cb324114e9fa092ebb6bd9463');
- for(let seed=1;seed<=50;seed++){const g=generateFloor(seed,2,{width:20,height:14,floors:2});assert.equal(g.theme,undefined);assert.equal(g.bossRoom,undefined);assert.ok(g.enemies.every(e=>e.boss===undefined&&e.species in LEGACY_WILD),'old path draws from the legacy five');}
+test('L1 two-floor developer runs remain deterministic and have no regional boss',()=>{
+ for(let seed=1;seed<=50;seed++)for(const level of [1,2]){
+  const options={width:20,height:14,floors:2},g=generateFloor(seed,level,options);
+  assert.deepEqual(g,generateFloor(seed,level,options));assert.equal(g.theme,undefined);assert.equal(g.bossRoom,undefined);
+  assert.equal(g.enemies.length,3);assert.ok(g.enemies.every(e=>!e.boss&&e.level===5&&eligibleSpecies(level,false).includes(e.species)));
+ }
 });
 test('L1b the old generator path and the departure with 2 floors never carry the boss mark',()=>{
  assert.equal(createExpedition('l1b',5,2,base(),0).dungeon.boss,undefined);
@@ -120,21 +116,15 @@ test('L1b the old generator path and the departure with 2 floors never carry the
  assert.equal(createExpedition('l1b',5,3).dungeon.boss,undefined,'no base, no boss');
  assert.equal(createExpedition('l1b',5,3,base(),0,false).dungeon.boss,undefined);
 });
-test('L2 boss-marked runs go 苔石洞, 潮湿水窟, 灰烬裂谷, with the tier mix and species pools of the theme table (seeds 1-200)',()=>{
- const pools=[{melee:['rattata','sandshrew','geodude'],ranged:['pidgey','spearow']},{melee:['onix','wooper'],ranged:['magnemite','zubat','dratini']},{melee:['makuhita','geodude'],chase:['growlithe','houndour']}];
- const mix=[['melee','ranged'],['melee','ranged','ranged'],['melee','chase','chase']];
- assert.deepEqual(THEME_FLOORS.map(t=>t.name),['苔石洞','潮湿水窟','灰烬裂谷']);assert.deepEqual(THEME_FLOORS.map(t=>t.theme),['moss','wet','ash']);
- assert.deepEqual([1,2,3].map(l=>themeOfLevel(true,l)),['moss','wet','ash']);assert.equal(themeOfLevel(false,3),'moss');
+test('L2 themed floors choose three normal encounters from their eligible first-type pools',()=>{
+ assert.deepEqual(THEME_FLOORS.map(t=>t.name),['苔石洞','潮湿水窟','灰烬裂谷']);
+ assert.deepEqual([1,2,3].map(l=>themeOfLevel(true,l)),['moss','wet','ash']);
  for(let seed=1;seed<=200;seed++)for(let level=1;level<=3;level++){
   const g=generateFloor(seed,level,FLOORS3),normal=g.enemies.filter(e=>!e.boss);
-  assert.equal(g.theme,['moss','wet','ash'][level-1]);
-  assert.deepEqual(normal.map(e=>e.ai),mix[level-1],`seed ${seed} floor ${level}`);
-  normal.forEach(e=>assert.ok(pools[level-1][e.ai].includes(e.species),`seed ${seed} floor ${level}: ${e.species} as ${e.ai}`));
+  assert.equal(g.theme,['moss','wet','ash'][level-1]);assert.equal(normal.length,3);
+  for(const e of normal)assert.ok(eligibleSpecies(level).includes(e.species));
   assert.equal(g.enemies.filter(e=>e.boss).length,level===3?1:0);
  }
- // the enemy numbers stay on the tier table: no hit-point multiplier per theme
- const g2=generateFloor(1,2,FLOORS3);assert.deepEqual(g2.enemies.map(e=>[e.ai,e.hp,e.damage]),[['melee',16,4],['ranged',6,6],['ranged',6,6]]);
- const g3=generateFloor(1,3,FLOORS3);assert.deepEqual(g3.enemies.map(e=>[e.id,e.species,e.ai,e.hp,e.damage]),[['w3a','makuhita','melee',16,4],['w3b','growlithe','chase',6,3],['w3c','houndour','chase',6,3],['boss','arcanine','melee',60,4]]);
 });
 const bossOf=g=>g.enemies.filter(e=>e.boss);
 test('L3 floor 3: exactly one exit in the lobby, no down stairs, one boss at the centre of the farthest room, nothing else in the boss room, T outside it (seeds 1-200)',()=>{
@@ -167,80 +157,68 @@ test('L4 floor 3: all floor cells are connected and the boss room can be reached
 });
 
 /* ---------- B: boss rules ---------- */
-/** A boss floor on an open row: the real run's units are replaced by plain fixtures so every number is a literal. */
-/** Runs `fn` with the boss attack count set to `n` (the shared BOSS object), restoring it afterwards. */
-function withBossAttacks(n,fn){const was=BOSS.attacks;BOSS.attacks=n;try{return fn();}finally{BOSS.attacks=was;}}
-/* The hand-built boss below keeps the historical 80 HP / 6 damage on purpose: those are the numbers every literal in the B tests was written for, and they are
- * still a legal saved boss (save.ts BOSS_HISTORY), so the fixtures also exercise that old saves keep loading. The current numbers are pinned in the generator test and 'boss constants'. */
-function arena({boss=[4],bossHp=80,units,floor=row(9),exit=null}={}){
- const s=jumpToFloor(createExpedition('b',1,3,base(),0),3);
+/** Open-row arena retains the current generated boss kit, level and modifiers. */
+function arena({boss=[4],bossHp=71,units,floor=row(9),exit=null}={}){
+ const s=jumpToFloor(createExpedition('b',1,3,base(),0),3),bossUnit=structuredClone(s.units.boss);
  for(const id of s.enemies)delete s.units[id];
  delete s.units.A;delete s.units.B;delete s.rooms;
  s.floor=floor;s.seen=floor.map(key);s.enemies=['boss'];s.points=exit?[{pos:exit,kind:'exit',used:false}]:[];
- s.units.boss={...enemy('boss',boss[0],1,bossHp,'melee',6,3),maxHp:80,species:'arcanine',boss:true};
+ s.units.boss={...bossUnit,hp:bossHp,pos:pos(boss[0])};
  Object.assign(s.units,units);s.queue=Object.keys(units).filter(i=>units[i].side==='friend');s.leader=s.queue[0];s.camp=[];
+ for(const id of s.queue)s.units[id].tactic='wait';
  s.prog.rng=7;return s;
 }
+const resolveInvites=s=>{while(s.phase==='invitation')s=applyCommand(s,{type:'invite',choice:'reject'}).state;return s;};
 const A=(x,hp=20,pp={tackle:2,roar:2})=>friend('A',x,1,hp,pp);
 const B=(x,hp=20,pp={protect:2})=>friend('B',x,1,hp,pp);
 const round=(s,action,override)=>{const r=applyCommand(s,{type:'round',action,...(override?{override}:{})});assert.equal(r.ok,true,r.error);return r.state;};
-test('B1 defeating only the boss sends no invitation and moves the recruit stream by exactly one step',()=>{
+test('B1 defeating the boss draws a machine then a normal Arcanine recruitment offer',()=>{
  const s=arena({bossHp:1,units:{A:A(3),B:B(2)}});
- const after=round(s,{type:'basic',target:'boss'});
- assert.equal(after.units.boss.hp,0);assert.deepEqual(after.invitations,[]);assert.equal(after.phase,'playing');
- assert.equal(s.prog.rng,7);
- assert.equal(after.prog.rng,1831565820,'stream state 7 stepped once (value 0.0117)');
- assert.equal(after.prog.made,0);
+ // Seed 1: the first value chooses the machine, the second succeeds at the 30% invitation draw.
+ s.prog.rng=1;const after=round(s,{type:'basic',target:'boss'});
+ assert.equal(after.units.boss.hp,0);assert.equal(after.prog.rng,rngStep(rngStep(1).state).state);
+ const offer=after.invitations[0];assert.ok(offer);assert.equal(offer.unit.species,'arcanine');assert.equal(offer.unit.boss,undefined);
+ assert.equal(offer.unit.maxHp,30+after.prog.level-5);assert.equal(offer.unit.hp,Math.floor(offer.unit.maxHp/2));
+ assert.equal(s.prog.rng,1);
 });
 test('B2 push on the boss is refused with the Chinese reason and costs no PP',()=>{
  const s=arena({units:{A:A(3),B:B(2)}});
  const r=applyCommand(s,{type:'round',action:{type:'skill',skill:'roar',target:'boss'}});
- assert.equal(r.ok,false);assert.equal(r.error,'首领不会被吹飞；本轮未执行');assert.deepEqual(r.state,s);assert.equal(s.units.A.pp.roar,2);assert.equal(s.units.boss.pos.x,4);
+ assert.equal(r.ok,false);assert.match(r.error,/首领.*吹飞；本轮未执行/);assert.deepEqual(r.state,s);assert.equal(s.units.A.pp.roar,2);assert.equal(s.units.boss.pos.x,4);
 });
-test('B3 with two attacks per round the boss hits twice for 6, never moves, and does not attack when everyone is out of reach and out of line',()=>withBossAttacks(2,()=>{
- const s=arena({units:{A:A(3),B:B(0)}});
- const hit=round(s,{type:'wait'});
- assert.equal(hit.units.A.hp,8,'two attacks of 6 on the adjacent member');assert.equal(hit.units.B.hp,20);assert.deepEqual(hit.units.boss.pos,{x:4,y:1});
- const far=arena({units:{A:A(8),B:B(9)}});const calm=round(far,{type:'wait'});
- assert.equal(calm.units.A.hp,20);assert.equal(calm.units.B.hp,20);assert.deepEqual(calm.units.boss.pos,{x:4,y:1},'the boss does not chase');
- // off the row (open 2-row floor): not adjacent and not in a straight line -> no attack
- const open=[...row(9),...row(9).map(p=>({x:p.x,y:2}))];
- const o=arena({floor:open,units:{A:{...A(6),pos:{x:6,y:2}},B:{...B(9),pos:{x:9,y:2}}}});
- const none=round(o,{type:'wait'});assert.equal(none.units.A.hp,20);assert.equal(none.units.B.hp,20);
- // within 3 cells on the row and clear: a ray attack, twice
- const ray=arena({units:{A:A(7),B:B(9)}});const shot=round(ray,{type:'wait'});assert.equal(shot.units.A.hp,8);
-}));
-test('B3b with the current BOSS the boss attacks once per round (same fixtures, one hit of 6 instead of two)',()=>{
- assert.equal(BOSS.attacks,1);
- const hit=round(arena({units:{A:A(3),B:B(0)}}),{type:'wait'});assert.equal(hit.units.A.hp,14);assert.equal(hit.units.B.hp,20);
- const shot=round(arena({units:{A:A(7),B:B(9)}}),{type:'wait'});assert.equal(shot.units.A.hp,14);
+test('B3 boss uses one shared move per round, spends PP, and never chases',()=>{
+ const s=arena({units:{A:A(3),B:B(0)}}),hit=round(s,{type:'wait'});
+ assert.equal(hit.units.A.hp,11,'Lv22 ExtremeSpeed: 6 + ceil(16/2) + floor(17/4) = 18, times the difficulty multiplier 0.5 = 9');
+ assert.equal(hit.units.boss.pp.extremespeed,s.units.boss.pp.extremespeed-1);
+ assert.deepEqual(hit.units.boss.pos,pos(4));assert.equal(hit.units.B.hp,20);
+ const far=arena({units:{A:A(8),B:B(9)}}),calm=round(far,{type:'wait'});
+ assert.equal(calm.units.A.hp,20);assert.equal(calm.units.B.hp,20);assert.deepEqual(calm.units.boss.pos,pos(4));
+ const two=round(arena({units:{A:A(6),B:B(9)}}),{type:'wait'});assert.equal(two.units.A.hp,11,'front2 reaches exactly two cells');
+ const three=round(arena({units:{A:A(7),B:B(9)}}),{type:'wait'});assert.equal(three.units.A.hp,20,'the old three-cell ray is gone');
 });
-test('B4 protect blocks both boss hits on its user for the first enemy phase',()=>withBossAttacks(2,()=>{
- const s=arena({units:{A:A(3,20,{protect:2}),B:B(2)}});
- const r=round(s,{type:'skill',skill:'protect',target:'A'});
+test('B4 protect prevents boss damage during the first opponent phase',()=>{
+ const s=arena({units:{A:A(3,20,{protect:2}),B:B(0)}}),r=round(s,{type:'skill',skill:'protect',target:'A'});
  assert.equal(r.units.A.hp,20);assert.equal(r.units.B.hp,20);assert.equal(r.units.A.pp.protect,1);assert.equal(r.units.A.protect,2);
-}));
-test('B10 when the first attack defeats the adjacent target, the second attack chooses the next one (here by ray); nothing left means no attack',()=>withBossAttacks(2,()=>{
- const s=arena({units:{A:A(3,6),B:B(2)}});
- const r=round(s,{type:'wait'});
- assert.equal(r.units.A.hp,0);assert.equal(r.units.B.hp,14,'second attack: 6 on the next member in the ray');
+});
+test('B10 the boss cannot take a second action after defeating one target',()=>{
+ const r=round(arena({units:{A:A(3,6),B:B(2)}}),{type:'wait'});
+ assert.equal(r.units.A.hp,0);assert.equal(r.units.B.hp,20);assert.equal(r.leader,'B');
  const lone=arena({units:{A:A(3,6),B:B(0,20)}});lone.units.B.pos=null;lone.units.B.hp=0;
  const r2=round(lone,{type:'wait'});assert.equal(r2.phase,'ended');assert.equal(r2.end.outcome,'wipe');
- assert.equal(r2.log.filter(l=>l.includes('受到6伤害')).length,1,'one hit only: after the lone member fell the second attack found nothing');
-}));
+});
 const exitAt=3;
-test('B5 after the boss falls the last machine is the boss machine (held), the draw used one random step, experience rose by 3',()=>{
+test('B5 after the boss falls the last machine is the boss machine (held), experience equals boss level and the reward cannot be duplicated',()=>{
  const s=arena({bossHp:1,units:{A:A(3),B:B(2)}});
  const r=round(s,{type:'basic',target:'boss'});
  assert.deepEqual(r.tms,[{move:'protect',source:'boss',fate:'held'}],'stream value 0.0117 x 7 = index 0');
- assert.equal(r.prog.exp,3);assert.equal(r.prog.level,2);assert.equal(r.units.A.maxHp,22);
+ assert.equal(r.prog.exp,22);assert.equal(r.prog.level,8);assert.equal(r.units.A.maxHp,23);
  assert.ok(r.log.some(l=>l.includes('区域首领被讨伐')));
  // a second round does not give a second machine or more experience
- const again=round(r,{type:'wait'});assert.equal(again.tms.length,1);assert.equal(again.prog.exp,3);assert.equal(again.prog.rng,r.prog.rng);
+ const again=round(resolveInvites(r),{type:'wait'});assert.equal(again.tms.length,1);assert.equal(again.prog.exp,22);assert.equal(again.prog.rng,r.prog.rng);
 });
 test('B6 after the boss fell, a normal exit brings the boss machine home: end.boss true, fate brought, reason includes 带回招式机',()=>{
  const s=arena({bossHp:1,units:{A:A(3),B:B(2)},exit:pos(1)});
- let w=round(s,{type:'basic',target:'boss'});
+ let w=resolveInvites(round(s,{type:'basic',target:'boss'}));
  w.units.A.pos=pos(1);w.units.B.pos=pos(2);
  w=round(w,{type:'interact',exit:true});assert.equal(w.phase,'exit');
  const f=applyCommand(w,{type:'finishExit'});assert.equal(f.ok,true,f.error);
@@ -249,14 +227,14 @@ test('B6 after the boss fell, a normal exit brings the boss machine home: end.bo
  assert.equal(f.state.end.effective,true);assert.deepEqual(f.state.end.reasons,['tm']);
 });
 test('B7 leaving by the lobby without challenging: end.boss false, the run ends normally, the reward is 100 once G was done',()=>{
- const s=arena({boss:[9],units:{A:A(1),B:B(0)},exit:pos(1)});s.goal=true;s.prog.exp=2;s.points[0].used=false;
+ const s=arena({boss:[9],units:{A:A(1),B:B(0)},exit:pos(1)});s.goal=true;s.prog.exp=0;s.points[0].used=false;
  let w=round(s,{type:'interact',exit:true});assert.equal(w.phase,'exit');
  const f=applyCommand(w,{type:'finishExit'});assert.equal(f.ok,true,f.error);
- assert.equal(f.state.end.boss,false);assert.equal(f.state.end.reward,100);assert.equal(f.state.end.outcome,'normal');assert.equal(f.state.units.boss.hp,80);
+ assert.equal(f.state.end.boss,false);assert.equal(f.state.end.reward,100);assert.equal(f.state.end.outcome,'normal');assert.equal(f.state.units.boss.hp,71);
 });
 function profileOf3(){
  const p=newGameProfile('chikorita','cyndaquil').profile;
- p.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
+ p.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false,tactic:'together'});
  p.next=4;p.team=['P1','P2','P3'];p.leader='P1';return p;
 }
 test('B8 a wipe on the boss floor: machines are lost and one unprotected partner draw is recorded',()=>{
@@ -265,11 +243,11 @@ test('B8 a wipe on the boss floor: machines are lost and one unprotected partner
  const bossAt=w.units.boss.pos,ids=w.queue;
  // the three members stand beside the boss with 1 HP each (the middle row of the 3x3 boss room is inside the room whatever its size)
  const spots=[{x:bossAt.x-1,y:bossAt.y},{x:bossAt.x+1,y:bossAt.y},{x:bossAt.x,y:bossAt.y-1}];
- ids.forEach((id,i)=>{w.units[id].pos=spots[i];w.units[id].hp=1;});
+ ids.forEach((id,i)=>{w.units[id].pos=spots[i];w.units[id].hp=1;w.units[id].tactic='wait';w.units[id].learned=[];w.units[id].pp={};});
  w.goal=true;w.prog.exp=2;w.tms=[{move:'protect',source:'target',fate:'held'}];w.bag=1;w.prog.rng=7;w.seen=w.floor.map(key);
- // the boss attacks once per round (BOSS.attacks): with 1 HP each it fells one member per round, so the wipe takes three rounds
+ // the boss takes one action per round: with 1 HP each it fells one member per round, so the wipe takes three rounds
  let s=round(w,{type:'wait'});
- while(s.phase==='playing')s=round(s,{type:'wait'});
+ for(let n=0;n<10&&s.phase==='playing';n++)s=round(s,{type:'wait'});
  assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');
  assert.deepEqual(s.end.tms,[{move:'protect',source:'target',fate:'lost'}]);
  assert.deepEqual(s.end.lost,['C'],'P3 is the only unprotected member and the first draw of stream 7 is 0.0117 < 0.5');
@@ -310,15 +288,17 @@ test('B9 with only the initial two members and an empty account, a departure rea
  assert.equal(r.reached,true,JSON.stringify(r.error)+r.s.log.slice(-3));
  assert.equal(r.s.dungeon.level,3);assert.equal(r.s.phase,'exit');
  const exit=r.s.points.find(p=>p.kind==='exit').pos;assert.deepEqual(r.s.units[r.s.request.actor].pos,exit);
- assert.equal(r.s.units.boss.hp,BOSS.hp,'the boss was never touched');
+ assert.equal(r.s.units.boss.hp,71,'the boss was never touched (Lv22 round((30+17)*3*0.5) = round(70.5) = 71)');
  const beforeWrites=port.writes();
  assert.equal((await store.dispatch({type:'finishExit'})).ok,true);assert.equal(store.state.end.boss,false);assert.equal(store.state.end.outcome,'normal');
  assert.equal(store.status,'ready');assert.equal(port.writes(),beforeWrites+1,'the first persistent write after departure is terminal settlement');
  assert.equal(store.envelope.format,2);assert.equal(Object.hasOwn(store.envelope,'current'),false);
 });
-const B9_SEED=1;
+const B9_SEED=20; // 7.8: searched using only accepted commands, reached floor 3 in 32 rounds.
 
 /* ---------- S: saves ---------- */
+const legacy78=JSON.parse(readFileSync(new URL('./fixtures78/legacy-worlds.json',import.meta.url),'utf8'));
+const LEGACY_WILD={pidgey:1,rattata:1,spearow:1,zubat:1,geodude:1};
 const load72=name=>readFileSync(new URL('./fixtures72/'+name,import.meta.url),'utf8');
 const openRaw=raw=>{const port={raw,getItem:()=>port.raw,setItem:(k,v)=>{port.raw=v;}};return {port,store:new TrialStore(port,'k')};};
 test('S1 a 7.2 in-progress World is discarded; the valid camp profile is migrated',async()=>{
@@ -335,18 +315,20 @@ test('S2 a 7.2 in-progress shop World is discarded; no shop state enters the cam
  assert.equal(Object.hasOwn(store.envelope,'recent'),false);assert.deepEqual(new TrialStore(port,'k').profile,store.profile);
 });
 const endedForLegacy=w=>{const s=structuredClone(w);if(s.phase!=='ended'){s.phase='ended';s.request=null;s.anchor=null;s.end=closeOut(s,'normal');}return s;};
-function envelopeOf(w,profile=initialProfile(),extra={}){return {format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:2,current:endedForLegacy(w),recent:null,profile,...extra};}
+function envelopeOf(w,profile=structuredClone(legacy78.profile),extra={}){return {format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:2,current:endedForLegacy(w),recent:null,profile,...extra};}
 const accepted=w=>{const raw=JSON.stringify(envelopeOf(w));const e=decodeLegacy(raw);assert.ok(e.current);return raw;};
 const rejects=(w,why)=>assert.throws(()=>decodeLegacy(JSON.stringify(envelopeOf(w))),/存档结构损坏|无法迁移/,why);
-const fresh3=(seed=4)=>createExpedition('s3',seed,3,base(),0);
-const floor3=(seed=4)=>jumpToFloor(fresh3(seed),3);
+const fresh3=()=>structuredClone(legacy78.floor1);
+const floor3=()=>structuredClone(legacy78.floor3);
+const oldFloor2=()=>structuredClone(legacy78.floor2);
+const oldTwo=()=>structuredClone(legacy78.twoFloor);
 test('S3 tampering is rejected (each case first checked in its untouched form)',()=>{
  // the untouched forms load
- accepted(fresh3());accepted(floor3());accepted(jumpToFloor(fresh3(),2));accepted(createExpedition('s3',4,2,base(),0));
+ accepted(fresh3());accepted(floor3());accepted(oldFloor2());accepted(oldTwo());
  // 1. an exit on floor 2
- {const w=jumpToFloor(fresh3(),2);w.points.push({pos:{...w.points.find(p=>p.kind==='down').pos},kind:'exit',used:false});rejects(w,'exit on floor 2');}
+ {const w=oldFloor2();w.points.push({pos:{...w.points.find(p=>p.kind==='down').pos},kind:'exit',used:false});rejects(w,'exit on floor 2');}
  // 2. a boss in a run without the boss mark
- {const w=createExpedition('s3',4,2,base(),0),src=floor3().units.boss;w.units.boss={...src,pos:{...w.floor[w.floor.length-1]}};w.enemies.push('boss');rejects(w,'boss without the mark');}
+ {const w=oldTwo(),src=floor3().units.boss;w.units.boss={...src,pos:{...w.floor[w.floor.length-1]}};w.enemies.push('boss');rejects(w,'boss without the mark');}
  // 3. two bosses
  {const w=floor3();const b=w.units.boss;const spare=w.floor.find(c=>!Object.values(w.units).some(u=>u.pos&&u.pos.x===c.x&&u.pos.y===c.y));w.units.boss2={...b,id:'boss2',pos:{...spare}};w.enemies.push('boss2');rejects(w,'two bosses');}
  // 4. boss numbers outside both legal sets: current (60 HP / 4) and the historical one (80 HP / 6). Above either maximum, and a mix of the two sets, are rejected; the historical set is still accepted.
@@ -360,7 +342,7 @@ test('S3 tampering is rejected (each case first checked in its untouched form)',
  {const w=floor3();w.tms=[{move:'protect',source:'boss',fate:'held'}];rejects(w,'boss machine without a defeat');}
  // 6. the end record's boss flag against the boss's final HP
  {let w=floor3();w.units[w.leader].pos={...w.points.find(p=>p.kind==='exit').pos};
-  w=applyCommand(w,{type:'round',action:{type:'interact',exit:true}}).state;w=applyCommand(w,{type:'finishExit'}).state;
+  w=endedForLegacy(w);
   assert.equal(w.phase,'ended');assert.equal(w.end.boss,false);accepted(w);
   const t=structuredClone(w);t.end.boss=true;rejects(t,'end.boss true with a living boss');
   const u=structuredClone(w);delete u.end.boss;rejects(u,'end.boss missing in a boss run');}
@@ -376,13 +358,13 @@ test('S3 tampering is rejected (each case first checked in its untouched form)',
  // Boss-as-recruit identity checks use expedition snapshots that can be valid historical saves.
  {const bossU=()=>structuredClone(floor3().units.boss);
   {const w=floor3();w.units.w3a.recruit={...bossU(),id:'N',pos:null};rejects(w,'boss as a recruit in a boss run');}
-  {const w=createExpedition('s3',4,2,base(),0);w.units.w1a.recruit={...bossU(),id:'N',pos:null};rejects(w,'boss as a recruit in a 2 floor run');}
+  {const w=oldTwo();w.units.w1a.recruit={...bossU(),id:'N',pos:null};rejects(w,'boss as a recruit in a 2 floor run');}
  }
  // a boss that is not the last enemy of its floor
  {const w=floor3();w.enemies=['boss',...w.enemies.filter(i=>i!=='boss')];rejects(w,'boss not last');}
 });
 test('S3b an old-format record still reads: a boss machine and boss fields are the only new things, so a 7.2 run with the new machines is not accepted',()=>{
- const w=createExpedition('s3b',4,2,base(),0);w.tms=[{move:'terablast',source:'target',fate:'held'}];w.bag=1;rejects(w,'new machine in a run without the mark');
+ const w=oldTwo();w.tms=[{move:'terablast',source:'target',fate:'held'}];w.bag=1;rejects(w,'new machine in a run without the mark');
  const v=floor3();v.tms=[{move:'terablast',source:'target',fate:'held'}];v.bag=1;accepted(v);
 });
 test('S4 a boss-marked run moves through transit, battle and exit in memory without persisting checkpoints',async()=>{
@@ -407,7 +389,8 @@ test('S4 a boss-marked run moves through transit, battle and exit in memory with
   w.queue.forEach((id,i)=>{w.units[id].pos=spots[i];});w.leader=w.queue[0];w.seen=w.floor.map(key);});
  check('beside the boss');
  await send({type:'round',action:{type:'basic',target:'boss'}},'boss falls');
- assert.equal(store.state.units.boss.hp,0);assert.equal(store.state.tms.at(-1).source,'boss');assert.equal(store.state.tms.at(-1).fate,'held');assert.equal(store.state.prog.exp,3);
+ assert.equal(store.state.units.boss.hp,0);assert.equal(store.state.tms.at(-1).source,'boss');assert.equal(store.state.tms.at(-1).fate,'held');assert.equal(store.state.prog.exp,22);
+ while(store.state.phase==='invitation')await send({type:'invite',choice:'reject'},'decline boss recruitment');
  // back to the lobby: put the team on the exit cell and its neighbour, then leave
  edit(w=>{const exit=w.points.find(p=>p.kind==='exit').pos,frees=[[0,1],[1,0],[-1,0],[0,-1]].map(([dx,dy])=>({x:exit.x+dx,y:exit.y+dy})).filter(c=>w.floor.some(f=>f.x===c.x&&f.y===c.y)&&!w.enemies.some(i=>w.units[i].hp>0&&w.units[i].pos.x===c.x&&w.units[i].pos.y===c.y));
   w.units[w.leader].pos={...exit};w.queue.filter(i=>i!==w.leader).forEach((id,i)=>{w.units[id].pos={...frees[i]};});});
@@ -419,10 +402,11 @@ test('S4 a boss-marked run moves through transit, battle and exit in memory with
 });
 
 /* ---------- display ---------- */
-test('boss info text names the species, HP, and the two refusals; log lines show the Chinese machine names',()=>{
+test('boss info names the species, HP, level and actual moves; log lines show the Chinese machine names',()=>{
  const s=arena({units:{A:A(3),B:B(2)}});
  const info=enemyInfo(s,'boss');
- assert.equal(info.name,'风速狗（首领）');assert.equal(info.hp,80);assert.equal(info.maxHp,80);assert.match(info.note,/不可招募、不会被吹飞/);
+ assert.equal(info.name,'风速狗（首领）');assert.equal(info.hp,71);assert.equal(info.maxHp,71);assert.doesNotMatch(info.note,/不可招募/);assert.equal(info.level,22);assert.ok(info.moves.some(m=>m.includes('神速')));
  assert.equal(localizeLog(s,'取得招式机：dragontail，mudslap，terablast，helpinghand'),'取得招式机：龙尾，掷泥，太晶爆发，帮助');
 });
-test('boss constants',()=>{assert.deepEqual(BOSS,{id:'boss',species:'arcanine',hp:60,damage:4,range:3,attacks:1});assert.equal(PROG.bossExp,2);});
+test('boss constants',()=>{assert.deepEqual(BOSS,{id:'boss',species:'arcanine'});assert.equal(PROG.bossExp,0);});
+

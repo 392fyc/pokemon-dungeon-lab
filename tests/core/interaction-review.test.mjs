@@ -14,14 +14,17 @@ test('used G rejects collection before any member or enemy acts, exit remains va
 });
 test('used T refuses extra collection without another lethal enemy phase',()=>{
  const s=createScenario('V11','used-item');s.points.find(p=>p.kind==='item').used=true;s.bag=1;
- denied(s,collect,/T已取得，仅可请求撤离/);assert.equal(s.units.B.hp,2);assert.equal(s.bag,1);
+ denied(s,collect,/T已取得，仅可请求撤离/);assert.equal(s.units.B.hp,1);assert.equal(s.bag,1);   // V11: B has 1 HP and H (60 HP) stands beside it
 });
 for(const id of ['V3','V7'])test(id+' pure exit refuses collection even when unused',()=>{
  let s=createScenario(id,'pure-'+id);if(id==='V3')s=valid(s,round({type:'move',to:{x:0,y:1}}));
  assert.equal(s.points[0].used,false);denied(s,collect,/此处是纯出口，仅可请求撤离/);assert.equal(valid(s,leave).phase,'exit');
 });
 test('unused G still collects exactly once and then refuses another collection',()=>{
- let s=createMain('first-goal',false);for(const a of [{type:'move',to:{x:3,y:1}},...Array(3).fill({type:'basic',target:'E'}),{type:'move',to:{x:4,y:1}}])s=valid(s,round(a));
+ let s=createMain('first-goal',false);
+ // the scripted route needs fixed targets: E and R only wait, and E has 16 HP so three basic attacks (6 each) defeat it
+ for(const id of s.enemies)s.units[id].waitOnly=true;s.units.E.hp=16;s.units.E.maxHp=16;
+ for(const a of [{type:'move',to:{x:3,y:1}},...Array(3).fill({type:'basic',target:'E'}),{type:'move',to:{x:4,y:1}}])s=valid(s,round(a));
  s=valid(s,collect);assert.equal(s.round,6);assert.equal(s.goal,true);denied(s,collect,/G已记录/);assert.equal(valid(s,leave).phase,'exit');
 });
 test('wall, unseen floor and current occupancy give distinct deterministic reasons',()=>{
@@ -39,7 +42,7 @@ test('V1 names B as the preceding mover, including in a planned combination',()=
 });
 test('other explicit action rejections also state that the round did not execute',()=>{
  const s=createMain('other-reasons',false);
- denied(s,round({type:'basic',target:'E'}),/普攻需要相邻敌人/);
+ denied(s,round({type:'basic',target:'E'}),/普攻需要相邻对方/);
  denied(s,round({type:'move',to:{x:5,y:1}}),/只能移动到相邻格/);
  denied(s,round({type:'skill',skill:'protect',target:'B'}),/未装备该招式或PP不足/);
  denied(s,round({type:'swap',target:'A'}),/只能与相邻存活伙伴换位/);

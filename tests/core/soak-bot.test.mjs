@@ -18,14 +18,14 @@ test('S74 tactical policy: two seeds finish without a stuck game and replay iden
  }
 });
 
-/* Stage 7.4 part 2: the tactical bot pays rescues at the base. Seed 4 is an ordinary (not forced-wipe) seed where a recruit goes missing in a wipe (found by playing seeds 0-13 with the 7.7 move-model tactical bot; seed 2, used before, no longer loses a partner because the new tactical bot plays it better).
+/* Stage 7.4 part 2 (7.8: seed 4 no longer loses a partner under the new enemy behaviour, so seed 5 replaces it; of seeds 0-29 seeds 3,5,7,11,15,18,19,23,24,27 lose a partner and 5 does so with one paid rescue and one return). The tactical bot pays rescues at the base. Seed 5 (formerly 4) is an ordinary (not forced-wipe) seed where a recruit goes missing in a wipe (found by playing seeds 0-13 with the 7.7 move-model tactical bot; seed 2, used before, no longer loses a partner because the new tactical bot plays it better).
  * The paying run replays identically, pays at least once, and every payment costs ECON.rescueCost; the same seed with payment switched off pays nothing and keeps the partner waiting. */
-test('S74 tactical policy pays rescues: seed 4 replays identically and pays at least once; the switch turns it off',async()=>{
- const a=await playSeed(4,{policy:'tactical'}),b=await playSeed(4,{policy:'tactical'}),off=await playSeed(4,{policy:'tactical',payRescue:false});
+test('S74 tactical policy pays rescues: seed 5 replays identically and pays at least once; the switch turns it off',async()=>{
+ const a=await playSeed(5,{policy:'tactical'}),b=await playSeed(5,{policy:'tactical'}),off=await playSeed(5,{policy:'tactical',payRescue:false});
  assert.deepEqual(a.games,b.games);assert.deepEqual(a.st,b.st);assert.deepEqual(a.extra,b.extra);assert.deepEqual(a.accTrail,b.accTrail);
  assert.equal(a.payRescue,true);assert.equal(off.payRescue,false);
- assert.ok(a.st.lostPartners>=1,'seed 4 must lose a partner');
- assert.ok(a.st.paid>=1,'seed 4 must pay at least one rescue');
+ assert.ok(a.st.lostPartners>=1,'seed 5 must lose a partner');
+ assert.ok(a.st.paid>=1,'seed 5 must pay at least one rescue');
  assert.equal(a.st.spent,a.st.paid*ECON.rescueCost);
  assert.ok(a.st.returned>=1,'a paid partner returns');
  assert.equal(off.st.paid,0);assert.equal(off.st.spent,0);

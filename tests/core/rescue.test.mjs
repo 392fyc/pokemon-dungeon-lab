@@ -12,11 +12,11 @@ import {serviceRoll} from '../../src/core/dungeon.ts';
  * Expected values are literals taken from that spec, from the roster data (pidgey: tackle strong 3, gust line 3), and from draws of the saved random
  * stream worked out once by hand: with state 7 the first two values are 0.012 and 0.062 (both below 0.5: lost); state 5 gives 0.690 and 0.773 (kept);
  * state 1 gives 0.627 (kept) then 0.003 (lost). Seeds with a shop or exchanger come from serviceRoll: seed 2 has a shop on floor 1 (machine whirlwind,
- * cell 17,5); seed 103 has a shop on floor 1 (machine roar, cell 3,10) and an exchanger on floor 1 (cell 7,3); seed 5 has neither.
+ * seed 103 has a shop on floor 1 (machine roar) and an exchanger on floor 1; seed 5 has neither.
  */
 const memory=()=>{const m=new Map();let writes=0;return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);writes++;},map:m,writes:()=>writes};};
-const pidgey=id=>({id,species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
-const zubat=id=>({id,species:'zubat',learned:[{move:'absorb',pp:2},{move:'poisonfang',pp:1}],carry:['absorb','poisonfang'],protected:false});
+const pidgey=id=>({id,species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false,tactic:'together'});
+const zubat=id=>({id,species:'zubat',learned:[{move:'absorb',pp:2},{move:'poisonfang',pp:1}],carry:['absorb','poisonfang'],protected:false,tactic:'together'});
 /** P1 chikorita and P2 cyndaquil are protected (new flow); P3 pidgey and P4 zubat are ordinary partners. */
 function profile4(over={}){
  const p=newGameProfile('chikorita','cyndaquil').profile;
@@ -170,7 +170,7 @@ test('R13 purse: returned after a normal exit, lost in a wipe; refused when the 
 /* ---------- shop ---------- */
 function shopRun(){
  const p=profile4();const s=createExpedition('shop-run',2,2,squadOf(p),100);
- s.units.A.pos={x:17,y:5};return s;
+ s.units.A.pos={...s.points.find(p=>p.kind==='shop').pos};return s;
 }
 const buy=(s,item)=>applyCommand(s,{type:'buy',item});
 test('R14 shop: stock and prices stay fixed; purchases use the purse and remain in the live World',async()=>{
@@ -203,7 +203,7 @@ test('R15 shop: only on the shop cell, never as an interact, and no shop in a ru
 /* ---------- exchanger ---------- */
 function exchangeRun(){
  const p=profile4();const s=createExpedition('ex-run',103,2,squadOf(p),0);
- s.units.A.pos={x:7,y:3};
+ s.units.A.pos={...s.points.find(p=>p.kind==='exchange').pos};
  s.tms=[{move:'protect',source:'target',fate:'held'},{move:'roar',source:'shop',fate:'held'},{move:'whirlwind',source:'target',fate:'held'}];s.bag=2;
  s.shop.trades=[{item:'tm',price:80}];s.shop.stock.tm=null;
  return s;
@@ -211,7 +211,8 @@ function exchangeRun(){
 const ex=(target,cargo)=>({type:'round',action:{type:'exchange',target,cargo}});
 test('R16 exchanger: one use; the leader cannot be sent; the companion leaves for good; cargo is limited to two held machines',()=>{
  const s=exchangeRun();
- assert.match(applyCommand(s,ex('A',[])).error,/主控以外/);
+ for(const id of s.enemies)s.units[id].waitOnly=true; // generated floor-2 enemies could reach A on this seed and hurt it; this test is about the exchanger not healing
+  assert.match(applyCommand(s,ex('A',[])).error,/主控以外/);
  assert.match(applyCommand(s,ex('C',[0,1,2])).error,/最多运送2份/);
  assert.match(applyCommand(s,ex('C',[0,0])).error,/最多运送2份不同/);
  assert.match(applyCommand(s,ex('C',[5])).error,/仍持有/);
@@ -303,18 +304,25 @@ test('R23 a run from before the base existed: A, B and C are protected and never
 
 /* ---------- terminal migration and camp-only records ---------- */
 test('R24 an old ended World settles the purse, rescue pool, squad and machines once',async()=>{
- const p=profile4({account:20,rescue:[entry(zubat('P5'),true,1),entry(pidgey('P6'),false,1)],next:7,team:['P3','P1','P2'],leader:'P3'});
- const s=finished(p,{outcome:'wipe',goal:true,rng:7,purse:40,tms:[['roar','shop']],camp:[]});
+ const frozen=JSON.parse(readFileSync(new URL('./fixtures78/legacy-worlds.json',import.meta.url),'utf8'));
+ const p=structuredClone(frozen.profile);p.account=20;p.rescue=[entry(zubat('P4'),true,1),entry(pidgey('P5'),false,1)];p.next=6;
+ // The frozen founders are all protected, which would hide the wipe draw. P2 (squirtle, unit B; the origin P3 must stay protected) is made an ordinary partner so the old terminal world can lose it:
+ // with state 7 the first draw is 0.012 (< 0.5), the same hand-worked value R5 and R10 rely on, and only unprotected members draw.
+ p.roster.find(i=>i.id==='P2').protected=false;
+ const s=structuredClone(frozen.floor3);s.prog.exp=2;s.prog.rng=7;delete s.units.B.protected;s.goal=true;s.purse=40;s.tms=[{move:'roar',source:'shop',fate:'held'}];s.bag=0;
+ for(const id of s.queue){s.units[id].hp=0;s.units[id].pos=null;}
+ s.phase='ended';s.request=null;s.anchor=null;s.end=closeOut(s,'wipe');
  const raw=JSON.stringify({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:9,current:s,recent:null,profile:p});
  const expected=settleRun(p,s),port=memory();port.setItem('dungeon-trial.player.v1',raw);const beforeWrites=port.writes(),live=new TrialStore(port);
  assert.equal(await live.whenReady,true,live.error);assert.equal(live.status,'ready',live.error);assert.equal(port.writes(),beforeWrites+1);
  const q=live.profile;
- // 1 reward 100 (the purse is lost in a wipe) -> 120; 2-3 the paid P5 returns, the unpaid P6 is lost; 4 P3 goes missing (state 7) with L = 4;
- // 5 the machine was not brought out; 6 the squad loses its leader P3 and P1 takes over.
- assert.equal(q.account,120);assert.deepEqual(roster(q),['P1','P2','P4','P5']);
- assert.deepEqual(q.lost,[{id:'P6',species:'pidgey',expedition:1}]);assert.deepEqual(q.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P3',false,4]]);
- assert.deepEqual(q.vault,{});assert.deepEqual(q.team,['P1','P2']);assert.equal(q.leader,'P1');
- const summary=settleSummary(p,s);assert.deepEqual(summary.returned,[{id:'P5',species:'zubat'}]);assert.deepEqual(summary.gone,[{id:'P6',species:'pidgey'}]);assert.deepEqual(summary.missing,[{id:'P3',species:'pidgey'}]);
+ // The frozen rules-2 World has a terminal goal and wipe: reward is paid, purse and held machine are lost, the paid rescue returns, the unpaid one is lost,
+ // and unprotected P2 goes missing (L = 4) and leaves the squad; leader P3 stays.
+ assert.deepEqual(s.end.lost,['B'],'the wipe draw loses the unprotected B');
+ assert.equal(q.account,120);assert.deepEqual(roster(q),['P1','P3','P4']);
+ assert.deepEqual(q.lost,[{id:'P5',species:'pidgey',expedition:1}]);assert.deepEqual(q.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P2',false,4]]);
+ assert.deepEqual(q.vault,{});assert.deepEqual(q.team,['P1','P3']);assert.equal(q.leader,'P3');
+ const summary=settleSummary(p,s);assert.deepEqual(summary.returned,[{id:'P4',species:'zubat'}]);assert.deepEqual(summary.gone,[{id:'P5',species:'pidgey'}]);assert.deepEqual(summary.missing,[{id:'P2',species:'squirtle'}]);
  assert.deepEqual(q,expected);assert.equal(Object.hasOwn(live.envelope,'current'),false);
  assert.deepEqual(new TrialStore(port).profile,q,'reopening cannot settle the result twice');
 });

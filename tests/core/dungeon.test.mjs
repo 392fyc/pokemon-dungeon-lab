@@ -24,7 +24,7 @@ test('D3 pinned regression values for seed 12345 (observed once, then frozen)',(
  const g=generateFloor(12345,1);
  assert.equal(g.floor.length,118);assert.equal(g.rooms.length,7);
  assert.deepEqual(g.points,[{pos:{x:4,y:9},kind:'exit',used:false},{pos:{x:16,y:2},kind:'down',used:false},{pos:{x:17,y:5},kind:'goal',used:false}]);
- assert.deepEqual(g.enemies.map(e=>[e.id,e.ai,e.pos.x,e.pos.y]),[['w1a','melee',15,12],['w1b','ranged',3,3]]);
+ assert.deepEqual(g.enemies.map(e=>[e.id,e.species,e.pos.x,e.pos.y]),[['w1a','tauros',15,12],['w1b','omanyte',13,8],['w1c','bellsprout',4,3]]);
  const h=generateFloor(12345,2);
  assert.deepEqual(h.points.map(p=>[p.kind,p.pos.x,p.pos.y]),[['up',9,5],['item',5,10]]);
 });
@@ -58,16 +58,14 @@ test('D6 stairs, points and enemies sit on legal, distinct cells',()=>{
    assert.notDeepEqual(e.pos,arrival);
    for(const p of g.points)assert.ok(Math.abs(p.pos.x-e.pos.x)+Math.abs(p.pos.y-e.pos.y)>=2,'enemy beside a point');
   }
-  assert.equal(g.enemies.length,level===1?2:3);
-  assert.deepEqual(g.enemies.map(e=>e.ai),level===1?['melee','ranged']:['melee','ranged','chase']);
+  assert.equal(g.enemies.length,3);
+  assert.ok(g.enemies.every(e=>e.level===5));
  }
 });
-test('D7 enemy stats use the manual tiers; species come from the roster wild set',()=>{
- const g=generateFloor(3,2),by=Object.fromEntries(g.enemies.map(e=>[e.ai,e]));
- assert.deepEqual([by.melee.hp,by.melee.damage,by.melee.range],[16,4,1]);
- assert.deepEqual([by.ranged.hp,by.ranged.damage,by.ranged.range],[6,6,3]);
- assert.deepEqual([by.chase.hp,by.chase.damage,by.chase.range],[6,3,1]);
- const nonStarter=Object.fromEntries(roster.species.filter(s=>!s.starter).map(s=>[s.id,s.dex]));
- assert.deepEqual(Object.keys(WILD_SPECIES).sort(),Object.keys(nonStarter).filter(i=>i in WILD_SPECIES).sort());
- for(const [id,dex] of Object.entries(WILD_SPECIES))assert.equal(nonStarter[id],dex);
+test('D7 enemy HP comes from the shared roster and developer floors use Lv5',()=>{
+ const g=generateFloor(3,2),by=Object.fromEntries(roster.species.map(s=>[s.id,s]));
+ for(const e of g.enemies){assert.equal(e.level,5);assert.equal(e.hp,Math.round(by[e.species].maxHp*0.5)); // difficulty multiplier 0.5 on enemy HP
+ assert.equal(e.damage,undefined);assert.equal(e.ai,undefined);}
+ for(const [id,dex] of Object.entries(WILD_SPECIES))assert.equal(by[id].dex,dex);
+ assert.ok('arcanine' in WILD_SPECIES);
 });

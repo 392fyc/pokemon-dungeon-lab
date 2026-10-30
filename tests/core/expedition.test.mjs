@@ -34,7 +34,9 @@ test('X3 no enemy phase on arrival: an enemy beside the entry does not strike, a
  assert.deepEqual(coords(s),[pos(2),pos(5),pos(3)]);  // right (4,1) is held by the enemy: A takes left; B takes the next cell out in walk order, (5,1) behind the enemy (sight passes living units)
 });
 test('X4 return keeps the old floor exactly: enemy HP, taken marks, revealed cells',()=>{
- const away=cross(requested(expedition()));
+ // E and w2a are wait-only here: the test locks that the stored floor is kept byte-for-byte, so no enemy may wander on either floor
+ const start=expedition({enemies:[enemy('E',9,1,5,'melee',{waitOnly:true})]});start.dungeon.stored['2'].units.w2a.waitOnly=true;
+ const away=cross(requested(start));
  const back=cross(round(away,stairs));
  assert.equal(back.dungeon.level,1);assert.equal(back.round,2);
  assert.deepEqual(coords(back),[pos(6),pos(4),pos(5)]);
@@ -68,6 +70,7 @@ test('X6 R09 step 3: the requester falls before round end, so the request is can
 test('X7 wipe beats a stairs request: failure end, no transit',()=>{
  const es=[enemy('E1',2,1,16,'melee',4),enemy('E2',4,1,16,'melee',4),enemy('E3',6,1,16,'melee',4)];
  const w=expedition({a:pos(1),b:pos(3),c:pos(5),enemies:es});for(const id of 'ABC')w.units[id].hp=1;
+ w.units.B.pp.protect=0;   // B's default would be guard (a team-protect move), which would save it; with no PP left it attacks like the others
  const s=requested(w);
  assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');assert.equal(s.request,null);assert.equal(s.dungeon.level,1);
 });
@@ -124,7 +127,7 @@ test('X15 generated expedition: start on the exit, floors created lazily from th
  assert.deepEqual(s0.units.C.pos,exit);
  assert.equal(new Set(coords(s0).map(p=>p.x+','+p.y)).size,3);
  assert.ok(s0.enemies.every(id=>!(s0.units[id].pos.x===exit.x&&s0.units[id].pos.y===exit.y)));
- assert.deepEqual(s0.enemies,['w1a','w1b']);
+ assert.deepEqual(s0.enemies,['w1a','w1b','w1c']);   // 7.8 (difficulty tuning): three ordinary enemies on every floor
  const s=structuredClone(s0);s.units.A.hp=0;s.units.A.pos=null;s.units.B.hp=0;s.units.B.pos=null;s.units.C.pos=down;
  const leaving=requested(s),down2=cross(leaving);
  assert.equal(down2.dungeon.level,2);assert.deepEqual(down2.units.C.pos,g2.points.find(p=>p.kind==='up').pos);

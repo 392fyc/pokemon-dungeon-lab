@@ -27,7 +27,7 @@ test('S66 loop soak: base -> expedition -> base -> expedition, many seeds, every
   `goal G reached in ${games.filter(g=>g.goal).length} games; ended on floor 2 in ${games.filter(g=>g.floor===2).length}, on floor 3 in ${games.filter(g=>g.floor===3).length}`,
   `boss (7.3, for 7.4 calibration, no threshold): runs that reached the boss floor ${st.reachedBoss}, boss defeated ${st.bossDefeated}, wiped on the boss floor ${st.bossWipes}, left by the lobby exit ${st.lobbyExits}`,
   `recruit invitations ${st.invites}: accepted ${st.accepted} (with a swap-out ${st.swapped}), rejected ${st.rejected}`,
-  `run level-ups ${st.levelUps} (mean final level ${(sum(games,g=>g.level)/total).toFixed(2)})`,
+  `run level-ups ${st.levelUps} (mean final level ${(sum(games,g=>g.level)/total).toFixed(2)}), evolutions ${st.evolutions}`,
   `technique machines obtained ${st.tmGot}, brought out ${st.tmBrought}, learned at base ${st.learned}`,
   `floor crossings ${st.transits} (cancelled ${st.cancelledTransits})`,
   `backpack: berries used ${st.berries}, tonics used ${st.tonics}, rest point used ${st.rests}, guard used ${st.guards}, line used ${st.lines}, lead switches ${st.switches}`,

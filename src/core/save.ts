@@ -1,7 +1,7 @@
-import {applyCommand,clone,levelFor,PROG,RULE_VERSION,CONTENT_VERSION,closeOut,isProtected,reasonsOf,bossDefeated,type World,type Command,type Result,type StoredFloor,type Dungeon} from './engine.ts';
-import {WILD_SPECIES,BOSS,serviceRoll} from './dungeon.ts';
+import {applyCommand,clone,RULE_VERSION,CONTENT_VERSION,closeOut,isProtected,reasonsOf,bossDefeated,type World,type Command,type Result,type StoredFloor,type Dungeon} from './engine.ts';
+import {BOSS,serviceRoll} from './dungeon.ts';
 import {ECON} from './economy.ts';
-import {speciesOf,tmPool,learnableMove,BOSS_SPECIES} from './roster.ts';
+import {speciesOf,tmPool,learnableMove} from './roster.ts';
 import {profileProblem,profileFitsWorld,settleRun,settleSummary,applyBase,squadOf,migrateProfile,migrateProfileMoves,purseProblem,type Profile,type BaseAction,type SettleSummary} from './base.ts';
 import {createExpedition} from './engine.ts';
 import {moveOf} from './moves.ts';
@@ -21,13 +21,18 @@ const position=(v:unknown):v is {x:number;y:number}=>object(v)&&integer(v.x)&&in
 const legacyBehaviors=['strong','line','guard','push'];
 const moveIds=(v:unknown):v is string[]=>strings(v)&&v.every(id=>!!moveOf(id));
 const exactKeys=(v:Record<string,unknown>,keys:string[])=>Object.keys(v).sort().join()===keys.slice().sort().join();
-// Released boss numbers stay valid as a complete tuple when current tuning changes.
-// Loading never replaces the numbers held by an existing boss (issue #38).
-const BOSS_HISTORY=[{hp:80,damage:6,range:3}] as const;
-const validBossNumbers=(v:Record<string,unknown>)=>[BOSS,...BOSS_HISTORY].some(b=>v.maxHp===b.hp&&v.damage===b.damage&&v.range===b.range);
+// These values belong to the rules 1/2 World reader only. Current 7.8 level and
+// encounter rules are deliberately not used to judge an expedition from those versions.
+const LEGACY_PROG={thresholds:[0,3,7,12,18],maxLevel:5,hpPerLevel:2,goalExp:2} as const;
+const legacyLevelFor=(exp:number)=>LEGACY_PROG.thresholds.filter(t=>exp>=t).length;
+const LEGACY_WILD_SPECIES=new Set(['pidgey','rattata','spearow','zubat','geodude','sandshrew','growlithe','magnemite','onix','dratini','wooper','houndour','makuhita']);
+const LEGACY_BOSS_SPECIES=new Set<string>(['arcanine']);
+// 7.3 boss tuple and its earlier released tuple. BOSS in current dungeon data now contains identity only.
+const BOSS_HISTORY=[{hp:60,damage:4,range:3},{hp:80,damage:6,range:3}] as const;
+const validBossNumbers=(v:Record<string,unknown>)=>BOSS_HISTORY.some(b=>v.maxHp===b.hp&&v.damage===b.damage&&v.range===b.range);
 function validUnit(v:unknown,depth=0):boolean {
   // 7.3 H1: a nested unit (a recruit) never carries the boss mark or the boss species.
-  if(depth>0&&object(v)&&(v.boss!==undefined||(typeof v.species==='string'&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species))))return false;
+  if(depth>0&&object(v)&&(v.boss!==undefined||(typeof v.species==='string'&&LEGACY_BOSS_SPECIES.has(v.species))))return false;
   if(!object(v)||typeof v.id!=='string'||!['friend','enemy'].includes(String(v.side))||!integer(v.hp)||!integer(v.maxHp)||(v.maxHp as number)<=0||(v.hp as number)<0||(v.hp as number)>(v.maxHp as number)||(v.pos!==null&&!position(v.pos))||!object(v.pp)||!object(v.maxPp)||!moveIds(v.learned))return false;
   const allowed=['id','side','hp','maxHp','pos','pp','maxPp','learned','ai','protected','damage','range','recruit','species','inst','moves','boss','stages','protect','counter','lastMove','reflect','lightscreen'];
   if(Object.keys(v).some(k=>!allowed.includes(k))||new Set(v.learned).size!==v.learned.length)return false;
@@ -46,11 +51,11 @@ function validUnit(v:unknown,depth=0):boolean {
   if(v.range!==undefined&&(!integer(v.range)||(v.range as number)<1))return false;
   // 7.3 boss: an Arcanine from the full Pokédex is still valid in a run only with the boss mark (enemy side, fixed numbers, no recruit, no base instance).
   if(v.boss!==undefined&&(v.boss!==true||v.side!=='enemy'||v.species!==BOSS.species||!validBossNumbers(v)||v.ai!=='melee'||v.recruit!==undefined||v.inst!==undefined))return false;
-  if(v.species!==undefined&&(typeof v.species!=='string'||!(speciesOf(v.species)||(v.boss===true&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species)))))return false;
-  if(typeof v.species==='string'&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species)&&v.boss!==true)return false;
+  if(v.species!==undefined&&(typeof v.species!=='string'||!speciesOf(v.species)))return false;
+  if(typeof v.species==='string'&&LEGACY_BOSS_SPECIES.has(v.species)&&v.boss!==true)return false;
   if(v.inst!==undefined&&(v.side!=='friend'||typeof v.inst!=='string'||!v.inst||!moveIds(v.moves)||v.species===undefined))return false;
   // Expedition enemies are always wild species; a starter on the enemy side is a contradictory save.
-  if(v.side==='enemy'&&v.species!==undefined&&v.boss!==true&&!(String(v.species) in WILD_SPECIES))return false;
+  if(v.side==='enemy'&&v.species!==undefined&&v.boss!==true&&!LEGACY_WILD_SPECIES.has(String(v.species)))return false;
   return v.recruit===undefined||(depth<1&&validUnit(v.recruit,depth+1));
 }
 const keyOf=(p:{x:number;y:number})=>`${p.x},${p.y}`;
@@ -90,10 +95,10 @@ function validProgress(s:World,d:Dungeon):boolean {
   const points=[...s.points,...Object.values(d.stored).flatMap(f=>f.points)];
   if(p===undefined)return !points.some(q=>isPickup(q.kind))&&s.tms===undefined&&s.purse===undefined&&s.shop===undefined&&s.exchange===undefined;
   if(!object(p)||!integer(p.level)||!integer(p.exp)||!integer(p.rng)||!integer(p.made)||!Array.isArray(p.kills)||!object(p.items))return false;
-  if(p.exp<0||p.level<1||p.level>PROG.maxLevel||p.level!==levelFor(p.exp)||p.rng<0||p.rng>4294967295||p.made<0||p.made>999||p.kills.length>0)return false;
+  if(p.exp<0||p.level<1||p.level>LEGACY_PROG.maxLevel||p.level!==legacyLevelFor(p.exp)||p.rng<0||p.rng>4294967295||p.made<0||p.made>999||p.kills.length>0)return false;
   if(Object.keys(p.items).sort().join()!=='berry,tonic')return false;
   for(const k of ['berry','tonic'] as const){const n=p.items[k];if(!integer(n)||n<0||n>points.filter(q=>q.kind===k&&q.used).length+(s.shop?.trades.filter(t=>t.item===k).length??0))return false;}
-  if(s.goal&&p.exp<PROG.goalExp)return false;
+  if(s.goal&&p.exp<LEGACY_PROG.goalExp)return false;
   if(points.filter(q=>q.kind==='rest').length>(d.base?1:0))return false;
   return validTms(s)&&validServices(s,d);
 }
@@ -148,12 +153,12 @@ function validSpeciesUnit(u:{species?:string;maxHp:number;learned:string[];pp:Pa
     const m=u.moves.map(n=>learnableMove(sp.id,n));
     if(m.length>2||m.some(x=>!x)||new Set(u.moves).size!==m.length||u.learned.join()!==u.moves.join()||Object.keys(u.maxPp).sort().join()!==[...u.moves].sort().join()||Object.keys(u.pp).sort().join()!==[...u.moves].sort().join())return false;
     for(let i=0;i<m.length;i++)if(u.maxPp[u.moves[i]]!==m[i]!.pp||!integer(u.pp[u.moves[i]]))return false;
-    const top=sp.maxHp+PROG.hpPerLevel*(level-1);return tier==='queue'?u.maxHp===top:u.maxHp>=sp.maxHp&&u.maxHp<=top;
+    const top=sp.maxHp+LEGACY_PROG.hpPerLevel*(level-1);return tier==='queue'?u.maxHp===top:u.maxHp>=sp.maxHp&&u.maxHp<=top;
   }
   const kit=Object.fromEntries(sp.kit.map(k=>[k.move,k.pp]));
   if([...u.learned].sort().join()!==Object.keys(kit).sort().join()||Object.keys(u.maxPp).sort().join()!==Object.keys(kit).sort().join())return false;
   for(const [k,n] of Object.entries(kit))if(u.maxPp[k]!==n||!integer(u.pp[k]))return false;
-  const top=sp.maxHp+PROG.hpPerLevel*(level-1);
+  const top=sp.maxHp+LEGACY_PROG.hpPerLevel*(level-1);
   return tier==='queue'?u.maxHp===top:tier==='camp'?u.maxHp>=sp.maxHp&&u.maxHp<=top:u.maxHp>=sp.maxHp&&u.maxHp<=top;
 }
 /** Every roster member and invitation of a 6.4 run; a pending invitation is exactly the R07 half snapshot at the current run level. */
@@ -166,7 +171,7 @@ function validRun(s:World):boolean {
   for(const i of s.invitations){
     if(!validSpeciesUnit(i.unit,p.level,'any'))return false;
     if(i.status==='pending'){
-      const u=i.unit,top=speciesOf(u.species!)!.maxHp+PROG.hpPerLevel*(p.level-1);
+      const u=i.unit,top=speciesOf(u.species!)!.maxHp+LEGACY_PROG.hpPerLevel*(p.level-1);
       if(u.maxHp!==top||u.hp!==Math.max(1,Math.floor(top/2)))return false;
       for(const [k,m] of Object.entries(u.maxPp))if(!integer(m)||(u.pp as Record<string,number>)[k]!==Math.min(m as number,Math.max(1,Math.floor((m as number)/2))))return false;
     }
@@ -224,7 +229,7 @@ function validWorld(v:unknown):v is World {
   if(s.points.some(p=>!object(p)||!position(p.pos)||!pointKinds.includes(p.kind)||typeof p.used!=='boolean'||!cells.has(`${p.pos.x},${p.pos.y}`)))return false;
   if(s.anchor!==null&&!position(s.anchor))return false;
   if(s.request!==null&&(!object(s.request)||typeof s.request.actor!=='string'||!s.units[s.request.actor]||!position(s.request.pos)||typeof s.request.locked!=='boolean'))return false;
-  if(s.invitations.some(i=>!object(i)||typeof i.id!=='string'||!validUnit(i.unit)||(i.unit as unknown as Record<string,unknown>).boss!==undefined||(typeof i.unit.species==='string'&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,i.unit.species))||!['pending','accepted','rejected','cancelled'].includes(i.status)))return false;
+  if(s.invitations.some(i=>!object(i)||typeof i.id!=='string'||!validUnit(i.unit)||(i.unit as unknown as Record<string,unknown>).boss!==undefined||!['pending','accepted','rejected','cancelled'].includes(i.status)))return false;
   if(s.phase==='ended'){const e=s.end;if(!object(e)||e.id!==`${s.runId}:end`||!['normal','wipe'].includes(e.outcome)||!strings(e.team)||!strings(e.camp)||e.team.join()!==s.queue.join()||e.camp.join()!==s.camp.join()||e.goal!==s.goal||e.acquired!==s.bag||e.brought!==(e.outcome==='normal'?s.bag:0))return false;
     if(!validEnd(s,e))return false;}else if(s.end!==null)return false;
   // Only complete processing checkpoints may be loaded. A phase tag cannot
@@ -348,7 +353,25 @@ function defaultWorldTeamGuardState(v:unknown):void {
 
 const LEGACY_RULES_1='trial-rules-1',LEGACY_CONTENT_1='trial-content-1';
 const LEGACY_RULES_2='trial-rules-2',LEGACY_CONTENT_2='trial-content-2';
+const LEGACY_RULES_3='trial-rules-3',LEGACY_CONTENT_3='trial-content-3';
 const PROFILE_KEYS=['expeditions','next','roster','vault','team','leader','account','rescue','lost','origin'];
+function defaultProfileTactics(v:unknown):void {
+  if(!object(v))return;
+  if(Array.isArray(v.roster))for(const instance of v.roster)if(object(instance)&&instance.tactic===undefined)instance.tactic='together';
+  if(Array.isArray(v.rescue))for(const entry of v.rescue)if(object(entry)&&object(entry.inst)&&entry.inst.tactic===undefined)entry.inst.tactic='together';
+}
+function migrateV3Camp(raw:string):Envelope {
+  const parsed=parseJson(raw);
+  if(!object(parsed)||parsed.format!==2||parsed.rules!==LEGACY_RULES_3||parsed.content!==LEGACY_CONTENT_3)
+    throw Error('存档版本不兼容；原记录已保留');
+  const e=parsed;
+  if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isInteger(e.sequence)||Number(e.sequence)<1)
+    throw Error('旧存档结构损坏；原记录已保留');
+  const profile=structuredClone(e.profile) as unknown;
+  defaultProfileTactics(profile);
+  if(!strictProfileShape(profile))throw Error('旧存档的营地档案损坏；原记录已保留');
+  return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:e.build,sequence:Math.min(Number(e.sequence)+1,Number.MAX_SAFE_INTEGER),profile};
+}
 function strictProfileShape(v:unknown):v is Profile {
   return object(v)&&exactKeys(v,PROFILE_KEYS)&&Array.isArray(v.rescue)&&v.rescue.every(r=>object(r)&&exactKeys(r,['inst','paid','left']))&&
     Array.isArray(v.lost)&&v.lost.every(l=>object(l)&&exactKeys(l,['id','species','expedition']))&&profileProblem(v)===null;
@@ -385,6 +408,7 @@ function decodeLegacyRecord(e:Record<string,unknown>,validateWorld:boolean):Lega
     }
     e.rules=LEGACY_RULES_2;e.content=LEGACY_CONTENT_2;
   }
+  defaultProfileTactics(e.profile);
   if(!strictProfileShape(e.profile))throw Error('旧存档的营地档案损坏；原记录已保留');
   if(validateWorld){
     defaultWorldTeamGuardState(e.current);defaultWorldTeamGuardState(e.recent);
@@ -404,9 +428,17 @@ export function decode(raw:string):Envelope {
   const e=parsed;
   if(e.format!==2||e.rules!==RULE_VERSION||e.content!==CONTENT_VERSION)throw Error('存档版本不兼容；原记录已保留');
   if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isSafeInteger(e.sequence)||Number(e.sequence)<1||!strictProfileShape(e.profile))throw Error('存档结构损坏；原记录已保留');
-  return structuredClone(e) as unknown as Envelope;
+  const normalized=structuredClone(e) as unknown as Envelope;
+  defaultProfileTactics(normalized.profile);
+  if(!strictProfileShape(normalized.profile))throw Error('存档结构损坏；原记录已保留');
+  return normalized;
 }
 function campFromLegacy(raw:string):Envelope {
+  const parsed=parseJson(raw);
+  if(object(parsed)&&parsed.format===2){
+    if(parsed.rules===LEGACY_RULES_3&&parsed.content===LEGACY_CONTENT_3)return migrateV3Camp(raw);
+    throw Error('存档版本不兼容；原记录已保留');
+  }
   const e=parseLegacy(raw);
   const ended=object(e.current)&&e.current.phase==='ended';
   const old=decodeLegacyRecord(e,ended);
@@ -446,7 +478,7 @@ export class TrialStore {
   private loadStored(raw:string):Promise<boolean> {
     try{
       const parsed=parseJson(raw);
-      if(object(parsed)&&parsed.format===2){this.record=decode(raw);this.status='ready';this.lastSaved=this.label();return Promise.resolve(true);}
+      if(object(parsed)&&parsed.format===2&&parsed.rules===RULE_VERSION&&parsed.content===CONTENT_VERSION){this.record=decode(raw);this.status='ready';this.lastSaved=this.label();return Promise.resolve(true);}
       const migrated=campFromLegacy(raw);
       this.record=migrated;
       return this.persist();
@@ -535,7 +567,8 @@ export class TrialStore {
     if(overwrite&&!confirmed)return false;
     if(this.status==='blocked'&&(this.raw===null||!this.exported))return false;
     const previous=this.snapshot();
-    this.record=this.camp(profile,1);this.world=null;this.activeProfile=null;this.activeKind=null;this.savedSettlement=null;
+    const normalized=clone(profile);defaultProfileTactics(normalized);
+    this.record=this.camp(normalized,1);this.world=null;this.activeProfile=null;this.activeKind=null;this.savedSettlement=null;
     if(await this.persist())return true;
     const failure=this.error;this.restore(previous);this.error=failure||previous.error;return false;
   }
@@ -550,7 +583,7 @@ export class TrialStore {
     let incoming:Envelope;
     try{
       const parsed=parseJson(raw);
-      incoming=object(parsed)&&parsed.format===2?decode(raw):campFromLegacy(raw);
+      incoming=object(parsed)&&parsed.format===2&&parsed.rules===RULE_VERSION&&parsed.content===CONTENT_VERSION?decode(raw):campFromLegacy(raw);
     }catch(e){
       const message=e instanceof Error?e.message:String(e);
       this.importError=/[\u3400-\u9fff]/.test(message)?message:'导入文件不是有效的存档记录；原记录已保留';return false;

@@ -21,3 +21,10 @@ export const MOVE_DEFS:Record<string,MoveSpec>=Object.assign(Object.create(null)
 export function moveOf(id:string):MoveSpec|undefined {
   return Object.prototype.hasOwnProperty.call(MOVE_DEFS,id)?MOVE_DEFS[id]:undefined;
 }
+
+/** Categories come from the fixed Showdown snapshot, independently of move reach. */
+export type MoveCategory='Physical'|'Special'|'Status';
+const categories:Record<string,MoveCategory>=(source as unknown as {categories:Record<string,MoveCategory>}).categories;
+export function moveCategory(id:string):MoveCategory|undefined {
+  return Object.prototype.hasOwnProperty.call(categories,id)?categories[id]:undefined;
+}

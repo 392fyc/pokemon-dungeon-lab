@@ -251,7 +251,11 @@ function migrateWorld(w:unknown,profile:unknown,history=false):void {
   }
 }
 export function decode(raw:string):Envelope {
-  const e=JSON.parse(raw) as Envelope;
+  let parsed:unknown;
+  try{parsed=JSON.parse(raw) as unknown;}
+  catch{throw Error('存档不是有效的JSON文本；原记录已保留');}
+  if(!object(parsed))throw Error('存档结构损坏；原记录已保留');
+  const e=parsed as unknown as Envelope;
   if(e.format!==1||e.rules!==RULE_VERSION||e.content!==CONTENT_VERSION)throw Error('存档版本不兼容；原记录已保留');
   if(object(e)){if(e.profile!==undefined)e.profile=migrateProfile(e.profile) as Profile;migrateWorld(e.current,e.profile);migrateWorld(e.recent,undefined,true);}
   if(typeof e.build!=='string'||!Number.isInteger(e.sequence)||e.sequence<1||(e.current!==null&&!validWorld(e.current))||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('存档结构损坏；原记录已保留');
@@ -266,6 +270,8 @@ export class TrialStore {
   private raw:string|null=null;
   private exported=false;
   status:SaveStatus='empty';error='';lastSaved:string|null=null;
+  /** Import feedback is separate from the loaded record's storage/decoding diagnosis. */
+  importError='';
   constructor(privatePort:StoragePort,key=SAVE_KEY){
     this.port=privatePort;this.key=key;
     try{this.raw=this.port.getItem(key);if(this.raw!==null){this.record=decode(this.raw);this.status='ready';this.lastSaved=this.label();}}
@@ -277,6 +283,8 @@ export class TrialStore {
   /** 6.5: the base profile (null for records that have none yet), and whether the player is at the base screen (a record with no current run). */
   get profile():Profile|null{return this.record?.profile?clone(this.record.profile):null;}
   get atBase():boolean{return !!this.record&&this.record.current===null;}
+  /** Export the complete, validated current record. Unreadable bytes remain available only through exportRaw(). */
+  exportRecord():string|null {return this.status==='ready'&&this.record?JSON.stringify(this.record):null;}
   private label():string|null {if(!this.record)return null;const c=this.record.current;return c?`${c.runId} · 第${c.round}轮 · ${c.phase} · 保存${this.record.sequence}`:`基地 · 待出发 · 保存${this.record.sequence}`;}
   private async persist():Promise<boolean> {
     this.status='saving';try{const text=JSON.stringify(this.record);await this.port.setItem(this.key,text);this.raw=text;this.status='ready';this.error='';this.lastSaved=this.label();return true;}
@@ -341,6 +349,33 @@ export class TrialStore {
     const failure=this.error;this.record=previous.record;this.raw=previous.raw;this.lastSaved=previous.lastSaved;this.status=previous.status;this.error=failure||previous.error;return false;
   }
   exportRaw():string|null {this.exported=true;return this.raw;}
+  /**
+   * Replace the complete save with an imported record. Existing readable or blocked records need confirmation;
+   * blocked bytes must first be exported. decode applies the same validation and legacy-field migration as loading.
+   */
+  async importRecord(raw:string,confirmed:boolean):Promise<boolean> {
+    this.importError='';
+    if(this.status==='saving'||this.status==='failed'){
+      this.importError='保存尚未完成；请先完成或重试保存';return false;
+    }
+    const overwrite=this.status==='ready'||this.status==='blocked';
+    if(overwrite&&!confirmed){this.importError='导入未确认；原记录已保留';return false;}
+    if(this.status==='blocked'&&(this.raw===null||!this.exported)){
+      this.importError='请先导出原始记录，再确认导入覆盖';return false;
+    }
+    let incoming:Envelope;
+    try{incoming=decode(raw);}
+    catch(e){
+      const message=e instanceof Error?e.message:String(e);
+      this.importError=/[\u3400-\u9fff]/.test(message)?message:'导入文件不是有效的存档记录；原记录已保留';
+      return false;
+    }
+    const previous={record:this.record,raw:this.raw,status:this.status,error:this.error,lastSaved:this.lastSaved,exported:this.exported};
+    this.record=incoming;
+    if(await this.persist()){this.exported=false;this.importError='';return true;}
+    this.record=previous.record;this.raw=previous.raw;this.status=previous.status;this.lastSaved=previous.lastSaved;this.exported=previous.exported;
+    this.error=previous.error;this.importError='导入保存失败；原记录已保留';return false;
+  }
   async resetAfterExport(s:World,confirmed:boolean):Promise<boolean> {
     if(this.status!=='blocked'||this.raw===null||!this.exported||!confirmed)return false;
     this.record={format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:clone(s),recent:null};return this.persist();

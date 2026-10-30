@@ -10,7 +10,7 @@
   "downloaded": "2026-10-30",
   "githubCommit": "ccfaa20f32af363569cd21a9d501b2bc1ded26b1",
   "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建",
-  "note": "图鉴1–151完整基础形态，并保留旧23种。learnsetGen按最新有升级招式的世代决定；旧23种kit/maxHp/starter冻结。新增kit依图鉴导入规格生成。"
+  "note": "图鉴1–151完整基础形态，并保留旧23种及其15种后续形态。learnsetGen按最新有升级招式的世代决定；原160种既有字段保留，仅追加进化与分类字段。"
  },
  "species": [
   {
@@ -124,7 +124,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[bulbasaur]; learnsets.json[bulbasaur] 第9世代; moves.json"
+   "source": "pokedex.json[bulbasaur]; learnsets.json[bulbasaur] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "ivysaur"
+   ],
+   "legendary": false
   },
   {
    "id": "charmander",
@@ -312,7 +317,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[charmander]; learnsets.json[charmander] 第9世代; moves.json"
+   "source": "pokedex.json[charmander]; learnsets.json[charmander] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "charmeleon"
+   ],
+   "legendary": false
   },
   {
    "id": "squirtle",
@@ -460,7 +470,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[squirtle]; learnsets.json[squirtle] 第9世代; moves.json"
+   "source": "pokedex.json[squirtle]; learnsets.json[squirtle] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "wartortle"
+   ],
+   "legendary": false
   },
   {
    "id": "pidgey",
@@ -565,7 +580,12 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[pidgey]; learnsets.json[pidgey] 第7世代; moves.json"
+   "source": "pokedex.json[pidgey]; learnsets.json[pidgey] 第7世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "pidgeotto"
+   ],
+   "legendary": false
   },
   {
    "id": "rattata",
@@ -689,7 +709,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[rattata]; learnsets.json[rattata] 第7世代; moves.json"
+   "source": "pokedex.json[rattata]; learnsets.json[rattata] 第7世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "raticate"
+   ],
+   "legendary": false
   },
   {
    "id": "spearow",
@@ -786,7 +811,12 @@
      "pp": 2
     }
    ],
-   "source": "pokedex.json[spearow]; learnsets.json[spearow] 第7世代; moves.json"
+   "source": "pokedex.json[spearow]; learnsets.json[spearow] 第7世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "fearow"
+   ],
+   "legendary": false
   },
   {
    "id": "pikachu",
@@ -926,7 +956,12 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[pikachu]; learnsets.json[pikachu] 第9世代; moves.json"
+   "source": "pokedex.json[pikachu]; learnsets.json[pikachu] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "raichu"
+   ],
+   "legendary": false
   },
   {
    "id": "zubat",
@@ -1055,7 +1090,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[zubat]; learnsets.json[zubat] 第8世代; moves.json"
+   "source": "pokedex.json[zubat]; learnsets.json[zubat] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "golbat"
+   ],
+   "legendary": false
   },
   {
    "id": "geodude",
@@ -1192,7 +1232,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[geodude]; learnsets.json[geodude] 第9世代; moves.json"
+   "source": "pokedex.json[geodude]; learnsets.json[geodude] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "graveler"
+   ],
+   "legendary": false
   },
   {
    "id": "chikorita",
@@ -1296,7 +1341,12 @@
      "pp": 2
     }
    ],
-   "source": "pokedex.json[chikorita]; learnsets.json[chikorita] 第9世代; moves.json"
+   "source": "pokedex.json[chikorita]; learnsets.json[chikorita] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "bayleef"
+   ],
+   "legendary": false
   },
   {
    "id": "cyndaquil",
@@ -1432,7 +1482,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[cyndaquil]; learnsets.json[cyndaquil] 第9世代; moves.json"
+   "source": "pokedex.json[cyndaquil]; learnsets.json[cyndaquil] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "quilava"
+   ],
+   "legendary": false
   },
   {
    "id": "totodile",
@@ -1604,7 +1659,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[totodile]; learnsets.json[totodile] 第9世代; moves.json"
+   "source": "pokedex.json[totodile]; learnsets.json[totodile] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "croconaw"
+   ],
+   "legendary": false
   },
   {
    "id": "treecko",
@@ -1756,7 +1816,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[treecko]; learnsets.json[treecko] 第9世代; moves.json"
+   "source": "pokedex.json[treecko]; learnsets.json[treecko] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "grovyle"
+   ],
+   "legendary": false
   },
   {
    "id": "torchic",
@@ -1892,7 +1957,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[torchic]; learnsets.json[torchic] 第9世代; moves.json"
+   "source": "pokedex.json[torchic]; learnsets.json[torchic] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "combusken"
+   ],
+   "legendary": false
   },
   {
    "id": "mudkip",
@@ -2036,7 +2106,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[mudkip]; learnsets.json[mudkip] 第9世代; moves.json"
+   "source": "pokedex.json[mudkip]; learnsets.json[mudkip] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "marshtomp"
+   ],
+   "legendary": false
   },
   {
    "id": "sandshrew",
@@ -2200,7 +2275,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[sandshrew]; learnsets.json[sandshrew] 第9世代; moves.json"
+   "source": "pokedex.json[sandshrew]; learnsets.json[sandshrew] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "sandslash"
+   ],
+   "legendary": false
   },
   {
    "id": "growlithe",
@@ -2332,7 +2412,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[growlithe]; learnsets.json[growlithe] 第9世代; moves.json"
+   "source": "pokedex.json[growlithe]; learnsets.json[growlithe] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "arcanine"
+   ],
+   "legendary": false
   },
   {
    "id": "magnemite",
@@ -2441,7 +2526,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[magnemite]; learnsets.json[magnemite] 第9世代; moves.json"
+   "source": "pokedex.json[magnemite]; learnsets.json[magnemite] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "magneton"
+   ],
+   "legendary": false
   },
   {
    "id": "onix",
@@ -2570,7 +2660,9 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[onix]; learnsets.json[onix] 第8世代; moves.json"
+   "source": "pokedex.json[onix]; learnsets.json[onix] 第8世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "dratini",
@@ -2722,7 +2814,12 @@
      "pp": 2
     }
    ],
-   "source": "pokedex.json[dratini]; learnsets.json[dratini] 第9世代; moves.json"
+   "source": "pokedex.json[dratini]; learnsets.json[dratini] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "dragonair"
+   ],
+   "legendary": false
   },
   {
    "id": "wooper",
@@ -2871,7 +2968,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[wooper]; learnsets.json[wooper] 第9世代; moves.json"
+   "source": "pokedex.json[wooper]; learnsets.json[wooper] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "quagsire"
+   ],
+   "legendary": false
   },
   {
    "id": "houndour",
@@ -3028,7 +3130,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[houndour]; learnsets.json[houndour] 第9世代; moves.json"
+   "source": "pokedex.json[houndour]; learnsets.json[houndour] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "houndoom"
+   ],
+   "legendary": false
   },
   {
    "id": "makuhita",
@@ -3204,7 +3311,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[makuhita]; learnsets.json[makuhita] 第9世代; moves.json"
+   "source": "pokedex.json[makuhita]; learnsets.json[makuhita] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "hariyama"
+   ],
+   "legendary": false
   },
   {
    "id": "ivysaur",
@@ -3321,7 +3433,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[ivysaur]; learnsets.json[ivysaur] 第9世代; moves.json"
+   "source": "pokedex.json[ivysaur]; learnsets.json[ivysaur] 第9世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "bulbasaur",
+   "evos": [
+    "venusaur"
+   ],
+   "legendary": false
   },
   {
    "id": "venusaur",
@@ -3454,7 +3572,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[venusaur]; learnsets.json[venusaur] 第9世代; moves.json"
+   "source": "pokedex.json[venusaur]; learnsets.json[venusaur] 第9世代; moves.json",
+   "evoLevel": 32,
+   "prevo": "ivysaur",
+   "legendary": false
   },
   {
    "id": "charmeleon",
@@ -3622,7 +3743,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[charmeleon]; learnsets.json[charmeleon] 第9世代; moves.json"
+   "source": "pokedex.json[charmeleon]; learnsets.json[charmeleon] 第9世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "charmander",
+   "evos": [
+    "charizard"
+   ],
+   "legendary": false
   },
   {
    "id": "charizard",
@@ -3807,7 +3934,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[charizard]; learnsets.json[charizard] 第9世代; moves.json"
+   "source": "pokedex.json[charizard]; learnsets.json[charizard] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "charmeleon",
+   "legendary": false
   },
   {
    "id": "wartortle",
@@ -3947,7 +4077,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[wartortle]; learnsets.json[wartortle] 第9世代; moves.json"
+   "source": "pokedex.json[wartortle]; learnsets.json[wartortle] 第9世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "squirtle",
+   "evos": [
+    "blastoise"
+   ],
+   "legendary": false
   },
   {
    "id": "blastoise",
@@ -4127,7 +4263,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[blastoise]; learnsets.json[blastoise] 第9世代; moves.json"
+   "source": "pokedex.json[blastoise]; learnsets.json[blastoise] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "wartortle",
+   "legendary": false
   },
   {
    "id": "caterpie",
@@ -4171,7 +4310,12 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[caterpie]; learnsets.json[caterpie] 第8世代; moves.json"
+   "source": "pokedex.json[caterpie]; learnsets.json[caterpie] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "metapod"
+   ],
+   "legendary": false
   },
   {
    "id": "metapod",
@@ -4212,7 +4356,13 @@
     }
    ],
    "source": "pokedex.json[metapod]; learnsets.json[metapod] 第8世代; moves.json",
-   "availability": "暂不出场"
+   "availability": "暂不出场",
+   "evoLevel": 7,
+   "prevo": "caterpie",
+   "evos": [
+    "butterfree"
+   ],
+   "legendary": false
   },
   {
    "id": "butterfree",
@@ -4333,7 +4483,10 @@
      "pp": 2
     }
    ],
-   "source": "pokedex.json[butterfree]; learnsets.json[butterfree] 第8世代; moves.json"
+   "source": "pokedex.json[butterfree]; learnsets.json[butterfree] 第8世代; moves.json",
+   "evoLevel": 10,
+   "prevo": "metapod",
+   "legendary": false
   },
   {
    "id": "weedle",
@@ -4378,7 +4531,12 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[weedle]; learnsets.json[weedle] 第7世代; moves.json"
+   "source": "pokedex.json[weedle]; learnsets.json[weedle] 第7世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "kakuna"
+   ],
+   "legendary": false
   },
   {
    "id": "kakuna",
@@ -4424,7 +4582,13 @@
     }
    ],
    "source": "pokedex.json[kakuna]; learnsets.json[kakuna] 第7世代; moves.json",
-   "availability": "暂不出场"
+   "availability": "暂不出场",
+   "evoLevel": 7,
+   "prevo": "weedle",
+   "evos": [
+    "beedrill"
+   ],
+   "legendary": false
   },
   {
    "id": "beedrill",
@@ -4533,7 +4697,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[beedrill]; learnsets.json[beedrill] 第7世代; moves.json"
+   "source": "pokedex.json[beedrill]; learnsets.json[beedrill] 第7世代; moves.json",
+   "evoLevel": 10,
+   "prevo": "kakuna",
+   "legendary": false
   },
   {
    "id": "pidgeotto",
@@ -4622,7 +4789,13 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[pidgeotto]; learnsets.json[pidgeotto] 第7世代; moves.json"
+   "source": "pokedex.json[pidgeotto]; learnsets.json[pidgeotto] 第7世代; moves.json",
+   "evoLevel": 18,
+   "prevo": "pidgey",
+   "evos": [
+    "pidgeot"
+   ],
+   "legendary": false
   },
   {
    "id": "pidgeot",
@@ -4711,7 +4884,10 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[pidgeot]; learnsets.json[pidgeot] 第7世代; moves.json"
+   "source": "pokedex.json[pidgeot]; learnsets.json[pidgeot] 第7世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "pidgeotto",
+   "legendary": false
   },
   {
    "id": "raticate",
@@ -4843,7 +5019,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[raticate]; learnsets.json[raticate] 第7世代; moves.json"
+   "source": "pokedex.json[raticate]; learnsets.json[raticate] 第7世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "rattata",
+   "legendary": false
   },
   {
    "id": "fearow",
@@ -4928,7 +5107,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[fearow]; learnsets.json[fearow] 第7世代; moves.json"
+   "source": "pokedex.json[fearow]; learnsets.json[fearow] 第7世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "spearow",
+   "legendary": false
   },
   {
    "id": "ekans",
@@ -5072,7 +5254,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[ekans]; learnsets.json[ekans] 第9世代; moves.json"
+   "source": "pokedex.json[ekans]; learnsets.json[ekans] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "arbok"
+   ],
+   "legendary": false
   },
   {
    "id": "arbok",
@@ -5232,7 +5419,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[arbok]; learnsets.json[arbok] 第9世代; moves.json"
+   "source": "pokedex.json[arbok]; learnsets.json[arbok] 第9世代; moves.json",
+   "evoLevel": 22,
+   "prevo": "ekans",
+   "legendary": false
   },
   {
    "id": "raichu",
@@ -5376,7 +5566,10 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[raichu]; learnsets.json[raichu] 第9世代; moves.json"
+   "source": "pokedex.json[raichu]; learnsets.json[raichu] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "pikachu",
+   "legendary": false
   },
   {
    "id": "sandslash",
@@ -5552,7 +5745,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[sandslash]; learnsets.json[sandslash] 第9世代; moves.json"
+   "source": "pokedex.json[sandslash]; learnsets.json[sandslash] 第9世代; moves.json",
+   "evoLevel": 22,
+   "prevo": "sandshrew",
+   "legendary": false
   },
   {
    "id": "nidoranf",
@@ -5668,7 +5864,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[nidoranf]; learnsets.json[nidoranf] 第8世代; moves.json"
+   "source": "pokedex.json[nidoranf]; learnsets.json[nidoranf] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "nidorina"
+   ],
+   "legendary": false
   },
   {
    "id": "nidorina",
@@ -5776,7 +5977,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[nidorina]; learnsets.json[nidorina] 第8世代; moves.json"
+   "source": "pokedex.json[nidorina]; learnsets.json[nidorina] 第8世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "nidoranf",
+   "evos": [
+    "nidoqueen"
+   ],
+   "legendary": false
   },
   {
    "id": "nidoqueen",
@@ -5989,7 +6196,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[nidoqueen]; learnsets.json[nidoqueen] 第8世代; moves.json"
+   "source": "pokedex.json[nidoqueen]; learnsets.json[nidoqueen] 第8世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "nidorina",
+   "legendary": false
   },
   {
    "id": "nidoranm",
@@ -6113,7 +6323,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[nidoranm]; learnsets.json[nidoranm] 第8世代; moves.json"
+   "source": "pokedex.json[nidoranm]; learnsets.json[nidoranm] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "nidorino"
+   ],
+   "legendary": false
   },
   {
    "id": "nidorino",
@@ -6225,7 +6440,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[nidorino]; learnsets.json[nidorino] 第8世代; moves.json"
+   "source": "pokedex.json[nidorino]; learnsets.json[nidorino] 第8世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "nidoranm",
+   "evos": [
+    "nidoking"
+   ],
+   "legendary": false
   },
   {
    "id": "nidoking",
@@ -6442,7 +6663,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[nidoking]; learnsets.json[nidoking] 第8世代; moves.json"
+   "source": "pokedex.json[nidoking]; learnsets.json[nidoking] 第8世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "nidorino",
+   "legendary": false
   },
   {
    "id": "clefairy",
@@ -6630,7 +6854,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[clefairy]; learnsets.json[clefairy] 第9世代; moves.json"
+   "source": "pokedex.json[clefairy]; learnsets.json[clefairy] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "clefable"
+   ],
+   "legendary": false
   },
   {
    "id": "clefable",
@@ -6822,7 +7051,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[clefable]; learnsets.json[clefable] 第9世代; moves.json"
+   "source": "pokedex.json[clefable]; learnsets.json[clefable] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "clefairy",
+   "legendary": false
   },
   {
    "id": "vulpix",
@@ -6950,7 +7182,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[vulpix]; learnsets.json[vulpix] 第9世代; moves.json"
+   "source": "pokedex.json[vulpix]; learnsets.json[vulpix] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "ninetales"
+   ],
+   "legendary": false
   },
   {
    "id": "ninetales",
@@ -7086,7 +7323,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[ninetales]; learnsets.json[ninetales] 第9世代; moves.json"
+   "source": "pokedex.json[ninetales]; learnsets.json[ninetales] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "vulpix",
+   "legendary": false
   },
   {
    "id": "jigglypuff",
@@ -7271,7 +7511,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[jigglypuff]; learnsets.json[jigglypuff] 第9世代; moves.json"
+   "source": "pokedex.json[jigglypuff]; learnsets.json[jigglypuff] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "wigglytuff"
+   ],
+   "legendary": false
   },
   {
    "id": "wigglytuff",
@@ -7460,7 +7705,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[wigglytuff]; learnsets.json[wigglytuff] 第9世代; moves.json"
+   "source": "pokedex.json[wigglytuff]; learnsets.json[wigglytuff] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "jigglypuff",
+   "legendary": false
   },
   {
    "id": "golbat",
@@ -7573,7 +7821,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[golbat]; learnsets.json[golbat] 第8世代; moves.json"
+   "source": "pokedex.json[golbat]; learnsets.json[golbat] 第8世代; moves.json",
+   "evoLevel": 22,
+   "prevo": "zubat",
+   "legendary": false
   },
   {
    "id": "oddish",
@@ -7678,7 +7929,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[oddish]; learnsets.json[oddish] 第9世代; moves.json"
+   "source": "pokedex.json[oddish]; learnsets.json[oddish] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "gloom"
+   ],
+   "legendary": false
   },
   {
    "id": "gloom",
@@ -7783,7 +8039,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[gloom]; learnsets.json[gloom] 第9世代; moves.json"
+   "source": "pokedex.json[gloom]; learnsets.json[gloom] 第9世代; moves.json",
+   "evoLevel": 21,
+   "prevo": "oddish",
+   "evos": [
+    "vileplume"
+   ],
+   "legendary": false
   },
   {
    "id": "vileplume",
@@ -7904,7 +8166,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[vileplume]; learnsets.json[vileplume] 第9世代; moves.json"
+   "source": "pokedex.json[vileplume]; learnsets.json[vileplume] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "gloom",
+   "legendary": false
   },
   {
    "id": "paras",
@@ -8033,7 +8298,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[paras]; learnsets.json[paras] 第7世代; moves.json"
+   "source": "pokedex.json[paras]; learnsets.json[paras] 第7世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "parasect"
+   ],
+   "legendary": false
   },
   {
    "id": "parasect",
@@ -8150,7 +8420,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[parasect]; learnsets.json[parasect] 第7世代; moves.json"
+   "source": "pokedex.json[parasect]; learnsets.json[parasect] 第7世代; moves.json",
+   "evoLevel": 24,
+   "prevo": "paras",
+   "legendary": false
   },
   {
    "id": "venonat",
@@ -8263,7 +8536,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[venonat]; learnsets.json[venonat] 第9世代; moves.json"
+   "source": "pokedex.json[venonat]; learnsets.json[venonat] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "venomoth"
+   ],
+   "legendary": false
   },
   {
    "id": "venomoth",
@@ -8388,7 +8666,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[venomoth]; learnsets.json[venomoth] 第9世代; moves.json"
+   "source": "pokedex.json[venomoth]; learnsets.json[venomoth] 第9世代; moves.json",
+   "evoLevel": 31,
+   "prevo": "venonat",
+   "legendary": false
   },
   {
    "id": "diglett",
@@ -8524,7 +8805,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[diglett]; learnsets.json[diglett] 第9世代; moves.json"
+   "source": "pokedex.json[diglett]; learnsets.json[diglett] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "dugtrio"
+   ],
+   "legendary": false
   },
   {
    "id": "dugtrio",
@@ -8664,7 +8950,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[dugtrio]; learnsets.json[dugtrio] 第9世代; moves.json"
+   "source": "pokedex.json[dugtrio]; learnsets.json[dugtrio] 第9世代; moves.json",
+   "evoLevel": 26,
+   "prevo": "diglett",
+   "legendary": false
   },
   {
    "id": "meowth",
@@ -8824,7 +9113,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[meowth]; learnsets.json[meowth] 第9世代; moves.json"
+   "source": "pokedex.json[meowth]; learnsets.json[meowth] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "persian"
+   ],
+   "legendary": false
   },
   {
    "id": "persian",
@@ -8980,7 +9274,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[persian]; learnsets.json[persian] 第9世代; moves.json"
+   "source": "pokedex.json[persian]; learnsets.json[persian] 第9世代; moves.json",
+   "evoLevel": 28,
+   "prevo": "meowth",
+   "legendary": false
   },
   {
    "id": "psyduck",
@@ -9152,7 +9449,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[psyduck]; learnsets.json[psyduck] 第9世代; moves.json"
+   "source": "pokedex.json[psyduck]; learnsets.json[psyduck] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "golduck"
+   ],
+   "legendary": false
   },
   {
    "id": "golduck",
@@ -9328,7 +9630,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[golduck]; learnsets.json[golduck] 第9世代; moves.json"
+   "source": "pokedex.json[golduck]; learnsets.json[golduck] 第9世代; moves.json",
+   "evoLevel": 33,
+   "prevo": "psyduck",
+   "legendary": false
   },
   {
    "id": "mankey",
@@ -9488,7 +9793,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[mankey]; learnsets.json[mankey] 第9世代; moves.json"
+   "source": "pokedex.json[mankey]; learnsets.json[mankey] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "primeape"
+   ],
+   "legendary": false
   },
   {
    "id": "primeape",
@@ -9652,7 +9962,10 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[primeape]; learnsets.json[primeape] 第9世代; moves.json"
+   "source": "pokedex.json[primeape]; learnsets.json[primeape] 第9世代; moves.json",
+   "evoLevel": 28,
+   "prevo": "mankey",
+   "legendary": false
   },
   {
    "id": "arcanine",
@@ -9804,7 +10117,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[arcanine]; learnsets.json[arcanine] 第9世代; moves.json"
+   "source": "pokedex.json[arcanine]; learnsets.json[arcanine] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "growlithe",
+   "legendary": false
   },
   {
    "id": "poliwag",
@@ -9944,7 +10260,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[poliwag]; learnsets.json[poliwag] 第9世代; moves.json"
+   "source": "pokedex.json[poliwag]; learnsets.json[poliwag] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "poliwhirl"
+   ],
+   "legendary": false
   },
   {
    "id": "poliwhirl",
@@ -10096,7 +10417,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[poliwhirl]; learnsets.json[poliwhirl] 第9世代; moves.json"
+   "source": "pokedex.json[poliwhirl]; learnsets.json[poliwhirl] 第9世代; moves.json",
+   "evoLevel": 25,
+   "prevo": "poliwag",
+   "evos": [
+    "poliwrath"
+   ],
+   "legendary": false
   },
   {
    "id": "poliwrath",
@@ -10297,7 +10624,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[poliwrath]; learnsets.json[poliwrath] 第9世代; moves.json"
+   "source": "pokedex.json[poliwrath]; learnsets.json[poliwrath] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "poliwhirl",
+   "legendary": false
   },
   {
    "id": "abra",
@@ -10413,7 +10743,12 @@
     }
    ],
    "source": "pokedex.json[abra]; learnsets.json[abra] 第8世代; moves.json",
-   "availability": "暂不出场"
+   "availability": "暂不出场",
+   "evoLevel": 1,
+   "evos": [
+    "kadabra"
+   ],
+   "legendary": false
   },
   {
    "id": "kadabra",
@@ -10545,7 +10880,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[kadabra]; learnsets.json[kadabra] 第8世代; moves.json"
+   "source": "pokedex.json[kadabra]; learnsets.json[kadabra] 第8世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "abra",
+   "evos": [
+    "alakazam"
+   ],
+   "legendary": false
   },
   {
    "id": "alakazam",
@@ -10681,7 +11022,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[alakazam]; learnsets.json[alakazam] 第8世代; moves.json"
+   "source": "pokedex.json[alakazam]; learnsets.json[alakazam] 第8世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "kadabra",
+   "legendary": false
   },
   {
    "id": "machop",
@@ -10825,7 +11169,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[machop]; learnsets.json[machop] 第8世代; moves.json"
+   "source": "pokedex.json[machop]; learnsets.json[machop] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "machoke"
+   ],
+   "legendary": false
   },
   {
    "id": "machoke",
@@ -10961,7 +11310,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[machoke]; learnsets.json[machoke] 第8世代; moves.json"
+   "source": "pokedex.json[machoke]; learnsets.json[machoke] 第8世代; moves.json",
+   "evoLevel": 28,
+   "prevo": "machop",
+   "evos": [
+    "machamp"
+   ],
+   "legendary": false
   },
   {
    "id": "machamp",
@@ -11113,7 +11468,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[machamp]; learnsets.json[machamp] 第8世代; moves.json"
+   "source": "pokedex.json[machamp]; learnsets.json[machamp] 第8世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "machoke",
+   "legendary": false
   },
   {
    "id": "bellsprout",
@@ -11246,7 +11604,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[bellsprout]; learnsets.json[bellsprout] 第9世代; moves.json"
+   "source": "pokedex.json[bellsprout]; learnsets.json[bellsprout] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "weepinbell"
+   ],
+   "legendary": false
   },
   {
    "id": "weepinbell",
@@ -11383,7 +11746,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[weepinbell]; learnsets.json[weepinbell] 第9世代; moves.json"
+   "source": "pokedex.json[weepinbell]; learnsets.json[weepinbell] 第9世代; moves.json",
+   "evoLevel": 21,
+   "prevo": "bellsprout",
+   "evos": [
+    "victreebel"
+   ],
+   "legendary": false
   },
   {
    "id": "victreebel",
@@ -11516,7 +11885,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[victreebel]; learnsets.json[victreebel] 第9世代; moves.json"
+   "source": "pokedex.json[victreebel]; learnsets.json[victreebel] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "weepinbell",
+   "legendary": false
   },
   {
    "id": "tentacool",
@@ -11677,7 +12049,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[tentacool]; learnsets.json[tentacool] 第9世代; moves.json"
+   "source": "pokedex.json[tentacool]; learnsets.json[tentacool] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "tentacruel"
+   ],
+   "legendary": false
   },
   {
    "id": "tentacruel",
@@ -11834,7 +12211,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[tentacruel]; learnsets.json[tentacruel] 第9世代; moves.json"
+   "source": "pokedex.json[tentacruel]; learnsets.json[tentacruel] 第9世代; moves.json",
+   "evoLevel": 30,
+   "prevo": "tentacool",
+   "legendary": false
   },
   {
    "id": "graveler",
@@ -11967,7 +12347,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[graveler]; learnsets.json[graveler] 第9世代; moves.json"
+   "source": "pokedex.json[graveler]; learnsets.json[graveler] 第9世代; moves.json",
+   "evoLevel": 25,
+   "prevo": "geodude",
+   "evos": [
+    "golem"
+   ],
+   "legendary": false
   },
   {
    "id": "golem",
@@ -12104,7 +12490,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[golem]; learnsets.json[golem] 第9世代; moves.json"
+   "source": "pokedex.json[golem]; learnsets.json[golem] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "graveler",
+   "legendary": false
   },
   {
    "id": "ponyta",
@@ -12212,7 +12601,12 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[ponyta]; learnsets.json[ponyta] 第8世代; moves.json"
+   "source": "pokedex.json[ponyta]; learnsets.json[ponyta] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "rapidash"
+   ],
+   "legendary": false
   },
   {
    "id": "rapidash",
@@ -12352,7 +12746,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[rapidash]; learnsets.json[rapidash] 第8世代; moves.json"
+   "source": "pokedex.json[rapidash]; learnsets.json[rapidash] 第8世代; moves.json",
+   "evoLevel": 40,
+   "prevo": "ponyta",
+   "legendary": false
   },
   {
    "id": "slowpoke",
@@ -12517,7 +12914,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[slowpoke]; learnsets.json[slowpoke] 第9世代; moves.json"
+   "source": "pokedex.json[slowpoke]; learnsets.json[slowpoke] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "slowbro"
+   ],
+   "legendary": false
   },
   {
    "id": "slowbro",
@@ -12710,7 +13112,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[slowbro]; learnsets.json[slowbro] 第9世代; moves.json"
+   "source": "pokedex.json[slowbro]; learnsets.json[slowbro] 第9世代; moves.json",
+   "evoLevel": 37,
+   "prevo": "slowpoke",
+   "legendary": false
   },
   {
    "id": "magneton",
@@ -12823,7 +13228,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[magneton]; learnsets.json[magneton] 第9世代; moves.json"
+   "source": "pokedex.json[magneton]; learnsets.json[magneton] 第9世代; moves.json",
+   "evoLevel": 30,
+   "prevo": "magnemite",
+   "legendary": false
   },
   {
    "id": "farfetchd",
@@ -12960,7 +13368,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[farfetchd]; learnsets.json[farfetchd] 第8世代; moves.json"
+   "source": "pokedex.json[farfetchd]; learnsets.json[farfetchd] 第8世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "doduo",
@@ -13057,7 +13467,12 @@
      "pp": 2
     }
    ],
-   "source": "pokedex.json[doduo]; learnsets.json[doduo] 第9世代; moves.json"
+   "source": "pokedex.json[doduo]; learnsets.json[doduo] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "dodrio"
+   ],
+   "legendary": false
   },
   {
    "id": "dodrio",
@@ -13158,7 +13573,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[dodrio]; learnsets.json[dodrio] 第9世代; moves.json"
+   "source": "pokedex.json[dodrio]; learnsets.json[dodrio] 第9世代; moves.json",
+   "evoLevel": 31,
+   "prevo": "doduo",
+   "legendary": false
   },
   {
    "id": "seel",
@@ -13298,7 +13716,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[seel]; learnsets.json[seel] 第9世代; moves.json"
+   "source": "pokedex.json[seel]; learnsets.json[seel] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "dewgong"
+   ],
+   "legendary": false
   },
   {
    "id": "dewgong",
@@ -13435,7 +13858,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[dewgong]; learnsets.json[dewgong] 第9世代; moves.json"
+   "source": "pokedex.json[dewgong]; learnsets.json[dewgong] 第9世代; moves.json",
+   "evoLevel": 34,
+   "prevo": "seel",
+   "legendary": false
   },
   {
    "id": "grimer",
@@ -13603,7 +14029,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[grimer]; learnsets.json[grimer] 第9世代; moves.json"
+   "source": "pokedex.json[grimer]; learnsets.json[grimer] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "muk"
+   ],
+   "legendary": false
   },
   {
    "id": "muk",
@@ -13783,7 +14214,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[muk]; learnsets.json[muk] 第9世代; moves.json"
+   "source": "pokedex.json[muk]; learnsets.json[muk] 第9世代; moves.json",
+   "evoLevel": 38,
+   "prevo": "grimer",
+   "legendary": false
   },
   {
    "id": "shellder",
@@ -13907,7 +14341,12 @@
      "pp": 4
     }
    ],
-   "source": "pokedex.json[shellder]; learnsets.json[shellder] 第9世代; moves.json"
+   "source": "pokedex.json[shellder]; learnsets.json[shellder] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "cloyster"
+   ],
+   "legendary": false
   },
   {
    "id": "cloyster",
@@ -14056,7 +14495,10 @@
      "pp": 4
     }
    ],
-   "source": "pokedex.json[cloyster]; learnsets.json[cloyster] 第9世代; moves.json"
+   "source": "pokedex.json[cloyster]; learnsets.json[cloyster] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "shellder",
+   "legendary": false
   },
   {
    "id": "gastly",
@@ -14201,7 +14643,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[gastly]; learnsets.json[gastly] 第9世代; moves.json"
+   "source": "pokedex.json[gastly]; learnsets.json[gastly] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "haunter"
+   ],
+   "legendary": false
   },
   {
    "id": "haunter",
@@ -14346,7 +14793,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[haunter]; learnsets.json[haunter] 第9世代; moves.json"
+   "source": "pokedex.json[haunter]; learnsets.json[haunter] 第9世代; moves.json",
+   "evoLevel": 25,
+   "prevo": "gastly",
+   "evos": [
+    "gengar"
+   ],
+   "legendary": false
   },
   {
    "id": "gengar",
@@ -14507,7 +14960,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[gengar]; learnsets.json[gengar] 第9世代; moves.json"
+   "source": "pokedex.json[gengar]; learnsets.json[gengar] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "haunter",
+   "legendary": false
   },
   {
    "id": "drowzee",
@@ -14655,7 +15111,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[drowzee]; learnsets.json[drowzee] 第9世代; moves.json"
+   "source": "pokedex.json[drowzee]; learnsets.json[drowzee] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "hypno"
+   ],
+   "legendary": false
   },
   {
    "id": "hypno",
@@ -14799,7 +15260,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[hypno]; learnsets.json[hypno] 第9世代; moves.json"
+   "source": "pokedex.json[hypno]; learnsets.json[hypno] 第9世代; moves.json",
+   "evoLevel": 26,
+   "prevo": "drowzee",
+   "legendary": false
   },
   {
    "id": "krabby",
@@ -14963,7 +15427,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[krabby]; learnsets.json[krabby] 第8世代; moves.json"
+   "source": "pokedex.json[krabby]; learnsets.json[krabby] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "kingler"
+   ],
+   "legendary": false
   },
   {
    "id": "kingler",
@@ -15123,7 +15592,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[kingler]; learnsets.json[kingler] 第8世代; moves.json"
+   "source": "pokedex.json[kingler]; learnsets.json[kingler] 第8世代; moves.json",
+   "evoLevel": 28,
+   "prevo": "krabby",
+   "legendary": false
   },
   {
    "id": "voltorb",
@@ -15219,7 +15691,12 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[voltorb]; learnsets.json[voltorb] 第9世代; moves.json"
+   "source": "pokedex.json[voltorb]; learnsets.json[voltorb] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "electrode"
+   ],
+   "legendary": false
   },
   {
    "id": "electrode",
@@ -15315,7 +15792,10 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[electrode]; learnsets.json[electrode] 第9世代; moves.json"
+   "source": "pokedex.json[electrode]; learnsets.json[electrode] 第9世代; moves.json",
+   "evoLevel": 30,
+   "prevo": "voltorb",
+   "legendary": false
   },
   {
    "id": "exeggcute",
@@ -15436,7 +15916,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[exeggcute]; learnsets.json[exeggcute] 第9世代; moves.json"
+   "source": "pokedex.json[exeggcute]; learnsets.json[exeggcute] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "exeggutor"
+   ],
+   "legendary": false
   },
   {
    "id": "exeggutor",
@@ -15569,7 +16054,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[exeggutor]; learnsets.json[exeggutor] 第9世代; moves.json"
+   "source": "pokedex.json[exeggutor]; learnsets.json[exeggutor] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "exeggcute",
+   "legendary": false
   },
   {
    "id": "cubone",
@@ -15713,7 +16201,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[cubone]; learnsets.json[cubone] 第8世代; moves.json"
+   "source": "pokedex.json[cubone]; learnsets.json[cubone] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "marowak"
+   ],
+   "legendary": false
   },
   {
    "id": "marowak",
@@ -15865,7 +16358,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[marowak]; learnsets.json[marowak] 第8世代; moves.json"
+   "source": "pokedex.json[marowak]; learnsets.json[marowak] 第8世代; moves.json",
+   "evoLevel": 28,
+   "prevo": "cubone",
+   "legendary": false
   },
   {
    "id": "hitmonlee",
@@ -16009,7 +16505,9 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[hitmonlee]; learnsets.json[hitmonlee] 第9世代; moves.json"
+   "source": "pokedex.json[hitmonlee]; learnsets.json[hitmonlee] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "hitmonchan",
@@ -16177,7 +16675,9 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[hitmonchan]; learnsets.json[hitmonchan] 第9世代; moves.json"
+   "source": "pokedex.json[hitmonchan]; learnsets.json[hitmonchan] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "lickitung",
@@ -16357,7 +16857,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[lickitung]; learnsets.json[lickitung] 第8世代; moves.json"
+   "source": "pokedex.json[lickitung]; learnsets.json[lickitung] 第8世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "koffing",
@@ -16477,7 +16979,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[koffing]; learnsets.json[koffing] 第9世代; moves.json"
+   "source": "pokedex.json[koffing]; learnsets.json[koffing] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "weezing"
+   ],
+   "legendary": false
   },
   {
    "id": "weezing",
@@ -16601,7 +17108,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[weezing]; learnsets.json[weezing] 第9世代; moves.json"
+   "source": "pokedex.json[weezing]; learnsets.json[weezing] 第9世代; moves.json",
+   "evoLevel": 35,
+   "prevo": "koffing",
+   "legendary": false
   },
   {
    "id": "rhyhorn",
@@ -16778,7 +17288,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[rhyhorn]; learnsets.json[rhyhorn] 第9世代; moves.json"
+   "source": "pokedex.json[rhyhorn]; learnsets.json[rhyhorn] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "rhydon"
+   ],
+   "legendary": false
   },
   {
    "id": "rhydon",
@@ -16999,7 +17514,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[rhydon]; learnsets.json[rhydon] 第9世代; moves.json"
+   "source": "pokedex.json[rhydon]; learnsets.json[rhydon] 第9世代; moves.json",
+   "evoLevel": 42,
+   "prevo": "rhyhorn",
+   "legendary": false
   },
   {
    "id": "chansey",
@@ -17171,7 +17689,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[chansey]; learnsets.json[chansey] 第9世代; moves.json"
+   "source": "pokedex.json[chansey]; learnsets.json[chansey] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "tangela",
@@ -17279,7 +17799,9 @@
      "pp": 2
     }
    ],
-   "source": "pokedex.json[tangela]; learnsets.json[tangela] 第8世代; moves.json"
+   "source": "pokedex.json[tangela]; learnsets.json[tangela] 第8世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "kangaskhan",
@@ -17471,7 +17993,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[kangaskhan]; learnsets.json[kangaskhan] 第8世代; moves.json"
+   "source": "pokedex.json[kangaskhan]; learnsets.json[kangaskhan] 第8世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "horsea",
@@ -17595,7 +18119,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[horsea]; learnsets.json[horsea] 第9世代; moves.json"
+   "source": "pokedex.json[horsea]; learnsets.json[horsea] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "seadra"
+   ],
+   "legendary": false
   },
   {
    "id": "seadra",
@@ -17711,7 +18240,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[seadra]; learnsets.json[seadra] 第9世代; moves.json"
+   "source": "pokedex.json[seadra]; learnsets.json[seadra] 第9世代; moves.json",
+   "evoLevel": 32,
+   "prevo": "horsea",
+   "legendary": false
   },
   {
    "id": "goldeen",
@@ -17847,7 +18379,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[goldeen]; learnsets.json[goldeen] 第8世代; moves.json"
+   "source": "pokedex.json[goldeen]; learnsets.json[goldeen] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "seaking"
+   ],
+   "legendary": false
   },
   {
    "id": "seaking",
@@ -17971,7 +18508,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[seaking]; learnsets.json[seaking] 第8世代; moves.json"
+   "source": "pokedex.json[seaking]; learnsets.json[seaking] 第8世代; moves.json",
+   "evoLevel": 33,
+   "prevo": "goldeen",
+   "legendary": false
   },
   {
    "id": "staryu",
@@ -18107,7 +18647,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[staryu]; learnsets.json[staryu] 第8世代; moves.json"
+   "source": "pokedex.json[staryu]; learnsets.json[staryu] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "starmie"
+   ],
+   "legendary": false
   },
   {
    "id": "starmie",
@@ -18252,7 +18797,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[starmie]; learnsets.json[starmie] 第8世代; moves.json"
+   "source": "pokedex.json[starmie]; learnsets.json[starmie] 第8世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "staryu",
+   "legendary": false
   },
   {
    "id": "mrmime",
@@ -18421,7 +18969,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[mrmime]; learnsets.json[mrmime] 第8世代; moves.json"
+   "source": "pokedex.json[mrmime]; learnsets.json[mrmime] 第8世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "scyther",
@@ -18554,7 +19104,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[scyther]; learnsets.json[scyther] 第9世代; moves.json"
+   "source": "pokedex.json[scyther]; learnsets.json[scyther] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "jynx",
@@ -18703,7 +19255,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[jynx]; learnsets.json[jynx] 第8世代; moves.json"
+   "source": "pokedex.json[jynx]; learnsets.json[jynx] 第8世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "electabuzz",
@@ -18835,7 +19389,9 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[electabuzz]; learnsets.json[electabuzz] 第9世代; moves.json"
+   "source": "pokedex.json[electabuzz]; learnsets.json[electabuzz] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "magmar",
@@ -18975,7 +19531,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[magmar]; learnsets.json[magmar] 第9世代; moves.json"
+   "source": "pokedex.json[magmar]; learnsets.json[magmar] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "pinsir",
@@ -19115,7 +19673,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[pinsir]; learnsets.json[pinsir] 第8世代; moves.json"
+   "source": "pokedex.json[pinsir]; learnsets.json[pinsir] 第8世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "tauros",
@@ -19255,7 +19815,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[tauros]; learnsets.json[tauros] 第9世代; moves.json"
+   "source": "pokedex.json[tauros]; learnsets.json[tauros] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "magikarp",
@@ -19288,7 +19850,12 @@
     }
    ],
    "source": "pokedex.json[magikarp]; learnsets.json[magikarp] 第9世代; moves.json",
-   "availability": "暂不出场"
+   "availability": "暂不出场",
+   "evoLevel": 1,
+   "evos": [
+    "gyarados"
+   ],
+   "legendary": false
   },
   {
    "id": "gyarados",
@@ -19457,7 +20024,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[gyarados]; learnsets.json[gyarados] 第9世代; moves.json"
+   "source": "pokedex.json[gyarados]; learnsets.json[gyarados] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "magikarp",
+   "legendary": false
   },
   {
    "id": "lapras",
@@ -19622,7 +20192,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[lapras]; learnsets.json[lapras] 第9世代; moves.json"
+   "source": "pokedex.json[lapras]; learnsets.json[lapras] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "ditto",
@@ -19645,7 +20217,9 @@
    "kit": [],
    "learnable": [],
    "source": "pokedex.json[ditto]; learnsets.json[ditto] 第9世代; moves.json",
-   "availability": "暂不出场"
+   "availability": "暂不出场",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "eevee",
@@ -19741,7 +20315,14 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[eevee]; learnsets.json[eevee] 第9世代; moves.json"
+   "source": "pokedex.json[eevee]; learnsets.json[eevee] 第9世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "vaporeon",
+    "jolteon",
+    "flareon"
+   ],
+   "legendary": false
   },
   {
    "id": "vaporeon",
@@ -19893,7 +20474,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[vaporeon]; learnsets.json[vaporeon] 第9世代; moves.json"
+   "source": "pokedex.json[vaporeon]; learnsets.json[vaporeon] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "eevee",
+   "legendary": false
   },
   {
    "id": "jolteon",
@@ -20021,7 +20605,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[jolteon]; learnsets.json[jolteon] 第9世代; moves.json"
+   "source": "pokedex.json[jolteon]; learnsets.json[jolteon] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "eevee",
+   "legendary": false
   },
   {
    "id": "flareon",
@@ -20157,7 +20744,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[flareon]; learnsets.json[flareon] 第9世代; moves.json"
+   "source": "pokedex.json[flareon]; learnsets.json[flareon] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "eevee",
+   "legendary": false
   },
   {
    "id": "porygon",
@@ -20281,7 +20871,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[porygon]; learnsets.json[porygon] 第9世代; moves.json"
+   "source": "pokedex.json[porygon]; learnsets.json[porygon] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "omanyte",
@@ -20426,7 +21018,12 @@
      "pp": 4
     }
    ],
-   "source": "pokedex.json[omanyte]; learnsets.json[omanyte] 第8世代; moves.json"
+   "source": "pokedex.json[omanyte]; learnsets.json[omanyte] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "omastar"
+   ],
+   "legendary": false
   },
   {
    "id": "omastar",
@@ -20563,7 +21160,10 @@
      "pp": 4
     }
    ],
-   "source": "pokedex.json[omastar]; learnsets.json[omastar] 第8世代; moves.json"
+   "source": "pokedex.json[omastar]; learnsets.json[omastar] 第8世代; moves.json",
+   "evoLevel": 40,
+   "prevo": "omanyte",
+   "legendary": false
   },
   {
    "id": "kabuto",
@@ -20720,7 +21320,12 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[kabuto]; learnsets.json[kabuto] 第8世代; moves.json"
+   "source": "pokedex.json[kabuto]; learnsets.json[kabuto] 第8世代; moves.json",
+   "evoLevel": 1,
+   "evos": [
+    "kabutops"
+   ],
+   "legendary": false
   },
   {
    "id": "kabutops",
@@ -20905,7 +21510,10 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[kabutops]; learnsets.json[kabutops] 第8世代; moves.json"
+   "source": "pokedex.json[kabutops]; learnsets.json[kabutops] 第8世代; moves.json",
+   "evoLevel": 40,
+   "prevo": "kabuto",
+   "legendary": false
   },
   {
    "id": "aerodactyl",
@@ -21050,7 +21658,9 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[aerodactyl]; learnsets.json[aerodactyl] 第8世代; moves.json"
+   "source": "pokedex.json[aerodactyl]; learnsets.json[aerodactyl] 第8世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "snorlax",
@@ -21242,7 +21852,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[snorlax]; learnsets.json[snorlax] 第9世代; moves.json"
+   "source": "pokedex.json[snorlax]; learnsets.json[snorlax] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": false
   },
   {
    "id": "articuno",
@@ -21363,7 +21975,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[articuno]; learnsets.json[articuno] 第9世代; moves.json"
+   "source": "pokedex.json[articuno]; learnsets.json[articuno] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": true
   },
   {
    "id": "zapdos",
@@ -21476,7 +22090,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[zapdos]; learnsets.json[zapdos] 第9世代; moves.json"
+   "source": "pokedex.json[zapdos]; learnsets.json[zapdos] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": true
   },
   {
    "id": "moltres",
@@ -21597,7 +22213,9 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[moltres]; learnsets.json[moltres] 第9世代; moves.json"
+   "source": "pokedex.json[moltres]; learnsets.json[moltres] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": true
   },
   {
    "id": "dragonair",
@@ -21741,7 +22359,13 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[dragonair]; learnsets.json[dragonair] 第9世代; moves.json"
+   "source": "pokedex.json[dragonair]; learnsets.json[dragonair] 第9世代; moves.json",
+   "evoLevel": 30,
+   "prevo": "dratini",
+   "evos": [
+    "dragonite"
+   ],
+   "legendary": false
   },
   {
    "id": "dragonite",
@@ -21962,7 +22586,10 @@
      "pp": 3
     }
    ],
-   "source": "pokedex.json[dragonite]; learnsets.json[dragonite] 第9世代; moves.json"
+   "source": "pokedex.json[dragonite]; learnsets.json[dragonite] 第9世代; moves.json",
+   "evoLevel": 55,
+   "prevo": "dragonair",
+   "legendary": false
   },
   {
    "id": "mewtwo",
@@ -22178,7 +22805,9 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[mewtwo]; learnsets.json[mewtwo] 第9世代; moves.json"
+   "source": "pokedex.json[mewtwo]; learnsets.json[mewtwo] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": true
   },
   {
    "id": "mew",
@@ -22650,7 +23279,2486 @@
      "pp": 1
     }
    ],
-   "source": "pokedex.json[mew]; learnsets.json[mew] 第9世代; moves.json"
+   "source": "pokedex.json[mew]; learnsets.json[mew] 第9世代; moves.json",
+   "evoLevel": 1,
+   "legendary": true
+  },
+  {
+   "id": "bayleef",
+   "dex": "0153",
+   "name": "Bayleef",
+   "starter": false,
+   "types": [
+    "Grass"
+   ],
+   "baseStats": {
+    "hp": 60,
+    "atk": 62,
+    "def": 80,
+    "spa": 63,
+    "spd": 80,
+    "spe": 60
+   },
+   "maxHp": 24,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "razorleaf",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "energyball",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "gigadrain",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "leafstorm",
+     "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
+     "move": "magicalleaf",
+     "pp": 2
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "razorleaf",
+     "pp": 2
+    },
+    {
+     "move": "reflect",
+     "pp": 2
+    },
+    {
+     "move": "seedbomb",
+     "pp": 1
+    },
+    {
+     "move": "swordsdance",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[bayleef]; learnsets.json[bayleef] 第9世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "chikorita",
+   "evos": [
+    "meganium"
+   ],
+   "legendary": false
+  },
+  {
+   "id": "meganium",
+   "dex": "0154",
+   "name": "Meganium",
+   "starter": false,
+   "types": [
+    "Grass"
+   ],
+   "baseStats": {
+    "hp": 80,
+    "atk": 82,
+    "def": 100,
+    "spa": 83,
+    "spd": 100,
+    "spe": 80
+   },
+   "maxHp": 28,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "petalblizzard",
+     "pp": 1
+    },
+    {
+     "move": "razorleaf",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "bulldoze",
+     "pp": 2
+    },
+    {
+     "move": "dragontail",
+     "pp": 1
+    },
+    {
+     "move": "energyball",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "gigadrain",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "leafstorm",
+     "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
+     "move": "magicalleaf",
+     "pp": 2
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "petalblizzard",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "razorleaf",
+     "pp": 2
+    },
+    {
+     "move": "reflect",
+     "pp": 2
+    },
+    {
+     "move": "seedbomb",
+     "pp": 1
+    },
+    {
+     "move": "swordsdance",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "weatherball",
+     "pp": 1
+    },
+    {
+     "move": "zenheadbutt",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[meganium]; learnsets.json[meganium] 第9世代; moves.json",
+   "evoLevel": 32,
+   "prevo": "bayleef",
+   "legendary": false
+  },
+  {
+   "id": "quilava",
+   "dex": "0156",
+   "name": "Quilava",
+   "starter": false,
+   "types": [
+    "Fire"
+   ],
+   "baseStats": {
+    "hp": 58,
+    "atk": 64,
+    "def": 58,
+    "spa": 80,
+    "spd": 65,
+    "spe": 80
+   },
+   "maxHp": 23,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "tackle",
+     "pp": 3
+    },
+    {
+     "move": "ember",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aerialace",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "defensecurl",
+     "pp": 4
+    },
+    {
+     "move": "ember",
+     "pp": 2
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "fireblast",
+     "pp": 1
+    },
+    {
+     "move": "firefang",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "pp": 1
+    },
+    {
+     "move": "flamecharge",
+     "pp": 2
+    },
+    {
+     "move": "flamethrower",
+     "pp": 1
+    },
+    {
+     "move": "flamewheel",
+     "pp": 2
+    },
+    {
+     "move": "heatwave",
+     "pp": 1
+    },
+    {
+     "move": "inferno",
+     "pp": 1
+    },
+    {
+     "move": "ironhead",
+     "pp": 1
+    },
+    {
+     "move": "lavaplume",
+     "pp": 1
+    },
+    {
+     "move": "overheat",
+     "pp": 1
+    },
+    {
+     "move": "playrough",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "pp": 3
+    },
+    {
+     "move": "roar",
+     "pp": 2
+    },
+    {
+     "move": "swift",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "zenheadbutt",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[quilava]; learnsets.json[quilava] 第9世代; moves.json",
+   "evoLevel": 14,
+   "prevo": "cyndaquil",
+   "evos": [
+    "typhlosion"
+   ],
+   "legendary": false
+  },
+  {
+   "id": "typhlosion",
+   "dex": "0157",
+   "name": "Typhlosion",
+   "starter": false,
+   "types": [
+    "Fire"
+   ],
+   "baseStats": {
+    "hp": 78,
+    "atk": 84,
+    "def": 78,
+    "spa": 109,
+    "spd": 85,
+    "spe": 100
+   },
+   "maxHp": 27,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "ember",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aerialace",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "bulldoze",
+     "pp": 2
+    },
+    {
+     "move": "defensecurl",
+     "pp": 4
+    },
+    {
+     "move": "ember",
+     "pp": 2
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "fireblast",
+     "pp": 1
+    },
+    {
+     "move": "firefang",
+     "pp": 1
+    },
+    {
+     "move": "firepunch",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "pp": 1
+    },
+    {
+     "move": "flamecharge",
+     "pp": 2
+    },
+    {
+     "move": "flamethrower",
+     "pp": 1
+    },
+    {
+     "move": "flamewheel",
+     "pp": 2
+    },
+    {
+     "move": "focusblast",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "heatwave",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "inferno",
+     "pp": 1
+    },
+    {
+     "move": "ironhead",
+     "pp": 1
+    },
+    {
+     "move": "lavaplume",
+     "pp": 1
+    },
+    {
+     "move": "overheat",
+     "pp": 1
+    },
+    {
+     "move": "playrough",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "pp": 3
+    },
+    {
+     "move": "roar",
+     "pp": 2
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "shadowball",
+     "pp": 1
+    },
+    {
+     "move": "shadowclaw",
+     "pp": 1
+    },
+    {
+     "move": "swift",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "throatchop",
+     "pp": 1
+    },
+    {
+     "move": "thunderpunch",
+     "pp": 1
+    },
+    {
+     "move": "zenheadbutt",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[typhlosion]; learnsets.json[typhlosion] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "quilava",
+   "legendary": false
+  },
+  {
+   "id": "croconaw",
+   "dex": "0159",
+   "name": "Croconaw",
+   "starter": false,
+   "types": [
+    "Water"
+   ],
+   "baseStats": {
+    "hp": 65,
+    "atk": 80,
+    "def": 80,
+    "spa": 59,
+    "spd": 63,
+    "spe": 58
+   },
+   "maxHp": 25,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "scratch",
+     "pp": 3
+    },
+    {
+     "move": "watergun",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aerialace",
+     "pp": 2
+    },
+    {
+     "move": "aquatail",
+     "pp": 1
+    },
+    {
+     "move": "bite",
+     "pp": 2
+    },
+    {
+     "move": "blizzard",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "crunch",
+     "pp": 1
+    },
+    {
+     "move": "dragonclaw",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "hydropump",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "pp": 1
+    },
+    {
+     "move": "icefang",
+     "pp": 1
+    },
+    {
+     "move": "icepunch",
+     "pp": 1
+    },
+    {
+     "move": "icywind",
+     "pp": 1
+    },
+    {
+     "move": "liquidation",
+     "pp": 1
+    },
+    {
+     "move": "metalclaw",
+     "pp": 3
+    },
+    {
+     "move": "muddywater",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "pp": 2
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "scratch",
+     "pp": 3
+    },
+    {
+     "move": "shadowclaw",
+     "pp": 1
+    },
+    {
+     "move": "slash",
+     "pp": 2
+    },
+    {
+     "move": "superpower",
+     "pp": 1
+    },
+    {
+     "move": "surf",
+     "pp": 1
+    },
+    {
+     "move": "swordsdance",
+     "pp": 2
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "pp": 2
+    },
+    {
+     "move": "waterfall",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "pp": 2
+    },
+    {
+     "move": "waterpulse",
+     "pp": 2
+    },
+    {
+     "move": "whirlpool",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[croconaw]; learnsets.json[croconaw] 第9世代; moves.json",
+   "evoLevel": 18,
+   "prevo": "totodile",
+   "evos": [
+    "feraligatr"
+   ],
+   "legendary": false
+  },
+  {
+   "id": "feraligatr",
+   "dex": "0160",
+   "name": "Feraligatr",
+   "starter": false,
+   "types": [
+    "Water"
+   ],
+   "baseStats": {
+    "hp": 85,
+    "atk": 105,
+    "def": 100,
+    "spa": 79,
+    "spd": 83,
+    "spe": 78
+   },
+   "maxHp": 29,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "scratch",
+     "pp": 3
+    },
+    {
+     "move": "watergun",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aerialace",
+     "pp": 2
+    },
+    {
+     "move": "aquatail",
+     "pp": 1
+    },
+    {
+     "move": "bite",
+     "pp": 2
+    },
+    {
+     "move": "blizzard",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "bulldoze",
+     "pp": 2
+    },
+    {
+     "move": "crunch",
+     "pp": 1
+    },
+    {
+     "move": "dragonclaw",
+     "pp": 1
+    },
+    {
+     "move": "dragontail",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "focusblast",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "hydropump",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "pp": 1
+    },
+    {
+     "move": "icefang",
+     "pp": 1
+    },
+    {
+     "move": "icepunch",
+     "pp": 1
+    },
+    {
+     "move": "icywind",
+     "pp": 1
+    },
+    {
+     "move": "liquidation",
+     "pp": 1
+    },
+    {
+     "move": "metalclaw",
+     "pp": 3
+    },
+    {
+     "move": "muddywater",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "pp": 2
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "scratch",
+     "pp": 3
+    },
+    {
+     "move": "shadowclaw",
+     "pp": 1
+    },
+    {
+     "move": "slash",
+     "pp": 2
+    },
+    {
+     "move": "snarl",
+     "pp": 1
+    },
+    {
+     "move": "superpower",
+     "pp": 1
+    },
+    {
+     "move": "surf",
+     "pp": 1
+    },
+    {
+     "move": "swordsdance",
+     "pp": 2
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "pp": 2
+    },
+    {
+     "move": "waterfall",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "pp": 2
+    },
+    {
+     "move": "waterpulse",
+     "pp": 2
+    },
+    {
+     "move": "whirlpool",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[feraligatr]; learnsets.json[feraligatr] 第9世代; moves.json",
+   "evoLevel": 30,
+   "prevo": "croconaw",
+   "legendary": false
+  },
+  {
+   "id": "grovyle",
+   "dex": "0253",
+   "name": "Grovyle",
+   "starter": false,
+   "types": [
+    "Grass"
+   ],
+   "baseStats": {
+    "hp": 50,
+    "atk": 65,
+    "def": 45,
+    "spa": 85,
+    "spd": 65,
+    "spe": 95
+   },
+   "maxHp": 22,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "energyball",
+     "pp": 1
+    },
+    {
+     "move": "falseswipe",
+     "pp": 4
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aerialace",
+     "pp": 2
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "crunch",
+     "pp": 1
+    },
+    {
+     "move": "dragontail",
+     "pp": 1
+    },
+    {
+     "move": "drainpunch",
+     "pp": 1
+    },
+    {
+     "move": "energyball",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "falseswipe",
+     "pp": 4
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "gigadrain",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "leafage",
+     "pp": 4
+    },
+    {
+     "move": "leafblade",
+     "pp": 1
+    },
+    {
+     "move": "leafstorm",
+     "pp": 1
+    },
+    {
+     "move": "lowsweep",
+     "pp": 2
+    },
+    {
+     "move": "magicalleaf",
+     "pp": 2
+    },
+    {
+     "move": "megadrain",
+     "pp": 1
+    },
+    {
+     "move": "pound",
+     "pp": 3
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "pp": 3
+    },
+    {
+     "move": "quickguard",
+     "pp": 1
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "seedbomb",
+     "pp": 1
+    },
+    {
+     "move": "slam",
+     "pp": 2
+    },
+    {
+     "move": "swift",
+     "pp": 2
+    },
+    {
+     "move": "swordsdance",
+     "pp": 2
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "pp": 2
+    },
+    {
+     "move": "thunderpunch",
+     "pp": 1
+    },
+    {
+     "move": "vacuumwave",
+     "pp": 3
+    },
+    {
+     "move": "xscissor",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[grovyle]; learnsets.json[grovyle] 第9世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "treecko",
+   "evos": [
+    "sceptile"
+   ],
+   "legendary": false
+  },
+  {
+   "id": "sceptile",
+   "dex": "0254",
+   "name": "Sceptile",
+   "starter": false,
+   "types": [
+    "Grass"
+   ],
+   "baseStats": {
+    "hp": 70,
+    "atk": 85,
+    "def": 65,
+    "spa": 105,
+    "spd": 85,
+    "spe": 120
+   },
+   "maxHp": 26,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "leafblade",
+     "pp": 1
+    },
+    {
+     "move": "energyball",
+     "pp": 1
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aerialace",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "bulldoze",
+     "pp": 2
+    },
+    {
+     "move": "crunch",
+     "pp": 1
+    },
+    {
+     "move": "dragonclaw",
+     "pp": 1
+    },
+    {
+     "move": "dragonpulse",
+     "pp": 1
+    },
+    {
+     "move": "dragontail",
+     "pp": 1
+    },
+    {
+     "move": "drainpunch",
+     "pp": 1
+    },
+    {
+     "move": "energyball",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "falseswipe",
+     "pp": 4
+    },
+    {
+     "move": "focusblast",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "gigadrain",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "leafage",
+     "pp": 4
+    },
+    {
+     "move": "leafblade",
+     "pp": 1
+    },
+    {
+     "move": "leafstorm",
+     "pp": 1
+    },
+    {
+     "move": "lowsweep",
+     "pp": 2
+    },
+    {
+     "move": "magicalleaf",
+     "pp": 2
+    },
+    {
+     "move": "megadrain",
+     "pp": 1
+    },
+    {
+     "move": "pound",
+     "pp": 3
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "pp": 3
+    },
+    {
+     "move": "quickguard",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "pp": 2
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "seedbomb",
+     "pp": 1
+    },
+    {
+     "move": "slam",
+     "pp": 2
+    },
+    {
+     "move": "swift",
+     "pp": 2
+    },
+    {
+     "move": "swordsdance",
+     "pp": 2
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "pp": 2
+    },
+    {
+     "move": "throatchop",
+     "pp": 1
+    },
+    {
+     "move": "thunderpunch",
+     "pp": 1
+    },
+    {
+     "move": "vacuumwave",
+     "pp": 3
+    },
+    {
+     "move": "xscissor",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[sceptile]; learnsets.json[sceptile] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "grovyle",
+   "legendary": false
+  },
+  {
+   "id": "combusken",
+   "dex": "0256",
+   "name": "Combusken",
+   "starter": false,
+   "types": [
+    "Fire",
+    "Fighting"
+   ],
+   "baseStats": {
+    "hp": 60,
+    "atk": 85,
+    "def": 60,
+    "spa": 85,
+    "spd": 60,
+    "spe": 55
+   },
+   "maxHp": 24,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "ember",
+     "pp": 2
+    },
+    {
+     "move": "flamethrower",
+     "pp": 1
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aerialace",
+     "pp": 2
+    },
+    {
+     "move": "blazekick",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "bulkup",
+     "pp": 2
+    },
+    {
+     "move": "closecombat",
+     "pp": 1
+    },
+    {
+     "move": "ember",
+     "pp": 2
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "fireblast",
+     "pp": 1
+    },
+    {
+     "move": "firepunch",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "pp": 1
+    },
+    {
+     "move": "flamecharge",
+     "pp": 2
+    },
+    {
+     "move": "flamethrower",
+     "pp": 1
+    },
+    {
+     "move": "focusblast",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "heatwave",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "lowsweep",
+     "pp": 2
+    },
+    {
+     "move": "overheat",
+     "pp": 1
+    },
+    {
+     "move": "poisonjab",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "pp": 3
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "scratch",
+     "pp": 3
+    },
+    {
+     "move": "shadowclaw",
+     "pp": 1
+    },
+    {
+     "move": "slash",
+     "pp": 2
+    },
+    {
+     "move": "swift",
+     "pp": 2
+    },
+    {
+     "move": "swordsdance",
+     "pp": 2
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "pp": 2
+    },
+    {
+     "move": "thunderpunch",
+     "pp": 1
+    },
+    {
+     "move": "vacuumwave",
+     "pp": 3
+    }
+   ],
+   "source": "pokedex.json[combusken]; learnsets.json[combusken] 第9世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "torchic",
+   "evos": [
+    "blaziken"
+   ],
+   "legendary": false
+  },
+  {
+   "id": "blaziken",
+   "dex": "0257",
+   "name": "Blaziken",
+   "starter": false,
+   "types": [
+    "Fire",
+    "Fighting"
+   ],
+   "baseStats": {
+    "hp": 80,
+    "atk": 120,
+    "def": 70,
+    "spa": 110,
+    "spd": 70,
+    "spe": 80
+   },
+   "maxHp": 28,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "blazekick",
+     "pp": 1
+    },
+    {
+     "move": "ember",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "aerialace",
+     "pp": 2
+    },
+    {
+     "move": "aurasphere",
+     "pp": 2
+    },
+    {
+     "move": "blazekick",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "bulkup",
+     "pp": 2
+    },
+    {
+     "move": "bulldoze",
+     "pp": 2
+    },
+    {
+     "move": "closecombat",
+     "pp": 1
+    },
+    {
+     "move": "ember",
+     "pp": 2
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "fireblast",
+     "pp": 1
+    },
+    {
+     "move": "firepunch",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "pp": 1
+    },
+    {
+     "move": "flamecharge",
+     "pp": 2
+    },
+    {
+     "move": "flamethrower",
+     "pp": 1
+    },
+    {
+     "move": "focusblast",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "heatwave",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "lowsweep",
+     "pp": 2
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "overheat",
+     "pp": 1
+    },
+    {
+     "move": "poisonjab",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "quickattack",
+     "pp": 3
+    },
+    {
+     "move": "roar",
+     "pp": 2
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "scratch",
+     "pp": 3
+    },
+    {
+     "move": "shadowclaw",
+     "pp": 1
+    },
+    {
+     "move": "slash",
+     "pp": 2
+    },
+    {
+     "move": "stoneedge",
+     "pp": 1
+    },
+    {
+     "move": "swift",
+     "pp": 2
+    },
+    {
+     "move": "swordsdance",
+     "pp": 2
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "pp": 2
+    },
+    {
+     "move": "thunderpunch",
+     "pp": 1
+    },
+    {
+     "move": "vacuumwave",
+     "pp": 3
+    }
+   ],
+   "source": "pokedex.json[blaziken]; learnsets.json[blaziken] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "combusken",
+   "legendary": false
+  },
+  {
+   "id": "marshtomp",
+   "dex": "0259",
+   "name": "Marshtomp",
+   "starter": false,
+   "types": [
+    "Water",
+    "Ground"
+   ],
+   "baseStats": {
+    "hp": 70,
+    "atk": 85,
+    "def": 70,
+    "spa": 60,
+    "spd": 70,
+    "spe": 50
+   },
+   "maxHp": 26,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "mudshot",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    }
+   ],
+   "learnable": [
+    {
+     "move": "blizzard",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "bulldoze",
+     "pp": 2
+    },
+    {
+     "move": "earthpower",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "hydropump",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "pp": 1
+    },
+    {
+     "move": "icepunch",
+     "pp": 1
+    },
+    {
+     "move": "icywind",
+     "pp": 1
+    },
+    {
+     "move": "liquidation",
+     "pp": 1
+    },
+    {
+     "move": "muddywater",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "pp": 2
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rockthrow",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "sandtomb",
+     "pp": 1
+    },
+    {
+     "move": "sludgewave",
+     "pp": 1
+    },
+    {
+     "move": "surf",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "waterfall",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "pp": 2
+    },
+    {
+     "move": "waterpulse",
+     "pp": 2
+    },
+    {
+     "move": "whirlpool",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[marshtomp]; learnsets.json[marshtomp] 第9世代; moves.json",
+   "evoLevel": 16,
+   "prevo": "mudkip",
+   "evos": [
+    "swampert"
+   ],
+   "legendary": false
+  },
+  {
+   "id": "swampert",
+   "dex": "0260",
+   "name": "Swampert",
+   "starter": false,
+   "types": [
+    "Water",
+    "Ground"
+   ],
+   "baseStats": {
+    "hp": 100,
+    "atk": 110,
+    "def": 90,
+    "spa": 85,
+    "spd": 90,
+    "spe": 60
+   },
+   "maxHp": 32,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "hammerarm",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "pp": 1
+    }
+   ],
+   "learnable": [
+    {
+     "move": "blizzard",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "bulkup",
+     "pp": 2
+    },
+    {
+     "move": "bulldoze",
+     "pp": 2
+    },
+    {
+     "move": "earthpower",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "focusblast",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "hammerarm",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "highhorsepower",
+     "pp": 1
+    },
+    {
+     "move": "hydropump",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "pp": 1
+    },
+    {
+     "move": "icepunch",
+     "pp": 1
+    },
+    {
+     "move": "icywind",
+     "pp": 1
+    },
+    {
+     "move": "liquidation",
+     "pp": 1
+    },
+    {
+     "move": "muddywater",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "poisonjab",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "pp": 2
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rockthrow",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "sandtomb",
+     "pp": 1
+    },
+    {
+     "move": "sludgewave",
+     "pp": 1
+    },
+    {
+     "move": "smackdown",
+     "pp": 1
+    },
+    {
+     "move": "stoneedge",
+     "pp": 1
+    },
+    {
+     "move": "surf",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "waterfall",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "pp": 2
+    },
+    {
+     "move": "waterpulse",
+     "pp": 2
+    },
+    {
+     "move": "weatherball",
+     "pp": 1
+    },
+    {
+     "move": "whirlpool",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[swampert]; learnsets.json[swampert] 第9世代; moves.json",
+   "evoLevel": 36,
+   "prevo": "marshtomp",
+   "legendary": false
+  },
+  {
+   "id": "quagsire",
+   "dex": "0195",
+   "name": "Quagsire",
+   "starter": false,
+   "types": [
+    "Water",
+    "Ground"
+   ],
+   "baseStats": {
+    "hp": 95,
+    "atk": 85,
+    "def": 85,
+    "spa": 65,
+    "spd": 65,
+    "spe": 35
+   },
+   "maxHp": 31,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "mudshot",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "acidspray",
+     "pp": 2
+    },
+    {
+     "move": "aquatail",
+     "pp": 1
+    },
+    {
+     "move": "blizzard",
+     "pp": 1
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "bulldoze",
+     "pp": 2
+    },
+    {
+     "move": "drainpunch",
+     "pp": 1
+    },
+    {
+     "move": "earthpower",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "focusblast",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "highhorsepower",
+     "pp": 1
+    },
+    {
+     "move": "hydropump",
+     "pp": 1
+    },
+    {
+     "move": "icebeam",
+     "pp": 1
+    },
+    {
+     "move": "icepunch",
+     "pp": 1
+    },
+    {
+     "move": "icywind",
+     "pp": 1
+    },
+    {
+     "move": "liquidation",
+     "pp": 1
+    },
+    {
+     "move": "muddywater",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "slam",
+     "pp": 2
+    },
+    {
+     "move": "sludgebomb",
+     "pp": 1
+    },
+    {
+     "move": "sludgewave",
+     "pp": 1
+    },
+    {
+     "move": "stoneedge",
+     "pp": 1
+    },
+    {
+     "move": "surf",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "pp": 2
+    },
+    {
+     "move": "waterfall",
+     "pp": 1
+    },
+    {
+     "move": "watergun",
+     "pp": 2
+    },
+    {
+     "move": "waterpulse",
+     "pp": 2
+    },
+    {
+     "move": "whirlpool",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[quagsire]; learnsets.json[quagsire] 第9世代; moves.json",
+   "evoLevel": 20,
+   "prevo": "wooper",
+   "legendary": false
+  },
+  {
+   "id": "houndoom",
+   "dex": "0229",
+   "name": "Houndoom",
+   "starter": false,
+   "types": [
+    "Dark",
+    "Fire"
+   ],
+   "baseStats": {
+    "hp": 75,
+    "atk": 90,
+    "def": 50,
+    "spa": 110,
+    "spd": 80,
+    "spe": 95
+   },
+   "maxHp": 27,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "ember",
+     "pp": 2
+    },
+    {
+     "move": "smog",
+     "pp": 2
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bite",
+     "pp": 2
+    },
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "crunch",
+     "pp": 1
+    },
+    {
+     "move": "darkpulse",
+     "pp": 1
+    },
+    {
+     "move": "ember",
+     "pp": 2
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "fireblast",
+     "pp": 1
+    },
+    {
+     "move": "firefang",
+     "pp": 1
+    },
+    {
+     "move": "firespin",
+     "pp": 1
+    },
+    {
+     "move": "flamecharge",
+     "pp": 2
+    },
+    {
+     "move": "flamethrower",
+     "pp": 1
+    },
+    {
+     "move": "foulplay",
+     "pp": 1
+    },
+    {
+     "move": "heatwave",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "hypervoice",
+     "pp": 1
+    },
+    {
+     "move": "incinerate",
+     "pp": 1
+    },
+    {
+     "move": "inferno",
+     "pp": 1
+    },
+    {
+     "move": "mudshot",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "overheat",
+     "pp": 1
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "roar",
+     "pp": 2
+    },
+    {
+     "move": "shadowball",
+     "pp": 1
+    },
+    {
+     "move": "sludgebomb",
+     "pp": 1
+    },
+    {
+     "move": "smog",
+     "pp": 2
+    },
+    {
+     "move": "snarl",
+     "pp": 1
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "pp": 2
+    },
+    {
+     "move": "throatchop",
+     "pp": 1
+    },
+    {
+     "move": "thunderfang",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[houndoom]; learnsets.json[houndoom] 第9世代; moves.json",
+   "evoLevel": 24,
+   "prevo": "houndour",
+   "legendary": false
+  },
+  {
+   "id": "hariyama",
+   "dex": "0297",
+   "name": "Hariyama",
+   "starter": false,
+   "types": [
+    "Fighting"
+   ],
+   "baseStats": {
+    "hp": 144,
+    "atk": 120,
+    "def": 60,
+    "spa": 40,
+    "spd": 60,
+    "spe": 50
+   },
+   "maxHp": 40,
+   "learnsetGen": 9,
+   "kit": [
+    {
+     "move": "brine",
+     "pp": 1
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    }
+   ],
+   "learnable": [
+    {
+     "move": "bodyslam",
+     "pp": 1
+    },
+    {
+     "move": "brickbreak",
+     "pp": 1
+    },
+    {
+     "move": "brine",
+     "pp": 1
+    },
+    {
+     "move": "bulkup",
+     "pp": 2
+    },
+    {
+     "move": "bulldoze",
+     "pp": 2
+    },
+    {
+     "move": "closecombat",
+     "pp": 1
+    },
+    {
+     "move": "drainpunch",
+     "pp": 1
+    },
+    {
+     "move": "facade",
+     "pp": 2
+    },
+    {
+     "move": "fakeout",
+     "pp": 1
+    },
+    {
+     "move": "firepunch",
+     "pp": 1
+    },
+    {
+     "move": "focusblast",
+     "pp": 1
+    },
+    {
+     "move": "focuspunch",
+     "pp": 2
+    },
+    {
+     "move": "forcepalm",
+     "pp": 1
+    },
+    {
+     "move": "helpinghand",
+     "pp": 2
+    },
+    {
+     "move": "icepunch",
+     "pp": 1
+    },
+    {
+     "move": "ironhead",
+     "pp": 1
+    },
+    {
+     "move": "lowsweep",
+     "pp": 2
+    },
+    {
+     "move": "mudshot",
+     "pp": 1
+    },
+    {
+     "move": "mudslap",
+     "pp": 1
+    },
+    {
+     "move": "poisonjab",
+     "pp": 2
+    },
+    {
+     "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "rockslide",
+     "pp": 1
+    },
+    {
+     "move": "rocktomb",
+     "pp": 1
+    },
+    {
+     "move": "smackdown",
+     "pp": 1
+    },
+    {
+     "move": "stoneedge",
+     "pp": 1
+    },
+    {
+     "move": "surf",
+     "pp": 1
+    },
+    {
+     "move": "swift",
+     "pp": 2
+    },
+    {
+     "move": "tackle",
+     "pp": 3
+    },
+    {
+     "move": "terablast",
+     "pp": 1
+    },
+    {
+     "move": "thief",
+     "pp": 2
+    },
+    {
+     "move": "throatchop",
+     "pp": 1
+    },
+    {
+     "move": "thunderpunch",
+     "pp": 1
+    },
+    {
+     "move": "vacuumwave",
+     "pp": 3
+    },
+    {
+     "move": "whirlwind",
+     "pp": 2
+    },
+    {
+     "move": "zenheadbutt",
+     "pp": 1
+    }
+   ],
+   "source": "pokedex.json[hariyama]; learnsets.json[hariyama] 第9世代; moves.json",
+   "evoLevel": 24,
+   "prevo": "makuhita",
+   "legendary": false
   }
  ]
 }

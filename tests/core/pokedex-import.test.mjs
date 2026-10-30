@@ -18,12 +18,15 @@ const mainRoot = locateMainCheckoutRoot();
 const snapshotRoot = path.join(mainRoot, '.artifacts');
 const scratchRoot = path.join(mainRoot, '.tmp', 'lane-dev', 'pokedex-import');
 const fixture = JSON.parse(fs.readFileSync(new URL('./fixtures-pokedex/legacy-baseline.json', import.meta.url), 'utf8'));
+const evolutionIds = ['bayleef', 'meganium', 'quilava', 'typhlosion', 'croconaw', 'feraligatr', 'grovyle', 'sceptile', 'combusken', 'blaziken', 'marshtomp', 'swampert', 'quagsire', 'houndoom', 'hariyama'];
+const roster160Baseline = JSON.parse(fs.readFileSync(new URL('./fixtures-pokedex/roster160-baseline.json', import.meta.url), 'utf8'));
 const generationOneIds = ['metapod', 'kakuna', 'abra', 'magikarp', 'ditto'];
 const admissionKeys = ['existingMoveRule', 'blowaway', 'drain', 'pureDamage', 'selfStages', 'teamProtection'];
 const exclusionKeys = ['nonstandard', 'noOfficialData', 'unsupportedRange', 'unsupportedTarget', 'selfCostOrCondition', 'ohko', 'fixedDamage', 'multihit', 'recoil', 'selfSwitch', 'basePowerCallback', 'zeroBasePower', 'charge', 'officialPowerUnavailable', 'changeMoveNoTemplate'];
 const requiredSnapshots = [
   'showdown/pokedex.json', 'showdown/moves.json', 'showdown/learnsets.json',
-  'pmd/wiki-2026-10-30.json', 'pmd/wiki-2026-10-30.json.sha256', 'pmd/moves-2026-10-30.json',
+  'pmd/wiki-2026-10-30.json', 'pmd/wiki-2026-10-30.json.sha256',
+  'pmd/wiki-2026-10-30-extra.json', 'pmd/wiki-2026-10-30-extra.json.sha256', 'pmd/moves-2026-10-30.json',
   'pokeapi/languages.csv', 'pokeapi/pokemon_species_names.csv', 'pokeapi/move_names.csv',
   'pokeapi/moves.csv', 'pokeapi/COMMIT',
   'spritecollab/tracker.json', 'spritecollab/COMMIT'
@@ -56,9 +59,9 @@ function rawMoveObjectHashes(text, expectedIds) {
 function assertLegacyAndRosterArtifacts(rosterDoc, moveDoc, label) {
   assert.ok(Array.isArray(rosterDoc.species), `${label}: roster.species must be an array`);
   const species = rosterDoc.species;
-  assert.equal(species.length, 160, `${label}: total species`);
+  assert.equal(species.length, 175, `${label}: total species`);
   const ids = species.map(entry => entry.id);
-  assert.equal(new Set(ids).size, 160, `${label}: duplicate species id`);
+  assert.equal(new Set(ids).size, 175, `${label}: duplicate species id`);
   assert.ok(species.every(entry => typeof entry.learnsetGen === 'number' && [7, 8, 9].includes(entry.learnsetGen)), `${label}: every species needs learnsetGen 7–9`);
   for (const entry of species) assert.equal(new Set(entry.kit.map(item => item.move)).size, entry.kit.length, label + ': ' + entry.id + ' kit must not repeat a move');
 
@@ -67,9 +70,33 @@ function assertLegacyAndRosterArtifacts(rosterDoc, moveDoc, label) {
   const gen1 = species.filter(entry => Number(entry.dex) >= 1 && Number(entry.dex) <= 151);
   assert.equal(gen1.length, 151, `${label}: generation-one species count`);
   assert.deepEqual(gen1.map(entry => entry.dex).sort(), Array.from({ length: 151 }, (_, index) => String(index + 1).padStart(4, '0')), `${label}: generation-one dex range`);
-  assert.equal(species.filter(entry => Number(entry.dex) > 151).length, 9, `${label}: preserved later-generation species count`);
+  assert.equal(species.filter(entry => Number(entry.dex) > 151).length, 24, `${label}: later-generation species count including evolutions`);
 
+  assert.deepEqual(ids.slice(160), evolutionIds, `${label}: appended evolution order`);
+  const oldFields = species.slice(0, 160).map(({ evoLevel, prevo, evos, legendary, ...entry }) => entry);
+  assert.equal(createHash('sha256').update(JSON.stringify(oldFields)).digest('hex'), roster160Baseline.speciesJsonSha256,
+    `${label}: all original fields and order of the first 160 species must stay unchanged`);
   const byId = new Map(species.map(entry => [entry.id, entry]));
+  for (const entry of species) {
+    assert.ok(Number.isInteger(entry.evoLevel) && entry.evoLevel >= 1 && entry.evoLevel <= 100, `${label}: ${entry.id} evolution level`);
+    assert.equal(typeof entry.legendary, 'boolean', `${label}: ${entry.id} legendary flag`);
+    if (entry.prevo !== undefined) {
+      assert.ok(byId.has(entry.prevo), `${label}: ${entry.id} in-roster prevo`);
+      assert.ok(byId.get(entry.prevo).evos?.includes(entry.id), `${label}: ${entry.id} reciprocal prevo`);
+    }
+    if (entry.evos !== undefined) {
+      assert.ok(Array.isArray(entry.evos) && entry.evos.length > 0, `${label}: ${entry.id} nonempty in-roster evolutions`);
+      for (const id of entry.evos) assert.equal(byId.get(id)?.prevo, entry.id, `${label}: ${entry.id} reciprocal evolution ${id}`);
+    }
+  }
+  for (const [id, level] of Object.entries({ ivysaur: 16, charizard: 36, pikachu: 1, raichu: 20, alakazam: 36, arcanine: 20 })) {
+    assert.equal(byId.get(id).evoLevel, level, `${label}: ${id} evolution threshold`);
+  }
+  assert.equal(byId.get('pikachu').prevo, undefined, `${label}: omit Pichu outside roster`);
+  assert.equal(byId.get('onix').evos, undefined, `${label}: omit Steelix outside roster`);
+  assert.deepEqual(byId.get('eevee').evos, ['vaporeon', 'jolteon', 'flareon'], `${label}: only the three in-roster Eevee branches`);
+  assert.equal(ids.includes('typhlosionhisui'), false, `${label}: regional formes excluded`);
+  assert.deepEqual(species.filter(entry => entry.legendary).map(entry => entry.id).sort(), ['articuno', 'mew', 'mewtwo', 'moltres', 'zapdos'], `${label}: legendary and mythical flags`);
   const legacyOrder = fixture.legacySpecies.map(entry => entry.id);
   assert.deepEqual(ids.filter(id => legacyOrder.includes(id)), legacyOrder, `${label}: legacy species order is frozen`);
   for (const old of fixture.legacySpecies) {
@@ -114,8 +141,8 @@ function inputSelection(pokedex, learnsets) {
   assert.equal(gen1Ids.size, 151, 'Showdown snapshot must have 151 base species for dex 1–151');
   const extraIds = fixture.legacySpecies.map(entry => entry.id).filter(id => !gen1Ids.has(id));
   assert.equal(extraIds.length, 9, 'the nine legacy later-generation species remain in scope');
-  const speciesIds = [...new Set([...gen1Ids, ...extraIds])].sort();
-  assert.equal(speciesIds.length, 160);
+  const speciesIds = [...new Set([...gen1Ids, ...extraIds, ...evolutionIds])].sort();
+  assert.equal(speciesIds.length, 175);
 
   const selectedGeneration = new Map();
   for (const id of speciesIds) {
@@ -365,7 +392,7 @@ assert set(power) == {"missing", "range"}
   assertImporterSucceeded(spawnSync('python', ['-I', '-c', python], { cwd: repoRoot, encoding: 'utf8', timeout: 15000 }), 'official power precedence');
 });
 
-test('图鉴正式静态产物覆盖160种，保留旧名单、25招原文字节及全局PP一致', () => {
+test('图鉴正式静态产物覆盖175种，保留旧名单、25招原文字节及全局PP一致', () => {
   const rosterFile = path.join(repoRoot, 'src', 'data', 'roster.json');
   const moveFile = path.join(repoRoot, 'src', 'data', 'pmd-moves.json');
   const roster = readJson(rosterFile);
@@ -373,10 +400,11 @@ test('图鉴正式静态产物覆盖160种，保留旧名单、25招原文字节
   const names = readJson(path.join(repoRoot, 'src', 'data', 'names-zh.json'));
   assertLegacyAndRosterArtifacts(roster, moveDoc, 'production');
   assertTeamProtectionData(moveDoc, names);
+  assert.deepEqual(evolutionIds.map(id => names.species[id]), ['月桂叶', '大竺葵', '火岩鼠', '火暴兽', '蓝鳄', '大力鳄', '森林蜥蜴', '蜥蜴王', '力壮鸡', '火焰鸡', '沼跃鱼', '巨沼怪', '沼王', '黑鲁加', '铁掌力士']);
   assert.equal(Object.keys(moveDoc.moves).length, 217, 'committed move table must contain 217 admitted moves without requiring snapshots');
   const gen1Moves = new Set(roster.species.filter(entry => Number(entry.dex) <= 151).flatMap(entry => entry.learnable.map(item => item.move)));
   assert.equal([...gen1Moves].filter(id => Object.hasOwn(moveDoc.moves, id)).length, 215, 'committed generation-one learnable moves must contain 215 admitted moves');
-  for (const [id, count, pp] of [['quickguard', 7, 1], ['reflect', 28, 2], ['lightscreen', 43, 3]]) {
+  for (const [id, count, pp] of [['quickguard', 9, 1], ['reflect', 30, 2], ['lightscreen', 45, 3]]) {
     const learners = roster.species.filter(entry => entry.learnable.some(item => item.move === id));
     assert.equal(learners.length, count, `${id} committed learnable count`);
     for (const entry of learners) assert.equal(entry.learnable.find(item => item.move === id).pp, pp, `${entry.id}/${id} global converted PP`);
@@ -424,6 +452,23 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   for (const entry of generated.roster.species) {
     assert.equal(entry.learnsetGen, expected.selectedGeneration.get(entry.id), `${entry.id} selected learnset generation`);
   }
+  const rosterIds = new Set(expected.speciesIds);
+  for (const entry of generated.roster.species) {
+    const source = pokedex[entry.id];
+    const toId = name => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const prevo = source.prevo && rosterIds.has(toId(source.prevo)) ? toId(source.prevo) : undefined;
+    const evos = (source.evos ?? []).map(toId).filter(id => rosterIds.has(id));
+    assert.equal(entry.prevo, prevo, `${entry.id} prevo from pinned Showdown`);
+    assert.deepEqual(entry.evos, evos.length ? evos : undefined, `${entry.id} evos from pinned Showdown`);
+    assert.equal(entry.legendary, Boolean(source.tags?.length), `${entry.id} tags classification`);
+    if (!prevo) assert.equal(entry.evoLevel, 1, `${entry.id} no in-roster predecessor`);
+    else if (Number.isInteger(source.evoLevel)) assert.equal(entry.evoLevel, source.evoLevel, `${entry.id} official numeric evolution level`);
+    else {
+      const parent = pokedex[prevo];
+      const depthTwo = parent.prevo && rosterIds.has(toId(parent.prevo));
+      assert.equal(entry.evoLevel, depthTwo ? 36 : 20, `${entry.id} special evolution threshold`);
+    }
+  }
   const generatedById = new Map(generated.roster.species.map(entry => [entry.id, entry]));
   const oldSpeciesIds = new Set(fixture.legacySpecies.map(entry => entry.id));
   for (const id of expected.speciesIds.filter(speciesId => !oldSpeciesIds.has(speciesId))) {
@@ -433,9 +478,9 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
     assert.equal(entry.starter, false, id + " starter flag");
   }
   assert.equal(expected.gen1Moves.size, 513, 'generation-one learnset union from the fixed snapshot');
-  assert.equal(expected.allMoves.size, 520, '160-species learnset union from the fixed snapshot');
+  assert.equal(expected.allMoves.size, 522, '175-species learnset union from the fixed snapshot');
   assertTeamProtectionWikiRows(generated.moveDoc, wiki);
-  const expectedTeamLearners = { quickguard: 7, reflect: 28, lightscreen: 43 };
+  const expectedTeamLearners = { quickguard: 9, reflect: 30, lightscreen: 45 };
   const showdownMoves = readJson(path.join(showdown, 'moves.json'));
   const generationPattern = /^(\d+)([A-Z])/;
   for (const [moveId, expectedCount] of Object.entries(expectedTeamLearners)) {
@@ -448,7 +493,7 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
     }).sort();
     const actualIds = generated.roster.species.filter(entry => entry.learnable.some(item => item.move === moveId)).map(entry => entry.id).sort();
     assert.deepEqual(actualIds, expectedIds, `${moveId} learnable species must come from their selected era without V methods`);
-    assert.equal(actualIds.length, expectedCount, `${moveId} learnable count across all 160 species`);
+    assert.equal(actualIds.length, expectedCount, `${moveId} learnable count across all 175 species`);
     const expectedPp = Math.max(1, Math.min(4, Math.floor(showdownMoves[moveId].pp / 10)));
     for (const speciesId of actualIds) {
       assert.equal(generatedById.get(speciesId).learnable.find(item => item.move === moveId).pp, expectedPp, `${speciesId}/${moveId} uses the global converted PP`);
@@ -458,7 +503,7 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   assert.deepEqual(generated.summary.learnsetGenerationCounts, expected.gen1GenerationCounts, 'reported generation counts must match the 151 input species');
 
   const totals = generated.summary.totals;
-  for (const [field, value] of Object.entries({ legacySpecies: 23, generation1Species: 151, extraSpecies: 9, species: 160, learnsetMoves: expected.allMoves.size, oldOfficialConsistencyChecks: 23, unavailableSpecies: 5 })) {
+  for (const [field, value] of Object.entries({ legacySpecies: 23, generation1Species: 151, extraSpecies: 24, species: 175, learnsetMoves: expected.allMoves.size, oldOfficialConsistencyChecks: 23, unavailableSpecies: 5 })) {
     assert.equal(totals[field], value, `summary.totals.${field}`);
   }
   const admitted = sumCounts(generated.summary.admissionCounts, admissionKeys, "admissionCounts");
@@ -470,7 +515,7 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   assert.deepEqual(unavailablePower.map(entry => entry.id).sort(), ["futuresight", "hiddenpower", "knockoff", "strength", "vitalthrow", "wrap"], "official-power exclusion contains exactly the six specified moves");
   assert.equal(generated.summary.exclusionCounts.officialPowerUnavailable, 6);
   assert.equal(admitted, 217);
-  assert.equal(excluded, 303);
+  assert.equal(excluded, 305);
   assert.equal(totals.notAdmittedMoves, excluded, "every non-admitted move has a rule exclusion");
   assert.equal(admitted + excluded, expected.allMoves.size, "admitted moves plus rule exclusions must equal the learnset union");
   for (const field of ['preview', 'observed']) {
@@ -501,4 +546,11 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   assert.notEqual(badResult.status, 0, 'modified snapshot must be rejected');
   assert.match(`${badResult.stdout}\n${badResult.stderr}`, /sha|校验|hash/i, 'failure must identify the snapshot checksum mismatch');
   assert.deepEqual(listFiles(badOut), [], 'checksum failure must write no output files');
+  fs.copyFileSync(path.join(snapshotRoot, 'pmd', 'wiki-2026-10-30.json'), path.join(badInput, 'pmd', 'wiki-2026-10-30.json'));
+  fs.appendFileSync(path.join(badInput, 'pmd', 'wiki-2026-10-30-extra.json'), '\n', 'utf8');
+  const badExtraOut = path.join(testRoot, 'bad-extra-sha-output');
+  const badExtraResult = runImporter(badInput, badExtraOut);
+  assert.notEqual(badExtraResult.status, 0, 'modified extra snapshot must be rejected');
+  assert.match(`${badExtraResult.stdout}\n${badExtraResult.stderr}`, /sha|校验|hash/i);
+  assert.deepEqual(listFiles(badExtraOut), [], 'extra checksum failure must write no output files');
 });

@@ -73,7 +73,7 @@ ADMISSION_KEYS = ("existingMoveRule", "blowaway", "drain", "pureDamage", "selfSt
 EXCLUSION_KEYS = (
     "nonstandard", "noOfficialData", "unsupportedRange", "unsupportedTarget",
     "selfCostOrCondition", "ohko", "fixedDamage", "multihit", "recoil",
-    "selfSwitch", "basePowerCallback", "zeroBasePower", "charge", "changeMoveNoTemplate",
+    "selfSwitch", "basePowerCallback", "zeroBasePower", "charge", "officialPowerUnavailable", "changeMoveNoTemplate",
 )
 RANGE_MAP = {
     "front": "front", "2 tiles away": "front2", "10 tiles away": "line10",
@@ -100,7 +100,7 @@ RANGE_REASON = {
     "反作用": "recoil", "换人": "selfSwitch", "威力由回调决定": "basePowerCallback",
     "basePower 为 0": "zeroBasePower", "蓄力": "charge",
     "变化招式暂无模板": "changeMoveNoTemplate", "无官方迷宫数据": "noOfficialData",
-    "非标准／Z／极巨招式": "nonstandard",
+    "非标准／Z／极巨招式": "nonstandard", "官方威力不可用": "officialPowerUnavailable",
 }
 
 class ImportFailure(Exception):
@@ -373,7 +373,7 @@ def selected_pmd_row(move_id: str, pmd_data: dict) -> dict | None:
             continue
         if row["game"] in by_game:
             fail(f"{move_id} 在 PMD 快照同一作品出现多行：{row['game']}")
-        by_game[row["game"]] = row
+        by_game[row["game"]] = {**row, "rawRow": raw}
     for game in GAME_PRIORITY:
         if game in by_game:
             return by_game[game]
@@ -437,7 +437,7 @@ def attack_special_reason(move: dict) -> str | None:
 
 
 def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_move_specs: dict):
-    specs, result, admission_counts, exclusions, pending = {}, {}, {"existingMoveRule": 0}, {}, {}
+    specs, result, admission_counts, exclusions, unavailable_power = {}, {}, {"existingMoveRule": 0}, {}, {}
     for move_id in sorted(union):
         if move_id in old_move_specs:
             result[move_id] = {"admitted": True, "kind": "existingMoveRule"}
@@ -463,6 +463,12 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
                     reason = "自身代价／使用条件"
                 elif move.get("category") in ("Physical", "Special") and attack_special_reason(move):
                     reason = attack_special_reason(move)
+                elif move.get("category") in ("Physical", "Special") and as_power(row["pow"]) is None:
+                    reason = "官方威力不可用"
+                    unavailable_power[move_id] = {
+                        "detail": f"Showdown 分类 {move['category']}；所选 {row['game']} 的 pow={row['pow']!r}，不是固定整数威力。",
+                        "rawRow": row["rawRow"],
+                    }
                 else:
                     category = move.get("category")
                     effects, note, kind = [], "", ""
@@ -488,15 +494,6 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
                     else:
                         game_id, game_name = GAME_OUTPUT[row["game"]]
                         power = as_power(row["pow"])
-                        if "damage" in effects and power is None:
-                            detail = (
-                                f"Showdown 分类 {category}、basePower={move.get('basePower')}；"
-                                f"所选 {row['game']} 行为 range={row['range']!r}、target={row['target']!r}、pow={row['pow']!r}。"
-                                "当前模板要求固定整数威力，不能表达此官方数据。"
-                            )
-                            pending[move_id] = detail
-                            result[move_id] = {"admitted": False, "pendingReview": True, "detail": detail}
-                            continue
                         specs[move_id] = {
                             "range": range_value, "target": target_value, "power": power,
                             "game": game_id, "gameName": game_name,
@@ -509,9 +506,9 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
         result[move_id] = {"admitted": False, "reason": reason}
         exclusions[reason] = exclusions.get(reason, 0) + 1
 
-    if sum(admission_counts.values()) + sum(exclusions.values()) + len(pending) != len(union):
+    if sum(admission_counts.values()) + sum(exclusions.values()) != len(union):
         fail("招式准入与例外分类计数没有闭合")
-    return specs, result, dict(sorted(admission_counts.items())), dict(sorted(exclusions.items())), dict(sorted(pending.items()))
+    return specs, result, dict(sorted(admission_counts.items())), dict(sorted(exclusions.items())), dict(sorted(unavailable_power.items()))
 
 
 def pp_for(move_id: str, showdown_moves: dict, legacy_pp: dict) -> int:
@@ -758,11 +755,11 @@ def md_table(headers: list[str], rows: list[list[str]]) -> str:
     )
 
 
-def build_exceptions(admission: dict, exclusions: dict, pending: dict, unavailable: list[dict], names_report: dict,
+def build_exceptions(admission: dict, exclusions: dict, unavailable_power: dict, unavailable: list[dict], names_report: dict,
                      sprite_rows: list[dict], hashes: dict, totals: dict):
     reason_groups = {}
     for move_id, result in admission.items():
-        if not result["admitted"] and not result.get("pendingReview"):
+        if not result["admitted"]:
             reason_groups.setdefault(result["reason"], []).append(move_id)
     lines = [
         "# 图鉴批量导入例外清单", "",
@@ -770,7 +767,7 @@ def build_exceptions(admission: dict, exclusions: dict, pending: dict, unavailab
         "## 输入快照 SHA-256", "",
         md_table(["相对路径", "SHA-256"], [[path, digest] for path, digest in hashes.items()]),
         "## 招式准入摘要", "",
-        f"招式并集 {totals['learnsetMoves']}；准入 {totals['admittedMoves']}；按规格原因排除 {totals['ruleExcludedMoves']}；待规格决定 {totals['pendingReviewMoves']}。四项闭合。", "",
+        f"招式并集 {totals['learnsetMoves']} = 准入 {totals['admittedMoves']} + 按规格原因排除 {totals['ruleExcludedMoves']}。", "",
         "## 按规则未准入的招式", "",
     ]
     if reason_groups:
@@ -778,9 +775,11 @@ def build_exceptions(admission: dict, exclusions: dict, pending: dict, unavailab
         lines.append(md_table(["原因", "数量", "招式 ID"], reason_rows))
     else:
         lines.append("无。\n")
-    lines += ["## 待规格决定的官方伤害数据", "", "这些招式不计入第2.4节规定的排除原因。当前模板需要固定整数威力；快照所选官方行缺威力或给出范围，因此暂不写入招式表，待规格决定如何表示。", ""]
-    pending_rows = [[move_id, detail] for move_id, detail in sorted(pending.items())]
-    lines.append(md_table(["招式 ID", "依据"], pending_rows) if pending_rows else "无。\n")
+    lines += ["## 官方威力不可用：原始记录", "", "按规格第2.4节第7条，攻击招式所选官方行的威力不是整数时不准入；本表已计入上述排除总数。保持作品优先级，不以 Showdown 威力补造。", ""]
+    for move_id, record in sorted(unavailable_power.items()):
+        lines += [f"### {move_id}", "", record["detail"], "", "```text", record["rawRow"], "```", ""]
+    if not unavailable_power:
+        lines.append("无。\n")
     lines += ["## 暂不出场物种", "", "这些物种按规定方法无法得到两个准入升级招式且至少一个伤害招式；保留在图鉴数据中，写入 `availability: 暂不出场`。", ""]
     lines.append(md_table(["图鉴号", "ID", "升级招式 kit", "原因"], [
         [sp["dex"], sp["id"], "、".join(x["move"] for x in sp["kit"]) or "无", "准入升级招式不足2个或没有伤害招式"] for sp in unavailable
@@ -846,7 +845,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         fail(f"PMD 请求招式集、快照招式集与选定学习表并集不同：learnset={len(union)} requested={len(requested)} pages={len(data['pmd'].get('moves', {}))}")
     if len(union) != 520:
         fail(f"第2.1–2.2节预期160种招式并集520，实际 {len(union)}")
-    new_specs, admission, admission_counts, exclusions, pending = classify_moves(
+    new_specs, admission, admission_counts, exclusions, unavailable_power = classify_moves(
         union, data["moves"], data["pmd"], old_pmd["moves"],
     )
     admitted_count = sum(1 for result in admission.values() if result["admitted"])
@@ -902,6 +901,8 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
 
     gen1_ids = {sp["id"] for sp in gen1}
     gen1_sprite_rows = [row for row in sprite_rows if row["id"] in gen1_ids]
+    _, gen1_union = learnset_data(data, sorted(gen1_ids))
+    gen1_admitted_count = sum(admission[mid]["admitted"] for mid in gen1_union)
     local_files_ready = sum(row["localFilesReady"] for row in sprite_rows)
     tracker_ready = sum(row["trackerReady"] for row in sprite_rows)
     sprite_available = sum(row["available"] for row in sprite_rows)
@@ -909,7 +910,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "legacySpecies": 23, "generation1Species": len(gen1),
         "extraSpecies": 9, "species": len(roster), "learnsetMoves": len(union),
         "admittedMoves": admitted_count, "excludedMoves": sum(exclusions.values()),
-        "ruleExcludedMoves": sum(exclusions.values()), "pendingReviewMoves": len(pending),
+        "ruleExcludedMoves": sum(exclusions.values()),
         "notAdmittedMoves": len(union) - admitted_count,
         "moveTableMoves": len(old_pmd["moves"]) + len(set(new_specs) - set(old_pmd["moves"])),
         "oldOfficialConsistencyChecks": len(consistent_moves), "unavailableSpecies": len(unavailable),
@@ -925,17 +926,16 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
             for key in EXCLUSION_KEYS
         },
         "unavailableSpecies": [{"dex": x["dex"], "id": x["id"]} for x in unavailable],
-        "pendingReview": [{"id": mid, "detail": detail} for mid, detail in pending.items()],
-        "pendingReviewCount": len(pending),
+        "officialPowerUnavailable": [{"id": mid, **record} for mid, record in unavailable_power.items()],
         "comparison": {
             "preview": {
-                "admittedMoves": 220, "unavailableSpecies": 5,
+                "admittedMoves": 214, "generation1AdmittedMoves": 212, "unavailableSpecies": 5,
                 "learnsetGenerationCounts": {"7": 12, "8": 40, "9": 99},
                 "nameChecks": {"missingSpecies": 0, "speciesDifferences": 0, "missingMoves": 1, "moveDifferences": 6},
             },
             "observed": {
                 "admittedMoves": admitted_count, "unavailableSpecies": len(unavailable),
-                "pendingReviewMoves": len(pending),
+                "generation1AdmittedMoves": gen1_admitted_count,
                 "learnsetGenerationCounts": dict(sorted(gen_counts.items())),
                 "nameChecks": {
                     "missingSpecies": len(name_report["missingSpecies"]),
@@ -963,7 +963,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
             },
         },
     }
-    exceptions = build_exceptions(admission, exclusions, pending, unavailable, name_report, sprite_rows, checked["hashes"], totals)
+    exceptions = build_exceptions(admission, exclusions, unavailable_power, unavailable, name_report, sprite_rows, checked["hashes"], totals)
     roster_bytes = (json.dumps(roster_doc, ensure_ascii=False, indent=1) + "\n").encode("utf-8")
     names_bytes = (json.dumps(names_doc, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     summary_bytes = (json.dumps(summary, ensure_ascii=False, indent=2) + "\n").encode("utf-8")

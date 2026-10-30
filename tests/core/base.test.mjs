@@ -35,6 +35,22 @@ test('the Pokédex Arcanine entry does not make the regional boss a regular rost
  assert.match(profileProblem(p),/首领物种arcanine不能作为普通伙伴/);
 });
 
+test('暂不出场的图鉴物种不能通过手改存档进入名册或救援池',()=>{
+ for(const species of ['metapod','kakuna','abra','magikarp','ditto']){
+  assert.equal(SPECIES[species].availability,'暂不出场');
+  for(const destination of ['roster','rescue']){
+   const p=initialProfile();
+   const inst={id:'P4',species,protected:false,learned:[],carry:[]};
+   p.next=5;
+   if(destination==='roster')p.roster.push(inst);
+   else p.rescue.push({inst,paid:false,left:1});
+   assert.match(profileProblem(p),new RegExp(`物种${species}暂不出场`),destination);
+   assert.throws(()=>decode(JSON.stringify(envelope({profile:p}))),/损坏|不兼容/,`${species}/${destination}`);
+  }
+ }
+ assert.doesNotThrow(()=>decode(JSON.stringify(envelope())));
+});
+
 test('B2 normal exit: the new recruit joins the roster, the brought machine enters the vault, old members keep what they had',()=>{
  const p=settleRun(initialProfile(),ended({camp:[['N1','pidgey']]}));
  assert.deepEqual(p.roster.map(i=>[i.id,i.species]),[['P1','charmander'],['P2','squirtle'],['P3','bulbasaur'],['P4','pidgey']]);

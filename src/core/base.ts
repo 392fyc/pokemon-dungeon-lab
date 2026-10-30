@@ -217,6 +217,7 @@ function instProblem(i:unknown,ids:Set<string>,wantProtected:boolean|null):strin
   if(wantProtected===false&&i.protected)return `救援池里的${i.id}不能带受保护标记`;
   if(Object.prototype.hasOwnProperty.call(BOSS_SPECIES,i.species))return `首领物种${i.species}不能作为普通伙伴`;
   if(!speciesOf(i.species))return `实例${i.id}的物种不在名册数据中`;
+  if(speciesOf(i.species)?.availability==='暂不出场')return `物种${i.species}暂不出场，不能作为伙伴`;
   const names=new Set<string>();
   for(const l of i.learned as unknown[]){
     if(!obj(l)||Object.keys(l).sort().join()!=='move,pp'||typeof l.move!=='string'||!Number.isInteger(l.pp)||(l.pp as number)<1)return `实例${i.id}的已学招式结构错误`;

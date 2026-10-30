@@ -20,7 +20,7 @@ const scratchRoot = path.join(mainRoot, '.tmp', 'lane-dev', 'pokedex-import');
 const fixture = JSON.parse(fs.readFileSync(new URL('./fixtures-pokedex/legacy-baseline.json', import.meta.url), 'utf8'));
 const generationOneIds = ['metapod', 'kakuna', 'abra', 'magikarp', 'ditto'];
 const admissionKeys = ['existingMoveRule', 'blowaway', 'drain', 'pureDamage', 'selfStages'];
-const exclusionKeys = ['nonstandard', 'noOfficialData', 'unsupportedRange', 'unsupportedTarget', 'selfCostOrCondition', 'ohko', 'fixedDamage', 'multihit', 'recoil', 'selfSwitch', 'basePowerCallback', 'zeroBasePower', 'charge', 'changeMoveNoTemplate'];
+const exclusionKeys = ['nonstandard', 'noOfficialData', 'unsupportedRange', 'unsupportedTarget', 'selfCostOrCondition', 'ohko', 'fixedDamage', 'multihit', 'recoil', 'selfSwitch', 'basePowerCallback', 'zeroBasePower', 'charge', 'officialPowerUnavailable', 'changeMoveNoTemplate'];
 const requiredSnapshots = [
   'showdown/pokedex.json', 'showdown/moves.json', 'showdown/learnsets.json',
   'pmd/wiki-2026-10-30.json', 'pmd/wiki-2026-10-30.json.sha256', 'pmd/moves-2026-10-30.json',
@@ -284,12 +284,41 @@ for value, supported, unsupported, field in (("Future range", module.RANGE_MAP, 
   assertImporterSucceeded(result, 'pure parser probe');
 });
 
+test('官方威力不可用按第7条判定，先处理自身代价和特殊攻击机制', () => {
+  const python = `
+import importlib.util
+spec = importlib.util.spec_from_file_location("pokedex_power_order_test", ${JSON.stringify(importerPath)})
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+base = {"category": "Special", "basePower": 60}
+moves = {
+    "missing": dict(base), "range": dict(base),
+    "cost": {**base, "selfdestruct": "always"},
+    "charge": {**base, "flags": {"charge": 1}},
+    "fixed": {**base, "damage": 20},
+    "status": {"category": "Status", "target": "self", "boosts": {"atk": 1}},
+}
+wiki = {"moves": {key: {"rows": ["{{MDMoveRow|game=TDS|pow=" + ("2-15" if key == "range" else "-") + "|range=Front|target=Enemy}}"]} for key in moves}}
+_, result, _, exclusions, power = module.classify_moves(set(moves), moves, wiki, {})
+assert result["cost"]["reason"] == "自身代价／使用条件"
+assert result["charge"]["reason"] == "蓄力"
+assert result["fixed"]["reason"] == "固定伤害"
+assert result["status"]["admitted"]
+assert exclusions["官方威力不可用"] == 2
+assert set(power) == {"missing", "range"}
+`;
+  assertImporterSucceeded(spawnSync('python', ['-I', '-c', python], { cwd: repoRoot, encoding: 'utf8', timeout: 15000 }), 'official power precedence');
+});
+
 test('图鉴正式静态产物覆盖160种，保留旧名单、25招原文字节及全局PP一致', () => {
   const rosterFile = path.join(repoRoot, 'src', 'data', 'roster.json');
   const moveFile = path.join(repoRoot, 'src', 'data', 'pmd-moves.json');
   const roster = readJson(rosterFile);
   const moveDoc = readJson(moveFile);
   assertLegacyAndRosterArtifacts(roster, moveDoc, 'production');
+  assert.equal(Object.keys(moveDoc.moves).length, 214, 'committed move table must contain 214 admitted moves without requiring snapshots');
+  const gen1Moves = new Set(roster.species.filter(entry => Number(entry.dex) <= 151).flatMap(entry => entry.learnable.map(item => item.move)));
+  assert.equal([...gen1Moves].filter(id => Object.hasOwn(moveDoc.moves, id)).length, 212, 'committed generation-one learnable moves must contain 212 admitted moves');
   assertOldMoveBytes(moveFile, 'production');
 });
 
@@ -354,16 +383,26 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   assert.equal(admitted, totals.admittedMoves, "admitted categories must sum to admittedMoves");
   assert.equal(excluded, totals.ruleExcludedMoves, "rule exclusion categories must sum to ruleExcludedMoves");
   assert.equal(excluded, totals.excludedMoves, "excludedMoves must reflect rule-based exclusions");
-  const pendingIds = generated.summary.pendingReview.map(entry => entry.id).sort();
-  assert.equal(generated.summary.pendingReviewCount, pendingIds.length, "pending review total");
-  assert.equal(totals.pendingReviewMoves, pendingIds.length, "summary pending review total");
-  assert.deepEqual(pendingIds, ["futuresight", "hiddenpower", "knockoff", "strength", "vitalthrow", "wrap"], "fixed snapshot items requiring a specification decision");
-  assert.equal(totals.notAdmittedMoves, excluded + pendingIds.length, "all non-admitted moves must be explained as rule exclusions or pending review");
-  assert.equal(admitted + excluded + pendingIds.length, expected.allMoves.size, "admitted moves, rule exclusions, and explicitly pending moves must close the learnset union");
+  const unavailablePower = generated.summary.officialPowerUnavailable;
+  assert.deepEqual(unavailablePower.map(entry => entry.id).sort(), ["futuresight", "hiddenpower", "knockoff", "strength", "vitalthrow", "wrap"], "official-power exclusion contains exactly the six specified moves");
+  assert.equal(generated.summary.exclusionCounts.officialPowerUnavailable, 6);
+  assert.equal(admitted, 214);
+  assert.equal(excluded, 306);
+  assert.equal(totals.notAdmittedMoves, excluded, "every non-admitted move has a rule exclusion");
+  assert.equal(admitted + excluded, expected.allMoves.size, "admitted moves plus rule exclusions must equal the learnset union");
+  for (const field of ['preview', 'observed']) {
+    assert.equal(generated.summary.comparison[field].admittedMoves, 214);
+    assert.equal(generated.summary.comparison[field].generation1AdmittedMoves, 212);
+  }
   assert.equal([...expected.allMoves].filter(id => outputMoveIds.has(id)).length, admitted, "move table membership must match admitted move count");
   assert.equal(totals.moveTableMoves, outputMoveIds.size, "move table total must match its generated entries");
   assert.deepEqual([...outputMoveIds].filter(id => !expected.allMoves.has(id)), [], "move table must contain no move outside the selected learnset union");
-  for (const id of pendingIds) assert.match(generated.exceptions, new RegExp("\\b" + id + "\\b", "i"), "exceptions must identify pending move " + id);
+  for (const entry of unavailablePower) {
+    assert.ok(wiki.moves[entry.id].rows.includes(entry.rawRow), `${entry.id}: excluded move retains an exact source row`);
+    assert.match(generated.exceptions, new RegExp("\\b" + entry.id + "\\b", "i"), "exceptions must identify excluded move " + entry.id);
+  }
+  assert.match(generated.exceptions, /官方威力不可用/);
+  assert.doesNotMatch(generated.exceptions, /待规格决定|不计入第2.4节/);
 
   for (const id of generationOneIds) {
     assert.match(generated.exceptions, new RegExp(`\\b${id}\\b`, 'i'), `exceptions must identify unavailable species ${id}`);

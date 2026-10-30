@@ -27,7 +27,8 @@ async function setup(fixture,mode='pass',animate=false){
  await page.goto(base+(fixture?'?fixture='+fixture:'?dev=1'));await page.locator('#start').waitFor();
  return {context,page,errors};
 }
-const ready=p=>p.waitForFunction(()=>window.trial?.store.status==='ready');
+// 7.5: entering play loads Phaser on demand; canvas assertions also need the scene ready.
+const ready=p=>p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
 const state=p=>p.evaluate(()=>window.trial.getState());
 const raw=p=>p.evaluate(()=>localStorage.getItem(window.trial.store.key));
 async function start(p){await p.locator('#start').click();await ready(p);}

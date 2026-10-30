@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import {animKey,facingRow,sheet} from './sprites.ts';
 import {BASE_MS,type AnimEvent} from './animation.ts';
 import type {Pos} from '../core/engine.ts';

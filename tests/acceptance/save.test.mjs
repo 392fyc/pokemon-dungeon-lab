@@ -1,135 +1,108 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createMain} from '../../src/core/engine.ts';
-import {TrialStore} from '../../src/core/save.ts';
-import {V,round,move,basic,interact,doCmd,accept,refuse,finish,pos,coords,hp,pp} from './fixtures.mjs';
+import {readFileSync} from 'node:fs';
+import {createMain,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
+import {newGameProfile,settleRun,squadOf} from '../../src/core/base.ts';
+import {TrialStore,decode,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
+import {round,wait,interact} from './fixtures.mjs';
 
 function port(raw=null){
- let value=raw,fail=false,hold=false,pending=null;
- const attempts=[];
- return {attempts,getItem(){return value;},async setItem(k,v){
-  attempts.push(v);
-  if(fail)throw Error('INDEPENDENT_WRITE_FAILURE');
-  if(hold)await new Promise((resolve,reject)=>{assert.equal(pending,null);pending={resolve,reject};});
-  value=v;
- },raw(){return value;},fail(v=true){fail=v;},hold(){hold=true;},
- release(){hold=false;const p=pending;pending=null;p.resolve();},
- reject(){hold=false;const p=pending;pending=null;p.reject(Error('INDEPENDENT_HELD_FAILURE'));}
- };
+ let value=raw,failNext=false,writes=0;
+ return {getItem:()=>value,setItem:(_key,next)=>{if(failNext){failNext=false;throw Error('ACCEPTANCE_WRITE_FAILURE');}value=next;writes++;},raw:()=>value,writes:()=>writes,failNext(){failNext=true;}};
 }
-function prefix4(){
- let s=createMain('save-run',true);
- for(const a of [move(3),basic('E'),basic('E'),basic('E')])s=round(s,a);
- return s;
+const legacy=name=>JSON.parse(readFileSync(new URL(`../core/fixtures77-regression/${name}`,import.meta.url),'utf8'));
+const gameProfile=()=>{const made=newGameProfile('charmander','squirtle');assert.equal(made.ok,true);return made.profile;};
+
+async function finishExpedition(store){
+ for(let n=0;n<20;n++){
+  const s=store.state;assert.ok(s,`World disappeared before terminal at step ${n}`);
+  if(s.phase==='ended')return s;
+  if(s.phase==='invitation'){assert.equal((await store.dispatch({type:'invite',choice:'reject'})).ok,true);continue;}
+  if(s.phase==='exit'){assert.equal((await store.dispatch({type:'finishExit'})).ok,true);continue;}
+  if(s.phase==='transit'){assert.equal((await store.dispatch({type:'finishTransit'})).ok,true);continue;}
+  assert.equal(s.phase,'playing');
+  const leader=s.units[s.leader],exit=s.points.find(p=>p.kind==='exit'&&leader.pos&&p.pos.x===leader.pos.x&&p.pos.y===leader.pos.y);
+  if(exit)assert.equal((await store.dispatch({type:'round',action:{type:'interact',exit:true}})).ok,true);
+  else assert.equal((await store.dispatch({type:'round',action:{type:'wait'}})).ok,true);
+ }
+ assert.fail('deterministic expedition did not reach its exit');
 }
-function scout(){
- let s=refuse(prefix4());
- for(const a of [move(4),interact(false),move(5)])s=round(s,a);
- return s;
-}
-async function reopen(s){
- const p=port();const a=new TrialStore(p,'acceptance');assert.equal(await a.start(s),true);
- const raw=p.raw(),b=new TrialStore(p,'acceptance');
- assert.equal(b.status,'ready');assert.deepEqual(b.state,s);assert.equal(p.raw(),raw);
- return {p,a,b};
-}
-test('S1 ordinary saved state is exact, not replayed',async()=>{
- const {b}=await reopen(scout());
- assert.equal(b.state.round,7);assert.deepEqual(coords(b.state),[pos(2),pos(3),pos(5)]);
- assert.deepEqual(hp(b.state),[20,20,8]);assert.deepEqual(pp(b.state),[{tackle:2},{protect:2},{tackle:2,quickattack:2}]);
- assert.equal(b.state.seen.includes('9,1'),true);assert.equal(b.state.units.R.hp,6);
+
+test('A1 new records contain only the camp profile; in-run Worlds stay in memory',async()=>{
+ const storage=port(),store=new TrialStore(storage,'acceptance'),profile=gameProfile();
+ assert.equal(await store.beginNewGame(profile,false),true,store.error);
+ const campRaw=storage.raw(),camp=decode(campRaw),writes=storage.writes();
+ assert.equal(camp.format,2);assert.equal(camp.rules,store.envelope.rules);assert.equal(camp.content,store.envelope.content);
+ assert.deepEqual(Object.keys(camp).sort(),['build','format','profile','rules','sequence','content'].sort());
+ assert.equal(Object.hasOwn(camp,'current'),false);assert.equal(Object.hasOwn(camp,'recent'),false);
+
+ assert.equal(await store.depart('acceptance-midrun',103,0),true,store.error);
+ assert.equal(storage.writes(),writes);assert.equal(storage.raw(),campRaw);
+ assert.equal((await store.dispatch({type:'round',action:wait})).ok,true);
+ assert.equal(storage.writes(),writes);assert.notDeepEqual(store.state,createMain('acceptance-midrun',true));
+ const reopened=new TrialStore(storage,'acceptance');await reopened.whenReady;
+ assert.equal(reopened.status,'ready');assert.equal(reopened.state,null);assert.deepEqual(reopened.profile,profile);
+ assert.equal(storage.raw(),campRaw);
 });
-test('S2 pending invitation survives repeated reads/reopen',async()=>{
- const s=prefix4(),{b,p}=await reopen(s);const before=p.raw();
- for(let i=0;i<3;i++){assert.equal(b.state.phase,'invitation');assert.deepEqual(b.state.anchor,pos(3));assert.equal(b.state.invitations[0].unit.hp,10);assert.deepEqual(b.state.invitations[0].unit.pp,{tackle:1,roar:1});}
- assert.deepEqual(b.state.invitations,s.invitations);assert.equal(p.raw(),before);
+
+test('A2 expedition settlement writes once at the terminal; returning to camp is only a view change',async()=>{
+ const storage=port(),store=new TrialStore(storage,'acceptance');
+ assert.equal(await store.beginNewGame(gameProfile(),false),true);
+ const startWrites=storage.writes(),before=store.envelope.profile.expeditions;
+ assert.equal(await store.depart('acceptance-terminal',103,0),true);
+ assert.equal(storage.writes(),startWrites);
+ const ended=await finishExpedition(store);
+ assert.equal(ended.phase,'ended');assert.equal(store.status,'ready');assert.equal(storage.writes(),startWrites+1);
+ assert.equal(store.envelope.profile.expeditions,before+1);
+ assert.equal(Object.hasOwn(store.envelope,'current'),false);assert.equal(Object.hasOwn(store.envelope,'recent'),false);
+ assert.deepEqual(decode(storage.raw()),store.envelope);
+ const saved=storage.raw(),writes=storage.writes(),summary=store.settlementSummary,profile=store.envelope.profile;
+ assert.equal(await store.returnToBase(),true);assert.equal(store.state,null);assert.equal(store.atBase,true);
+ assert.equal(storage.raw(),saved);assert.equal(storage.writes(),writes);assert.equal(store.settlementSummary,null);
+ assert.ok(summary);const reopened=new TrialStore(storage,'acceptance');assert.deepEqual(reopened.profile,profile);
 });
-test('S3 one processed invitation resumes second once',async()=>{
- const s=accept(V(10),'A'),{b,p}=await reopen(s);
- assert.deepEqual(b.state.camp,['A']);assert.deepEqual(b.state.units.N1.pos,pos(2,2));assert.equal(b.state.leader,'B');
- const r=await b.dispatch({type:'invite',choice:'accept',outgoing:'C'});assert.equal(r.ok,true);
- assert.deepEqual(b.state.camp,['A','C']);assert.deepEqual(b.state.queue,['B','N1','N2']);assert.deepEqual(b.state.units.N2.pos,pos(3,2));
- const c=new TrialStore(p,'acceptance');assert.deepEqual(c.state,b.state);
+
+test('A3 terminal write failure retries the already settled result exactly once',async()=>{
+ const storage=port(),store=new TrialStore(storage,'acceptance');
+ assert.equal(await store.beginNewGame(gameProfile(),false),true);
+ const startWrites=storage.writes(),before=store.profile.expeditions;
+ assert.equal(await store.depart('acceptance-retry',103,0),true);
+ storage.failNext();const ended=await finishExpedition(store);
+ assert.equal(ended.phase,'ended');assert.equal(store.status,'failed');assert.equal(store.envelope.profile.expeditions,before+1);
+ assert.equal(storage.writes(),startWrites);assert.equal(JSON.parse(storage.raw()).profile.expeditions,before);
+ const candidate=store.envelope,summary=store.settlementSummary;
+ assert.equal(await store.retry(),true,store.error);assert.equal(store.status,'ready');assert.equal(storage.writes(),startWrites+1);
+ assert.deepEqual(store.envelope,candidate);assert.deepEqual(store.settlementSummary,summary);
+ assert.equal(new TrialStore(storage,'acceptance').profile.expeditions,before+1);
 });
-for(const stage of ['invite','exit'])test('S4 restore valid request '+stage,async()=>{
- let s=round(V(13),interact(true));if(stage==='exit')s=accept(s,'B');
- const {b,p}=await reopen(s);assert.equal(b.state.request.locked,true);
- if(stage==='invite'){assert.equal(b.state.phase,'invitation');await b.dispatch({type:'invite',choice:'accept',outgoing:'B'});}
- assert.equal(b.state.phase,'exit');assert.equal(b.state.round,1);
- await b.dispatch({type:'finishExit'});assert.equal(b.state.end.outcome,'normal');assert.equal(b.state.round,1);
- const raw=p.raw();assert.equal((await b.dispatch({type:'finishExit'})).ok,false);assert.equal(p.raw(),raw);
+
+test('A4 legacy in-progress saves drop the World while valid legacy ended saves settle once',async()=>{
+ const running=legacy('run-before72.json'),runningPort=port(JSON.stringify(running)),runningStore=new TrialStore(runningPort,'acceptance');
+ assert.equal(await runningStore.whenReady,true,runningStore.error);assert.equal(runningStore.status,'ready');
+ assert.equal(runningStore.state,null);assert.equal(runningPort.writes(),1);assert.equal(JSON.parse(runningPort.raw()).format,2);
+
+ const ended=legacy('ended-before72.json'),raw=JSON.stringify(ended),old=decodeLegacy(raw);
+ const expected=settleRun(old.profile,old.current),endedPort=port(raw),endedStore=new TrialStore(endedPort,'acceptance');
+ assert.equal(await endedStore.whenReady,true,endedStore.error);assert.equal(endedStore.state,null);
+ assert.deepEqual(endedStore.profile,expected);assert.equal(endedStore.profile.expeditions,old.profile.expeditions+1);
+ assert.equal(endedPort.writes(),1);assert.equal(Object.hasOwn(JSON.parse(endedPort.raw()),'current'),false);
+ assert.equal(new TrialStore(endedPort,'acceptance').profile.expeditions,expected.expeditions);
 });
-for(const mode of ['normal','wipe'])test('S5 terminal reload '+mode,async()=>{
- const s=mode==='normal'?finish(round(V(7),interact(true))):round(V(12),interact(true));
- const {b,p}=await reopen(s);const before=p.raw();
- for(let i=0;i<2;i++){assert.equal((await b.dispatch({type:'finishExit'})).ok,false);assert.equal((await b.dispatch({type:'round',action:move(1)})).ok,false);}
- assert.deepEqual(b.state.end,s.end);assert.equal(p.raw(),before);assert.equal(b.state.end.brought,0);
+
+test('A5 an old save without a valid camp profile stays blocked and keeps its bytes until explicit reset',async()=>{
+ const old=legacy('run-before72.json');delete old.profile;const raw=JSON.stringify(old),storage=port(raw),store=new TrialStore(storage,'acceptance');
+ assert.equal(await store.whenReady,false);assert.equal(store.status,'blocked');assert.equal(store.exportRaw(),raw);
+ assert.equal(await store.resetAfterExport(createMain('reset-after-export',false),false),false);assert.equal(storage.raw(),raw);
+ assert.equal(await store.resetAfterExport(createMain('reset-after-export',false),true),true);
+ assert.equal(store.status,'ready');assert.equal(store.state.runId,'reset-after-export');
+ assert.equal(storage.writes(),0);assert.equal(storage.raw(),raw,'developer reset changes memory only');
 });
-const boundaries=[
- ['ordinary',()=>createMain('ordinary',false),{type:'round',action:move(3)}],
- ['invite-created',()=>{let s=createMain('invite',true);for(const a of [move(3),basic('E'),basic('E')])s=round(s,a);return s;},{type:'round',action:basic('E')}],
- ['item-processed',()=>V(10),{type:'invite',choice:'accept',outgoing:'A'}],
- ['exit-pending',()=>V(7),{type:'round',action:interact(true)}],
- ['normal-terminal',()=>round(V(7),interact(true)),{type:'finishExit'}],
- ['failure-terminal',()=>V(12),{type:'round',action:interact(true)}]
-];
-for(const [id,initial,cmd] of boundaries)test('S6 failed write '+id,async()=>{
- const {a,p}=await reopen(initial());const old=p.raw(),oldLabel=a.lastSaved;p.fail();
- await a.dispatch(cmd);assert.equal(a.status,'failed');assert.equal(p.raw(),old);assert.equal(a.lastSaved,oldLabel);
- const candidate=a.envelope,failedPayload=p.attempts.at(-1);
- for(const command of [{type:'switch',actor:'A'},{type:'round',action:move(1)},{type:'invite',choice:'reject'},{type:'finishExit'}])assert.equal((await a.dispatch(command)).ok,false);
- assert.equal(await a.newTrial(createMain('blocked-new',false)),false);assert.deepEqual(a.envelope,candidate);
- assert.equal(await a.retry(),false);assert.equal(p.attempts.at(-1),failedPayload);
- p.fail(false);assert.equal(await a.retry(),true);assert.equal(p.attempts.at(-1),failedPayload);
- assert.deepEqual(new TrialStore(p,'acceptance').envelope,candidate);
-});
-test('S6 asynchronous saving gate rejects mutation then releases same result',async()=>{
- const {a,p}=await reopen(createMain('async',false)),old=p.raw(),oldLabel=a.lastSaved;
- p.hold();const running=a.dispatch({type:'round',action:move(3)});
- assert.equal(a.status,'saving');assert.equal(p.raw(),old);assert.equal(a.lastSaved,oldLabel);
- const candidate=a.envelope;
- assert.equal((await a.dispatch({type:'round',action:move(4)})).ok,false);
- assert.equal((await a.dispatch({type:'switch',actor:'A'})).ok,false);
- assert.equal(await a.newTrial(createMain('blocked',false)),false);
- assert.deepEqual(a.envelope,candidate);p.release();await running;
- assert.equal(a.status,'ready');assert.equal(a.state.round,1);assert.equal(a.state.units.C.hp,16);assert.equal(a.lastSaved!==oldLabel,true);
-});
-test('S6 asynchronous rejected write preserves last successful raw',async()=>{
- const {a,p}=await reopen(createMain('async-fail',false)),old=p.raw();p.hold();
- const running=a.dispatch({type:'round',action:move(3)});assert.equal(a.status,'saving');p.reject();await running;
- assert.equal(a.status,'failed');assert.equal(p.raw(),old);const bytes=p.attempts.at(-1);
- await a.retry();assert.equal(p.attempts.at(-1),bytes);assert.equal(a.state.round,1);
-});
-test('S7 initial failure is not a recoverable save',async()=>{
- const p=port();p.fail();const a=new TrialStore(p,'acceptance');
- assert.equal(await a.start(createMain('first',false)),false);assert.equal(a.status,'failed');assert.equal(a.lastSaved,null);
- assert.equal(p.raw(),null);assert.equal((await a.dispatch({type:'round',action:move(3)})).ok,false);
- assert.equal(new TrialStore(p,'acceptance').status,'empty');
- const first=p.attempts[0];p.fail(false);await a.retry();assert.equal(p.attempts.at(-1),first);
-});
-test('S8 restart preserves terminal and retries identical new run identity',async()=>{
- const terminal=round(V(12),interact(true)),{a,p}=await reopen(terminal),old=p.raw();
- p.fail();assert.equal(await a.newTrial(createMain('new-independent',false)),false);
- const candidate=a.envelope,payload=p.attempts.at(-1);
- assert.equal(p.raw(),old);assert.deepEqual(candidate.recent,terminal);
- assert.equal(candidate.current.runId,'new-independent');assert.deepEqual(hp(candidate.current),[20,20,20]);assert.equal(candidate.current.bag,0);assert.deepEqual(candidate.current.camp,[]);
- assert.equal(await a.newTrial(createMain('must-not-regenerate',false)),false);assert.deepEqual(a.envelope,candidate);
- p.fail(false);assert.equal(await a.retry(),true);assert.equal(p.attempts.at(-1),payload);
- const b=new TrialStore(p,'acceptance');assert.deepEqual(b.envelope,candidate);assert.equal(b.state.round,0);
-});
-for(const alteration of ['json','format','rules','content','negativePP','missingInviteUnit','pendingInviteMarkedExit'])test('S9 invalid save '+alteration,async()=>{
- const s=alteration==='pendingInviteMarkedExit'?round(V(13),interact(true)):alteration==='missingInviteUnit'?prefix4():createMain('corrupt',false),{p}=await reopen(s);
- let e=JSON.parse(p.raw());
- if(alteration==='format')e.format=999;
- if(alteration==='rules')e.rules='future-rules';
- if(alteration==='content')e.content='future-content';
- if(alteration==='negativePP')e.current.units.A.pp.tackle=-1;
- if(alteration==='missingInviteUnit')delete e.current.invitations[0].unit;
- if(alteration==='pendingInviteMarkedExit')e.current.phase='exit';
- const raw=alteration==='json'?'{broken':JSON.stringify(e),bad=port(raw),a=new TrialStore(bad,'acceptance');
- assert.equal(a.status,'blocked');assert.equal(bad.raw(),raw);
- assert.equal(await a.resetAfterExport(createMain('reset',false),true),false);
- assert.equal(a.exportRaw(),raw);assert.equal(await a.resetAfterExport(createMain('reset',false),false),false);
- assert.equal(await a.resetAfterExport(createMain('reset',false),true),true);
- assert.equal(a.status,'ready');assert.equal(a.state.runId,'reset');
+
+test('A6 a developer start is not persisted, and strict format 2 rejects embedded Worlds',async()=>{
+ const storage=port(),store=new TrialStore(storage,'acceptance');
+ const world=round(createMain('developer-only',true),wait);
+ assert.equal(await store.start(world),true);assert.deepEqual(store.state,world);assert.equal(storage.writes(),0);
+ assert.equal(new TrialStore(storage,'acceptance').status,'empty');
+ const record={format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,profile:gameProfile(),current:world};
+ assert.throws(()=>decode(JSON.stringify(record)),/存档结构损坏|存档版本不兼容/);
 });

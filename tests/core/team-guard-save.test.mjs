@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {createExpedition,jumpToFloor,applyCommand,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {createScenario} from '../../src/core/scenarios.ts';
 import {initialProfile,squadOf} from '../../src/core/base.ts';
-import {decode,TrialStore,BUILD_ID} from '../../src/core/save.ts';
+import {decodeLegacy,TrialStore,BUILD_ID} from '../../src/core/save.ts';
 import {ALL_TM_MOVES,LEGACY_TM_MOVES,TM_MOVES,TM_MOVES_V3,SPECIES,tmPool} from '../../src/core/roster.ts';
 
-const envelope=(current,profile=initialProfile())=>({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:3,current,recent:null,profile});
+const envelope=(current,profile=initialProfile())=>({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:3,current,recent:null,profile});
 const rawOf=(current,profile)=>JSON.stringify(envelope(current,profile));
 function memory(raw=null){let value=raw,writes=0;return {getItem:()=>value,setItem:(_key,next)=>{value=next;writes++;},raw:()=>value,writes:()=>writes};}
 function targetRun(seed,tmPoolVersion){
@@ -20,14 +20,11 @@ function targetRun(seed,tmPoolVersion){
   return result.state;
 }
 function blocked(raw){
-  const storage=memory(raw),store=new TrialStore(storage);
-  assert.equal(store.status,'blocked',store.error);
-  assert.equal(store.exportRaw(),raw);
-  assert.equal(storage.writes(),0);
+  assert.throws(()=>decodeLegacy(raw),/存档结构损坏|无法迁移/);
 }
 
 test('7.7b keeps both historical draw lists and enables the ten-move list only with a boss tmPool:3 mark',()=>{
-  assert.equal(RULE_VERSION,'trial-rules-2');assert.equal(CONTENT_VERSION,'trial-content-2');
+  assert.equal(RULE_VERSION,'trial-rules-3');assert.equal(CONTENT_VERSION,'trial-content-3');
   assert.deepEqual([...LEGACY_TM_MOVES],['protect','whirlwind','roar']);
   assert.deepEqual([...TM_MOVES],['protect','whirlwind','roar','dragontail','helpinghand','mudslap','terablast']);
   assert.deepEqual([...TM_MOVES_V3],[...TM_MOVES,'quickguard','reflect','lightscreen']);
@@ -55,9 +52,10 @@ test('fixed old no-tmPool draws keep their pre-7.7b literal results at the targe
   assert.deepEqual(drop.state.tms,[{move:'terablast',source:'boss',fate:'held'}]);
 });
 
-test('a new base departure writes tmPool:3 and its fixed shop seed can draw a move from the new three',async()=>{
+test('a new base departure creates tmPool:3 in memory and leaves the saved camp unchanged',async()=>{
   const storage=memory(),store=new TrialStore(storage);
   assert.equal(await store.beginNewGame(initialProfile(),false),true);
+  const raw=storage.raw(),writes=storage.writes();
   assert.equal(await store.depart('team-guard-new-departure',38),true,store.error);
   assert.equal(store.state.dungeon.boss,true);
   assert.equal(store.state.dungeon.tmPool,3);
@@ -65,28 +63,26 @@ test('a new base departure writes tmPool:3 and its fixed shop seed can draw a mo
   assert.equal(store.state.shop.stock.tm,'lightscreen');
   const reloaded=new TrialStore(storage);
   assert.equal(reloaded.status,'ready',reloaded.error);
-  assert.equal(reloaded.state.dungeon.tmPool,3);
-  assert.equal(reloaded.state.shop.stock.tm,'lightscreen');
+  assert.equal(reloaded.state,null);assert.deepEqual(reloaded.profile,store.envelope.profile);
+  assert.equal(storage.raw(),raw);assert.equal(storage.writes(),writes);
 });
 
 test('friend guard durations load at zero when absent and preserve valid stored values through decode and reload',async()=>{
   const old=targetRun(1,undefined);
   for(const unit of Object.values(old.units))if(unit.side==='friend'){delete unit.reflect;delete unit.lightscreen;}
   const oldRaw=rawOf(old);
-  const loadedOld=decode(oldRaw);
+ const loadedOld=decodeLegacy(oldRaw);
   for(const unit of Object.values(loadedOld.current.units))if(unit.side==='friend'){
     assert.equal(unit.reflect,0);assert.equal(unit.lightscreen,0);
   }
   assert.equal(oldRaw.includes('"reflect"'),false,'the original bytes remain an old-shaped sample');
 
-  const current=targetRun(1,3),friend=Object.values(current.units).find(u=>u.side==='friend');
+ const current=targetRun(1,3),friend=Object.values(current.units).find(u=>u.side==='friend');
   friend.reflect=7;friend.lightscreen=2;
-  const storage=memory(),store=new TrialStore(storage);
-  assert.equal(await store.importRecord(rawOf(current),true),true,store.importError);
-  assert.equal(store.state.units[friend.id].reflect,7);assert.equal(store.state.units[friend.id].lightscreen,2);
-  const again=new TrialStore(storage);
-  assert.equal(again.status,'ready',again.error);
-  assert.equal(again.state.units[friend.id].reflect,7);assert.equal(again.state.units[friend.id].lightscreen,2);
+ const storage=memory(),store=new TrialStore(storage);
+ assert.equal(await store.start(current),true);
+ assert.equal(store.state.units[friend.id].reflect,7);assert.equal(store.state.units[friend.id].lightscreen,2);
+ assert.equal(storage.writes(),0);assert.equal(new TrialStore(storage).status,'empty');
 });
 
 test('guard durations reject invalid values and any enemy carrying either friend-only field',()=>{
@@ -100,8 +96,8 @@ test('guard durations reject invalid values and any enemy carrying either friend
 
 test('tmPool only accepts version 3 on a boss run; old missing fields keep their current content and draw checks',()=>{
   const old=targetRun(1,undefined);
-  assert.doesNotThrow(()=>decode(rawOf(old)));
-  old.tms[0].move='terablast';assert.doesNotThrow(()=>decode(rawOf(old)));
+  assert.doesNotThrow(()=>decodeLegacy(rawOf(old)));
+  old.tms[0].move='terablast';assert.doesNotThrow(()=>decodeLegacy(rawOf(old)));
 
   const unknown=targetRun(1,undefined);unknown.dungeon.tmPool=2;blocked(rawOf(unknown));
   const ordinary=createExpedition('team-guard-no-boss-pool',12,2,squadOf(initialProfile()),0);
@@ -109,7 +105,7 @@ test('tmPool only accepts version 3 on a boss run; old missing fields keep their
   const wrongMove=targetRun(1,undefined);wrongMove.tms=[{move:'reflect',source:'target',fate:'held'}];wrongMove.bag=1;blocked(rawOf(wrongMove));
 
   const current=targetRun(1,3);assert.equal(current.tms[0].move,'lightscreen');
-  assert.doesNotThrow(()=>decode(rawOf(current)));
+  assert.doesNotThrow(()=>decodeLegacy(rawOf(current)));
 });
 
 test('the warehouse accepts and learns each new machine through a persisted base action',async()=>{

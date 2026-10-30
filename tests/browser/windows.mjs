@@ -45,6 +45,12 @@ async function cell(p,x,y){
  await p.mouse.click(b.x+(340-w*c/2+(x-minX+.5)*c)*b.width/680,b.y+(175-h*c/2+(y-minY+.5)*c)*b.height/350);await ready(p);
 }
 async function prefix(p){await key(p,'ArrowRight');for(let i=0;i<3;i++)await cell(p,4,1);assert.equal((await state(p)).round,4);}
+async function defeatMainEAndRecordG(p){
+ await click(p,'skill-quickattack');await cell(p,4,1); // two-tile Quick Attack leaves E at 8 HP without an E attack
+ await key(p,'ArrowRight');                     // E attacks once as C moves adjacent
+ await click(p,'skill-tackle');await cell(p,4,1); // adjacent Tackle defeats E
+ await key(p,'ArrowRight');await click(p,'take'); // step onto and record G
+}
 async function reject(p){await click(p,'reject');await click(p,'reject-confirm');}
 async function exit(p){await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='ended');}
 async function test(name,fn){if(process.env.TRIAL_CHECK_FILTER&&!name.includes(process.env.TRIAL_CHECK_FILTER))return;let r={name,status:'FAIL'};try{r.details=await fn();r.status='PASS';}catch(e){r.error=String(e.stack??e);}results.push(r);console.log(r.status,name,r.error??'');fs.writeFileSync(artifact+(process.env.TRIAL_CHECK_FILTER?'windows-browser-extra-results.json':'windows-browser-results.json'),JSON.stringify({origin:base,browser:await browser.version(),results},null,2));}
@@ -61,14 +67,23 @@ await test('M2、S1：探看返回及关闭页面后同源恢复',async()=>{
  await p.close();const q=await context.newPage();await q.goto(base+'?dev=1');await ready(q);assert.deepEqual(await state(q),saved);await key(q,'2');await key(q,'ArrowRight');await exit(q);s=await state(q);assert.equal(s.round,9);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,20,8]);assert.deepEqual(errors,[]);return {rounds:9,restoredRevealedR:true};}finally{await context.close();}
 });
 await test('M3：电光一闪两格射程、合法目标提示与T撤离',async()=>{
- const {context,page:p,errors}=await setup();try{await start(p);
-  // 把一个合法的两格目标场景写入存档并重载；getState 只用于观察，不作为改状态接口。
-  await p.evaluate(()=>{const key=window.trial.store.key,e=JSON.parse(localStorage.getItem(key));e.current.units.C.pos={x:7,y:1};e.current.seen=[...new Set([...e.current.seen,'7,1','8,1','9,1'])].sort();localStorage.setItem(key,JSON.stringify(e));});
-  await p.reload();await ready(p);assert.equal((await state(p)).round,0);assert.deepEqual((await state(p)).units.C.pos,{x:7,y:1});
-  await click(p,'skill-quickattack');const label=await p.locator('#skill-quickattack').innerText();assert.match(label,/电光一闪/);assert.match(label,/同排／列1–2格/);assert.match(label,/造成8点基础伤害/);
-  const before=await state(p);await cell(p,4,1);assert.deepEqual(await state(p),before);assert.equal(await p.locator('#message').innerText(),'目标相距3格，超出招式射程2格；本轮未执行');
-  await cell(p,9,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.C.pp.quickattack,1);assert.equal(s.units.R.hp,0);
-  await exit(p);s=await state(p);assert.equal(s.round,2);assert.equal(s.end.brought,1);assert.equal(s.units.C.hp,20);await p.screenshot({path:artifact+'windows-m3-terminal.png',fullPage:true});assert.deepEqual(errors,[]);return {rounds:2,brought:1,quickattackPP:1,R:0,illegalThreeTileTargetRejected:true};}finally{await context.close();}
+ const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
+  await click(p,'skill-quickattack');let label=await p.locator('#skill-quickattack').innerText();assert.match(label,/电光一闪/);assert.match(label,/同排／列1–2格/);assert.match(label,/造成8点基础伤害/);
+  await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,8);assert.equal(s.units.C.pp.quickattack,1);
+  await key(p,'ArrowRight');await click(p,'skill-tackle');await cell(p,4,1);s=await state(p);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.hp,16);
+  await key(p,'ArrowRight');await click(p,'take');assert.equal((await state(p)).goal,true);
+  await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');s=await state(p);assert.deepEqual(s.units.C.pos,{x:7,y:1});assert.equal(s.units.C.hp,4);
+  await click(p,'skill-quickattack');await cell(p,9,1);s=await state(p);assert.equal(s.round,9);assert.equal(s.units.C.pp.quickattack,0);assert.equal(s.units.R.hp,0);
+  await click(p,'take');s=await state(p);assert.equal(s.round,10);assert.equal(s.bag,1);assert.equal(s.points.find(q=>q.kind==='item').used,true);
+  await exit(p);s=await state(p);assert.equal(s.round,11);assert.equal(s.end.brought,1);assert.equal(s.units.C.hp,4);await p.screenshot({path:artifact+'windows-m3-terminal.png',fullPage:true});assert.deepEqual(errors,[]);return {rounds:11,brought:1,quickattackPP:0,E:0,R:0};}finally{await context.close();}
+});
+await test('M3：三格直线目标拒绝且不耗PP或回合',async()=>{
+ const {context,page:p,errors}=await setup('K5');try{await start(p);await reject(p);const before=await state(p);
+  await click(p,'skill-quickattack');await cell(p,5,1);
+  assert.deepEqual(await state(p),before);assert.equal(before.units.C.pp.quickattack,1);
+  assert.equal(await p.locator('#message').innerText(),'目标相距3格，超出招式射程2格；本轮未执行');assert.deepEqual(errors,[]);
+  return {threeTileTargetRejected:true,noRoundOrPpSpent:true};
+ }finally{await context.close();}
 });
 await test('M6：邀请替换、双方换位、承伤撤离',async()=>{
  const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await key(p,'2');await click(p,'swap');await click(p,'partner-N');assert.ok((await p.locator('#controls').innerText()).includes('双方行动'));await click(p,'submit');await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,11);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,2,10]);assert.equal(s.units.C.hp,8);assert.deepEqual(s.camp,['C']);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(errors,[]);return {rounds:11,team:['A20','B2','N10'],camp:'C8'};}finally{await context.close();}
@@ -128,13 +143,10 @@ await test('PR5 已使用G/T和V3/V7出口仅提供撤离',async()=>{
    if(!kind.startsWith('V'))await p.locator('#config').selectOption('main-none');
    await start(p);
    if(kind==='G'||kind==='T'){
-    await prefix(p);await key(p,'ArrowRight');await click(p,'take');
+     await defeatMainEAndRecordG(p);
     if(kind==='T'){
-     await key(p,'ArrowRight');await key(p,'ArrowRight');
-      // Reload a valid saved fixture on T. This case checks pickup/exit UI, while M3 covers move targeting.
-      await p.evaluate(()=>{const key=window.trial.store.key,e=JSON.parse(localStorage.getItem(key));e.current.units.C.pos={x:7,y:1};e.current.units.C.hp=e.current.units.C.maxHp;e.current.seen=[...new Set([...e.current.seen,'7,1','8,1','9,1'])].sort();localStorage.setItem(key,JSON.stringify(e));});
-      await p.reload();await ready(p);const t=await state(p);assert.equal(t.round,8);assert.deepEqual(t.units.C.pos,{x:7,y:1});assert.equal(t.units.C.hp,t.units.C.maxHp);assert.equal(t.points.find(q=>q.kind==='item').used,false);
-      await click(p,'take');
+       await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');
+       await click(p,'skill-quickattack');await cell(p,9,1);await click(p,'take');
     }
    }else if(kind==='V3')await key(p,'ArrowLeft');
    const before=await state(p),bytes=await raw(p);
@@ -393,6 +405,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
   const ally=['A','C'].find(id=>Math.abs(s.units[id].pos.x-s.units.B.pos.x)+Math.abs(s.units[id].pos.y-s.units.B.pos.y)===1);assert.ok(ally,'an ally stands next to the leader');
   await click(p,'skill-protect');await cell(p,s.units.B.pos.x,s.units.B.pos.y);
   s=await state(p);assert.equal(s.round,1);assert.equal(s.units.B.pp.protect,0);assert.ok(s.units.B.protect>0,'守住保护使用者本人');assert.equal(s.units[ally].protect,0,'相邻队友没有获得守住状态');assert.ok(s.log.includes('B进入守住状态'));
+  assert.match(await p.locator('[data-unit-status="B"]').innerText(),/守住：剩余2个敌方阶段/);
   assert.deepEqual(errors,[]);return {learned:'protect',carried:['tackle','protect'],selfProtected:'B',adjacentAllyUnaffected:ally,squad:['P2','P3','P1'],usedInRun:true,writeFailureFrozeAndRetried:true};
  }finally{await context.close();}
 });
@@ -654,6 +667,28 @@ await test('7.3 新游戏→出发→第1层：苔石主题（原石地与岩壁
   assert.match(await p.locator('#world-label').innerText(),/第1层/);
   await p.screenshot({path:artifact+'windows-boss-3-floor1.png',fullPage:true});
   assert.deepEqual(errors,[]);return {tiles:v.tiles,floors:s.dungeon.floors};
+ }finally{await context.close();}
+});
+await test('7.7a 状态卡片：守住与反击递减、攻防阶段显示、重载一致',async()=>{
+ const {context,page:p,errors}=await setup('K1');
+ try{
+  await start(p);await key(p,'2');const before=await state(p);
+  await click(p,'skill-protect');await cell(p,before.units.A.pos.x,before.units.A.pos.y);
+  assert.deepEqual(await state(p),before);
+  assert.equal(await p.locator('#message').innerText(),'这个招式需要选择自己作为目标；本轮未执行');
+  // Explicit display fixture: combine saved combat states, then use real waits to check their countdown.
+  // This does not claim that the combination was obtained by playing through this fixture.
+  await p.evaluate(()=>{const k=window.trial.store.key,e=JSON.parse(localStorage.getItem(k)),u=e.current.units.B;u.protect=2;u.counter=1;u.stages={atk:1,def:-2};localStorage.setItem(k,JSON.stringify(e));});
+  await p.reload();await ready(p);
+  const status=p.locator('[data-unit-status="B"]');
+  assert.equal(await status.innerText(),'守住：剩余2个敌方阶段 · 反击：剩余1个敌方阶段 · 攻击+1 · 防御-2');
+  assert.equal(await p.locator('[data-unit-status="C"]').innerText(),'');
+  await p.screenshot({path:artifact+'windows-move-status.png',fullPage:true});
+  await click(p,'wait');assert.equal(await status.innerText(),'守住：剩余1个敌方阶段 · 攻击+1 · 防御-2');
+  await click(p,'wait');assert.equal(await status.innerText(),'攻击+1 · 防御-2');
+  const saved=await state(p);await p.reload();await ready(p);assert.deepEqual(await state(p),saved);
+  assert.equal(await status.innerText(),'攻击+1 · 防御-2');assert.deepEqual(errors,[]);
+  return {countdowns:true,zeroStatusesHidden:true,stages:true,reloaded:true};
  }finally{await context.close();}
 });
 await browser.close();

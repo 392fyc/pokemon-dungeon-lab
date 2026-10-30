@@ -114,6 +114,7 @@ PR #3路线方案已以[06cf1c0](https://github.com/392fyc/pokemon-game-research
 - [项目运行方式](项目框架/研究与制作运行方式.md)：初期采用的职责分工、资料归属与复用流程。
 - [自有 Pokémon Auto Chess 肉鸽 mod](pokemon-autochess-mod/README.md)：从既有奖励选择、实例成长和 Boss 代码研究本作需要的问题。
 - [八款浏览器游戏参考](跨项目/八款浏览器游戏参考与研究优先级.md)：Kanto Tactics、Pokémon Royale、PokéBonk、PokéTide、Tazos、FighterZ Tactics、Underground Survivors 与 PokéCatch 的入口、证据范围及研究问题。
+- [PDMN 参考与差异化](跨项目/PDMN—探险队页游参考与差异化—2026-10-30.md)：2026-10-30 补充的浏览器探险队同人游戏，与本作最接近；列出重合点、本作已有的不同之处和差异化候选。
 
 - [PokéBonk](pokebonk/README.md)：已经上线的浏览器生存类游戏；可研究公开客户端中的招式转换、融合配方，以及版本更新后的修复。
 - [Pokémon Arena 2D](pokemon-arena-2d/README.md)：Big Kid Nation 的像素实时竞技场项目；公开 Beta 计划在 2026 年 12 月，当前适合研究素材复用、场地演出、角色投票和宣传节奏。

@@ -123,8 +123,36 @@ const bossLive=s=>!!s.dungeon?.boss&&!bossDefeated(s);
  *  while a basic attack plus the neighbours' basic attacks would not? Neighbours that stand next to `e` also strike in the same round. */
 function skillKills(s,L,e){
  const b=dmgBonus(s),helpers=s.queue.map(i=>s.units[i]).filter(m=>aliveU(m)&&m.id!==L.id&&dist(m.pos,e.pos)===1).length*(6+b);
- const power=Math.max(0,...hitMoves(s,L,e).map(k=>Math.ceil(moveOf(k).power/2)));
- return e.hp<=6+power+b+helpers&&e.hp>6+b+helpers;
+ const best=Math.max(0,...hitMoves(s,L,e).map(k=>estDamage(s,L,e,k)));
+ return e.hp<=best+helpers&&e.hp>basicDamage(s,L,e)+helpers;
+}
+/* 7.7 official-move helpers (tactical policies only). Damage rule read from engine.ts resolveDamage/executeSkill: base = 6+ceil(power/2)+level bonus,
+ * plus the attacker's attack stage, minus the target's defence stage, at least 1. A basic attack is the same with power 0. */
+function estDamage(s,L,e,k){return Math.max(1,6+Math.ceil(moveOf(k).power/2)+dmgBonus(s)+(L.stages?.atk??0)-(e.stages?.def??0));}
+function basicDamage(s,L,e){return Math.max(1,6+dmgBonus(s)+(L.stages?.atk??0)-(e.stages?.def??0));}
+/** Usable damage moves that can hit `e` now, strongest first (estimated damage this round), ties: more PP left first. */
+function bestMoves(s,L,e){return hitMoves(s,L,e).sort((a,c)=>estDamage(s,L,e,c)-estDamage(s,L,e,a)||(L.pp[c]??0)-(L.pp[a]??0));}
+/** Learned moves with PP left whose effect list satisfies `test` (e.g. protect, counter, a defence-stage raise). */
+const movesWith=(u,test)=>u.learned.filter(k=>(u.pp[k]??0)>0&&moveOf(k)&&moveOf(k).effects.some(test));
+const isProtect=e=>e==='protect',isCounter=e=>e==='counter',isDefUp=e=>/^stage:def:\+/.test(e),isAtkUp=e=>/^stage:atk:\+/.test(e);
+const pureBlow=u=>u.learned.filter(k=>(u.pp[k]??0)>0&&moveOf(k)?.effects.includes('blowaway')&&!moveOf(k).effects.includes('damage'));
+/** Mirrors the engine's room reach (its `inRoomReach`): inside the actor's room, or within 2 cells (Chebyshev) when the actor is not in a known room. */
+function roomMates(s,L){
+ const inR=(p,r)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h,room=(s.rooms??[]).find(r=>inR(L.pos,r));
+ return s.queue.map(i=>s.units[i]).filter(m=>aliveU(m)&&m.id!==L.id&&(room?inR(m.pos,room):Math.max(Math.abs(m.pos.x-L.pos.x),Math.abs(m.pos.y-L.pos.y))<=2));
+}
+/** Can the enemy `e` hit member `L` this round: adjacent, or a ranged enemy with a clear straight line within its range (what the player sees on the board). */
+function foeReaches(s,e,L){
+ if(dist(e.pos,L.pos)===1)return true;
+ return (e.ai==='ranged'||e.boss)&&(e.pos.x===L.pos.x||e.pos.y===L.pos.y)&&dist(e.pos,L.pos)<=(e.range??3)&&rayClear(s,e.pos,L.pos,null);
+}
+/** A blow from L pushes `e` straight away from L: safe when the path ends at a wall or an enemy (they take collision damage) and not at one of our own. */
+function blowSafe(s,L,e){
+ const dx=Math.sign(e.pos.x-L.pos.x),dy=Math.sign(e.pos.y-L.pos.y),floor=new Set(s.floor.map(key));
+ const occ=new Map([...s.queue,...s.enemies].map(i=>s.units[i]).filter(aliveU).map(u=>[key(u.pos),u]));
+ let at=e.pos;
+ for(let i=0;i<10;i++){const n={x:at.x+dx,y:at.y+dy};if(!floor.has(key(n)))return true;const b=occ.get(key(n));if(b)return b.side==='enemy';at=n;}
+ return true;
 }
 /** True when a ray of length 1..3 from `from` to `to` crosses only floor cells nobody stands on (the leader itself is ignored: it is the one moving). */
 function rayClear(s,from,to,leaderId){
@@ -161,6 +189,12 @@ function bossPrep(s,memo,B){
   else if(memo.prepWait<4){memo.prepWait++;act({type:'wait'});} // followers are not adjacent yet: give them a few rounds
  }
  if(s.prog.items.tonic>0){const t=reach.filter(m=>ppDeficit(m)).sort((a,b)=>(a.id===L.id?0:1)-(b.id===L.id?0:1))[0];if(t)act({type:'use',item:'tonic',target:t.id});}
+ // 7.7: raise the lead's defence to stage 2 (harden / defensecurl) and, with >=2 mates in the room, their attack to +2 (helpinghand) before walking in.
+ // The boss has not engaged yet, so these rounds cost nothing but the move's PP. Both are bounded by stage clamps and PP.
+ const defUp=movesWith(L,isDefUp)[0];
+ if(defUp&&(L.stages?.def??0)<2)act({type:'skill',skill:defUp,target:L.id});
+ const mates=roomMates(s,L),helper=movesWith(L,isAtkUp)[0];
+ if(helper&&mates.length>=2&&mates.some(m=>(m.stages?.atk??0)<2))act({type:'skill',skill:helper,target:L.id});
  // all members present: when the boss is in sight but still far, wait for stragglers (at most 6 rounds in total)
  if(s.seen.includes(key(B.pos))&&dist(B.pos,L.pos)>5&&members.some(m=>dist(m.pos,L.pos)>2)&&memo.gatherWait<6){memo.gatherWait++;act({type:'wait'});}
  return out;
@@ -197,14 +231,23 @@ function bossTurn(s,memo,B){
  // Berry: to the lowest-HP member the lead can reach, when that member is at <=40%.
  const weak=[...reach].sort((a,c)=>ratioOf(a)-ratioOf(c))[0];
  if(weak&&ratioOf(weak)<=0.4&&s.prog.items.berry>0)act({type:'use',item:'berry',target:weak.id});
- // Protect now shields only the acting member; keep the same low-HP threshold.
+ // 7.7 protect shields only the acting member for 3 enemy phases: use it when the boss will pick the lead (first adjacent member in queue order, else nearest on a line) and the lead is at <=40% HP.
  const adjB=members.filter(m=>dist(m.pos,B.pos)===1);
  const victim=adjB[0]??members.filter(m=>(m.pos.x===B.pos.x||m.pos.y===B.pos.y)&&dist(m.pos,B.pos)<=3).sort((a,c)=>dist(a.pos,B.pos)-dist(c.pos,B.pos))[0];
- if(victim?.id===L.id&&ratioOf(L)<=0.6&&(L.pp.protect??0)>0)act({type:'skill',skill:'protect',target:L.id});
- if(d===1){for(const skill of hitMoves(s,L,B))act({type:'skill',skill,target:B.id});act({type:'basic',target:B.id});}
+ const guard=movesWith(L,isProtect)[0];
+ if(victim?.id===L.id&&ratioOf(L)<=0.4&&guard&&!(L.protect>0)&&L.lastMove!==guard)act({type:'skill',skill:guard,target:L.id});
+ const hits=bestMoves(s,L,B);
+ // drain first while hurt (<70% HP)
+ const drain=hits.find(k=>moveOf(k).effects.includes('drain'));
+ if(drain&&ratioOf(L)<0.7)act({type:'skill',skill:drain,target:B.id});
+ if(d===1){
+  // counter ("pursuit"): only when the boss will pick the lead, the lead is at >=50% HP and the move is not already running; skipped when a move would finish the boss
+  const counter=movesWith(L,isCounter)[0];
+  if(counter&&victim?.id===L.id&&ratioOf(L)>=0.5&&!(L.counter>0)&&!(hits.length&&B.hp<=estDamage(s,L,B,hits[0])))act({type:'skill',skill:counter,target:L.id});
+  for(const skill of hits)act({type:'skill',skill,target:B.id});act({type:'basic',target:B.id});
+ }
  else{
   if(rangedMoves(L).length){
-   const hits=hitMoves(s,L,B);
    if(hits.length)for(const skill of hits)act({type:'skill',skill,target:B.id});
    else for(const want of [2]){const spots=lineSpots(s,B,want,L.id);if(!spots.size)continue;
     const r=route(s,L.pos,c=>spots.has(key(c)));
@@ -213,6 +256,31 @@ function bossTurn(s,memo,B){
   const step=stepToward(s,memo,{pos:B.pos});if(step)act(step); // no line left (or no spot): walk up and hit it
  }
  act({type:'wait'});
+ return out;
+}
+/**
+ * 7.7 ordinary fight of the tactical policies (floors 1-3, enemies other than the boss-floor boss plan). Returns the command list for the leader's action.
+ * Order: protect (a ranged enemy or the boss can hit the lead, lead <=40% HP) > blow a plain enemy off a hurt mate > drain while hurt (<70%)
+ * > counter (not on floors 1-2 while the boss is still to come: its PP is kept for the boss) > the strongest usable damage move > the basic attack.
+ */
+function tacticalFight(s,L,members,adj,visible,saveSkills,mayUse){
+ const out=[],act=a=>out.push({type:'round',action:a}),b=dmgBonus(s);
+ const guard=movesWith(L,isProtect)[0];
+ if(guard&&ratioOf(L)<=0.4&&!(L.protect>0)&&L.lastMove!==guard&&visible.some(e=>foeReaches(s,e,L)&&(e.ai==='ranged'||e.boss)))act({type:'skill',skill:guard,target:L.id});
+ const hurtMates=members.filter(m=>m.id!==L.id&&ratioOf(m)<0.6);
+ for(const k of pureBlow(L))for(const e of adj)
+  if(!e.boss&&e.hp>6+b&&hurtMates.some(m=>dist(m.pos,e.pos)===1)&&blowSafe(s,L,e))act({type:'skill',skill:k,target:e.id});
+ for(const e of adj){
+  const hits=bestMoves(s,L,e),drain=hits.find(k=>moveOf(k).effects.includes('drain'));
+  if(drain&&ratioOf(L)<0.7)act({type:'skill',skill:drain,target:e.id});
+  const counter=movesWith(L,isCounter)[0];
+  if(counter&&!saveSkills&&ratioOf(L)>=0.5&&!(L.counter>0)&&e.hp>basicDamage(s,L,e))act({type:'skill',skill:counter,target:L.id});
+  if(mayUse(e))for(const skill of hits)act({type:'skill',skill,target:e.id});
+  act({type:'basic',target:e.id});
+ }
+ if(!adj.length)for(const e of visible){const drain=bestMoves(s,L,e).find(k=>moveOf(k).effects.includes('drain'));
+  if(drain&&ratioOf(L)<0.7)act({type:'skill',skill:drain,target:e.id});
+  if(mayUse(e))for(const skill of bestMoves(s,L,e))act({type:'skill',skill,target:e.id});}
  return out;
 }
 /** Ordered list of commands; the driver sends them in order and keeps the first one the rules accept. */
@@ -260,9 +328,12 @@ function candidates(s,memo){
  // fight: protect the hurt acting member when an enemy is near, then strike
  const adj=adjacentEnemies(s).sort((a,b)=>a.hp-b.hp);
  const visible=s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&s.seen.includes(key(u.pos)));
+ if(tac)out.push(...tacticalFight(s,L,members,adj,visible,saveSkills,mayUse));
+ else{
  if(low(L)<=0.5&&(L.pp.protect??0)>0&&visible.some(e=>dist(e.pos,L.pos)<=4))act({type:'skill',skill:'protect',target:L.id});
  for(const e of adj){if(mayUse(e))for(const skill of hitMoves(s,L,e))act({type:'skill',skill,target:e.id});act({type:'basic',target:e.id});}
  if(!adj.length)for(const e of visible)if(mayUse(e))for(const skill of hitMoves(s,L,e))act({type:'skill',skill,target:e.id});
+ }
  const target=objective(s,memo);
  if(target&&same(target.pos,L.pos)){
   const k=target.kind;act({type:'interact',exit:k==='exit'||k==='down'||k==='up'});
@@ -322,7 +393,7 @@ async function probe(port,store,st,where){
  for(const cmd of bad){const r=await send(port,store,cmd,st,where+' probe');assert.equal(r.ok,false,`${where}: ${JSON.stringify(cmd)} was accepted in phase ${s.phase}`);}
 }
 
-async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchange=false,fightBoss=false,policy='naive',x={},noRetreat=false){
+async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchange=false,fightBoss=false,policy='naive',x={},noRetreat=false,use={}){
  let store=ref.store;
  const memo={visited:{},declined:new Set(),lastSwitch:-99,fullInvites:0,reckless,doomed,useExchange,suicidal:false,fightBoss,policy,noRetreat,engaged:false,retreat:false,prepWait:0,gatherWait:0};
  let rounds=0,commands=0,levelBefore=1;const where=`${gameId}`;
@@ -385,8 +456,10 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    if(cmd.type==='buy'){st.bought++;moved=true;break;}
    rounds++;moved=true;
    const a=cmd.action;
+   if(process.env.SOAK_TRACE&&s.dungeon.boss&&s.dungeon.level===3){const bb=s.enemies.map(i=>s.units[i]).find(u=>u.boss);console.error(`${gameId} r${s.round} ${s.queue.map(i=>`${i}:${s.units[i].hp}@${s.units[i].pos?key(s.units[i].pos):'x'}`).join(' ')} boss:${bb?.hp}@${bb?key(bb.pos):''} ${JSON.stringify(a)}`);} // debug only (env SOAK_TRACE)
    if(a.type==='exchange')st.exchanged++;
    if(a.type==='use')a.item==='berry'?st.berries++:st.tonics++;
+   if(a.type==='skill')use[a.skill]=(use[a.skill]??0)+1;else if(a.type==='basic')use.basic=(use.basic??0)+1; // observation only: the leader's explicit attacks (mates act by default and are not counted)
    if(a.type==='skill'&&a.skill==='protect')st.guards++;
    if(a.type==='skill'&&['front2','line10'].includes(moveOf(a.skill)?.range))st.lines++;
    if(a.type==='interact'){const p=s.points.find(p=>same(p.pos,s.units[s.leader].pos));if(p?.kind==='rest')st.rests++;}
@@ -492,7 +565,7 @@ export async function playSeed(i,options={}){
  const policy=options.policy??'naive',tactical=policy==='tactical'||policy==='tactical-stand';
  const payRescue=tactical&&options.payRescue!==false;
  const seed=seedOf(i),port=memory(),st=stats(),games=[],doomed=i%4===3,extra=[],trk={eff:0,lostAt:new Map()},accTrail=[],rosterTrail=[];
- let store;const ref={};
+ let store;const ref={};const moveUse={};
  if(i%2===0){ // the real first-run path of the start page: a legacy expedition with no profile; the base profile appears when it returns
   store=new TrialStore(port);const gseed=(seed*2654435761)>>>0;
   assert.equal(await store.start(createExpedition(`soak-${seed}-0`,gseed)),true);roundTrip(port,store,`seed ${seed} start`);
@@ -503,7 +576,7 @@ export async function playSeed(i,options={}){
  }
  for(let g=0;g<GAMES;g++){
   const id=`seed ${seed} game ${g}`;
-  ref.store=store;const x={};const r=await playRun(port,ref,id,st,!tactical&&i%3===2&&!doomed,doomed,g%2===0,tactical||(i*5+g*3)%4<2,tactical?'tactical':'naive',x,policy==='tactical-stand');store=ref.store;extra.push({outcome:r.outcome,doomed,...x});games.push({seed,game:g,reckless:i%3===2,legacy:i%2===0&&g===0,doomed,...r});
+  ref.store=store;const x={};const r=await playRun(port,ref,id,st,!tactical&&i%3===2&&!doomed,doomed,g%2===0,tactical||(i*5+g*3)%4<2,tactical?'tactical':'naive',x,policy==='tactical-stand',moveUse);store=ref.store;extra.push({outcome:r.outcome,doomed,...x});games.push({seed,game:g,reckless:i%3===2,legacy:i%2===0&&g===0,doomed,...r});
   if(r.outcome==='timeout')break;
   const before=store.envelope.profile;const endRecord=structuredClone(store.state.end);
   assert.equal(await store.returnToBase(),true,`${id}: returnToBase refused`);roundTrip(port,store,`${id} return`);
@@ -514,5 +587,5 @@ export async function playSeed(i,options={}){
   if(g===GAMES-1)break;
   await (doomed?doomedBase:baseTurn)(port,store,seed,g+1,st,`${id} base`,payRescue);
  }
- return {seed,games,st,roster:store.profile?.roster.length??0,vault:store.profile?.vault??{},extra,account:store.profile?.account??null,doomed,policy,payRescue,accTrail,rosterTrail};
+ return {seed,games,st,moveUse,roster:store.profile?.roster.length??0,vault:store.profile?.vault??{},extra,account:store.profile?.account??null,doomed,policy,payRescue,accTrail,rosterTrail};
 }

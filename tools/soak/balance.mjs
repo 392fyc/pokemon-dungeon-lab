@@ -56,6 +56,7 @@ function summarize(results){
    account:{mean:mean(accounts),min:accounts.length?Math.min(...accounts):null,max:accounts.length?Math.max(...accounts):null,seeds:accounts.length}},
   tm:{got:st.tmGot,brought:st.tmBrought,learned:st.learned,vaultUnused:sum(Object.values(vault)),vaultByMove:vault},
   invites:{total:st.invites,accepted:st.accepted,rejected:st.rejected,swappedOut:st.swapped},
+  moveUse:(m=>{for(const r of results)for(const [k,v] of Object.entries(r.moveUse??{}))m[k]=(m[k]??0)+v;return Object.fromEntries(Object.entries(m).sort((a,b)=>b[1]-a[1]));})({}),
   usage:{berries:st.berries,tonics:st.tonics,rests:st.rests,guards:st.guards,lines:st.lines,switches:st.switches},
   floor3:floor3(games),
   stats:st};
@@ -87,6 +88,7 @@ function section(title,s){
 - 首领层上普通敌人（不含首领）造成的伤害：${f.otherDamage.games} 局共 ${f.otherDamage.rounds} 回合，平均每局 ${fmt(f.otherDamage.meanPerGame)}，最多 ${f.otherDamage.max??'-'}，平均每回合 ${fmt(f.otherDamage.meanPerRound,2)}。
 - 全灭发生的楼层（共 ${f.wipeFloor.all} 次）：第 1 层 ${f.wipeFloor[1]}，第 2 层 ${f.wipeFloor[2]}，第 3 层 ${f.wipeFloor[3]}。
 - 邀请与招募：邀请 ${i.total}，接受 ${i.accepted}（含换出 ${i.swappedOut}），拒绝 ${i.rejected}。
+- 领队主动出手次数（招式 id → 次数；basic=普攻，只统计领队，伙伴按默认行为出手不计）：${Object.entries(s.moveUse).map(([k,v])=>`${k} ${v}`).join('，')||'-'}。
 - 背包与动作使用次数：树果 ${u.berries}，PP补剂 ${u.tonics}，休整点 ${u.rests}，保护 ${u.guards}，直线 ${u.lines}，领队切换 ${u.switches}。
 `;
 }

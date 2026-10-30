@@ -188,15 +188,16 @@ test('合成 around 招式命中切比雪夫距离一格内全部目标，不命
 
 test('跨层、新伙伴加入和远征结束会清零战斗状态',()=>{
   const newUnit=newcomer();assert.deepEqual(newUnit.stages,{atk:0,def:0});assert.equal(newUnit.protect,0);assert.equal(newUnit.counter,0);assert.equal(newUnit.lastMove,null);
+  assert.equal(newUnit.reflect,0);assert.equal(newUnit.lightscreen,0);
   let expedition=createExpedition('state-reset',42,2);
-  for(const id of expedition.queue){const u=expedition.units[id];u.stages={atk:2,def:-1};u.protect=2;u.counter=1;u.lastMove='protect';}
+  for(const id of expedition.queue){const u=expedition.units[id];u.stages={atk:2,def:-1};u.protect=2;u.counter=1;u.lastMove='protect';u.reflect=4;u.lightscreen=7;}
   expedition=jumpToFloor(expedition,2);
-  for(const id of expedition.queue){const u=expedition.units[id];assert.deepEqual(u.stages,{atk:0,def:0});assert.equal(u.protect,0);assert.equal(u.counter,0);assert.equal(u.lastMove,null);}
+  for(const id of expedition.queue){const u=expedition.units[id];assert.deepEqual(u.stages,{atk:0,def:0});assert.equal(u.protect,0);assert.equal(u.counter,0);assert.equal(u.lastMove,null);assert.equal(u.reflect,0);assert.equal(u.lightscreen,0);}
 
   const s=world({floor:row(0,3),friends:[friend('A',1,1),friend('B',2,1)]});
-  for(const id of s.queue){s.units[id].stages={atk:1,def:2};s.units[id].protect=2;s.units[id].counter=3;s.units[id].lastMove='protect';}
+  for(const id of s.queue){s.units[id].stages={atk:1,def:2};s.units[id].protect=2;s.units[id].counter=3;s.units[id].lastMove='protect';s.units[id].reflect=2;s.units[id].lightscreen=3;}
   s.leader='A';s.points=[{pos:{x:1,y:1},kind:'exit',used:false}];
   const request=play(s,{type:'interact',exit:true});assert.equal(request.phase,'exit');
   const ended=applyCommand(request,{type:'finishExit'});assert.equal(ended.ok,true);
-  for(const id of ended.state.queue){const u=ended.state.units[id];assert.deepEqual(u.stages,{atk:0,def:0});assert.equal(u.protect,0);assert.equal(u.counter,0);assert.equal(u.lastMove,null);}
+  for(const id of ended.state.queue){const u=ended.state.units[id];assert.deepEqual(u.stages,{atk:0,def:0});assert.equal(u.protect,0);assert.equal(u.counter,0);assert.equal(u.lastMove,null);assert.equal(u.reflect,0);assert.equal(u.lightscreen,0);}
 });

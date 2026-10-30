@@ -1,6 +1,6 @@
 {
   "main":"mudkip",
-  "deputy":"treecko",
+  "deputy":"chikorita",
   "games":[
     {"seed":16763,"purse":0,"commands":[
       {"type":"round","action":{"type":"move","to":{"x":7,"y":5}}},
@@ -111,5 +111,5 @@
       {"type":"finishExit"}
     ]}
   ],
-  "training":{"afterGame":2,"inst":"P1","move":"terablast","removeMove":"watergun"}
+  "training":{"afterGame":2,"inst":"P2","move":"reflect","removeMove":"magicalleaf"}
 }

@@ -7,7 +7,7 @@ export const pos=(x,y=1)=>({x,y});
 export const row=(end=9)=>Array.from({length:end+1},(_,x)=>pos(x));
 export const open=(n=4)=>Array.from({length:n*n},(_,i)=>pos(i%n+1,Math.floor(i/n)+1));
 export const friend=(id,x,y=1,hp=20,pp={},maxHp=20)=>({
- id,side:'friend',stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,hp,maxHp,pos:hp>0?pos(x,y):null,pp:{...pp},
+ id,side:'friend',stages:{atk:0,def:0},protect:0,counter:0,reflect:0,lightscreen:0,lastMove:null,hp,maxHp,pos:hp>0?pos(x,y):null,pp:{...pp},
  maxPp:Object.fromEntries(Object.keys(pp).map(k=>[k,2])),learned:Object.keys(pp)
 });
 export const enemy=(id,x,y,hp,ai,damage,range=1)=>({

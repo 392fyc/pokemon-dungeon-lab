@@ -59,6 +59,13 @@ LEGACY_MOVE_IDS = (
     "protect", "pursuit", "quickattack", "roar", "scratch", "seedbomb", "slam",
     "tackle", "terablast", "thundershock", "watergun", "whirlwind",
 )
+TEAM_PROTECTION_MOVE_IDS = ("quickguard", "reflect", "lightscreen")
+TEAM_PROTECTION_NOTES = {
+    "quickguard": "固定取无限迷宫（GTI）同房间全队版；官方持续1回合，本作仅持续至本回合敌方阶段结束。",
+    "reflect": "固定取无限迷宫（GTI）同房间全队版；本作持续10个敌方阶段，官方无限迷宫起为21回合。",
+    "lightscreen": "固定取无限迷宫（GTI）同房间全队版；本作持续10个敌方阶段，官方无限迷宫起为21回合。",
+}
+TEAM_PROTECTION_EFFECTS = {move_id: move_id for move_id in TEAM_PROTECTION_MOVE_IDS}
 
 GAME_PRIORITY = ("TDS", "S", "TD", "GTI", "SMD", "RTDX")
 GAME_OUTPUT = {
@@ -69,7 +76,7 @@ GAME_OUTPUT = {
     "SMD": ("SMD", "超不可思议的迷宫"),
     "RTDX": ("RTDX", "救助队 DX"),
 }
-ADMISSION_KEYS = ("existingMoveRule", "blowaway", "drain", "pureDamage", "selfStages")
+ADMISSION_KEYS = ("existingMoveRule", "blowaway", "drain", "pureDamage", "selfStages", "teamProtection")
 EXCLUSION_KEYS = (
     "nonstandard", "noOfficialData", "unsupportedRange", "unsupportedTarget",
     "selfCostOrCondition", "ohko", "fixedDamage", "multihit", "recoil",
@@ -365,6 +372,8 @@ def parse_pmd_row(row: str) -> dict | None:
 def selected_pmd_row(move_id: str, pmd_data: dict) -> dict | None:
     entry = pmd_data["moves"].get(move_id)
     if not entry:
+        if move_id in TEAM_PROTECTION_MOVE_IDS:
+            fail(f"7.7b 团队保护招式缺少固定 GTI 行：{move_id}")
         return None
     by_game = {}
     for raw in entry.get("rows", []):
@@ -374,6 +383,10 @@ def selected_pmd_row(move_id: str, pmd_data: dict) -> dict | None:
         if row["game"] in by_game:
             fail(f"{move_id} 在 PMD 快照同一作品出现多行：{row['game']}")
         by_game[row["game"]] = {**row, "rawRow": raw}
+    if move_id in TEAM_PROTECTION_MOVE_IDS:
+        if "GTI" not in by_game:
+            fail(f"7.7b 团队保护招式没有固定 GTI 行：{move_id}")
+        return by_game["GTI"]
     for game in GAME_PRIORITY:
         if game in by_game:
             return by_game[game]
@@ -472,7 +485,13 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
                 else:
                     category = move.get("category")
                     effects, note, kind = [], "", ""
-                    if move.get("forceSwitch"):
+                    if move_id in TEAM_PROTECTION_EFFECTS:
+                        if category != "Status":
+                            fail(f"7.7b 团队保护招式应为变化招式：{move_id}")
+                        effects = [TEAM_PROTECTION_EFFECTS[move_id]]
+                        note = TEAM_PROTECTION_NOTES[move_id]
+                        kind = "teamProtection"
+                    elif move.get("forceSwitch"):
                         effects = ["damage", "blowaway"] if category in ("Physical", "Special") else ["blowaway"]
                         kind = "blowaway"
                     elif category in ("Physical", "Special") and move.get("drain"):
@@ -814,7 +833,11 @@ def serialize_pmd(old_pmd: dict, new_specs: dict, baseline_snippets: dict[str, b
         "note": "阶段7.7 官方招式与图鉴扩展招式数据，由 tools/data/import_pokedex.py 合并生成；旧25招对象按固定基线保留。仅用于私有构建。",
         "source": old_pmd["source"], "retrieved": old_pmd["retrieved"],
         "snapshotSha256": PMD_SHA, "gamePriority": [GAME_OUTPUT[g][0] for g in GAME_PRIORITY],
-        "moves": dict(sorted(moves.items())), "candidates77b": old_pmd["candidates77b"],
+        "moves": dict(sorted(moves.items())),
+        "candidates77b": {
+            move_id: candidate for move_id, candidate in old_pmd["candidates77b"].items()
+            if move_id not in TEAM_PROTECTION_MOVE_IDS
+        },
     }
     text = json.dumps(root, ensure_ascii=False, indent=1) + "\n"
     root_entries, _ = json_object_entries(text)
@@ -889,12 +912,17 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         },
         "species": roster,
     }
+    tm_names = dict(baseline_names["tms"])
+    for move_id in TEAM_PROTECTION_MOVE_IDS:
+        if not move_names.get(move_id):
+            fail(f"招式机名称缺失：{move_id}")
+        tm_names[move_id] = move_names[move_id]
     names_doc = {
         "source": f"物种名与招式名来自 PokeAPI 固定提交 {POKEAPI_COMMIT} 的简体中文（language id 12）；保留固定手写名称基线中已有译名，差异见 .artifacts/pokedex/exceptions.md。类型、招式机与物品名称沿用本作基线。",
         "species": dict(sorted(species_names.items())),
         "types": baseline_names["types"],
         "moves": dict(sorted(move_names.items())),
-        "tms": baseline_names["tms"],
+        "tms": tm_names,
         "items": baseline_names["items"],
     }
     pmd_bytes = serialize_pmd(old_pmd, new_specs, baseline_snippets)
@@ -929,7 +957,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "officialPowerUnavailable": [{"id": mid, **record} for mid, record in unavailable_power.items()],
         "comparison": {
             "preview": {
-                "admittedMoves": 214, "generation1AdmittedMoves": 212, "unavailableSpecies": 5,
+                "admittedMoves": 217, "generation1AdmittedMoves": 215, "unavailableSpecies": 5,
                 "learnsetGenerationCounts": {"7": 12, "8": 40, "9": 99},
                 "nameChecks": {"missingSpecies": 0, "speciesDifferences": 0, "missingMoves": 1, "moveDifferences": 6},
             },

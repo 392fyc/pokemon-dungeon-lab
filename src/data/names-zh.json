@@ -710,7 +710,10 @@
     "dragontail": "龙尾",
     "helpinghand": "帮助",
     "mudslap": "掷泥",
-    "terablast": "太晶爆发"
+    "terablast": "太晶爆发",
+    "quickguard": "快速防守",
+    "reflect": "反射壁",
+    "lightscreen": "光墙"
   },
   "items": {
     "berry": "橙橙果",

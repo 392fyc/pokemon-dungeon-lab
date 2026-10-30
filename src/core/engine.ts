@@ -10,6 +10,8 @@ export type Skill = string;
 export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; pos:Pos|null;
   pp:Partial<Record<Skill,number>>; maxPp:Partial<Record<Skill,number>>; learned:Skill[];
   stages:{atk:number;def:number}; protect:number; counter:number; lastMove:string|null;
+  /** 7.7b ally-only temporary screens; omitted on old saves and defaults to zero. */
+  reflect?:number; lightscreen?:number;
   ai?:'melee'|'ranged'|'chase'; damage?:number; range?:number; recruit?:Unit; species?:string;
   /** 6.5: base-roster instance this unit was made from, and the names of its carried moves (aligned with `learned`). Absent for recruits made in the run and for fixtures. */
   inst?:string; moves?:string[];
@@ -53,7 +55,7 @@ export type StoredFloor={floor:Pos[];seen:string[];enemies:string[];units:Record
 /** `base` (6.5): true for a run started from the base; only those runs get the floor-2 rest point (older generated runs keep their exact floors). */
 /** `services` (7.2): true for a run that may hold a shop and an exchanger (decided by `serviceRoll` from the seed). Older runs never get them. */
 /** `boss` (7.3): the run is 3 floors with themes, a lobby exit and the regional boss on floor 3 (needs `base` and `services`). Runs without it generate exactly as before. */
-export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true};
+export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true;tmPool?:3};
 /** 7.2 a technique machine obtained in this run (from T or the shop) and where it ended up: held while the run goes on, then brought home (normal exit), sent home safely (exchanger) or lost (wipe, not sent). */
 export type TmItem={move:string;source:'target'|'shop'|'boss';fate:'held'|'brought'|'sent'|'lost'};
 /** 7.2 the shop of this run: fixed stock decided at the start, and every sale so far. `tm` is null once sold. */
@@ -86,7 +88,7 @@ export const plus=(a:Pos,b:Pos):Pos=>({x:a.x+b.x,y:a.y+b.y});
 export const clone=<T>(v:T):T=>structuredClone(v);
 const freshCombatState=()=>({stages:{atk:0,def:0},protect:0,counter:0,lastMove:null as string|null});
 export function friend(id:string,x:number,y:number,hp=20,pp:Unit['pp']={}):Unit {
-  return {id,side:'friend',hp,maxHp:20,pos:hp>0?{x,y}:null,pp:{...pp},maxPp:Object.fromEntries(Object.keys(pp).map(k=>[k,2])),learned:Object.keys(pp),...freshCombatState()};
+  return {id,side:'friend',hp,maxHp:20,pos:hp>0?{x,y}:null,pp:{...pp},maxPp:Object.fromEntries(Object.keys(pp).map(k=>[k,2])),learned:Object.keys(pp),...freshCombatState(),reflect:0,lightscreen:0};
 }
 export function enemy(id:string,x:number,y:number,hp:number,ai:Unit['ai'],damage:number,range=1):Unit {
   return {id,side:'enemy',hp,maxHp:hp,pos:{x,y},pp:{},maxPp:{},learned:[],ai,damage,range,...freshCombatState()};
@@ -95,7 +97,7 @@ export function newcomer(id='N'):Unit {return friend(id,0,0,10,{tackle:1,roar:1}
 /** 6.4: a real roster unit at the given run level: roster maxHp plus 2 per level above 1, full HP, kit moves at full kit PP. */
 export function speciesUnit(id:string,speciesId:string,level=1,pos:Pos|null=null):Unit {
   const sp=SPECIES[speciesId],maxHp=sp.maxHp+PROG.hpPerLevel*(level-1);
-  return {id,side:'friend',hp:maxHp,maxHp,pos,pp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),learned:sp.kit.map(k=>k.move),species:speciesId,...freshCombatState()};
+  return {id,side:'friend',hp:maxHp,maxHp,pos,pp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),learned:sp.kit.map(k=>k.move),species:speciesId,...freshCombatState(),reflect:0,lightscreen:0};
 }
 /** R07 half snapshot of a new recruit: HP floor(max/2) (at least 1); each kit move PP floor(max/2) (at least 1, at most max). */
 export function recruitUnit(id:string,speciesId:string,level:number):Unit {
@@ -200,11 +202,13 @@ function moveTargetsInReach(s:World,actorId:string,spec:MoveSpec):Unit[] {
 function rejectedForBoss(spec:MoveSpec,target:Unit):boolean {
   return !!target.boss&&spec.effects.includes('blowaway')&&spec.effects.includes('damage')===false;
 }
+const isProtectionMove=(spec:MoveSpec)=>spec.effects.includes('protect')||spec.effects.includes('quickguard');
+const isProtectionMoveId=(move:string|null)=>move==='protect'||move==='quickguard';
 /** Legal command targets for UI highlighting. User/room moves use the actor id in Action.target by contract. */
 export function skillTargets(s:World,actorId:string,skill:Skill):string[] {
   const actor=s.units[actorId],spec=moveOf(skill);
   if(!alive(actor)||!spec||!actor.learned.includes(skill)||(actor.pp[skill]??0)<1)return [];
-  if(spec.effects.includes('protect')&&actor.lastMove==='protect')return [];
+  if(isProtectionMove(spec)&&isProtectionMoveId(actor.lastMove))return [];
   const affected=moveTargetsInReach(s,actorId,spec);
   if(spec.range==='user')return affected.length?[actorId]:[];
   if(spec.range==='room')return affected.length?[actorId]:[];
@@ -273,7 +277,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(a.type==='basic')return t.side!=='enemy'||distance(u.pos,t.pos)!==1?'普攻需要相邻敌人':null;
   if(!u.learned.includes(a.skill)||(u.pp[a.skill]??0)<1)return '未装备该招式或PP不足';
   const spec=moveOf(a.skill);if(!spec)return '招式数据不存在';
-  if(spec.effects.includes('protect')&&u.lastMove==='protect')return '守住不能连续使用';
+  if(isProtectionMove(spec)&&isProtectionMoveId(u.lastMove))return '守住与快速防守不能连续使用';
   if((spec.range==='user'||spec.range==='room')&&a.target!==id)return '这个招式需要选择自己作为目标';
   if(spec.range==='user'||spec.range==='room'){
     if(!moveTargetsInReach(s,id,spec).length)return spec.range==='room'?'范围内没有能受此招式影响的单位':'招式无法作用于使用者';
@@ -301,12 +305,23 @@ function hit(s:World,id:string,n:number):void {
     if(s.units[unit.id]||s.invitations.some(i=>i.unit.id===unit.id))unit.id=`${unit.id}-${s.invitations.length+1}`;
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});}}
 }
-/** Apply damage after the defender's defence stage; protect only stops enemy attacks against friends. */
-function resolveDamage(s:World,sourceId:string,targetId:string,base:number,allowCounter=true):number {
+/** Apply defence, the matching ally screen, then protect/quickguard; return actual HP lost for drain and counter. */
+function resolveDamage(s:World,sourceId:string,targetId:string,base:number,allowCounter=true,quickguard:ReadonlySet<string>=new Set()):number {
   const source=s.units[sourceId],target=s.units[targetId];
-  const blocked=source.side==='enemy'&&target.side==='friend'&&target.protect>0;
-  const scaledBase=base+(source.stages?.atk??0);
-  const amount=blocked?0:base<=0?0:Math.max(1,scaledBase-(target.stages?.def??0));
+  const enemyAttack=source.side==='enemy'&&target.side==='friend';
+  const attackDistance=source.pos&&target.pos?distance(source.pos,target.pos):0;
+  // Ordinary melee/chase attacks are physical and ranged attacks are special; each boss hit is
+  // physical at distance one and special farther away, as required by the 7.7b contract.
+  const kind=source.boss?(attackDistance===1?'physical':'special'):source.ai==='ranged'?'special':'physical';
+  const raw=base+(source.stages?.atk??0);
+  let amount=raw<=0?0:Math.max(0,raw-(target.stages?.def??0));
+  if(enemyAttack&&amount>0){
+    if(kind==='physical'&&(target.reflect??0)>0)amount=Math.floor(amount/2);
+    if(kind==='special'&&(target.lightscreen??0)>0)amount=Math.floor(amount/2);
+  }
+  const blocked=enemyAttack&&(target.protect>0||(quickguard.has(target.id)&&attackDistance>1));
+  if(blocked)amount=0;
+  else if(raw>0)amount=Math.max(1,amount);
   const counter=allowCounter&&amount>0&&target.side==='friend'&&source.side==='enemy'&&target.counter>0&&
     !!source.pos&&!!target.pos&&distance(source.pos,target.pos)===1;
   hit(s,targetId,amount);
@@ -340,7 +355,7 @@ function changeStage(s:World,targetId:string,stat:'atk'|'def',change:number):voi
   target.stages[stat]=Math.max(-3,Math.min(3,before+change));
   note(s,`${targetId}${stat==='atk'?'攻击':'防御'}阶段变为${target.stages[stat]}`);
 }
-function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,bonus:number):void {
+function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,bonus:number,quickguard:Set<string>):void {
   const actor=s.units[id],spec=moveOf(a.skill)!;actor.pp[a.skill]=(actor.pp[a.skill]??0)-1;actor.lastMove=a.skill;
   note(s,`${id}使用${SKILL_CN[a.skill]??a.skill}`);
   let targets=spec.range==='room'||spec.range==='around'?moveTargetsInReach(s,id,spec):[s.units[a.target]];
@@ -351,6 +366,18 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,bonus:n
     if(stage){for(const target of targets)if(alive(target))changeStage(s,target.id,stage[1] as 'atk'|'def',Number(stage[2]));continue;}
     if(effect==='protect'){actor.protect=3;note(s,`${id}进入守住状态`);continue;}
     if(effect==='counter'){actor.counter=3;note(s,`${id}进入反击状态`);continue;}
+    if(effect==='quickguard'){
+      const guarded=targets.filter(t=>alive(t)&&t.side==='friend');
+      for(const target of guarded)quickguard.add(target.id);
+      note(s,`${id}为${guarded.map(t=>t.id).join('、')}开启快速防守`);continue;
+    }
+    if(effect==='reflect'||effect==='lightscreen'){
+      for(const target of targets)if(alive(target)&&target.side==='friend'){
+        target[effect]=10;
+        note(s,`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续10个敌方阶段`);
+      }
+      continue;
+    }
     if(effect==='damage'&&spec.power!==null){
       const base=6+Math.ceil(spec.power/2)+bonus;
       for(const target of targets)if(alive(target)){
@@ -376,7 +403,7 @@ function sendHome(s:World,a:Extract<Action,{type:'exchange'}>):void {
   const point=s.points.find(p=>p.kind==='exchange');if(point)point.used=true;
   note(s,`${s.leader}启动交换机：${a.target}安全回到基地，运走${a.cargo.length}份招式机；本局不再参战`);
 }
-function execute(s:World,id:string,a:Action):void {
+function execute(s:World,id:string,a:Action,quickguard:Set<string>):void {
   const u=s.units[id],bonus=s.prog?(s.prog.level-1)*PROG.damagePerLevel:0;
   if(a.type!=='skill')u.lastMove=null;
   if(a.type==='move'){u.pos=clone(a.to);reveal(s);note(s,`${id}移动到${key(a.to)}`);}
@@ -386,7 +413,7 @@ function execute(s:World,id:string,a:Action):void {
     if(a.item==='berry'){const before=t.hp;t.hp=Math.min(t.maxHp,t.hp+PROG.berryHeal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);}
     else{for(const k of t.learned)t.pp[k]=Math.min(t.maxPp[k]??0,(t.pp[k]??0)+PROG.tonicPp);note(s,`${id}对${t.id}使用${ITEM_NAMES.tonic}，每招PP+${PROG.tonicPp}（不超上限）`);}
   }
-  else if(a.type==='skill')executeSkill(s,id,a,bonus);
+  else if(a.type==='skill')executeSkill(s,id,a,bonus,quickguard);
   else if(a.type==='interact'){
     const p=s.points.find(p=>same(p.pos,u.pos))!;const stairs=p.kind==='down'||p.kind==='up';
     if(p.kind==='rest'){
@@ -405,7 +432,7 @@ function execute(s:World,id:string,a:Action):void {
 /** One member's turn in a round, as the rules would run it (stage 7.1 preview). `explicit` is false for the default behaviour; `failed` means the action no longer applied and the member waited. */
 export type TraceStep={id:string;action:Action;explicit:boolean;failed:boolean;swapWith?:string};
 function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,trace?:TraceStep[]):string|null {
-  const lead=s.leader;const moved=new Set<string>();
+  const lead=s.leader;const moved=new Set<string>(),quickguard=new Set<string>();
   if(cmd.override&&(cmd.override.actor===lead||!s.queue.includes(cmd.override.actor)||!alive(s.units[cmd.override.actor])))return '只能安排另一名存活伙伴';
   if(cmd.override?.action.type==='swap')return '换位须从主控发起';
   if(cmd.override?.action.type==='interact'||cmd.override?.action.type==='exchange')return '伙伴不能代替主控交互';
@@ -424,7 +451,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     const explicit=id===lead?cmd.action:cmd.override?.actor===id?cmd.override.action:null;
     const a=explicit??defaultAction(s,id);const err=invalid(s,id,a,moved);
     if(err){if(explicit&&preflight)return err;s.units[id].lastMove=null;note(s,`${id}动作失效，等待，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
-    execute(s,id,a);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false});
+    execute(s,id,a,quickguard);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false});
   }
   if(preflight)return null;
   for(const id of s.enemies){const e=s.units[id];if(!alive(e))continue;
@@ -434,7 +461,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
         const cands=s.queue.map(i=>s.units[i]).filter(alive);
         const t=cands.find(c=>distance(e.pos!,c.pos)===1)??cands.filter(c=>clearRay(s,e.pos!,c.pos,e.range??BOSS.range)).sort((a,b)=>distance(e.pos!,a.pos)-distance(e.pos!,b.pos))[0];
         if(!t)break;
-        resolveDamage(s,id,t.id,e.damage??0);
+        resolveDamage(s,id,t.id,e.damage??0,true,quickguard);
       }
       continue;
     }
@@ -442,7 +469,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     const targets=candidates.filter(t=>e.ai==='ranged'?clearRay(s,e.pos!,t.pos,e.range??3):distance(e.pos!,t.pos)===1);
     if(e.ai==='ranged')targets.sort((a,b)=>distance(e.pos!,a.pos)-distance(e.pos!,b.pos));
     const t=targets[0];
-    if(t)resolveDamage(s,id,t.id,e.damage??0);
+    if(t)resolveDamage(s,id,t.id,e.damage??0,true,quickguard);
     else if(e.ai==='chase'&&candidates.length){
       candidates.sort((a,b)=>distance(e.pos!,a.pos)-distance(e.pos!,b.pos));const target=candidates[0];
       // BFS to the chosen target; its occupied cell is a permitted endpoint only.
@@ -456,6 +483,10 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   for(const u of Object.values(s.units)){
     if(u.protect>0)u.protect--;
     if(u.counter>0)u.counter--;
+    if(u.side==='friend'){
+      if((u.reflect??0)>0)u.reflect!--;
+      if((u.lightscreen??0)>0)u.lightscreen!--;
+    }
   }
   return null;
 }
@@ -504,6 +535,8 @@ function end(s:World,outcome:End['outcome']):void {
 }
 function clearUnitCombatState(u:Unit):void {
   u.stages={atk:0,def:0};u.protect=0;u.counter=0;u.lastMove=null;
+  if(u.side==='friend'){u.reflect=0;u.lightscreen=0;}
+  else{delete u.reflect;delete u.lightscreen;}
 }
 function clearCombatState(s:World):void {
   for(const u of Object.values(s.units))clearUnitCombatState(u);
@@ -689,11 +722,11 @@ export type SquadMember={inst:string;species:string;carry:KitMove[];protected?:b
 export function carriedUnit(id:string,m:SquadMember):Unit {
   const sp=SPECIES[m.species];
   return {id,side:'friend',hp:sp.maxHp,maxHp:sp.maxHp,pos:null,pp:Object.fromEntries(m.carry.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(m.carry.map(k=>[k.move,k.pp])),
-    learned:m.carry.map(k=>k.move),species:m.species,inst:m.inst,moves:m.carry.map(k=>k.move),...freshCombatState(),...(m.protected?{protected:true as const}:{})};
+    learned:m.carry.map(k=>k.move),species:m.species,inst:m.inst,moves:m.carry.map(k=>k.move),...freshCombatState(),reflect:0,lightscreen:0,...(m.protected?{protected:true as const}:{})};
 }
 /** `boss` (7.3) defaults to true for a base run of 3 floors (what departures use); a run with another floor count or no base never has it. */
-export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number},purse=0,boss=!!squad&&floors===3):World {
-  const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{},...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{})};
+export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3):World {
+  const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{},...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...(tmPoolVersion===3&&squad&&boss?{tmPool:3 as const}:{})};
   const f=freshFloor(d,1,true);
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,seen:[],
     units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m)])):{A:speciesUnit('A','charmander'),B:speciesUnit('B','squirtle'),C:speciesUnit('C','bulbasaur')}),...f.units},

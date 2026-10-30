@@ -1920,6 +1920,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "lightscreen": {
+   "range": "room",
+   "target": "party",
+   "power": null,
+   "game": "MDGtI",
+   "gameName": "无限之迷宫",
+   "official": {
+    "basePp": "15",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "lightscreen"
+   ],
+   "source": "Bulbapedia",
+   "note": "固定取无限迷宫（GTI）同房间全队版；本作持续10个敌方阶段，官方无限迷宫起为21回合。"
+  },
   "liquidation": {
    "range": "front",
    "target": "enemy",
@@ -2584,6 +2601,23 @@
    "source": "Bulbapedia",
    "note": "本作 4 方向网格，无斜角"
   },
+  "quickguard": {
+   "range": "room",
+   "target": "party",
+   "power": null,
+   "game": "MDGtI",
+   "gameName": "无限之迷宫",
+   "official": {
+    "basePp": "13",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "quickguard"
+   ],
+   "source": "Bulbapedia",
+   "note": "固定取无限迷宫（GTI）同房间全队版；官方持续1回合，本作仅持续至本回合敌方阶段结束。"
+  },
   "rapidspin": {
    "range": "front",
    "target": "enemy",
@@ -2634,6 +2668,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "reflect": {
+   "range": "room",
+   "target": "party",
+   "power": null,
+   "game": "MDGtI",
+   "gameName": "无限之迷宫",
+   "official": {
+    "basePp": "15",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "reflect"
+   ],
+   "source": "Bulbapedia",
+   "note": "固定取无限迷宫（GTI）同房间全队版；本作持续10个敌方阶段，官方无限迷宫起为21回合。"
   },
   "retaliate": {
    "range": "front",
@@ -3663,42 +3714,6 @@
     "basePp": "13",
     "accuracy": "—%",
     "cutsCorners": "Yes"
-   }
-  },
-  "quickguard": {
-   "range": "room",
-   "target": "party",
-   "power": null,
-   "game": "MDGtI",
-   "gameName": "无限迷宫",
-   "official": {
-    "basePp": "13",
-    "accuracy": "—%",
-    "cutsCorners": "Yes"
-   }
-  },
-  "reflect": {
-   "range": "user",
-   "target": "user",
-   "power": null,
-   "game": "MDTDS",
-   "gameName": "时／暗之探险队",
-   "official": {
-    "basePp": "22",
-    "accuracy": "—%",
-    "cutsCorners": "-"
-   }
-  },
-  "lightscreen": {
-   "range": "user",
-   "target": "user",
-   "power": null,
-   "game": "MDTDS",
-   "gameName": "时／暗之探险队",
-   "official": {
-    "basePp": "14",
-    "accuracy": "—%",
-    "cutsCorners": "-"
    }
   },
   "safeguard": {

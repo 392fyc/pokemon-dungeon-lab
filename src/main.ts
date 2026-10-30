@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import {applyCommand,traceRound,previewInvitation,createMain,createExpedition,key,same,plus,clone,skillTargets,SPEC_SOURCE,ITEM_NAMES,PROG,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point} from './core/engine.ts';
 import {ECON} from './core/economy.ts';
-import {SPECIES,TM_MOVES,STARTER_IDS,learnableMove} from './core/roster.ts';
+import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from './core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh} from './core/names.ts';
 import {moveOf} from './core/moves.ts';
 import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,moveSummary} from './core/describe.ts';
@@ -73,6 +73,8 @@ const live=()=>store.state;
 const combatStatus=(u:Unit):string=>[
  u.protect>0?`守住：剩余${u.protect}个敌方阶段`:'',
  u.counter>0?`反击：剩余${u.counter}个敌方阶段`:'',
+ (u.reflect??0)>0?`反射壁：剩余${u.reflect}个敌方阶段`:'',
+ (u.lightscreen??0)>0?`光墙：剩余${u.lightscreen}个敌方阶段`:'',
  u.stages.atk?`攻击${u.stages.atk>0?'+':''}${u.stages.atk}`:'',
  u.stages.def?`防御${u.stages.def>0?'+':''}${u.stages.def}`:'',
 ].filter(Boolean).join(' · ');
@@ -171,7 +173,7 @@ function renderBase(){
   <p>携带：${i.carry.length?i.carry.map(n=>`${esc(moveZh(n))}（${esc(moveSummary(n))}）`).join('、'):'无'}</p>
   <div>${i.learned.map(l=>button(`carry-${i.id}-${l.move}`,`${i.carry.includes(l.move)?'卸下':'携带'} ${esc(moveZh(l.move))}`,!ready,i.carry.includes(l.move)?'class="selected"':'')).join('')}</div>
   <div>${button(`team-${i.id}`,pos>=0?'移出队伍':'加入队伍',!ready)}${button(`lead-${i.id}`,'设为主控',!ready||pos<0||i.id===p.leader)}</div></article>`;}).join('');
- const vault=TM_MOVES.map(m=>button(`tm-${m}`,`${esc(tmName(m))}招式机 ×${p.vault[m]??0}`,!ready||(p.vault[m]??0)<1,tmPick===m?'class="selected"':'')).join('');
+ const vault=ALL_TM_MOVES.map(m=>button(`tm-${m}`,`${esc(tmName(m))}招式机 ×${p.vault[m]??0}`,!ready||(p.vault[m]??0)<1,tmPick===m?'class="selected"':'')).join('');
  const learnRows=tmPick?`<p>把${esc(tmName(tmPick))}招式机教给：</p>${p.roster.map(i=>{const r=learnTm(p,i.id,tmPick!);return button(`learn-${i.id}`,`${esc(i.id)} ${esc(spName(i.species))}：${r.ok?'可学习':esc(r.error.split('；')[0])}`,!ready);}).join('')}`:'';
  const recent=store.envelope?.recent;
  purseDraft=Math.min(purseDraft,Math.floor(Math.min(ECON.purseMax,p.account)/ECON.purseStep)*ECON.purseStep);
@@ -199,7 +201,7 @@ function renderBase(){
  }
  for(const r of p.rescue)bind(`rescue-pay-${r.inst.id}`,()=>void edit({type:'rescue',inst:r.inst.id}));
  bind('purse-down',()=>{purseDraft=Math.max(0,purseDraft-ECON.purseStep);render();});bind('purse-up',()=>{purseDraft+=ECON.purseStep;render();});
- for(const m of TM_MOVES)bind(`tm-${m}`,()=>{tmPick=tmPick===m?null:m;notice='';render();});
+ for(const m of ALL_TM_MOVES)bind(`tm-${m}`,()=>{tmPick=tmPick===m?null:m;notice='';render();});
  bind('recent',()=>{recentVisible=!recentVisible;render();});
  bind('depart',()=>{if(anim.active||store.status!=='ready')return;const bad=purseProblem(p,purseDraft);if(bad){notice=bad;render();return;}clear();tmPick=null;notice='';const amount=purseDraft;purseDraft=0;const pending=store.depart(newId(),newSeed(),amount);render();void pending.then(()=>{render();});});
 }

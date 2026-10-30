@@ -27,8 +27,10 @@ function validUnit(v:unknown,depth=0):boolean {
   // 7.3 H1: a nested unit (a recruit) never carries the boss mark or the boss species.
   if(depth>0&&object(v)&&(v.boss!==undefined||(typeof v.species==='string'&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species))))return false;
   if(!object(v)||typeof v.id!=='string'||!['friend','enemy'].includes(String(v.side))||!integer(v.hp)||!integer(v.maxHp)||(v.maxHp as number)<=0||(v.hp as number)<0||(v.hp as number)>(v.maxHp as number)||(v.pos!==null&&!position(v.pos))||!object(v.pp)||!object(v.maxPp)||!moveIds(v.learned))return false;
-  const allowed=['id','side','hp','maxHp','pos','pp','maxPp','learned','ai','protected','damage','range','recruit','species','inst','moves','boss','stages','protect','counter','lastMove'];
+  const allowed=['id','side','hp','maxHp','pos','pp','maxPp','learned','ai','protected','damage','range','recruit','species','inst','moves','boss','stages','protect','counter','lastMove','reflect','lightscreen'];
   if(Object.keys(v).some(k=>!allowed.includes(k))||new Set(v.learned).size!==v.learned.length)return false;
+  if(v.side==='enemy'&&(v.reflect!==undefined||v.lightscreen!==undefined))return false;
+  for(const k of ['reflect','lightscreen'] as const){const n=v[k];if(n!==undefined&&(v.side!=='friend'||!integer(n)||(n as number)<0||(n as number)>10))return false;}
   const learned=v.learned as string[];
   if(!exactKeys(v.pp,learned)||!exactKeys(v.maxPp,learned))return false;
   for(const k of learned){const n=v.pp[k],max=v.maxPp[k];if(!integer(n)||!integer(max)||(max as number)<1||(n as number)<0||(n as number)>(max as number))return false;}
@@ -176,7 +178,7 @@ function validDungeon(s:World):boolean {
   const stairs=point?.kind==='down'||point?.kind==='up';
   if(r&&stairs!==(r.to!==undefined))return false;
   if(d===undefined)return s.scenario!=='expedition'&&s.phase!=='transit'&&!stairs&&pointsFitLevel(s.points,null,0)&&s.prog===undefined&&s.rooms===undefined&&!s.points.some(p=>isPickup(p.kind))&&!Object.values(s.units).some(u=>u.boss!==undefined);
-  if(!object(d)||s.scenario!=='expedition'||(d.base!==undefined&&(d.base!==true||s.prog===undefined))||(d.services!==undefined&&(d.services!==true||d.base!==true))||(d.boss!==undefined&&(d.boss!==true||d.base!==true||d.services!==true||d.floors!==3)))return false;
+  if(!object(d)||s.scenario!=='expedition'||(d.base!==undefined&&(d.base!==true||s.prog===undefined))||(d.services!==undefined&&(d.services!==true||d.base!==true))||(d.boss!==undefined&&(d.boss!==true||d.base!==true||d.services!==true||d.floors!==3))||(d.tmPool!==undefined&&(d.tmPool!==3||d.boss!==true)))return false;
   if(![d.seed,d.width,d.height,d.floors,d.level].every(integer)||d.seed<0||d.seed>4294967295||d.width<8||d.height<8||d.width>64||d.height>64||d.floors<2||d.floors>9||d.level<1||d.level>d.floors||!object(d.stored))return false;
   if(s.floor.some(p=>p.x<0||p.y<0||p.x>=d.width||p.y>=d.height))return false;
   const taken=new Set(Object.keys(s.units));
@@ -325,6 +327,23 @@ function migrateLegacyMoveState(profile:unknown,...worlds:unknown[]):void {
   }
 }
 
+/** New friend guard counters default to zero when reading saves written before 7.7b; enemies may never carry them. */
+function defaultTeamGuardState(v:unknown):void {
+  if(!object(v))return;
+  if(v.side==='friend'){
+    if(v.reflect===undefined)v.reflect=0;
+    if(v.lightscreen===undefined)v.lightscreen=0;
+  }
+  if(v.recruit!==undefined)defaultTeamGuardState(v.recruit);
+}
+function defaultWorldTeamGuardState(v:unknown):void {
+  if(!object(v))return;
+  if(object(v.units))for(const unit of Object.values(v.units))defaultTeamGuardState(unit);
+  if(Array.isArray(v.invitations))for(const invitation of v.invitations)if(object(invitation))defaultTeamGuardState(invitation.unit);
+  if(object(v.dungeon)&&object(v.dungeon.stored))for(const floor of Object.values(v.dungeon.stored))
+    if(object(floor)&&object(floor.units))for(const unit of Object.values(floor.units))defaultTeamGuardState(unit);
+}
+
 export function decode(raw:string):Envelope {
   let parsed:unknown;
   try{parsed=JSON.parse(raw) as unknown;}
@@ -346,6 +365,7 @@ export function decode(raw:string):Envelope {
     }
     e.rules=RULE_VERSION;e.content=CONTENT_VERSION;
   }
+  defaultWorldTeamGuardState(e.current);defaultWorldTeamGuardState(e.recent);
   if(typeof e.build!=='string'||!Number.isInteger(e.sequence)||e.sequence<1||(e.current!==null&&!validWorld(e.current))||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('存档结构损坏；原记录已保留');
   // 6.5: the profile is validated on its own and against the run that uses it; at the base (no current run) a profile is required.
   if(e.profile!==undefined&&profileProblem(e.profile)!==null)throw Error('存档结构损坏；原记录已保留');
@@ -417,7 +437,7 @@ export class TrialStore {
     if(purseProblem(this.record.profile,purse)!==null)return false;
     // One write: the purse leaves the account and goes into the new run.
     const profile=clone(this.record.profile);profile.account-=purse;
-    this.record={...this.record,sequence:this.record.sequence+1,profile,current:createExpedition(runId,seed,3,squadOf(profile),purse)};return this.persist();
+    this.record={...this.record,sequence:this.record.sequence+1,profile,current:createExpedition(runId,seed,3,squadOf(profile),purse,undefined,3)};return this.persist();
   }
   /**
    * Stage 7.1: writes a brand-new record that holds only a base profile (the player is at the base, no run). An empty store needs no consent;

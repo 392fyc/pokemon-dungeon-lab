@@ -4,7 +4,7 @@ const legacyRecord=name=>JSON.parse(readFileSync(new URL('./fixtures77-regressio
 import assert from 'node:assert/strict';
 import {createExpedition,applyCommand,closeOut,recruitUnit,previewInvitation,reveal,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {newGameProfile,initialProfile,squadOf,settleRun,settleSummary,payRescue,purseProblem,profileProblem,migrateProfile} from '../../src/core/base.ts';
-import {TrialStore,decode,BUILD_ID} from '../../src/core/save.ts';
+import {TrialStore,decode,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 import {serviceRoll} from '../../src/core/dungeon.ts';
 
 /*
@@ -85,15 +85,10 @@ test('R5 protected members never go missing; the others draw from the saved stat
  // an old profile's three starters are all protected, even with state 7
  const old=finished(initialProfile(),{outcome:'wipe',rng:7});assert.deepEqual(old.end.lost,[]);assert.equal(old.prog.rng,7,'no protected member draws');
 });
-test('R6 the draw is part of the end record: reload gives the same list and the same random state',async()=>{
- const port=memory(),store=new TrialStore(port);
- await store.beginNewGame(profile4(),false);
+test('R6 the terminal stores the lost-partner draw; settlement puts the same member in rescue',()=>{
  const s=finished(profile4(),{outcome:'wipe',rng:7});
- const raw=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:3,current:s,recent:null,profile:profile4()});
- const again=decode(raw);assert.deepEqual(again.current.end.lost,['C']);assert.deepEqual(again.current,s);assert.equal(again.current.prog.rng,s.prog.rng);
- port.setItem(store.key,raw);const reopened=new TrialStore(port);assert.equal(reopened.status,'ready',reopened.error);
- assert.deepEqual(reopened.state.end.lost,['C']);assert.equal(await reopened.returnToBase(),true);
- assert.deepEqual(new TrialStore(port).profile.rescue.map(r=>r.inst.id),['P3']);
+ assert.deepEqual(s.end.lost,['C']);assert.equal(s.prog.rng,1831565820,'the end stores the stream after the one loss draw');
+ const settled=settleRun(profile4(),s);assert.deepEqual(settled.rescue.map(r=>r.inst.id),['P3']);
 });
 
 /* ---------- rescue ---------- */
@@ -169,7 +164,7 @@ test('R13 purse: returned after a normal exit, lost in a wipe; refused when the 
  const raw=port.getItem(store.key);assert.equal(await store.depart('d1',5,160),false);assert.equal(port.getItem(store.key),raw);assert.equal(await store.depart('d1',5,30),false);
  assert.equal(await store.depart('d1',5,100),true);
  assert.equal(store.profile.account,50);assert.equal(store.state.purse,100);
- assert.equal(new TrialStore(port).profile.account,50,'the deduction and the run were one write');
+ assert.equal(new TrialStore(port).profile.account,150,'the camp record keeps the pre-departure account');
 });
 
 /* ---------- shop ---------- */
@@ -178,7 +173,7 @@ function shopRun(){
  s.units.A.pos={x:17,y:5};return s;
 }
 const buy=(s,item)=>applyCommand(s,{type:'buy',item});
-test('R14 shop: the stock is fixed and a reload does not refresh it; purchases use the purse and take no round',async()=>{
+test('R14 shop: stock and prices stay fixed; purchases use the purse and remain in the live World',async()=>{
  const s=shopRun();assert.deepEqual(s.shop,{level:1,stock:{berry:2,tonic:1,tm:'whirlwind'},trades:[]});
  assert.equal(serviceRoll(2,2).shop.level,1);
  let r=buy(s,'berry');assert.equal(r.ok,true);
@@ -190,17 +185,12 @@ test('R14 shop: the stock is fixed and a reload does not refresh it; purchases u
  const rich=shopRun();rich.purse=200;
  const bought=buy(rich,'tm').state;assert.equal(bought.purse,120);assert.deepEqual(bought.tms,[{move:'whirlwind',source:'shop',fate:'held'}]);assert.equal(bought.shop.stock.tm,null);
  assert.equal(buy(bought,'tm').ok,false);
- // each purchase is one complete save, and a reload shows the same stock
- const port=memory(),store=new TrialStore(port);
- await store.beginNewGame(profile4(),false);
- const base=store.envelope;assert.equal(base.current,null);
- const raw=JSON.stringify({...base,current:s,sequence:2});port.setItem(store.key,raw);
- const live=new TrialStore(port);assert.equal(live.status,'ready',live.error);
- const writes=port.writes();assert.equal((await live.dispatch({type:'buy',item:'berry'})).ok,true);assert.equal(port.writes(),writes+1);
- const again=new TrialStore(port);assert.deepEqual(again.state.shop,{level:1,stock:{berry:1,tonic:1,tm:'whirlwind'},trades:[{item:'berry',price:20}]});assert.equal(again.state.purse,80);
- assert.equal((await live.dispatch({type:'buy',item:'tonic'})).ok,true);assert.equal(port.writes(),writes+2);
- assert.equal((await live.dispatch({type:'buy',item:'tonic'})).ok,false);assert.equal(port.writes(),writes+2,'a refusal writes nothing');
- assert.equal(new TrialStore(port).state.shop.stock.tonic,0);
+ const port=memory(),live=new TrialStore(port);assert.equal(await live.start(s),true);
+ const writes=port.writes();assert.equal((await live.dispatch({type:'buy',item:'berry'})).ok,true);assert.equal(port.writes(),writes);
+ assert.deepEqual(live.state.shop,{level:1,stock:{berry:1,tonic:1,tm:'whirlwind'},trades:[{item:'berry',price:20}]});assert.equal(live.state.purse,80);
+ assert.equal((await live.dispatch({type:'buy',item:'tonic'})).ok,true);assert.equal(port.writes(),writes);
+ assert.equal((await live.dispatch({type:'buy',item:'tonic'})).ok,false);assert.equal(port.writes(),writes,'a refusal writes nothing');
+ assert.equal(new TrialStore(port).status,'empty');
 });
 test('R15 shop: only on the shop cell, never as an interact, and no shop in a run without one',()=>{
  const s=shopRun();s.units.A.pos={x:10,y:11};
@@ -258,13 +248,12 @@ test('R18 the empty seat can only be filled by an invitation in the run',()=>{
  assert.equal(previewInvitation(inv).ok,true);
  const joined=applyCommand(inv,{type:'invite',choice:'accept'});assert.equal(joined.ok,true,joined.error);assert.deepEqual(joined.state.queue,['A','B','N1']);
 });
-test('R19 the exchanger state survives a reload and cannot be used twice or carried twice',async()=>{
+test('R19 the exchanger state stays in memory and cannot be used twice or carried twice',async()=>{
  const s=applyCommand(exchangeRun(),ex('C',[0,1])).state;
- const port=memory(),store=new TrialStore(port);await store.beginNewGame(profile4(),false);
- port.setItem(store.key,JSON.stringify({...store.envelope,current:s,sequence:5}));
- const again=new TrialStore(port);assert.equal(again.status,'ready',again.error);
- assert.deepEqual(again.state.exchange,{level:1,used:true,sent:'C'});assert.deepEqual(again.state.tms.map(m=>m.fate),['sent','sent','held']);
- const r=await again.dispatch(ex('B',[2]));assert.equal(r.ok,false);
+ const port=memory(),store=new TrialStore(port);assert.equal(await store.start(s),true);
+ assert.deepEqual(store.state.exchange,{level:1,used:true,sent:'C'});assert.deepEqual(store.state.tms.map(m=>m.fate),['sent','sent','held']);
+ const r=await store.dispatch(ex('B',[2]));assert.equal(r.ok,false);assert.equal(port.writes(),0);
+ assert.equal(new TrialStore(port).state,null);
 });
 
 /* ---------- migration ---------- */
@@ -279,31 +268,26 @@ test('R20 old profiles are read by content: a starter P3 means the old flow; oth
  const rm=migrateProfile(recruit);assert.deepEqual(rm.roster.map(i=>[i.id,i.protected]),[['P1',true],['P2',true],['P3',false]]);assert.equal(rm.origin,'P1');
  // a profile that already has the new fields is left alone
  assert.deepEqual(migrateProfile(fresh),fresh);
- // the whole record is migrated on load, never rewritten until the next save
+ // old profile migration uses the explicit legacy reader
  const raw=JSON.stringify(legacyRecord('base-before72'));
- assert.equal(decode(raw).profile.origin,'P3');
+ assert.equal(decodeLegacy(raw).profile.origin,'P3');
 });
-test('R21 a run saved mid-way by an older build loads, keeps its machine as one list item, and settles correctly',async()=>{
+test('R21 an old mid-run record is discarded while its valid camp remains',async()=>{
  const raw=JSON.stringify(legacyRecord('run-before72'));
  const port=memory();port.setItem('dungeon-trial.player.v1',raw);
- const store=new TrialStore(port);assert.equal(store.status,'ready',store.error);
- const cur=store.state;
- assert.deepEqual(cur.tms,[{move:'protect',source:'target',fate:'held'}]);assert.equal(cur.purse,0);assert.equal(cur.shop,undefined);assert.equal(cur.exchange,undefined);assert.equal(cur.tm,undefined);
- assert.deepEqual(['A','B','C'].map(i=>cur.units[i].protected),[true,true,true]);
- // play to the exit: the leader stands on it already
- assert.equal((await store.dispatch({type:'round',action:{type:'interact',exit:true}})).ok,true);
- assert.equal(store.state.phase,'exit');
- assert.equal((await store.dispatch({type:'finishExit'})).ok,true);
- assert.deepEqual(store.state.end.tms,[{move:'protect',source:'target',fate:'brought'}]);assert.equal(store.state.end.effective,true);assert.deepEqual(store.state.end.reasons,['tm']);
- assert.equal(await store.returnToBase(),true);assert.deepEqual(store.profile.vault,{protect:1});
+ const beforeWrites=port.writes();
+ const store=new TrialStore(port);assert.equal(await store.whenReady,true,store.error);
+ assert.equal(store.status,'ready',store.error);assert.equal(store.state,null);
+ assert.equal(store.envelope.format,2);assert.equal(store.envelope.profile.expeditions,0);
+ assert.equal(port.writes(),beforeWrites+1);assert.deepEqual(new TrialStore(port).profile.vault,{});
 });
-test('R22 an old finished run waiting to return gets its end-of-run processing once, from the saved state',()=>{
+test('R22 an old ended run is validated and settled once during migration',async()=>{
  const raw=JSON.stringify(legacyRecord('ended-before72'));
- const a=decode(raw),b=decode(raw);
- assert.deepEqual(a.current.end,b.current.end);
- assert.deepEqual([a.current.end.lost,a.current.end.reward,a.current.end.effective,a.current.end.reasons],[[],100,true,['goal']]);
- assert.deepEqual(a.current.end.tms,[{move:'roar',source:'target',fate:'lost'}]);
- assert.equal(settleRun(a.profile,a.current).account,100);
+ const old=decodeLegacy(raw),expected=settleRun(old.profile,old.current),port=memory();port.setItem('dungeon-trial.player.v1',raw);const beforeWrites=port.writes(),store=new TrialStore(port);
+ assert.equal(await store.whenReady,true,store.error);assert.equal(store.status,'ready');assert.equal(store.state,null);
+ assert.deepEqual(store.profile,expected);assert.equal(store.profile.expeditions,old.profile.expeditions+1);
+ assert.equal(store.profile.account,100);assert.equal(port.writes(),beforeWrites+1);assert.equal(Object.hasOwn(store.envelope,'current'),false);
+ assert.equal(new TrialStore(port).profile.expeditions,old.profile.expeditions+1);
 });
 test('R23 a run from before the base existed: A, B and C are protected and never go missing',()=>{
  const w=createExpedition('legacy',3);w.prog.rng=7;
@@ -317,15 +301,13 @@ test('R23 a run from before the base existed: A, B and C are protected and never
  assert.deepEqual(q.end.lost,[],'camp members are safe');
 });
 
-/* ---------- order of the one write, save round trips and tampering ---------- */
-test('R24 returning to the base is one write, in the fixed order',async()=>{
+/* ---------- terminal migration and camp-only records ---------- */
+test('R24 an old ended World settles the purse, rescue pool, squad and machines once',async()=>{
  const p=profile4({account:20,rescue:[entry(zubat('P5'),true,1),entry(pidgey('P6'),false,1)],next:7,team:['P3','P1','P2'],leader:'P3'});
  const s=finished(p,{outcome:'wipe',goal:true,rng:7,purse:40,tms:[['roar','shop']],camp:[]});
- s.tms[0].fate; // lost with the wipe
- const port=memory(),store=new TrialStore(port);await store.beginNewGame(p,false);
- port.setItem(store.key,JSON.stringify({...store.envelope,current:s,sequence:9}));
- const live=new TrialStore(port);assert.equal(live.status,'ready',live.error);
- const writes=port.writes();assert.equal(await live.returnToBase(),true);assert.equal(port.writes(),writes+1);
+ const raw=JSON.stringify({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:9,current:s,recent:null,profile:p});
+ const expected=settleRun(p,s),port=memory();port.setItem('dungeon-trial.player.v1',raw);const beforeWrites=port.writes(),live=new TrialStore(port);
+ assert.equal(await live.whenReady,true,live.error);assert.equal(live.status,'ready',live.error);assert.equal(port.writes(),beforeWrites+1);
  const q=live.profile;
  // 1 reward 100 (the purse is lost in a wipe) -> 120; 2-3 the paid P5 returns, the unpaid P6 is lost; 4 P3 goes missing (state 7) with L = 4;
  // 5 the machine was not brought out; 6 the squad loses its leader P3 and P1 takes over.
@@ -333,59 +315,37 @@ test('R24 returning to the base is one write, in the fixed order',async()=>{
  assert.deepEqual(q.lost,[{id:'P6',species:'pidgey',expedition:1}]);assert.deepEqual(q.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P3',false,4]]);
  assert.deepEqual(q.vault,{});assert.deepEqual(q.team,['P1','P2']);assert.equal(q.leader,'P1');
  const summary=settleSummary(p,s);assert.deepEqual(summary.returned,[{id:'P5',species:'zubat'}]);assert.deepEqual(summary.gone,[{id:'P6',species:'pidgey'}]);assert.deepEqual(summary.missing,[{id:'P3',species:'pidgey'}]);
- assert.deepEqual(new TrialStore(port).profile,q);
+ assert.deepEqual(q,expected);assert.equal(Object.hasOwn(live.envelope,'current'),false);
+ assert.deepEqual(new TrialStore(port).profile,q,'reopening cannot settle the result twice');
 });
-function record(over){return {format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:3,current:null,recent:null,profile:profile4(),...over};}
-test('R25 every new processing point round-trips, and tampering with it is refused on load',()=>{
- const shop=shopRun();const bought=buy(shop,'tm').state;
- const exchanged=applyCommand(exchangeRun(),ex('C',[0,1])).state;
- const wiped=finished(profile4(),{outcome:'wipe',goal:true,rng:7,purse:60});
+function record(profile){return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:3,profile};}
+test('R25 the current save round-trips camp-only state and refuses invalid camp data',async()=>{
  const rich=profile4({account:80,rescue:[entry(zubat('P5'),false,2)],lost:[{id:'P6',species:'pidgey',expedition:2}],next:7});
- for(const rec of [record({current:shop}),record({current:bought}),record({current:exchanged}),record({current:wiped}),record({profile:rich}),record({current:finished(profile4(),{goal:true}),recent:wiped})])
-  assert.deepEqual(decode(JSON.stringify(rec)),rec);
- const bad=(base,edit)=>{const r=structuredClone(base);edit(r);return JSON.stringify(r);};
+ const valid=record(rich);assert.deepEqual(decode(JSON.stringify(valid)),valid);
  const tampered=[
-  ['negative account',record({profile:rich}),r=>{r.profile.account=-1;}],
-  ['fractional account',record({profile:rich}),r=>{r.profile.account=1.5;}],
-  ['pool entry with zero left',record({profile:rich}),r=>{r.profile.rescue[0].left=0;}],
-  ['paid entry waiting two',record({profile:rich}),r=>{r.profile.rescue[0].paid=true;r.profile.rescue[0].left=2;}],
-  ['unpaid entry waiting five',record({profile:rich}),r=>{r.profile.rescue[0].left=5;}],
-  ['pool instance marked protected',record({profile:rich}),r=>{r.profile.rescue[0].inst.protected=true;}],
-  ['lost record repeats a roster id',record({profile:rich}),r=>{r.profile.lost[0].id='P1';}],
-  ['id counter behind the pool',record({profile:rich}),r=>{r.profile.next=6;}],
-  ['origin not protected',record({profile:rich}),r=>{r.profile.origin='P3';}],
-  ['origin missing',record({profile:rich}),r=>{r.profile.origin='P9';}],
-  ['instance without the mark',record({profile:rich}),r=>{delete r.profile.roster[0].protected;}],
-  ['purse negative',record({current:shop}),r=>{r.current.purse=-20;}],
-  ['purse above the cap',record({current:shop}),r=>{r.current.purse=220;}],
-  ['purse off the step',record({current:shop}),r=>{r.current.purse=90;}],
-  ['stock changed without a sale',record({current:shop}),r=>{r.current.shop.stock.berry=1;}],
-  ['sale without a record',record({current:bought}),r=>{r.current.shop.trades=[];}],
-  ['sale at the wrong price',record({current:shop}),r=>{r.current.shop.trades=[{item:'berry',price:1}];r.current.shop.stock.berry=1;}],
-  ['shop machine differs from the seed',record({current:shop}),r=>{r.current.shop.stock.tm='roar';}],
-  ['shop that the seed does not give',record({current:shop}),r=>{r.current.dungeon.seed=11;}],
-  ['exchanger used without a companion',record({current:exchanged}),r=>{r.current.exchange.sent=null;}],
-  ['exchanger unused but a machine sent',record({current:exchanged}),r=>{r.current.exchange.used=false;r.current.exchange.sent=null;}],
-  ['sent companion still in the queue',record({current:exchanged}),r=>{r.current.queue.push('C');}],
-  ['three machines sent',record({current:exchanged}),r=>{r.current.tms[2].fate='sent';}],
-  ['machine already brought during play',record({current:exchanged}),r=>{r.current.tms[2].fate='brought';}],
-  ['protected unit in the missing list',record({current:wiped}),r=>{r.current.end.lost=['A'];}],
-  ['missing list on a normal exit',record({current:finished(profile4(),{goal:true})}),r=>{r.current.end.lost=['C'];}],
-  ['wrong reward',record({current:wiped}),r=>{r.current.end.reward=0;}],
-  ['effective flag flipped',record({current:wiped}),r=>{r.current.end.effective=false;}],
-  ['purse refunded after a wipe',record({current:wiped}),r=>{r.current.end.refund=60;}],
-  ['end machine list differs',record({current:finished(profile4(),{tms:[['roar','shop']]})}),r=>{r.current.end.tms[0].fate='lost';}],
-  ['protected mark on an enemy',record({current:shop}),r=>{const id=r.current.enemies[0];r.current.units[id].protected=true;}],
-  ['unit mark differs from the profile',record({current:shop}),r=>{r.current.units.C.protected=true;}],
+  ['negative account',r=>{r.profile.account=-1;}],
+  ['fractional account',r=>{r.profile.account=1.5;}],
+  ['pool entry with zero left',r=>{r.profile.rescue[0].left=0;}],
+  ['paid entry waiting two',r=>{r.profile.rescue[0].paid=true;r.profile.rescue[0].left=2;}],
+  ['unpaid entry waiting five',r=>{r.profile.rescue[0].left=5;}],
+  ['pool instance marked protected',r=>{r.profile.rescue[0].inst.protected=true;}],
+  ['lost record repeats a roster id',r=>{r.profile.lost[0].id='P1';}],
+  ['id counter behind the pool',r=>{r.profile.next=6;}],
+  ['origin not protected',r=>{r.profile.origin='P3';}],
+  ['origin missing',r=>{r.profile.origin='P9';}],
+  ['instance without the mark',r=>{delete r.profile.roster[0].protected;}],
  ];
- for(const [name,base,edit] of tampered)assert.throws(()=>decode(bad(base,edit)),/损坏|不兼容/,name);
+ for(const [name,edit] of tampered){const candidate=structuredClone(valid);edit(candidate);assert.throws(()=>decode(JSON.stringify(candidate)),/损坏|不兼容/,name);}
+ const shop=shopRun(),port=memory(),store=new TrialStore(port);assert.equal(await store.start(shop),true);
+ assert.equal((await store.dispatch({type:'buy',item:'tm'})).ok,true);assert.equal(port.writes(),0);
+ assert.equal(store.exportRecord(),null);assert.equal(new TrialStore(port).status,'empty');
 });
 
 test('R26 an old, already settled recent run is history: no wipe draw is run on it, whatever the saved random state',()=>{
  for(const rng of [1,7,123]){
   const legacy=legacyRecord('recent-before72');legacy.recent.prog.rng=rng;
   const raw=JSON.stringify(legacy);
-  const e=decode(raw);
+  const e=decodeLegacy(raw);
   assert.deepEqual(e.recent.end.lost,[],`state ${rng}`);assert.equal(e.recent.prog.rng,rng,'the random state is untouched');
   assert.deepEqual(e.recent.end.reasons,[]);assert.equal(e.recent.end.effective,false);
  }

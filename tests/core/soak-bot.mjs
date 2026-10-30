@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import {createExpedition,createMain,PROG,RULE_VERSION,CONTENT_VERSION,bossDefeated,applyCommand,skillTargets} from '../../src/core/engine.ts';
-import {initialProfile,newGameProfile,profileProblem} from '../../src/core/base.ts';
-import {TrialStore,BUILD_ID} from '../../src/core/save.ts';
+import {createExpedition,createMain,PROG,bossDefeated,applyCommand,skillTargets} from '../../src/core/engine.ts';
+import {initialProfile,newGameProfile,profileProblem,settleRun} from '../../src/core/base.ts';
+import {TrialStore} from '../../src/core/save.ts';
 import {ECON} from '../../src/core/economy.ts';
 import {moveOf} from '../../src/core/moves.ts';
 const damageMoves=u=>u.learned.filter(k=>(u.pp[k]??0)>0&&moveOf(k)?.effects.includes('damage'));
@@ -22,7 +22,7 @@ const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 const dist=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const same=(a,b)=>!!a&&!!b&&a.x===b.x&&a.y===b.y;
 const aliveU=u=>!!u&&u.hp>0&&u.pos!==null;
-const memory=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);},map:m};};
+const memory=()=>{const m=new Map();let writes=0;return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);writes++;},map:m,writes:()=>writes};};
 
 /* ---------- invariants ---------- */
 function checkWorld(s,where){
@@ -45,18 +45,46 @@ function checkWorld(s,where){
  assert.equal(s.queue.filter(id=>s.camp.includes(id)).length,0,`${at}: member both in queue and camp`);
 }
 function checkEnvelope(env,where){
- if(env.current)checkWorld(env.current,where);
- if(env.recent)assert.equal(env.recent.phase,'ended',`${where}: recent is not an ended run`);
- if(env.profile)assert.equal(profileProblem(env.profile),null,`${where}: profile fails validation`);
- else assert.ok(env.current,`${where}: no profile and no run`);
+ assert.equal(env.format,2,`${where}: expected camp-only format 2`);
+ assert.equal(Object.hasOwn(env,'current'),false,`${where}: camp record embeds a World`);
+ assert.equal(Object.hasOwn(env,'recent'),false,`${where}: camp record embeds recent history`);
+ assert.equal(profileProblem(env.profile),null,`${where}: profile fails validation`);
 }
-/** After every accepted write: a fresh store reading the same storage must hold exactly what the writing store holds. */
+/** A fresh controller reads the same camp record; active Worlds are intentionally memory-only. */
 function roundTrip(port,store,where){
  assert.equal(store.status,'ready',`${where}: store not ready (${store.error})`);
+ assert.equal(store.state,null,`${where}: a camp round-trip must not persist the active World`);
  const re=new TrialStore(port);
  assert.equal(re.status,'ready',`${where}: reload ${re.status} ${re.error}`);
+ assert.equal(re.state,null,`${where}: reloaded controller has a World`);
  assert.deepEqual(re.envelope,store.envelope,`${where}: reloaded record differs`);
  checkEnvelope(re.envelope,where);
+}
+/** A terminal World remains visible in the result screen, while disk contains only its settled camp profile. */
+function terminalRoundTrip(port,store,where){
+ assert.equal(store.status,'ready',`${where}: store not ready (${store.error})`);
+ assert.equal(store.state?.phase,'ended',`${where}: live result is not terminal`);checkWorld(store.state,where);
+ checkEnvelope(store.envelope,where);
+ const re=new TrialStore(port);assert.equal(re.status,'ready',`${where}: reload ${re.status} ${re.error}`);
+ assert.equal(re.state,null,`${where}: reloaded terminal World instead of camp`);
+ assert.deepEqual(re.envelope,store.envelope,`${where}: saved terminal camp differs`);
+}
+/** Check one active run step without serializing or reloading its World. */
+function memoryRun(port,store,where,campRaw=port.getItem(store.key),campWrites=port.writes()){
+ assert.equal(store.status,'ready',`${where}: in-memory controller not ready (${store.error})`);
+ assert.ok(store.state,`${where}: missing in-memory World`);checkWorld(store.state,where);
+ assert.equal(port.getItem(store.key),campRaw,`${where}: an active World changed the camp bytes`);
+ assert.equal(port.writes(),campWrites,`${where}: an active World wrote storage`);
+ const re=new TrialStore(port);
+ assert.equal(re.status,store.envelope?'ready':'empty',`${where}: camp reload ${re.status} ${re.error}`);
+ assert.equal(re.state,null,`${where}: opening another controller restored the active World`);
+ assert.deepEqual(re.envelope,store.envelope,`${where}: active World changed the stored camp record`);
+}
+/** Test-only injection for the forced-wipe variant; no storage bytes or production API are involved. */
+function injectMemoryWorld(store,world,where){
+ assert.ok(Object.hasOwn(store,'world'),`${where}: expected the test controller's in-memory World slot`);
+ store.world=structuredClone(world);
+ assert.deepEqual(store.state,world,`${where}: injected memory fixture did not take effect`);
 }
 
 /* ---------- the bot ---------- */
@@ -374,13 +402,29 @@ function observeBossFloor(s,x){
 
 /* ---------- driver ---------- */
 async function send(port,store,cmd,st,where){
- const before=store.envelope,rawBefore=port.getItem(store.key);
+ const before=store.state,envelopeBefore=store.envelope,rawBefore=port.getItem(store.key),writesBefore=port.writes();
  const r=await store.dispatch(cmd);
- if(r.ok){roundTrip(port,store,where);return r;}
+ if(r.ok){
+  assert.deepEqual(store.state,r.state,`${where}: dispatch result differs from live World`);
+  if(before.phase!=='ended'&&r.state.phase==='ended'&&store.envelope){
+   assert.equal(port.writes(),writesBefore+1,`${where}: terminal result must save exactly once`);
+   assert.notEqual(port.getItem(store.key),rawBefore,`${where}: terminal camp record was not written`);
+   assert.equal(Object.hasOwn(store.envelope,'current'),false,`${where}: terminal camp embeds World`);
+   assert.equal(Object.hasOwn(store.envelope,'recent'),false,`${where}: terminal camp stores recent World`);
+   terminalRoundTrip(port,store,where+' terminal camp');
+  }else{
+   assert.equal(port.getItem(store.key),rawBefore,`${where}: an active World wrote storage`);
+   assert.equal(port.writes(),writesBefore,`${where}: an active World wrote storage`);
+   memoryRun(port,store,where,rawBefore,writesBefore);
+  }
+  return r;
+ }
  st.rejections++;
- assert.deepEqual(store.envelope,before,`${where}: rejected ${JSON.stringify(cmd)} changed the record`);
- assert.deepEqual(r.state,before.current,`${where}: rejected result state differs`);
+ assert.deepEqual(store.state,before,`${where}: rejected ${JSON.stringify(cmd)} changed the live World`);
+ assert.deepEqual(store.envelope,envelopeBefore,`${where}: rejected ${JSON.stringify(cmd)} changed the camp`);
+ assert.deepEqual(r.state,before,`${where}: rejected result state differs`);
  assert.equal(port.getItem(store.key),rawBefore,`${where}: rejected command wrote storage`);
+ assert.equal(port.writes(),writesBefore,`${where}: rejected command wrote storage`);
  return r;
 }
 /** Commands that must be refused in the current phase. Each one is checked to change nothing. */
@@ -415,7 +459,7 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
     assert.equal(s.end.boss,s.units.boss?.hp===0||Object.values(s.dungeon.stored).some(f=>f.units.boss?.hp===0),`${where}: end.boss disagrees with the boss unit`);
    }
    await probe(port,store,st,where+' ended');
-   if(store.envelope.profile){const before=store.envelope; // with a base, a finished expedition must go back to the base, not straight into a new trial
+   if(store.envelope?.profile){const before=store.envelope; // with a saved camp, a finished expedition must return there before another trial
     assert.equal(await store.newTrial(createMain('soak-direct')),false,where+': newTrial accepted over a based expedition');assert.deepEqual(store.envelope,before);}
    x.wipeFloor=s.end.outcome==='wipe'?s.dungeon.level:null;
    return {outcome:s.end.outcome,rounds,commands,goal:s.goal,level:s.prog.level,floor:s.dungeon.level};
@@ -428,10 +472,12 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    return {outcome:'timeout',rounds,commands,goal:s.goal,level:s.prog.level,floor:s.dungeon.level,
     reason:`phase=${s.phase} floor=${s.dungeon.level} goal=${s.goal} bag=${s.bag} leader@${key(L.pos)} objective=${obj?obj.kind+'@'+key(obj.pos):'none'} visited=${visited.size}/${s.seen.length} seenCells unseenFloor=${unseenFloor} enemiesAlive=${s.enemies.filter(i=>aliveU(s.units[i])).length} cancelledTransits=${st.cancelledTransits}`};
   }
-  // Forced-wipe variant: once G is done (or after round 60) every member is brought down to 1 HP in the saved record, and the bot stops defending.
+  // Forced-wipe variant: once G is done (or after round 60) every living member is brought to 1 HP in memory, and the bot stops defending.
   if(doomed&&!memo.suicidal&&s.phase==='playing'&&(s.goal||s.round>=60)){
-   const env=JSON.parse(port.getItem(store.key));for(const id of env.current.queue){const u=env.current.units[id];if(u.hp>0)u.hp=1;}
-   port.setItem(store.key,JSON.stringify(env));store=ref.store=new TrialStore(port);assert.equal(store.status,'ready',`${where}: reopened after the hp edit: ${store.error}`);memo.suicidal=true;continue;
+   const low=structuredClone(s);for(const id of low.queue){const u=low.units[id];if(u.hp>0)u.hp=1;}
+   injectMemoryWorld(store,low,where+' forced-wipe input');
+   for(const id of low.queue)if(low.units[id].hp>0)assert.equal(store.state.units[id].hp,1,`${where}: forced-wipe timing for ${id}`);
+   memoryRun(port,store,where+' forced-wipe input');memo.suicidal=true;continue;
   }
   commands++;(memo.trail??=[]).push(`${s.round}:${key(s.units[s.leader].pos)}:${s.phase}`);
   if(s.phase==='playing'&&s.dungeon.boss&&s.dungeon.level===3)observeBossFloor(s,x);
@@ -509,10 +555,11 @@ async function baseTurn(port,store,seed,game,st,where,pay=false){
  else if(game>0)await check({type:'team',team:['P1','P2','P3'],leader:'P3'},true);
  const gseed=(seed*2654435761+game*40503)>>>0;
  const purse=game%2===0?Math.min(40,Math.floor(store.profile.account/ECON.purseStep)*ECON.purseStep):0;
+ const campRaw=port.getItem(store.key),campWrites=port.writes();
  assert.equal(await store.depart(`soak-${seed}-${game}`,gseed,purse),true,`${where}: depart refused`);
  if(purse)assert.equal(store.state.purse,purse);
  if(paidNow>0&&purse===0&&(game%2===0?Math.min(40,Math.floor(account0/ECON.purseStep)*ECON.purseStep):0)>0)st.purseZeroByRescue++; // observation: paying emptied this run's purse
- roundTrip(port,store,where+' depart');
+ memoryRun(port,store,where+' depart',campRaw,campWrites);
 }
 
 /** Forced-wipe variant: a profile with two ordinary partners (P3 pidgey, P4 zubat) next to the protected founder P1, and some money for rescues. */
@@ -536,7 +583,8 @@ async function doomedBase(port,store,seed,game,st,where){
  const ids=store.profile.roster.map(i=>i.id).slice(0,3),origin=store.profile.origin;
  const res=await store.baseAction({type:'team',team:ids,leader:ids.includes(origin)?origin:ids[0]});assert.ok(res.ok&&res.saved,`${where}: team: ${res.error}`);roundTrip(port,store,where+' team');
  const purse=Math.min(40,Math.floor(store.profile.account/ECON.purseStep)*ECON.purseStep);
- assert.equal(await store.depart(`soak-${seed}-${game}`,(seed*2654435761+game*40503)>>>0,purse),true,`${where}: depart refused`);roundTrip(port,store,where+' depart');
+ const campRaw=port.getItem(store.key),campWrites=port.writes();
+ assert.equal(await store.depart(`soak-${seed}-${game}`,(seed*2654435761+game*40503)>>>0,purse),true,`${where}: depart refused`);memoryRun(port,store,where+' depart',campRaw,campWrites);
 }
 /** The settlement rules written again independently of settleRun: what must hold between the profile before a run and the one after it. */
 function checkSettlement(before,after,end,st,where,trk){
@@ -566,23 +614,38 @@ export async function playSeed(i,options={}){
  const payRescue=tactical&&options.payRescue!==false;
  const seed=seedOf(i),port=memory(),st=stats(),games=[],doomed=i%4===3,extra=[],trk={eff:0,lostAt:new Map()},accTrail=[],rosterTrail=[];
  let store;const ref={};const moveUse={};
- if(i%2===0){ // the real first-run path of the start page: a legacy expedition with no profile; the base profile appears when it returns
+ if(i%2===0){ // Keep the legacy two-floor, no-profile fixture; it runs in memory, then seeds a camp at its ending.
   store=new TrialStore(port);const gseed=(seed*2654435761)>>>0;
-  assert.equal(await store.start(createExpedition(`soak-${seed}-0`,gseed)),true);roundTrip(port,store,`seed ${seed} start`);
+  assert.equal(await store.start(createExpedition(`soak-${seed}-0`,gseed)),true);memoryRun(port,store,`seed ${seed} first legacy expedition`);
  }else{ // a player at the base with the initial profile
-  port.setItem('dungeon-trial.player.v1',JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:null,recent:null,profile:doomed?doomedProfile():initialProfile()}));
-  store=new TrialStore(port);assert.equal(store.status,'ready');assert.equal(store.atBase,true);
+  store=new TrialStore(port);assert.equal(await store.beginNewGame(doomed?doomedProfile():initialProfile(),false),true,`seed ${seed}: initial camp save`);
+  roundTrip(port,store,`seed ${seed} initial camp`);
   await (doomed?doomedBase:baseTurn)(port,store,seed,0,st,`seed ${seed} g0 base`,payRescue);
  }
  for(let g=0;g<GAMES;g++){
   const id=`seed ${seed} game ${g}`;
+  const before=store.profile;
   ref.store=store;const x={};const r=await playRun(port,ref,id,st,!tactical&&i%3===2&&!doomed,doomed,g%2===0,tactical||(i*5+g*3)%4<2,tactical?'tactical':'naive',x,policy==='tactical-stand',moveUse);store=ref.store;extra.push({outcome:r.outcome,doomed,...x});games.push({seed,game:g,reckless:i%3===2,legacy:i%2===0&&g===0,doomed,...r});
   if(r.outcome==='timeout')break;
-  const before=store.envelope.profile;const endRecord=structuredClone(store.state.end);
-  assert.equal(await store.returnToBase(),true,`${id}: returnToBase refused`);roundTrip(port,store,`${id} return`);
+  const ended=structuredClone(store.state),endRecord=structuredClone(ended.end),terminalRaw=port.getItem(store.key),terminalWrites=port.writes();
+  if(before){
+   assert.equal(store.envelope.profile.expeditions,before.expeditions+1,`${id}: terminal camp was not settled`);
+   assert.equal(Object.hasOwn(store.envelope,'current'),false,`${id}: terminal camp embeds World`);
+   assert.equal(Object.hasOwn(store.envelope,'recent'),false,`${id}: terminal camp keeps recent World`);
+   assert.equal(await store.returnToBase(),true,`${id}: returnToBase refused`);
+   assert.equal(port.getItem(store.key),terminalRaw,`${id}: returning to camp changed saved bytes`);
+   assert.equal(port.writes(),terminalWrites,`${id}: returning to camp wrote storage`);
+   roundTrip(port,store,`${id} return`);
+  }else{
+   // The original first expedition has no camp profile; settlement creates its first camp after the result.
+   const settled=settleRun(null,ended);assert.ok(settled,`${id}: legacy first run could not seed the camp`);
+   assert.equal(await store.beginNewGame(settled,false),true,`${id}: legacy first-run camp save failed`);
+   assert.equal(port.writes(),terminalWrites+1,`${id}: first camp should be written once after the run`);
+   roundTrip(port,store,`${id} first camp`);
+  }
   assert.equal(store.atBase,true);assert.ok(store.profile.expeditions>=1);
   if(before)assert.equal(store.profile.expeditions,before.expeditions+1);
-  assert.equal(store.envelope.recent.phase,'ended');
+  assert.equal(Object.hasOwn(store.envelope,'recent'),false,`${id}: camp envelope contains recent`);
   checkSettlement(before??initialProfile(),store.profile,endRecord,st,id,trk);accTrail.push(store.profile.account);rosterTrail.push(store.profile.roster.length);
   if(g===GAMES-1)break;
   await (doomed?doomedBase:baseTurn)(port,store,seed,g+1,st,`${id} base`,payRescue);

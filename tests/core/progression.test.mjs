@@ -5,7 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createExpedition,createMain,applyCommand,reveal,rngStep,levelFor} from '../../src/core/engine.ts';
 import {generateFloor,mulberry32} from '../../src/core/dungeon.ts';
-import {TrialStore} from '../../src/core/save.ts';
+import {TrialStore,BUILD_ID} from '../../src/core/save.ts';
+import {initialProfile} from '../../src/core/base.ts';
 import {enemy,world,pos,row,doCmd,reject,round,interact,basic,skill,wait,accept,refuse} from '../acceptance/fixtures.mjs';
 
 /* Roster kits (src/data/roster.json): charmander 19 HP strong3 line2; squirtle 20 HP strong3 line2; bulbasaur 21 HP strong3 line1. */
@@ -25,6 +26,7 @@ function run({level=1,exp=0,rng=7,enemies=[wild('w',3,6)],points=[],items={berry
 }
 const port=(raw=null)=>{let value=raw,writes=0;return {getItem:()=>value,setItem:(k,v)=>{value=v;writes++;},raw:()=>value,writes:()=>writes};};
 const opened=async s=>{const p=port();const a=new TrialStore(p,'x');assert.equal(await a.start(s),true,a.error);return {p,a};};
+const legacyActive=current=>JSON.stringify({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:1,current,recent:null,profile:initialProfile()});
 
 /* ---------- the real species team ---------- */
 test('P1 a new expedition starts three roster starters at run level 1 with roster HP and kit PP',()=>{
@@ -236,30 +238,31 @@ test('P10 a world without prog (older expedition, fixed map) draws nothing, leve
 });
 
 /* ---------- save and restore ---------- */
-test('P11 a new expedition and a mid-run state round-trip through the save format',async()=>{
- const s=createExpedition('save-new',2024);const {p}=await opened(s);
- assert.deepEqual(new TrialStore(p,'x').state,s);
+test('P11 a new expedition and a mid-run state stay in the live controller only',async()=>{
+ const s=createExpedition('save-new',2024);const {p,a}=await opened(s);
+ assert.deepEqual(a.state,s);assert.equal(p.writes(),0);
  const mid=round(run({exp:2,rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));
- const q=await opened(mid);const b=new TrialStore(q.p,'x');assert.equal(b.status,'ready',b.error);assert.deepEqual(b.state,mid);
+ const q=await opened(mid);assert.deepEqual(q.a.state,mid);assert.equal(q.p.writes(),0);
+ const reopened=new TrialStore(q.p,'x');assert.equal(reopened.status,'empty');assert.equal(reopened.state,null);
 });
-test('P11b restoring a pending invitation does not redraw: same invitation, same rng; accepting adds no draw',async()=>{
+test('P11b processing a pending invitation in the live controller does not redraw',async()=>{
  const pending=round(run({rng:7}),basic('w'));
- const {p}=await opened(pending);const b=new TrialStore(p,'x');
+ const {p,a:b}=await opened(pending);
  assert.deepEqual(b.state.invitations,pending.invitations);assert.equal(b.state.prog.rng,1831565820);
  const writes=p.writes();
  assert.equal((await b.dispatch({type:'invite',choice:'accept',outgoing:'A'})).ok,true);
- assert.equal(b.state.prog.rng,1831565820);assert.equal(b.state.prog.made,1);assert.equal(p.writes(),writes+1);
- const again=new TrialStore(p,'x');assert.deepEqual(again.state,b.state);
+ assert.equal(b.state.prog.rng,1831565820);assert.equal(b.state.prog.made,1);assert.equal(p.writes(),writes);
+ const again=new TrialStore(p,'x');assert.equal(again.status,'empty');assert.equal(again.state,null);
 });
-test('P11c saving and restoring in the middle of a run gives the same later draws as never stopping',async()=>{
+test('P11c branching the same in-memory run state gives the same later random draws',async()=>{
  const start=run({rng:1,enemies:[wild('w',3,6),wild('w2',9,6,'pidgey')]});
  const first=round(start,basic('w'));                      // draw 1 at state 1: no invitation
- const {p}=await opened(first);const restored=new TrialStore(p,'x').state;
- assert.deepEqual(restored,first);
+ const {p,a}=await opened(first);const live=a.state;
+ assert.deepEqual(live,first);assert.equal(p.writes(),0);
  // move the second enemy next to C in both copies (position edit only), then defeat it
  const edit=s=>{const t=structuredClone(s);t.units.w2.pos=pos(3);return t;};
- const direct=round(edit(first),basic('w2')),viaDisk=round(edit(restored),basic('w2'));
- assert.deepEqual(viaDisk,direct);assert.equal(direct.prog.rng,3663131627);   // state 1 stepped twice
+ const direct=round(edit(first),basic('w2')),branch=round(edit(live),basic('w2'));
+ assert.deepEqual(branch,direct);assert.equal(direct.prog.rng,3663131627);   // state 1 stepped twice
 });
 const mutations=[
  ['level that does not match exp',s=>{s.prog.level=2;}],
@@ -283,11 +286,12 @@ const mutations=[
  ['extra learned move',s=>{s.units.A.learned.push('roar');s.units.A.pp.roar=1;s.units.A.maxPp.roar=1;}],
  ['pickup point in a world with no prog',s=>{delete s.prog;delete s.rooms;s.points.push({pos:pos(2),kind:'berry',used:false});}],
 ];
-for(const [name,mutate] of mutations)test('P12 rejects '+name+' and preserves bytes',async()=>{
+for(const [name,mutate] of mutations)test('P12 ignores legacy in-progress World ('+name+') and keeps the valid camp',async()=>{
  const base=run({enemies:[],points:[{pos:pos(5),kind:'berry',used:false}]});
- const {p}=await opened(base);const e=JSON.parse(p.raw());mutate(e.current);const raw=JSON.stringify(e);
+ mutate(base);const raw=legacyActive(base);
  const q=port(raw);const st=new TrialStore(q,'x');
- assert.equal(st.status,'blocked',name);assert.equal(st.state,null);assert.equal(st.exportRaw(),raw);assert.equal(q.writes(),0);
+ await st.whenReady;
+ assert.equal(st.status,'ready',name);assert.equal(st.state,null);assert.ok(st.profile);assert.equal(st.envelope.format,2);assert.equal('current' in st.envelope,false);assert.equal(q.writes(),1);
 });
 const pendingMutations=[
  ['invitation HP is not the half snapshot',u=>{u.hp=u.hp+1;}],
@@ -295,20 +299,20 @@ const pendingMutations=[
  ['invitation PP is not the half snapshot',u=>{u.pp.tackle=3;}],
  ['invitation species missing',u=>{delete u.species;}],
 ];
-for(const [name,mutate] of pendingMutations)test('P12b rejects '+name,async()=>{
+for(const [name,mutate] of pendingMutations)test('P12b ignores malformed active invitation ('+name+') and keeps the valid camp',async()=>{
  const pending=round(run({rng:7}),basic('w'));
- const {p}=await opened(pending);const e=JSON.parse(p.raw());mutate(e.current.invitations[0].unit);
- assert.equal(new TrialStore(port(JSON.stringify(e)),'x').status,'blocked',name);
+ mutate(pending.invitations[0].unit);const p=port(legacyActive(pending)),st=new TrialStore(p,'x');await st.whenReady;
+ assert.equal(st.status,'ready',name);assert.equal(st.state,null);assert.ok(st.profile);assert.equal(st.envelope.format,2);
 });
-test('P12c the fixed map refuses prog, rooms and pickups',async()=>{
+test('P12c an old fixed-map World is discarded with its legacy in-progress record',async()=>{
  for(const mutate of [s=>{s.prog={level:1,exp:0,rng:1,made:0,kills:[],items:{berry:0,tonic:0}};},s=>{s.rooms=[{x:0,y:1,w:3,h:1}];},s=>{s.points.push({pos:structuredClone(s.units.C.pos),kind:'tonic',used:false});}]){
-  const {p}=await opened(createMain('fixed',false));const e=JSON.parse(p.raw());mutate(e.current);
-  assert.equal(new TrialStore(port(JSON.stringify(e)),'x').status,'blocked');
+  const current=createMain('fixed',false);mutate(current);const p=port(legacyActive(current)),st=new TrialStore(p,'x');await st.whenReady;
+  assert.equal(st.status,'ready');assert.equal(st.state,null);assert.equal(st.envelope.format,2);
  }
 });
-test('P12d a taken berry that was then used still validates: items never exceed what was picked up',async()=>{
+test('P12d a taken berry that was then used keeps valid expedition item state in memory',async()=>{
  const s=round(berryAt2(),interact(false));
- const {p}=await opened(s);assert.equal(new TrialStore(p,'x').status,'ready');
+ const {p,a}=await opened(s);assert.deepEqual(a.state.prog.items,{berry:1,tonic:0});assert.equal(new TrialStore(p,'x').status,'empty');
  const used=round(Object.assign(structuredClone(s),{}),wait);   // a plain round keeps it valid
  assert.deepEqual(used.prog.items,{berry:1,tonic:0});
 });

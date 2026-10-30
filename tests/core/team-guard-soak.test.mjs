@@ -40,11 +40,15 @@ function assertHealthyProgress(previous,next){
   assert.ok(next.phase==='playing'||next.phase==='ended','each result reaches a complete turn boundary');
 }
 async function saveReadBack(world){
-  const values=new Map(),port={getItem:key=>values.get(key)??null,setItem:(key,value)=>values.set(key,value)};
+  const values=new Map();let writes=0;
+  const port={getItem:key=>values.get(key)??null,setItem:(key,value)=>{writes++;values.set(key,value);}};
   const store=new TrialStore(port);assert.equal(await store.start(world),true);
-  const restored=new TrialStore(port);assert.equal(restored.status,'ready',restored.error);
-  assert.deepEqual(restored.state,world,'the saved rule state is unchanged after readback');
-  return restored.state;
+  assert.deepEqual(store.state,world,'the developer world remains available in its in-memory controller');
+  assert.equal(writes,0,'starting a developer world does not persist it');
+  const reopened=new TrialStore(port);assert.equal(reopened.status,'empty',reopened.error);
+  assert.equal(reopened.state,null,'reopening cannot recover a developer world from storage');
+  assert.equal(writes,0);
+  return store.state;
 }
 async function simulate(initial,move,useGuard){
   let state=structuredClone(initial),casts=0;

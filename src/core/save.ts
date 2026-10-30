@@ -2,13 +2,15 @@ import {applyCommand,clone,levelFor,PROG,RULE_VERSION,CONTENT_VERSION,closeOut,i
 import {WILD_SPECIES,BOSS,serviceRoll} from './dungeon.ts';
 import {ECON} from './economy.ts';
 import {speciesOf,tmPool,learnableMove,BOSS_SPECIES} from './roster.ts';
-import {profileProblem,profileFitsWorld,settleRun,applyBase,squadOf,migrateProfile,migrateProfileMoves,purseProblem,type Profile,type BaseAction} from './base.ts';
+import {profileProblem,profileFitsWorld,settleRun,settleSummary,applyBase,squadOf,migrateProfile,migrateProfileMoves,purseProblem,type Profile,type BaseAction,type SettleSummary} from './base.ts';
 import {createExpedition} from './engine.ts';
 import {moveOf} from './moves.ts';
 import {LEGACY_BEHAVIOR_MOVE,legacyMoveForBehavior,legacySpeciesMove} from './legacy-moves.ts';
 export interface StoragePort {getItem(key:string):string|null;setItem(key:string,value:string):void|Promise<void>;}
-/** `current` is null while the player is at the base (6.5); `profile` exists only for expedition players and is written in the same record as `current` and `recent`. */
-export type Envelope={format:1;rules:string;content:string;build:string;sequence:number;current:World|null;recent:World|null;profile?:Profile};
+/** A persisted record contains only the camp profile. The current expedition is memory-only. */
+export type Envelope={format:2;rules:string;content:string;build:string;sequence:number;profile:Profile};
+/** Format 1 is retained only for decoding and validating old saves. */
+export type LegacyEnvelope={format:1;rules:string;content:string;build:string;sequence:number;current:World|null;recent:World|null;profile:Profile};
 export type SaveStatus='empty'|'ready'|'saving'|'failed'|'blocked';
 export const SAVE_KEY='dungeon-trial.player.v1';
 export const BUILD_ID='trial-0.1.0';
@@ -344,148 +346,226 @@ function defaultWorldTeamGuardState(v:unknown):void {
     if(object(floor)&&object(floor.units))for(const unit of Object.values(floor.units))defaultTeamGuardState(unit);
 }
 
-export function decode(raw:string):Envelope {
-  let parsed:unknown;
-  try{parsed=JSON.parse(raw) as unknown;}
+const LEGACY_RULES_1='trial-rules-1',LEGACY_CONTENT_1='trial-content-1';
+const LEGACY_RULES_2='trial-rules-2',LEGACY_CONTENT_2='trial-content-2';
+const PROFILE_KEYS=['expeditions','next','roster','vault','team','leader','account','rescue','lost','origin'];
+function strictProfileShape(v:unknown):v is Profile {
+  return object(v)&&exactKeys(v,PROFILE_KEYS)&&Array.isArray(v.rescue)&&v.rescue.every(r=>object(r)&&exactKeys(r,['inst','paid','left']))&&
+    Array.isArray(v.lost)&&v.lost.every(l=>object(l)&&exactKeys(l,['id','species','expedition']))&&profileProblem(v)===null;
+}
+function parseJson(raw:string):unknown {
+  try{return JSON.parse(raw) as unknown;}
   catch{throw Error('存档不是有效的JSON文本；原记录已保留');}
+}
+function parseLegacy(raw:string):Record<string,unknown> {
+  const parsed=parseJson(raw);
   if(!object(parsed))throw Error('存档结构损坏；原记录已保留');
-  const e=parsed as unknown as Envelope;
+  const e=parsed;
   if(e.format!==1)throw Error('存档版本不兼容；原记录已保留');
-  const oldV1=e.rules==='trial-rules-1'&&e.content==='trial-content-1';
-  const current=e.rules===RULE_VERSION&&e.content===CONTENT_VERSION;
-  if(!oldV1&&!current)throw Error('存档版本不兼容；原记录已保留');
+  const oldV1=e.rules===LEGACY_RULES_1&&e.content===LEGACY_CONTENT_1;
+  const oldV2=e.rules===LEGACY_RULES_2&&e.content===LEGACY_CONTENT_2;
+  if(!oldV1&&!oldV2)throw Error('存档版本不兼容；原记录已保留');
+  if(typeof e.build!=='string'||!Number.isInteger(e.sequence)||Number(e.sequence)<1||!Object.hasOwn(e,'current')||!Object.hasOwn(e,'recent'))throw Error('存档结构损坏；原记录已保留');
+  if(Object.keys(e).some(k=>!['format','rules','content','build','sequence','current','recent','profile'].includes(k)))throw Error('存档结构损坏；原记录已保留');
+  return structuredClone(e) as Record<string,unknown>;
+}
+/** Decode old format 1 records. Full World validation is used for ended runs and the exported helper; active runs are discarded by the store. */
+function decodeLegacyRecord(e:Record<string,unknown>,validateWorld:boolean):LegacyEnvelope {
+  const oldV1=e.rules===LEGACY_RULES_1&&e.content===LEGACY_CONTENT_1;
+  if(e.profile===undefined)throw Error('旧存档没有营地档案；原记录已保留');
   if(oldV1){
-    if(e.profile!==undefined)e.profile=migrateProfile(e.profile) as Profile;
-    migrateWorld(e.current,e.profile);migrateWorld(e.recent,undefined,true);
-    try{migrateLegacyMoveState(e.profile,e.current,e.recent);}
-    catch(error){
+    e.profile=migrateProfile(e.profile);
+    try{
+      if(validateWorld){migrateWorld(e.current,e.profile);migrateWorld(e.recent,undefined,true);migrateLegacyMoveState(e.profile,e.current,e.recent);}
+      else migrateLegacyMoveState(e.profile);
+    }catch(error){
       const reason=error instanceof Error?error.message:'旧招式字段损坏';
       const detail=reason.replace(/[；，]?\s*原记录已保留$/,'');
       throw Error(`${detail}；整条存档未迁移，原记录已保留`);
     }
-    e.rules=RULE_VERSION;e.content=CONTENT_VERSION;
+    e.rules=LEGACY_RULES_2;e.content=LEGACY_CONTENT_2;
   }
-  defaultWorldTeamGuardState(e.current);defaultWorldTeamGuardState(e.recent);
-  if(typeof e.build!=='string'||!Number.isInteger(e.sequence)||e.sequence<1||(e.current!==null&&!validWorld(e.current))||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('存档结构损坏；原记录已保留');
-  // 6.5: the profile is validated on its own and against the run that uses it; at the base (no current run) a profile is required.
-  if(e.profile!==undefined&&profileProblem(e.profile)!==null)throw Error('存档结构损坏；原记录已保留');
-  if(e.current===null?e.profile===undefined:((e.profile!==undefined&&e.current.scenario!=='expedition')||!profileFitsWorld(e.profile,e.current)))throw Error('存档结构损坏；原记录已保留');
-  return e;
+  if(!strictProfileShape(e.profile))throw Error('旧存档的营地档案损坏；原记录已保留');
+  if(validateWorld){
+    defaultWorldTeamGuardState(e.current);defaultWorldTeamGuardState(e.recent);
+    if((e.current!==null&&!validWorld(e.current))||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('旧存档结构损坏；原记录已保留');
+    if(e.current!==null&&((e.current as World).scenario!=='expedition'||!profileFitsWorld(e.profile as Profile,e.current as World)))throw Error('旧存档结构损坏；原记录已保留');
+  }
+  return e as unknown as LegacyEnvelope;
 }
-/** One complete JSON record per atomic setItem; failures freeze this controller. */
+/** Test and compatibility entry point: returns the fully migrated and validated legacy record, including its old World fields. */
+export function decodeLegacy(raw:string):LegacyEnvelope {
+  return decodeLegacyRecord(parseLegacy(raw),true);
+}
+/** Strict decoder for the current camp-only envelope. Any old World field or unknown property is rejected. */
+export function decode(raw:string):Envelope {
+  const parsed=parseJson(raw);
+  if(!object(parsed))throw Error('存档结构损坏；原记录已保留');
+  const e=parsed;
+  if(e.format!==2||e.rules!==RULE_VERSION||e.content!==CONTENT_VERSION)throw Error('存档版本不兼容；原记录已保留');
+  if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isSafeInteger(e.sequence)||Number(e.sequence)<1||!strictProfileShape(e.profile))throw Error('存档结构损坏；原记录已保留');
+  return structuredClone(e) as unknown as Envelope;
+}
+function campFromLegacy(raw:string):Envelope {
+  const e=parseLegacy(raw);
+  const ended=object(e.current)&&e.current.phase==='ended';
+  const old=decodeLegacyRecord(e,ended);
+  let profile=old.profile;
+  if(ended){
+    const settled=settleRun(profile,old.current as World);
+    if(!settled)throw Error('旧远征结算记录无法迁移；原记录已保留');
+    profile=settled;
+  }
+  if(!strictProfileShape(profile))throw Error('旧存档的营地档案损坏；原记录已保留');
+  const sequence=Math.min(old.sequence+1,Number.MAX_SAFE_INTEGER);
+  return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:old.build,sequence,profile};
+}
+/** One complete camp record per atomic setItem; failed writes leave the candidate available for retry. */
 export class TrialStore {
   private record:Envelope|null=null;
   private raw:string|null=null;
   private exported=false;
+  private world:World|null=null;
+  private activeProfile:Profile|null=null;
+  private activeKind:'developer'|'expedition'|null=null;
+  private savedSettlement:SettleSummary|null=null;
   status:SaveStatus='empty';error='';lastSaved:string|null=null;
+  /** Constructor migration may settle and persist a legacy ended run asynchronously. Wait before showing the loaded state. */
+  readonly whenReady:Promise<boolean>;
   /** Import feedback is separate from the loaded record's storage/decoding diagnosis. */
   importError='';
+  private port:StoragePort;readonly key:string;
   constructor(privatePort:StoragePort,key=SAVE_KEY){
     this.port=privatePort;this.key=key;
-    try{this.raw=this.port.getItem(key);if(this.raw!==null){this.record=decode(this.raw);this.status='ready';this.lastSaved=this.label();}}
-    catch(e){this.status='blocked';this.error=String(e);}
+    try{
+      this.raw=this.port.getItem(key);
+      if(this.raw===null){this.status='empty';this.whenReady=Promise.resolve(true);return;}
+      this.whenReady=this.loadStored(this.raw);
+    }catch(e){this.status='blocked';this.error=String(e);this.whenReady=Promise.resolve(false);}
   }
-  private port:StoragePort;readonly key:string;
+  private loadStored(raw:string):Promise<boolean> {
+    try{
+      const parsed=parseJson(raw);
+      if(object(parsed)&&parsed.format===2){this.record=decode(raw);this.status='ready';this.lastSaved=this.label();return Promise.resolve(true);}
+      const migrated=campFromLegacy(raw);
+      this.record=migrated;
+      return this.persist();
+    }catch(e){this.status='blocked';this.error=String(e);return Promise.resolve(false);}
+  }
+  private camp(profile:Profile,sequence:number):Envelope {
+    // This display counter must remain readable even after importing its maximum valid value.
+    return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:Math.min(sequence,Number.MAX_SAFE_INTEGER),profile:clone(profile)};
+  }
   get envelope():Envelope|null{return this.record?clone(this.record):null;}
-  get state():World|null{return this.record?.current?clone(this.record.current):null;}
-  /** 6.5: the base profile (null for records that have none yet), and whether the player is at the base screen (a record with no current run). */
-  get profile():Profile|null{return this.record?.profile?clone(this.record.profile):null;}
-  get atBase():boolean{return !!this.record&&this.record.current===null;}
-  /** Export the complete, validated current record. Unreadable bytes remain available only through exportRaw(). */
+  get state():World|null{return this.world?clone(this.world):null;}
+  get current():World|null{return this.state;}
+  /** During a run this is the in-memory run profile; wallet money is deducted here only. */
+  get profile():Profile|null{return this.world?this.activeProfile?clone(this.activeProfile):null:this.record?clone(this.record.profile):null;}
+  get runProfile():Profile|null{return this.activeKind==='expedition'&&this.activeProfile?clone(this.activeProfile):null;}
+  get atBase():boolean{return this.record!==null&&this.world===null;}
+  get settlementSummary():SettleSummary|null{return this.savedSettlement?clone(this.savedSettlement):null;}
+  /** During a run this exports the untouched camp record, never the memory-only World. */
   exportRecord():string|null {return this.status==='ready'&&this.record?JSON.stringify(this.record):null;}
-  private label():string|null {if(!this.record)return null;const c=this.record.current;return c?`${c.runId} · 第${c.round}轮 · ${c.phase} · 保存${this.record.sequence}`:`基地 · 待出发 · 保存${this.record.sequence}`;}
+  private label():string|null {return this.record?`基地 · 待出发 · 保存${this.record.sequence}`:null;}
   private async persist():Promise<boolean> {
-    this.status='saving';try{const text=JSON.stringify(this.record);await this.port.setItem(this.key,text);this.raw=text;this.status='ready';this.error='';this.lastSaved=this.label();return true;}
+    if(!this.record){this.status='failed';this.error='没有可保存的营地档案';return false;}
+    this.status='saving';
+    try{const text=JSON.stringify(this.record);await this.port.setItem(this.key,text);this.raw=text;this.status='ready';this.error='';this.lastSaved=this.label();return true;}
     catch(e){this.status='failed';this.error=String(e);return false;}
   }
-  /** `profile` is for developer scenarios that stand in for a base run (their units come from a profile); an ordinary start has none. */
+  /** Developer scenarios are memory-only; `profile` supplies their optional sample camp state. */
   async start(s:World,profile?:Profile):Promise<boolean> {
     if(this.status!=='empty')return false;
-    this.record={format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:clone(s),recent:null,...(profile?{profile:clone(profile)}:{})};return this.persist();
+    this.world=clone(s);this.activeProfile=profile?clone(profile):null;this.activeKind='developer';this.savedSettlement=null;this.status='ready';this.error='';return true;
   }
   async dispatch(cmd:Command):Promise<Result> {
-    const s=this.record?.current;if(!s)throw Error('没有已加载试验');
+    const s=this.world;if(!s)throw Error('没有已加载试验');
     if(this.status!=='ready')return {ok:false,state:clone(s),error:'保存未完成；仅可查看或重试'};
     const result=applyCommand(s,cmd);if(!result.ok)return result;
-    this.record!.current=result.state;this.record!.sequence++;await this.persist();return {ok:true,state:this.state!};
+    this.world=result.state;
+    if((this.activeKind==='expedition'||(this.activeKind==='developer'&&this.activeProfile!==null&&s.scenario==='expedition'))&&result.state.phase==='ended'&&s.phase!=='ended'){
+      const before=this.activeProfile;
+      const summary=settleSummary(before,result.state);
+      const settled=settleRun(before,result.state);
+      if(!before||!summary||!settled){this.status='failed';this.error='远征结果无法结算；当前结果已保留在画面中';return {ok:false,state:clone(result.state),error:this.error};}
+      this.savedSettlement=summary;
+      if(this.activeKind==='expedition'){
+        this.record=this.camp(settled,(this.record?.sequence??0)+1);
+        await this.persist();
+      }else this.activeProfile=settled;
+    }
+    return {ok:true,state:clone(this.world)};
   }
-  async retry():Promise<boolean> {return this.status==='failed'?this.persist():false;}
+  async retry():Promise<boolean> {return this.status==='failed'&&this.record!==null?this.persist():false;}
+  /** Developer-only restart; no storage is read or written. */
   async newTrial(s:World):Promise<boolean> {
-    const cur=this.record?.current;
-    if(this.status!=='ready'||!cur||cur.phase!=='ended'||s.runId===cur.runId||s.phase!=='playing'||s.round!==0)return false;
-    if(this.record!.profile&&cur.scenario==='expedition')return false; // with a base, a finished expedition goes back to the base first
-    this.record={...this.record!,sequence:this.record!.sequence+1,recent:clone(cur),current:clone(s)};return this.persist();
+    const cur=this.world;
+    if(this.status!=='ready'||this.activeKind!=='developer'||!cur||cur.phase!=='ended'||s.runId===cur.runId||s.phase!=='playing'||s.round!==0)return false;
+    this.world=clone(s);this.savedSettlement=null;return true;
   }
-  /** 6.5 settlement: one write moves the finished expedition into `recent`, clears `current` and updates the profile. */
+  /** The result was saved when the expedition ended; returning only leaves the result screen. */
   async returnToBase():Promise<boolean> {
-    const cur=this.record?.current;if(this.status!=='ready'||!cur)return false;
-    const profile=settleRun(this.record!.profile??null,cur);if(!profile)return false;
-    this.record={...this.record!,sequence:this.record!.sequence+1,recent:clone(cur),current:null,profile};return this.persist();
+    if(this.status!=='ready'||this.activeKind!=='expedition'||this.world?.phase!=='ended')return false;
+    this.world=null;
+    this.activeProfile=null;this.activeKind=null;this.savedSettlement=null;
+    return true;
   }
-  /** 6.5 base edits (learn / carry / team). Each one is one write; the next edit is accepted only after it succeeded. */
+  /** Camp edits each produce one v2 envelope write. */
   async baseAction(a:BaseAction):Promise<{ok:true;saved:boolean}|{ok:false;error:string}> {
-    if(!this.record||this.record.current!==null||!this.record.profile)return {ok:false,error:'现在不在基地'};
+    if(!this.atBase||!this.record)return {ok:false,error:'现在不在基地'};
     if(this.status!=='ready')return {ok:false,error:'保存未完成；仅可查看或重试'};
     const r=applyBase(this.record.profile,a);if(!r.ok)return r;
-    this.record={...this.record,sequence:this.record.sequence+1,profile:r.profile};
-    // ok: the edit is valid and is now the in-memory result; saved: whether that result reached storage (else retry).
+    this.record=this.camp(r.profile,this.record.sequence+1);
     return {ok:true,saved:await this.persist()};
   }
-  /** 6.5 departure: a new seeded expedition from the saved squad, full HP and PP, run level 1. One write. */
+  /** Departure only creates memory state. The stored profile and wallet remain at their pre-departure values. */
   async depart(runId:string,seed:number,purse=0):Promise<boolean> {
-    if(this.status!=='ready'||!this.record||this.record.current!==null||!this.record.profile)return false;
+    if(this.status!=='ready'||!this.atBase||!this.record)return false;
     if(purseProblem(this.record.profile,purse)!==null)return false;
-    // One write: the purse leaves the account and goes into the new run.
     const profile=clone(this.record.profile);profile.account-=purse;
-    this.record={...this.record,sequence:this.record.sequence+1,profile,current:createExpedition(runId,seed,3,squadOf(profile),purse,undefined,3)};return this.persist();
+    try{this.world=createExpedition(runId,seed,3,squadOf(profile),purse,undefined,3);}
+    catch{this.world=null;return false;}
+    this.activeProfile=profile;this.activeKind='expedition';this.savedSettlement=null;return true;
   }
-  /**
-   * Stage 7.1: writes a brand-new record that holds only a base profile (the player is at the base, no run). An empty store needs no consent;
-   * a store that holds a record needs `confirmed` (the UI asks first), and a record that could not be read also needs its original bytes exported.
-   * Nothing is changed when this returns false.
-   */
+  /** Create and save a new camp profile; failed writes restore the whole prior controller state. */
   async beginNewGame(profile:Profile,confirmed:boolean):Promise<boolean> {
-    if(profileProblem(profile)!==null)return false;
-    const overwrite=this.status==='ready'||this.status==='blocked';
-    if(this.status!=='empty'&&!overwrite)return false;
+    if(!strictProfileShape(profile))return false;
+    const overwrite=this.record!==null||this.status==='blocked';
+    if(this.status!=='empty'&&this.status!=='ready'&&this.status!=='blocked')return false;
     if(overwrite&&!confirmed)return false;
     if(this.status==='blocked'&&(this.raw===null||!this.exported))return false;
-    const previous={record:this.record,raw:this.raw,status:this.status,error:this.error,lastSaved:this.lastSaved};
-    this.record={format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:null,recent:null,profile:clone(profile)};
+    const previous=this.snapshot();
+    this.record=this.camp(profile,1);this.world=null;this.activeProfile=null;this.activeKind=null;this.savedSettlement=null;
     if(await this.persist())return true;
-    // A failed write must leave the old record in memory and on disk exactly as it was.
-    const failure=this.error;this.record=previous.record;this.raw=previous.raw;this.lastSaved=previous.lastSaved;this.status=previous.status;this.error=failure||previous.error;return false;
+    const failure=this.error;this.restore(previous);this.error=failure||previous.error;return false;
   }
   exportRaw():string|null {this.exported=true;return this.raw;}
-  /**
-   * Replace the complete save with an imported record. Existing readable or blocked records need confirmation;
-   * blocked bytes must first be exported. decode applies the same validation and legacy-field migration as loading.
-   */
+  /** Import only camp data. Legacy imports migrate old ended runs before the single import write. */
   async importRecord(raw:string,confirmed:boolean):Promise<boolean> {
     this.importError='';
-    if(this.status==='saving'||this.status==='failed'){
-      this.importError='保存尚未完成；请先完成或重试保存';return false;
-    }
-    const overwrite=this.status==='ready'||this.status==='blocked';
+    if(this.status==='saving'||this.status==='failed'){this.importError='保存尚未完成；请先完成或重试保存';return false;}
+    const overwrite=this.status==='ready'&&(this.record!==null||this.world!==null)||this.status==='blocked';
     if(overwrite&&!confirmed){this.importError='导入未确认；原记录已保留';return false;}
-    if(this.status==='blocked'&&(this.raw===null||!this.exported)){
-      this.importError='请先导出原始记录，再确认导入覆盖';return false;
-    }
+    if(this.status==='blocked'&&(this.raw===null||!this.exported)){this.importError='请先导出原始记录，再确认导入覆盖';return false;}
     let incoming:Envelope;
-    try{incoming=decode(raw);}
-    catch(e){
+    try{
+      const parsed=parseJson(raw);
+      incoming=object(parsed)&&parsed.format===2?decode(raw):campFromLegacy(raw);
+    }catch(e){
       const message=e instanceof Error?e.message:String(e);
-      this.importError=/[\u3400-\u9fff]/.test(message)?message:'导入文件不是有效的存档记录；原记录已保留';
-      return false;
+      this.importError=/[\u3400-\u9fff]/.test(message)?message:'导入文件不是有效的存档记录；原记录已保留';return false;
     }
-    const previous={record:this.record,raw:this.raw,status:this.status,error:this.error,lastSaved:this.lastSaved,exported:this.exported};
-    this.record=incoming;
+    const previous=this.snapshot();
+    this.record=incoming;this.world=null;this.activeProfile=null;this.activeKind=null;this.savedSettlement=null;
     if(await this.persist()){this.exported=false;this.importError='';return true;}
-    this.record=previous.record;this.raw=previous.raw;this.status=previous.status;this.lastSaved=previous.lastSaved;this.exported=previous.exported;
-    this.error=previous.error;this.importError='导入保存失败；原记录已保留';return false;
+    const failure=this.error;this.restore(previous);this.error=previous.error;this.importError='导入保存失败；原记录已保留';if(!failure)this.importError='导入保存失败；原记录已保留';return false;
   }
+  /** Developer-only recovery scenario after exporting blocked bytes; it leaves storage untouched. */
   async resetAfterExport(s:World,confirmed:boolean):Promise<boolean> {
     if(this.status!=='blocked'||this.raw===null||!this.exported||!confirmed)return false;
-    this.record={format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:clone(s),recent:null};return this.persist();
+    this.record=null;this.world=clone(s);this.activeProfile=null;this.activeKind='developer';this.savedSettlement=null;
+    this.status='ready';this.error='';this.lastSaved=null;return true;
   }
+  private snapshot(){return {record:this.record?clone(this.record):null,raw:this.raw,status:this.status,error:this.error,lastSaved:this.lastSaved,exported:this.exported,world:this.world?clone(this.world):null,activeProfile:this.activeProfile?clone(this.activeProfile):null,activeKind:this.activeKind,savedSettlement:this.savedSettlement?clone(this.savedSettlement):null};}
+  private restore(s:ReturnType<TrialStore['snapshot']>):void {this.record=s.record;this.raw=s.raw;this.status=s.status;this.error=s.error;this.lastSaved=s.lastSaved;this.exported=s.exported;this.world=s.world;this.activeProfile=s.activeProfile;this.activeKind=s.activeKind;this.savedSettlement=s.savedSettlement;}
 }

@@ -6,7 +6,7 @@ import {speciesZh,moveZh,tmZh,typeZh,itemZh} from './core/names.ts';
 import {moveOf} from './core/moves.ts';
 import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,moveSummary} from './core/describe.ts';
 import {renderTitle,renderNewGame,portraitTick,type NewGameState} from './ui/title.ts';
-import {learnTm,newGameProfile,settleSummary,purseProblem,MAX_TEAM,type BaseAction} from './core/base.ts';
+import {learnTm,newGameProfile,purseProblem,MAX_TEAM,type BaseAction} from './core/base.ts';
 import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from './core/save.ts';
 import {createScenario,scenarioProfile,SCENARIOS,SCENARIO_LABEL,type ScenarioId} from './core/scenarios.ts';
 import {THEME_FLOORS,themeOfLevel,farthestRoom,ARENA_TILE} from './core/dungeon.ts';
@@ -26,7 +26,7 @@ const params=new URLSearchParams(location.search);
 /** Developer mode (stage 7.1): `?dev=1` or `?fixture=`. Only here do the fixed map, the no-invitation control, fixtures, `?seed=` and coordinates exist; the title screen is skipped. */
 const dev=params.get('dev')==='1'||(params.get('fixture')!==null&&(SCENARIOS as readonly string[]).includes(params.get('fixture')!));
 const app=document.querySelector<HTMLDivElement>('#app')!;
-app.innerHTML=`<header><div class="brand">同行<span>FIELD TRIAL / 01</span></div><div class="build">${BUILD_ID} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'完成G的记录即可结束。也可以探看后段，再决定是否带回T的成果。':'探索迷宫、击败敌人、招募伙伴；在合适的时候回到出口撤离，把成果带回基地。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未开始</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标／出口</span><span>T 成果／出口</span><span>下／上 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section>${dev?`<details><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button></details>`:''}<footer>规则源 ${SPEC_SOURCE.slice(0,7)}<br>几何占位 · 无账号 · 同一网页来源本地保存</footer></aside></main><div id="title-screen" class="screen" hidden></div><dialog id="settings" aria-labelledby="settings-heading"><h2 id="settings-heading">设置与存档</h2><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label><p>进度只保存在此浏览器、此网页来源。换设备或网址前，请导出文件保留进度。</p><button id="save-export">导出存档文件</button><button id="save-import">导入存档文件</button><input id="save-file" type="file" accept=".json,application/json" hidden><p id="transfer-message" role="status" aria-live="polite"></p><details><summary>操作说明与试验边界</summary><p>方向键移动；点相邻敌人普攻；句点等待。普通动作合法即推进完整一轮。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑主控动作并提交。切主控不改变队列。倒下退图但仍占名额。</p><p>出口使用也占一轮，敌人仍会行动。关闭不是撤离；恢复最后成功保存点。</p><p>远征模式为随机三层迷宫（第3层的最远房间有区域首领，入口附近有一个普通出口，可以不挑战首领就撤离）：走到楼梯格后点击楼梯按钮请求跨层，可返回旧层。远征含本局等级、基地培养、失败回归与稀有服务点（商店、交换机）；所有数值均为人工参数。</p></details><button id="settings-close">关闭设置</button></dialog>`;
+app.innerHTML=`<header><div class="brand">同行<span>FIELD TRIAL / 01</span></div><div class="build">${BUILD_ID} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'完成G的记录即可结束。也可以探看后段，再决定是否带回T的成果。':'探索迷宫、击败敌人、招募伙伴；在合适的时候回到出口撤离，把成果带回基地。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未开始</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标／出口</span><span>T 成果／出口</span><span>下／上 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section>${dev?`<details><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button></details>`:''}<footer>规则源 ${SPEC_SOURCE.slice(0,7)}<br>几何占位 · 无账号 · 同一网页来源本地保存</footer></aside></main><div id="title-screen" class="screen" hidden></div><dialog id="settings" aria-labelledby="settings-heading"><h2 id="settings-heading">设置与存档</h2><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label><p>营地档案保存在此浏览器、此网页来源。远征途中只有内存状态；离开前请正常撤离或完成本局。</p><button id="save-export">导出存档文件</button><button id="save-import">导入存档文件</button><input id="save-file" type="file" accept=".json,application/json" hidden><p id="transfer-message" role="status" aria-live="polite"></p><details><summary>操作说明与试验边界</summary><p>方向键移动；点相邻敌人普攻；句点等待。普通动作合法即推进完整一轮。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑主控动作并提交。切主控不改变队列。倒下退图但仍占名额。</p><p>出口使用也占一轮，敌人仍会行动。撤离或全灭时会自动结算并保存；在此之前关闭或刷新会回到出发前的基地存档。</p><p>远征模式为随机三层迷宫（第3层的最远房间有区域首领，入口附近有一个普通出口，可以不挑战首领就撤离）：走到楼梯格后点击楼梯按钮请求跨层，可返回旧层。远征含本局等级、基地培养、失败回归与稀有服务点（商店、交换机）；所有数值均为人工参数。</p></details><button id="settings-close">关闭设置</button></dialog>`;
 const fixture=params.get('fixture') as ScenarioId|null;
 const checkMode=fixture!==null&&SCENARIOS.includes(fixture);
 /** `?seed=<integer>` fixes the expedition seed (browser checks); otherwise every expedition draws a fresh one. */
@@ -42,7 +42,7 @@ let selectedConfig='main-invite';
 let draft:{partner:string;action:Action|null;main:Action|null;editor:string;swap:boolean}|null=null;
 let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
-let inviteChoice:string|undefined,inviteReject=false,notice='',recentVisible=false,detailsId:string|null=null;
+let inviteChoice:string|undefined,inviteReject=false,notice='',detailsId:string|null=null;
 let tmPick:string|null=null;
 /** 7.2: the purse chosen at the base, and the exchanger choices (companion to send, indexes of the machines to carry) before they are confirmed. */
 let purseDraft=0,exTarget:string|null=null,exCargo:number[]=[];
@@ -122,30 +122,32 @@ function actionLabel(a:Action|null,actor?:string){if(!a)return '尚未选择';if
 function render(){renderOverlay();renderMain();renderExtras();refreshTransfer();if(screen==='play')void ensureBoard();}
 function renderMain(){const s=live();$('legend-items').hidden=!s?.prog;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 轮 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'单层探索试验');$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:s?`目标 ${s.goal?'已完成':'未完成'} · 背包 ${s.bag}${s.prog?` · 本局Lv${s.prog.level} 经验${s.prog.exp}/${nextExp(s)} · 橙橙果×${s.prog.items.berry} PP补剂×${s.prog.items.tonic}${s.dungeon?.base?` · 钱袋 ${s.purse??0}`:''}`:''}`:'';
  $('message').textContent=notice;
- const saveText={empty:'尚无可恢复记录',ready:'已保存',saving:'正在保存，请稍候再关闭',failed:'最新结果未保存；关闭可能丢失本次变化',blocked:'记录无法载入，原字节已保留'}[store.status];
- $('save').innerHTML=`<div class="save-state ${store.status}">${saveText}</div><small>${esc(store.lastSaved?.replace(/^[^·]+ · /,'').replace('playing','完整轮末').replace('invitation','待邀请').replace('ended','终局').replace('exit','待撤离').replace('transit','待跨层')??'尚无成功保存点')}</small>${store.error?`<p class="error">${esc(store.error)}</p>`:''}${store.status==='failed'?button('retry','重试保存'):''}${store.status==='blocked'?button('export','导出原记录')+button('reset','导出后明确重置'):''}`;
+ const expeditionMemory=s?.scenario==='expedition'&&s.phase!=='ended';
+ const saveText=store.status==='failed'&&s?.phase==='ended'?'终局已结算，但未保存；重试成功后才能回营地':store.status==='failed'?'基地改动未保存；可以重试':store.status==='ready'&&expeditionMemory?(store.envelope?'基地档案已保存；本次远征仅在内存中':'开发者远征只在内存中；未创建营地档案'):store.status==='ready'&&s?.phase==='ended'?(store.envelope?'终局结算已保存':'开发者场景只在内存中'): {empty:'尚无可恢复记录',ready:'基地档案已保存',saving:'正在保存基地档案',failed:'基地改动未保存；可以重试',blocked:'记录无法载入，原字节已保留'}[store.status];
+ $('save').innerHTML=`<div class="save-state ${store.status}">${saveText}</div><small>${esc(store.lastSaved?.replace(/^[^·]+ · /,'').replace('playing','营地状态').replace('invitation','待邀请').replace('ended','终局结算').replace('exit','待撤离').replace('transit','待跨层')??(expeditionMemory?(store.envelope?'营地存档保持出发前内容':'没有持久营地存档'):'尚无成功保存点'))}</small>${store.error?`<p class="error">${esc(store.error)}</p>`:''}${store.status==='failed'?button('retry','重试保存'):''}${store.status==='blocked'?button('export','导出原记录')+button('reset','导出后明确重置'):''}`;
  bind('retry',()=>void transition(store.retry()));
  bind('export',()=>{const raw=store.exportRaw();if(raw===null){notice='无法读取原记录，不能重置；请保留当前浏览器数据。';render();return;}download(raw);notice='已提供原记录下载；请确认文件已保留，再选择重置。';render();});
  bind('reset',()=>{if(window.confirm('仅在已保留导出原记录后重置。该操作将开始独立试验，是否确认？'))void transition(store.resetAfterExport(createMain(newId()),true));});
  $('history').innerHTML=s?visibleLog(s).slice(-12).map(t=>`<li>${esc(localizeLog(s,t))}</li>`).join(''):'';
  if(!s&&store.atBase){renderBase();return;}
- if(!s){$('party').innerHTML='<p class="muted">开始后显示三个实例与独立资源。</p>';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>还没有存档。请返回标题开始新游戏。</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>进度保存在此浏览器、此网页来源。首次探索无需照路线答案操作。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（随机 2 层，旧式无基地）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(checkMode?store.start(createScenario(fixture!,newId()),scenarioProfile(fixture!)):store.start(begin(selectedConfig)));});return;}
+ if(!s){$('party').innerHTML='<p class="muted">开始后显示三个实例与独立资源。</p>';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>还没有存档。请返回标题开始新游戏。</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>开发者场景只在本次页面内存中运行，不会写入玩家营地存档。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（随机 2 层，旧式无基地）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(checkMode?store.start(createScenario(fixture!,newId()),scenarioProfile(fixture!)):store.start(begin(selectedConfig)));});return;}
  const ready=store.status==='ready',playing=s.phase==='playing',editable=ready||store.status==='saving';
  $('party').innerHTML=s.queue.map((id,i)=>{const u=s.units[id];const down=u.hp===0;return `<article class="unit ${id===s.leader?'leader':''}"><div><strong>${esc(id)}</strong><span>${down?'倒下 · 仍占名额':id===s.leader?'主控':'同行'}${u.protected?' · 初始成员':''} · ${u.hp}/${u.maxHp}${u.species?` · ${esc(specName(u))}${s.prog?` Lv${s.prog.level}`:''}`:''}</span></div><div class="hp"><i style="width:${u.hp/u.maxHp*100}%"></i></div><p class="muted" data-unit-status="${esc(id)}" ${combatStatus(u)?'':'hidden'}>${esc(combatStatus(u))}</p><p>${u.learned.map(k=>`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普攻，不耗PP'}</p>${button('leader-'+i,'设为主控',!ready||!playing||down||s.leader===id)}${button('detail-'+i,'详情')}</article>`;}).join('')+(s.camp.length?`<p class="muted">此前已回营：${s.camp.map(id=>esc(resources(s,id))).join('；')}（本局不可调回）</p>`:'');
  s.queue.forEach((id,i)=>{bind('leader-'+i,()=>{void send({type:'switch',actor:id});});bind('detail-'+i,()=>{detailsId=detailsId===id?null:id;render();});});
  if(detailsId&&s.units[detailsId]){$('party').insertAdjacentHTML('beforeend',`<p class="detail">${esc(detailsId)} 已学：${s.units[detailsId].learned.map(k=>`${esc(skillLabel(s.units[detailsId!],k))}（${esc(moveSummary(k))}）`).join('；')||'无特殊招式'}。普攻造成6点基础伤害；选中招式后可查看射程与效果。详情不改变草稿。</p>`);}
  if(s.phase==='ended'){
-  const end=s.end!;$('controls').innerHTML='';$('flow').innerHTML=`<div class="result"><small>本次试验结果</small><h2>${end.outcome==='normal'?'正常撤离':'全队倒下'}</h2><p>目标${end.goal?'已完成':'未完成'} · 已取得 ${end.acquired} · 正常带出 ${end.brought}${end.boss===undefined?'':` · 讨伐首领：${end.boss?'成功':'未挑战'}`}</p><p>${end.team.map(id=>`${esc(resources(s,id))}，${end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。资源与已学招式保留终局值，不治疗。</p>${resultDetails(s)}${s.scenario==='expedition'&&s.prog?button('to-base','回到基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}${store.envelope?.recent?button('recent','查看最近结束记录'):''}<p class="muted">重开使用新初态，不是原局复活。终局ID ${esc(end.id)}</p>${recentVisible?`<pre>${esc(JSON.stringify(store.envelope?.recent?.end,null,2))}</pre>`:''}</div>`;
+  const end=s.end!;$('controls').innerHTML='';const persistentRun=s.scenario==='expedition'&&!!store.envelope;
+  $('flow').innerHTML=`<div class="result"><small>本次试验结果</small><h2>${end.outcome==='normal'?'正常撤离':'全队倒下'}</h2><p>目标${end.goal?'已完成':'未完成'} · 已取得 ${end.acquired} · 正常带出 ${end.brought}${end.boss===undefined?'':` · 讨伐首领：${end.boss?'成功':'未挑战'}`}</p><p>${end.team.map(id=>`${esc(resources(s,id))}，${end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。资源与已学招式保留终局值，不治疗。</p>${resultDetails(s)}${persistentRun?button('to-base','回到基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}<p class="muted">${persistentRun?(ready?'终局已结算并自动保存。':'终局已结算，保存失败；重试成功前不能回营地。'):'这是内存开发场景；结算不会写入营地存档。'} 终局ID ${esc(end.id)}</p></div>`;
   bind('to-base',()=>{if(anim.active)return;clear();notice='';void transition(store.returnToBase());});
-  bind('new',()=>{const next=checkMode?createScenario(fixture!,newId()):begin(s.scenario==='main-invite'||s.scenario==='expedition'?s.scenario:'main-none');void transition(store.newTrial(next));});bind('recent',()=>{recentVisible=!recentVisible;render();});return;
+  bind('new',()=>{const next=checkMode?createScenario(fixture!,newId()):begin(s.scenario==='main-invite'||s.scenario==='expedition'?s.scenario:'main-none');void transition(store.newTrial(next));});return;
  }
  if(s.phase==='invitation'){
   $('controls').innerHTML='';const pending=s.invitations.find(i=>i.status==='pending')!;const preview=previewInvitation(s,inviteChoice);const old=inviteChoice?s.units[inviteChoice]:null;
   $('flow').innerHTML=`<h2>${esc(pending.unit.id)}想加入</h2><p>邀请处理暂停世界；新人下一轮才行动。${s.request?.locked?'本轮撤离请求已成立，先处理这份邀请。':''}</p><div class="compare"><div><strong>新人 ${esc(pending.unit.id)}${pending.unit.species?` · ${esc(specName(pending.unit))}${s.prog?` Lv${s.prog.level}`:''}`:''}</strong><p>${pending.unit.hp}/${pending.unit.maxHp}HP</p><p>${pending.unit.learned.map(k=>`${skillLabel(pending.unit,k)} ${pending.unit.pp[k]}/${pending.unit.maxPp[k]}`).join(' · ')}</p></div><div><strong>回营 ${esc(inviteChoice??'尚未选择')}</strong><p>${old?`${old.hp}/${old.maxHp}HP`:'满员需要选一名同行者'}</p><p>${old?old.learned.map(k=>`${skillLabel(old,k)} ${old.pp[k]}/${old.maxPp[k]}`).join(' · '):''}</p></div></div><div class="button-row">${s.queue.map((id,i)=>button('out-'+i,`${id}回营`,!ready,inviteChoice===id?'class="selected"':'')).join('')}${s.queue.length<3?button('out-none','补空位',!ready):''}</div><p>${preview.ok?`入场 (${preview.pos.x},${preview.pos.y}) · 队列 ${preview.queue.join(' → ')} · 主控 ${preview.leader}`:esc(preview.error)}</p><p class="muted">旧人保留培养，本局不可调回；共用背包不运输，其他人不恢复。</p>${inviteReject?`<p>将拒绝这份邀请，不会生成伙伴。</p>${button('reject-confirm','确认拒绝',!ready,'data-confirm="true"')}${button('back','返回比较')}`:button('accept','确认接受并回营',!ready||!preview.ok,'data-confirm="true" class="primary"')+button('reject','选择拒绝',!ready)}`;
   s.queue.forEach((id,i)=>bind('out-'+i,()=>{inviteChoice=id;inviteReject=false;render();}));bind('out-none',()=>{inviteChoice=undefined;render();});bind('accept',()=>void send({type:'invite',choice:'accept',outgoing:inviteChoice}));bind('reject',()=>{inviteReject=true;render();});bind('reject-confirm',()=>void send({type:'invite',choice:'reject'}));bind('back',()=>{inviteReject=false;render();});return;
  }
- if(s.phase==='exit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮撤离请求已成立；等待保存后完成一次终局。</p>';return;}
- if(s.phase==='transit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮跨层请求已成立；等待保存后完成一次转场。</p>';return;}
+ if(s.phase==='exit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮撤离请求已成立；正在完成终局处理。</p>';return;}
+ if(s.phase==='transit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮跨层请求已成立；正在切换楼层。</p>';return;}
  const leaderPoint=s.points.find(p=>same(p.pos,s.units[s.leader].pos)),onStairs=leaderPoint?.kind==='down'||leaderPoint?.kind==='up';
  $('flow').innerHTML=confirmExit?`<h2>${onStairs?'本轮请求跨层？':'本轮请求撤离？'}</h2><p>消耗主控行动，敌人仍会行动。使用者轮末存活且仍在交互格才成立。</p>${button('exit-confirm',onStairs?'确认本轮跨层':'确认本轮撤离',!ready,'data-confirm="true" class="primary"')}${button('cancel-exit','继续查看')}`:'';
  bind('exit-confirm',()=>void send({type:'round',action:{type:'interact',exit:true}}));bind('cancel-exit',()=>{confirmExit=false;render();});
@@ -175,7 +177,6 @@ function renderBase(){
   <div>${button(`team-${i.id}`,pos>=0?'移出队伍':'加入队伍',!ready)}${button(`lead-${i.id}`,'设为主控',!ready||pos<0||i.id===p.leader)}</div></article>`;}).join('');
  const vault=ALL_TM_MOVES.map(m=>button(`tm-${m}`,`${esc(tmName(m))}招式机 ×${p.vault[m]??0}`,!ready||(p.vault[m]??0)<1,tmPick===m?'class="selected"':'')).join('');
  const learnRows=tmPick?`<p>把${esc(tmName(tmPick))}招式机教给：</p>${p.roster.map(i=>{const r=learnTm(p,i.id,tmPick!);return button(`learn-${i.id}`,`${esc(i.id)} ${esc(spName(i.species))}：${r.ok?'可学习':esc(r.error.split('；')[0])}`,!ready);}).join('')}`:'';
- const recent=store.envelope?.recent;
  purseDraft=Math.min(purseDraft,Math.floor(Math.min(ECON.purseMax,p.account)/ECON.purseStep)*ECON.purseStep);
  const poolHtml=p.rescue.length?p.rescue.map(r=>{const warn=!r.paid&&r.left===1;
   return `<article class="unit rescue${warn?' warn':''}" id="rescue-${esc(r.inst.id)}"><div><strong>${esc(r.inst.id)}</strong><span>${esc(spName(r.inst.species))} · ${r.paid?`已付费 · 再经过 ${r.left} 次有效探险后回归`:`未付费 · 剩余期限 ${r.left} 次有效探险`}</span></div>${warn?'<p class="warn-text" style="color:#ffd27a;font-weight:700">下次有效探险后失去！请在出发前付费。</p>':''}<p>已学：${r.inst.learned.map(l=>esc(moveZh(l.move))).join('、')}</p>${r.paid?'':button(`rescue-pay-${r.inst.id}`,`付救援费 ${ECON.rescueCost}`,!ready)}</article>`;}).join(''):'<p class="muted" id="rescue-empty">救援池是空的。</p>';
@@ -187,9 +188,9 @@ function renderBase(){
   <h2>已失去的伙伴</h2>${lostHtml}
   <h2>仓库（招式机）</h2><div>${vault}</div>${learnRows}
   <h2>出发队伍</h2><p id="squad">${p.team.map((id,n)=>`${n+1}. ${esc(id)} ${esc(spName(p.roster.find(i=>i.id===id)!.species))}${id===p.leader?'（主控）':''}`).join(' → ')}（选择顺序即队列顺序，最多${MAX_TEAM}只）</p>
-  <p class="muted">出发是免费的基本整备：全员HP、PP全满；本局等级从1开始；新的随机地图。</p>
+  <p class="muted">出发是免费的基本整备：全员HP、PP全满；本局等级从1开始；新的随机地图。</p><p class="warn-text">远征途中只有内存状态。关闭或刷新页面会回到出发前的营地存档，本次远征作废。</p>
   <h2>出发前：钱袋</h2><p id="purse-picker">钱袋：<strong id="purse-value">${purseDraft}</strong>（0到${Math.min(ECON.purseMax,p.account)}，每档${ECON.purseStep}；出发时从账户扣除，只能在局内商店花；正常撤离退回，全灭丢失）</p>${button('purse-down','减少',!ready||purseDraft<=0)}${button('purse-up','增加',!ready||purseDraft+ECON.purseStep>Math.min(ECON.purseMax,p.account))}
-  ${button('depart','出发',!ready,'data-confirm="true" class="primary"')}${recent?.end?button('recent','查看最近结束记录'):''}${recentVisible?`<pre>${esc(JSON.stringify(recent?.end,null,2))}</pre>`:''}</div>`;
+  ${button('depart','出发',!ready,'data-confirm="true" class="primary"')}</div>`;
  $('controls').innerHTML='';
  const edit=async(a:BaseAction,after?:()=>void)=>{if(anim.active||store.status!=='ready')return;const pending=store.baseAction(a);render();const r=await pending;notice=r.ok?(r.saved?'':'这次改动尚未保存；请重试保存'):r.error;if(r.ok&&r.saved)after?.();render();};
  for(const i of p.roster){
@@ -202,7 +203,6 @@ function renderBase(){
  for(const r of p.rescue)bind(`rescue-pay-${r.inst.id}`,()=>void edit({type:'rescue',inst:r.inst.id}));
  bind('purse-down',()=>{purseDraft=Math.max(0,purseDraft-ECON.purseStep);render();});bind('purse-up',()=>{purseDraft+=ECON.purseStep;render();});
  for(const m of ALL_TM_MOVES)bind(`tm-${m}`,()=>{tmPick=tmPick===m?null:m;notice='';render();});
- bind('recent',()=>{recentVisible=!recentVisible;render();});
  bind('depart',()=>{if(anim.active||store.status!=='ready')return;const bad=purseProblem(p,purseDraft);if(bad){notice=bad;render();return;}clear();tmPick=null;notice='';const amount=purseDraft;purseDraft=0;const pending=store.depart(newId(),newSeed(),amount);render();void pending.then(()=>{render();});});
 }
 
@@ -212,13 +212,14 @@ function resultDetails(s:World):string{
  const end=s.end!;
  if(!s.prog||end.effective===undefined)return `<p>报酬／救援未启用。${end.outcome==='wipe'?'普通背包已取得但未带出，不进入跨局库存。':''}</p>`;
  const label=(id:string)=>esc(unitLabel(s.units[id],id));
- const sum=s.scenario==='expedition'?settleSummary(store.profile,s):null;
+ const sum=s.scenario==='expedition'?store.settlementSummary:null;
+ const savedSettlement=!!store.envelope&&store.status==='ready';
  const sp=(x:{id:string;species:string})=>`${esc(x.id)} ${esc(spName(x.species))}`;
- const pool=sum?`<ul id="pool-change">${sum.returned.length?`<li>回归名册：${sum.returned.map(sp).join('、')}</li>`:''}${sum.gone.length?`<li>永久失去（期限用完且未付费）：${sum.gone.map(sp).join('、')}</li>`:''}${sum.missing.length?`<li>本局走失、进入救援池（期限 ${ECON.window} 次有效探险，从下一局起计）：${sum.missing.map(sp).join('、')}</li>`:''}${sum.advanced.map(a=>`<li>${sp(a)}：${a.paid?'等待':'期限'} ${a.from} → ${a.to}</li>`).join('')}${!sum.returned.length&&!sum.gone.length&&!sum.missing.length&&!sum.advanced.length?'<li>救援池没有变化。</li>':''}</ul><p>账户：${sum.account.before} → ${sum.account.after}（回到基地时入账）</p>`:'';
+ const pool=sum?`<ul id="pool-change">${sum.returned.length?`<li>回归名册：${sum.returned.map(sp).join('、')}</li>`:''}${sum.gone.length?`<li>永久失去（期限用完且未付费）：${sum.gone.map(sp).join('、')}</li>`:''}${sum.missing.length?`<li>本局走失、进入救援池（期限 ${ECON.window} 次有效探险，从下一局起计）：${sum.missing.map(sp).join('、')}</li>`:''}${sum.advanced.map(a=>`<li>${sp(a)}：${a.paid?'等待':'期限'} ${a.from} → ${a.to}</li>`).join('')}${!sum.returned.length&&!sum.gone.length&&!sum.missing.length&&!sum.advanced.length?'<li>救援池没有变化。</li>':''}</ul><p>账户：${sum.account.before} → ${sum.account.after}（${savedSettlement?'终局已入账':store.envelope?'保存成功后入账':'仅本次内存场景结算'}）</p>`:'';
  return `<div id="settle"><h2>结算</h2>
  <p id="eff-line">本局${end.effective?'算':'不算'}有效探险${end.reasons!.length?`：${end.reasons!.map(r=>REASON[r]).join('；')}`:'：没有完成基础目标，也没有保留新成果'}。${end.effective?'出发前就在救援池里的伙伴，等待次数各减1。':'救援池的等待次数不变。'}</p>
  <p id="reward-line">基础报酬：${end.reward}${end.reward?'（完成了 G，全灭也照付）':'（没有完成 G，不发）'}。钱袋余额 ${end.purse}：${end.outcome==='normal'?`退回账户 ${end.refund}`:'全灭，丢失'}。</p>
- <p id="lost-line">走失的伙伴：${end.lost!.length?end.lost!.map(label).join('、'):'无'}${end.outcome==='wipe'?'（初始成员不会走失；其余伙伴各以一半概率走失，结果已随终局保存，读档不变）':''}。</p>
+ <p id="lost-line">走失的伙伴：${end.lost!.length?end.lost!.map(label).join('、'):'无'}${end.outcome==='wipe'?`（初始成员不会走失；其余伙伴各以一半概率走失，${savedSettlement?'结果已随终局保存，之后打开仍保留':store.envelope?'保存成功后会保留':'结果只保存在开发场景内存中'}）`:''}。</p>
  <ul id="tm-list">${end.tms!.length?end.tms!.map(t=>`<li>${esc(tmLine(t))}</li>`).join(''):'<li>本局没有取得招式机。</li>'}</ul>
  <h2>救援池的变化</h2>${pool||'<p class="muted">没有基地档案，无救援池。</p>'}</div>`;
 }
@@ -229,7 +230,7 @@ function servicePanel(s:World,point:Point|undefined,ready:boolean):string{
   const sh=s.shop,purse=s.purse??0;
   const row=(item:ShopItem,label:string,left:number)=>{const price=ECON.price[item];const short=purse<price;
    return `<li>${esc(label)} · 价格 ${price} · 库存 ${left}${button('buy-'+item,left<1?'售罄':'购买',!ready||left<1||short)}${left>0&&short?`<small>钱袋不足，还差${price-purse}</small>`:''}</li>`;};
-  return `<div class="service" id="shop-panel"><h2>商店 <small>只能用钱袋付款；买东西不占回合；库存固定，读档不会刷新；首版不收购</small></h2><p id="purse-line">钱袋余额：${purse}</p><ul>${row('berry',ITEM_NAMES.berry,sh.stock.berry)}${row('tonic',ITEM_NAMES.tonic,sh.stock.tonic)}${row('tm',sh.stock.tm?`招式机：${tmName(sh.stock.tm)}`:'招式机',sh.stock.tm?1:0)}</ul></div>`;
+  return `<div class="service" id="shop-panel"><h2>商店 <small>只能用钱袋付款；买东西不占回合；本次远征期间库存固定；关闭或刷新会回到出发前；首版不收购</small></h2><p id="purse-line">钱袋余额：${purse}</p><ul>${row('berry',ITEM_NAMES.berry,sh.stock.berry)}${row('tonic',ITEM_NAMES.tonic,sh.stock.tonic)}${row('tm',sh.stock.tm?`招式机：${tmName(sh.stock.tm)}`:'招式机',sh.stock.tm?1:0)}</ul></div>`;
  }
  if(point.kind==='exchange'&&s.exchange){
   const ex=s.exchange;
@@ -258,7 +259,7 @@ async function buyItem(item:ShopItem){
 }
 
 /* ---------- stage 7.1: title, new game, readability panels ---------- */
-function saveSummary():string{const e=store.envelope;if(!e)return '';return e.current?`远征进行中 · 第${e.current.round}轮`:`基地 · 已完成远征${e.profile?.expeditions??0}次`;}
+function saveSummary():string{const e=store.envelope;if(!e)return '';return `基地 · 已完成远征${e.profile?.expeditions??0}次`;}
 function renderOverlay(){
  const el=$('title-screen');
  if(screen==='play'){el.hidden=true;return;}
@@ -290,7 +291,7 @@ async function startNewGame(){
  const made=newGameProfile(ng.main,ng.deputy);if(!made.ok){ngError=made.error;render();return;}
  const ok=await store.beginNewGame(made.profile,ng.overwrite);
  if(!ok){ngError=store.error?`没有写入新存档：${store.error}。原存档保持不变。`:'没有写入新存档；原存档保持不变。';render();return;}
- clear();notice='';tmPick=null;recentVisible=false;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
+ clear();notice='';tmPick=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
 }
 /** Log lines the player may see: lines about an enemy on an unrevealed cell are dropped. */
 function visibleLog(s:World):string[]{
@@ -419,7 +420,7 @@ function refreshTransfer(){
 }
 function openSettings(){
  if(anim.active)return;
- $('transfer-message').textContent=store.status==='blocked'?`${store.error}。请先导出原记录保留备份，再导入其他存档。`:store.status==='failed'?'最新结果尚未保存，请先关闭设置并重试保存。':'';
+ $('transfer-message').textContent=store.status==='blocked'?`${store.error}。请先导出原记录保留备份，再导入其他存档。`:store.status==='failed'?'当前改动尚未保存，请先重试保存。':'';
  refreshTransfer();settings.showModal();
 }
 bind('open-settings',openSettings);
@@ -430,7 +431,7 @@ bind('save-export',()=>{
  if(raw===null){$('transfer-message').textContent='没有可导出的记录，请先完成保存。';return;}
  download(raw,store.status==='blocked'?'trial-save-original.json':'trial-save.json');
  if(store.status==='blocked')exportedOriginal=true;
- $('transfer-message').textContent='已提供下载，请确认存档文件已保留。';
+ $('transfer-message').textContent=store.state?.scenario==='expedition'&&store.state.phase!=='ended'?'已导出出发前的营地存档；本次远征只在内存中，不包含在文件内。':'已提供下载，请确认存档文件已保留。';
 });
 bind('save-import',()=>($('save-file') as HTMLInputElement).click());
 $('save-file').addEventListener('change',async()=>{
@@ -466,4 +467,4 @@ window.addEventListener('blur',()=>{anim.shift=false;selectedSkill=null;render()
  box.addEventListener('change',()=>{try{window.localStorage.setItem(PREF_KEY,box.checked?'on':'off');}catch{/* preference is optional */}if(!box.checked)scene?.skip();});}
 // Read-only state inspection and the same dispatch API for private browser acceptance.
 Object.assign(window,{trial:{store,profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),animationEnabled}});
-render();{const next=finishing();if(next)void transition(store.dispatch(next));}
+render();void store.whenReady.then(()=>{render();const next=finishing();if(next)void transition(store.dispatch(next));});

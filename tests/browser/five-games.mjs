@@ -21,6 +21,7 @@ page.on('response',r=>{if(r.status()>=400)errors.push(`${r.status()} ${r.url()}`
 const ready=()=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
 const state=()=>page.evaluate(()=>window.trial.getState());
 const envelope=()=>page.evaluate(()=>window.trial.store.envelope);
+const raw=()=>page.evaluate(()=>localStorage.getItem(window.trial.store.key));
 const click=async id=>{await page.locator('#'+id).click();await ready();};
 async function cell(pos){
  const camera=await page.evaluate(()=>window.trial.camera()),box=await page.locator('canvas').boundingBox();
@@ -66,6 +67,7 @@ async function command(c){
 }
 async function roundTrip(label){
  const before=await envelope();
+ assert.deepEqual(Object.keys(before).sort(),['build','content','format','profile','rules','sequence'],label+' contains only camp data');
  await click('open-settings');
  const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#save-export').click()]);
  const bytes=fs.readFileSync(await download.path(),'utf8');
@@ -76,6 +78,7 @@ async function roundTrip(label){
  assert.deepEqual(await envelope(),before,label+' import');
  await click('settings-close');await page.reload();await ready();
  assert.deepEqual(await envelope(),before,label+' reload');
+ assert.equal(await state(),null,label+' reload starts from camp');
 }
 try{
  await page.goto(base);await page.locator('#title-new').waitFor();
@@ -90,10 +93,10 @@ try{
   // The developer URL only fixes generation seed; it keeps the same freshly-created player save.
   const before=await envelope();await page.goto(base+'?dev=1&seed='+route.seed);await ready();
   assert.deepEqual(await envelope(),before,'selecting a seed must not replace the player save');
-  assert.equal(before.profile.expeditions,index);assert.equal(before.current,null);
+  assert.deepEqual(Object.keys(before).sort(),['build','content','format','profile','rules','sequence']);assert.equal(before.profile.expeditions,index);
   for(let n=0;n<route.purse/20;n++)await click('purse-up');
   assert.equal(Number(await page.locator('#purse-value').innerText()),route.purse);
-  assert.equal(await page.locator('#depart').isEnabled(),true);await click('depart');
+  assert.equal(await page.locator('#depart').isEnabled(),true);const campBytes=await raw();await click('depart');assert.equal(await raw(),campBytes,'departure retains the exact camp bytes');assert.deepEqual(await envelope(),before);
   let s=await state();assert.equal(s.dungeon.seed,route.seed);assert.ok(!runIds.has(s.runId));runIds.add(s.runId);
   if(learned){const u=Object.values(s.units).find(u=>u.inst===routes.training.inst);assert.ok(u.learned.includes(routes.training.move));carriedIntoRun=true;}
   for(const [commandIndex,c] of route.commands.entries()){
@@ -102,7 +105,7 @@ try{
   }
   s=await state();assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'normal');assert.equal(s.end.effective,true);
   await roundTrip(`game ${index+1} terminal`);
-  await click('to-base');assert.equal((await envelope()).profile.expeditions,index+1);
+  assert.equal(await state(),null);assert.equal((await envelope()).profile.expeditions,index+1);
   if(routes.training.afterGame===index+1){
    const t=routes.training,p=(await envelope()).profile;
    assert.ok(p.vault[t.move]>0);assert.ok(!p.roster.find(u=>u.id===t.inst).learned.some(k=>k.move===t.move));
@@ -111,7 +114,7 @@ try{
    assert.ok((await envelope()).profile.roster.find(u=>u.id===t.inst).carry.includes(t.move));learned=true;
   }
   await roundTrip(`game ${index+1} base`);
-  assert.equal((await envelope()).current,null);assert.equal(await page.locator('#depart').isEnabled(),true);
+  assert.equal(await state(),null);assert.equal(await page.locator('#depart').isEnabled(),true);
   report.games.push({game:index+1,seed:route.seed,runId:s.runId,rounds:s.round,outcome:s.end.outcome,effective:s.end.effective,terminalAndBaseRoundTrip:true,readyToDepart:true});
   console.log('PASS fresh-save game',index+1,JSON.stringify(report.games.at(-1)));
  }

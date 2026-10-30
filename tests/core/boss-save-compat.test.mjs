@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {BOSS} from '../../src/core/dungeon.ts';
-import {createExpedition,jumpToFloor,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
+import {createExpedition,jumpToFloor,closeOut} from '../../src/core/engine.ts';
 import {initialProfile,squadOf} from '../../src/core/base.ts';
-import {decode,TrialStore,BUILD_ID} from '../../src/core/save.ts';
+import {decodeLegacy,TrialStore,BUILD_ID} from '../../src/core/save.ts';
 import {legacySpeciesMove} from '../../src/core/legacy-moves.ts';
 
 const history={hp:80,damage:6,range:3};
@@ -15,7 +15,8 @@ function record(stats=history,stored=false){
   let world=jumpToFloor(createExpedition('boss-save-compat',4,3,squadOf(profile),0),3);
   Object.assign(world.units.boss,{maxHp:stats.hp,hp:stats.hp-7,damage:stats.damage,range:stats.range});
   if(stored)world=jumpToFloor(world,2);
-  return {format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:2,current:world,recent:null,profile};
+  world.phase='ended';world.request=null;world.anchor=null;world.end=closeOut(world,'normal');
+  return {format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:2,current:world,recent:null,profile};
 }
 function legacyRecord(stats=history,stored=false){
   const e=record(stats,stored);
@@ -48,31 +49,29 @@ async function tuned(fn){
   try{Object.assign(BOSS,future);await fn();}finally{Object.assign(BOSS,original);}
 }
 
-test('historical and current boss tuples load unchanged, on the active or a stored floor',async()=>{
+test('decodeLegacy validates historical and current boss tuples unchanged on the active or a stored floor',async()=>{
   await tuned(async()=>{
     for(const stats of [history,future])for(const stored of [false,true]){
-      const expected=record(stats,stored),raw=JSON.stringify(expected),storage=port(raw);
-      assert.deepEqual(decode(raw),expected);
-      const loaded=new TrialStore(storage);
-      assert.equal(loaded.status,'ready',loaded.error);
-      assert.deepEqual(loaded.envelope,expected);
-      assert.equal(storage.raw(),raw);
-      assert.equal(storage.writes(),0,'loading does not rewrite old boss numbers');
+      const expected=record(stats,stored),migrated=decodeLegacy(JSON.stringify(expected));
+      const boss=stored?migrated.current.dungeon.stored['3'].units.boss:migrated.current.units.boss;
+      assert.deepEqual([boss.maxHp,boss.damage,boss.range],[stats.hp,stats.damage,stats.range]);
     }
   });
 });
 
-test('historical boss survives import, a normal save and reload after tuning',async()=>{
+test('importing a valid old ended boss run settles camp data and drops the World',async()=>{
   await tuned(async()=>{
     const expected=record(),raw=JSON.stringify(expected),storage=port();
     const loaded=new TrialStore(storage);
     assert.equal(await loaded.importRecord(raw,true),true,loaded.importError);
-    assert.deepEqual(loaded.state,expected.current);
-    assert.equal((await loaded.dispatch({type:'round',action:{type:'wait'}})).ok,true);
+    assert.equal(loaded.state,null);
+    assert.equal(loaded.envelope.format,2);assert.equal(Object.hasOwn(loaded.envelope,'current'),false);
     const again=new TrialStore(storage);
     assert.equal(again.status,'ready',again.error);
     assert.deepEqual(again.envelope,loaded.envelope);
-    assert.deepEqual(again.state.units.boss,expected.current.units.boss);
+    assert.equal(again.state,null);
+    const old=decodeLegacy(raw),boss=old.current.units.boss;
+    assert.deepEqual([boss.maxHp,boss.damage,boss.range],[history.hp,history.damage,history.range]);
   });
 });
 
@@ -83,8 +82,9 @@ test('mixed generations and unknown boss numbers are refused without changing th
     invalid.push({...history,hp:81},{...history,damage:5},{...history,range:4});
     for(const stats of invalid)for(const stored of [false,true]){
       const raw=JSON.stringify(record(stats,stored)),storage=port(raw);
-      assert.throws(()=>decode(raw),/存档结构损坏/);
+      assert.throws(()=>decodeLegacy(raw),/存档结构损坏/);
       const loaded=new TrialStore(storage);
+      await loaded.whenReady;
       assert.equal(loaded.status,'blocked');
       assert.equal(loaded.exportRaw(),raw);
       assert.equal(storage.writes(),0);
@@ -96,7 +96,7 @@ test('historical tuple does not waive boss identity, health or recruitment const
   await tuned(async()=>{
     for(const mutate of [b=>{b.species='geodude';},b=>{b.side='friend';},b=>{b.ai='ranged';},b=>{b.hp=81;},b=>{b.recruit={};},b=>{b.inst='fake';}]){
       const candidate=record();mutate(candidate.current.units.boss);
-      assert.throws(()=>decode(JSON.stringify(candidate)),/存档结构损坏/);
+      assert.throws(()=>decodeLegacy(JSON.stringify(candidate)),/存档结构损坏/);
     }
   });
 });
@@ -106,27 +106,27 @@ test('Arcanine without the boss mark is not accepted as an ordinary enemy',()=>{
     const candidate=record(history,stored),world=candidate.current;
     const boss=stored?world.dungeon.stored['3'].units.boss:world.units.boss;
     delete boss.boss;
-    assert.throws(()=>decode(JSON.stringify(candidate)),/存档结构损坏/);
+    assert.throws(()=>decodeLegacy(JSON.stringify(candidate)),/存档结构损坏/);
   }
 });
 
-test('a valid v1 boss migrates on the active floor and in a stored floor',()=>{
+test('decodeLegacy migrates a valid v1 boss on the active floor and in a stored floor',()=>{
   for(const stored of [false,true]){
-    const old=legacyRecord(history,stored),migrated=decode(JSON.stringify(old));
+    const old=legacyRecord(history,stored),migrated=decodeLegacy(JSON.stringify(old));
     const boss=stored?migrated.current.dungeon.stored['3'].units.boss:migrated.current.units.boss;
     assert.equal(boss.species,'arcanine');
     assert.equal(boss.boss,true);
     assert.deepEqual(boss.learned,[]);
     assert.deepEqual(boss.stages,{atk:0,def:0});
     assert.equal(boss.protect,0);assert.equal(boss.counter,0);assert.equal(boss.lastMove,null);
-    assert.deepEqual(decode(JSON.stringify(migrated)),migrated);
+    assert.deepEqual(decodeLegacy(JSON.stringify(migrated)),migrated);
   }
 });
 
-test('unknown current boss numbers and a nonboolean boss mark stay invalid in v1 and v2 saves',()=>{
+test('unknown boss numbers and a nonboolean mark stay invalid in old ended records',()=>{
   const invalid=[];
   const oldNumber=legacyRecord();oldNumber.current.units.boss.maxHp=81;invalid.push(oldNumber);
   const oldStringMark=legacyRecord();oldStringMark.current.units.boss.boss='yes';invalid.push(oldStringMark);
   const currentStringMark=record();currentStringMark.current.units.boss.boss='yes';invalid.push(currentStringMark);
-  for(const candidate of invalid)assert.throws(()=>decode(JSON.stringify(candidate)),/无法迁移|存档结构损坏/);
+  for(const candidate of invalid)assert.throws(()=>decodeLegacy(JSON.stringify(candidate)),/无法迁移|存档结构损坏/);
 });

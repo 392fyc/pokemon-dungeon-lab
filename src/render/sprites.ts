@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import index from './characters.json';
 import {WILD_SPECIES} from '../core/dungeon.ts';
 import {SPECIES,BOSS_SPECIES} from '../core/roster.ts';

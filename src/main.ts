@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import {applyCommand,traceRound,previewInvitation,createMain,createExpedition,key,same,plus,clone,SPEC_SOURCE,ITEM_NAMES,PROG,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point} from './core/engine.ts';
 import {ECON} from './core/economy.ts';
 import {SPECIES,TM_MOVES,STARTER_IDS,learnableMove} from './core/roster.ts';
@@ -29,7 +29,7 @@ const params=new URLSearchParams(location.search);
 /** Developer mode (stage 7.1): `?dev=1` or `?fixture=`. Only here do the fixed map, the no-invitation control, fixtures, `?seed=` and coordinates exist; the title screen is skipped. */
 const dev=params.get('dev')==='1'||(params.get('fixture')!==null&&(SCENARIOS as readonly string[]).includes(params.get('fixture')!));
 const app=document.querySelector<HTMLDivElement>('#app')!;
-app.innerHTML=`<header><div class="brand">同行<span>FIELD TRIAL / 01</span></div><div class="build">${BUILD_ID} · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'完成G的记录即可结束。也可以探看后段，再决定是否带回T的成果。':'探索迷宫、击败敌人、招募伙伴；在合适的时候回到出口撤离，把成果带回基地。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未开始</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标／出口</span><span>T 成果／出口</span><span>下／上 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section><details><summary>操作说明与试验边界</summary><p>方向键移动；点相邻敌人普攻；句点等待。普通动作合法即推进完整一轮。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑主控动作并提交。切主控不改变队列。倒下退图但仍占名额。</p><p>出口使用也占一轮，敌人仍会行动。关闭不是撤离；恢复最后成功保存点。</p><p>远征模式为随机三层迷宫（第3层的最远房间有区域首领，入口附近有一个普通出口，可以不挑战首领就撤离）：走到楼梯格后点击楼梯按钮请求跨层，可返回旧层。远征含本局等级、基地培养、失败回归与稀有服务点（商店、交换机）；所有数值均为人工参数。</p></details>${dev?`<details><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button></details>`:''}<footer>规则源 ${SPEC_SOURCE.slice(0,7)}<br>几何占位 · 无账号 · 同一网页来源本地保存</footer></aside></main><div id="title-screen" class="screen" hidden></div>`;
+app.innerHTML=`<header><div class="brand">同行<span>FIELD TRIAL / 01</span></div><div class="build">${BUILD_ID} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'完成G的记录即可结束。也可以探看后段，再决定是否带回T的成果。':'探索迷宫、击败敌人、招募伙伴；在合适的时候回到出口撤离，把成果带回基地。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未开始</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标／出口</span><span>T 成果／出口</span><span>下／上 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section>${dev?`<details><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button></details>`:''}<footer>规则源 ${SPEC_SOURCE.slice(0,7)}<br>几何占位 · 无账号 · 同一网页来源本地保存</footer></aside></main><div id="title-screen" class="screen" hidden></div><dialog id="settings" aria-labelledby="settings-heading"><h2 id="settings-heading">设置与存档</h2><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label><p>进度只保存在此浏览器、此网页来源。换设备或网址前，请导出文件保留进度。</p><button id="save-export">导出存档文件</button><button id="save-import">导入存档文件</button><input id="save-file" type="file" accept=".json,application/json" hidden><p id="transfer-message" role="status" aria-live="polite"></p><details><summary>操作说明与试验边界</summary><p>方向键移动；点相邻敌人普攻；句点等待。普通动作合法即推进完整一轮。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑主控动作并提交。切主控不改变队列。倒下退图但仍占名额。</p><p>出口使用也占一轮，敌人仍会行动。关闭不是撤离；恢复最后成功保存点。</p><p>远征模式为随机三层迷宫（第3层的最远房间有区域首领，入口附近有一个普通出口，可以不挑战首领就撤离）：走到楼梯格后点击楼梯按钮请求跨层，可返回旧层。远征含本局等级、基地培养、失败回归与稀有服务点（商店、交换机）；所有数值均为人工参数。</p></details><button id="settings-close">关闭设置</button></dialog>`;
 const fixture=params.get('fixture') as ScenarioId|null;
 const checkMode=fixture!==null&&SCENARIOS.includes(fixture);
 /** `?seed=<integer>` fixes the expedition seed (browser checks); otherwise every expedition draws a fresh one. */
@@ -49,7 +49,9 @@ let inviteChoice:string|undefined,inviteReject=false,notice='',recentVisible=fal
 let tmPick:string|null=null;
 /** 7.2: the purse chosen at the base, and the exchanger choices (companion to send, indexes of the machines to carry) before they are confirmed. */
 let purseDraft=0,exTarget:string|null=null,exCargo:number[]=[];
+type BoardScene=InstanceType<ReturnType<typeof makeBoardScene>>;
 let scene:BoardScene|null=null;
+let boardLoading:Promise<void>|null=null;
 /** Stage 7.1 screens: the title and the new-game pages sit on top of the game view; developer mode starts in the game view as before. */
 let screen:'title'|'newgame'|'play'=dev?'play':'title';
 let ng:NewGameState={step:1,main:null,deputy:null,overwrite:false};
@@ -97,7 +99,7 @@ function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'
  if(target&&s.enemies.includes(target))act({type:'basic',target});else act({type:'move',to:p});
 }
 function actionLabel(a:Action|null){if(!a)return '尚未选择';if(a.type==='move')return `移动到(${a.to.x},${a.to.y})`;if(a.type==='skill')return `${names[a.skill]} → ${a.target}`;if(a.type==='basic')return `普攻 → ${a.target}`;if(a.type==='swap')return `与${a.target}换位`;if(a.type==='use')return `使用${ITEM_NAMES[a.item]} → ${a.target}`;if(a.type==='interact')return a.exit?'取得／请求撤离':'取得并继续';return '等待';}
-function render(){renderOverlay();renderMain();renderExtras();}
+function render(){renderOverlay();renderMain();renderExtras();refreshTransfer();if(screen==='play')void ensureBoard();}
 function renderMain(){const s=live();$('legend-items').hidden=!s?.prog;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 轮 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'单层探索试验');$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:s?`目标 ${s.goal?'已完成':'未完成'} · 背包 ${s.bag}${s.prog?` · 本局Lv${s.prog.level} 经验${s.prog.exp}/${nextExp(s)} · 橙橙果×${s.prog.items.berry} PP补剂×${s.prog.items.tonic}${s.dungeon?.base?` · 钱袋 ${s.purse??0}`:''}`:''}`:'';
  $('message').textContent=notice;
  const saveText={empty:'尚无可恢复记录',ready:'已保存',saving:'正在保存，请稍候再关闭',failed:'最新结果未保存；关闭可能丢失本次变化',blocked:'记录无法载入，原字节已保留'}[store.status];
@@ -244,6 +246,8 @@ function renderOverlay(){
  el.hidden=false;
  if(screen==='title'){
   el.innerHTML=renderTitle({hasRecord:store.status!=='empty',status:store.status,error:store.error,saveLine:saveSummary(),asking:askOverwrite,exported:exportedOriginal});
+  $('title-screen').querySelector('.title-menu')?.insertAdjacentHTML('beforeend',button('title-settings','设置与存档'));
+  bind('title-settings',openSettings);
   bind('title-continue',()=>{screen='play';notice='';render();});
   bind('title-new',()=>{if(store.status==='empty'){openPicker(false);return;}askOverwrite=true;render();});
   bind('overwrite-export',()=>{const raw=store.exportRaw();if(raw!==null){download(raw);exportedOriginal=true;}render();});
@@ -313,7 +317,8 @@ function draftOrder(s:World,d:NonNullable<typeof draft>):string{
  if(!steps)return '<p class="muted" id="draft-order">本轮顺序暂时无法预演（草稿里有不合法的动作）。</p>';
  return `<p id="draft-order"><strong>本轮顺序：</strong>${esc(orderLine(s,steps))}</p><ul id="draft-steps">${stepRows(s,steps).map(r=>`<li>${esc(r.text)}</li>`).join('')}</ul>${d.main?'':'<p class="muted">主控的动作还没选；预览暂按“等待”。</p>'}${!d.swap&&!d.action?'<p class="muted">伙伴的动作还没选；预览用默认行为，可以直接提交。</p>':''}`;
 }
-function download(raw:string){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.download='trial-save-original.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function download(raw:string,filename='trial-save-original.json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
+function makeBoardScene(Phaser:typeof import('phaser')){
 class BoardScene extends Phaser.Scene {
  private graphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;
  constructor(){super('board');}
@@ -372,7 +377,63 @@ class BoardScene extends Phaser.Scene {
  /** Read-only view of what is drawn, for the browser checks: the tile textures in use, and the boss sprite's scale next to a normal unit's, with its labels. */
  debug(){const unit=(id:string)=>{const v=this.views.get(id);return v?{scale:Number(v.sprite.scaleX.toFixed(3)),labels:v.labels.map(l=>l.t.text)}:null;};return {tiles:[...new Set(this.tiles.map(t=>t.texture.key))].sort(),boss:unit('boss'),leader:unit(live()?.leader??'')};}
 }
-try{new Phaser.Game({type:Phaser.AUTO,width:680,height:350,parent:'board',backgroundColor:'#101c1b',scene:BoardScene,scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},pixelArt:true});}catch(e){notice=`画面加载失败：${String(e)}。记录未清除。`;}
+return BoardScene;
+}
+/** The title and save tools work without downloading Phaser. Load it once on entering play. */
+async function ensureBoard():Promise<void>{
+ if(boardLoading)return boardLoading;
+ boardLoading=(async()=>{
+  try{const {default:Phaser}=await import('phaser');
+   new Phaser.Game({type:Phaser.AUTO,width:680,height:350,parent:'board',backgroundColor:'#101c1b',scene:makeBoardScene(Phaser),scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},pixelArt:true});
+  }catch{notice='画面加载失败，请刷新重试。存档没有被清除。';$('message').textContent=notice;}
+ })();
+ return boardLoading;
+}
+const settings=$('settings') as HTMLDialogElement;
+let transferBusy=false;
+function refreshTransfer(){
+ const busy=transferBusy||store.status==='saving'||anim.active;
+ ($('save-export') as HTMLButtonElement).disabled=busy||!['ready','blocked'].includes(store.status);
+ ($('save-import') as HTMLButtonElement).disabled=busy||store.status==='failed';
+ ($('settings-close') as HTMLButtonElement).disabled=transferBusy;
+ $('save-export').textContent=store.status==='blocked'?'导出原记录':'导出存档文件';
+}
+function openSettings(){
+ if(anim.active)return;
+ $('transfer-message').textContent=store.status==='blocked'?`${store.error}。请先导出原记录保留备份，再导入其他存档。`:store.status==='failed'?'最新结果尚未保存，请先关闭设置并重试保存。':'';
+ refreshTransfer();settings.showModal();
+}
+bind('open-settings',openSettings);
+bind('settings-close',()=>settings.close());
+settings.addEventListener('cancel',e=>{if(transferBusy)e.preventDefault();});
+bind('save-export',()=>{
+ const raw=store.status==='blocked'?store.exportRaw():store.exportRecord();
+ if(raw===null){$('transfer-message').textContent='没有可导出的记录，请先完成保存。';return;}
+ download(raw,store.status==='blocked'?'trial-save-original.json':'trial-save.json');
+ if(store.status==='blocked')exportedOriginal=true;
+ $('transfer-message').textContent='已提供下载，请确认存档文件已保留。';
+});
+bind('save-import',()=>($('save-file') as HTMLInputElement).click());
+$('save-file').addEventListener('change',async()=>{
+ const input=$('save-file') as HTMLInputElement,file=input.files?.[0];input.value='';
+ if(!file||transferBusy)return;
+ transferBusy=true;refreshTransfer();
+ try{
+  if(file.size>5*1024*1024){$('transfer-message').textContent='存档文件超过 5 MiB，未读取或导入。请选择较小的存档文件。';return;}
+  const raw=await file.text();
+  if(!window.confirm('导入会覆盖当前存档，覆盖后无法恢复。建议先导出备份。确认导入这个文件吗？')){
+   $('transfer-message').textContent='已取消导入，当前存档没有改动。';return;
+  }
+  const pending=store.importRecord(raw,true);render();
+  const ok=await pending;
+  if(ok){clear();inviteChoice=undefined;inviteReject=false;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;purseDraft=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
+   $('transfer-message').textContent='存档已导入并保存，关闭设置后可继续游戏。';
+  }else $('transfer-message').textContent=store.importError;
+  render();
+  const next=ok?finishing():null;if(next)await transition(store.dispatch(next));
+ }catch{$('transfer-message').textContent='无法读取所选文件，请重新选择。当前存档没有改动。';}
+ finally{transferBusy=false;refreshTransfer();}
+});
 bind('to-title',()=>{if(anim.active)return;clear();askOverwrite=false;screen='title';render();});
 {const box=document.getElementById('coords-toggle') as HTMLInputElement|null;box?.addEventListener('change',()=>{showCoords=box.checked;scene?.paint(live());});}
 setInterval(()=>{if(screen!=='play')portraitTick(performance.now(),animationEnabled());},80);
@@ -380,7 +441,7 @@ bind('open-fixture',()=>{const id=(document.getElementById('fixture') as HTMLSel
 document.addEventListener('keyup',e=>{if(e.key==='Shift')anim.shift=false;});
 // While a round plays, every click on a control is swallowed before its own handler sees it (nothing is queued); the animation switch stays usable.
 document.addEventListener('click',e=>{if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, label:has(#anim-toggle), summary')){e.stopPropagation();e.preventDefault();}},true);
-document.addEventListener('keydown',e=>{if(screen!=='play')return;if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}if(e.repeat){e.preventDefault();return;}if(anim.active){if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}const target=e.target as HTMLElement;if(target.matches('input,select,textarea'))return;if(e.key==='Enter'){if(target.matches('button[data-confirm]')&&!target.hasAttribute('disabled')){e.preventDefault();target.click();}else e.preventDefault();return;}if(e.key==='Escape'){if(live()?.phase==='invitation'&&inviteReject){inviteReject=false;notice='已取消拒绝，返回邀请比较。';}else{clear();notice='未执行的选择已取消。';}render();return;}const s=live();if(!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;if(['1','2','3'].includes(e.key)&&store.status==='ready'){const id=s.queue[Number(e.key)-1];if(id){void send({type:'switch',actor:id});}return;}const directions:Record<string,Pos>={ArrowRight:{x:1,y:0},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowUp:{x:0,y:-1},d:{x:1,y:0},s:{x:0,y:1},a:{x:-1,y:0},w:{x:0,y:-1}};if(directions[e.key]){e.preventDefault();const u=s.units[draft?.editor??s.leader];if(u.pos)act({type:'move',to:plus(u.pos,directions[e.key])});}if(e.key==='.')act({type:'wait'});if(e.key.toLowerCase()==='k')document.getElementById('skill-'+s.units[draft?.editor??s.leader].learned[0])?.click();});
+document.addEventListener('keydown',e=>{if(settings.open||screen!=='play')return;if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}if(e.repeat){e.preventDefault();return;}if(anim.active){if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}const target=e.target as HTMLElement;if(target.matches('input,select,textarea'))return;if(e.key==='Enter'){if(target.matches('button[data-confirm]')&&!target.hasAttribute('disabled')){e.preventDefault();target.click();}else e.preventDefault();return;}if(e.key==='Escape'){if(live()?.phase==='invitation'&&inviteReject){inviteReject=false;notice='已取消拒绝，返回邀请比较。';}else{clear();notice='未执行的选择已取消。';}render();return;}const s=live();if(!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;if(['1','2','3'].includes(e.key)&&store.status==='ready'){const id=s.queue[Number(e.key)-1];if(id){void send({type:'switch',actor:id});}return;}const directions:Record<string,Pos>={ArrowRight:{x:1,y:0},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowUp:{x:0,y:-1},d:{x:1,y:0},s:{x:0,y:1},a:{x:-1,y:0},w:{x:0,y:-1}};if(directions[e.key]){e.preventDefault();const u=s.units[draft?.editor??s.leader];if(u.pos)act({type:'move',to:plus(u.pos,directions[e.key])});}if(e.key==='.')act({type:'wait'});if(e.key.toLowerCase()==='k')document.getElementById('skill-'+s.units[draft?.editor??s.leader].learned[0])?.click();});
 window.addEventListener('blur',()=>{anim.shift=false;selectedSkill=null;render();});
 {const box=document.getElementById('anim-toggle') as HTMLInputElement;box.checked=animationEnabled();box.disabled=params.get('anim')!==null||!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim;
  box.addEventListener('change',()=>{try{window.localStorage.setItem(PREF_KEY,box.checked?'on':'off');}catch{/* preference is optional */}if(!box.checked)scene?.skip();});}

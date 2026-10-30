@@ -1,0 +1,507 @@
+{
+ "note": "阶段7.7 官方招式模型的数据（规格：docs/玩法研究/官方招式模型规格.md）。由 tools/data/import_pmd.py 生成，勿手改。仅用于私有构建。",
+ "source": "https://bulbapedia.bulbagarden.net/wiki/<Move>_(move)，“Pokémon Mystery Dungeon series”一节的表格",
+ "retrieved": "2026-10-30T04:40Z（主会话内置浏览器读取）",
+ "snapshotSha256": "9dc017d8964cce9785988236c1dd56417cae3ecfd38ea3213d7969d47d81c683",
+ "gamePriority": [
+  "MDTDS",
+  "BSL",
+  "MDGtI",
+  "SMD"
+ ],
+ "moves": {
+  "absorb": {
+   "range": "front",
+   "target": "enemy",
+   "power": 1,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "15",
+    "accuracy": "88%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage",
+    "drain"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "bite": {
+   "range": "front",
+   "target": "enemy",
+   "power": 7,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "19",
+    "accuracy": "90%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "省略畏缩"
+  },
+  "defensecurl": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "16",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:def:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": "“每级 −1 伤害”为本作换算"
+  },
+  "dragontail": {
+   "range": "front",
+   "target": "enemy",
+   "power": 3,
+   "game": "MDGtI",
+   "gameName": "无限迷宫",
+   "official": {
+    "basePp": "13",
+    "accuracy": "95%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage",
+    "blowaway"
+   ],
+   "source": "Bulbapedia",
+   "note": "探险队没有此招，取无限迷宫数据"
+  },
+  "ember": {
+   "range": "front",
+   "target": "enemy",
+   "power": 7,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "15",
+    "accuracy": "88%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "省略灼伤；本作 4 方向网格，无斜角"
+  },
+  "gust": {
+   "range": "front",
+   "target": "enemy",
+   "power": 4,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "19",
+    "accuracy": "88%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "省略对空中双倍（本作无飞空）"
+  },
+  "harden": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "16",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:def:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": "“每级 −1 伤害”为本作换算"
+  },
+  "helpinghand": {
+   "range": "room",
+   "target": "teammates",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "16",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "stage:atk:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": "官方同时加特攻；“每级 +1 伤害”为本作换算"
+  },
+  "leafage": {
+   "range": "front",
+   "target": "enemy",
+   "power": 6,
+   "effects": [
+    "damage"
+   ],
+   "note": "官方迷宫没有此招；按草系近身小招设定，威力取与撞击相同的 6",
+   "game": null,
+   "gameName": null,
+   "official": null,
+   "source": "本作自定"
+  },
+  "magicalleaf": {
+   "range": "front",
+   "target": "enemy",
+   "power": 12,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "8",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "本作 4 方向网格，无斜角"
+  },
+  "mudslap": {
+   "range": "front",
+   "target": "enemy",
+   "power": 4,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "16",
+    "accuracy": "84%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "省略降命中"
+  },
+  "poisonfang": {
+   "range": "front",
+   "target": "enemy",
+   "power": 10,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "15",
+    "accuracy": "73.92%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "省略剧毒"
+  },
+  "pound": {
+   "range": "front",
+   "target": "enemy",
+   "power": 6,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "27",
+    "accuracy": "90%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "protect": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "10",
+    "accuracy": "75%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "protect"
+   ],
+   "source": "Bulbapedia",
+   "note": "持续固定 3（官方 3–6）；连续使用被拒（官方为概率失败）"
+  },
+  "pursuit": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "counter"
+   ],
+   "source": "Bulbapedia",
+   "note": "探险队里是反击状态（7–12 回合），本作持续 3"
+  },
+  "quickattack": {
+   "range": "front2",
+   "target": "enemy",
+   "power": 4,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "13",
+    "accuracy": "88%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "本作 4 方向网格，无斜角"
+  },
+  "roar": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "14",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "blowaway"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "scratch": {
+   "range": "front",
+   "target": "enemy",
+   "power": 6,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "28",
+    "accuracy": "90%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "seedbomb": {
+   "range": "front",
+   "target": "enemy",
+   "power": 16,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "11",
+    "accuracy": "88%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "本作 4 方向网格，无斜角"
+  },
+  "slam": {
+   "range": "front",
+   "target": "enemy",
+   "power": 16,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "12",
+    "accuracy": "78%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "官方命中 78%，本作必中"
+  },
+  "tackle": {
+   "range": "front",
+   "target": "enemy",
+   "power": 6,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "30",
+    "accuracy": "95%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "terablast": {
+   "range": "front",
+   "target": "enemy",
+   "power": 12,
+   "effects": [
+    "damage"
+   ],
+   "note": "官方迷宫没有此招；作为招式机的较强近身招，威力取与魔法叶相同的 12",
+   "game": null,
+   "gameName": null,
+   "official": null,
+   "source": "本作自定"
+  },
+  "thundershock": {
+   "range": "front",
+   "target": "enemy",
+   "power": 1,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "88%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "省略麻痹"
+  },
+  "watergun": {
+   "range": "front",
+   "target": "enemy",
+   "power": 5,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "88%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": "本作 4 方向网格，无斜角"
+  },
+  "whirlwind": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "27",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "blowaway"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  }
+ },
+ "candidates77b": {
+  "wideguard": {
+   "range": "room",
+   "target": "party",
+   "power": null,
+   "game": "MDGtI",
+   "gameName": "无限迷宫",
+   "official": {
+    "basePp": "13",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   }
+  },
+  "quickguard": {
+   "range": "room",
+   "target": "party",
+   "power": null,
+   "game": "MDGtI",
+   "gameName": "无限迷宫",
+   "official": {
+    "basePp": "13",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   }
+  },
+  "reflect": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   }
+  },
+  "lightscreen": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "14",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   }
+  },
+  "safeguard": {
+   "range": "room",
+   "target": "party",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "13",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   }
+  },
+  "mist": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   }
+  }
+ }
+}

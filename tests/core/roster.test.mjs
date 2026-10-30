@@ -10,11 +10,11 @@ const established23=[...ids,'sandshrew','growlithe','magnemite','onix','dratini'
 const establishedDexes=[...dexes,'0027','0058','0081','0095','0147','0194','0228','0296'];
 
 test('R1 the expanded roster retains the established 23-species prefix and the same starters',()=>{
- assert.equal(roster.species.length,160);
+ assert.equal(roster.species.length,175);
  assert.deepEqual(roster.species.slice(0,23).map(s=>s.id),established23);
  assert.deepEqual(roster.species.slice(0,23).map(s=>s.dex),establishedDexes);
- assert.equal(new Set(roster.species.map(s=>s.id)).size,160);
- assert.equal(new Set(roster.species.map(s=>s.dex)).size,160);
+ assert.equal(new Set(roster.species.map(s=>s.id)).size,175);
+ assert.equal(new Set(roster.species.map(s=>s.dex)).size,175);
  for(const s of roster.species)assert.match(s.dex,/^\d{4}$/);
  assert.deepEqual(roster.species.filter(s=>s.starter).map(s=>s.id),['bulbasaur','charmander','squirtle','chikorita','cyndaquil','totodile','treecko','torchic','mudkip']);
  assert.deepEqual(roster.source.files['moves.json'],'26909a321a7e4528d14a7dffd24173aa03a6845776cf41c39cc3d76f8e14616b');

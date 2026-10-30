@@ -26,7 +26,7 @@ const frozenSpecies=s=>({id:s.id,starter:s.starter,maxHp:s.maxHp,kit:s.kit});
 
 /* ---------- D: data chain ---------- */
 test('D1 the expanded roster keeps the established 23 species first and freezes only their starter, HP and kit fields',()=>{
- assert.equal(roster.species.length,160);
+ assert.equal(roster.species.length,175);
  assert.deepEqual(roster.species.slice(0,23).map(s=>s.id),ESTABLISHED23);
  // The new import expands learnable and adds generation/availability metadata. Only these four fields were frozen by the Pokédex batch-import specification.
  assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,23).map(frozenSpecies))).digest('hex'),'3419bec7d22f9269b39f11810276f78544d248197c68b1aa8fb6f74f3712a962');

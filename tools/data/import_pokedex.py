@@ -25,6 +25,8 @@ POKEAPI_COMMIT = "2bf639e5572812a67d2b94903fdcb9d095f5aeb2"
 SPRITECOLLAB_COMMIT = "42a63b0757b3d55ebca29b27e62cd444cd29047b"
 PMD_NAME = "wiki-2026-10-30.json"
 PMD_SHA = "12436b4fd16aa726e2d06e1ccfdf3f9836c4c63ce5f82a853825494f5d4fda0f"
+PMD_EXTRA_NAME = "wiki-2026-10-30-extra.json"
+PMD_EXTRA_SHA = "ca1883a2005e2e57c9347001a72d24be649e99a6cd1607723650cc88fa72ec49"
 NAMES_BASE_SHA = "fafe297e861d44fe886a76cc93a5e15216a5d752a55a66080f764b2de4792923"
 OLD_PMD_BASE_NAME = "moves-2026-10-30.json"
 OLD_PMD_BASE_SHA = "9dc017d8964cce9785988236c1dd56417cae3ecfd38ea3213d7969d47d81c683"
@@ -35,6 +37,7 @@ INPUT_SHA = {
     "showdown/moves.json": "26909a321a7e4528d14a7dffd24173aa03a6845776cf41c39cc3d76f8e14616b",
     "showdown/learnsets.json": "cedbe661968e2d69abe9f317e9a3f5d4f2dcf989e1f937cb0cdd72e7af29ab8f",
     "pmd/" + PMD_NAME: PMD_SHA,
+    "pmd/" + PMD_EXTRA_NAME: PMD_EXTRA_SHA,
     "pmd/" + OLD_PMD_BASE_NAME: OLD_PMD_BASE_SHA,
     "pokeapi/languages.csv": "fbb60019a6a461783d5671a995d5f590db61792a273e90faa0ed630d102a19b8",
     "pokeapi/pokemon_species_names.csv": "820cde17074cdb1c2b0595c997fb8f998e773bd5da3bb525dec85703c86c5fd9",
@@ -53,6 +56,12 @@ LEGACY_EXTRA_IDS = (
     "chikorita", "cyndaquil", "totodile", "treecko", "torchic", "mudkip",
     "wooper", "houndour", "makuhita",
 )
+LEGACY_EVOLUTION_IDS = (
+    "bayleef", "meganium", "quilava", "typhlosion", "croconaw", "feraligatr",
+    "grovyle", "sceptile", "combusken", "blaziken", "marshtomp", "swampert",
+    "quagsire", "houndoom", "hariyama",
+)
+EVOLUTION_FIELDS = ("evoLevel", "prevo", "evos", "legendary")
 LEGACY_MOVE_IDS = (
     "absorb", "bite", "defensecurl", "dragontail", "ember", "gust", "harden",
     "helpinghand", "leafage", "magicalleaf", "mudslap", "poisonfang", "pound",
@@ -155,18 +164,41 @@ def verify_and_load(snapshot_root: Path) -> dict:
         fail(f"PokeAPI COMMIT 不一致：预期 {POKEAPI_COMMIT}，实际 {poke_commit}")
     if sprite_commit != SPRITECOLLAB_COMMIT:
         fail(f"SpriteCollab COMMIT 不一致：预期 {SPRITECOLLAB_COMMIT}，实际 {sprite_commit}")
-    sidecar = (snapshot_root / "pmd" / (PMD_NAME + ".sha256")).read_text(encoding="ascii").strip()
-    if sidecar.split()[0] != PMD_SHA:
-        fail(f"PMD sha256 sidecar 与规格不符：{sidecar}")
+    for name, expected in ((PMD_NAME, PMD_SHA), (PMD_EXTRA_NAME, PMD_EXTRA_SHA)):
+        sidecar = (snapshot_root / "pmd" / (name + ".sha256")).read_text(encoding="ascii").strip()
+        if not sidecar.startswith(expected + " "):
+            fail(f"PMD sha256 sidecar 与固定输入不符：{name}.sha256 / {sidecar}")
 
     data = {name: json.loads(raw_files[relative].decode("utf-8")) for name, relative in {
         "pokedex": "showdown/pokedex.json", "moves": "showdown/moves.json",
         "learnsets": "showdown/learnsets.json", "pmd": "pmd/" + PMD_NAME,
+        "pmdExtra": "pmd/" + PMD_EXTRA_NAME,
         "tracker": "spritecollab/tracker.json",
     }.items()}
-    pmd = data["pmd"]
-    if pmd.get("missingPages") not in ([], None):
-        fail(f"PMD 快照记录了缺页：{pmd.get('missingPages')}")
+    for name in ("pmd", "pmdExtra"):
+        pmd = data[name]
+        if pmd.get("missingPages") not in ([], None):
+            fail(f"PMD 快照 {name} 记录了缺页：{pmd.get('missingPages')}")
+        requested = pmd.get("requestedIds")
+        moves = pmd.get("moves")
+        if not isinstance(requested, list) or len(requested) != len(set(requested)):
+            fail(f"PMD 快照 {name} 的 requestedIds 缺失、重复或格式错误")
+        if not isinstance(moves, dict) or set(requested) != set(moves):
+            fail(f"PMD 快照 {name} 的 requestedIds 与招式页集合不同")
+    extra = data["pmdExtra"]
+    if tuple(extra["requestedIds"]) != ("headlongrush", "shedtail"):
+        fail(f"PMD 附加快照招式清单变化：{extra['requestedIds']}")
+    if any(extra["moves"][move_id].get("rows") for move_id in extra["requestedIds"]):
+        fail("PMD 附加快照固定应保留两页无 MDMoveRow 的实测结果")
+    base = data["pmd"]
+    if set(base["moves"]) & set(extra["moves"]):
+        fail("PMD 主快照与附加快照包含重复招式页")
+    data["pmd"] = {
+        **base,
+        "requestedIds": [*base["requestedIds"], *extra["requestedIds"]],
+        "moves": {**base["moves"], **extra["moves"]},
+        "missingPages": [*(base.get("missingPages") or []), *(extra.get("missingPages") or [])],
+    }
     return {"raw": raw_files, "data": data, "hashes": dict(sorted(INPUT_SHA.items()))}
 
 
@@ -268,8 +300,12 @@ def build_baselines(snapshot_root: Path, checked: dict):
     current_moves_path = REPO / "src" / "data" / "pmd-moves.json"
     if current_roster_path.is_file():
         current = json.loads(current_roster_path.read_text(encoding="utf-8"))
-        by_id = {sp.get("id"): sp for sp in current.get("species", [])}
-        order = [sp.get("id") for sp in current.get("species", []) if sp.get("id") in LEGACY_SPECIES_IDS]
+        current_species = current.get("species")
+        if not isinstance(current_species, list):
+            fail("当前 roster.json 缺少 species 数组")
+        checked["currentRosterSpecies"] = current_species
+        by_id = {sp.get("id"): sp for sp in current_species}
+        order = [sp.get("id") for sp in current_species if sp.get("id") in LEGACY_SPECIES_IDS]
         if tuple(order) != LEGACY_SPECIES_IDS:
             fail("当前 roster.json 中原23种的相对顺序与固定导入基线不同")
         for old in old_species:
@@ -540,9 +576,125 @@ def pp_for(move_id: str, showdown_moves: dict, legacy_pp: dict) -> int:
     return max(1, min(4, math.floor(pp / 10)))
 
 
+def showdown_name_to_id(pokedex: dict) -> dict[str, str]:
+    name_to_id = {}
+    for species_id, entry in pokedex.items():
+        name = entry.get("name")
+        if not isinstance(name, str):
+            fail(f"Showdown 图鉴缺少物种显示名：{species_id}")
+        if name in name_to_id and name_to_id[name] != species_id:
+            fail(f"Showdown 图鉴物种显示名重复：{name}")
+        name_to_id[name] = species_id
+    return name_to_id
+
+
+def legacy_evolution_ids(pokedex: dict) -> list[str]:
+    name_to_id = showdown_name_to_id(pokedex)
+    evolution_ids = []
+    for root_id in LEGACY_EXTRA_IDS:
+        if root_id not in pokedex:
+            fail(f"Showdown 图鉴缺少旧扩展物种：{root_id}")
+        current_id = root_id
+        seen = {root_id}
+        while True:
+            children = pokedex[current_id].get("evos", [])
+            if not isinstance(children, list):
+                fail(f"Showdown evos 不是列表：{current_id}")
+            in_scope = []
+            for child_name in children:
+                child_id = name_to_id.get(child_name)
+                if child_id is None:
+                    fail(f"Showdown evos 引用了不存在的物种：{current_id} -> {child_name}")
+                child = pokedex[child_id]
+                if "forme" not in child:
+                    in_scope.append(child_id)
+            if not in_scope:
+                break
+            if len(in_scope) != 1:
+                fail(f"旧扩展进化链出现规格未列出的分支：{current_id} -> {in_scope}")
+            child_id = in_scope[0]
+            if child_id in seen:
+                fail(f"Showdown 进化链出现循环：{child_id}")
+            seen.add(child_id)
+            evolution_ids.append(child_id)
+            current_id = child_id
+    if tuple(evolution_ids) != LEGACY_EVOLUTION_IDS:
+        fail(f"按 LEGACY_EXTRA_IDS 推导出的15种与规格显式名单不同：{evolution_ids}")
+    return evolution_ids
+
+
+def evolution_fields(data: dict, all_species: list[dict]) -> dict[str, dict]:
+    pokedex = data["pokedex"]
+    name_to_id = showdown_name_to_id(pokedex)
+    included_ids = {species["id"] for species in all_species}
+    in_roster_prevo = {}
+    in_roster_evos = {}
+    for species_id in included_ids:
+        entry = pokedex[species_id]
+        prevo_name = entry.get("prevo")
+        if prevo_name:
+            prevo_id = name_to_id.get(prevo_name)
+            if prevo_id is None:
+                fail(f"Showdown prevo 引用了不存在的物种：{species_id} -> {prevo_name}")
+            if prevo_id in included_ids:
+                in_roster_prevo[species_id] = prevo_id
+        evos = entry.get("evos", [])
+        if not isinstance(evos, list):
+            fail(f"Showdown evos 不是列表：{species_id}")
+        selected_evos = []
+        for child_name in evos:
+            child_id = name_to_id.get(child_name)
+            if child_id is None:
+                fail(f"Showdown evos 引用了不存在的物种：{species_id} -> {child_name}")
+            if child_id in included_ids:
+                selected_evos.append(child_id)
+        if selected_evos:
+            in_roster_evos[species_id] = selected_evos
+
+    stages = {}
+
+    def stage_of(species_id: str, visiting: set[str]) -> int:
+        if species_id in stages:
+            return stages[species_id]
+        if species_id in visiting:
+            fail(f"名单内 prevo 出现循环：{species_id}")
+        prevo_id = in_roster_prevo.get(species_id)
+        stage = 0 if prevo_id is None else stage_of(prevo_id, visiting | {species_id}) + 1
+        stages[species_id] = stage
+        return stage
+
+    result = {}
+    for species_id in included_ids:
+        entry = pokedex[species_id]
+        stage = stage_of(species_id, set())
+        source_level = entry.get("evoLevel")
+        if stage == 0:
+            evo_level = 1
+        elif source_level is not None:
+            if isinstance(source_level, bool) or not isinstance(source_level, int) or not 1 <= source_level <= 100:
+                fail(f"Showdown evoLevel 无效：{species_id} / {source_level!r}")
+            evo_level = source_level
+        elif stage == 1:
+            evo_level = 20
+        elif stage == 2:
+            evo_level = 36
+        else:
+            fail(f"本作尚未规定第 {stage} 阶段的非等级进化折算：{species_id}")
+
+        fields = {"evoLevel": evo_level}
+        if species_id in in_roster_prevo:
+            fields["prevo"] = in_roster_prevo[species_id]
+        if species_id in in_roster_evos:
+            fields["evos"] = in_roster_evos[species_id]
+        fields["legendary"] = bool(entry.get("tags"))
+        result[species_id] = fields
+    return result
+
+
 def generate_roster(data: dict, all_species: list[dict], learnsets: dict, union: set[str],
                     admission: dict, move_specs: dict, legacy_species: list[dict], showdown_moves: dict):
     legacy_by_id = {sp["id"]: sp for sp in legacy_species}
+    species_evolution = evolution_fields(data, all_species)
     legacy_pp = {}
     for sp in legacy_species:
         for move in [*sp["kit"], *sp["learnable"]]:
@@ -598,6 +750,7 @@ def generate_roster(data: dict, all_species: list[dict], learnsets: dict, union:
             "learnsetGen": era, "kit": kit, "learnable": learnable,
             "source": f"pokedex.json[{sid}]; learnsets.json[{sid}] 第{era}世代; moves.json",
             **({"availability": "暂不出场"} if sid not in legacy_by_id and not available_for_play else {}),
+            **species_evolution[sid],
         })
     return output, unavailable
 
@@ -623,7 +776,43 @@ def pokedex_species(data: dict, legacy_species: list[dict]):
         if sp["id"] not in by_id:
             fail(f"Showdown 图鉴数据缺少旧物种：{sp['id']}")
         legacy_entries.append(by_id[sp["id"]])
-    return [*legacy_entries, *new], gen1, {sid: by_id[sid] for sid in gen1_ids}
+    evolution_ids = legacy_evolution_ids(data["pokedex"])
+    if any(sid in old_ids or sid in gen1_ids for sid in evolution_ids):
+        fail("新增进化形态与现有160种名单发生重叠")
+    evolution_entries = []
+    for species_id in evolution_ids:
+        if species_id not in by_id:
+            fail(f"Showdown 图鉴数据缺少新增进化形态：{species_id}")
+        evolution_entries.append(by_id[species_id])
+    return [*legacy_entries, *new, *evolution_entries], gen1, {sid: by_id[sid] for sid in gen1_ids}
+
+
+def validate_existing_species(current_species: list[dict] | None, generated_species: list[dict]) -> None:
+    if current_species is None:
+        return
+    generated_by_id = {species["id"]: species for species in generated_species}
+    current_ids = [species.get("id") for species in current_species]
+    existing_ids = [species_id for species_id in current_ids if species_id not in LEGACY_EVOLUTION_IDS]
+    added_ids = [species_id for species_id in current_ids if species_id in LEGACY_EVOLUTION_IDS]
+    expected_existing_ids = [species["id"] for species in generated_species if species["id"] not in LEGACY_EVOLUTION_IDS]
+    if existing_ids != expected_existing_ids:
+        fail("当前 roster.json 的原160种 ID 或顺序与固定导入基线不同")
+    if added_ids and added_ids != list(LEGACY_EVOLUTION_IDS):
+        fail("当前 roster.json 的新增15种顺序与固定名单不同")
+    if current_ids != [*existing_ids, *added_ids]:
+        fail("当前 roster.json 的新增15种没有追加在原160种之后")
+
+    for current in current_species:
+        species_id = current.get("id")
+        generated = generated_by_id.get(species_id)
+        if generated is None:
+            fail(f"当前 roster.json 含固定名单以外物种：{species_id}")
+        old_fields = {key: value for key, value in current.items() if key not in EVOLUTION_FIELDS}
+        generated_old_fields = {key: value for key, value in generated.items() if key not in EVOLUTION_FIELDS}
+        if old_fields != generated_old_fields:
+            changed = sorted(set(old_fields) | set(generated_old_fields))
+            changed = [key for key in changed if old_fields.get(key) != generated_old_fields.get(key)]
+            fail(f"当前物种既有字段与固定导入结果不同：{species_id} / {changed}")
 
 
 def pokeapi_names(snapshot_root: Path, raw_files: dict, gen1: list[dict], roster: list[dict], baseline_names: dict, union: set[str]):
@@ -651,7 +840,7 @@ def pokeapi_names(snapshot_root: Path, raw_files: dict, gen1: list[dict], roster
             species_names[sid] = api_name
     for sp in roster:
         if sp["id"] not in species_names:
-            # Nine retained species are outside the 151-species name pass but have API names in the same fixed snapshot.
+            # Non-Gen1 roster species use their national dex number in the same fixed snapshot.
             api_name = species_api.get(str(int(sp["dex"])))
             if api_name:
                 species_names[sp["id"]] = api_name
@@ -775,7 +964,7 @@ def md_table(headers: list[str], rows: list[list[str]]) -> str:
 
 
 def build_exceptions(admission: dict, exclusions: dict, unavailable_power: dict, unavailable: list[dict], names_report: dict,
-                     sprite_rows: list[dict], hashes: dict, totals: dict):
+                     sprite_rows: list[dict], hashes: dict, totals: dict, pmd_snapshot_no_rows: list[str]):
     reason_groups = {}
     for move_id, result in admission.items():
         if not result["admitted"]:
@@ -785,6 +974,8 @@ def build_exceptions(admission: dict, exclusions: dict, unavailable_power: dict,
         "本清单由固定快照离线生成。招式例外按每招计数；物种、译名和素材类别不计入招式闭合和。素材状态分别记录 tracker 完成度与当前本地文件核验；没有下载任何文件。", "",
         "## 输入快照 SHA-256", "",
         md_table(["相对路径", "SHA-256"], [[path, digest] for path, digest in hashes.items()]),
+        "## PMD 附加快照说明", "",
+        f"固定附加快照页面存在但没有 MDMoveRow 的招式：{'、'.join(sorted(pmd_snapshot_no_rows)) or '无'}。这些招式按第2.4节的作品优先级计入‘无官方迷宫数据’，这里只说明本次固定快照未提供招式行，不表示断言官方作品中不存在相关数据。", "",
         "## 招式准入摘要", "",
         f"招式并集 {totals['learnsetMoves']} = 准入 {totals['admittedMoves']} + 按规格原因排除 {totals['ruleExcludedMoves']}。", "",
         "## 按规则未准入的招式", "",
@@ -812,7 +1003,7 @@ def build_exceptions(admission: dict, exclusions: dict, unavailable_power: dict,
     missing_rows = [["物种", x["dex"], x["id"], "未匹配简体中文名"] for x in names_report["missingSpecies"]]
     missing_rows += [["招式", x["id"], x.get("pokeapiIdentifier") or "—", "moves.csv 标识去连字符后无对应 ID 或无简体中文名"] for x in names_report["missingMoves"]]
     lines.append(md_table(["类别", "图鉴号／ID", "PokeAPI 标识", "情况"], missing_rows) if missing_rows else "无。\n")
-    lines += ["## 角色素材可用性（本次图鉴 160 种）", "", "tracker 的 `portrait_complete`、`sprite_complete` 只表示快照中的完成度。素材判定还要求当前本地有 `AnimData.xml`，并且 Walk、Idle、Attack、Hurt、Shoot 以及各自解析到的 Anim/Shadow PNG 文件都存在。tracker 完成不代表素材文件已下载、可用或许可已确认。", ""]
+    lines += ["## 角色素材可用性（本次图鉴 175 种）", "", "tracker 的 `portrait_complete`、`sprite_complete` 只表示快照中的完成度。素材判定还要求当前本地有 `AnimData.xml`，并且 Walk、Idle、Attack、Hurt、Shoot 以及各自解析到的 Anim/Shadow PNG 文件都存在。tracker 完成不代表素材文件已下载、可用或许可已确认。", ""]
     sprite_table = []
     for row in sprite_rows:
         tracker_state = "通过" if row["trackerReady"] else "未通过"
@@ -830,9 +1021,12 @@ def serialize_pmd(old_pmd: dict, new_specs: dict, baseline_snippets: dict[str, b
     moves = dict(old_pmd["moves"])
     moves.update(new_specs)
     root = {
-        "note": "阶段7.7 官方招式与图鉴扩展招式数据，由 tools/data/import_pokedex.py 合并生成；旧25招对象按固定基线保留。仅用于私有构建。",
+        "note": "阶段7.8 官方招式与图鉴扩展招式数据，由 tools/data/import_pokedex.py 合并生成；旧25招对象按固定基线保留。仅用于私有构建。",
         "source": old_pmd["source"], "retrieved": old_pmd["retrieved"],
-        "snapshotSha256": PMD_SHA, "gamePriority": [GAME_OUTPUT[g][0] for g in GAME_PRIORITY],
+        "snapshotSha256": PMD_SHA,
+        "supplementalSnapshotFile": PMD_EXTRA_NAME,
+        "supplementalSnapshotSha256": PMD_EXTRA_SHA,
+        "gamePriority": [GAME_OUTPUT[g][0] for g in GAME_PRIORITY],
         "moves": dict(sorted(moves.items())),
         "candidates77b": {
             move_id: candidate for move_id, candidate in old_pmd["candidates77b"].items()
@@ -866,8 +1060,8 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
     requested = set(data["pmd"].get("requestedIds", []))
     if union != requested or union != set(data["pmd"].get("moves", {})):
         fail(f"PMD 请求招式集、快照招式集与选定学习表并集不同：learnset={len(union)} requested={len(requested)} pages={len(data['pmd'].get('moves', {}))}")
-    if len(union) != 520:
-        fail(f"第2.1–2.2节预期160种招式并集520，实际 {len(union)}")
+    if len(union) != 522:
+        fail(f"175种名单按固定学习表预期招式并集522，实际 {len(union)}")
     new_specs, admission, admission_counts, exclusions, unavailable_power = classify_moves(
         union, data["moves"], data["pmd"], old_pmd["moves"],
     )
@@ -877,6 +1071,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
     roster, unavailable = generate_roster(
         data, all_species, roster_learnsets, union, admission, all_move_specs, old_species, data["moves"],
     )
+    validate_existing_species(checked.get("currentRosterSpecies"), roster)
     frozen_ids = tuple(sp["id"] for sp in roster if sp["id"] in LEGACY_SPECIES_IDS)
     if frozen_ids != LEGACY_SPECIES_IDS:
         fail("新名单没有保留原23物种顺序")
@@ -908,7 +1103,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
             "url": "https://play.pokemonshowdown.com/data/<name>.json",
             "downloaded": "2026-10-30", "githubCommit": showdown_commit,
             "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建",
-            "note": "图鉴1–151完整基础形态，并保留旧23种。learnsetGen按最新有升级招式的世代决定；旧23种kit/maxHp/starter冻结。新增kit依图鉴导入规格生成。",
+            "note": "图鉴1–151完整基础形态，并保留旧23种及其15种后续形态。learnsetGen按最新有升级招式的世代决定；原160种既有字段保留，仅追加进化与分类字段。",
         },
         "species": roster,
     }
@@ -936,7 +1131,8 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
     sprite_available = sum(row["available"] for row in sprite_rows)
     totals = {
         "legacySpecies": 23, "generation1Species": len(gen1),
-        "extraSpecies": 9, "species": len(roster), "learnsetMoves": len(union),
+        "extraSpecies": len(roster) - len(gen1), "evolutionSpecies": len(LEGACY_EVOLUTION_IDS),
+        "species": len(roster), "learnsetMoves": len(union),
         "admittedMoves": admitted_count, "excludedMoves": sum(exclusions.values()),
         "ruleExcludedMoves": sum(exclusions.values()),
         "notAdmittedMoves": len(union) - admitted_count,
@@ -991,7 +1187,13 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
             },
         },
     }
-    exceptions = build_exceptions(admission, exclusions, unavailable_power, unavailable, name_report, sprite_rows, checked["hashes"], totals)
+    pmd_snapshot_no_rows = [
+        move_id for move_id, page in data["pmdExtra"]["moves"].items() if not page.get("rows")
+    ]
+    exceptions = build_exceptions(
+        admission, exclusions, unavailable_power, unavailable, name_report, sprite_rows,
+        checked["hashes"], totals, pmd_snapshot_no_rows,
+    )
     roster_bytes = (json.dumps(roster_doc, ensure_ascii=False, indent=1) + "\n").encode("utf-8")
     names_bytes = (json.dumps(names_doc, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     summary_bytes = (json.dumps(summary, ensure_ascii=False, indent=2) + "\n").encode("utf-8")

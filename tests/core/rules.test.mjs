@@ -51,7 +51,7 @@ test('K1 rejects protecting another unit and tackle uses move power',()=>{
  let s=createScenario('K1','k1');
  const refused=applyCommand(s,{type:'round',action:skill('tackle','H'),override:{actor:'B',action:skill('protect','A')}});
  assert.equal(refused.ok,false);assert.deepEqual(refused.state,s);
- s=round(s,skill('tackle','H'),{actor:'B',action:skill('protect','B')});assert.equal(s.units.H.hp,6);assert.equal(s.units.A.hp,2);   // A tackle 9 + C's default tackle 9 (24-18); H ember or bite (10, tie to ember by move order) hits A first in queue order (12-10)
+ s=round(s,skill('tackle','H'),{actor:'B',action:skill('protect','B')});assert.equal(s.units.H.hp,6);assert.equal(s.units.A.hp,7);   // A tackle 9 + C's default tackle 9 (24-18); H ember or bite (10, tie to ember by move order; 5 after the enemy difficulty multiplier 0.5) hits A first in queue order (12-5)
  assert.equal(s.units.B.pp.protect,0);
  s=round(s,skill('tackle','H'));assert.equal(s.units.H.hp,0);
 });

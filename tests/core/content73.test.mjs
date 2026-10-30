@@ -107,7 +107,7 @@ test('L1 two-floor developer runs remain deterministic and have no regional boss
  for(let seed=1;seed<=50;seed++)for(const level of [1,2]){
   const options={width:20,height:14,floors:2},g=generateFloor(seed,level,options);
   assert.deepEqual(g,generateFloor(seed,level,options));assert.equal(g.theme,undefined);assert.equal(g.bossRoom,undefined);
-  assert.equal(g.enemies.length,4);assert.ok(g.enemies.every(e=>!e.boss&&e.level===5&&eligibleSpecies(level,false).includes(e.species)));
+  assert.equal(g.enemies.length,3);assert.ok(g.enemies.every(e=>!e.boss&&e.level===5&&eligibleSpecies(level,false).includes(e.species)));
  }
 });
 test('L1b the old generator path and the departure with 2 floors never carry the boss mark',()=>{
@@ -116,12 +116,12 @@ test('L1b the old generator path and the departure with 2 floors never carry the
  assert.equal(createExpedition('l1b',5,3).dungeon.boss,undefined,'no base, no boss');
  assert.equal(createExpedition('l1b',5,3,base(),0,false).dungeon.boss,undefined);
 });
-test('L2 themed floors choose four normal encounters from their eligible first-type pools',()=>{
+test('L2 themed floors choose three normal encounters from their eligible first-type pools',()=>{
  assert.deepEqual(THEME_FLOORS.map(t=>t.name),['苔石洞','潮湿水窟','灰烬裂谷']);
  assert.deepEqual([1,2,3].map(l=>themeOfLevel(true,l)),['moss','wet','ash']);
  for(let seed=1;seed<=200;seed++)for(let level=1;level<=3;level++){
   const g=generateFloor(seed,level,FLOORS3),normal=g.enemies.filter(e=>!e.boss);
-  assert.equal(g.theme,['moss','wet','ash'][level-1]);assert.equal(normal.length,4);
+  assert.equal(g.theme,['moss','wet','ash'][level-1]);assert.equal(normal.length,3);
   for(const e of normal)assert.ok(eligibleSpecies(level).includes(e.species));
   assert.equal(g.enemies.filter(e=>e.boss).length,level===3?1:0);
  }
@@ -158,7 +158,7 @@ test('L4 floor 3: all floor cells are connected and the boss room can be reached
 
 /* ---------- B: boss rules ---------- */
 /** Open-row arena retains the current generated boss kit, level and modifiers. */
-function arena({boss=[4],bossHp=141,units,floor=row(9),exit=null}={}){
+function arena({boss=[4],bossHp=71,units,floor=row(9),exit=null}={}){
  const s=jumpToFloor(createExpedition('b',1,3,base(),0),3),bossUnit=structuredClone(s.units.boss);
  for(const id of s.enemies)delete s.units[id];
  delete s.units.A;delete s.units.B;delete s.rooms;
@@ -188,12 +188,12 @@ test('B2 push on the boss is refused with the Chinese reason and costs no PP',()
 });
 test('B3 boss uses one shared move per round, spends PP, and never chases',()=>{
  const s=arena({units:{A:A(3),B:B(0)}}),hit=round(s,{type:'wait'});
- assert.equal(hit.units.A.hp,2,'Lv22 ExtremeSpeed: 6 + ceil(16/2) + floor(17/4) = 18');
+ assert.equal(hit.units.A.hp,11,'Lv22 ExtremeSpeed: 6 + ceil(16/2) + floor(17/4) = 18, times the difficulty multiplier 0.5 = 9');
  assert.equal(hit.units.boss.pp.extremespeed,s.units.boss.pp.extremespeed-1);
  assert.deepEqual(hit.units.boss.pos,pos(4));assert.equal(hit.units.B.hp,20);
  const far=arena({units:{A:A(8),B:B(9)}}),calm=round(far,{type:'wait'});
  assert.equal(calm.units.A.hp,20);assert.equal(calm.units.B.hp,20);assert.deepEqual(calm.units.boss.pos,pos(4));
- const two=round(arena({units:{A:A(6),B:B(9)}}),{type:'wait'});assert.equal(two.units.A.hp,2,'front2 reaches exactly two cells');
+ const two=round(arena({units:{A:A(6),B:B(9)}}),{type:'wait'});assert.equal(two.units.A.hp,11,'front2 reaches exactly two cells');
  const three=round(arena({units:{A:A(7),B:B(9)}}),{type:'wait'});assert.equal(three.units.A.hp,20,'the old three-cell ray is gone');
 });
 test('B4 protect prevents boss damage during the first opponent phase',()=>{
@@ -230,7 +230,7 @@ test('B7 leaving by the lobby without challenging: end.boss false, the run ends 
  const s=arena({boss:[9],units:{A:A(1),B:B(0)},exit:pos(1)});s.goal=true;s.prog.exp=0;s.points[0].used=false;
  let w=round(s,{type:'interact',exit:true});assert.equal(w.phase,'exit');
  const f=applyCommand(w,{type:'finishExit'});assert.equal(f.ok,true,f.error);
- assert.equal(f.state.end.boss,false);assert.equal(f.state.end.reward,100);assert.equal(f.state.end.outcome,'normal');assert.equal(f.state.units.boss.hp,141);
+ assert.equal(f.state.end.boss,false);assert.equal(f.state.end.reward,100);assert.equal(f.state.end.outcome,'normal');assert.equal(f.state.units.boss.hp,71);
 });
 function profileOf3(){
  const p=newGameProfile('chikorita','cyndaquil').profile;
@@ -288,7 +288,7 @@ test('B9 with only the initial two members and an empty account, a departure rea
  assert.equal(r.reached,true,JSON.stringify(r.error)+r.s.log.slice(-3));
  assert.equal(r.s.dungeon.level,3);assert.equal(r.s.phase,'exit');
  const exit=r.s.points.find(p=>p.kind==='exit').pos;assert.deepEqual(r.s.units[r.s.request.actor].pos,exit);
- assert.equal(r.s.units.boss.hp,141,'the boss was never touched');
+ assert.equal(r.s.units.boss.hp,71,'the boss was never touched (Lv22 round((30+17)*3*0.5) = round(70.5) = 71)');
  const beforeWrites=port.writes();
  assert.equal((await store.dispatch({type:'finishExit'})).ok,true);assert.equal(store.state.end.boss,false);assert.equal(store.state.end.outcome,'normal');
  assert.equal(store.status,'ready');assert.equal(port.writes(),beforeWrites+1,'the first persistent write after departure is terminal settlement');
@@ -405,7 +405,7 @@ test('S4 a boss-marked run moves through transit, battle and exit in memory with
 test('boss info names the species, HP, level and actual moves; log lines show the Chinese machine names',()=>{
  const s=arena({units:{A:A(3),B:B(2)}});
  const info=enemyInfo(s,'boss');
- assert.equal(info.name,'风速狗（首领）');assert.equal(info.hp,141);assert.equal(info.maxHp,141);assert.doesNotMatch(info.note,/不可招募/);assert.equal(info.level,22);assert.ok(info.moves.some(m=>m.includes('神速')));
+ assert.equal(info.name,'风速狗（首领）');assert.equal(info.hp,71);assert.equal(info.maxHp,71);assert.doesNotMatch(info.note,/不可招募/);assert.equal(info.level,22);assert.ok(info.moves.some(m=>m.includes('神速')));
  assert.equal(localizeLog(s,'取得招式机：dragontail，mudslap，terablast，helpinghand'),'取得招式机：龙尾，掷泥，太晶爆发，帮助');
 });
 test('boss constants',()=>{assert.deepEqual(BOSS,{id:'boss',species:'arcanine'});assert.equal(PROG.bossExp,0);});

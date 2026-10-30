@@ -211,7 +211,8 @@ function exchangeRun(){
 const ex=(target,cargo)=>({type:'round',action:{type:'exchange',target,cargo}});
 test('R16 exchanger: one use; the leader cannot be sent; the companion leaves for good; cargo is limited to two held machines',()=>{
  const s=exchangeRun();
- assert.match(applyCommand(s,ex('A',[])).error,/主控以外/);
+ for(const id of s.enemies)s.units[id].waitOnly=true; // generated floor-2 enemies could reach A on this seed and hurt it; this test is about the exchanger not healing
+  assert.match(applyCommand(s,ex('A',[])).error,/主控以外/);
  assert.match(applyCommand(s,ex('C',[0,1,2])).error,/最多运送2份/);
  assert.match(applyCommand(s,ex('C',[0,0])).error,/最多运送2份不同/);
  assert.match(applyCommand(s,ex('C',[5])).error,/仍持有/);

@@ -31,19 +31,20 @@ test('7.8 first-type themes exclude unavailable and legendary species, then filt
  for(const id of ['mew','mewtwo','articuno','zapdos','moltres','magikarp','metapod','kakuna','abra','ditto'])assert.equal(id in WILD_SPECIES,false,id);
 });
 
-test('7.8 independent streams, four enemies per floor, level bands and boss HP are deterministic',()=>{
+test('7.8 independent streams, three enemies per floor, level bands and boss HP are deterministic',()=>{
  assert.deepEqual(['enemy-ai','enemy-level','enemy-species'].map(t=>streamSeed(12345,1,t)),[2257267927,3144851047,3858705323]);
  const bands=[[5,6],[8,11],[12,20]];
  for(let seed=1;seed<=30;seed++)for(let level=1;level<=3;level++){
   const params={width:20,height:14,floors:3,boss:true},g=generateFloor(seed,level,params);
   assert.deepEqual(g,generateFloor(seed,level,params));
-  const ordinary=g.enemies.filter(e=>!e.boss);assert.equal(ordinary.length,4);
+  const ordinary=g.enemies.filter(e=>!e.boss);assert.equal(ordinary.length,3);
   for(const e of ordinary){
    const sp=SPECIES[e.species];assert.ok(eligibleSpecies(level).includes(e.species));
    assert.ok(e.level>=Math.max(bands[level-1][0],sp.evoLevel)&&e.level<=bands[level-1][1]);
-   assert.equal(e.hp,sp.maxHp+Math.max(0,e.level-5));assert.equal(typeof e.asleep,'boolean');
+   assert.equal(e.hp,Math.round((sp.maxHp+Math.max(0,e.level-5))*0.5)); // difficulty multiplier 0.5
+   assert.equal(typeof e.asleep,'boolean');
   }
-  assert.equal(g.enemyAiRng,(streamSeed(seed,level,'enemy-ai')+4*0x6D2B79F5)>>>0);
-  if(level===3){const boss=g.enemies.find(e=>e.boss);assert.equal(boss.level,22);assert.equal(boss.hp,141);assert.equal(boss.asleep,false);assert.equal(BOSS_CONFIG.arcanine.canMove,false);}
+  assert.equal(g.enemyAiRng,(streamSeed(seed,level,'enemy-ai')+3*0x6D2B79F5)>>>0);
+  if(level===3){const boss=g.enemies.find(e=>e.boss);assert.equal(boss.level,22);assert.equal(boss.hp,71);assert.equal(boss.asleep,false);assert.equal(BOSS_CONFIG.arcanine.canMove,false);}
  }
 });

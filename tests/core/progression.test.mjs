@@ -33,7 +33,7 @@ const opened=async s=>{const p=port();const a=new TrialStore(p,'x');assert.equal
 const legacyActive=current=>JSON.stringify({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:1,current,recent:null,profile:initialProfile()});
 
 /* ---------- the real species team ---------- */
-test('P1 a new expedition starts three roster starters at run level 5 with roster HP and kit PP, facing four floor-1 wild enemies',()=>{
+test('P1 a new expedition starts three roster starters at run level 5 with roster HP and kit PP, facing three floor-1 wild enemies',()=>{
  const s=createExpedition('start',777);
  assert.deepEqual(s.queue,['A','B','C']);assert.equal(s.leader,'C');
  const brief=id=>{const u=s.units[id];return [u.species,u.hp,u.maxHp,u.learned,u.pp,u.maxPp];};
@@ -44,10 +44,10 @@ test('P1 a new expedition starts three roster starters at run level 5 with roste
  // spec 14.2: floor-1 theme = first type normal/grass/bug/rock/ground/flying, evolution level <= 6, no legendary; a no-boss run uses floor-1 species at Lv5 on every floor
  const theme=new Set(['Normal','Grass','Bug','Rock','Ground','Flying']);
  const pool=new Set(roster.species.filter(sp=>theme.has(sp.types[0])&&sp.evoLevel<=6&&!sp.legendary&&!sp.availability).map(sp=>sp.id));
- assert.equal(s.enemies.length,4);
+ assert.equal(s.enemies.length,3);
  assert.ok(s.enemies.every(id=>pool.has(s.units[id].species)),'wild enemies come from the floor-1 theme pool');
  assert.ok(s.enemies.every(id=>s.units[id].level===5&&s.units[id].tactic==='gofoes'));
- assert.ok(s.enemies.every(id=>{const u=s.units[id];return u.maxHp===roster.species.find(x=>x.id===u.species).maxHp&&u.hp===u.maxHp;}),'Lv5 enemy HP is the roster HP');
+ assert.ok(s.enemies.every(id=>{const u=s.units[id];return u.maxHp===Math.round(roster.species.find(x=>x.id===u.species).maxHp*0.5)&&u.hp===u.maxHp;}),'Lv5 enemy HP is the roster HP times the difficulty multiplier 0.5');
 });
 
 /* ---------- the recoverable random stream ---------- */

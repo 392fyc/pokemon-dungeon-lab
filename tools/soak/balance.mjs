@@ -15,7 +15,7 @@ import path from 'node:path';
 import {playSeed,stats,GAMES,ROUND_CAP} from '../../tests/core/soak-bot.mjs';
 import {ECON} from '../../src/core/economy.ts';
 import {ALL_TM_MOVES} from '../../src/core/roster.ts';
-import {BOSS_CONFIG} from '../../src/core/dungeon.ts';
+import {BOSS_CONFIG,ENEMY_DIFFICULTY,THEME_FLOORS} from '../../src/core/dungeon.ts';
 
 const args=process.argv.slice(2),opt=(name,def)=>{const i=args.indexOf('--'+name);return i>=0&&args[i+1]!==undefined?args[i+1]:def;};
 const SEEDS=+opt('seeds',30),POLICIES=opt('policy','naive,tactical').split(',').map(s=>s.trim()).filter(Boolean);
@@ -77,7 +77,7 @@ function section(title,s){
 - 结局：正常撤离 ${o.normal}（${pct(o.normal,s.games)}），全灭 ${o.wipe}（${pct(o.wipe,s.games)}），超时/卡住 ${o.timeout}（${pct(o.timeout,s.games)}）；完成目标 G：${s.goalDone} 局（${pct(s.goalDone,s.games)}）。
 - 轮数：平均 ${fmt(s.rounds.mean)}，中位 ${fmt(s.rounds.median)}，最小 ${s.rounds.min}，最大 ${s.rounds.max}。
 - 结束时本局等级：Lv1 ${lv[1]}，Lv2 ${lv[2]}，Lv3 ${lv[3]}，Lv4 ${lv[4]}，Lv5 ${lv[5]}（局数）。
-- 首领（${b.runsWithBoss} 局带首领）：到达首领层 ${b.reached}，击败首领 ${b.defeated}（到达首领层的局结束时首领剩余 HP：平均 ${fmt(b.bossHpLeft.mean)}，最小 ${b.bossHpLeft.min??'-'}，最大 ${b.bossHpLeft.max??'-'}，满 ${BOSS.hp}），在首领层全灭 ${b.wipedOnBossFloor}，从大厅出口撤离 ${b.lobbyExit}（其中机器人判定“打不过”而撤退 ${b.retreatDecided} 局）；击败首领时存活成员数：1 人 ${b.survivorsWhenDefeated[1]}，2 人 ${b.survivorsWhenDefeated[2]}，3 人 ${b.survivorsWhenDefeated[3]}。
+- 首领（${b.runsWithBoss} 局带首领）：到达首领层 ${b.reached}，击败首领 ${b.defeated}（到达首领层的局结束时首领剩余 HP：平均 ${fmt(b.bossHpLeft.mean)}，最小 ${b.bossHpLeft.min??'-'}，最大 ${b.bossHpLeft.max??'-'}），在首领层全灭 ${b.wipedOnBossFloor}，从大厅出口撤离 ${b.lobbyExit}（其中机器人判定“打不过”而撤退 ${b.retreatDecided} 局）；击败首领时存活成员数：1 人 ${b.survivorsWhenDefeated[1]}，2 人 ${b.survivorsWhenDefeated[2]}，3 人 ${b.survivorsWhenDefeated[3]}。
 - 走失与救援：走失伙伴 ${r.lostPartners}，支付救援 ${r.paid}，成功归来 ${r.returned}，永久失去 ${r.goneForGood}；每个种子 ${GAMES} 局后账户余额：平均 ${fmt(r.account.mean)}，最小 ${r.account.min??'-'}，最大 ${r.account.max??'-'}（${r.account.seeds} 个种子）。
 - 招式机：获得 ${t.got}，带回 ${t.brought}，基地学会 ${t.learned}，局后金库未用 ${t.vaultUnused}（${ALL_TM_MOVES.map(m=>`${m} ${t.vaultByMove[m]}`).join('，')}）。
 - 进入首领层时：${f.entry.games} 局有记录；存活 3 人 ${f.entry.alive[3]}，2 人 ${f.entry.alive[2]}，1 人 ${f.entry.alive[1]}；每名成员（含已倒下者按 0）HP 比例平均 ${fmt(f.entry.memberHpRatio,2)}，仅存活者平均 ${fmt(f.entry.aliveMemberHpRatio,2)}；全队 HP 平均 ${fmt(f.entry.teamHp)}/${fmt(f.entry.teamMax)}（${fmt(f.entry.teamHpRatio,2)}，最低 ${fmt(f.entry.teamHpRatioMin,2)}）。
@@ -157,7 +157,7 @@ if(COMPARE){
  console.log(md.join('\n'));console.log(`JSON 已写入 ${OUT}`);
 }else{
  const report={generated:new Date().toISOString(),seedsPerPolicy:SEEDS,gamesPerSeed:GAMES,roundCap:ROUND_CAP,boss:BOSS_CONFIG.arcanine,policies:{}};
- const md=[`## 7.8 平衡长测（每种策略 ${SEEDS} 个种子 × ${GAMES} 局，回合上限 ${ROUND_CAP}；首领等级加值 ${BOSS_CONFIG.arcanine.levelBonus} / HP倍率 ${BOSS_CONFIG.arcanine.hpMultiplier} / 共用名单招式）\n`];
+ const md=[`## 7.8 平衡长测（每种策略 ${SEEDS} 个种子 × ${GAMES} 局，回合上限 ${ROUND_CAP}；难度倍率 ${ENEMY_DIFFICULTY}（敌人 HP 与伤害）/ 每层普通敌人 ${THEME_FLOORS.map(f=>f.count).join('/')} / 首领等级加值 ${BOSS_CONFIG.arcanine.levelBonus} / HP倍率 ${BOSS_CONFIG.arcanine.hpMultiplier} / 共用名单招式）\n`];
  for(const policy of POLICIES){
   const r=await runPolicy(policy);
   report.policies[policy]={seconds:r.secs,all:r.all,ordinary:r.ordinary,forcedWipeSeeds:r.forcedWipeSeeds,games:rowGames(r.results,policy),

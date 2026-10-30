@@ -28,12 +28,14 @@ export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[]
   theme?:ThemeId;bossRoom?:number};
 export type ThemeId='moss'|'wet'|'ash';
 export const INITIAL_LEVEL=5;
-export const NORMAL_HP_MULTIPLIER=1;
+/** Difficulty multiplier on every generated enemy's max HP and on every damage dealt by an enemy (only `normal` exists for now; easy/hard and a picker come later). */
+export const DIFFICULTY:{normal:number}={normal:0.5};
+export const ENEMY_DIFFICULTY=DIFFICULTY.normal;
 /** First-type partitions and level bands from the 7.8 working specification. */
 export const THEME_FLOORS:{theme:ThemeId;name:string;types:string[];levels:[number,number];count:number;floorTile:string;wallTile:string}[]=[
-  {theme:'moss',name:'苔石洞',types:['Normal','Grass','Bug','Rock','Ground','Flying'],levels:[5,6],count:4,floorTile:'floor-stone',wallTile:'wall-rock'},
-  {theme:'wet',name:'潮湿水窟',types:['Water','Ice','Electric','Poison','Psychic','Fairy'],levels:[8,11],count:4,floorTile:'floor-wet',wallTile:'wall-wet'},
-  {theme:'ash',name:'灰烬裂谷',types:['Fire','Fighting','Dark','Ghost','Dragon','Steel'],levels:[12,20],count:4,floorTile:'floor-ash',wallTile:'wall-basalt'},
+  {theme:'moss',name:'苔石洞',types:['Normal','Grass','Bug','Rock','Ground','Flying'],levels:[5,6],count:3,floorTile:'floor-stone',wallTile:'wall-rock'},
+  {theme:'wet',name:'潮湿水窟',types:['Water','Ice','Electric','Poison','Psychic','Fairy'],levels:[8,11],count:3,floorTile:'floor-wet',wallTile:'wall-wet'},
+  {theme:'ash',name:'灰烬裂谷',types:['Fire','Fighting','Dark','Ghost','Dragon','Steel'],levels:[12,20],count:3,floorTile:'floor-ash',wallTile:'wall-basalt'},
 ];
 export const themeOfLevel=(boss:boolean|undefined,level:number):ThemeId=>boss?THEME_FLOORS[Math.min(Math.max(level,1),THEME_FLOORS.length)-1].theme:'moss';
 export const ARENA_TILE='floor-arena';
@@ -150,11 +152,11 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const lower=Math.max(themed.levels[0],SPECIES[species].evoLevel),upper=themed.levels[1];
     const enemyLevel=boss?lower+Math.floor(levelRng()*(upper-lower+1)):INITIAL_LEVEL;
     const asleep=sleepRng()<0.25;enemyAiRng=(enemyAiRng+0x6D2B79F5)>>>0;
-    enemies.push({id:`w${level}${'abcd'[n]}`,species,level:enemyLevel,hp:speciesMaxHp(species,enemyLevel,NORMAL_HP_MULTIPLIER),pos,asleep});
+    enemies.push({id:`w${level}${'abcd'[n]}`,species,level:enemyLevel,hp:speciesMaxHp(species,enemyLevel,ENEMY_DIFFICULTY),pos,asleep});
   }
   if(bossPos){
     const traits=BOSS_CONFIG[BOSS.species],enemyLevel=Math.max(themed.levels[1]+traits.levelBonus,SPECIES[BOSS.species].evoLevel);
-    enemies.push({id:BOSS.id,species:BOSS.species,level:enemyLevel,hp:speciesMaxHp(BOSS.species,enemyLevel,traits.hpMultiplier),pos:bossPos,boss:true,asleep:false});
+    enemies.push({id:BOSS.id,species:BOSS.species,level:enemyLevel,hp:speciesMaxHp(BOSS.species,enemyLevel,traits.hpMultiplier*ENEMY_DIFFICULTY),pos:bossPos,boss:true,asleep:false});
   }
   // 6. Pickups (6.4 working candidate): one berry per floor, plus one tonic on floor 2. Own random stream; never on a point or an enemy; outside the arrival room when possible.
   const prng=mulberry32((Math.imul(seed>>>0,0x7FEB352D)^Math.imul(level,0x846CA68B)^0x1B873593)>>>0);

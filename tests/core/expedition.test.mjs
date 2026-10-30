@@ -127,11 +127,11 @@ test('X15 generated expedition: start on the exit, floors created lazily from th
  assert.deepEqual(s0.units.C.pos,exit);
  assert.equal(new Set(coords(s0).map(p=>p.x+','+p.y)).size,3);
  assert.ok(s0.enemies.every(id=>!(s0.units[id].pos.x===exit.x&&s0.units[id].pos.y===exit.y)));
- assert.deepEqual(s0.enemies,['w1a','w1b','w1c','w1d']);   // 7.8: four ordinary enemies on every floor
+ assert.deepEqual(s0.enemies,['w1a','w1b','w1c']);   // 7.8 (difficulty tuning): three ordinary enemies on every floor
  const s=structuredClone(s0);s.units.A.hp=0;s.units.A.pos=null;s.units.B.hp=0;s.units.B.pos=null;s.units.C.pos=down;
  const leaving=requested(s),down2=cross(leaving);
  assert.equal(down2.dungeon.level,2);assert.deepEqual(down2.units.C.pos,g2.points.find(p=>p.kind==='up').pos);
- assert.deepEqual(down2.enemies,['w2a','w2b','w2c','w2d']);assert.deepEqual(down2.floor,g2.floor);
+ assert.deepEqual(down2.enemies,['w2a','w2b','w2c']);assert.deepEqual(down2.floor,g2.floor);
  const up=cross(round(down2,stairs));
  assert.equal(up.dungeon.level,1);assert.deepEqual(up.units.C.pos,down);assert.deepEqual(up.floor,g1.floor);
  assert.deepEqual(up.enemies.map(id=>[up.units[id].hp,up.units[id].pos]),leaving.enemies.map(id=>[leaving.units[id].hp,leaving.units[id].pos]));

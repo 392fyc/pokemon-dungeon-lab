@@ -1,5 +1,5 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
-import {generateFloor,serviceRoll,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,type GeneratedFloor} from './dungeon.ts';
+import {generateFloor,serviceRoll,ENEMY_DIFFICULTY,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,type GeneratedFloor} from './dungeon.ts';
 import {ECON} from './economy.ts';
 import {SPECIES,speciesOf,tmPool,learnableMove,speciesMaxHp,type KitMove} from './roster.ts';
 import {TACTICS,isTactic,type Tactic} from './tactics.ts';
@@ -310,7 +310,7 @@ function pickDamageAction(s:World,id:string,tactic:Tactic,quickguard:ReadonlySet
       const dist=distance(actor.pos!,target.pos!),guarded=target.protect>0||(quickguard.has(target.id)&&dist>1);
       let score=0;
       if(spec.effects.includes('damage')&&spec.power!==null){
-        const base=6+Math.ceil(spec.power/2)+levelDamageBonus(actorLevel);
+        const base=actor.side==='enemy'?Math.max(1,Math.round((6+Math.ceil(spec.power/2)+levelDamageBonus(actorLevel))*ENEMY_DIFFICULTY)):6+Math.ceil(spec.power/2)+levelDamageBonus(actorLevel);
         let hitDamage=Math.max(1,base+(actor.stages?.atk??0)-(target.stages?.def??0));
         const category=moveCategory(move);
         if(!category)throw new Error(`缺少招式类别：${move}`);
@@ -548,10 +548,11 @@ function basicCategory(u:Unit):'Physical'|'Special' {
   return b&&b.spa>b.atk?'Special':'Physical';
 }
 /** Apply defence, the matching ally screen, then protect/quickguard; return actual HP lost for drain and counter. */
-function resolveDamage(s:World,sourceId:string,targetId:string,base:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set()):number {
+function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set()):number {
   const source=s.units[sourceId],target=s.units[targetId];
   const opposing=source.side!==target.side;
   const attackDistance=source.pos&&target.pos?distance(source.pos,target.pos):0;
+  const base=source.side==='enemy'?Math.max(1,Math.round(baseDamage*ENEMY_DIFFICULTY)):baseDamage;
   const raw=base+(source.stages?.atk??0);
   let amount=raw<=0?0:Math.max(0,raw-(target.stages?.def??0));
   if(opposing&&amount>0){

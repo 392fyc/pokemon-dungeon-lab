@@ -76,7 +76,7 @@ function section(title,s){
 
 - 结局：正常撤离 ${o.normal}（${pct(o.normal,s.games)}），全灭 ${o.wipe}（${pct(o.wipe,s.games)}），超时/卡住 ${o.timeout}（${pct(o.timeout,s.games)}）；完成目标 G：${s.goalDone} 局（${pct(s.goalDone,s.games)}）。
 - 轮数：平均 ${fmt(s.rounds.mean)}，中位 ${fmt(s.rounds.median)}，最小 ${s.rounds.min}，最大 ${s.rounds.max}。
-- 结束时本局等级：Lv1 ${lv[1]}，Lv2 ${lv[2]}，Lv3 ${lv[3]}，Lv4 ${lv[4]}，Lv5 ${lv[5]}（局数）。
+- 结束时本局等级：${Object.keys(lv).map(Number).sort((x,y)=>x-y).map(k=>`Lv${k} ${lv[k]}`).join("，")||"-"}（局数）。
 - 首领（${b.runsWithBoss} 局带首领）：到达首领层 ${b.reached}，击败首领 ${b.defeated}（到达首领层的局结束时首领剩余 HP：平均 ${fmt(b.bossHpLeft.mean)}，最小 ${b.bossHpLeft.min??'-'}，最大 ${b.bossHpLeft.max??'-'}），在首领层全灭 ${b.wipedOnBossFloor}，从大厅出口撤离 ${b.lobbyExit}（其中机器人判定“打不过”而撤退 ${b.retreatDecided} 局）；击败首领时存活成员数：1 人 ${b.survivorsWhenDefeated[1]}，2 人 ${b.survivorsWhenDefeated[2]}，3 人 ${b.survivorsWhenDefeated[3]}。
 - 走失与救援：走失伙伴 ${r.lostPartners}，支付救援 ${r.paid}，成功归来 ${r.returned}，永久失去 ${r.goneForGood}；每个种子 ${GAMES} 局后账户余额：平均 ${fmt(r.account.mean)}，最小 ${r.account.min??'-'}，最大 ${r.account.max??'-'}（${r.account.seeds} 个种子）。
 - 招式机：获得 ${t.got}，带回 ${t.brought}，基地学会 ${t.learned}，局后金库未用 ${t.vaultUnused}（${ALL_TM_MOVES.map(m=>`${m} ${t.vaultByMove[m]}`).join('，')}）。

@@ -9,30 +9,35 @@ const round=(s,action,override)=>command(s,{type:'round',action,override});
 const reject=s=>s.phase==='invitation'?command(s,{type:'invite',choice:'reject'}):s;
 const finish=s=>s.phase==='exit'?command(s,{type:'finishExit'}):s;
 const positions=s=>s.queue.map(id=>s.units[id].pos?.x??null);
-/** The scripted fixed-map route needs fixed targets: E and R only wait (the old harmless-block behaviour) and E has 16 HP, so three basic attacks (6 each) defeat it and nobody takes damage. */
-function still(s){for(const id of s.enemies)s.units[id].waitOnly=true;s.units.E.hp=16;s.units.E.maxHp=16;return s;}
-function prefix(invite=true){let s=still(createMain('main',invite));s=round(s,move(3));for(let i=0;i<3;i++)s=round(s,basic('E'));return s;}
+/** Enemies act for real. E gets 16 HP and R 6 HP (literals, so basic attacks of 6 are easy to count); E tackles the leader C for 5 in rounds 1-3 and dies in round 4, R walks one cell per round. */
+function fixedHp(s){s.units.E.hp=16;s.units.E.maxHp=16;s.units.R.hp=6;s.units.R.maxHp=6;return s;}
+function prefix(invite=true){let s=fixedHp(createMain('main',invite));s=round(s,move(3));for(let i=0;i<3;i++)s=round(s,basic('E'));return s;}
+/** The leader waits while R steps from 5 to 4, then kills it with one basic attack (6) before it can strike. */
+function clearR(s){s=round(s,wait);assert.deepEqual(s.units.R.pos,{x:4,y:1});s=round(s,basic('R'));assert.equal(s.units.R.hp,0);return s;}
 test('M1/M2 and no-invitation routes preserve terminal resources',()=>{
  for(const invited of [true,false])for(const route of [1,2]){
- let s=reject(prefix(invited));s=round(s,move(4));s=round(s,interact(route===1));
+ let s=clearR(reject(prefix(invited)));assert.equal(s.units.C.hp,5);s=round(s,move(4));s=round(s,interact(route===1));
  if(route!==1){s=round(s,move(5));assert.equal(s.seen.includes('9,1'),true);
  s=command(s,{type:'switch',actor:'B'});s=round(s,move(4));s=round(s,interact(true));}
- s=finish(s);assert.equal(s.round,route===1?6:9);assert.equal(s.end.outcome,'normal');assert.deepEqual(positions(s),route===1?[1,3,4]:[3,4,5]);assert.equal(s.units.C.hp,20);assert.equal(s.units.C.pp.quickattack,2);assert.equal(s.bag,0);
+ s=finish(s);assert.equal(s.round,route===1?8:11);assert.equal(s.end.outcome,'normal');assert.deepEqual(positions(s),route===1?[1,3,4]:[3,4,5]);assert.equal(s.units.C.hp,5);assert.equal(s.units.C.pp.quickattack,2);assert.equal(s.bag,0);
  }});
-test('M5/M6 B damage belongs to B, both plans 11 rounds',()=>{
- for(const accept of [false,true]){let s=prefix();s=command(s,{type:'invite',choice:accept?'accept':'reject',...(accept?{outgoing:'C'}:{})});s=command(s,{type:'switch',actor:'B'});const p=accept?'N':'C';s=round(s,{type:'swap',target:p});assert.deepEqual(positions(s),[1,3,2]);for(const a of [move(4),interact(false),move(5),move(6),move(7),interact(true)])s=round(s,a);s=finish(s);assert.equal(s.round,11);assert.deepEqual(positions(s),[5,7,6]);assert.equal(s.units.B.hp,20);assert.equal(s.units[p].hp,accept?10:20);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(s.camp,accept?['C']:[]);}
+test('M5/M6 B damage belongs to B, both plans 13 rounds',()=>{
+ for(const accept of [false,true]){let s=prefix();s=command(s,{type:'invite',choice:accept?'accept':'reject',...(accept?{outgoing:'C'}:{})});s=command(s,{type:'switch',actor:'B'});const p=accept?'N':'C';s=round(s,{type:'swap',target:p});assert.deepEqual(positions(s),[1,3,2]);
+  // B waits beside the approaching R: its tackle (5) lands on B only, then B's basic attack kills it.
+  s=round(s,wait);assert.equal(s.units.B.hp,15);assert.equal(s.units.A.hp,20);assert.equal(s.units[p].hp,accept?10:5);s=round(s,basic('R'));assert.equal(s.units.R.hp,0);
+  for(const a of [move(4),interact(false),move(5),move(6),move(7),interact(true)])s=round(s,a);s=finish(s);assert.equal(s.round,13);assert.deepEqual(positions(s),[5,7,6]);assert.equal(s.units.B.hp,15);assert.equal(s.units[p].hp,accept?10:5);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(s.camp,accept?['C']:[]);}
 });
 test('V1/V2 refusal is immutable and explicit waiting fixes known conflict',()=>{
  const s=createScenario('V1','v1'),before=JSON.stringify(s);const r=applyCommand(s,{type:'round',action:move(4)});assert.equal(r.ok,false);assert.strictEqual(r.state,s);assert.equal(JSON.stringify(s),before);
  const fixed=round(s,move(4),{actor:'B',action:wait});assert.deepEqual(positions(fixed),[2,3,4]);
 });
 test('M4 B already on exit; no extra return damage',()=>{
- let s=createScenario('V1','m4');s.units.R.waitOnly=true;s=round(s,move(6));s=command(s,{type:'switch',actor:'B'});s=finish(round(s,interact(true)));assert.deepEqual(positions(s),[3,4,5]);assert.equal(s.units.C.hp,20);assert.equal(s.round,9);
+ let s=createScenario('V1','m4');s=round(s,move(6));s=command(s,{type:'switch',actor:'B'});s=finish(round(s,interact(true)));assert.deepEqual(positions(s),[3,4,5]);assert.equal(s.units.C.hp,20);assert.equal(s.round,9);
 });
 test('V3/V4 follow and V5/V6/V7 down membership',()=>{
  let s=createScenario('V3','v3');s=round(s,move(0));assert.deepEqual(positions(s),[3,2,0]);assert.equal(finish(round(s,interact(true))).phase,'ended');
  s=createScenario('V4','v4');s=round(s,wait,{actor:'C',action:{type:'move',to:{x:2,y:2}}});s=round(s,wait);assert.deepEqual(s.units.B.pos,{x:2,y:1});assert.deepEqual(s.units.C.pos,{x:3,y:2});
- s=createScenario('V5','v5');s=round(s,move(2));assert.equal(s.units.B.hp,8);   // V5's E only waits, so B beside it takes nothing
+ s=createScenario('V5','v5');s=round(s,move(2));assert.equal(s.units.B.hp,3);   // V5's E is a real growlithe: B steps beside it and takes ember (base 10, x0.5 enemy difficulty = 5), 8-5=3
  assert.equal(s.units.C.pos.x,1);s=round(s,basic('E'));assert.equal(s.units.C.pos.x,1);assert.equal(s.queue.length,3);
  s=round(createScenario('V6','v6'),move(2));assert.equal(s.leader,'C');assert.equal(s.units.B.pos,null);
  s=finish(round(createScenario('V7','v7'),interact(true)));assert.equal(s.units.A.hp,0);assert.equal(s.end.outcome,'normal');

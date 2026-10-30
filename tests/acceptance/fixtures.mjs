@@ -54,7 +54,7 @@ export function preview(s,outgoing){
 export function V(id){
  if(id===3)return world({A:friend('A',3,1,10),B:friend('B',2,1,10),C:friend('C',1,1,10)},{floor:row(4),leader:'C',points:[{pos:pos(0),kind:'exit',used:false}]});
  if(id===4)return world({A:friend('A',3,1,10),B:friend('B',1,1,10),C:friend('C',2,1,10)},{floor:[...row(3),pos(2,2),pos(3,2)]});
- if(id===5||id===6)return world({A:friend('A',2,1,0),B:friend('B',1,1,id===6?3:8),C:friend('C',0,1,8),E:enemy('E',3,1,6,'chase',{waitOnly:id===5})},{floor:row(4),leader:'B',enemies:['E']});
+ if(id===5||id===6)return world({A:friend('A',2,1,0),B:friend('B',1,1,id===6?3:8),C:friend('C',0,1,8),E:enemy('E',3,1,6,'chase')},{floor:row(4),leader:'B',enemies:['E']});
  if(id===7)return world({A:friend('A',2,1,0),B:friend('B',0,1,8),C:friend('C',1,1,8)},{floor:row(4),leader:'B',points:[{pos:pos(0),kind:'exit',used:false}]});
  if(id===8||id===9||id===10){
   const s=world({A:friend('A',2,2,id===10?10:20,{tackle:2}),B:friend('B',id===8?1:2,id===8?2:3,id===10?10:20,{protect:2}),C:friend('C',4,2,id===10?10:0,{tackle:2,quickattack:2})},{floor:open(id===8?5:4)});

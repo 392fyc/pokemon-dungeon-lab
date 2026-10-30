@@ -48,7 +48,7 @@ export function createScenario(id:ScenarioId,runId:string):World {
   const s=fixture(runId,id,open?rect(id==='V8'?5:4):row(0,id.startsWith('K')?5:9));
   if(id==='V3') {s.floor=row(0,4);s.units={A:friend('A',3,1,10),B:friend('B',2,1,10),C:friend('C',1,1,10)};s.leader='C';s.points=[{pos:{x:0,y:1},kind:'exit',used:false}];}
   if(id==='V4'){s.floor=[...row(0,3),{x:2,y:2},{x:3,y:2}];s.units={A:friend('A',3,1,10),B:friend('B',1,1,10),C:friend('C',2,1,10)};}
-  if(id==='V5'||id==='V6'){s.floor=row(0,4);s.units={A:friend('A',2,1,0),B:friend('B',1,1,id==='V6'?3:8),C:friend('C',0,1,8),E:foe('E',3,1,6,'chase',id==='V5'?0:3)};s.enemies=['E'];s.leader='B';}
+  if(id==='V5'||id==='V6'){s.floor=row(0,4);s.units={A:friend('A',2,1,0),B:friend('B',1,1,id==='V6'?3:8),C:friend('C',0,1,8),E:foe('E',3,1,6,'chase',3)};s.enemies=['E'];s.leader='B';}
   if(id==='V7'){s.floor=row(0,4);s.units={A:friend('A',2,1,0),B:friend('B',0,1,8),C:friend('C',1,1,8)};s.leader='B';s.points=[{pos:{x:0,y:1},kind:'exit',used:false}];}
   if(id==='V8'||id==='V9'||id==='V10'){
     s.units={A:friend('A',2,2,id==='V10'?10:20,{tackle:2}),B:friend('B',id==='V8'?1:2,id==='V8'?2:3,id==='V10'?10:20,{protect:2}),C:friend('C',4,2,id==='V10'?10:0,{tackle:2,quickattack:2})};

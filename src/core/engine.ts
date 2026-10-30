@@ -102,9 +102,12 @@ export type EnemyFixtureRole='melee'|'ranged'|'chase';
 const FIXTURE_SPECIES:Record<EnemyFixtureRole,string>={melee:'geodude',ranged:'pidgey',chase:'growlithe'};
 export function enemy(id:string,x:number,y:number,hp:number,role:EnemyFixtureRole,damage:number,range=1):Unit {
   // `hp` and `range` remain in the helper signature for old scenario fixtures.
-  // The roster, level and HP formula define the enemy's actual stats.
+  // The roster, level and HP formula define the enemy's actual stats; a species-generated enemy
+  // gets the enemy difficulty multiplier on HP just like its damage (spec 5.1). Callers that need a
+  // literal HP (test fixtures, developer scenarios) assign it afterwards.
   void hp;void range;
   const species=FIXTURE_SPECIES[role],u=speciesUnit(id,species,INITIAL_LEVEL,{x,y});
+  u.maxHp=speciesMaxHp(species,INITIAL_LEVEL,ENEMY_DIFFICULTY);u.hp=u.maxHp;
   u.side='enemy';u.tactic='gofoes';if(damage===0)u.waitOnly=true;return u;
 }
 export function newcomer(id='N'):Unit {return friend(id,0,0,10,{tackle:1,roar:1});}

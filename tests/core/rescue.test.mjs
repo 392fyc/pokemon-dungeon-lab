@@ -306,18 +306,23 @@ test('R23 a run from before the base existed: A, B and C are protected and never
 test('R24 an old ended World settles the purse, rescue pool, squad and machines once',async()=>{
  const frozen=JSON.parse(readFileSync(new URL('./fixtures78/legacy-worlds.json',import.meta.url),'utf8'));
  const p=structuredClone(frozen.profile);p.account=20;p.rescue=[entry(zubat('P4'),true,1),entry(pidgey('P5'),false,1)];p.next=6;
- const s=structuredClone(frozen.floor3);s.prog.exp=2;s.goal=true;s.purse=40;s.tms=[{move:'roar',source:'shop',fate:'held'}];s.bag=0;
+ // The frozen founders are all protected, which would hide the wipe draw. P2 (squirtle, unit B; the origin P3 must stay protected) is made an ordinary partner so the old terminal world can lose it:
+ // with state 7 the first draw is 0.012 (< 0.5), the same hand-worked value R5 and R10 rely on, and only unprotected members draw.
+ p.roster.find(i=>i.id==='P2').protected=false;
+ const s=structuredClone(frozen.floor3);s.prog.exp=2;s.prog.rng=7;delete s.units.B.protected;s.goal=true;s.purse=40;s.tms=[{move:'roar',source:'shop',fate:'held'}];s.bag=0;
  for(const id of s.queue){s.units[id].hp=0;s.units[id].pos=null;}
  s.phase='ended';s.request=null;s.anchor=null;s.end=closeOut(s,'wipe');
  const raw=JSON.stringify({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:9,current:s,recent:null,profile:p});
  const expected=settleRun(p,s),port=memory();port.setItem('dungeon-trial.player.v1',raw);const beforeWrites=port.writes(),live=new TrialStore(port);
  assert.equal(await live.whenReady,true,live.error);assert.equal(live.status,'ready',live.error);assert.equal(port.writes(),beforeWrites+1);
  const q=live.profile;
- // The frozen rules-2 World has a terminal goal and wipe: reward is paid, purse and held machine are lost, the paid rescue returns, and the unpaid one is lost.
- assert.equal(q.account,120);assert.deepEqual(roster(q),['P1','P2','P3','P4']);
- assert.deepEqual(q.lost,[{id:'P5',species:'pidgey',expedition:1}]);assert.deepEqual(q.rescue,[]);
- assert.deepEqual(q.vault,{});assert.deepEqual(q.team,['P1','P2','P3']);assert.equal(q.leader,'P3');
- const summary=settleSummary(p,s);assert.deepEqual(summary.returned,[{id:'P4',species:'zubat'}]);assert.deepEqual(summary.gone,[{id:'P5',species:'pidgey'}]);assert.deepEqual(summary.missing,[]);
+ // The frozen rules-2 World has a terminal goal and wipe: reward is paid, purse and held machine are lost, the paid rescue returns, the unpaid one is lost,
+ // and unprotected P2 goes missing (L = 4) and leaves the squad; leader P3 stays.
+ assert.deepEqual(s.end.lost,['B'],'the wipe draw loses the unprotected B');
+ assert.equal(q.account,120);assert.deepEqual(roster(q),['P1','P3','P4']);
+ assert.deepEqual(q.lost,[{id:'P5',species:'pidgey',expedition:1}]);assert.deepEqual(q.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P2',false,4]]);
+ assert.deepEqual(q.vault,{});assert.deepEqual(q.team,['P1','P3']);assert.equal(q.leader,'P3');
+ const summary=settleSummary(p,s);assert.deepEqual(summary.returned,[{id:'P4',species:'zubat'}]);assert.deepEqual(summary.gone,[{id:'P5',species:'pidgey'}]);assert.deepEqual(summary.missing,[{id:'P2',species:'squirtle'}]);
  assert.deepEqual(q,expected);assert.equal(Object.hasOwn(live.envelope,'current'),false);
  assert.deepEqual(new TrialStore(port).profile,q,'reopening cannot settle the result twice');
 });

@@ -82,7 +82,7 @@ try{
  assert.equal(await exported(),incompatible);await upload(backup);assert.deepEqual(JSON.parse(await raw()),original);
  result.checks.push('不兼容存档有中文原因，可按原字节导出后导入有效记录');
  await p.locator('#settings-close').click();
- // Complete the fixed-map six-round route using keys, canvas attacks and invitation/exit buttons.
+ // Complete the fixed-map five-round route (7.8: the real geodude E has 10 HP, so two basic attacks defeat it) using keys, canvas attacks and invitation/exit buttons.
  // Use a separate browser context below, so the player save is not replaced by a developer trial.
  const runContext=await browser.newContext({viewport:{width:1440,height:1100}});
  try{
@@ -91,13 +91,13 @@ try{
   await q.goto(base+'?dev=1');await q.locator('#start').click();await q.waitForFunction(()=>window.trial?.view());
   await q.keyboard.press('ArrowRight');
   const b=await q.locator('canvas').boundingBox();
-  for(let i=0;i<3;i++)await q.mouse.click(b.x+310*b.width/680,b.y+175*b.height/350);
+  for(let i=0;i<2;i++)await q.mouse.click(b.x+310*b.width/680,b.y+175*b.height/350);
   await q.locator('#reject').click();await q.locator('#reject-confirm').click();await q.keyboard.press('ArrowRight');
   await q.locator('#take-exit').click();await q.locator('#exit-confirm').click();
   await q.waitForFunction(()=>window.trial.getState()?.phase==='ended');
-  const end=await q.evaluate(()=>window.trial.getState());assert.equal(end.round,6);assert.equal(end.goal,true);assert.equal(end.end.outcome,'normal');
+  const end=await q.evaluate(()=>window.trial.getState());assert.equal(end.round,5);assert.equal(end.goal,true);assert.equal(end.end.outcome,'normal');
   await q.screenshot({path:'.artifacts/trial/web-ea-completed-run.png',fullPage:true});
-  result.checks.push('固定主图六轮：移动、三次普攻、拒绝邀请、完成 G 并正常撤离');
+  result.checks.push('固定主图五轮：移动、两次普攻、拒绝邀请、完成 G 并正常撤离');
  }finally{await runContext.close();}
  assert.deepEqual(errors,[]);assert.deepEqual(failed,[]);
  result.status='PASS';console.log(JSON.stringify(result,null,2));

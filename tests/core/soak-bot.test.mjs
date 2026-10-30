@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {playSeed} from './soak-bot.mjs';
+import {ECON} from '../../src/core/economy.ts';
 
 /* Stage 7.4: the tactical policy of the shared soak bot finishes its games (no round-cap timeout) and replays identically from the same seed. */
 test('S74 tactical-stand policy: one seed replays identically',async()=>{
@@ -15,4 +16,19 @@ test('S74 tactical policy: two seeds finish without a stuck game and replay iden
   assert.ok(a.games.length>=1);
   assert.deepEqual(a.games,b.games);assert.deepEqual(a.st,b.st);assert.deepEqual(a.extra,b.extra);
  }
+});
+
+/* Stage 7.4 part 2: the tactical bot pays rescues at the base. Seed 2 is an ordinary (not forced-wipe) seed where a recruit goes missing in a wipe (found by playing seeds 0-13).
+ * The paying run replays identically, pays at least once, and every payment costs ECON.rescueCost; the same seed with payment switched off pays nothing and keeps the partner waiting. */
+test('S74 tactical policy pays rescues: seed 2 replays identically and pays at least once; the switch turns it off',async()=>{
+ const a=await playSeed(2,{policy:'tactical'}),b=await playSeed(2,{policy:'tactical'}),off=await playSeed(2,{policy:'tactical',payRescue:false});
+ assert.deepEqual(a.games,b.games);assert.deepEqual(a.st,b.st);assert.deepEqual(a.extra,b.extra);assert.deepEqual(a.accTrail,b.accTrail);
+ assert.equal(a.payRescue,true);assert.equal(off.payRescue,false);
+ assert.ok(a.st.lostPartners>=1,'seed 2 must lose a partner');
+ assert.ok(a.st.paid>=1,'seed 2 must pay at least one rescue');
+ assert.equal(a.st.spent,a.st.paid*ECON.rescueCost);
+ assert.ok(a.st.returned>=1,'a paid partner returns');
+ assert.equal(off.st.paid,0);assert.equal(off.st.spent,0);
+ assert.ok(off.st.lostPartners>=1);assert.equal(off.st.returned,0); // unpaid: the partner keeps waiting
+ assert.equal(off.games.filter(g=>g.outcome==='timeout').length,0);
 });

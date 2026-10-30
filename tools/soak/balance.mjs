@@ -3,6 +3,8 @@
  * the full numbers (aggregates and every game record) go to a JSON file.
  *
  *   node --experimental-strip-types tools/soak/balance.mjs [--seeds 30] [--policy naive,tactical]  (tactical-stand = tactical without the retreat rule, for measuring the boss fight itself) [--out .tmp/lane-main/balance-<time>.json]
+ *   --no-pay   tactical policies do not pay rescues (default: they pay every rescue the account allows at the base; naive never pays)
+ *   --rescue-compare   run `tactical` twice (pay / no pay) over the same seeds and print the comparison table and the rescue-burden tables
  *
  * `--seeds N` plays N seeds x 5 games per policy. Seeds with i % 4 === 3 are the forced-wipe seeds of the soak (HP is cut to 1 on purpose);
  * they are summarised in their own section and never mixed into the ordinary seeds' wipe rate.
@@ -11,6 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {playSeed,stats,GAMES,ROUND_CAP} from '../../tests/core/soak-bot.mjs';
+import {ECON} from '../../src/core/economy.ts';
 import {TM_MOVES} from '../../src/core/roster.ts';
 import {BOSS} from '../../src/core/dungeon.ts';
 
@@ -22,6 +25,7 @@ for(const p of POLICIES)if(!['naive','tactical','tactical-stand'].includes(p)){c
 const BOSS_DEFAULT={hp:BOSS.hp,damage:BOSS.damage,attacks:BOSS.attacks};
 const parseBoss=s=>Object.fromEntries(String(s??'').split(',').filter(Boolean).map(kv=>{const [k,v]=kv.split('=');if(!(k in BOSS_DEFAULT)||!Number.isInteger(+v)||+v<1){console.error(`bad --boss entry ${kv}`);process.exit(2);}return [k,+v];}));
 const setBoss=o=>Object.assign(BOSS,BOSS_DEFAULT,o);
+const NO_PAY=args.includes('--no-pay'),COMPARE=args.includes('--rescue-compare');
 const SWEEP=args.includes('--sweep'),BOSS_ARG=parseBoss(opt('boss',''));
 const stamp=new Date().toISOString().replace(/[-:]/g,'').slice(0,15);
 const OUT=opt('out',`.tmp/lane-main/balance-${stamp}.json`);
@@ -87,9 +91,49 @@ function section(title,s){
 `;
 }
 
-async function runPolicy(policy){
+/** 7.4 part 2: rescue burden of one group of seed results. Each game's account/roster figure is read after its settlement (before the next base turn). */
+function burden(results){
+ const st=stats();for(const r of results)for(const k of Object.keys(st))st[k]+=r.st[k];
+ const n=results.length,trail=(key,g)=>results.map(r=>r[key][g]).filter(v=>v!==undefined);
+ const acc=[0,1,2,3,4].map(g=>{const v=trail('accTrail',g);return {games:v.length,mean:mean(v),min:v.length?Math.min(...v):null};});
+ const ros=results.map(r=>({first:r.rosterTrail[0],last:r.rosterTrail.at(-1),min:Math.min(...r.rosterTrail)}));
+ const perSeed=results.map(r=>({seed:r.seed,lost:r.st.lostPartners,paid:r.st.paid,spent:r.st.spent,returned:r.st.returned,gone:r.st.goneForGood,
+  wait:r.st.waitN?r.st.waitSum/r.st.waitN:null,income:r.st.income,purseZero:r.st.purseZeroByRescue,acc:r.accTrail,roster:r.rosterTrail}));
+ return {seeds:n,st:{lost:st.lostPartners,paid:st.paid,spent:st.spent,returned:st.returned,gone:st.goneForGood,waitN:st.waitN,wait:st.waitN?st.waitSum/st.waitN:null,income:st.income,refund:st.refund,purseZero:st.purseZeroByRescue,wipes:st.wipes},
+  acc,rosterFirst:mean(ros.map(x=>x.first)),rosterLast:mean(ros.map(x=>x.last)),rosterMin:mean(ros.map(x=>x.min)),rosterShrank:count(ros,x=>x.last<x.first),perSeed};
+}
+function burdenMd(title,b){
+ const t=b.st,seedsWithLoss=count(b.perSeed,r=>r.lost>0);
+ const head=`#### ${title}（${b.seeds} 个种子）
+| 项目 | 数值 |
+|---|---|
+| 走失人次 | ${t.lost}（${seedsWithLoss}/${b.seeds} 个种子发生过走失；全灭 ${t.wipes} 局） |
+| 支付次数 / 总花费 | ${t.paid} 次 / ${t.spent}（每次 ${ECON.rescueCost}） |
+| 成功归来 | ${t.returned} |
+| 永久失去 | ${t.gone} |
+| 走失到归来的平均有效探险数 | ${fmt(t.wait,2)}（${t.waitN} 人次） |
+| 基础收入总额（reward）/ 钱袋退款 | ${t.income} / ${t.refund} |
+| 因救援花费使该局钱袋为 0 的局数 | ${t.purseZero} |
+| 名册规模（第 1 局后 → 第 5 局后，种子均值） | ${fmt(b.rosterFirst,2)} → ${fmt(b.rosterLast,2)}（途中最小均值 ${fmt(b.rosterMin,2)}；${b.rosterShrank} 个种子缩小） |
+
+每局结束后账户余额（结算后、下一次基地回合之前）：
+
+| 第几局 | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| 均值 | ${b.acc.map(a=>fmt(a.mean)).join(' | ')} |
+| 最小 | ${b.acc.map(a=>a.min??'-').join(' | ')} |
+`;
+ const rows=b.perSeed.map(r=>`| ${r.seed} | ${r.lost} | ${r.paid} | ${r.spent} | ${r.returned} | ${r.gone} | ${fmt(r.wait,1)} | ${r.income} | ${r.purseZero} | ${r.acc.join('→')} | ${r.roster.join('→')} |`);
+ return head+`
+按种子：
+
+| 种子 | 走失 | 支付 | 花费 | 归来 | 失去 | 平均等待 | 收入 | 钱袋归零局 | 账户 | 名册 |
+|---|---|---|---|---|---|---|---|---|---|---|
+`+rows.join('\n')+'\n';
+}
+async function runPolicy(policy,payRescue=!NO_PAY){
  const t0=Date.now(),results=[];
- for(let i=0;i<SEEDS;i++)results.push(await playSeed(i,{policy}));
+ for(let i=0;i<SEEDS;i++)results.push(await playSeed(i,{policy,payRescue}));
  const normal=results.filter(r=>!r.doomed),forced=results.filter(r=>r.doomed);
  return {results,secs:(Date.now()-t0)/1000,all:summarize(results),ordinary:summarize(normal),forcedWipeSeeds:summarize(forced)};
 }
@@ -111,6 +155,24 @@ if(SWEEP){
  fs.writeFileSync(OUT,JSON.stringify(report));
  console.log(`## 首领数值扫描（每组 ${SEEDS} 个种子 × ${GAMES} 局，普通种子口径）\n\n`+rows.join('\n')+'\n\n'+detail.join('\n'));
  console.log(`JSON 已写入 ${OUT}`);
+}else if(COMPARE){
+ setBoss(BOSS_ARG);
+ const runs={};for(const pay of [true,false])runs[pay?'pay':'nopay']=await runPolicy('tactical',pay);
+ const row=(name,r)=>{const o=r.ordinary,b=o.boss,u=burden(r.results.filter(x=>!x.doomed)),t=u.st;
+  return `| ${name} | ${o.games} | ${pct(o.outcome.normal,o.games)} | ${pct(o.outcome.wipe,o.games)} | ${o.outcome.timeout} | ${pct(b.defeated,b.reached)}（${b.defeated}/${b.reached}） | ${t.lost} | ${t.paid} | ${t.spent} | ${t.returned} | ${t.gone} | ${fmt(t.wait,2)} | ${fmt(o.rescue.account.mean)} | ${t.purseZero} | ${fmt(u.rosterLast,2)} |`;};
+ const md=[`## 7.4 救援对照（tactical，${SEEDS} 个种子 × ${GAMES} 局，普通种子口径；强制全灭种子单列）
+`,
+  '| 策略 | 局数 | 正常撤离 | 全灭 | 超时 | 首领击败率 | 走失 | 支付 | 总花费 | 归来 | 永久失去 | 平均等待(有效探险) | 5局后账户均值 | 钱袋归零局 | 5局后名册均值 |','|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|',
+  row('支付救援',runs.pay),row('不支付',runs.nopay),''];
+ for(const [name,r] of Object.entries(runs)){
+  md.push(`### ${name==='pay'?'支付救援':'不支付'}：救援负担（耗时 ${r.secs.toFixed(0)} 秒）
+`);
+  md.push(burdenMd('普通种子',burden(r.results.filter(x=>!x.doomed))));
+  md.push(burdenMd('强制全灭种子（HP 被刻意削到 1；该组基地回合自带付费逻辑，与开关无关）',burden(r.results.filter(x=>x.doomed))));
+ }
+ const report={generated:new Date().toISOString(),mode:'rescue-compare',seeds:SEEDS,variants:Object.fromEntries(Object.entries(runs).map(([k,r])=>[k,{seconds:r.secs,ordinary:r.ordinary,forcedWipeSeeds:r.forcedWipeSeeds,burdenOrdinary:burden(r.results.filter(x=>!x.doomed)),burdenForced:burden(r.results.filter(x=>x.doomed))}]))};
+ fs.writeFileSync(OUT,JSON.stringify(report));
+ console.log(md.join('\n'));console.log(`JSON 已写入 ${OUT}`);
 }else{
  setBoss(BOSS_ARG);
  const report={generated:new Date().toISOString(),seedsPerPolicy:SEEDS,gamesPerSeed:GAMES,roundCap:ROUND_CAP,boss:{hp:BOSS.hp,damage:BOSS.damage,attacks:BOSS.attacks},policies:{}};
@@ -121,6 +183,7 @@ if(SWEEP){
    seedAccounts:r.results.map(x=>({seed:x.seed,doomed:x.doomed,account:x.account,roster:x.roster}))};
   md.push(`### 策略：${policy}（耗时 ${r.secs.toFixed(0)} 秒）\n`);
   md.push(section('普通种子（不含强制全灭）',r.ordinary));
+  md.push(burdenMd('救援负担：普通种子（不含强制全灭）',burden(r.results.filter(x=>!x.doomed))));
   md.push(section('强制全灭种子（i%4===3，只用来检验失败回归，不代表全灭率）',r.forcedWipeSeeds));
   const stuck=r.results.flatMap(x=>x.games.filter(g=>g.outcome==='timeout').map(g=>`种子 ${g.seed} 第 ${g.game} 局：${g.reason}`));
   md.push(stuck.length?`卡住的局：\n${stuck.map(s=>'- '+s).join('\n')}\n`:'没有卡住的局。\n');

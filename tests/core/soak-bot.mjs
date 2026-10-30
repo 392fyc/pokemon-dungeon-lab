@@ -56,7 +56,7 @@ function roundTrip(port,store,where){
 }
 
 /* ---------- the bot ---------- */
-export const stats=()=>({reachedBoss:0,bossDefeated:0,bossWipes:0,lobbyExits:0,wipes:0,lostPartners:0,paid:0,returned:0,goneForGood:0,bought:0,exchanged:0,doomedWipes:0,invites:0,accepted:0,rejected:0,swapped:0,levelUps:0,tmGot:0,tmBrought:0,transits:0,cancelledTransits:0,berries:0,tonics:0,rests:0,guards:0,lines:0,switches:0,declined:0,rejections:0,probes:0,learned:0});
+export const stats=()=>({reachedBoss:0,bossDefeated:0,bossWipes:0,lobbyExits:0,wipes:0,lostPartners:0,paid:0,returned:0,goneForGood:0,bought:0,exchanged:0,doomedWipes:0,invites:0,accepted:0,rejected:0,swapped:0,levelUps:0,tmGot:0,tmBrought:0,spent:0,income:0,refund:0,waitSum:0,waitN:0,purseZeroByRescue:0,transits:0,cancelledTransits:0,berries:0,tonics:0,rests:0,guards:0,lines:0,switches:0,declined:0,rejections:0,probes:0,learned:0});
 const adjacentEnemies=s=>s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&dist(u.pos,s.units[s.leader].pos)===1);
 function ppDeficit(u){return u.learned.some(k=>(u.pp[k]??0)<(u.maxPp[k]??0));}
 /** BFS over revealed floor cells only. Allies and enemies do not block the search (the bot swaps with allies and attacks enemies in the way). */
@@ -392,7 +392,7 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
 }
 
 /** Base routine: every refusal is checked to change nothing; then learn the first compatible machine, set carry and team, depart. */
-async function baseTurn(port,store,seed,game,st,where){
+async function baseTurn(port,store,seed,game,st,where,pay=false){
  const check=async(a,expectOk)=>{
   const before=store.envelope,raw=port.getItem(store.key);
   const r=await store.baseAction(a);
@@ -402,6 +402,12 @@ async function baseTurn(port,store,seed,game,st,where){
   return r;
  };
  st.probes+=4;
+ // 7.4 part 2 (tactical policies only, switchable): pay every unpaid rescue the account allows, in the order the partners went missing.
+ let paidNow=0;const account0=store.profile.account;
+ if(pay)for(const r of [...store.profile.rescue])if(!r.paid&&store.profile.account>=ECON.rescueCost){
+  const before=store.profile.account;await check({type:'rescue',inst:r.inst.id},true);
+  assert.equal(store.profile.account,before-ECON.rescueCost,`${where}: rescue price`);st.paid++;st.spent+=ECON.rescueCost;paidNow++;
+ }
  await check({type:'carry',inst:'P1',moves:['scratch','ember','scratch']},false);
  await check({type:'team',team:[],leader:'P1'},false);
  await check({type:'team',team:['P1','P2','P3','P1'],leader:'P1'},false);
@@ -427,6 +433,7 @@ async function baseTurn(port,store,seed,game,st,where){
  const purse=game%2===0?Math.min(40,Math.floor(store.profile.account/ECON.purseStep)*ECON.purseStep):0;
  assert.equal(await store.depart(`soak-${seed}-${game}`,gseed,purse),true,`${where}: depart refused`);
  if(purse)assert.equal(store.state.purse,purse);
+ if(paidNow>0&&purse===0&&(game%2===0?Math.min(40,Math.floor(account0/ECON.purseStep)*ECON.purseStep):0)>0)st.purseZeroByRescue++; // observation: paying emptied this run's purse
  roundTrip(port,store,where+' depart');
 }
 
@@ -441,7 +448,7 @@ function doomedProfile(){
 async function doomedBase(port,store,seed,game,st,where){
  for(const r of [...store.profile.rescue])if(!r.paid&&store.profile.account>=ECON.rescueCost){
   const before=store.profile.account,res=await store.baseAction({type:'rescue',inst:r.inst.id});
-  assert.ok(res.ok&&res.saved,`${where}: paying ${r.inst.id}: ${res.error}`);assert.equal(store.profile.account,before-ECON.rescueCost);st.paid++;roundTrip(port,store,where+' pay');
+  assert.ok(res.ok&&res.saved,`${where}: paying ${r.inst.id}: ${res.error}`);assert.equal(store.profile.account,before-ECON.rescueCost);st.paid++;st.spent+=ECON.rescueCost;roundTrip(port,store,where+' pay');
  }
  const poor=store.profile.rescue.find(r=>!r.paid);
  if(poor&&store.profile.account<ECON.rescueCost){ // refused with the missing amount, nothing written
@@ -454,7 +461,9 @@ async function doomedBase(port,store,seed,game,st,where){
  assert.equal(await store.depart(`soak-${seed}-${game}`,(seed*2654435761+game*40503)>>>0,purse),true,`${where}: depart refused`);roundTrip(port,store,where+' depart');
 }
 /** The settlement rules written again independently of settleRun: what must hold between the profile before a run and the one after it. */
-function checkSettlement(before,after,end,st,where){
+function checkSettlement(before,after,end,st,where,trk){
+ if(end.effective)trk.eff++;
+ st.income+=end.reward;st.refund+=end.refund;
  assert.equal(after.account,before.account+end.reward+end.refund,`${where}: account`);assert.ok(after.account>=0,`${where}: negative account`);
  const pool=new Map(before.rescue.map(r=>[r.inst.id,r]));
  for(const [id,r] of pool){
@@ -462,13 +471,13 @@ function checkSettlement(before,after,end,st,where){
   if(!end.effective||r.left>1){
    const want=end.effective?r.left-1:r.left;
    assert.ok(now&&now.left===want&&now.paid===r.paid&&!back&&!gone,`${where}: ${id} should wait with ${want}`);
-  }else if(r.paid){assert.ok(back&&!now&&!gone,`${where}: paid ${id} should return`);st.returned++;}
+  }else if(r.paid){assert.ok(back&&!now&&!gone,`${where}: paid ${id} should return`);st.returned++;st.waitSum+=trk.eff-(trk.lostAt.get(id)??trk.eff);st.waitN++;}
   else{assert.ok(gone&&!now&&!back,`${where}: unpaid ${id} should be lost for good`);st.goneForGood++;}
  }
  const fresh=after.rescue.filter(x=>!pool.has(x.inst.id));
  assert.equal(fresh.length,end.lost.length,`${where}: pool newcomers vs the draw`);
  for(const x of fresh){assert.equal(x.left,ECON.window);assert.equal(x.paid,false);}
- st.lostPartners+=fresh.length;
+ st.lostPartners+=fresh.length;for(const x of fresh)trk.lostAt.set(x.inst.id,trk.eff);
  assert.ok(after.rescue.every(x=>!x.inst.protected)&&after.lost.length>=before.lost.length,`${where}: protected member in the pool or lost record shrank`);
  for(const i of before.roster.filter(i=>i.protected))assert.ok(after.roster.some(j=>j.id===i.id),`${where}: protected ${i.id} left the roster`);
  assert.ok(after.team.length>=1&&after.team.every(id=>after.roster.some(i=>i.id===id)),`${where}: squad not departable`);
@@ -476,7 +485,8 @@ function checkSettlement(before,after,end,st,where){
 export const seedOf=i=>1000+i*7919;
 export async function playSeed(i,options={}){
  const policy=options.policy??'naive',tactical=policy==='tactical'||policy==='tactical-stand';
- const seed=seedOf(i),port=memory(),st=stats(),games=[],doomed=i%4===3,extra=[];
+ const payRescue=tactical&&options.payRescue!==false;
+ const seed=seedOf(i),port=memory(),st=stats(),games=[],doomed=i%4===3,extra=[],trk={eff:0,lostAt:new Map()},accTrail=[],rosterTrail=[];
  let store;const ref={};
  if(i%2===0){ // the real first-run path of the start page: a legacy expedition with no profile; the base profile appears when it returns
   store=new TrialStore(port);const gseed=(seed*2654435761)>>>0;
@@ -484,7 +494,7 @@ export async function playSeed(i,options={}){
  }else{ // a player at the base with the initial profile
   port.setItem('dungeon-trial.player.v1',JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:null,recent:null,profile:doomed?doomedProfile():initialProfile()}));
   store=new TrialStore(port);assert.equal(store.status,'ready');assert.equal(store.atBase,true);
-  await (doomed?doomedBase:baseTurn)(port,store,seed,0,st,`seed ${seed} g0 base`);
+  await (doomed?doomedBase:baseTurn)(port,store,seed,0,st,`seed ${seed} g0 base`,payRescue);
  }
  for(let g=0;g<GAMES;g++){
   const id=`seed ${seed} game ${g}`;
@@ -495,9 +505,9 @@ export async function playSeed(i,options={}){
   assert.equal(store.atBase,true);assert.ok(store.profile.expeditions>=1);
   if(before)assert.equal(store.profile.expeditions,before.expeditions+1);
   assert.equal(store.envelope.recent.phase,'ended');
-  checkSettlement(before??initialProfile(),store.profile,endRecord,st,id);
+  checkSettlement(before??initialProfile(),store.profile,endRecord,st,id,trk);accTrail.push(store.profile.account);rosterTrail.push(store.profile.roster.length);
   if(g===GAMES-1)break;
-  await (doomed?doomedBase:baseTurn)(port,store,seed,g+1,st,`${id} base`);
+  await (doomed?doomedBase:baseTurn)(port,store,seed,g+1,st,`${id} base`,payRescue);
  }
- return {seed,games,st,roster:store.profile?.roster.length??0,vault:store.profile?.vault??{},extra,account:store.profile?.account??null,doomed,policy};
+ return {seed,games,st,roster:store.profile?.roster.length??0,vault:store.profile?.vault??{},extra,account:store.profile?.account??null,doomed,policy,payRescue,accTrail,rosterTrail};
 }

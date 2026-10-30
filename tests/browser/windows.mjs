@@ -440,9 +440,8 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
 });
 /* Stage 7.2: failure, rescue and return, with real clicks. CHECK ENTRY: the record is pre-seeded (written to the page's own storage before it loads) with a run
    in progress: the leader stands on G, every member has 1 HP, and a chasing enemy with 200 HP is next to them; random state 7 makes the third member
-   (P3, an ordinary partner) go missing. Everything after that is real clicks: take G, wait until the wipe, read the result, return to the base,
-   pay the rescue, set a purse, depart, finish an effective run (the second run is moved onto its G cell by editing the saved record, as the 6.5 check does), and
-   see the partner back on the roster. */
+   (P3, an ordinary partner) go missing. After that saved entry, real clicks and movement inputs take G, wait until the wipe, read the result,
+   return to base, pay the rescue, set a purse, depart, walk the next expedition to G and return; then the rescued partner must be back on the roster. */
 await test('失败与救援7.2：完成G→全灭→伙伴走失→基地付费→下一局有效探险后回归',async()=>{
  const {createExpedition,reveal,RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
  const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
@@ -475,32 +474,36 @@ await test('失败与救援7.2：完成G→全灭→伙伴走失→基地付费�
   assert.match(await p.locator('#pool-change').innerText(),/P3 波波/);
   assert.match(await p.locator('#pool-change').innerText(),/进入救援池/);
   await p.screenshot({path:artifact+'windows-rescue-1-result.png',fullPage:true});
-  await p.reload();await ready(p);assert.deepEqual((await state(p)).end,s.end,'the draw is not redone after a reload');
+   await p.reload();await ready(p);assert.deepEqual(await state(p),s,'the settled wipe is unchanged after a reload');
   await click(p,'to-base');
   let pr=await p.evaluate(()=>window.trial.profile());
   assert.equal(pr.account,100);assert.deepEqual(pr.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P3',false,4]]);assert.deepEqual(pr.team,['P1','P2']);
   assert.match(await p.locator('#account').innerText(),/100/);assert.match(await p.locator('#rescue-P3').innerText(),/未付费.*4/);
   await p.screenshot({path:artifact+'windows-rescue-2-base.png',fullPage:true});
+   const unpaidBase=structuredClone(pr);await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),unpaidBase);
   await click(p,'rescue-pay-P3');
   pr=await p.evaluate(()=>window.trial.profile());assert.equal(pr.account,40);assert.deepEqual(pr.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P3',true,1]]);
   assert.match(await p.locator('#rescue-P3').innerText(),/已付费/);assert.equal(await p.locator('#rescue-pay-P3').count(),0);
+   const paidBase=structuredClone(pr);await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),paidBase);
+   assert.equal(await p.locator('#depart').isEnabled(),true,'the base remains able to start an expedition after rescue payment');
   await click(p,'purse-up');await click(p,'purse-up');assert.equal(await p.locator('#purse-value').innerText(),'40');assert.equal(await p.locator('#purse-up').isDisabled(),true,'no more than the account holds');
   await click(p,'depart');await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   s=await state(p);assert.equal(s.purse,40);assert.deepEqual(s.queue,['A','B']);
   assert.equal((await p.evaluate(()=>window.trial.profile())).account,0);
-  // second run: stand the leader on G in the saved record, then finish with real clicks
-  await p.evaluate(()=>{const key=window.trial.store.key,e=JSON.parse(localStorage.getItem(key)),w=e.current,g=w.points.find(q=>q.kind==='goal').pos;
-   w.units.A.pos={x:g.x,y:g.y};if(w.units.B.pos.x===g.x&&w.units.B.pos.y===g.y)throw Error('B on G');localStorage.setItem(key,JSON.stringify(e));});
-  await p.reload();await ready(p);
-  await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='ended');
+   const secondRun=structuredClone(s);await p.reload();await ready(p);assert.deepEqual(await state(p),secondRun,'the next expedition is saved before it is played');
+   const goal=s.points.find(q=>q.kind==='goal').pos;assert.deepEqual(s.units.A.pos,{x:16,y:6});assert.deepEqual(goal,{x:8,y:5});
+   for(let i=0;i<s.units.A.pos.x-goal.x;i++)await key(p,'ArrowLeft');await key(p,'ArrowUp');
+   assert.deepEqual((await state(p)).units.A.pos,goal,'real movement reaches G');await click(p,'take');assert.equal((await state(p)).goal,true);
+   await exit(p);
   s=await state(p);assert.equal(s.end.outcome,'normal');assert.equal(s.end.effective,true);assert.equal(s.end.refund,40);
   assert.match(await p.locator('#pool-change').innerText(),/P3 波波/);
+   const secondEnd=structuredClone(s);await p.reload();await ready(p);assert.deepEqual(await state(p),secondEnd,'the completed effective run is unchanged after a reload');
   await click(p,'to-base');
   pr=await p.evaluate(()=>window.trial.profile());
   assert.equal(pr.account,140);assert.deepEqual(pr.rescue,[]);assert.deepEqual(pr.roster.map(i=>i.id),['P1','P2','P3']);assert.deepEqual(pr.roster[2].carry,['tackle','gust']);
   assert.equal(await p.locator('#rescue-empty').count(),1);
   await p.screenshot({path:artifact+'windows-rescue-3-returned.png',fullPage:true});
-  await p.reload();await ready(p);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),pr);
+   await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),pr);assert.equal(await p.locator('#depart').isEnabled(),true,'the base can start another expedition after P3 returns');
   assert.deepEqual(errors,[]);return {wipe:true,lost:['C'],paid:60,returnedAfterEffectiveRun:true,account:pr.account};
  }finally{await context.close();}
 });
@@ -629,13 +632,13 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
  try{
   const options=await p.locator('#fixture option').allTextContents();assert.ok(options.includes('首领层（紧邻首领）'),'the developer menu offers the boss scene: '+options);
   await start(p);
-  const s=await state(p);assert.equal(s.dungeon.level,3);assert.equal(s.dungeon.boss,true);assert.equal(s.units.boss.hp,80);
+  const s=await state(p);assert.equal(s.dungeon.level,3);assert.equal(s.dungeon.boss,true);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
   const v=await p.evaluate(()=>window.trial.view());
   assert.deepEqual(v.tiles.filter(t=>/^(floor|wall)/.test(t)),['floor-arena','floor-ash','wall-basalt'],'ash theme tiles and the arena tile, no stone tiles');
   assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01,'the boss is drawn 1.5 times larger: '+v.boss.scale/v.leader.scale);assert.ok(v.boss.labels.includes('首领'),'the boss carries a name tag');
   await hoverCell(p,s.units.boss.pos.x,s.units.boss.pos.y);await p.waitForSelector('#enemy-info');
   const info=await p.locator('#enemy-info').innerText();
-  assert.match(info,/风速狗（首领）/);assert.match(info,/80\/80/);assert.match(info,/不可招募、不会被吹飞/);
+  assert.match(info,/风速狗（首领）/);assert.ok(info.includes(`${s.units.boss.hp}/${s.units.boss.maxHp}`));assert.match(info,/不可招募、不会被吹飞/);
   await p.screenshot({path:artifact+'windows-boss-1-floor.png',fullPage:true});
   await click(p,'skill-roar');await cell(p,s.units.boss.pos.x,s.units.boss.pos.y);
   await p.waitForFunction(()=>document.getElementById('message').textContent.includes('首领不会被吹飞'));
@@ -648,7 +651,7 @@ await test('7.3 首领层：不挑战首领，从前庭普通出口撤离，看�
  const {context,page:p,errors}=await setup('BOSSX');
  try{
   await start(p);
-  const s=await state(p),exitPos=s.points.find(q=>q.kind==='exit').pos;assert.deepEqual(s.units[s.leader].pos,exitPos);assert.equal(s.units.boss.hp,80);
+  const s=await state(p),exitPos=s.points.find(q=>q.kind==='exit').pos;assert.deepEqual(s.units[s.leader].pos,exitPos);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
   await exit(p);
   const end=await state(p);assert.equal(end.phase,'ended');assert.equal(end.end.outcome,'normal');assert.equal(end.end.boss,false);
   const text=await p.locator('.result').innerText();assert.match(text,/讨伐首领：未挑战/);assert.match(text,/结算/);

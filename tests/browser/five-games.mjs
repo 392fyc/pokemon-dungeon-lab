@@ -83,7 +83,7 @@ async function roundTrip(label){
  assert.deepEqual(await envelope(),before,label+' reload');
  assert.equal(await state(),null,label+' reload starts from camp');
 }
-// 7.8: real enemies walk up and fight, so recorded step lists no longer stay valid. The route is planned from the visible state instead (like the 6.4 walker),
+// 7.8: real enemies walk up and fight, so recorded step lists no longer stay valid. The route is planned from the full game state (the whole map, every live enemy and its sleep flag, all points), not only what the player can see;
 // and every step is still a real key press or canvas click: finish the goal, optionally buy at the shop, accept one recruit while there is room, then take the exit.
 const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
 const alive=u=>u&&u.hp>0&&u.pos;

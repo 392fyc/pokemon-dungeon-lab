@@ -378,6 +378,57 @@
    ]
   }
  },
+ "0027": {
+  "Idle": {
+   "file": "characters/0027/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    40,
+    2,
+    2,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0027/Walk-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    6,
+    10,
+    6,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0027/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0027/Hurt-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0041": {
   "Idle": {
    "file": "characters/0041/Idle-Anim.png",
@@ -437,6 +488,108 @@
    ]
   }
  },
+ "0058": {
+  "Idle": {
+   "file": "characters/0058/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    40,
+    4,
+    2
+   ]
+  },
+  "Walk": {
+   "file": "characters/0058/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    6,
+    8,
+    6,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0058/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    6,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0058/Hurt-Anim.png",
+   "w": 48,
+   "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0059": {
+  "Idle": {
+   "file": "characters/0059/Idle-Anim.png",
+   "w": 40,
+   "h": 48,
+   "durations": [
+    8
+   ]
+  },
+  "Walk": {
+   "file": "characters/0059/Walk-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0059/Attack-Anim.png",
+   "w": 72,
+   "h": 88,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0059/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0074": {
   "Idle": {
    "file": "characters/0074/Idle-Anim.png",
@@ -485,6 +638,169 @@
    "file": "characters/0074/Hurt-Anim.png",
    "w": 40,
    "h": 48,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0081": {
+  "Idle": {
+   "file": "characters/0081/Idle-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    10,
+    14,
+    10,
+    14
+   ]
+  },
+  "Walk": {
+   "file": "characters/0081/Walk-Anim.png",
+   "w": 24,
+   "h": 32,
+   "durations": [
+    8,
+    6,
+    6,
+    8,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0081/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0081/Hurt-Anim.png",
+   "w": 48,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0095": {
+  "Idle": {
+   "file": "characters/0095/Idle-Anim.png",
+   "w": 96,
+   "h": 104,
+   "durations": [
+    16,
+    16,
+    16,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0095/Walk-Anim.png",
+   "w": 88,
+   "h": 112,
+   "durations": [
+    10,
+    14,
+    10,
+    14
+   ]
+  },
+  "Attack": {
+   "file": "characters/0095/Attack-Anim.png",
+   "w": 128,
+   "h": 152,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0095/Hurt-Anim.png",
+   "w": 80,
+   "h": 88,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0147": {
+  "Idle": {
+   "file": "characters/0147/Idle-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    10,
+    20,
+    10,
+    20
+   ]
+  },
+  "Walk": {
+   "file": "characters/0147/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    10,
+    8,
+    8,
+    8,
+    8
+   ]
+  },
+  "Attack": {
+   "file": "characters/0147/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0147/Hurt-Anim.png",
+   "w": 48,
+   "h": 64,
    "durations": [
     2,
     8
@@ -644,6 +960,118 @@
    ]
   }
  },
+ "0194": {
+  "Idle": {
+   "file": "characters/0194/Idle-Anim.png",
+   "w": 32,
+   "h": 32,
+   "durations": [
+    24,
+    16
+   ]
+  },
+  "Walk": {
+   "file": "characters/0194/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    6,
+    6,
+    6,
+    8,
+    6,
+    6,
+    6
+   ]
+  },
+  "Attack": {
+   "file": "characters/0194/Attack-Anim.png",
+   "w": 72,
+   "h": 72,
+   "durations": [
+    2,
+    6,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0194/Hurt-Anim.png",
+   "w": 48,
+   "h": 40,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0228": {
+  "Idle": {
+   "file": "characters/0228/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    60,
+    10,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    10
+   ]
+  },
+  "Walk": {
+   "file": "characters/0228/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0228/Attack-Anim.png",
+   "w": 64,
+   "h": 80,
+   "durations": [
+    2,
+    4,
+    1,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0228/Hurt-Anim.png",
+   "w": 40,
+   "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
  "0252": {
   "Idle": {
    "file": "characters/0252/Idle-Anim.png",
@@ -794,6 +1222,71 @@
    "file": "characters/0258/Hurt-Anim.png",
    "w": 48,
    "h": 56,
+   "durations": [
+    2,
+    8
+   ]
+  }
+ },
+ "0296": {
+  "Idle": {
+   "file": "characters/0296/Idle-Anim.png",
+   "w": 32,
+   "h": 48,
+   "durations": [
+    2,
+    2,
+    2,
+    2,
+    20,
+    4,
+    4,
+    4,
+    2,
+    2,
+    2,
+    2,
+    20,
+    4,
+    4,
+    4
+   ]
+  },
+  "Walk": {
+   "file": "characters/0296/Walk-Anim.png",
+   "w": 32,
+   "h": 40,
+   "durations": [
+    8,
+    10,
+    8,
+    10
+   ]
+  },
+  "Attack": {
+   "file": "characters/0296/Attack-Anim.png",
+   "w": 72,
+   "h": 80,
+   "durations": [
+    2,
+    2,
+    6,
+    1,
+    1,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2
+   ]
+  },
+  "Hurt": {
+   "file": "characters/0296/Hurt-Anim.png",
+   "w": 56,
+   "h": 64,
    "durations": [
     2,
     8

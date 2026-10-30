@@ -7,9 +7,9 @@ const BEHAVIORS=['strong','line','guard','push'];
 const ids=['bulbasaur','charmander','squirtle','pidgey','rattata','spearow','pikachu','zubat','geodude','chikorita','cyndaquil','totodile','treecko','torchic','mudkip']; // stage 7.1 appended the six generation 2-3 starters after the original nine
 const dexes=['0001','0004','0007','0016','0019','0021','0025','0041','0074','0152','0155','0158','0252','0255','0258'];
 
-test('R1 roster has the fifteen species (nine original + six stage 7.1 starters) with four-digit dex numbers and starters',()=>{
- assert.deepEqual(roster.species.map(s=>s.id),ids);
- assert.deepEqual(roster.species.map(s=>s.dex),dexes);
+test('R1 roster has 23 species (the fifteen of stage 7.1 + eight of stage 7.3, in this order) with four-digit dex numbers and starters',()=>{
+ assert.deepEqual(roster.species.map(s=>s.id),[...ids,'sandshrew','growlithe','magnemite','onix','dratini','wooper','houndour','makuhita']);
+ assert.deepEqual(roster.species.map(s=>s.dex),[...dexes,'0027','0058','0081','0095','0147','0194','0228','0296']);
  for(const s of roster.species)assert.match(s.dex,/^\d{4}$/);
  assert.deepEqual(roster.species.filter(s=>s.starter).map(s=>s.id),['bulbasaur','charmander','squirtle','chikorita','cyndaquil','totodile','treecko','torchic','mudkip']);
  assert.deepEqual(roster.source.files['moves.json'],'26909a321a7e4528d14a7dffd24173aa03a6845776cf41c39cc3d76f8e14616b');

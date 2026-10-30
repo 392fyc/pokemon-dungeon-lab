@@ -592,5 +592,56 @@ await test('7.1 可读性：悬停敌人看信息、组合草稿显示执行顺�
   assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {inspect:true,orderLine:order};
  }finally{await context.close();}
 });
+/* Stage 7.3: the boss floor, through the developer menu scenes (isolated storage). BOSS: whole floor shown, the team beside the boss. BOSSX: the team on the lobby exit.
+   The mouse is moved over canvas cells with the same fixed 40 px cell geometry the other dungeon checks use. */
+async function hoverCell(p,x,y){
+ const s=await state(p),b=await p.locator('canvas').boundingBox(),cam=await p.evaluate(()=>window.trial.camera());
+ await p.mouse.move(b.x+(x*40+20-cam.x)*b.width/680,b.y+(y*40+20-cam.y)*b.height/350);
+}
+await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放大与名牌、首领信息、推退被拒的中文原因、从前庭撤离见结算',async()=>{
+ const {context,page:p,errors}=await setup('BOSS');
+ try{
+  const options=await p.locator('#fixture option').allTextContents();assert.ok(options.includes('首领层（紧邻首领）'),'the developer menu offers the boss scene: '+options);
+  await start(p);
+  const s=await state(p);assert.equal(s.dungeon.level,3);assert.equal(s.dungeon.boss,true);assert.equal(s.units.boss.hp,80);
+  const v=await p.evaluate(()=>window.trial.view());
+  assert.deepEqual(v.tiles.filter(t=>/^(floor|wall)/.test(t)),['floor-arena','floor-ash','wall-basalt'],'ash theme tiles and the arena tile, no stone tiles');
+  assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01,'the boss is drawn 1.5 times larger: '+v.boss.scale/v.leader.scale);assert.ok(v.boss.labels.includes('首领'),'the boss carries a name tag');
+  await hoverCell(p,s.units.boss.pos.x,s.units.boss.pos.y);await p.waitForSelector('#enemy-info');
+  const info=await p.locator('#enemy-info').innerText();
+  assert.match(info,/风速狗（首领）/);assert.match(info,/80\/80/);assert.match(info,/不可招募、不会被推退/);
+  await p.screenshot({path:artifact+'windows-boss-1-floor.png',fullPage:true});
+  await click(p,'skill-push');await cell(p,s.units.boss.pos.x,s.units.boss.pos.y);
+  await p.waitForFunction(()=>document.getElementById('message').textContent.includes('首领不会被推退'));
+  assert.equal(await p.locator('#message').innerText(),'首领不会被推退；本轮未执行');
+  const after=await state(p);assert.equal(after.round,0);assert.deepEqual(after.units.A.pp,s.units.A.pp,'no PP spent');assert.deepEqual(after.units.boss.pos,s.units.boss.pos);
+  assert.deepEqual(errors,[]);return {tiles:v.tiles,bossScale:v.boss.scale,message:'首领不会被推退；本轮未执行'};
+ }finally{await context.close();}
+});
+await test('7.3 首领层：不挑战首领，从前庭普通出口撤离，看到结算画面（未挑战）',async()=>{
+ const {context,page:p,errors}=await setup('BOSSX');
+ try{
+  await start(p);
+  const s=await state(p),exitPos=s.points.find(q=>q.kind==='exit').pos;assert.deepEqual(s.units[s.leader].pos,exitPos);assert.equal(s.units.boss.hp,80);
+  await exit(p);
+  const end=await state(p);assert.equal(end.phase,'ended');assert.equal(end.end.outcome,'normal');assert.equal(end.end.boss,false);
+  const text=await p.locator('.result').innerText();assert.match(text,/讨伐首领：未挑战/);assert.match(text,/结算/);
+  await p.screenshot({path:artifact+'windows-boss-2-result.png',fullPage:true});
+  assert.deepEqual(errors,[]);return {settlement:true,boss:'未挑战'};
+ }finally{await context.close();}
+});
+await test('7.3 新游戏→出发→第1层：苔石主题（原石地与岩壁），三层带首领的远征',async()=>{
+ const {context,page:p,errors}=await plainContext();
+ try{
+  await p.goto(base);await p.locator('#title-new').waitFor();await p.locator('#title-new').click();
+  await newGameClicks(p,'treecko','mudkip');
+  await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
+  const s=await state(p);assert.equal(s.dungeon.floors,3);assert.equal(s.dungeon.boss,true);assert.equal(s.dungeon.level,1);assert.equal(s.dungeon.base,true);
+  const v=await p.evaluate(()=>window.trial.view());assert.deepEqual(v.tiles.filter(t=>/^(floor|wall)/.test(t)),['floor','wall'],'floor 1 shows the original stone tiles');
+  assert.match(await p.locator('#world-label').innerText(),/第1层/);
+  await p.screenshot({path:artifact+'windows-boss-3-floor1.png',fullPage:true});
+  assert.deepEqual(errors,[]);return {tiles:v.tiles,floors:s.dungeon.floors};
+ }finally{await context.close();}
+});
 await browser.close();
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

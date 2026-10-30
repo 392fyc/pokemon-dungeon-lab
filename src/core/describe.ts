@@ -1,6 +1,6 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
 import {SKILL_CN,key,type Action,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
-import {SPECIES} from './roster.ts';
+import {SPECIES,TM_MOVES} from './roster.ts';
 import {speciesZh,moveZh,typeZh,tmZh,itemZh} from './names.ts';
 
 /** Chinese species name, or the unit id when the unit has no species (fixed-map fixtures). */
@@ -44,6 +44,8 @@ export function enemyInfo(s:World,id:string):EnemyInfo|null {
   if(!u||u.side!=='enemy'||u.hp<=0||!u.pos||!s.seen.includes(key(u.pos)))return null;
   const sp=u.species?SPECIES[u.species]:undefined;
   const range=u.range??3;
+  if(u.boss)return {id,name:`${unitName(u)}（首领）`,types:'',hp:u.hp,maxHp:u.maxHp,behavior:`首领：不移动；每个敌方阶段攻击2次，每次先打相邻的同行（按队列顺序），没有相邻目标时打${range}格内射线无遮挡的最近同行；第一次打倒目标后，第二次重新选目标`,
+    damage:`${u.damage}，每个敌方阶段2次（“保护”只为被保护者挡掉本阶段的首次4点）`,note:'不可招募、不会被推退。击败后得到一张招式机，带回基地才算数。'};
   const behavior=u.ai==='ranged'?`远程：同一行或列、${range}格以内、中间没有墙和单位时射击；不移动`
     :u.ai==='chase'?'追击：够不着时每轮向最近的同行走一步；相邻后近战攻击':'近战：只攻击上下左右相邻的同行；不移动';
   const damage=u.damage===undefined?'未知':`${u.damage}（“保护”可为被保护者挡掉首次的4点）`;
@@ -61,7 +63,7 @@ export function localizeLog(s:World,line:string):string {
   const guard=(from:string,to:string)=>{const token=`@@${swaps.length}@@`;swaps.push([token,to]);out=out.replace(new RegExp(`(?<!${edge})${escapeRe(from)}(?!${edge})`,'g'),token);};
   for(const id of ids){const u=s.units[id];const n=unitName(u);if(n)guard(id,`${id} ${n}`);}
   for(const id of Object.keys(SPECIES))guard(id,speciesZh(id));
-  for(const tm of ['protect','whirlwind','roar'])guard(tm,tmZh(tm));
+  for(const tm of TM_MOVES)guard(tm,tmZh(tm));
   for(const [token,to] of swaps)out=out.split(token).join(to);
   return out;
 }

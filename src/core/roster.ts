@@ -6,9 +6,17 @@ export const SPECIES:Record<string,Species>=Object.fromEntries((data.species as 
 /** The species the player may pick as the main character (stage 7.1: generation 1-3 starters), in roster order. */
 export const STARTER_IDS:string[]=(data.species as Species[]).filter(s=>s.starter).map(s=>s.id);
 export const speciesOf=(id:string):Species|undefined=>Object.prototype.hasOwnProperty.call(SPECIES,id)?SPECIES[id]:undefined;
-/** 6.5 technique machines (workable candidates): the three moves that fill the "pin" and "reposition" gaps found in 6.2. A machine teaches one move to a compatible species. */
-export const TM_MOVES=['protect','whirlwind','roar'] as const;
-export const TM_NAMES:Record<string,string>={protect:'保护',whirlwind:'旋风（推退）',roar:'吼叫（推退）'};
+/**
+ * 6.5 technique machines (workable candidates): the three moves that fill the "pin" and "reposition" gaps found in 6.2. A machine teaches one move to a compatible species.
+ * 7.3 adds four more (dragontail, helpinghand, mudslap, terablast). `LEGACY_TM_MOVES` is what runs without the boss mark still draw from: the draws are `floor(r * length)`,
+ * so lengthening the list would change what an old save's seed means. `TM_MOVES` is the full set used for warehouse and legality checks (it contains the legacy three first).
+ */
+export const LEGACY_TM_MOVES=['protect','whirlwind','roar'] as const;
+export const TM_MOVES=['protect','whirlwind','roar','dragontail','helpinghand','mudslap','terablast'] as const;
+/** The pool a run draws its machines from (target T, shop, boss): the full seven for boss-marked runs, the legacy three otherwise. */
+export const tmPool=(d?:{boss?:boolean}|null):readonly string[]=>d?.boss?TM_MOVES:LEGACY_TM_MOVES;
+/** 7.3 regional boss: only accepted on a unit that carries the boss mark in a boss-marked run (see save.ts). Not in the roster, never recruitable. */
+export const BOSS_SPECIES:Record<string,string>={arcanine:'0059'};
 /** The move as the species can learn it (behavior and max PP from the roster's learnable list), or undefined when the species cannot learn it. */
 export function learnableMove(speciesId:string,move:string):KitMove|undefined {
   const sp=(data.species as unknown as {id:string;learnable:KitMove[]}[]).find(s=>s.id===speciesId);

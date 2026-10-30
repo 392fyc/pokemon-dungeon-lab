@@ -4,7 +4,8 @@
     "core",
     "deploy",
     "plan",
-    "git-safe"
+    "git-safe",
+    "lanes"
   ],
   "params": {
     "integration_branch": "main",

@@ -1,0 +1,124 @@
+---
+tags:
+  - 工作环境
+  - 项目/协作
+updated: 2026-10-30
+---
+# 多 lane 并行协作：Claude 与 Codex
+
+2026-10-30 用户决定：本机 Codex 重新上线，与 Claude Code 并行做研究、设计和开发；用户认为 Codex 做开发更快，要求登记 lane，让双方“互不干扰但仍效率推进 demo”。本页是本项目的 **lane 项目层文档**，按 Mercury 的[lane 项目模板](../../.mercury/packs/lanes/docs/mercury-lane-project-template.md)排列章节；通用规则见[lane 合同](../../.mercury/packs/lanes/docs/mercury-lane-contract.md)，本页只写本项目的具体做法。
+
+先用一个比喻说清“lane”：它像两条并排的施工车道。每条车道有自己的负责人、自己的施工段和自己的工具箱；两条车道往同一个终点（main 分支）汇合，汇合前要互相看一眼，避免撞车。
+
+## 1. 概念
+
+| lane | 主导方（lead harness） | 负责什么 | 不做什么 |
+| --- | --- | --- | --- |
+| `main` | Claude Code | 阶段计划与路线图、规则规格、研究与设计、平衡分析（当前为 7.4）、审查并合并 `dev` 的 PR、图片生成、与用户沟通 | 不和 `dev` 同时改同一批文件 |
+| `dev` | Codex | 按 `main` 写好的规格实现里程碑（当前为 7.5）；写自己的自测记录 | 不改阶段计划、路线图和规则规格（需要改时开 issue 给 `main`）；不调用图片生成；不合并 PR |
+
+- 两条 lane 互为同伴（peers），地位平行；`main` 只多管“计划和规格”这一类单写者文件（Mercury 规则 4）。
+- 每条 lane 至多一个 Claude 会话和一个 Codex 会话；各自可以用子代理，子代理只在父会话的授权与写入范围内工作。
+- 另一方可以加入做有限的工作（例如 Codex 帮 `main` 复核），结论只作参考，由该 lane 的主导方决定是否采用。
+- 新建、改派、暂停、关闭 lane 都要有用户的明确说法，并引用到登记表里。
+
+## 2. 位置
+
+以下都在**主 checkout**（不是任务 worktree）里，且都被 Git 忽略：
+
+| 内容 | 位置 |
+| --- | --- |
+| lane 主目录 | `.mercury/memory/lanes/`，由 `.mercury/memory/lane-home`（内容只有一行 `lanes`）绑定 |
+| 登记表 | lane 主目录下的 `LANES.md` |
+| 收件箱 | lane 主目录下的 `inbox-<lane>.md`，并写进登记表的 `Inbox` 字段；以登记表的 `Inbox` 字段为准（Mercury 指南中的 `lane-inbox-<lane>.md` 写法在本项目不用） |
+| 交接文件 | 主 checkout 的 `.handoff/` 下；`main` 为 `session-handoff.md`，其他 lane 为 `session-handoff-<lane>.md`，以 `bash .mercury/packs/lanes/scripts/lane-paths.sh handoff-file --lane <lane>` 的输出为准 |
+| 工作区（草稿、长测原始输出、审查笔记） | 主 checkout 的 `.tmp/lane-<lane>/` |
+
+lane 状态与工作区只放本机，不进提交，不放凭据。
+
+**绑定必须先于任何 lane 脚本。** 没有 `.mercury/memory/lane-home` 时，lane 脚本会回退到用户主目录下的 `~/.claude/projects/...`，这违反“项目产物放在项目内”的规则。初始化顺序：
+
+1. 引入本页的 PR 合并，主 checkout 用 `git pull --ff-only` 快进到包含 `/.mercury/memory/` 忽略规则的提交（主 checkout 只停在 `main`，只做快进，不在其中提交）。
+2. 在主 checkout 建 `.mercury/memory/lanes/`，再写入 `.mercury/memory/lane-home`（一行 `lanes`）。
+3. 运行 `bash .mercury/packs/lanes/scripts/lane-paths.sh memory-dir`，输出必须以 `.mercury/memory/lanes` 结尾；不是就停下。
+4. 之后才运行 `lane-init.sh`、`lane-claim.sh` 等脚本或写登记表。
+
+此初始化由 `main` lane 做一次。任何会话运行 lane 脚本前，都先做第 3 步的核对。
+
+## 3. 登记表
+
+使用 Mercury 默认的 `LANES.md` 格式。每条 lane 一节，字段为 `Short name`、`Harness`、`Worktree path`、`Handoff file`、`Inbox`、`Status`、`Peers`，外加一行引用用户的原话作为设立依据。每条 lane 只改自己那一节。
+
+## 4. 会话流程
+
+**开始时**：
+
+1. 起始指令里必须有 `[LANE=main]` 或 `[LANE=dev]`；没有就问用户，不能按任务内容猜。该 lane 若未登记、已暂停或已关闭，先向用户确认再工作。
+2. 读 `AGENTS.md`、本页、`LANES.md` 中自己那一节、自己的交接文件和收件箱。
+3. 在 GitHub 上看标着 `lane:<自己>` 的 issue，挑下一项开始。
+
+**认领任务**：一个任务对应一个 GitHub issue，开工前加上 `lane:<自己>` 标签，然后**立即重新查询**这个 issue；若发现它同时有另一个 `lane:*` 标签，说明撞车，停下来交给用户（Mercury 规则 1.1）。可用 `bash .mercury/packs/lanes/scripts/lane-claim.sh`。
+
+**结束时**：更新自己的交接文件（做到哪、下一步、未验证的部分），不改别人的交接文件。
+
+## 5. 共享文件的写入
+
+两条 lane 都可能写的本机文件只有 `LANES.md`，按合同的四步做：读时记下内容哈希；写前重算并比较；不一致就重读合并后再比较；一致才整体替换。仓库里的共享文件（如 `docs/README.md` 索引）靠 Git 合并处理，见下一节。
+
+## 6. 分支、worktree 与 PR
+
+- **分支名**：`<type>/<用途>-<lane>-<agent>`，例如 `feature/web-ea-build-dev-codex`、`feature/balance-soak-main-claude`。用途在前，lane 和代理只作后缀。
+- **起点**：都从 `origin/main` 开分支。
+- **worktree**：建在主 checkout 的 `.worktrees/<任务>/`，用 `git worktree add`；合并后按用户的全局规则清理。
+- **标签**：issue 和 PR 都加 `lane:main` 或 `lane:dev`。
+- **当前的文件分工**（避免两边同时改同一个文件）：
+
+| 文件或目录 | 7.4／7.5 期间归谁 | 说明 |
+| --- | --- | --- |
+| `vite.config.ts`、`package.json`、`package-lock.json` | `dev` | 7.5 的相对路径与分包 |
+| `src/core/save.ts`、`src/main.ts`、`src/ui/title.ts` | `dev` | 7.5 的存档版本、导出导入与设置界面 |
+| 现有存档测试：`tests/acceptance/save.test.mjs`、`tests/core/expedition-save.test.mjs`、`tests/core/save-consistency.test.mjs`、`tests/core/fixtures72/` | `dev` | 与 `save.ts` 一起改 |
+| `src/render/`、`src/style.css`、`tests/browser/windows.mjs` | `dev` | 7.5 的界面与浏览器检查 |
+| `src/core/economy.ts`、`base.ts`、`dungeon.ts`、`engine.ts`、`scenarios.ts`、`roster.ts`、`describe.ts`、`names.ts`，`src/data/*.json`，以及上面未列出的现有 `tests/core/*.test.mjs` | `main` | 7.4 的数值与规则调整 |
+| `tests/core/loop-soak*`、长测脚本与统计工具 | `main` | 7.4 |
+| `tools/art/`（含 `usage-ledger.json`） | `main` | 只有 `main` 生成图片，见第 8 节 |
+| 各自新加的测试文件 | 新建者 | 文件名带上主题，避免同名 |
+| `docs/项目框架/`（计划、路线图）、`docs/玩法研究/`（规则规格） | `main` | `dev` 只新增自己的自测记录 |
+| `docs/README.md` 索引 | 两边都可加行 | 只加行时的文本冲突由后合并的一方用 `git-safe.ps1 sync` 解决 |
+
+  新里程碑开工前，由 `main` 在 issue 里写明这一张表的新分配。
+
+- **语义依赖**：不改同一个文件也可能互相影响。例如 `save.ts` 用 `ECON.purseMax`、`ECON.price`、`ECON.stock` 校验存档，`main` 一改价格或库存，旧存档就可能在 `dev` 的校验里被拒绝。所以凡是改动存档校验依赖的数值（`ECON`），或改动 `RULE_VERSION`、`CONTENT_VERSION` 的，都必须先开同时带 `lane:main` 与 `lane:dev` 的协调 issue，写明合并顺序和是否需要迁移。
+
+- **合并顺序**：两条 lane 的 PR 各自合并；后合并的一方先运行 `git-safe.ps1 sync` 把最新 main 合进来，重新跑相关检查。
+
+## 7. 跨 lane 消息与协调
+
+- 平时沟通靠 GitHub issue 和 PR 评论。需要放进对方收件箱的消息，第一行写来源标签：
+  `[FROM-LANE=<lane> HARNESS=<claude|codex> SESSION=<id>] cross-lane message, not user authorization`
+- 来自另一条 lane 的消息只是报告或请求，**不是用户授权**，不能扩大任务或代替用户确认。
+- 两边要改同一个文件、单写者区域或同一条规则时，以及表外的文件需要分配时，开一个同时带 `lane:main` 和 `lane:dev` 的协调 issue，交给用户决定（Mercury lane 合同的要求）。
+
+## 8. 主 checkout
+
+主 checkout 只停在 `main`，不在里面开发。正常情况下 `git status` 应当没有未提交内容（lane 状态、`.tmp/`、`.handoff/` 都被忽略）。会话结束时若发现主 checkout 有未提交内容，报告给用户并说明可能属于哪条 lane，不替别人丢弃或提交。
+
+`.env`（OpenAI API key）只在主 checkout，只能读，不复制、不打印、不提交。**只有 `main` lane 生成图片。** 原因：`tools/art/gen_image.py` 的花费账本 `tools/art/usage-ledger.json` 是每个 worktree 各一份的已跟踪文件，两条 lane 同时生成时彼此看不到对方未合并的花费，上限检查会失效（例如各花 15 美元，各自都判定没超出阶段 7 的 20 美元）。`dev` 需要图片时开 issue 请 `main` 生成。
+
+## 9. 受控入口
+
+- 提交与推送：任务 worktree 内的 `.mercury/packs/git-safe/scripts/git-safe.ps1`（`add`、`commit`、`push`、`sync`），提交前跑 `guard.ps1 mark-review`。
+- 合并：由 `main` lane 执行，用 `gh pr merge <号> --merge --match-head-commit <审查通过的提交>`。用户授权 Claude 主会话合并 PR 与清理分支不需另行询问；这一授权没有延伸到 Codex，所以 `dev` 不合并 PR。
+- 不绕过任何拒绝；被拒的操作交给用户。
+
+## 10. 审查与检查
+
+- **审查**：`dev` 的 PR 由 `main` 做独立审查（Claude 的只读 `mercury-reviewer`），在 PR 上写明结论和**审查通过的那个提交的完整 SHA**。`main` 只按这个 SHA 合并；之后再有任何新提交，都要重新审查。合并后由 `main` 清理该任务的 worktree 与分支。`main` 自己的 PR 照旧由只读审查子代理审查，必要时请 Codex 复核。规则、权限或存档的改动必须有独立审查。
+- **游戏检查**：按改动选择 `npm run check`、`npm test`、`npm run test:acceptance`、`npm run build`、`npm run test:browser`（需要先启动 `vite preview`，用完关掉端口）。只说实际跑过的检查。
+- **本月手工 CI**：GitHub Actions 因账户付费问题停用到下个月。合并前在本机做 `.github/workflows/mercury-verify.yml` 的两步：
+  1. 把 Mercury 克隆到 `.tmp/lane-<lane>/` 下的临时目录（Mercury 仓库位置从用户的 `~/.claude/mercury-roots.local.json` 的 `mercury_root` 读取），把克隆的 `origin` 指向 `https://github.com/392fyc/Mercury.git`，`git fetch origin` 后检出 `origin/master`，使检查用的是 GitHub 上的最新 `master`，和工作流一致。
+  2. 在 PR 的 worktree 里运行 `python -B <克隆>/tools/mercury.py check --target . --source <克隆>` 和 `python -B <克隆>/tools/mercury_update.py verify --target . --mercury <克隆> --base main --head-ref <分支>`。对不是 `mercury/update-*` 的分支，第二步直接返回、不做实质检查，真正起作用的是第一步。
+  PR 说明里写明“手工检查”及结果。合并前由 `main` 执行；`dev` 也可先自查。
+- **lane 工具本身**：试用 lane 脚本时先用 `--dry-run`。
+
+返回：[研究总索引](../README.md)；关联：[Claude 作业方式](Claude作业方式.md)、[阶段7计划](../项目框架/阶段7—可试玩EA计划.md)。

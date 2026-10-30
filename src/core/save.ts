@@ -40,9 +40,10 @@ function validUnit(v:unknown,depth=0):boolean {
   if(v.protected!==undefined&&(v.protected!==true||v.side!=='friend'||v.inst===undefined))return false;
   if(v.damage!==undefined&&(!integer(v.damage)||(v.damage as number)<0))return false;
   if(v.range!==undefined&&(!integer(v.range)||(v.range as number)<1))return false;
-  // 7.3 boss: the only unit that may carry a species outside the roster, and only with the boss mark (arcanine, enemy side, fixed numbers, no recruit, no base instance).
+  // 7.3 boss: an Arcanine from the full Pokédex is still valid in a run only with the boss mark (enemy side, fixed numbers, no recruit, no base instance).
   if(v.boss!==undefined&&(v.boss!==true||v.side!=='enemy'||v.species!==BOSS.species||!validBossNumbers(v)||v.ai!=='melee'||v.recruit!==undefined||v.inst!==undefined))return false;
   if(v.species!==undefined&&(typeof v.species!=='string'||!(speciesOf(v.species)||(v.boss===true&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species)))))return false;
+  if(typeof v.species==='string'&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species)&&v.boss!==true)return false;
   if(v.inst!==undefined&&(v.side!=='friend'||typeof v.inst!=='string'||!v.inst||!moveIds(v.moves)||v.species===undefined))return false;
   // Expedition enemies are always wild species; a starter on the enemy side is a contradictory save.
   if(v.side==='enemy'&&v.species!==undefined&&v.boss!==true&&!(String(v.species) in WILD_SPECIES))return false;

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createExpedition,createMain,applyCommand,recruitUnit,closeOut,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {initialProfile,learnTm,setCarry,setTeam,squadOf,settleRun,profileProblem} from '../../src/core/base.ts';
 import {TrialStore,decode,BUILD_ID} from '../../src/core/save.ts';
+import {SPECIES} from '../../src/core/roster.ts';
 // Stage 6.5 rule tests. Every expected value below is a literal written from docs/玩法研究/基地与培养.md and the roster data
 // (charmander kit scratch+ember, squirtle tackle+watergun, bulbasaur tackle+seedbomb); none is computed with the code under test.
 
@@ -26,6 +27,12 @@ test('B1 the initial profile: three starters, their kits learned and carried, em
  assert.deepEqual(p.roster[0].learned,[{move:'scratch',pp:3},{move:'ember',pp:2}]);
  assert.deepEqual(p.vault,{});assert.equal(p.expeditions,0);assert.deepEqual(p.team,['P1','P2','P3']);assert.equal(p.leader,'P3');
  assert.equal(profileProblem(p),null);
+});
+
+test('the Pokédex Arcanine entry does not make the regional boss a regular roster partner',()=>{
+ assert.ok(SPECIES.arcanine);
+ const p=initialProfile();p.roster[0].species='arcanine';
+ assert.match(profileProblem(p),/首领物种arcanine不能作为普通伙伴/);
 });
 
 test('B2 normal exit: the new recruit joins the roster, the brought machine enters the vault, old members keep what they had',()=>{
@@ -231,7 +238,7 @@ test('B19 tampered profiles and records are refused on load',()=>{
   ['learned move outside the species list',e=>{e.profile.roster[0].learned[0].move='quickattack';}],
   ['carry not learned',e=>{e.profile.roster[0].carry=['scratch','protect'];}],
   ['carry three',e=>{e.profile.roster[0].learned.push({move:'protect',pp:1});e.profile.roster[0].carry=['scratch','ember','protect'];}],
-  ['carry a move removed from the supported list',e=>{e.profile.roster[2].learned.push({move:'falseswipe',pp:4});e.profile.roster[2].carry=['tackle','falseswipe'];}],
+  ['carry a move not learnable by the species',e=>{e.profile.roster[2].learned.push({move:'roar',pp:2});e.profile.roster[2].carry=['tackle','roar'];}],
   ['negative machine count',e=>{e.profile.vault={protect:-1};}],
   ['fractional machine count',e=>{e.profile.vault={protect:1.5};}],
   ['unknown machine',e=>{e.profile.vault={tackle:1};}],

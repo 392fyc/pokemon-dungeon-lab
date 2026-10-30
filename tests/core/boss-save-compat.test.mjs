@@ -101,6 +101,15 @@ test('historical tuple does not waive boss identity, health or recruitment const
   });
 });
 
+test('Arcanine without the boss mark is not accepted as an ordinary enemy',()=>{
+  for(const stored of [false,true]){
+    const candidate=record(history,stored),world=candidate.current;
+    const boss=stored?world.dungeon.stored['3'].units.boss:world.units.boss;
+    delete boss.boss;
+    assert.throws(()=>decode(JSON.stringify(candidate)),/存档结构损坏/);
+  }
+});
+
 test('a valid v1 boss migrates on the active floor and in a stored floor',()=>{
   for(const stored of [false,true]){
     const old=legacyRecord(history,stored),migrated=decode(JSON.stringify(old));

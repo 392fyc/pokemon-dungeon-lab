@@ -20,15 +20,17 @@ const roster=JSON.parse(readFileSync(new URL('../../src/data/roster.json',import
 const by=Object.fromEntries(roster.species.map(s=>[s.id,s]));
 const memory=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);},map:m};};
 const NEW8=['sandshrew','growlithe','magnemite','onix','dratini','wooper','houndour','makuhita'];
+const ESTABLISHED23=['bulbasaur','charmander','squirtle','pidgey','rattata','spearow','pikachu','zubat','geodude','chikorita','cyndaquil','totodile','treecko','torchic','mudkip',...NEW8];
 const FLOORS3={width:20,height:14,floors:3,boss:true};
 const kitOf=id=>by[id].kit.map(k=>[k.move,k.pp]);
+const frozenSpecies=s=>({id:s.id,starter:s.starter,maxHp:s.maxHp,kit:s.kit});
 
 /* ---------- D: data chain ---------- */
-test('D1 the roster has 23 species and the first 15 match the approved 7.7a data shape',()=>{
- assert.equal(roster.species.length,23);
- // Independently checked against f757d51: remove behavior, retain frozen kits, filter learnable to kit + TM and sort by move.
- assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,15))).digest('hex'),'c9a51da1ddddb971fd379cbbfd6472d530b80101b48a56464ae1557a34cb2e9a');
- assert.deepEqual(roster.species.slice(15).map(s=>s.id),NEW8);
+test('D1 the expanded roster keeps the established 23 species first and freezes only their starter, HP and kit fields',()=>{
+ assert.equal(roster.species.length,160);
+ assert.deepEqual(roster.species.slice(0,23).map(s=>s.id),ESTABLISHED23);
+ // The new import expands learnable and adds generation/availability metadata. Only these four fields were frozen by the Pokédex batch-import specification.
+ assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,23).map(frozenSpecies))).digest('hex'),'3419bec7d22f9269b39f11810276f78544d248197c68b1aa8fb6f74f3712a962');
 });
 test('D2 the eight new species are not starters, have a kit of 1-2 moves and a non-empty learnable list; kits are the importer output (assumptions A1-A3, observed 2026-10-30)',()=>{
  for(const id of NEW8){assert.equal(by[id].starter,false);assert.ok(by[id].kit.length>=1&&by[id].kit.length<=2,id);assert.ok(by[id].learnable.length>0,id);}
@@ -42,24 +44,28 @@ test('D2 the eight new species are not starters, have a kit of 1-2 moves and a n
  assert.deepEqual(kitOf('makuhita'),[['tackle',3],['whirlwind',2]]);
 });
 test('D3 gate: at least 2 of the new species have push in the kit and at least 2 have guard (shellder failed the gate and onix replaced it)',()=>{
+ const pools=new Set(THEME_FLOORS.flatMap(t=>Object.values(t.pool).flat()));
  assert.deepEqual(NEW8.filter(id=>by[id].kit.some(k=>['dragontail','roar','whirlwind'].includes(k.move))),['dratini','houndour','makuhita']);
  assert.deepEqual(NEW8.filter(id=>by[id].kit.some(k=>['defensecurl','harden'].includes(k.move))),['sandshrew','onix']);
- assert.equal(by.shellder,undefined,'the fallback replaced shellder instead of changing the mapping rules');
+ assert.ok(by.shellder,'the full Pokédex now includes shellder');
+ assert.ok(!NEW8.includes('shellder')&&!pools.has('shellder'),'the previous appearance-pool gate still selects onix instead of shellder');
 });
-test('D4 every new species is in some theme pool; the wild set holds the legacy five and every pool species',()=>{
+test('D4 the established encounter pool stays fixed; Arcanine is in the Pokédex but remains boss-only',()=>{
  const pools=new Set(THEME_FLOORS.flatMap(t=>Object.values(t.pool).flat()));
  for(const id of NEW8)assert.ok(pools.has(id),id);
  assert.deepEqual(Object.keys(LEGACY_WILD),['pidgey','rattata','spearow','zubat','geodude']);
+ assert.deepEqual(Object.keys(WILD_SPECIES).sort(),[...new Set([...Object.keys(LEGACY_WILD),...pools])].sort());
  for(const id of Object.keys(LEGACY_WILD))assert.ok(id in WILD_SPECIES);
  for(const id of pools)assert.equal(WILD_SPECIES[id],by[id].dex,id);
- assert.ok(!('arcanine' in WILD_SPECIES)&&!(BOSS_SPECIES.arcanine===undefined));assert.deepEqual(Object.keys(BOSS_SPECIES),['arcanine']);assert.equal(by.arcanine,undefined,'the boss is not in the roster');
+ assert.ok(!('arcanine' in WILD_SPECIES));assert.deepEqual(Object.keys(BOSS_SPECIES),['arcanine']);assert.equal(by.arcanine.dex,'0059');assert.equal(BOSS_SPECIES.arcanine,by.arcanine.dex);
 });
 test('D5 the Chinese name table has the eight new species, the boss and the four new machine moves',()=>{
  assert.deepEqual(NEW8.map(speciesZh),['穿山鼠','卡蒂狗','小磁怪','大岩蛇','迷你龙','乌波','戴鲁比','幕下力士']);
  assert.equal(speciesZh('arcanine'),'风速狗');
  assert.deepEqual(['dragontail','helpinghand','mudslap','terablast'].map(tmZh),['龙尾','帮助','掷泥','太晶爆发']);
  assert.deepEqual(['protect','whirlwind','roar'].map(tmZh),['守住','吹飞','吼叫']);
- for(const s of roster.species)for(const m of [...s.kit,...s.learnable])assert.ok(NAME_TABLE.moves[m.move],m.move);
+ for(const s of roster.species)for(const m of [...s.kit,...s.learnable])if(m.move!=='visegrip')assert.ok(NAME_TABLE.moves[m.move],m.move);
+ assert.equal(moveZh('visegrip'),'visegrip','the documented PokeAPI spelling exception falls back to its Showdown id');
 });
 
 /* ---------- T: technique machines ---------- */
@@ -70,8 +76,8 @@ test('T1 the machine list has 7 entries, the first three being 守住, 吹飞, �
 });
 test('T2 each new machine move can be learned by at least 2 roster species, with the behavior and PP observed from the import',()=>{
  const learners=m=>roster.species.filter(s=>s.learnable.some(l=>l.move===m)).map(s=>s.id);
- assert.deepEqual(learners('dragontail'),['charmander','treecko','onix','dratini']);
- assert.equal(learners('helpinghand').length,13);assert.equal(learners('mudslap').length,11);assert.equal(learners('terablast').length,18);
+ for(const m of ['dragontail','helpinghand','mudslap','terablast'])assert.ok(learners(m).length>=2,m);
+ for(const id of ['charmander','treecko','onix','dratini'])assert.ok(learners('dragontail').includes(id),id);
  assert.deepEqual(learnableMove('charmander','dragontail'),{move:'dragontail',pp:1});
  assert.deepEqual(learnableMove('bulbasaur','helpinghand'),{move:'helpinghand',pp:2});
  assert.deepEqual(learnableMove('rattata','mudslap'),{move:'mudslap',pp:1});

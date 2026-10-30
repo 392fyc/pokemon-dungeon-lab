@@ -20445,6 +20445,226 @@
       ],
       "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
     },
+    "characters/0153/AnimData.xml": {
+      "bytes": 4657,
+      "sha256": "13875b137f638f61f576b78836bf667a552c5411c3682b1d71834dced9a42acf",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0153/Attack-Anim.png": {
+      "bytes": 23828,
+      "sha256": "3bd046a26fb18d49baf7c43d7f23ee3269e7d9e6a7f09964bab0483267c3400a",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0153/Attack-Shadow.png": {
+      "bytes": 4760,
+      "sha256": "9a3ffca34b6a88c5163e7692e92351b50d613b731dd0da4e393e13d8f4ce1bd9",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0153/Hurt-Anim.png": {
+      "bytes": 5662,
+      "sha256": "fddc65770c1599d355b9a8a57c2573eb39ecf9b95650aa43a1c2d4e0491c9c66",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0153/Hurt-Shadow.png": {
+      "bytes": 802,
+      "sha256": "20ce4ed6a229d23fb065544b3db4a5f77b92814c9c6028c1cca425c0e7233a5f",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0153/Idle-Anim.png": {
+      "bytes": 8663,
+      "sha256": "c03c402653000b6131cabfcf4bf69a8f6410f3c548d333a04ae57e1e15774bde",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0153/Idle-Shadow.png": {
+      "bytes": 1070,
+      "sha256": "53efc4b85c7013c48c68378b735ddffcc81d0f8598f2d4a7d23fbf8dc4d86f72",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0153/Walk-Anim.png": {
+      "bytes": 8663,
+      "sha256": "c03c402653000b6131cabfcf4bf69a8f6410f3c548d333a04ae57e1e15774bde",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0153/Walk-Shadow.png": {
+      "bytes": 1070,
+      "sha256": "53efc4b85c7013c48c68378b735ddffcc81d0f8598f2d4a7d23fbf8dc4d86f72",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0153/credits.txt": {
+      "bytes": 130,
+      "sha256": "345a47b1d809adba21b39642b0b4923d68f5f0db41b2ee1f5d4de8a449c1652f",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0153",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/AnimData.xml": {
+      "bytes": 5164,
+      "sha256": "a79caecf978684f235ec52dafd8c1dde2e6e0363c855b1a4ecb3ecde0a65c67e",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/Attack-Anim.png": {
+      "bytes": 30188,
+      "sha256": "49c760e37770719130f33f3334c1406c562321b6b87e5195c5b75730b7bf59e5",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/Attack-Shadow.png": {
+      "bytes": 6580,
+      "sha256": "1fb05e709097180f6bbd38618c807dff2329f6d98467dce05d8142742039733c",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/Hurt-Anim.png": {
+      "bytes": 7262,
+      "sha256": "e5fd57e909018b36bd5e5f84f2fa88d338785529307441e97b27f5d93f5e197f",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/Hurt-Shadow.png": {
+      "bytes": 802,
+      "sha256": "20ce4ed6a229d23fb065544b3db4a5f77b92814c9c6028c1cca425c0e7233a5f",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/Idle-Anim.png": {
+      "bytes": 10182,
+      "sha256": "5be5127c0a34f7a2c2461e8e202850f663799a1c9faf16af5ac6ef4a15fd925f",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/Idle-Shadow.png": {
+      "bytes": 597,
+      "sha256": "bd4852e1670f77c84a8844685deb14474c14b06cb6ce41a55d0fe0014e2d4774",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/Walk-Anim.png": {
+      "bytes": 9607,
+      "sha256": "9fdd52799a4c063556a4e3eb02689e6adf0ce8c620f50d224f9ddaa8d0999d49",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/Walk-Shadow.png": {
+      "bytes": 597,
+      "sha256": "bd4852e1670f77c84a8844685deb14474c14b06cb6ce41a55d0fe0014e2d4774",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0154/credits.txt": {
+      "bytes": 130,
+      "sha256": "4170d5ee821b2df5cd50d3414e5bfda67287ef9c37ad996a2d9a9199720b5aa0",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0154",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
     "characters/0155/AnimData.xml": {
       "bytes": 11143,
       "sha256": "40da0e095999e3744ae77d1b850cd2459a6472288afe8db7b321739641b8b4d4",
@@ -20577,6 +20797,246 @@
       ],
       "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
     },
+    "characters/0156/AnimData.xml": {
+      "bytes": 14125,
+      "sha256": "dfc7d889803a111afb621777fc485f4b8a39892f64c4d0a6daa277605d573da4",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0156/Attack-Anim.png": {
+      "bytes": 32835,
+      "sha256": "13f92be33e806f166d850d44b3a105248948249187148020fc653e12f5b8542d",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0156/Attack-Shadow.png": {
+      "bytes": 6159,
+      "sha256": "18a9fcfb36692c701ee04904b537cbe391f42d1c44eede11c0b452a931dca86a",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0156/Hurt-Anim.png": {
+      "bytes": 4383,
+      "sha256": "58547947a46dc86d7ddb05fba950c19e8b0ec862f23b3e9b8d8c5be68a935809",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0156/Hurt-Shadow.png": {
+      "bytes": 816,
+      "sha256": "a6b9f3539e19ceee47f27cc0f1fe6579fe67bba4d641a5bf8e38c330faace4e9",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0156/Idle-Anim.png": {
+      "bytes": 4885,
+      "sha256": "92024f7c0265faa2b26cd156806ccbde241e79491906d904161b223846dc3a30",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0156/Idle-Shadow.png": {
+      "bytes": 531,
+      "sha256": "7e1c16c578f21561dc9d64e75005f40322c10535d28762659150c80d6cff2844",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0156/Walk-Anim.png": {
+      "bytes": 4838,
+      "sha256": "47024abea537bb36c761e2a1c3977321653fd92b5e34b8fadb5efc9cb30615b4",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0156/Walk-Shadow.png": {
+      "bytes": 450,
+      "sha256": "ce1bba841663f35f8fcf75f1b1cd9b00a5ad803b6e3504b30ef0fc623eed4b75",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0156/credits.txt": {
+      "bytes": 414,
+      "sha256": "8441e6f72836c3fac5565bb13fe1699880d34791fe674561a6958ecaa317e7f4",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0156",
+      "authors": [
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/AnimData.xml": {
+      "bytes": 13964,
+      "sha256": "84466770b3fcf986c5d0fe356bdc06c1672b27fe4fdb12ff2ac6b2e20d607591",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/Attack-Anim.png": {
+      "bytes": 37947,
+      "sha256": "3d026f49932230b3fb1ff5aec0467d5fd6731f8a9f49383260c209399f20a587",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/Attack-Shadow.png": {
+      "bytes": 6648,
+      "sha256": "283f9ad690c75843eae89b6b5724c12c900c18a68667464cee3f5e6dbe034fce",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/Hurt-Anim.png": {
+      "bytes": 5767,
+      "sha256": "9d0f47836fdd7d634a68d6aaba07417060141630c72b742954256647f1ef59ad",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/Hurt-Shadow.png": {
+      "bytes": 802,
+      "sha256": "20ce4ed6a229d23fb065544b3db4a5f77b92814c9c6028c1cca425c0e7233a5f",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/Idle-Anim.png": {
+      "bytes": 8939,
+      "sha256": "1a1e58c7f731d997b9596545ed02b48eda027bd375546a9da333f9c5cbc7a316",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/Idle-Shadow.png": {
+      "bytes": 597,
+      "sha256": "bd4852e1670f77c84a8844685deb14474c14b06cb6ce41a55d0fe0014e2d4774",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/Walk-Anim.png": {
+      "bytes": 8477,
+      "sha256": "f529daa8da9ea40fb4cb51cd077dc85a262cb7cbf740921ab55979be6adfc7af",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/Walk-Shadow.png": {
+      "bytes": 535,
+      "sha256": "1ec150c932f208ce21ceccbfc72b21ef85a17cd42133734ce2a2e0638c49eed7",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0157/credits.txt": {
+      "bytes": 425,
+      "sha256": "cb241ec77b909f4953f5ee3b12072e824f1bd03c75b93f245d5fdf842df60774",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0157",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
     "characters/0158/AnimData.xml": {
       "bytes": 11786,
       "sha256": "3ce03826cf0cfb5c5b49ad7d5e4fcc98db58ed0842b3cbc24a2a3823a44eb634",
@@ -20704,6 +21164,226 @@
       "source": "PMDCollab/SpriteCollab",
       "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
       "sourcePath": "sprite/0158",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/AnimData.xml": {
+      "bytes": 5108,
+      "sha256": "7e6d40ff4bf6386cfcb4459c893be6b1492de699964dbe04d07c87af63875905",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/Attack-Anim.png": {
+      "bytes": 26732,
+      "sha256": "f9e0ee3168160b1bfdd47ad356689fceb998263c8087f790c6043341ad26409e",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/Attack-Shadow.png": {
+      "bytes": 5484,
+      "sha256": "018410cf4dc51508ddcb651f0503c9efba2f97404697782e984e3e7facea2d58",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/Hurt-Anim.png": {
+      "bytes": 6544,
+      "sha256": "e969a0c46f886f6b3b582004dc4442d6d9476e31e8362fca19c6ab7b99a9c2ea",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/Hurt-Shadow.png": {
+      "bytes": 851,
+      "sha256": "737198ec693340ec6a7560fcad447d3c6616b95f350dc019384301d2a450677b",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/Idle-Anim.png": {
+      "bytes": 6575,
+      "sha256": "c5f04dc038d2d1b4f9045bcfa49043d9c46535c4a75107c7ed580458247c5515",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/Idle-Shadow.png": {
+      "bytes": 721,
+      "sha256": "e7816201696d3ecf6b6e25cc00acfdb5ac88575eb864d3ad876780da69d9b0e1",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/Walk-Anim.png": {
+      "bytes": 8938,
+      "sha256": "e5b8642861df24adaa73030432e5aa07e94b21c6cd9cbb6e56499660d95b2784",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/Walk-Shadow.png": {
+      "bytes": 571,
+      "sha256": "0843ac7aa314a5a302a0c1998ceb6f73720007a70ca7d3e0684e86d5e608f0c3",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0159/credits.txt": {
+      "bytes": 130,
+      "sha256": "010d2942383de09c9cacd1aa474345b07be1815dc1e7c7276ad78871c8ae4ee5",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0159",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/AnimData.xml": {
+      "bytes": 5268,
+      "sha256": "0a96159fc493acabff12bd247e7d851a66e9e443d22c26e77857675d4fb44ac9",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/Attack-Anim.png": {
+      "bytes": 30043,
+      "sha256": "d25a5ac9c02fcc67cf043c245453e399de423ad7708bfc38eb5dd9340dc3f772",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/Attack-Shadow.png": {
+      "bytes": 5740,
+      "sha256": "0799fdd052aa49bdd1e94de52d3a36d07572e8d5a0705911206de4afc109533b",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/Hurt-Anim.png": {
+      "bytes": 8661,
+      "sha256": "0f4ae882b4099045d92495e6f56392ac20d0dc6d0b72c754a99f495a8d5738e8",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/Hurt-Shadow.png": {
+      "bytes": 969,
+      "sha256": "db7d3db4e87983e7d724483082216d1420e2c793fda34cedf6420eb36144d721",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/Idle-Anim.png": {
+      "bytes": 15617,
+      "sha256": "0de49226cd123d8ef3d6a141487cda9f07ff40a5a07f5f0029e6212039cb2cda",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/Idle-Shadow.png": {
+      "bytes": 1443,
+      "sha256": "9b8ac64a8539e9770055aa7078289ab355e5695a599ce371c731114dca24e6de",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/Walk-Anim.png": {
+      "bytes": 12133,
+      "sha256": "413da3e3c92678723723d5e1fe0ad9df77dadb96d940563b0a44b4cb6a84373d",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/Walk-Shadow.png": {
+      "bytes": 571,
+      "sha256": "0843ac7aa314a5a302a0c1998ceb6f73720007a70ca7d3e0684e86d5e608f0c3",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0160/credits.txt": {
+      "bytes": 130,
+      "sha256": "1f6d720b9f2a45deb9a083d9612f498c01a971417e7f12fa351e92e684d52caf",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0160",
       "authors": [
         "CHUNSOFT"
       ],
@@ -20877,6 +21557,116 @@
       ],
       "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
     },
+    "characters/0195/AnimData.xml": {
+      "bytes": 5202,
+      "sha256": "dae714d473a869341fb7a31ee064e188540850a88f174b4fc623188fe2a2f73d",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0195/Attack-Anim.png": {
+      "bytes": 35878,
+      "sha256": "4ca04f5886aa87236d5fbd4317ace7cbbec1a906918a0cb4ac2d93371222b271",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0195/Attack-Shadow.png": {
+      "bytes": 5565,
+      "sha256": "3fe701c6800d1d5c0143bc457eb3bfda6397eb4a86a0b02500cf80d61b0e6945",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0195/Hurt-Anim.png": {
+      "bytes": 6510,
+      "sha256": "5524addf75a49f199a42b42c2775ad92f7080acbb437b65ef8c37d754e593a8f",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0195/Hurt-Shadow.png": {
+      "bytes": 822,
+      "sha256": "4973734d088ad25a7f3a2fe09949b183bc8ba0bc0cfc627e93ef21675f194521",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0195/Idle-Anim.png": {
+      "bytes": 11890,
+      "sha256": "4e08941beef1b1eda8e01a116d28a64a4a76467b5e47f2700b41ef0515f418c3",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0195/Idle-Shadow.png": {
+      "bytes": 1743,
+      "sha256": "1cc4ec96716065417dfd868945ab4403fc5c617df9092c84c8b8688091a18203",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0195/Walk-Anim.png": {
+      "bytes": 9131,
+      "sha256": "aed0f032d8a82079534df1f71891896ce2f1b0b7524342a5eec3176bbddc37a7",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0195/Walk-Shadow.png": {
+      "bytes": 837,
+      "sha256": "97aa907e483f738c436a8469cf290603e3fbb6d7814fa5a47f02e5f858491f84",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0195/credits.txt": {
+      "bytes": 137,
+      "sha256": "b0cd956a8256ad6214a14b90bf84970316fb8fefe2e5f870aa02f31ea2515d48",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0195",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
     "characters/0228/AnimData.xml": {
       "bytes": 14090,
       "sha256": "59e8aeedbc4bef8f8319a83f8a845e41a47d62f7add300832fe1239fbda6e727",
@@ -21021,6 +21811,116 @@
       ],
       "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
     },
+    "characters/0229/AnimData.xml": {
+      "bytes": 5212,
+      "sha256": "9f4c389bd6af003662f0b8b55365087fdc1234d9a49733d8d9568f1567219f81",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0229/Attack-Anim.png": {
+      "bytes": 28917,
+      "sha256": "05d4517bb9ed1b89211193de950932bd3dda26157271785d70ee82ea01cce082",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0229/Attack-Shadow.png": {
+      "bytes": 4846,
+      "sha256": "05e558d141d8b0daf0f5243771c5376efe608c2a59a76d45923af89bfa3e7873",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0229/Hurt-Anim.png": {
+      "bytes": 7909,
+      "sha256": "93cb3c4ef09419eaaff7c67696941e06d2a254a52d13bcb188892b613510d7ca",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0229/Hurt-Shadow.png": {
+      "bytes": 851,
+      "sha256": "737198ec693340ec6a7560fcad447d3c6616b95f350dc019384301d2a450677b",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0229/Idle-Anim.png": {
+      "bytes": 20057,
+      "sha256": "fb67135060a46f1d161904c22e4f354f657751ba4450f5c97062910c3dc55eed",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0229/Idle-Shadow.png": {
+      "bytes": 3726,
+      "sha256": "b3be5ab65a8b70d093bd9c9a9289f2322fbce44b3a6286298bb7f6d145467c15",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0229/Walk-Anim.png": {
+      "bytes": 12774,
+      "sha256": "efe1518ed845ae21988fb9d6895ddc05a3fb58a30d96e73e71fb97bce565a0ed",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0229/Walk-Shadow.png": {
+      "bytes": 1070,
+      "sha256": "53efc4b85c7013c48c68378b735ddffcc81d0f8598f2d4a7d23fbf8dc4d86f72",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0229/credits.txt": {
+      "bytes": 131,
+      "sha256": "1057bc266cc2f6ce6a3a12f82726707b79486a9ff16724451284b8392c0bee4a",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0229",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
     "characters/0252/AnimData.xml": {
       "bytes": 11662,
       "sha256": "772dcb43c7838d9393c444a39c13a1398e91192ae3188f40706ffee73e848c75",
@@ -21148,6 +22048,246 @@
       "source": "PMDCollab/SpriteCollab",
       "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
       "sourcePath": "sprite/0252",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/AnimData.xml": {
+      "bytes": 13739,
+      "sha256": "238ce0216bc3bf8e6a881207fbf0faf9d47dd73c62b5e687d9ee2e2383cbf097",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/Attack-Anim.png": {
+      "bytes": 19196,
+      "sha256": "18090f4815283af33d1fa45e939773fc3768fb7e536da645cf0dc0477775aadd",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/Attack-Shadow.png": {
+      "bytes": 5060,
+      "sha256": "52cf19306356fae1bdcc448fb50315b7041a6c7be9c21eb26b7d6a46c0e0d276",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/Hurt-Anim.png": {
+      "bytes": 4706,
+      "sha256": "d2b8b15a11acd96338850ee31a19faecaa78cc611a21bf2b929ce6371f34b3e5",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/Hurt-Shadow.png": {
+      "bytes": 736,
+      "sha256": "698903e1ad774ea45deaeb2b33d7e7c26cad316b95c9bb6b6ff57cd3f31b4a14",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/Idle-Anim.png": {
+      "bytes": 4644,
+      "sha256": "d970b15c7ac35fe0226c5b469e4f5abaddda7ee2251b35bf82963596f0ca9cdf",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/Idle-Shadow.png": {
+      "bytes": 424,
+      "sha256": "8775a4605979e41023680c853b098921f5201d6bcea9b393b52aa75ba1884e50",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/Walk-Anim.png": {
+      "bytes": 9509,
+      "sha256": "da53b1c129fb5e2ee9aa19796e8bc1e3b9b65654114356b8acc6852bdf467450",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/Walk-Shadow.png": {
+      "bytes": 847,
+      "sha256": "b20facfb5f5429290c15b29d51cc71aedddf44e4bccd74d68efe74126f79009d",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0253/credits.txt": {
+      "bytes": 504,
+      "sha256": "5c7cad0ac810c7fb7a0e799d31d4b9d3dce4f2bdf098414117c43c4f5962a43b",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0253",
+      "authors": [
+        "<@!157796074457661440>",
+        "<@!702275233125630042>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/AnimData.xml": {
+      "bytes": 5052,
+      "sha256": "01670c1eb20d10c43736a628056879b6236fc2c1a987b169286ab4e94ba6dc19",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/Attack-Anim.png": {
+      "bytes": 21762,
+      "sha256": "fbc1925e2d935939f5b22dbf998e652f88e80e4377b43d0d3e3b6b5e6d96ccf6",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/Attack-Shadow.png": {
+      "bytes": 5098,
+      "sha256": "7d9b8aff0f1e38da6ba1033a0982b089e86051d2163fa04da5d8ca7fd3651052",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/Hurt-Anim.png": {
+      "bytes": 6224,
+      "sha256": "9c84539e614a22a257073e345e9601d341fad179d92885d4a8b02dabff3e7b92",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/Hurt-Shadow.png": {
+      "bytes": 848,
+      "sha256": "59e15793497a8122091a82c72c5a51beee94f1f6d7103dfedfb2604d57a02f51",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/Idle-Anim.png": {
+      "bytes": 6124,
+      "sha256": "3b4a7ccdabbf3346c2e2864c73cb4d52f3780ddc71396bc23dc7c671e9bda4b9",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/Idle-Shadow.png": {
+      "bytes": 537,
+      "sha256": "6ac90dc4a5498a3e2981479ac96747d7bc4a4e26606741c5b169889aa3f33580",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/Walk-Anim.png": {
+      "bytes": 9335,
+      "sha256": "89f6a836fb1b0ccee94fec63ad2380ea10063782ef1655955e2bcb59bf1e550a",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/Walk-Shadow.png": {
+      "bytes": 571,
+      "sha256": "0843ac7aa314a5a302a0c1998ceb6f73720007a70ca7d3e0684e86d5e608f0c3",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0254/credits.txt": {
+      "bytes": 130,
+      "sha256": "56cbb2543846a7c5800da4c3b9474fabdaec7c2c26211496ffaf430d7f0fd02c",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0254",
       "authors": [
         "CHUNSOFT"
       ],
@@ -21285,6 +22425,226 @@
       ],
       "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
     },
+    "characters/0256/AnimData.xml": {
+      "bytes": 5187,
+      "sha256": "c389dfd110e216a11c5673ecffeccfa36ec0564afdbfe694b804c9b852b69271",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0256/Attack-Anim.png": {
+      "bytes": 24692,
+      "sha256": "0ed99cbfde635b5cd37346fa3e2987ebbbe019cf30c9fca025cfb82c5b5bcd76",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0256/Attack-Shadow.png": {
+      "bytes": 5399,
+      "sha256": "dee03ddadcb28c837732f87cfbaae021012731118617a1ed98acab7ca2e41076",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0256/Hurt-Anim.png": {
+      "bytes": 6512,
+      "sha256": "3fe921d515ad96cd33ae5901d7920e5c398093c2d14ea53af5d1b67571a55a80",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0256/Hurt-Shadow.png": {
+      "bytes": 881,
+      "sha256": "c9f80ce48d650caabda2bbe00522e3da7cf868137f0d292652a23d5ebc480874",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0256/Idle-Anim.png": {
+      "bytes": 9636,
+      "sha256": "14aa58ca8163a4835dcb497c29424d47c7f4b8479732105e7b61d4025986d415",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0256/Idle-Shadow.png": {
+      "bytes": 560,
+      "sha256": "9149ca146bec07fa2eba1927efdf2cd5add7412fcf271e8182e59f92bd66f888",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0256/Walk-Anim.png": {
+      "bytes": 8004,
+      "sha256": "96a851f45857e4317819c5c0c6adda512097727522406bd1982e221fbc47fb0a",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0256/Walk-Shadow.png": {
+      "bytes": 512,
+      "sha256": "b01311a29a8cd8396b84f03e8d84011e3378999364fad1386cb022d3d1aa6f20",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0256/credits.txt": {
+      "bytes": 130,
+      "sha256": "431021f2c548cdeab89dc57929c0389a5cfb0ef3c325c405d8b1ca76e117439d",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0256",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/AnimData.xml": {
+      "bytes": 5701,
+      "sha256": "3071822a49c8fe39c4240fa117237369998e74662bad83c5150e7368b0b7f508",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/Attack-Anim.png": {
+      "bytes": 22740,
+      "sha256": "b18362eba01ff6ed02ae8bc40d263efce898b0ccaf77bf65c058bb6d2f78d5f0",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/Attack-Shadow.png": {
+      "bytes": 4602,
+      "sha256": "fdd89aca88d30d5ec92ae8760af17de110e789b3e59c5a4f88ce965883a68b8d",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/Hurt-Anim.png": {
+      "bytes": 6369,
+      "sha256": "7f756ef419dbacadba19dac185d114907094576393b0164996e7c8b6ecf416af",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/Hurt-Shadow.png": {
+      "bytes": 815,
+      "sha256": "df7815c9541ff2a2416b89ee31260fb0bb23e9f9c037457468f59cf976f1d0bb",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/Idle-Anim.png": {
+      "bytes": 6396,
+      "sha256": "3fa9230c38bc55a4d25d5345aa1b8787e12918f7783d8c54d93a567c99582e61",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/Idle-Shadow.png": {
+      "bytes": 503,
+      "sha256": "845b71acdd65e8a6b307f397f0575f4d7c1e55ab93a824303cd5a117253889b7",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/Walk-Anim.png": {
+      "bytes": 10043,
+      "sha256": "61581ec6b6f5af40ca96777f6777fee1e0f574a2747885073dce2b2dfee22633",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/Walk-Shadow.png": {
+      "bytes": 597,
+      "sha256": "bd4852e1670f77c84a8844685deb14474c14b06cb6ce41a55d0fe0014e2d4774",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0257/credits.txt": {
+      "bytes": 134,
+      "sha256": "6c5f5ef738648795beced8a7df7abbddfb5c40857f9d7aa4ca9fef83e6ec82bc",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0257",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
     "characters/0258/AnimData.xml": {
       "bytes": 11944,
       "sha256": "7e0f93ed47ab1f9e935920342057862622663d7923cf34c44fd6232c161b6734",
@@ -21413,6 +22773,236 @@
       "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
       "sourcePath": "sprite/0258",
       "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/AnimData.xml": {
+      "bytes": 5255,
+      "sha256": "9b40a84c9c2fc03ed481d776e22410f6b18d3af1ed90954b6a3e2316dda5237a",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/Attack-Anim.png": {
+      "bytes": 17847,
+      "sha256": "09097dfa3a4ba1c9e2439d582d9ab54abf29fa30b5ccd18ffe031dd6f9f5b64f",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/Attack-Shadow.png": {
+      "bytes": 4784,
+      "sha256": "f835b719a90169e9c1c82eaf3a33da808bd1cc3e522dd881880a47447b70f373",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/Hurt-Anim.png": {
+      "bytes": 4683,
+      "sha256": "154768b5553ab1f4d766fb378301baf11f6b427f874bc77e89a4964435d2d9c9",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/Hurt-Shadow.png": {
+      "bytes": 787,
+      "sha256": "c598a4c3fc9b723e5936bd5ed74086c34af796aa188d84466b4472b3fb8eb99c",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/Idle-Anim.png": {
+      "bytes": 6082,
+      "sha256": "f6071a28b987435123709be8ae50ebad0fbbf1aaeb64fb52820903d448180706",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/Idle-Shadow.png": {
+      "bytes": 463,
+      "sha256": "c0ba6d2d4ef8e26824dace9aca22a63c8cc4bd423ffa67d6755e5ad2ec6423d8",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/Walk-Anim.png": {
+      "bytes": 6082,
+      "sha256": "f6071a28b987435123709be8ae50ebad0fbbf1aaeb64fb52820903d448180706",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/Walk-Shadow.png": {
+      "bytes": 463,
+      "sha256": "c0ba6d2d4ef8e26824dace9aca22a63c8cc4bd423ffa67d6755e5ad2ec6423d8",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0259/credits.txt": {
+      "bytes": 149,
+      "sha256": "5976e1cd17419966a80591bb91c9e0793128c1a4da0c6385d27bb1c19ab709be",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0259",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/AnimData.xml": {
+      "bytes": 14165,
+      "sha256": "7b8968fd4305b6309a8ff17339e67965231aae7e3e1896f3c30280d3cbeb637b",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/Attack-Anim.png": {
+      "bytes": 27540,
+      "sha256": "70c6470830cc2cc652354a0609c02042ae7c562c9bf4154d044926e2bc8eec01",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/Attack-Shadow.png": {
+      "bytes": 5660,
+      "sha256": "7822100861716f91abb76d74b18a3a0ca5316c2a3d78960d5da98d3558fc1b4a",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/Hurt-Anim.png": {
+      "bytes": 6715,
+      "sha256": "6bc58ee24522133b439e9afde77ad87ccdeb98e3a924a772443fb65d479f666c",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/Hurt-Shadow.png": {
+      "bytes": 823,
+      "sha256": "4b04c29b16a65336d214c5853efd6744fca874511c42a13d186aba1f96797d8d",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/Idle-Anim.png": {
+      "bytes": 15286,
+      "sha256": "c4057b76bf34116c7e3e7e637c0ca54d4b3ef4f5c74a1007a52275b2e4bb7a8c",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/Idle-Shadow.png": {
+      "bytes": 1038,
+      "sha256": "08001278147019310437b9081bed9f617caf81a49e803fb357eaa441f1bd6af8",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/Walk-Anim.png": {
+      "bytes": 11065,
+      "sha256": "92f436a81c2602b707e879a10b59a6b587a6afe958d71b68d9b5797f02e7cdc1",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/Walk-Shadow.png": {
+      "bytes": 551,
+      "sha256": "731bf455d0e68d18cc37c219fc50b1882fbac9987914c80d17b92ceca9974280",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0260/credits.txt": {
+      "bytes": 414,
+      "sha256": "95524a0cde76a7cac38fea14c4cd5823d68c0d20f6b54da88e3840e636b9fea0",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0260",
+      "authors": [
+        "<@!356635814668664832>",
         "CHUNSOFT"
       ],
       "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
@@ -21557,6 +23147,116 @@
       "sourcePath": "sprite/0296",
       "authors": [
         "<@!275075929905168384>",
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/AnimData.xml": {
+      "bytes": 5457,
+      "sha256": "fe8306b727b8a085b1886edb03bc945a6d8f30cb44ba6e84e57c605b172cbeb1",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/Attack-Anim.png": {
+      "bytes": 34463,
+      "sha256": "e7c493367c1ac7ef68210fd4662e945c93bfa4cee116e5a168618cb218f337bc",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/Attack-Shadow.png": {
+      "bytes": 5808,
+      "sha256": "db85cb7270fe717cb15edf7afc70e83b3800543221abec3cd463a0be1c2be907",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/Hurt-Anim.png": {
+      "bytes": 9198,
+      "sha256": "2b75e57c05a9ec366ffc2c2f7450cb849af8b10f4ac8e41cfa9aba6d2abde782",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/Hurt-Shadow.png": {
+      "bytes": 822,
+      "sha256": "4973734d088ad25a7f3a2fe09949b183bc8ba0bc0cfc627e93ef21675f194521",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/Idle-Anim.png": {
+      "bytes": 25857,
+      "sha256": "301048ee0d8d0d667dd3f67068bf244463edd457fc9256a3f20749ebcfecbe26",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/Idle-Shadow.png": {
+      "bytes": 2181,
+      "sha256": "e2a488a61cf992331d6921ea60c5be5647a1e119e6c488af851a3bf532a910b2",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/Walk-Anim.png": {
+      "bytes": 14191,
+      "sha256": "f8de121e31c910e5750fa446891451ab98a833fa77ffb9b50bfdffd09df590a9",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/Walk-Shadow.png": {
+      "bytes": 792,
+      "sha256": "d7574bee72119c7a75aa9cc70f5c3f46f237f94053074ff14f4e981a5aa56dec",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
+        "CHUNSOFT"
+      ],
+      "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."
+    },
+    "characters/0297/credits.txt": {
+      "bytes": 130,
+      "sha256": "039ef45f06f4a03cbb03998c62b15342a41a2685181b875c28fe63f10f9cceb2",
+      "source": "PMDCollab/SpriteCollab",
+      "commit": "448d3af85e2cfa85a8c5ead076eddb145251b473",
+      "sourcePath": "sprite/0297",
+      "authors": [
         "CHUNSOFT"
       ],
       "licence": "Community submissions: CC BY-NC 4.0 (non-commercial, attribution). Files credited to CHUNSOFT are official game sprites with no licence granted. Pokemon IP is not licensed. Private build only."

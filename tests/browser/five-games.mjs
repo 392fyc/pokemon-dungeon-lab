@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 
+fs.mkdirSync('.artifacts/trial',{recursive:true});
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const base=process.env.TRIAL_URL;
@@ -95,7 +96,10 @@ try{
   assert.equal(await page.locator('#depart').isEnabled(),true);await click('depart');
   let s=await state();assert.equal(s.dungeon.seed,route.seed);assert.ok(!runIds.has(s.runId));runIds.add(s.runId);
   if(learned){const u=Object.values(s.units).find(u=>u.inst===routes.training.inst);assert.ok(u.learned.includes(routes.training.move));carriedIntoRun=true;}
-  for(const c of route.commands){await command(c);if(c.type==='invite'&&c.choice==='accept')accepted++;}
+  for(const [commandIndex,c] of route.commands.entries()){
+   try{await command(c);if(c.type==='invite'&&c.choice==='accept')accepted++;}
+   catch(error){throw new Error(`第 ${index+1} 局第 ${commandIndex+1} 条指令 ${JSON.stringify(c)}：${error instanceof Error?error.message:String(error)}`,{cause:error});}
+  }
   s=await state();assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'normal');assert.equal(s.end.effective,true);
   await roundTrip(`game ${index+1} terminal`);
   await click('to-base');assert.equal((await envelope()).profile.expeditions,index+1);

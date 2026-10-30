@@ -105,6 +105,14 @@ test('守住覆盖施用当回合的敌方阶段并持续三次；连续使用�
   s=play(s,{type:'wait'});assert.equal(s.units.A.hp,5); // melee 4 + ranged 5 + boss 两次各 3
 });
 
+test('守住后等待一回合即可再次使用',()=>{
+  const a=friend('A',1,1,20,{protect:2}),e=enemy('E',2,1,20,'melee',4);
+  let s=world({floor:row(0,3),friends:[a],enemies:[e]});
+  s=use(s,'protect','A');assert.equal(s.units.A.protect,2);assert.equal(s.units.A.pp.protect,1);assert.equal(s.units.A.hp,20);
+  s=play(s,{type:'wait'});assert.equal(s.units.A.lastMove,null);assert.equal(s.units.A.protect,1);assert.equal(s.units.A.hp,20);
+  s=use(s,'protect','A');assert.equal(s.units.A.protect,2);assert.equal(s.units.A.pp.protect,0);assert.equal(s.units.A.hp,20);
+});
+
 test('反击对每次相邻敌方命中各反射同额伤害；被守住挡掉或来自远处时不触发',()=>{
   let a=friend('A',1,1,20,{pursuit:2}),e1=enemy('E1',2,1,1,'melee',2),e2=enemy('E2',1,2,20,'melee',3);
   let s=world({floor:rect(0,4,0,4),friends:[a],enemies:[e1,e2]});

@@ -338,7 +338,11 @@ export function decode(raw:string):Envelope {
     if(e.profile!==undefined)e.profile=migrateProfile(e.profile) as Profile;
     migrateWorld(e.current,e.profile);migrateWorld(e.recent,undefined,true);
     try{migrateLegacyMoveState(e.profile,e.current,e.recent);}
-    catch(error){const reason=error instanceof Error?error.message:'旧招式字段损坏';throw Error(`${reason}；整条存档未迁移，原记录已保留`);}
+    catch(error){
+      const reason=error instanceof Error?error.message:'旧招式字段损坏';
+      const detail=reason.replace(/[；，]?\s*原记录已保留$/,'');
+      throw Error(`${detail}；整条存档未迁移，原记录已保留`);
+    }
     e.rules=RULE_VERSION;e.content=CONTENT_VERSION;
   }
   if(typeof e.build!=='string'||!Number.isInteger(e.sequence)||e.sequence<1||(e.current!==null&&!validWorld(e.current))||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('存档结构损坏；原记录已保留');

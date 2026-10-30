@@ -15,6 +15,10 @@ const integer=(v:unknown)=>Number.isInteger(v);
 const strings=(v:unknown):v is string[]=>Array.isArray(v)&&v.every(x=>typeof x==='string');
 const position=(v:unknown):v is {x:number;y:number}=>object(v)&&integer(v.x)&&integer(v.y);
 const skillNames=['strong','line','guard','push'];
+// Released boss numbers stay valid as a complete tuple when current tuning changes.
+// Loading never replaces the numbers held by an existing boss (issue #38).
+const BOSS_HISTORY=[{hp:80,damage:6,range:3}] as const;
+const validBossNumbers=(v:Record<string,unknown>)=>[BOSS,...BOSS_HISTORY].some(b=>v.maxHp===b.hp&&v.damage===b.damage&&v.range===b.range);
 function validUnit(v:unknown,depth=0):boolean {
   // 7.3 H1: a nested unit (a recruit) never carries the boss mark or the boss species.
   if(depth>0&&object(v)&&(v.boss!==undefined||(typeof v.species==='string'&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species))))return false;
@@ -27,7 +31,7 @@ function validUnit(v:unknown,depth=0):boolean {
   if(v.damage!==undefined&&(!integer(v.damage)||(v.damage as number)<0))return false;
   if(v.range!==undefined&&(!integer(v.range)||(v.range as number)<1))return false;
   // 7.3 boss: the only unit that may carry a species outside the roster, and only with the boss mark (arcanine, enemy side, fixed numbers, no recruit, no base instance).
-  if(v.boss!==undefined&&(v.boss!==true||v.side!=='enemy'||v.species!==BOSS.species||v.maxHp!==BOSS.hp||v.damage!==BOSS.damage||v.range!==BOSS.range||v.ai!=='melee'||v.recruit!==undefined||v.inst!==undefined))return false;
+  if(v.boss!==undefined&&(v.boss!==true||v.side!=='enemy'||v.species!==BOSS.species||!validBossNumbers(v)||v.ai!=='melee'||v.recruit!==undefined||v.inst!==undefined))return false;
   if(v.species!==undefined&&(typeof v.species!=='string'||!(speciesOf(v.species)||(v.boss===true&&Object.prototype.hasOwnProperty.call(BOSS_SPECIES,v.species)))))return false;
   if((v.inst===undefined)!==(v.moves===undefined)||(v.inst!==undefined&&(v.side!=='friend'||typeof v.inst!=='string'||!v.inst||!strings(v.moves)||v.species===undefined)))return false;
   // Expedition enemies are always wild species; a starter on the enemy side is a contradictory save.

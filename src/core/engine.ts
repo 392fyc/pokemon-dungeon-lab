@@ -274,7 +274,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(!u.learned.includes(a.skill)||(u.pp[a.skill]??0)<1)return '未装备该招式或PP不足';
   const spec=moveOf(a.skill);if(!spec)return '招式数据不存在';
   if(spec.effects.includes('protect')&&u.lastMove==='protect')return '守住不能连续使用';
-  if((spec.range==='user'||spec.range==='room')&&a.target!==id)return '这种招式的目标必须填使用者自己';
+  if((spec.range==='user'||spec.range==='room')&&a.target!==id)return '这个招式需要选择自己作为目标';
   if(spec.range==='user'||spec.range==='room'){
     if(!moveTargetsInReach(s,id,spec).length)return spec.range==='room'?'范围内没有能受此招式影响的单位':'招式无法作用于使用者';
     return null;

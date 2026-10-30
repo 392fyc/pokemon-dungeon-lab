@@ -54,7 +54,9 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
   const protects:{idx:number; ev:AnimEvent}[] = [];
   for (const id of b.queue) {
     const e = explicit(id), u = b.units[id];
-    if (e?.type === 'skill' && moveOf(e.skill)?.effects.includes('protect') && u.hp > 0) protects.push({idx:b.queue.indexOf(id), ev:{k:'protect', by:id, target:e.target, from:{x:0, y:0}, at:{x:0, y:0}}});
+    // A planned action may never run (for example, an earlier blowaway collision knocks this member out).
+    // Keep an effect only when the rule log confirms it happened, even if the member falls afterward.
+    if (e?.type === 'skill' && moveOf(e.skill)?.effects.includes('protect') && u.hp > 0 && lines.includes(`${id}进入守住状态`)) protects.push({idx:b.queue.indexOf(id), ev:{k:'protect', by:id, target:e.target, from:{x:0, y:0}, at:{x:0, y:0}}});
   }
   const flush = (upTo:number) => {
     while (protects.length && protects[0].idx < upTo) {

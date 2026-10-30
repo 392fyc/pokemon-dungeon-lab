@@ -12,6 +12,13 @@ const clone=(v)=>structuredClone(v);
 const base=()=>load('v1-profile-current.json');
 const parts=()=>load('v1-location-parts.json');
 function port(raw){let value=raw,writes=0;return {getItem:()=>value,setItem:(_key,next)=>{value=next;writes++;},raw:()=>value,writes:()=>writes};}
+function assertBlockedRaw(raw){
+  const storage=port(raw),store=new TrialStore(storage);
+  assert.equal(store.status,'blocked',store.error);
+  assert.equal(store.exportRaw(),raw);
+  assert.equal(storage.writes(),0);
+  assert.equal((store.error.match(/原记录已保留/g)??[]).length,1,store.error);
+}
 function putPendingInvitation(world,unit){
   world.phase='invitation';
   world.seen=world.floor.map(p=>`${p.x},${p.y}`);
@@ -67,13 +74,18 @@ test('an old species invitation without moves uses the frozen species kit mappin
 
 test('stored-floor units receive the move-key migration and required combat defaults',()=>{
   const e=base(),w=e.current;
-  w.dungeon.stored={'2':clone(parts().storedFloor)};
+  const floor=clone(parts().storedFloor);
+  floor.units.storedE.recruit=clone(parts().noSpeciesRecruitUnit);
+  w.dungeon.stored={'2':floor};
   const migrated=decode(JSON.stringify(e));
   const stored=migrated.current.dungeon.stored['2'].units.storedE;
   assert.equal(stored.learned.length,0);
   assert.deepEqual(stored.pp,{});assert.deepEqual(stored.maxPp,{});
   assert.deepEqual(stored.stages,{atk:0,def:0});
   assert.equal(stored.protect,0);assert.equal(stored.counter,0);assert.equal(stored.lastMove,null);
+  assert.deepEqual(stored.recruit.learned,['tackle','roar']);
+  assert.deepEqual(stored.recruit.pp,{tackle:1,roar:1});
+  assert.deepEqual(stored.recruit.stages,{atk:0,def:0});
   assert.deepEqual(decode(JSON.stringify(migrated)),migrated);
 });
 
@@ -122,6 +134,20 @@ test('a malformed old behavior cannot be discarded during migration and blocked 
   assert.match(store.error,/冻结的旧名单不符/);
   assert.equal(store.exportRaw(),raw);
   assert.equal(storage.writes(),0);
+  assert.equal((store.error.match(/原记录已保留/g)??[]).length,1,store.error);
+});
+
+test('bad PP keys in a stored-floor recruit or invitation block loading without rewriting bytes',()=>{
+  const crossFloor=base(),floor=clone(parts().storedFloor);
+  floor.units.storedE.recruit=clone(parts().noSpeciesRecruitUnit);
+  floor.units.storedE.recruit.pp.unknown=1;
+  crossFloor.current.dungeon.stored={'2':floor};
+  assertBlockedRaw(JSON.stringify(crossFloor));
+
+  const invitation=base();
+  const unit=clone(parts().speciesInvitationUnit);putPendingInvitation(invitation.current,unit);
+  invitation.current.invitations[0].unit.pp.unknown=1;
+  assertBlockedRaw(JSON.stringify(invitation));
 });
 
 test('new saves reject missing combat fields and unknown current-unit groups',()=>{

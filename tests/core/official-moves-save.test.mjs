@@ -15,6 +15,7 @@ function port(raw){let value=raw,writes=0;return {getItem:()=>value,setItem:(_ke
 function assertBlockedRaw(raw){
   const storage=port(raw),store=new TrialStore(storage);
   assert.equal(store.status,'blocked',store.error);
+  assert.match(store.error,/PP键/);
   assert.equal(store.exportRaw(),raw);
   assert.equal(storage.writes(),0);
   assert.equal((store.error.match(/原记录已保留/g)??[]).length,1,store.error);

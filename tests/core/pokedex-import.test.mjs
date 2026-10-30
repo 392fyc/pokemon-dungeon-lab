@@ -19,7 +19,7 @@ const snapshotRoot = path.join(mainRoot, '.artifacts');
 const scratchRoot = path.join(mainRoot, '.tmp', 'lane-dev', 'pokedex-import');
 const fixture = JSON.parse(fs.readFileSync(new URL('./fixtures-pokedex/legacy-baseline.json', import.meta.url), 'utf8'));
 const generationOneIds = ['metapod', 'kakuna', 'abra', 'magikarp', 'ditto'];
-const admissionKeys = ['existingMoveRule', 'blowaway', 'drain', 'pureDamage', 'selfStages'];
+const admissionKeys = ['existingMoveRule', 'blowaway', 'drain', 'pureDamage', 'selfStages', 'teamProtection'];
 const exclusionKeys = ['nonstandard', 'noOfficialData', 'unsupportedRange', 'unsupportedTarget', 'selfCostOrCondition', 'ohko', 'fixedDamage', 'multihit', 'recoil', 'selfSwitch', 'basePowerCallback', 'zeroBasePower', 'charge', 'officialPowerUnavailable', 'changeMoveNoTemplate'];
 const requiredSnapshots = [
   'showdown/pokedex.json', 'showdown/moves.json', 'showdown/learnsets.json',
@@ -207,6 +207,51 @@ function assertOfficialRows(moveDoc, wikiDoc) {
   return checked;
 }
 
+function assertTeamProtectionData(moveDoc, names) {
+  const expected = {
+    quickguard: { pp: 1, name: '快速防守', note: /官方持续1回合，本作仅持续至本回合敌方阶段结束/ },
+    reflect: { pp: 2, name: '反射壁', note: /本作持续10个敌方阶段，官方无限迷宫起为21回合/ },
+    lightscreen: { pp: 3, name: '光墙', note: /本作持续10个敌方阶段，官方无限迷宫起为21回合/ },
+  };
+  for (const [id, expectation] of Object.entries(expected)) {
+    const move = moveDoc.moves[id];
+    assert.ok(move, `${id} must be promoted into the executable move table`);
+    assert.deepEqual(
+      { range: move.range, target: move.target, power: move.power, game: move.game, effects: move.effects },
+      { range: 'room', target: 'party', power: null, game: 'MDGtI', effects: [id] },
+      `${id} must use the GTI team-protection row and effect template`,
+    );
+    assert.equal(move.official.basePp, id === 'quickguard' ? '13' : '15', `${id} official PP from GTI`);
+    assert.equal(move.official.accuracy, '—%', `${id} official accuracy from GTI`);
+    assert.equal(move.official.cutsCorners, 'Yes', `${id} official corner behavior from GTI`);
+    assert.match(move.note, expectation.note, `${id} must record the work-specific duration difference`);
+    assert.equal(names.moves[id], expectation.name, `${id} move label`);
+    assert.equal(names.tms[id], expectation.name, `${id} TM label must be available to the UI`);
+  }
+  for (const id of Object.keys(expected)) {
+    assert.equal(Object.hasOwn(moveDoc.candidates77b, id), false, `${id} must no longer be an unpromoted 7.7b candidate`);
+  }
+}
+
+function assertTeamProtectionWikiRows(moveDoc, wikiDoc) {
+  const expectedBasePp = { quickguard: '13', reflect: '15', lightscreen: '15' };
+  for (const id of Object.keys(expectedBasePp)) {
+    const row = wikiDoc.moves[id]?.rows.find(candidate =>
+      candidate.startsWith('{{MDMoveRow|') && parseMoveRowField(candidate, 'game') === 'GTI');
+    assert.ok(row, `${id} wiki snapshot must contain the selected GTI row`);
+    const actual = moveDoc.moves[id];
+    assert.equal(actual.game, 'MDGtI', `${id} must use the row selected from GTI`);
+    assert.ok(['Entire room', 'Enitre room'].includes(parseMoveRowField(row, 'range')), `${id} raw GTI range row`);
+    assert.equal(parseMoveRowField(row, 'target'), 'Party', `${id} raw GTI target row`);
+    assert.equal(actual.range, 'room', `${id} mapped range must come from its GTI row`);
+    assert.equal(actual.target, 'party', `${id} mapped target must come from its GTI row`);
+    assert.equal(actual.official.basePp, expectedBasePp[id], `${id} official PP must come from its GTI row`);
+    assert.equal(actual.official.basePp, parseMoveRowField(row, 'pp'), `${id} selected PP vs GTI row`);
+    assert.equal(actual.official.accuracy, parseMoveRowField(row, 'acc'), `${id} selected accuracy vs GTI row`);
+    assert.equal(actual.official.cutsCorners, parseMoveRowField(row, 'cuts'), `${id} selected corner rule vs GTI row`);
+  }
+}
+
 function sumCounts(counts, expectedKeys, label) {
   assert.deepEqual(Object.keys(counts).sort(), [...expectedKeys].sort(), `${label}: category keys`);
   let sum = 0;
@@ -272,6 +317,16 @@ assert row["range"] == "Front"
 assert row["target"] == "Enemy"
 assert module.mapped_field(" Entire floor ", module.RANGE_MAP, module.UNSUPPORTED_RANGES, "range", "probe") == (None, "射程暂不支持")
 assert module.mapped_field(" Wall ", module.TARGET_MAP, module.UNSUPPORTED_TARGETS, "target", "probe") == (None, "目标暂不支持")
+rows = {"moves": {"reflect": {"rows": [
+    "{{MDMoveRow|game=TDS|range=User|target=User}}",
+    "{{MDMoveRow|game=GTI|range=Entire room|target=Party}}",
+]}}}
+assert module.selected_pmd_row("reflect", rows)["game"] == "GTI"
+other_rows = {"moves": {"tackle": {"rows": [
+    "{{MDMoveRow|game=TDS|range=Front|target=Enemy}}",
+    "{{MDMoveRow|game=GTI|range=Front|target=Enemy}}",
+]}}}
+assert module.selected_pmd_row("tackle", other_rows)["game"] == "TDS"
 for value, supported, unsupported, field in (("Future range", module.RANGE_MAP, module.UNSUPPORTED_RANGES, "range"), ("Future target", module.TARGET_MAP, module.UNSUPPORTED_TARGETS, "target")):
     try:
         module.mapped_field(value, supported, unsupported, field, "probe")
@@ -315,10 +370,17 @@ test('图鉴正式静态产物覆盖160种，保留旧名单、25招原文字节
   const moveFile = path.join(repoRoot, 'src', 'data', 'pmd-moves.json');
   const roster = readJson(rosterFile);
   const moveDoc = readJson(moveFile);
+  const names = readJson(path.join(repoRoot, 'src', 'data', 'names-zh.json'));
   assertLegacyAndRosterArtifacts(roster, moveDoc, 'production');
-  assert.equal(Object.keys(moveDoc.moves).length, 214, 'committed move table must contain 214 admitted moves without requiring snapshots');
+  assertTeamProtectionData(moveDoc, names);
+  assert.equal(Object.keys(moveDoc.moves).length, 217, 'committed move table must contain 217 admitted moves without requiring snapshots');
   const gen1Moves = new Set(roster.species.filter(entry => Number(entry.dex) <= 151).flatMap(entry => entry.learnable.map(item => item.move)));
-  assert.equal([...gen1Moves].filter(id => Object.hasOwn(moveDoc.moves, id)).length, 212, 'committed generation-one learnable moves must contain 212 admitted moves');
+  assert.equal([...gen1Moves].filter(id => Object.hasOwn(moveDoc.moves, id)).length, 215, 'committed generation-one learnable moves must contain 215 admitted moves');
+  for (const [id, count, pp] of [['quickguard', 7, 1], ['reflect', 28, 2], ['lightscreen', 43, 3]]) {
+    const learners = roster.species.filter(entry => entry.learnable.some(item => item.move === id));
+    assert.equal(learners.length, count, `${id} committed learnable count`);
+    for (const entry of learners) assert.equal(entry.learnable.find(item => item.move === id).pp, pp, `${entry.id}/${id} global converted PP`);
+  }
   assertOldMoveBytes(moveFile, 'production');
 });
 
@@ -345,6 +407,7 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
 
   const generated = loadOutput(outA);
   assertLegacyAndRosterArtifacts(generated.roster, generated.moveDoc, outA);
+  assertTeamProtectionData(generated.moveDoc, generated.names);
   assertOldMoveBytes(path.join(outA, 'src', 'data', 'pmd-moves.json'), 'isolated import');
   for (const filename of ['roster.json', 'pmd-moves.json', 'names-zh.json']) {
     const formal = normalizeGitNewlines(fs.readFileSync(path.join(repoRoot, 'src', 'data', filename), 'utf8'));
@@ -371,6 +434,26 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   }
   assert.equal(expected.gen1Moves.size, 513, 'generation-one learnset union from the fixed snapshot');
   assert.equal(expected.allMoves.size, 520, '160-species learnset union from the fixed snapshot');
+  assertTeamProtectionWikiRows(generated.moveDoc, wiki);
+  const expectedTeamLearners = { quickguard: 7, reflect: 28, lightscreen: 43 };
+  const showdownMoves = readJson(path.join(showdown, 'moves.json'));
+  const generationPattern = /^(\d+)([A-Z])/;
+  for (const [moveId, expectedCount] of Object.entries(expectedTeamLearners)) {
+    const expectedIds = expected.speciesIds.filter(speciesId => {
+      const generation = expected.selectedGeneration.get(speciesId);
+      return (learnsets[speciesId].learnset[moveId] ?? []).some(code => {
+        const match = generationPattern.exec(code);
+        return match && Number(match[1]) === generation && match[2] !== 'V';
+      });
+    }).sort();
+    const actualIds = generated.roster.species.filter(entry => entry.learnable.some(item => item.move === moveId)).map(entry => entry.id).sort();
+    assert.deepEqual(actualIds, expectedIds, `${moveId} learnable species must come from their selected era without V methods`);
+    assert.equal(actualIds.length, expectedCount, `${moveId} learnable count across all 160 species`);
+    const expectedPp = Math.max(1, Math.min(4, Math.floor(showdownMoves[moveId].pp / 10)));
+    for (const speciesId of actualIds) {
+      assert.equal(generatedById.get(speciesId).learnable.find(item => item.move === moveId).pp, expectedPp, `${speciesId}/${moveId} uses the global converted PP`);
+    }
+  }
   const outputMoveIds = new Set(Object.keys(generated.moveDoc.moves));
   assert.deepEqual(generated.summary.learnsetGenerationCounts, expected.gen1GenerationCounts, 'reported generation counts must match the 151 input species');
 
@@ -386,13 +469,13 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   const unavailablePower = generated.summary.officialPowerUnavailable;
   assert.deepEqual(unavailablePower.map(entry => entry.id).sort(), ["futuresight", "hiddenpower", "knockoff", "strength", "vitalthrow", "wrap"], "official-power exclusion contains exactly the six specified moves");
   assert.equal(generated.summary.exclusionCounts.officialPowerUnavailable, 6);
-  assert.equal(admitted, 214);
-  assert.equal(excluded, 306);
+  assert.equal(admitted, 217);
+  assert.equal(excluded, 303);
   assert.equal(totals.notAdmittedMoves, excluded, "every non-admitted move has a rule exclusion");
   assert.equal(admitted + excluded, expected.allMoves.size, "admitted moves plus rule exclusions must equal the learnset union");
   for (const field of ['preview', 'observed']) {
-    assert.equal(generated.summary.comparison[field].admittedMoves, 214);
-    assert.equal(generated.summary.comparison[field].generation1AdmittedMoves, 212);
+    assert.equal(generated.summary.comparison[field].admittedMoves, 217);
+    assert.equal(generated.summary.comparison[field].generation1AdmittedMoves, 215);
   }
   assert.equal([...expected.allMoves].filter(id => outputMoveIds.has(id)).length, admitted, "move table membership must match admitted move count");
   assert.equal(totals.moveTableMoves, outputMoveIds.size, "move table total must match its generated entries");

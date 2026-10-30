@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import {createExpedition,traceRound,closeOut,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {newGameProfile,squadOf,profileProblem,settleRun} from '../../src/core/base.ts';
 import {TrialStore,decode,BUILD_ID,SAVE_KEY} from '../../src/core/save.ts';
-import {SPECIES,STARTER_IDS,TM_MOVES} from '../../src/core/roster.ts';
+import {SPECIES,STARTER_IDS,ALL_TM_MOVES} from '../../src/core/roster.ts';
 import {speciesZh,moveZh,typeZh,tmZh,itemZh,NAME_TABLE} from '../../src/core/names.ts';
 import {enemyInfo,localizeLog,orderLine,stepRows} from '../../src/core/describe.ts';
 import {createScenario} from '../../src/core/scenarios.ts';
@@ -32,7 +32,7 @@ test('N3 every species, type, kit move, learnable move and technique-machine mov
   for(const t of s.types)assert.ok(NAME_TABLE.types[t],`type ${t}`);
   for(const k of [...s.kit,...s.learnable])if(k.move!=='visegrip')assert.ok(NAME_TABLE.moves[k.move],`move ${k.move}`);
  }
- for(const m of TM_MOVES){assert.ok(NAME_TABLE.moves[m],`tm move ${m}`);assert.ok(NAME_TABLE.tms[m],`tm ${m}`);}
+ for(const m of ALL_TM_MOVES){assert.ok(NAME_TABLE.moves[m],`tm move ${m}`);assert.ok(NAME_TABLE.tms[m],`tm ${m}`);}
  for(const i of ['berry','tonic'])assert.ok(NAME_TABLE.items[i]);
  assert.equal(speciesZh('treecko'),'木守宫');assert.equal(moveZh('leafage'),'树叶');  // official name per wiki.52poke.com move list, checked 2026-10-30assert.equal(typeZh('Grass'),'草');assert.equal(tmZh('protect'),'守住');assert.equal(itemZh('berry'),'橙橙果');
  assert.equal(moveZh('visegrip'),'visegrip','the documented PokeAPI spelling exception falls back to its Showdown id');

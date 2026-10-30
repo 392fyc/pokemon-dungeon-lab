@@ -2,7 +2,7 @@
  * 6.5 base profile: the part of the player's progress that outlives one run. Pure data and pure functions; no storage, no renderer.
  * Specification: docs/玩法研究/基地与培养.md. All numbers (two carried moves, three-member squads) are working candidates.
  */
-import {SPECIES,speciesOf,learnableMove,TM_MOVES,STARTER_IDS,BOSS_SPECIES,type KitMove} from './roster.ts';
+import {SPECIES,speciesOf,learnableMove,ALL_TM_MOVES,STARTER_IDS,BOSS_SPECIES,type KitMove} from './roster.ts';
 import type {World,SquadMember} from './engine.ts';
 import {legacySpeciesMove} from './legacy-moves.ts';
 import {speciesZh,moveZh} from './names.ts';
@@ -46,7 +46,7 @@ export function newGameProfile(mainSpecies:string,deputySpecies:string):BaseResu
 export const instanceOf=(p:Profile,id:string)=>p.roster.find(i=>i.id===id);
 
 export function learnTm(original:Profile,instId:string,move:string):BaseResult {
-  if(!(TM_MOVES as readonly string[]).includes(move))return fail(`${moveZh(move)}不是招式机`);
+  if(!(ALL_TM_MOVES as readonly string[]).includes(move))return fail(`${moveZh(move)}不是招式机`);
   if((original.vault[move]??0)<1)return fail(`仓库里没有${moveZh(move)}招式机`);
   const inst=instanceOf(original,instId);if(!inst)return fail('没有这只伙伴');
   const m=learnableMove(inst.species,move);
@@ -252,7 +252,7 @@ export function profileProblem(v:unknown):string|null {
   if((v.next as number)<=maxNo)return '实例计数落后于已有编号';
   const origin=(roster as Instance[]).find(i=>i.id===v.origin);
   if(!origin||!origin.protected)return '初始主控不在名册里，或没有受保护标记';
-  for(const [k,n] of Object.entries(v.vault as Record<string,unknown>)){if(!(TM_MOVES as readonly string[]).includes(k)||!nat(n))return `仓库里的${k}计数不是合法的非负整数`;}
+  for(const [k,n] of Object.entries(v.vault as Record<string,unknown>)){if(!(ALL_TM_MOVES as readonly string[]).includes(k)||!nat(n))return `仓库里的${k}计数不是合法的非负整数`;}
   const team=v.team as unknown[];
   if(team.length<1||team.length>MAX_TEAM||team.some(t=>typeof t!=='string'||!rosterIds.has(t))||new Set(team).size!==team.length)return '出发队伍不合法';
   if(!team.includes(v.leader))return '主控不在出发队伍中';

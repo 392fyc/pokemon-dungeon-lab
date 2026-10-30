@@ -866,6 +866,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "nuzzle",
      "pp": 2
     },
@@ -880,6 +884,10 @@
     {
      "move": "quickattack",
      "pp": 3
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "spark",
@@ -1005,6 +1013,10 @@
     {
      "move": "quickattack",
      "pp": 3
+    },
+    {
+     "move": "quickguard",
+     "pp": 1
     },
     {
      "move": "shadowball",
@@ -1240,6 +1252,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "magicalleaf",
      "pp": 2
     },
@@ -1253,6 +1269,10 @@
     },
     {
      "move": "razorleaf",
+     "pp": 2
+    },
+    {
+     "move": "reflect",
      "pp": 2
     },
     {
@@ -1690,6 +1710,10 @@
     {
      "move": "quickattack",
      "pp": 3
+    },
+    {
+     "move": "quickguard",
+     "pp": 1
     },
     {
      "move": "rockslide",
@@ -2373,8 +2397,16 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "protect",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "spark",
@@ -2644,6 +2676,10 @@
     {
      "move": "ironhead",
      "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
     },
     {
      "move": "protect",
@@ -5280,6 +5316,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "nuzzle",
      "pp": 2
     },
@@ -5294,6 +5334,10 @@
     {
      "move": "quickattack",
      "pp": 3
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "spark",
@@ -6506,6 +6550,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "magicalleaf",
      "pp": 2
     },
@@ -6540,6 +6588,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -6690,6 +6742,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "magicalleaf",
      "pp": 2
     },
@@ -6724,6 +6780,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -7143,6 +7203,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "magicalleaf",
      "pp": 2
     },
@@ -7165,6 +7229,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -7324,6 +7392,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "magicalleaf",
      "pp": 2
     },
@@ -7346,6 +7418,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -7462,6 +7538,10 @@
     },
     {
      "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "quickguard",
      "pp": 1
     },
     {
@@ -7901,6 +7981,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "metalclaw",
      "pp": 3
     },
@@ -8020,6 +8104,10 @@
     {
      "move": "leechlife",
      "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
     },
     {
      "move": "protect",
@@ -8980,6 +9068,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "liquidation",
      "pp": 1
     },
@@ -9146,6 +9238,10 @@
     {
      "move": "icywind",
      "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
     },
     {
      "move": "liquidation",
@@ -10264,6 +10360,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "megakick",
      "pp": 1
     },
@@ -10282,6 +10382,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -10381,6 +10485,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "megakick",
      "pp": 1
     },
@@ -10407,6 +10515,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -10509,6 +10621,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "megakick",
      "pp": 1
     },
@@ -10535,6 +10651,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -10653,6 +10773,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "lowsweep",
      "pp": 2
     },
@@ -10670,6 +10794,10 @@
     },
     {
      "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "quickguard",
      "pp": 1
     },
     {
@@ -10783,6 +10911,10 @@
     {
      "move": "icepunch",
      "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
     },
     {
      "move": "lowsweep",
@@ -10925,6 +11057,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "lowsweep",
      "pp": 2
     },
@@ -11062,6 +11198,10 @@
      "pp": 2
     },
     {
+     "move": "reflect",
+     "pp": 2
+    },
+    {
      "move": "seedbomb",
      "pp": 1
     },
@@ -11195,6 +11335,10 @@
      "pp": 2
     },
     {
+     "move": "reflect",
+     "pp": 2
+    },
+    {
      "move": "seedbomb",
      "pp": 1
     },
@@ -11325,6 +11469,10 @@
     },
     {
      "move": "razorleaf",
+     "pp": 2
+    },
+    {
+     "move": "reflect",
      "pp": 2
     },
     {
@@ -12293,6 +12441,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "liquidation",
      "pp": 1
     },
@@ -12474,6 +12626,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "liquidation",
      "pp": 1
     },
@@ -12619,8 +12775,16 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "protect",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "spark",
@@ -13824,6 +13988,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "liquidation",
      "pp": 1
     },
@@ -14427,6 +14595,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "lowsweep",
      "pp": 2
     },
@@ -14453,6 +14625,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -14567,6 +14743,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "lowsweep",
      "pp": 2
     },
@@ -14589,6 +14769,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -14995,6 +15179,10 @@
      "pp": 2
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "protect",
      "pp": 1
     },
@@ -15087,6 +15275,10 @@
      "pp": 2
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "protect",
      "pp": 1
     },
@@ -15150,8 +15342,8 @@
      "pp": 2
     },
     {
-     "move": "megadrain",
-     "pp": 1
+     "move": "reflect",
+     "pp": 2
     }
    ],
    "learnable": [
@@ -15192,6 +15384,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "megadrain",
      "pp": 1
     },
@@ -15210,6 +15406,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "seedbomb",
@@ -15309,6 +15509,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "magicalleaf",
      "pp": 2
     },
@@ -15331,6 +15535,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "seedbomb",
@@ -15918,6 +16126,10 @@
     },
     {
      "move": "protect",
+     "pp": 1
+    },
+    {
+     "move": "quickguard",
      "pp": 1
     },
     {
@@ -16899,6 +17111,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "pound",
      "pp": 3
     },
@@ -17033,6 +17249,10 @@
     {
      "move": "protect",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "seedbomb",
@@ -17819,6 +18039,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "powergem",
      "pp": 2
     },
@@ -17837,6 +18061,10 @@
     {
      "move": "rapidspin",
      "pp": 4
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "scald",
@@ -17948,6 +18176,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "powergem",
      "pp": 2
     },
@@ -17974,6 +18206,10 @@
     {
      "move": "rapidspin",
      "pp": 4
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "scald",
@@ -18043,8 +18279,8 @@
      "pp": 3
     },
     {
-     "move": "confusion",
-     "pp": 2
+     "move": "quickguard",
+     "pp": 1
     }
    ],
    "learnable": [
@@ -18109,6 +18345,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "magicalleaf",
      "pp": 2
     },
@@ -18143,6 +18383,14 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "quickguard",
+     "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -18250,6 +18498,10 @@
      "pp": 2
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "nightslash",
      "pp": 1
     },
@@ -18260,6 +18512,10 @@
     {
      "move": "quickattack",
      "pp": 3
+    },
+    {
+     "move": "quickguard",
+     "pp": 1
     },
     {
      "move": "slash",
@@ -18395,6 +18651,10 @@
      "pp": 3
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "megakick",
      "pp": 1
     },
@@ -18425,6 +18685,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "shadowball",
@@ -18517,6 +18781,10 @@
     {
      "move": "icepunch",
      "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
     },
     {
      "move": "lowsweep",
@@ -19306,6 +19574,10 @@
      "pp": 1
     },
     {
+     "move": "reflect",
+     "pp": 2
+    },
+    {
      "move": "smartstrike",
      "pp": 1
     },
@@ -19691,6 +19963,10 @@
     {
      "move": "lastresort",
      "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
     },
     {
      "move": "mudslap",
@@ -21051,12 +21327,20 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "powdersnow",
      "pp": 2
     },
     {
      "move": "protect",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "roar",
@@ -21146,6 +21430,10 @@
     {
      "move": "hurricane",
      "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
     },
     {
      "move": "peck",
@@ -21405,6 +21693,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "protect",
      "pp": 1
     },
@@ -21596,6 +21888,10 @@
     {
      "move": "ironhead",
      "pp": 1
+    },
+    {
+     "move": "lightscreen",
+     "pp": 3
     },
     {
      "move": "protect",
@@ -21794,6 +22090,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "lowsweep",
      "pp": 2
     },
@@ -21828,6 +22128,10 @@
     {
      "move": "psystrike",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "rockslide",
@@ -22134,6 +22438,10 @@
      "pp": 1
     },
     {
+     "move": "lightscreen",
+     "pp": 3
+    },
+    {
      "move": "liquidation",
      "pp": 1
     },
@@ -22204,6 +22512,10 @@
     {
      "move": "psyshock",
      "pp": 1
+    },
+    {
+     "move": "reflect",
+     "pp": 2
     },
     {
      "move": "roar",

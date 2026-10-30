@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {TM_MOVES} from '../../src/core/roster.ts';
+import {ALL_TM_MOVES} from '../../src/core/roster.ts';
 import {playSeed,stats,ROUND_CAP} from './soak-bot.mjs';
 
 /*
@@ -33,7 +33,7 @@ test('S66 loop soak: base -> expedition -> base -> expedition, many seeds, every
   `backpack: berries used ${st.berries}, tonics used ${st.tonics}, rest point used ${st.rests}, guard used ${st.guards}, line used ${st.lines}, lead switches ${st.switches}`,
   `failure and rescue: wipes ${st.wipes} (forced-wipe seeds ${st.doomedWipes}), partners gone missing ${st.lostPartners}, rescues paid ${st.paid}, paid partners returned ${st.returned}, lost for good ${st.goneForGood}; shop purchases ${st.bought}, exchanger uses ${st.exchanged}`,
   `commands refused (state verified unchanged) ${st.rejections}, deliberate illegal probes ${st.probes}`,
-  `final rosters: mean ${(sum(results,r=>r.roster)/SEEDS).toFixed(1)}, max ${Math.max(...results.map(r=>r.roster))}; unused vault machines at the end ${sum(results,r=>sum(Object.values(r.vault),n=>n))} (${TM_MOVES.map(m=>m+' '+sum(results,r=>r.vault[m]??0)).join(', ')})`,
+  `final rosters: mean ${(sum(results,r=>r.roster)/SEEDS).toFixed(1)}, max ${Math.max(...results.map(r=>r.roster))}; unused vault machines at the end ${sum(results,r=>sum(Object.values(r.vault),n=>n))} (${ALL_TM_MOVES.map(m=>m+' '+sum(results,r=>r.vault[m]??0)).join(', ')})`,
   `seeds with at least 2 completed games: ${results.filter(r=>r.games.filter(g=>g.outcome!=='timeout').length>=2).length}/${SEEDS}`,
   `stuck games (round cap ${ROUND_CAP}): ${stuck.length?stuck.map(g=>`seed ${g.seed} game ${g.game}: ${g.reason}`).join(' | '):'none'}`,
  ];

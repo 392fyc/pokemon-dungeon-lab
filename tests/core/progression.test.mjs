@@ -9,7 +9,7 @@ import {TrialStore} from '../../src/core/save.ts';
 import {enemy,world,pos,row,doCmd,reject,round,interact,basic,skill,wait,accept,refuse} from '../acceptance/fixtures.mjs';
 
 /* Roster kits (src/data/roster.json): charmander 19 HP strong3 line2; squirtle 20 HP strong3 line2; bulbasaur 21 HP strong3 line1. */
-const mon=(id,species,x,hp,maxHp,pp,maxPp)=>({id,side:'friend',stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,hp,maxHp,pos:hp>0?pos(x):null,pp:{...pp},maxPp:{...maxPp},learned:Object.keys(maxPp),species});
+const mon=(id,species,x,hp,maxHp,pp,maxPp)=>({id,side:'friend',stages:{atk:0,def:0},protect:0,counter:0,reflect:0,lightscreen:0,lastMove:null,hp,maxHp,pos:hp>0?pos(x):null,pp:{...pp},maxPp:{...maxPp},learned:Object.keys(maxPp),species});
 const wild=(id,x,hp,species='rattata',damage=0)=>{const e=enemy(id,x,1,hp,'melee',damage);e.species=species;return e;};
 /** A hand-built 6.4 expedition on one row: A(0) charmander, B(1) squirtle, C(2) bulbasaur leads. `level` raises max HP by 2 per level above 1. */
 function run({level=1,exp=0,rng=7,enemies=[wild('w',3,6)],points=[],items={berry:0,tonic:0},floor=row(9)}={}){
@@ -52,7 +52,7 @@ test('P2 rngStep walks the same sequence as the floor generator stream and retur
 test('P3 a defeated wild enemy invites when the draw is under 0.3: R07 half snapshot of its species at the run level',()=>{
  const s=round(run({rng:7}),basic('w'));          // first draw from state 7 is 0.0117
  assert.equal(s.phase,'invitation');assert.equal(s.invitations.length,1);
- assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,hp:9,maxHp:18,pos:null,pp:{tackle:1},maxPp:{tackle:3},learned:['tackle'],species:'rattata'});
+ assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',stages:{atk:0,def:0},protect:0,counter:0,reflect:0,lightscreen:0,lastMove:null,hp:9,maxHp:18,pos:null,pp:{tackle:1},maxPp:{tackle:3},learned:['tackle'],species:'rattata'});
  assert.deepEqual(s.prog,{level:1,exp:1,rng:1831565820,made:1,kills:[],items:{berry:0,tonic:0}});
 });
 test('P3b no invitation when the draw is 0.3 or more; the draw is still spent',()=>{
@@ -62,7 +62,7 @@ test('P3b no invitation when the draw is 0.3 or more; the draw is still spent',(
 });
 test('P3c a wild species with two moves halves each, never below 1: pidgey 20 HP, strong3/line3 gives 10 HP, 1/1',()=>{
  const s=round(run({rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));
- assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,hp:10,maxHp:20,pos:null,pp:{tackle:1,gust:1},maxPp:{tackle:3,gust:3},learned:['tackle','gust'],species:'pidgey'});
+ assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',stages:{atk:0,def:0},protect:0,counter:0,reflect:0,lightscreen:0,lastMove:null,hp:10,maxHp:20,pos:null,pp:{tackle:1,gust:1},maxPp:{tackle:3,gust:3},learned:['tackle','gust'],species:'pidgey'});
 });
 test('P3d geodude keeps its guard move: guard 4 gives 2, strong 3 gives 1, 20 HP gives 10',()=>{
  const s=round(run({rng:7,enemies:[wild('w',3,6,'geodude')]}),basic('w'));
@@ -89,7 +89,7 @@ test('P4 level 2 at 3 exp: every member +2 max HP, current HP unchanged; the inv
  const s=round(run({exp:2,rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));
  assert.deepEqual([s.prog.level,s.prog.exp],[2,3]);
  assert.deepEqual(s.queue.map(i=>[s.units[i].hp,s.units[i].maxHp]),[[19,21],[20,22],[21,23]]);
- assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,hp:11,maxHp:22,pos:null,pp:{tackle:1,gust:1},maxPp:{tackle:3,gust:3},learned:['tackle','gust'],species:'pidgey'});
+ assert.deepEqual(s.invitations[0].unit,{id:'N1',side:'friend',stages:{atk:0,def:0},protect:0,counter:0,reflect:0,lightscreen:0,lastMove:null,hp:11,maxHp:22,pos:null,pp:{tackle:1,gust:1},maxPp:{tackle:3,gust:3},learned:['tackle','gust'],species:'pidgey'});
  const up=s.log.findIndex(t=>/升到Lv2/.test(t)),inv=s.log.findIndex(t=>/发出邀请/.test(t));
  assert.ok(up>=0&&inv>up,'level-up is settled before the invitation appears');
 });

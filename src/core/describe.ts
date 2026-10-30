@@ -20,6 +20,9 @@ export function moveEffectLabel(id:string):string{
     else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
     else if(effect==='protect')parts.push('自身受到敌方攻击伤害为0（3个敌方阶段）');
     else if(effect==='counter')parts.push('反击相邻敌人的有效伤害（3个敌方阶段）');
+    else if(effect==='quickguard')parts.push('使用时范围内全队在本回合挡下距离大于1格的敌方攻击；与守住不能连续使用');
+    else if(effect==='reflect')parts.push('使用时范围内全队受到的物理攻击伤害减半（10个敌方阶段）');
+    else if(effect==='lightscreen')parts.push('使用时范围内全队受到的特殊攻击伤害减半（10个敌方阶段）');
     else if(effect==='blowaway')parts.push(spec.effects.includes('damage')?'伤害后沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害':'沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害');
     else {const stage=/^stage:(atk|def):([+-]\d+)$/.exec(effect);if(stage){const who=spec.range==='room'&&spec.target==='teammates'?'同房间队友':spec.range==='user'?'自身':'目标';parts.push(`${who}${stage[1]==='atk'?'攻击':'防御'}${stage[2]}（上限±3）`);}}
   }

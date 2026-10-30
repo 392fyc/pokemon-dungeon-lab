@@ -8,13 +8,17 @@ export const STARTER_IDS:string[]=(data.species as Species[]).filter(s=>s.starte
 export const speciesOf=(id:string):Species|undefined=>Object.prototype.hasOwnProperty.call(SPECIES,id)?SPECIES[id]:undefined;
 /**
  * 6.5 technique machines (workable candidates): the three moves that fill the "pin" and "reposition" gaps found in 6.2. A machine teaches one move to a compatible species.
- * 7.3 adds four more (dragontail, helpinghand, mudslap, terablast). `LEGACY_TM_MOVES` is what runs without the boss mark still draw from: the draws are `floor(r * length)`,
- * so lengthening the list would change what an old save's seed means. `TM_MOVES` is the full set used for warehouse and legality checks (it contains the legacy three first).
+ * 7.3 adds four more (dragontail, helpinghand, mudslap, terablast). `LEGACY_TM_MOVES` is what runs without the boss mark still draw from; `TM_MOVES` is the
+ * seven-entry boss pool introduced in 7.3. Draws are `floor(r * length)`, so lengthening either old list would change what an old save's seed means.
  */
 export const LEGACY_TM_MOVES=['protect','whirlwind','roar'] as const;
 export const TM_MOVES=['protect','whirlwind','roar','dragontail','helpinghand','mudslap','terablast'] as const;
-/** The pool a run draws its machines from (target T, shop, boss): the full seven for boss-marked runs, the legacy three otherwise. */
-export const tmPool=(d?:{boss?:boolean}|null):readonly string[]=>d?.boss?TM_MOVES:LEGACY_TM_MOVES;
+/** The 7.7b boss pool; only a new departure marked with tmPool:3 draws from these ten moves. */
+export const TM_MOVES_V3=[...TM_MOVES,'quickguard','reflect','lightscreen'] as const;
+/** All moves which can appear in the warehouse and pass legality checks. */
+export const ALL_TM_MOVES=TM_MOVES_V3;
+/** Missing tmPool preserves old saves: ordinary runs use three, old boss runs seven, new marked boss runs ten. */
+export const tmPool=(d?:{boss?:boolean;tmPool?:3}|null):readonly string[]=>d?.boss?(d.tmPool===3?TM_MOVES_V3:TM_MOVES):LEGACY_TM_MOVES;
 /** The Arcanine entry is part of the full Pokédex, but an in-run Arcanine remains boss-only and cannot be recruited (see save.ts and base.ts). */
 export const BOSS_SPECIES:Record<string,string>={arcanine:'0059'};
 /** The move and its max PP from the roster's learnable list, or undefined when the species cannot learn it. */

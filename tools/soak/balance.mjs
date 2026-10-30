@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {playSeed,stats,GAMES,ROUND_CAP} from '../../tests/core/soak-bot.mjs';
 import {ECON} from '../../src/core/economy.ts';
-import {TM_MOVES} from '../../src/core/roster.ts';
+import {ALL_TM_MOVES} from '../../src/core/roster.ts';
 import {BOSS} from '../../src/core/dungeon.ts';
 
 const args=process.argv.slice(2),opt=(name,def)=>{const i=args.indexOf('--'+name);return i>=0&&args[i+1]!==undefined?args[i+1]:def;};
@@ -43,7 +43,7 @@ function summarize(results){
  const by=o=>count(games,g=>g.outcome===o),rounds=games.map(g=>g.rounds);
  const bossGames=games.filter(g=>g.x.bossRun),defeated=bossGames.filter(g=>g.x.defeated);
  const accounts=results.map(r=>r.account).filter(a=>a!==null);
- const vault=Object.fromEntries(TM_MOVES.map(m=>[m,sum(results,r=>r.vault[m]??0)]));
+ const vault=Object.fromEntries(ALL_TM_MOVES.map(m=>[m,sum(results,r=>r.vault[m]??0)]));
  return {seeds:results.length,games:total,
   outcome:{normal:by('normal'),wipe:by('wipe'),timeout:by('timeout')},goalDone:count(games,g=>g.goal),
   rounds:{mean:mean(rounds),median:median(rounds),min:rounds.length?Math.min(...rounds):null,max:rounds.length?Math.max(...rounds):null},
@@ -82,7 +82,7 @@ function section(title,s){
 - 结束时本局等级：Lv1 ${lv[1]}，Lv2 ${lv[2]}，Lv3 ${lv[3]}，Lv4 ${lv[4]}，Lv5 ${lv[5]}（局数）。
 - 首领（${b.runsWithBoss} 局带首领）：到达首领层 ${b.reached}，击败首领 ${b.defeated}（到达首领层的局结束时首领剩余 HP：平均 ${fmt(b.bossHpLeft.mean)}，最小 ${b.bossHpLeft.min??'-'}，最大 ${b.bossHpLeft.max??'-'}，满 ${BOSS.hp}），在首领层全灭 ${b.wipedOnBossFloor}，从大厅出口撤离 ${b.lobbyExit}（其中机器人判定“打不过”而撤退 ${b.retreatDecided} 局）；击败首领时存活成员数：1 人 ${b.survivorsWhenDefeated[1]}，2 人 ${b.survivorsWhenDefeated[2]}，3 人 ${b.survivorsWhenDefeated[3]}。
 - 走失与救援：走失伙伴 ${r.lostPartners}，支付救援 ${r.paid}，成功归来 ${r.returned}，永久失去 ${r.goneForGood}；每个种子 ${GAMES} 局后账户余额：平均 ${fmt(r.account.mean)}，最小 ${r.account.min??'-'}，最大 ${r.account.max??'-'}（${r.account.seeds} 个种子）。
-- 招式机：获得 ${t.got}，带回 ${t.brought}，基地学会 ${t.learned}，局后金库未用 ${t.vaultUnused}（${TM_MOVES.map(m=>`${m} ${t.vaultByMove[m]}`).join('，')}）。
+- 招式机：获得 ${t.got}，带回 ${t.brought}，基地学会 ${t.learned}，局后金库未用 ${t.vaultUnused}（${ALL_TM_MOVES.map(m=>`${m} ${t.vaultByMove[m]}`).join('，')}）。
 - 进入首领层时：${f.entry.games} 局有记录；存活 3 人 ${f.entry.alive[3]}，2 人 ${f.entry.alive[2]}，1 人 ${f.entry.alive[1]}；每名成员（含已倒下者按 0）HP 比例平均 ${fmt(f.entry.memberHpRatio,2)}，仅存活者平均 ${fmt(f.entry.aliveMemberHpRatio,2)}；全队 HP 平均 ${fmt(f.entry.teamHp)}/${fmt(f.entry.teamMax)}（${fmt(f.entry.teamHpRatio,2)}，最低 ${fmt(f.entry.teamHpRatioMin,2)}）。
 - 首次与首领相邻或进入首领射线时：${f.contact.games} 局发生，${f.contact.neverTouched} 局到达首领层却始终没接触；存活 3 人 ${f.contact.alive[3]}，2 人 ${f.contact.alive[2]}，1 人 ${f.contact.alive[1]}；全队 HP 平均 ${fmt(f.contact.teamHp)}/${fmt(f.contact.teamMax)}（${fmt(f.contact.teamHpRatio,2)}，最低 ${fmt(f.contact.teamHpRatioMin,2)}）。
 - 首领层上普通敌人（不含首领）造成的伤害：${f.otherDamage.games} 局共 ${f.otherDamage.rounds} 回合，平均每局 ${fmt(f.otherDamage.meanPerGame)}，最多 ${f.otherDamage.max??'-'}，平均每回合 ${fmt(f.otherDamage.meanPerRound,2)}。

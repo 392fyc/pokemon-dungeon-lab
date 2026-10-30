@@ -695,5 +695,61 @@ await test('7.7a 状态卡片：守住与反击递减、攻防阶段显示、重
   return {countdowns:true,zeroStatusesHidden:true,stages:true,reloaded:true};
  }finally{await context.close();}
 });
+await test('7.7b 仓库：三招可见、学习、配招，新远征使用新版招式机清单',async()=>{
+ const {newGameProfile}=await import('../../src/core/base.ts');
+ const {RULE_VERSION,CONTENT_VERSION}=await import('../../src/core/engine.ts');
+ const {SAVE_KEY,BUILD_ID}=await import('../../src/core/save.ts');
+ const profile=newGameProfile('treecko','chikorita').profile;
+ // Explicit inventory fixture: this check tests learning and equipping, not earning the machines.
+ profile.vault={quickguard:1,reflect:1,lightscreen:1};
+ const record=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,current:null,recent:null,profile});
+ const {context,page:p,errors}=await plainContext();
+ await context.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,value);},{key:SAVE_KEY,value:record});
+ try{
+  await p.goto(base+'?dev=1&seed=16763');await p.locator('#depart').waitFor();await ready(p);
+  for(const [move,label,inst] of [['quickguard','快速防守','P1'],['reflect','反射壁','P2'],['lightscreen','光墙','P2']]){
+   assert.match(await p.locator('#tm-'+move).innerText(),new RegExp(label));
+   await click(p,'tm-'+move);await click(p,'learn-'+inst);
+   assert.ok((await p.evaluate(()=>window.trial.profile())).roster.find(i=>i.id===inst).learned.some(l=>l.move===move));
+  }
+  await click(p,'carry-P1-pound');await click(p,'carry-P1-quickguard');
+  await click(p,'carry-P2-tackle');await click(p,'carry-P2-magicalleaf');
+  await click(p,'carry-P2-reflect');await click(p,'carry-P2-lightscreen');
+  const prepared=await p.evaluate(()=>window.trial.profile());
+  assert.deepEqual(prepared.roster[0].carry,['leafage','quickguard']);
+  assert.deepEqual(prepared.roster[1].carry,['reflect','lightscreen']);
+  await p.screenshot({path:artifact+'windows-team-guard-warehouse.png',fullPage:true});
+  await p.reload();await ready(p);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),prepared);
+  await click(p,'depart');const s=await state(p);assert.equal(s.dungeon.tmPool,3);
+  assert.ok(s.units.A.learned.includes('quickguard'));assert.deepEqual(s.units.B.learned,['reflect','lightscreen']);
+  assert.deepEqual(errors,[]);return {injectedInventory:true,learnedAndEquipped:true,newPool:3,reloaded:true};
+ }finally{await context.close();}
+});
+
+await test('7.7b 状态：实际施放团队保护、倒计时与重载、快速防守不写存档',async()=>{
+ const {context,page:p,errors}=await setup('K1');
+ try{
+  await start(p);
+  // Display fixture supplies learned moves and harmless enemies; real clicks below cast the moves.
+  await p.evaluate(()=>{const k=window.trial.store.key,e=JSON.parse(localStorage.getItem(k)),u=e.current.units.B;
+   for(const move of ['reflect','lightscreen','quickguard']){u.learned.push(move);u.pp[move]=3;u.maxPp[move]=3;}
+   for(const id of e.current.enemies)e.current.units[id].damage=0;
+   localStorage.setItem(k,JSON.stringify(e));});
+  await p.reload();await ready(p);await key(p,'2');
+  for(const move of ['reflect','lightscreen']){const s=await state(p);await click(p,'skill-'+move);await cell(p,s.units.B.pos.x,s.units.B.pos.y);}
+  const guarded=await state(p);
+  assert.equal(guarded.units.B.reflect,8);assert.equal(guarded.units.B.lightscreen,9);
+  const status=p.locator('[data-unit-status="B"]');
+  assert.match(await status.innerText(),/反射壁：剩余8个敌方阶段/);assert.match(await status.innerText(),/光墙：剩余9个敌方阶段/);
+  await p.screenshot({path:artifact+'windows-team-guard-status.png',fullPage:true});
+  await p.reload();await ready(p);assert.deepEqual(await state(p),guarded);
+  await click(p,'skill-quickguard');await cell(p,guarded.units.B.pos.x,guarded.units.B.pos.y);
+  const quick=await state(p);assert.equal(quick.units.B.lastMove,'quickguard');
+  for(const u of Object.values(quick.units))assert.equal(Object.hasOwn(u,'quickguard'),false);
+  assert.match(await p.locator('#history').textContent(),/快速防守/);
+  await p.reload();await ready(p);assert.deepEqual(await state(p),quick);
+  assert.deepEqual(errors,[]);return {fixtureMoves:true,realCasts:true,reflect:8,lightscreen:9,quickGuardTransient:true,reloaded:true};
+ }finally{await context.close();}
+});
 await browser.close();
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

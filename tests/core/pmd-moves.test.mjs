@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {TM_MOVES} from '../../src/core/roster.ts';
+import {ALL_TM_MOVES,TM_MOVES} from '../../src/core/roster.ts';
 
 /* Stage 7.7 regression checks: the first-batch definitions remain frozen while the expanded Pokédex adds more move rows. */
 const data=JSON.parse(fs.readFileSync(new URL('../../src/data/pmd-moves.json',import.meta.url),'utf8'));
 const roster=JSON.parse(fs.readFileSync(new URL('../../src/data/roster.json',import.meta.url),'utf8'));
+const names=JSON.parse(fs.readFileSync(new URL('../../src/data/names-zh.json',import.meta.url),'utf8'));
 const species=Array.isArray(roster)?roster:roster.species;
 
 // [range, target, power (null when the move deals no damage), effects]
@@ -24,8 +25,11 @@ const SPEC={
 const DAMAGE={bite:10,poisonfang:11,pound:9,quickattack:8,scratch:9,slam:14,tackle:9,absorb:7,ember:10,gust:8,magicalleaf:12,seedbomb:14,thundershock:7,watergun:9,mudslap:8,leafage:9,terablast:12,dragontail:8};
 
 test('S77 pmd-moves.json covers every current kit and machine move and retains all 25 first-batch entries',()=>{
- const used=new Set([...species.flatMap(s=>s.kit.map(k=>k.move)),...TM_MOVES]);
+ const used=new Set([...species.flatMap(s=>s.kit.map(k=>k.move)),...ALL_TM_MOVES]);
  for(const id of used)assert.ok(Object.hasOwn(data.moves,id),`missing current move ${id}`);
+ for(const id of ALL_TM_MOVES)assert.ok(Object.hasOwn(names.tms,id),`missing current TM label ${id}`);
+ for(const id of ['quickguard','reflect','lightscreen'])assert.ok(ALL_TM_MOVES.includes(id),`${id} must be available to the current move-machine UI`);
+ assert.deepEqual(ALL_TM_MOVES,[...TM_MOVES,'quickguard','reflect','lightscreen']);
  for(const id of Object.keys(SPEC))assert.ok(Object.hasOwn(data.moves,id),`missing first-batch move ${id}`);
 });
 
@@ -44,5 +48,15 @@ test('S77 sources: Explorers data first, Gates to Infinity only where Explorers 
   if(id==='leafage'||id==='terablast'){assert.equal(m.source,'本作自定');assert.equal(m.game,null);assert.ok(m.note.length>0);continue;}
   assert.equal(m.source,'Bulbapedia');
   assert.equal(m.game,id==='dragontail'?'MDGtI':'MDTDS',`${id} game`);
+ }
+ for(const id of ['quickguard','reflect','lightscreen']){
+  const m=data.moves[id];
+  assert.equal(m.source,'Bulbapedia',`${id} source`);
+  assert.equal(m.game,'MDGtI',`${id} uses the fixed team-protection GTI row`);
+  assert.equal(m.range,'room',`${id} range`);
+  assert.equal(m.target,'party',`${id} target`);
+  assert.deepEqual(m.effects,[id],`${id} uses the team-protection effect only`);
+  assert.ok(m.note.includes('固定取无限迷宫（GTI）同房间全队版'),`${id} records the work exception`);
+  assert.ok(/持续/.test(m.note),`${id} records the work duration`);
  }
 });

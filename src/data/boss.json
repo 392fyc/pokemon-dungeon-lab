@@ -1,0 +1,11 @@
+{
+  "note": "7.8 首领特性（敌我对等招式与强化模型规格第 5、13 节）。基础数据（HP、招式、PP）来自 roster.json 的同物种条目，这里只放首领特有的强化与行为开关。数值是工作候选，由长测确定。",
+  "bosses": {
+    "arcanine": {
+      "levelBonus": 2,
+      "hpMultiplier": 3,
+      "canMove": false,
+      "canBeBlownAway": false
+    }
+  }
+}

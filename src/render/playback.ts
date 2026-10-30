@@ -47,9 +47,9 @@ async function play(st:Stage,ev:AnimEvent):Promise<void>{
     ps.push(floatText(st,to,`-${ev.amount}`,'#ff9c88',d(220),d(110)));
     if(ev.dead&&T)ps.push(wait(st,d(220)).then(()=>tween(st,{targets:[T.sprite,...T.labels.map(l=>l.t)],alpha:0,duration:Math.max(1,d(140))})));
     await Promise.all(ps);}
-  else if(ev.k==='guard'){const A=V(ev.by);if(A)face(A,ev.from,ev.at);if(A)idle(st,A);
-    await flash(st,'fx-guard',at(ev.at),d(BASE_MS.guard),0,{grow:1.5});}
-  else if(ev.k==='push'){const A=V(ev.by),T=V(ev.target),ps:Promise<void>[]=[];
+  else if(ev.k==='protect'){const A=V(ev.by);if(A)face(A,ev.from,ev.at);if(A)idle(st,A);
+    await flash(st,'fx-guard',at(ev.at),d(BASE_MS.protect),0,{grow:1.5});}
+  else if(ev.k==='blowaway'){const A=V(ev.by),T=V(ev.target),ps:Promise<void>[]=[];
     const dir=Math.atan2(ev.to.y-ev.from.y,ev.to.x-ev.from.x);
     if(A){face(A,ev.actorAt,ev.from);useAnim(st,A,'Attack',A.row,d(200));ps.push(wait(st,d(200)).then(()=>idle(st,A)));}
     ps.push(flash(st,'fx-push',at(ev.from),d(160),d(30),{angle:dir,grow:1.4}));

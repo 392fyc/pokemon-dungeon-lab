@@ -58,23 +58,35 @@ ROSTER = [
     ("makuhita", 296, False),
 ]
 
-BEHAVIORS = ["strong", "line", "guard", "push"]  # 与 src/core/engine.ts 的 Skill 一致
-
-# ---- 覆盖表（显式规则，优先于自动规则） ----
-# 保护类：本作改编，在本作中保护相邻的另一名同行（Showdown 中多数是保护自己）。
-GUARD_OVERRIDE = ["protect", "detect", "withdraw", "defensecurl", "harden", "irondefense", "helpinghand"]
-# 推退类：Showdown 带 forceSwitch 的招式自动算 push；下列为额外列入的招式。
-PUSH_OVERRIDE = ["whirlwind", "roar", "dragontail", "circlethrow"]
-# 不进入本作的招式：Z 招式、极巨招式，以及这些 isNonstandard 值。
-EXCLUDED_NONSTANDARD = {"CAP", "Future", "Gmax", "LGPE", "Unobtainable"}
-
-# 四种功能配置（核心玩法第 2 节），顺序即并列时的优先顺序。
-CONFIGS = [
-    ("守护", {"strong", "guard"}),
-    ("射手", {"strong", "line"}),
-    ("牵制", {"strong", "push"}),
-    ("调位", {"line", "push"}),
-]
+# ---- 冻结的初始招式：来自 7.6 roster.json 的原 kit ----
+# 旧行为语义不再参与生成。迁移用的 behavior -> move 对照保存在
+# src/core/legacy-moves.ts；这里仅保留原招式与 PP，避免新数据改变开局。
+FROZEN_KITS = {
+    "bulbasaur": [("tackle", 3), ("seedbomb", 1)],
+    "charmander": [("scratch", 3), ("ember", 2)],
+    "squirtle": [("tackle", 3), ("watergun", 2)],
+    "pidgey": [("tackle", 3), ("gust", 3)],
+    "rattata": [("tackle", 3)],
+    "spearow": [("pursuit", 2)],
+    "pikachu": [("quickattack", 3), ("thundershock", 3)],
+    "zubat": [("absorb", 2), ("poisonfang", 1)],
+    "geodude": [("tackle", 3), ("defensecurl", 4)],
+    "chikorita": [("tackle", 3), ("magicalleaf", 2)],
+    "cyndaquil": [("tackle", 3), ("ember", 2)],
+    "totodile": [("scratch", 3), ("watergun", 2)],
+    "treecko": [("pound", 3), ("leafage", 4)],
+    "torchic": [("scratch", 3), ("ember", 2)],
+    "mudkip": [("tackle", 3), ("watergun", 2)],
+    "sandshrew": [("scratch", 3), ("defensecurl", 4)],
+    "growlithe": [("ember", 2), ("bite", 2)],
+    "magnemite": [("tackle", 3), ("thundershock", 3)],
+    "onix": [("tackle", 3), ("harden", 3)],
+    "dratini": [("dragontail", 1), ("slam", 2)],
+    "wooper": [("watergun", 2), ("slam", 2)],
+    "houndour": [("ember", 2), ("roar", 2)],
+    "makuhita": [("tackle", 3), ("whirlwind", 2)],
+}
+TM_MOVES = ("protect", "whirlwind", "roar", "dragontail", "helpinghand", "mudslap", "terablast")
 
 
 def sha256_of(path):
@@ -103,27 +115,6 @@ def load(src):
     return data
 
 
-def classify(move_id, mv):
-    """返回本作行为名，或 None（未映射）。"""
-    if mv.get("isZ") or mv.get("isMax"):
-        return None
-    if mv.get("isNonstandard") in EXCLUDED_NONSTANDARD:
-        return None
-    if move_id in GUARD_OVERRIDE:
-        return "guard"
-    if move_id in PUSH_OVERRIDE or "forceSwitch" in mv:
-        return "push"
-    if mv.get("selfSwitch"):  # 换人类（回身等）：不是击退，也不当作强击
-        return None
-    cat, bp = mv.get("category"), mv.get("basePower", 0)
-    flags, target = mv.get("flags", {}), mv.get("target")
-    if cat == "Physical" and bp >= 40 and flags.get("contact") and target == "normal":
-        return "strong"
-    if cat != "Status" and bp >= 20 and not flags.get("contact") and target in ("normal", "any"):
-        return "line"
-    return None
-
-
 def game_pp(showdown_pp):
     return max(1, min(4, math.floor(showdown_pp / 10)))
 
@@ -140,28 +131,6 @@ def parse_codes(codes):
     return out
 
 
-def pick_kit(levelups):
-    """levelups: {行为: (等级, 招式id)}，每种行为已取等级最低者。返回 (行为列表, 配置名或None)。"""
-    avail = set(levelups)
-
-    def key(pair):
-        lv = [levelups[b][0] for b in pair]
-        return (max(lv), sum(lv))
-
-    def order(pair):
-        return sorted(pair, key=lambda b: (levelups[b][0], BEHAVIORS.index(b)))
-
-    full = [(key(req), i, name, req) for i, (name, req) in enumerate(CONFIGS) if req <= avail]
-    if full:
-        _, _, name, req = min(full, key=lambda t: (t[0], t[1]))
-        return order(req), name
-    if len(avail) >= 2:
-        pairs = [(b1, b2) for i, b1 in enumerate(BEHAVIORS) for b2 in BEHAVIORS[i + 1:] if {b1, b2} <= avail]
-        best = min(pairs, key=lambda p: (key(p), BEHAVIORS.index(p[0]), BEHAVIORS.index(p[1])))
-        return order(best), None
-    return sorted(avail), None
-
-
 def build(data):
     dex, moves, learn = data["pokedex"], data["moves"], data["learnsets"]
     species, report = [], []
@@ -169,33 +138,20 @@ def build(data):
         entry = dex[sid]
         if entry["num"] != num:
             sys.exit(f"{sid} 的图鉴编号 {entry['num']} 与名单 {num} 不符")
+        if sid not in FROZEN_KITS:
+            sys.exit(f"{sid} 没有冻结的初始招式表")
         parsed = {mid: parse_codes(cs) for mid, cs in learn[sid]["learnset"].items()}
         # 时代：该物种存在 level-up（L）条目的最新世代
         era = max(g for ps in parsed.values() for g, k, _ in ps if k == "L")
-        levelups = {}
+        kit = [{"move": mid, "pp": pp} for mid, pp in FROZEN_KITS[sid]]
+        learnable_by_id = {m["move"]: dict(m) for m in kit}
+        # 招式机以该物种第九世代 learnset 中存在任一学习方式作为可学依据；初始招式无条件冻结保留。
         for mid, ps in parsed.items():
-            lv = [n for g, k, n in ps if g == era and k == "L"]
-            if not lv or mid not in moves:
+            if mid not in TM_MOVES or mid not in moves or not any(g == era for g, _, _ in ps):
                 continue
-            b = classify(mid, moves[mid])
-            if b is None:
-                continue
-            cand = (min(lv), mid)
-            if b not in levelups or cand < levelups[b]:
-                levelups[b] = cand
-        chosen, config = pick_kit(levelups)
-        kit = [{"move": levelups[b][1], "behavior": b, "pp": game_pp(moves[levelups[b][1]]["pp"])} for b in chosen]
-        # learnable：该世代任何学习方式
-        learnable, unmapped = [], 0
-        for mid, ps in parsed.items():
-            if mid not in moves or not any(g == era for g, _, _ in ps):
-                continue
-            b = classify(mid, moves[mid])
-            if b is None:
-                unmapped += 1
-                continue
-            learnable.append({"move": mid, "behavior": b, "pp": game_pp(moves[mid]["pp"])})
-        learnable.sort(key=lambda e: (BEHAVIORS.index(e["behavior"]), e["move"]))
+            learnable_by_id.setdefault(mid, {"move": mid, "pp": game_pp(moves[mid]["pp"])})
+        learnable = list(learnable_by_id.values())
+        learnable.sort(key=lambda e: e["move"])
         species.append({
             "id": sid,
             "dex": f"{num:04d}",
@@ -208,7 +164,7 @@ def build(data):
             "learnable": learnable,
             "source": f"pokedex.json[{sid}]; learnsets.json[{sid}] 第{era}世代; moves.json",
         })
-        report.append((sid, era, config, kit, len(learnable), unmapped))
+        report.append((sid, era, kit, len(learnable)))
     return species, report
 
 
@@ -229,7 +185,7 @@ def main():
             "downloaded": SOURCE_DATE,
             "githubCommit": SOURCE_COMMIT,
             "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建",
-            "note": "工作候选：名单、maxHp 公式、pp 换算与行为映射均待后续平衡决定",
+            "note": "工作候选：名单、maxHp 公式与 PP 换算待后续平衡决定；初始招式按7.6名单冻结，learnable仅含初始招式与首批招式机",
         },
         "species": species,
     }
@@ -237,8 +193,8 @@ def main():
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", encoding="utf-8", newline="\n") as f:
         f.write(text)
-    for sid, era, config, kit, nl, nu in report:
-        print(f"{sid}: 第{era}世代 配置={config or '无'} kit={[(k['move'], k['behavior'], k['pp']) for k in kit]} 可学映射={nl} 未映射={nu}")
+    for sid, era, kit, nl in report:
+        print(f"{sid}: 第{era}世代 kit={[(k['move'], k['pp']) for k in kit]} 可学={nl}")
     print(f"已写入 {args.out}")
 
 

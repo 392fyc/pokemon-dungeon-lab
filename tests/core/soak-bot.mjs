@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
-import {createExpedition,createMain,PROG,RULE_VERSION,CONTENT_VERSION,bossDefeated,applyCommand} from '../../src/core/engine.ts';
+import {createExpedition,createMain,PROG,RULE_VERSION,CONTENT_VERSION,bossDefeated,applyCommand,skillTargets} from '../../src/core/engine.ts';
 import {initialProfile,newGameProfile,profileProblem} from '../../src/core/base.ts';
 import {TrialStore,BUILD_ID} from '../../src/core/save.ts';
 import {ECON} from '../../src/core/economy.ts';
+import {moveOf} from '../../src/core/moves.ts';
+const damageMoves=u=>u.learned.filter(k=>(u.pp[k]??0)>0&&moveOf(k)?.effects.includes('damage'));
+const hitMoves=(s,u,e)=>damageMoves(u).filter(k=>skillTargets(s,u.id,k).includes(e.id));
+const rangedMoves=u=>damageMoves(u).filter(k=>['front2','line10'].includes(moveOf(k).range));
 
 /*
  * Stage 6.6 (automatic part): full-loop soak.
@@ -119,7 +123,8 @@ const bossLive=s=>!!s.dungeon?.boss&&!bossDefeated(s);
  *  while a basic attack plus the neighbours' basic attacks would not? Neighbours that stand next to `e` also strike in the same round. */
 function skillKills(s,L,e){
  const b=dmgBonus(s),helpers=s.queue.map(i=>s.units[i]).filter(m=>aliveU(m)&&m.id!==L.id&&dist(m.pos,e.pos)===1).length*(6+b);
- return e.hp<=10+b+helpers&&e.hp>6+b+helpers;
+ const power=Math.max(0,...hitMoves(s,L,e).map(k=>Math.ceil(moveOf(k).power/2)));
+ return e.hp<=6+power+b+helpers&&e.hp>6+b+helpers;
 }
 /** True when a ray of length 1..3 from `from` to `to` crosses only floor cells nobody stands on (the leader itself is ignored: it is the one moving). */
 function rayClear(s,from,to,leaderId){
@@ -171,7 +176,7 @@ function bossTurn(s,memo,B){
  const members=s.queue.map(i=>s.units[i]).filter(aliveU),b=dmgBonus(s);
  const pts=s.points.filter(p=>s.seen.includes(key(p.pos)));
  // Retreat rule: lost fight = boss HP above what we can deal in the next 3 rounds AND someone has already fallen. Sticky once decided.
- const sk=Math.min(3,(L.pp.strong??0)+(L.pp.line??0)),leader3=sk*(10+b)+(3-sk)*(6+b),team3=leader3+(members.length-1)*3*(6+b);
+ const attacks=damageMoves(L),sk=Math.min(3,attacks.reduce((n,k)=>n+L.pp[k],0)),power=Math.max(0,...attacks.map(k=>Math.ceil(moveOf(k).power/2))),leader3=sk*(6+power+b)+(3-sk)*(6+b),team3=leader3+(members.length-1)*3*(6+b);
  const fallen=s.queue.some(i=>s.units[i].hp<=0);
  if(!memo.retreat&&!memo.noRetreat&&fallen&&B.hp>team3)memo.retreat=true; // policy 'tactical-stand' never retreats (measures the fight itself)
  if(memo.retreat){
@@ -182,7 +187,7 @@ function bossTurn(s,memo,B){
    if(out.length){act({type:'wait'});return out;}
   }
  }
- const d=dist(L.pos,B.pos),canHitNow=d===1||((L.pp.line??0)>0&&d<=3&&rayClear(s,L.pos,B.pos,L.id));
+ const d=dist(L.pos,B.pos),canHitNow=d===1||hitMoves(s,L,B).length>0;
  // Lead switch: the lead is at <=40% HP and a clearly healthier member exists (cooldown 2 rounds).
  // The boss picks its victim by queue order and position, not by who leads, so a switch does not save the old lead; it only costs the lead's own attack.
  // So it is skipped while the lead can hit the boss this round, and used when the lead cannot (the healthier member then does the walking and shooting).
@@ -192,15 +197,16 @@ function bossTurn(s,memo,B){
  // Berry: to the lowest-HP member the lead can reach, when that member is at <=40%.
  const weak=[...reach].sort((a,c)=>ratioOf(a)-ratioOf(c))[0];
  if(weak&&ratioOf(weak)<=0.4&&s.prog.items.berry>0)act({type:'use',item:'berry',target:weak.id});
- // Guard: shield the member the boss will hit (first adjacent in queue order, else the nearest on a line) if it is hurt and next to the lead.
+ // Protect now shields only the acting member; keep the same low-HP threshold.
  const adjB=members.filter(m=>dist(m.pos,B.pos)===1);
  const victim=adjB[0]??members.filter(m=>(m.pos.x===B.pos.x||m.pos.y===B.pos.y)&&dist(m.pos,B.pos)<=3).sort((a,c)=>dist(a.pos,B.pos)-dist(c.pos,B.pos))[0];
- if(victim&&victim.id!==L.id&&dist(victim.pos,L.pos)===1&&ratioOf(victim)<=0.6&&(L.pp.guard??0)>0)act({type:'skill',skill:'guard',target:victim.id});
- if(d===1){if((L.pp.strong??0)>0)act({type:'skill',skill:'strong',target:B.id});act({type:'basic',target:B.id});}
+ if(victim?.id===L.id&&ratioOf(L)<=0.6&&(L.pp.protect??0)>0)act({type:'skill',skill:'protect',target:L.id});
+ if(d===1){for(const skill of hitMoves(s,L,B))act({type:'skill',skill,target:B.id});act({type:'basic',target:B.id});}
  else{
-  if((L.pp.line??0)>0){
-   if(d<=3&&rayClear(s,L.pos,B.pos,L.id))act({type:'skill',skill:'line',target:B.id});
-   else for(const want of [3,2]){const spots=lineSpots(s,B,want,L.id);if(!spots.size)continue;
+  if(rangedMoves(L).length){
+   const hits=hitMoves(s,L,B);
+   if(hits.length)for(const skill of hits)act({type:'skill',skill,target:B.id});
+   else for(const want of [2]){const spots=lineSpots(s,B,want,L.id);if(!spots.size)continue;
     const r=route(s,L.pos,c=>spots.has(key(c)));
     if(r){const c=stepCommand(s,r);if(c.type!=='basic')act(c);break;}}
   }
@@ -251,13 +257,12 @@ function candidates(s,memo){
  if(!memo.reckless&&hurt&&s.prog.items.berry>0)act({type:'use',item:'berry',target:hurt.id});
  const dry=reachable.find(m=>m.learned.some(k=>(m.pp[k]??0)===0));
  if(!memo.reckless&&dry&&s.prog.items.tonic>0)act({type:'use',item:'tonic',target:dry.id});
- // fight: guard a hurt neighbour when an enemy is near, then strike
+ // fight: protect the hurt acting member when an enemy is near, then strike
  const adj=adjacentEnemies(s).sort((a,b)=>a.hp-b.hp);
  const visible=s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&s.seen.includes(key(u.pos)));
- const guardTarget=reachable.find(m=>m.id!==L.id&&low(m)<=0.5);
- if(guardTarget&&(L.pp.guard??0)>0&&visible.some(e=>dist(e.pos,L.pos)<=4))act({type:'skill',skill:'guard',target:guardTarget.id});
- for(const e of adj){if((L.pp.strong??0)>0&&mayUse(e))act({type:'skill',skill:'strong',target:e.id});act({type:'basic',target:e.id});}
- if(!adj.length&&(L.pp.line??0)>0)for(const e of visible)if((e.pos.x===L.pos.x||e.pos.y===L.pos.y)&&dist(e.pos,L.pos)<=3&&mayUse(e))act({type:'skill',skill:'line',target:e.id});
+ if(low(L)<=0.5&&(L.pp.protect??0)>0&&visible.some(e=>dist(e.pos,L.pos)<=4))act({type:'skill',skill:'protect',target:L.id});
+ for(const e of adj){if(mayUse(e))for(const skill of hitMoves(s,L,e))act({type:'skill',skill,target:e.id});act({type:'basic',target:e.id});}
+ if(!adj.length)for(const e of visible)if(mayUse(e))for(const skill of hitMoves(s,L,e))act({type:'skill',skill,target:e.id});
  const target=objective(s,memo);
  if(target&&same(target.pos,L.pos)){
   const k=target.kind;act({type:'interact',exit:k==='exit'||k==='down'||k==='up'});
@@ -382,8 +387,8 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    const a=cmd.action;
    if(a.type==='exchange')st.exchanged++;
    if(a.type==='use')a.item==='berry'?st.berries++:st.tonics++;
-   if(a.type==='skill'&&a.skill==='guard')st.guards++;
-   if(a.type==='skill'&&a.skill==='line')st.lines++;
+   if(a.type==='skill'&&a.skill==='protect')st.guards++;
+   if(a.type==='skill'&&['front2','line10'].includes(moveOf(a.skill)?.range))st.lines++;
    if(a.type==='interact'){const p=s.points.find(p=>same(p.pos,s.units[s.leader].pos));if(p?.kind==='rest')st.rests++;}
    break;
   }
@@ -420,7 +425,7 @@ async function baseTurn(port,store,seed,game,st,where,pay=false){
     const r=await check({type:'learn',inst,move});
     if(!r.ok)continue;
     const learned=store.profile.roster.find(i=>i.id===inst).learned,m=learned.find(l=>l.move===move);
-    const keep=store.profile.roster.find(i=>i.id===inst).carry.map(n=>learned.find(l=>l.move===n)).find(l=>l&&l.behavior!==m.behavior);
+    const keep=store.profile.roster.find(i=>i.id===inst).carry.map(n=>learned.find(l=>l.move===n)).find(l=>l&&l.move!==m.move);
     const r2=await check({type:'carry',inst,moves:keep?[move,keep.move]:[move]});assert.ok(r2.ok,`${where}: carry after learn refused: ${r2.error}`);
     st.learned++;learnedOne=true;break;
    }
@@ -441,7 +446,7 @@ async function baseTurn(port,store,seed,game,st,where,pay=false){
 const kit=(id,species,learned)=>({id,species,learned,carry:learned.map(l=>l.move),protected:false});
 function doomedProfile(){
  const p=newGameProfile('chikorita','cyndaquil').profile;
- p.roster.push(kit('P3','pidgey',[{move:'tackle',behavior:'strong',pp:3},{move:'gust',behavior:'line',pp:3}]),kit('P4','zubat',[{move:'absorb',behavior:'line',pp:2},{move:'poisonfang',behavior:'strong',pp:1}]));
+ p.roster.push(kit('P3','pidgey',[{move:'tackle',pp:3},{move:'gust',pp:3}]),kit('P4','zubat',[{move:'absorb',pp:2},{move:'poisonfang',pp:1}]));
  p.next=5;p.team=['P1','P3','P4'];p.leader='P1';p.account=100;return p;
 }
 /** Base routine of the forced-wipe seeds: pay every rescue the account allows, put the first three roster members on the squad, set a purse, depart. */

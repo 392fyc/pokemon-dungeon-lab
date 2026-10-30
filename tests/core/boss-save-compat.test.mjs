@@ -4,6 +4,7 @@ import {BOSS} from '../../src/core/dungeon.ts';
 import {createExpedition,jumpToFloor,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {initialProfile,squadOf} from '../../src/core/base.ts';
 import {decode,TrialStore,BUILD_ID} from '../../src/core/save.ts';
+import {legacySpeciesMove} from '../../src/core/legacy-moves.ts';
 
 const history={hp:80,damage:6,range:3};
 // Synthetic future tuning, not a balance decision. Changing all three fields
@@ -15,6 +16,28 @@ function record(stats=history,stored=false){
   Object.assign(world.units.boss,{maxHp:stats.hp,hp:stats.hp-7,damage:stats.damage,range:stats.range});
   if(stored)world=jumpToFloor(world,2);
   return {format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:2,current:world,recent:null,profile};
+}
+function legacyRecord(stats=history,stored=false){
+  const e=record(stats,stored);
+  const oldUnit=(u)=>{
+    if(u.species&&u.learned.length){
+      const rows=u.learned.map(move=>({move,old:legacySpeciesMove(u.species,move)}));
+      if(rows.some(x=>!x.old))throw Error(`test sample has no frozen mapping for ${u.species}`);
+      u.learned=rows.map(x=>x.old.behavior);
+      u.pp=Object.fromEntries(rows.map(x=>[x.old.behavior,u.pp[x.move]]));
+      u.maxPp=Object.fromEntries(rows.map(x=>[x.old.behavior,u.maxPp[x.move]]));
+    }
+    delete u.stages;delete u.protect;delete u.counter;delete u.lastMove;
+    if(u.recruit)oldUnit(u.recruit);
+  };
+  for(const i of e.profile.roster)for(const l of i.learned){const old=legacySpeciesMove(i.species,l.move);if(!old)throw Error(`test sample has no frozen mapping for ${i.species}/${l.move}`);l.behavior=old.behavior;}
+  for(const w of [e.current,e.recent])if(w){
+    for(const u of Object.values(w.units))oldUnit(u);
+    for(const f of Object.values(w.dungeon?.stored??{}))for(const u of Object.values(f.units))oldUnit(u);
+    for(const i of w.invitations)oldUnit(i.unit);
+  }
+  e.rules='trial-rules-1';e.content='trial-content-1';
+  return e;
 }
 function port(raw=null){
   let value=raw,writes=0;
@@ -76,4 +99,25 @@ test('historical tuple does not waive boss identity, health or recruitment const
       assert.throws(()=>decode(JSON.stringify(candidate)),/存档结构损坏/);
     }
   });
+});
+
+test('a valid v1 boss migrates on the active floor and in a stored floor',()=>{
+  for(const stored of [false,true]){
+    const old=legacyRecord(history,stored),migrated=decode(JSON.stringify(old));
+    const boss=stored?migrated.current.dungeon.stored['3'].units.boss:migrated.current.units.boss;
+    assert.equal(boss.species,'arcanine');
+    assert.equal(boss.boss,true);
+    assert.deepEqual(boss.learned,[]);
+    assert.deepEqual(boss.stages,{atk:0,def:0});
+    assert.equal(boss.protect,0);assert.equal(boss.counter,0);assert.equal(boss.lastMove,null);
+    assert.deepEqual(decode(JSON.stringify(migrated)),migrated);
+  }
+});
+
+test('unknown current boss numbers and a nonboolean boss mark stay invalid in v1 and v2 saves',()=>{
+  const invalid=[];
+  const oldNumber=legacyRecord();oldNumber.current.units.boss.maxHp=81;invalid.push(oldNumber);
+  const oldStringMark=legacyRecord();oldStringMark.current.units.boss.boss='yes';invalid.push(oldStringMark);
+  const currentStringMark=record();currentStringMark.current.units.boss.boss='yes';invalid.push(currentStringMark);
+  for(const candidate of invalid)assert.throws(()=>decode(JSON.stringify(candidate)),/无法迁移|存档结构损坏/);
 });

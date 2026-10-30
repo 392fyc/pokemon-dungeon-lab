@@ -19,7 +19,7 @@ test('X2 crossing: leader on the entry, followers on the first revealed free cel
  const s=cross(requested(expedition()));
  assert.equal(s.phase,'playing');assert.equal(s.request,null);assert.equal(s.round,1);assert.equal(s.dungeon.level,2);
  assert.deepEqual(coords(s),[pos(4),pos(2),pos(3)]);   // A right of the entry, B left of it, C on the up stairs
- assert.deepEqual(hp(s),[20,20,20]);assert.deepEqual(pp(s),[{strong:2},{guard:2},{strong:2,line:2}]);
+ assert.deepEqual(hp(s),[20,20,20]);assert.deepEqual(pp(s),[{tackle:2},{protect:2},{tackle:2,quickattack:2}]);
  assert.deepEqual(s.enemies,['w2a']);assert.deepEqual(s.units.w2a.pos,pos(7));assert.equal(s.units.w2a.hp,9);
  assert.equal(s.units.E,undefined,'floor 1 enemy must not follow');
  assert.deepEqual(s.points.map(p=>p.kind),['up','item']);
@@ -92,7 +92,7 @@ test('X10 a fallen member keeps a roster slot but gets no cell, so a two-cell en
  assert.equal(s.units.A.pos,null);assert.equal(s.units.A.hp,0);assert.deepEqual([s.units.B.pos,s.units.C.pos],[pos(4),pos(3)]);
 });
 test('X11 R09 step 4 then 5: an invitation raised in the same round is handled first, then one crossing on the final roster',()=>{
- const e=enemy('E',6,1,6,'melee',4);e.recruit=friend('N',0,1,10,{strong:1,push:1});
+ const e=enemy('E',6,1,6,'melee',4);e.recruit=friend('N',0,1,10,{tackle:1,roar:1});
  const w=expedition({a:pos(7),b:pos(4),c:pos(5),enemies:[e]});
  let s=round(w,stairs,'A',basic('E'));
  assert.equal(s.phase,'invitation');assert.equal(s.request.locked,true);assert.equal(s.request.to,2);

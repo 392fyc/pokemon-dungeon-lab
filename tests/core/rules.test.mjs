@@ -10,16 +10,15 @@ const reject=s=>s.phase==='invitation'?command(s,{type:'invite',choice:'reject'}
 const finish=s=>s.phase==='exit'?command(s,{type:'finishExit'}):s;
 const positions=s=>s.queue.map(id=>s.units[id].pos?.x??null);
 function prefix(invite=true){let s=createMain('main',invite);s=round(s,move(3));for(let i=0;i<3;i++)s=round(s,basic('E'));return s;}
-test('M1/M2/M3 and no-invitation routes: published terminal resources',()=>{
- for(const invited of [true,false])for(const route of [1,2,3]){
+test('M1/M2 and no-invitation routes preserve terminal resources',()=>{
+ for(const invited of [true,false])for(const route of [1,2]){
  let s=reject(prefix(invited));s=round(s,move(4));s=round(s,interact(route===1));
  if(route!==1){s=round(s,move(5));assert.equal(s.seen.includes('9,1'),true);
- if(route===2){s=command(s,{type:'switch',actor:'B'});s=round(s,move(4));s=round(s,interact(true));}
- else{s=round(s,move(6));s=round(s,skill('line','R'));s=round(s,move(7));s=round(s,interact(true));}}
- s=finish(s);assert.equal(s.round,[0,6,9,11][route]);assert.equal(s.end.outcome,'normal');assert.deepEqual(positions(s),route===1?[1,3,4]:route===2?[3,4,5]:[4,6,7]);assert.equal(s.units.C.hp,route===3?2:8);assert.equal(s.units.C.pp.line,route===3?1:2);assert.equal(s.bag,route===3?1:0);
+ s=command(s,{type:'switch',actor:'B'});s=round(s,move(4));s=round(s,interact(true));}
+ s=finish(s);assert.equal(s.round,[0,6,9,11][route]);assert.equal(s.end.outcome,'normal');assert.deepEqual(positions(s),route===1?[1,3,4]:route===2?[3,4,5]:[4,6,7]);assert.equal(s.units.C.hp,route===3?2:8);assert.equal(s.units.C.pp.quickattack,route===3?1:2);assert.equal(s.bag,route===3?1:0);
  }});
 test('M5/M6 B damage belongs to B, both plans 11 rounds',()=>{
- for(const accept of [false,true]){let s=prefix();s=command(s,{type:'invite',choice:accept?'accept':'reject',...(accept?{outgoing:'C'}:{})});s=command(s,{type:'switch',actor:'B'});const p=accept?'N':'C';s=round(s,{type:'swap',target:p});assert.deepEqual(positions(s),[1,3,2]);for(const a of [move(4),interact(false),move(5),move(6),move(7),interact(true)])s=round(s,a);s=finish(s);assert.equal(s.round,11);assert.deepEqual(positions(s),[5,7,6]);assert.equal(s.units.B.hp,2);assert.equal(s.units[p].hp,accept?10:8);assert.equal(s.units.B.pp.guard,2);assert.deepEqual(s.camp,accept?['C']:[]);}
+ for(const accept of [false,true]){let s=prefix();s=command(s,{type:'invite',choice:accept?'accept':'reject',...(accept?{outgoing:'C'}:{})});s=command(s,{type:'switch',actor:'B'});const p=accept?'N':'C';s=round(s,{type:'swap',target:p});assert.deepEqual(positions(s),[1,3,2]);for(const a of [move(4),interact(false),move(5),move(6),move(7),interact(true)])s=round(s,a);s=finish(s);assert.equal(s.round,11);assert.deepEqual(positions(s),[5,7,6]);assert.equal(s.units.B.hp,2);assert.equal(s.units[p].hp,accept?10:8);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(s.camp,accept?['C']:[]);}
 });
 test('V1/V2 refusal is immutable and explicit waiting fixes known conflict',()=>{
  const s=createScenario('V1','v1'),before=JSON.stringify(s);const r=applyCommand(s,{type:'round',action:move(4)});assert.equal(r.ok,false);assert.strictEqual(r.state,s);assert.equal(JSON.stringify(s),before);
@@ -45,15 +44,17 @@ test('V11/V12/V13 full-round transition and wipe priority',()=>{
  s=round(createScenario('V12','v12'),interact(true));assert.equal(s.end.outcome,'wipe');assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.deepEqual(s.end.camp,['C']);
  s=round(createScenario('V13','v13'),interact(true));assert.equal(s.phase,'invitation');assert.equal(s.request.locked,true);s=command(s,{type:'invite',choice:'accept',outgoing:'B'});assert.deepEqual(s.queue,['A','C','N']);s=finish(s);assert.equal(s.end.outcome,'normal');assert.equal(s.round,1);
 });
-test('K1/K2/K3/K4 exact resources and whole-round rejection',()=>{
- let s=createScenario('K1','k1');s=round(s,skill('strong','H'),{actor:'B',action:skill('guard','A')});assert.equal(s.units.H.hp,8);assert.equal(s.units.A.hp,8);assert.equal(s.units.B.pp.guard,0);s=round(s,skill('strong','H'));assert.equal(s.units.H.hp,0);
- s=createScenario('K2','k2');s=round(s,skill('strong','H'),{actor:'D',action:skill('push','H')});assert.deepEqual(s.units.H.pos,{x:3,y:2});assert.equal(s.units.A.hp,12);s=round(s,skill('strong','H'));assert.equal(s.units.H.hp,0);assert.equal(s.units.D.hp,4);assert.equal(s.units.B.pp.guard,1);
- s=createScenario('K3','k3');assert.equal(applyCommand(s,{type:'round',action:skill('strong','H'),override:{actor:'D',action:skill('push','H')}}).ok,false);assert.equal(s.units.H.hp,24);
- s=createScenario('K4','k4');assert.equal(applyCommand(s,{type:'round',action:skill('line','R')}).ok,false);
+test('K1 protect is self-only and tackle uses move power',()=>{
+ let s=createScenario('K1','k1');
+ const refused=applyCommand(s,{type:'round',action:skill('tackle','H'),override:{actor:'B',action:skill('protect','A')}});
+ assert.equal(refused.ok,false);assert.deepEqual(refused.state,s);
+ s=round(s,skill('tackle','H'),{actor:'B',action:skill('protect','B')});assert.equal(s.units.H.hp,9);assert.equal(s.units.A.hp,4);assert.equal(s.units.B.pp.protect,0);
+ s=round(s,skill('tackle','H'));assert.equal(s.units.H.hp,0);
 });
-test('K5 alternative recipients preserve A/B12 of20 and C learned line',()=>{
- for(const outgoing of [null,'C','A','B']){let s=createScenario('K5','k5'+outgoing);s=command(s,{type:'invite',choice:outgoing?'accept':'reject',...(outgoing?{outgoing}:{})});if(!outgoing){s=round(s,skill('line','R'));assert.equal(s.round,1);}else{s=command(s,{type:'switch',actor:'Q'});if(outgoing==='C'){s=round(s,move(3),{actor:'B',action:skill('guard','Q')});s=round(s,move(4));s=round(s,basic('R'));assert.equal(s.units.Q.hp,2);}else{s=round(s,move(4));s=round(s,basic('R'));assert.equal(s.units.Q.hp,4);assert.equal(s.units.C.pp.line,1);}}
- assert.equal(s.units.A.hp,12);assert.equal(s.units.B.hp,12);assert.equal(s.units.A.maxHp,20);assert.equal(s.units.R.hp,0);}
+test('K4/K5 quickattack retains obstruction and two-cell range limits',()=>{
+ const blocked=createScenario('K4','k4');assert.equal(applyCommand(blocked,{type:'round',action:skill('quickattack','R')}).ok,false);
+ let s=createScenario('K5','k5');s=command(s,{type:'invite',choice:'reject'});
+ const r=applyCommand(s,{type:'round',action:skill('quickattack','R')});assert.equal(r.ok,false);assert.deepEqual(r.state,s);assert.equal(s.units.C.pp.quickattack,1);
 });
 class Memory {raw=null;fail=false;getItem(){return this.raw;}setItem(k,v){if(this.fail)throw Error('quota');this.raw=v;}}
 test('S2/S3/S4/S5 restore invitations and locked request exactly once',async()=>{

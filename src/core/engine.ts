@@ -2,16 +2,20 @@
 import {generateFloor,serviceRoll,BOSS,type GeneratedFloor} from './dungeon.ts';
 import {ECON} from './economy.ts';
 import {SPECIES,speciesOf,tmPool,learnableMove,type KitMove} from './roster.ts';
+import {moveOf,type MoveSpec} from './moves.ts';
+import names from '../data/names-zh.json' with {type:'json'};
 export type Pos = {x:number;y:number};
-export type Skill = 'strong'|'line'|'guard'|'push';
+/** Skills are move ids; PP and learned use the same keys. */
+export type Skill = string;
 export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; pos:Pos|null;
   pp:Partial<Record<Skill,number>>; maxPp:Partial<Record<Skill,number>>; learned:Skill[];
+  stages:{atk:number;def:number}; protect:number; counter:number; lastMove:string|null;
   ai?:'melee'|'ranged'|'chase'; damage?:number; range?:number; recruit?:Unit; species?:string;
   /** 6.5: base-roster instance this unit was made from, and the names of its carried moves (aligned with `learned`). Absent for recruits made in the run and for fixtures. */
   inst?:string; moves?:string[];
   /** 7.2: true for a founding member of the base profile (the initial two, or the three starters of an old profile); never goes missing in a wipe. */
   protected?:true;
-  /** 7.3: the regional boss. Only the generator sets it (an enemy of species arcanine, 80 HP, never moves, attacks twice, cannot be pushed or recruited). */
+  /** 7.3: the regional boss. Only the generator sets it (an enemy of species arcanine, 80 HP, never moves, attacks twice, resists blowaway and cannot be recruited). */
   boss?:true};
 // Precondition: generated expedition enemies never carry `recruit`; expedition invitations come only from the
 // round-end draw. A preset `recruit` would issue a species-less invitation that save.ts rejects.
@@ -30,7 +34,7 @@ export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest'|'s
 export type ShopItem='berry'|'tonic'|'tm';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
 export type Item='berry'|'tonic';
-export const SKILL_CN:Record<Skill,string>={strong:'强击',line:'直线',guard:'保护',push:'推退'};
+export const SKILL_CN:Record<Skill,string>=(names as unknown as {moves:Record<string,string>}).moves;
 export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP补剂'};
 export type Rect={x:number;y:number;w:number;h:number};
 /**
@@ -71,8 +75,8 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
   purse?:number;tms?:TmItem[];shop?:Shop;exchange?:Exchange};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
-export const RULE_VERSION='trial-rules-1';
-export const CONTENT_VERSION='trial-content-1';
+export const RULE_VERSION='trial-rules-2';
+export const CONTENT_VERSION='trial-content-2';
 export const SPEC_SOURCE='5f3547889b30e59f6cdfebc5af8c91e46cba4ee4';
 export const key=(p:Pos)=>`${p.x},${p.y}`;
 export const same=(a:Pos|null,b:Pos|null)=>!!a&&!!b&&a.x===b.x&&a.y===b.y;
@@ -80,22 +84,23 @@ export const distance=(a:Pos,b:Pos)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 export const DIRS:Pos[]=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 export const plus=(a:Pos,b:Pos):Pos=>({x:a.x+b.x,y:a.y+b.y});
 export const clone=<T>(v:T):T=>structuredClone(v);
+const freshCombatState=()=>({stages:{atk:0,def:0},protect:0,counter:0,lastMove:null as string|null});
 export function friend(id:string,x:number,y:number,hp=20,pp:Unit['pp']={}):Unit {
-  return {id,side:'friend',hp,maxHp:20,pos:hp>0?{x,y}:null,pp:{...pp},maxPp:Object.fromEntries(Object.keys(pp).map(k=>[k,2])),learned:Object.keys(pp) as Skill[]};
+  return {id,side:'friend',hp,maxHp:20,pos:hp>0?{x,y}:null,pp:{...pp},maxPp:Object.fromEntries(Object.keys(pp).map(k=>[k,2])),learned:Object.keys(pp),...freshCombatState()};
 }
 export function enemy(id:string,x:number,y:number,hp:number,ai:Unit['ai'],damage:number,range=1):Unit {
-  return {id,side:'enemy',hp,maxHp:hp,pos:{x,y},pp:{},maxPp:{},learned:[],ai,damage,range};
+  return {id,side:'enemy',hp,maxHp:hp,pos:{x,y},pp:{},maxPp:{},learned:[],ai,damage,range,...freshCombatState()};
 }
-export function newcomer(id='N'):Unit {return friend(id,0,0,10,{strong:1,push:1});}
+export function newcomer(id='N'):Unit {return friend(id,0,0,10,{tackle:1,roar:1});}
 /** 6.4: a real roster unit at the given run level: roster maxHp plus 2 per level above 1, full HP, kit moves at full kit PP. */
 export function speciesUnit(id:string,speciesId:string,level=1,pos:Pos|null=null):Unit {
   const sp=SPECIES[speciesId],maxHp=sp.maxHp+PROG.hpPerLevel*(level-1);
-  return {id,side:'friend',hp:maxHp,maxHp,pos,pp:Object.fromEntries(sp.kit.map(k=>[k.behavior,k.pp])),maxPp:Object.fromEntries(sp.kit.map(k=>[k.behavior,k.pp])),learned:sp.kit.map(k=>k.behavior),species:speciesId};
+  return {id,side:'friend',hp:maxHp,maxHp,pos,pp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),learned:sp.kit.map(k=>k.move),species:speciesId,...freshCombatState()};
 }
 /** R07 half snapshot of a new recruit: HP floor(max/2) (at least 1); each kit move PP floor(max/2) (at least 1, at most max). */
 export function recruitUnit(id:string,speciesId:string,level:number):Unit {
   const u=speciesUnit(id,speciesId,level);u.hp=Math.max(1,Math.floor(u.maxHp/2));
-  for(const k of Object.keys(u.maxPp) as Skill[])u.pp[k]=Math.min(u.maxPp[k]!,Math.max(1,Math.floor(u.maxPp[k]!/2)));
+  for(const k of Object.keys(u.maxPp))u.pp[k]=Math.min(u.maxPp[k]!,Math.max(1,Math.floor(u.maxPp[k]!/2)));
   return u;
 }
 /** Recoverable recruit-draw stream: mulberry32 stepped from an explicit state, so the state can be saved and resumed without redrawing. */
@@ -107,7 +112,7 @@ export function createMain(runId:string,invitation=true):World {
   const e=enemy('E',4,1,16,'melee',4);if(invitation)e.recruit=newcomer();
   const s:World={runId,scenario:invitation?'main-invite':'main-none',round:0,
     floor:Array.from({length:10},(_,x)=>({x,y:1})),seen:[],
-    units:{A:friend('A',0,1,20,{strong:2}),B:friend('B',1,1,20,{guard:2}),C:friend('C',2,1,20,{strong:2,line:2}),E:e,R:enemy('R',9,1,6,'ranged',6,3)},
+    units:{A:friend('A',0,1,20,{tackle:2}),B:friend('B',1,1,20,{protect:2}),C:friend('C',2,1,20,{tackle:2,quickattack:2}),E:e,R:enemy('R',9,1,6,'ranged',6,3)},
     queue:['A','B','C'],enemies:['E','R'],camp:[],leader:'C',points:[{pos:{x:4,y:1},kind:'goal',used:false},{pos:{x:7,y:1},kind:'item',used:false}],
     goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[]};
   reveal(s);return s;
@@ -152,14 +157,68 @@ function clearRay(s:World,a:Pos,b:Pos,range:number):boolean {
   const d={x:Math.sign(b.x-a.x),y:Math.sign(b.y-a.y)};let p=plus(a,d);
   while(!same(p,b)){if(!walk(s,p)||occupied(s,p))return false;p=plus(p,d);}return true;
 }
-/** Names the first reason a straight-line skill cannot reach its target. */
+/** Names the first reason a straight-line move cannot reach its target. */
 function rayProblem(s:World,a:Pos,b:Pos,range:number):string|null {
-  if(a.x!==b.x&&a.y!==b.y)return '直线只能指定同排或同列的目标';
-  if(distance(a,b)<1)return '直线不能指定自己所在的格';
-  if(distance(a,b)>range)return `目标相距${distance(a,b)}格，超出直线射程${range}格`;
+  if(a.x!==b.x&&a.y!==b.y)return '招式只能指定同排或同列的目标';
+  if(distance(a,b)<1)return '招式不能指定自己所在的格';
+  if(distance(a,b)>range)return `目标相距${distance(a,b)}格，超出招式射程${range}格`;
   const d={x:Math.sign(b.x-a.x),y:Math.sign(b.y-a.y)};let p=plus(a,d);
   while(!same(p,b)){if(!walk(s,p))return `射线在(${p.x},${p.y})被墙挡住`;const blocker=active(s).find(v=>same(v.pos,p));if(blocker)return `射线被${blocker.id}挡住`;p=plus(p,d);}
   return null;
+}
+const chebyshev=(a:Pos,b:Pos)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
+const inRect=(p:Pos,r:Rect)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
+function inRoomReach(s:World,actor:Pos,target:Pos):boolean {
+  const room=(s.rooms??[]).find(r=>inRect(actor,r));
+  return room?inRect(target,room):chebyshev(actor,target)<=2;
+}
+function targetKindMatches(s:World,actorId:string,target:Unit,spec:MoveSpec):boolean {
+  switch(spec.target){
+    case 'enemy':return target.side==='enemy'&&s.enemies.includes(target.id);
+    case 'user':return target.id===actorId;
+    case 'teammates':return target.id!==actorId&&target.side==='friend'&&s.queue.includes(target.id);
+    case 'party':return target.side==='friend'&&s.queue.includes(target.id);
+    case 'all':return s.queue.includes(target.id)||s.enemies.includes(target.id);
+  }
+}
+/** Units affected by a move's geometry and target category, before special use restrictions. */
+function moveTargetsInReach(s:World,actorId:string,spec:MoveSpec):Unit[] {
+  const actor=s.units[actorId];if(!alive(actor))return [];
+  if(spec.range==='user')return targetKindMatches(s,actorId,actor,spec)?[actor]:[];
+  const candidates=active(s).filter(t=>targetKindMatches(s,actorId,t,spec));
+  if(spec.range==='room')return candidates.filter(t=>inRoomReach(s,actor.pos,t.pos!));
+  if(spec.range==='around')return candidates.filter(t=>t.id!==actorId&&chebyshev(actor.pos,t.pos!)===1);
+  return candidates.filter(t=>{
+    switch(spec.range){
+      case 'front':return distance(actor.pos,t.pos!)===1;
+      case 'front2':return clearRay(s,actor.pos,t.pos!,2);
+      case 'line10':return clearRay(s,actor.pos,t.pos!,10);
+      default:return false;
+    }
+  });
+}
+function rejectedForBoss(spec:MoveSpec,target:Unit):boolean {
+  return !!target.boss&&spec.effects.includes('blowaway')&&spec.effects.includes('damage')===false;
+}
+/** Legal command targets for UI highlighting. User/room moves use the actor id in Action.target by contract. */
+export function skillTargets(s:World,actorId:string,skill:Skill):string[] {
+  const actor=s.units[actorId],spec=moveOf(skill);
+  if(!alive(actor)||!spec||!actor.learned.includes(skill)||(actor.pp[skill]??0)<1)return [];
+  if(spec.effects.includes('protect')&&actor.lastMove==='protect')return [];
+  const affected=moveTargetsInReach(s,actorId,spec);
+  if(spec.range==='user')return affected.length?[actorId]:[];
+  if(spec.range==='room')return affected.length?[actorId]:[];
+  return affected.filter(t=>!!t.pos&&s.seen.includes(key(t.pos))&&!rejectedForBoss(spec,t)).map(t=>t.id);
+}
+function moveRangeProblem(s:World,actor:Unit,target:Unit,spec:MoveSpec):string {
+  switch(spec.range){
+    case 'front':return '目标不在上下左右相邻格';
+    case 'front2':return rayProblem(s,actor.pos!,target.pos!,2)??'目标不在两格直线射程内';
+    case 'line10':return rayProblem(s,actor.pos!,target.pos!,10)??'目标不在直线射程内';
+    case 'around':return '目标不在使用者周围八格内';
+    case 'room':return '目标不在同一房间或走廊范围内';
+    case 'user':return '招式只能指定使用者自己';
+  }
 }
 function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set()):string|null {
   const u=s.units[id];if(!alive(u))return `${id}已倒下，不能行动`;
@@ -213,12 +272,16 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(a.type==='swap')return !s.queue.includes(t.id)||id===t.id||distance(u.pos,t.pos)!==1?'只能与相邻存活伙伴换位':null;
   if(a.type==='basic')return t.side!=='enemy'||distance(u.pos,t.pos)!==1?'普攻需要相邻敌人':null;
   if(!u.learned.includes(a.skill)||(u.pp[a.skill]??0)<1)return '未装备该招式或PP不足';
-  if(a.skill==='guard')return !s.queue.includes(t.id)||id===t.id||distance(u.pos,t.pos)!==1?'保护需要相邻另一名存活伙伴':null;
-  if(t.side!=='enemy')return '该招式只能指定敌人';
-  if(a.skill==='push'&&t.boss)return '首领不会被推退';
-  if(a.skill==='line')return rayProblem(s,u.pos,t.pos,3);
-  if(distance(u.pos,t.pos)!==1)return '目标不相邻';
-  if(a.skill==='push'){const p=plus(t.pos,{x:t.pos.x-u.pos.x,y:t.pos.y-u.pos.y});if(!walk(s,p)||!s.seen.includes(key(p))||occupied(s,p))return '推退后格不可用';}
+  const spec=moveOf(a.skill);if(!spec)return '招式数据不存在';
+  if(spec.effects.includes('protect')&&u.lastMove==='protect')return '守住不能连续使用';
+  if((spec.range==='user'||spec.range==='room')&&a.target!==id)return '这种招式的目标必须填使用者自己';
+  if(spec.range==='user'||spec.range==='room'){
+    if(!moveTargetsInReach(s,id,spec).length)return spec.range==='room'?'范围内没有能受此招式影响的单位':'招式无法作用于使用者';
+    return null;
+  }
+  if(!targetKindMatches(s,id,t,spec))return spec.target==='enemy'?'该招式只能指定敌人':spec.target==='teammates'?'该招式只能指定同行队友':spec.target==='user'?'招式只能指定使用者自己':'目标阵营不符合招式要求';
+  if(!moveTargetsInReach(s,id,spec).some(v=>v.id===t.id))return moveRangeProblem(s,u,t,spec);
+  if(t.boss&&spec.effects.includes('blowaway')&&!spec.effects.includes('damage'))return '首领不会被吹飞';
   return null;
 }
 /** 6.5 rest point: for each living member on the map, the move with the lowest remaining PP ratio (first in learned order on ties) if it is below its maximum. */
@@ -238,28 +301,93 @@ function hit(s:World,id:string,n:number):void {
     if(s.units[unit.id]||s.invitations.some(i=>i.unit.id===unit.id))unit.id=`${unit.id}-${s.invitations.length+1}`;
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});}}
 }
+/** Apply damage after the defender's defence stage; protect only stops enemy attacks against friends. */
+function resolveDamage(s:World,sourceId:string,targetId:string,base:number,allowCounter=true):number {
+  const source=s.units[sourceId],target=s.units[targetId];
+  const blocked=source.side==='enemy'&&target.side==='friend'&&target.protect>0;
+  const scaledBase=base+(source.stages?.atk??0);
+  const amount=blocked?0:base<=0?0:Math.max(1,scaledBase-(target.stages?.def??0));
+  const counter=allowCounter&&amount>0&&target.side==='friend'&&source.side==='enemy'&&target.counter>0&&
+    !!source.pos&&!!target.pos&&distance(source.pos,target.pos)===1;
+  hit(s,targetId,amount);
+  if(counter)hit(s,sourceId,amount);
+  return amount;
+}
+function collide(s:World,targetId:string):void {
+  // The specification fixes blowaway impact at five damage; defence stages do not change collision damage.
+  hit(s,targetId,5);
+}
+function blowAway(s:World,actor:Unit,target:Unit):void {
+  if(!alive(actor)||!alive(target))return;
+  const start=target.pos;
+  const delta={x:Math.sign(target.pos.x-actor.pos.x),y:Math.sign(target.pos.y-actor.pos.y)};
+  let at=target.pos,wall=false,blocker:Unit|undefined;
+  for(let i=0;i<10;i++){
+    const next=plus(at,delta);
+    if(!walk(s,next)){wall=true;break;}
+    blocker=active(s).find(u=>u.id!==target.id&&same(u.pos,next));
+    if(blocker)break;
+    at=next;
+  }
+  target.pos=at;
+  if(!same(start,at))reveal(s);
+  note(s,`${actor.id}吹飞${target.id}到${key(at)}`);
+  if(wall)collide(s,target.id);
+  else if(blocker){collide(s,target.id);collide(s,blocker.id);}
+}
+function changeStage(s:World,targetId:string,stat:'atk'|'def',change:number):void {
+  const target=s.units[targetId],before=target.stages[stat];
+  target.stages[stat]=Math.max(-3,Math.min(3,before+change));
+  note(s,`${targetId}${stat==='atk'?'攻击':'防御'}阶段变为${target.stages[stat]}`);
+}
+function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,bonus:number):void {
+  const actor=s.units[id],spec=moveOf(a.skill)!;actor.pp[a.skill]=(actor.pp[a.skill]??0)-1;actor.lastMove=a.skill;
+  note(s,`${id}使用${SKILL_CN[a.skill]??a.skill}`);
+  let targets=spec.range==='room'||spec.range==='around'?moveTargetsInReach(s,id,spec):[s.units[a.target]];
+  if(spec.range==='user')targets=[actor];
+  let dealt=0;
+  for(const effect of spec.effects){
+    const stage=effect.match(/^stage:(atk|def):([+-]\d+)$/);
+    if(stage){for(const target of targets)if(alive(target))changeStage(s,target.id,stage[1] as 'atk'|'def',Number(stage[2]));continue;}
+    if(effect==='protect'){actor.protect=3;note(s,`${id}进入守住状态`);continue;}
+    if(effect==='counter'){actor.counter=3;note(s,`${id}进入反击状态`);continue;}
+    if(effect==='damage'&&spec.power!==null){
+      const base=6+Math.ceil(spec.power/2)+bonus;
+      for(const target of targets)if(alive(target)){
+        const hpBefore=target.hp;resolveDamage(s,id,target.id,base);dealt+=hpBefore-target.hp;
+      }
+      continue;
+    }
+    if(effect==='blowaway'){
+      // The regional boss resists blowaway effects. Dragontail still deals its listed damage.
+      for(const target of targets)if(alive(target)&&!(target.boss&&spec.effects.includes('damage')))blowAway(s,actor,target);
+    }
+  }
+  if(spec.effects.includes('drain')&&dealt>0&&actor.hp>0){
+    const before=actor.hp,heal=Math.max(1,Math.floor(dealt/2));actor.hp=Math.min(actor.maxHp,actor.hp+heal);
+    note(s,`${id}吸取生命，HP ${before}→${actor.hp}`);
+  }
+}
 /** 7.2: the exchanger's effect. The companion leaves the queue (its slot stays empty), the chosen machines become 'sent', the exchanger is used up. */
 function sendHome(s:World,a:Extract<Action,{type:'exchange'}>):void {
-  const t=s.units[a.target];s.queue=s.queue.filter(i=>i!==a.target);t.pos=null;
+  const t=s.units[a.target];s.queue=s.queue.filter(i=>i!==a.target);t.pos=null;s.units[s.leader].lastMove=null;
   for(const i of a.cargo)s.tms![i].fate='sent';
   s.exchange!.used=true;s.exchange!.sent=a.target;
   const point=s.points.find(p=>p.kind==='exchange');if(point)point.used=true;
   note(s,`${s.leader}启动交换机：${a.target}安全回到基地，运走${a.cargo.length}份招式机；本局不再参战`);
 }
-function execute(s:World,id:string,a:Action,guards:Record<string,number>):void {
+function execute(s:World,id:string,a:Action):void {
   const u=s.units[id],bonus=s.prog?(s.prog.level-1)*PROG.damagePerLevel:0;
+  if(a.type!=='skill')u.lastMove=null;
   if(a.type==='move'){u.pos=clone(a.to);reveal(s);note(s,`${id}移动到${key(a.to)}`);}
-  else if(a.type==='basic')hit(s,a.target,6+bonus);
+  else if(a.type==='basic')resolveDamage(s,id,a.target,6+bonus);
   else if(a.type==='use'){
     const t=s.units[a.target];s.prog!.items[a.item]--;
     if(a.item==='berry'){const before=t.hp;t.hp=Math.min(t.maxHp,t.hp+PROG.berryHeal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);}
     else{for(const k of t.learned)t.pp[k]=Math.min(t.maxPp[k]??0,(t.pp[k]??0)+PROG.tonicPp);note(s,`${id}对${t.id}使用${ITEM_NAMES.tonic}，每招PP+${PROG.tonicPp}（不超上限）`);}
   }
-  else if(a.type==='skill'){u.pp[a.skill]=(u.pp[a.skill]??0)-1;
-    if(a.skill==='guard')guards[a.target]=4;
-    else if(a.skill==='push'){const t=s.units[a.target];t.pos=plus(t.pos!,{x:t.pos!.x-u.pos!.x,y:t.pos!.y-u.pos!.y});reveal(s);note(s,`${id}推退${t.id}`);}
-    else hit(s,a.target,10+bonus);
-  } else if(a.type==='interact'){
+  else if(a.type==='skill')executeSkill(s,id,a,bonus);
+  else if(a.type==='interact'){
     const p=s.points.find(p=>same(p.pos,u.pos))!;const stairs=p.kind==='down'||p.kind==='up';
     if(p.kind==='rest'){
       const parts:string[]=[];
@@ -277,7 +405,7 @@ function execute(s:World,id:string,a:Action,guards:Record<string,number>):void {
 /** One member's turn in a round, as the rules would run it (stage 7.1 preview). `explicit` is false for the default behaviour; `failed` means the action no longer applied and the member waited. */
 export type TraceStep={id:string;action:Action;explicit:boolean;failed:boolean;swapWith?:string};
 function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,trace?:TraceStep[]):string|null {
-  const guards:Record<string,number>={};const lead=s.leader;const moved=new Set<string>();
+  const lead=s.leader;const moved=new Set<string>();
   if(cmd.override&&(cmd.override.actor===lead||!s.queue.includes(cmd.override.actor)||!alive(s.units[cmd.override.actor])))return '只能安排另一名存活伙伴';
   if(cmd.override?.action.type==='swap')return '换位须从主控发起';
   if(cmd.override?.action.type==='interact'||cmd.override?.action.type==='exchange')return '伙伴不能代替主控交互';
@@ -292,11 +420,11 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   for(let i=0;i<order.length;i++){const id=order[i];if(!s.queue.includes(id)||!alive(s.units[id])||(ex&&id===lead))continue;
     if(swap&&(id===lead||id===swap)){
       if(i===later){const err=invalid(s,lead,cmd.action);if(err){if(preflight)return err;continue;}
-        const p=s.units[lead].pos;s.units[lead].pos=s.units[swap].pos;s.units[swap].pos=p;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
+        const p=s.units[lead].pos;s.units[lead].pos=s.units[swap].pos;s.units[swap].pos=p;s.units[lead].lastMove=null;s.units[swap].lastMove=null;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
     const explicit=id===lead?cmd.action:cmd.override?.actor===id?cmd.override.action:null;
     const a=explicit??defaultAction(s,id);const err=invalid(s,id,a,moved);
-    if(err){if(explicit&&preflight)return err;note(s,`${id}动作失效，等待，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
-    execute(s,id,a,guards);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false});
+    if(err){if(explicit&&preflight)return err;s.units[id].lastMove=null;note(s,`${id}动作失效，等待，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
+    execute(s,id,a);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false});
   }
   if(preflight)return null;
   for(const id of s.enemies){const e=s.units[id];if(!alive(e))continue;
@@ -306,7 +434,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
         const cands=s.queue.map(i=>s.units[i]).filter(alive);
         const t=cands.find(c=>distance(e.pos!,c.pos)===1)??cands.filter(c=>clearRay(s,e.pos!,c.pos,e.range??BOSS.range)).sort((a,b)=>distance(e.pos!,a.pos)-distance(e.pos!,b.pos))[0];
         if(!t)break;
-        const amount=Math.max(0,(e.damage??0)-(guards[t.id]??0));delete guards[t.id];hit(s,t.id,amount);
+        resolveDamage(s,id,t.id,e.damage??0);
       }
       continue;
     }
@@ -314,7 +442,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     const targets=candidates.filter(t=>e.ai==='ranged'?clearRay(s,e.pos!,t.pos,e.range??3):distance(e.pos!,t.pos)===1);
     if(e.ai==='ranged')targets.sort((a,b)=>distance(e.pos!,a.pos)-distance(e.pos!,b.pos));
     const t=targets[0];
-    if(t){const amount=Math.max(0,(e.damage??0)-(guards[t.id]??0));delete guards[t.id];hit(s,t.id,amount);}
+    if(t)resolveDamage(s,id,t.id,e.damage??0);
     else if(e.ai==='chase'&&candidates.length){
       candidates.sort((a,b)=>distance(e.pos!,a.pos)-distance(e.pos!,b.pos));const target=candidates[0];
       // BFS to the chosen target; its occupied cell is a permitted endpoint only.
@@ -324,6 +452,10 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
         if(occupied(s,p))continue;seen.add(key(p));q.push({p,first:same(q[k].p,e.pos)?p:q[k].first});}
       if(step){e.pos=step;note(s,`${id}趋近一步`);}
     }
+  }
+  for(const u of Object.values(s.units)){
+    if(u.protect>0)u.protect--;
+    if(u.counter>0)u.counter--;
   }
   return null;
 }
@@ -366,8 +498,16 @@ export function closeOut(s:World,outcome:End['outcome'],draw=true):End {
   return e;
 }
 function end(s:World,outcome:End['outcome']):void {
+  clearCombatState(s);
   s.end=closeOut(s,outcome);
   s.phase='ended';s.request=null;s.anchor=null;note(s,outcome==='normal'?'正常撤离':'全队倒下，本试验结束');
+}
+function clearUnitCombatState(u:Unit):void {
+  u.stages={atk:0,def:0};u.protect=0;u.counter=0;u.lastMove=null;
+}
+function clearCombatState(s:World):void {
+  for(const u of Object.values(s.units))clearUnitCombatState(u);
+  for(const floor of Object.values(s.dungeon?.stored??{}))for(const u of Object.values(floor.units))clearUnitCombatState(u);
 }
 /** After invitations are done: a locked plain request waits as `exit`, a locked stairs request as `transit`. */
 const settled=(s:World):World['phase']=>s.request?.locked?(s.request.to!==undefined?'transit':'exit'):'playing';
@@ -383,7 +523,7 @@ function settle(s:World):void {
   p.exp+=kills.length*PROG.killExp+(bossNew?PROG.bossExp:0);
   while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level]){
     p.level++;for(const id of s.queue)s.units[id].maxHp+=PROG.hpPerLevel;
-    note(s,`本局等级升到Lv${p.level}：同行最大HP+${PROG.hpPerLevel}（当前HP不变），普攻／强击／直线伤害+${PROG.damagePerLevel}`);
+    note(s,`本局等级升到Lv${p.level}：同行最大HP+${PROG.hpPerLevel}（当前HP不变），攻击伤害+${PROG.damagePerLevel}`);
   }
   if(bossNew){
     const r=rngStep(p.rng);p.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];
@@ -529,7 +669,7 @@ function transit(original:World):World {
   const stair=s.points.find(p=>p.kind===(to>from?'up':'down'));
   if(!stair)return cancelled('目标层没有对应楼梯');
   if(!placeTeam(s,stair.pos))return cancelled('目标层入口附近没有合法位置');
-  delete d.stored[to];d.stored[String(from)]=cur;d.level=to;s.request=null;s.phase='playing';
+  delete d.stored[to];d.stored[String(from)]=cur;clearCombatState(s);d.level=to;s.request=null;s.phase='playing';
   note(s,`同行抵达第${to}层`);return s;
 }
 /**
@@ -548,8 +688,8 @@ export type SquadMember={inst:string;species:string;carry:KitMove[];protected?:b
 /** 6.5: a roster instance entering a run: species base HP at run level 1, full HP, and exactly its carried moves at full PP. */
 export function carriedUnit(id:string,m:SquadMember):Unit {
   const sp=SPECIES[m.species];
-  return {id,side:'friend',hp:sp.maxHp,maxHp:sp.maxHp,pos:null,pp:Object.fromEntries(m.carry.map(k=>[k.behavior,k.pp])),maxPp:Object.fromEntries(m.carry.map(k=>[k.behavior,k.pp])),
-    learned:m.carry.map(k=>k.behavior),species:m.species,inst:m.inst,moves:m.carry.map(k=>k.move),...(m.protected?{protected:true as const}:{})};
+  return {id,side:'friend',hp:sp.maxHp,maxHp:sp.maxHp,pos:null,pp:Object.fromEntries(m.carry.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(m.carry.map(k=>[k.move,k.pp])),
+    learned:m.carry.map(k=>k.move),species:m.species,inst:m.inst,moves:m.carry.map(k=>k.move),...freshCombatState(),...(m.protected?{protected:true as const}:{})};
 }
 /** `boss` (7.3) defaults to true for a base run of 3 floors (what departures use); a run with another floor count or no base never has it. */
 export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number},purse=0,boss=!!squad&&floors===3):World {

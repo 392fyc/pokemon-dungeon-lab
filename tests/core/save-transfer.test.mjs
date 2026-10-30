@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
 import assert from 'node:assert/strict';
 import {TrialStore,decode,BUILD_ID} from '../../src/core/save.ts';
 import {RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
@@ -15,10 +16,7 @@ async function makeRecord(runId){
  return {storage,store,raw:store.exportRecord()};
 }
 function legacyProfileRecord(){
- const profile=newGameProfile('treecko','torchic').profile;
- for(const instance of profile.roster)delete instance.protected;
- delete profile.account;delete profile.rescue;delete profile.lost;delete profile.origin;
- return {format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:2,current:null,recent:null,profile};
+ return JSON.parse(readFileSync(new URL('./fixtures77-regression/transfer-before72.json',import.meta.url),'utf8'));
 }
 
 test('exportRecord emits the full versioned record and import round-trips the validated rule state',async()=>{

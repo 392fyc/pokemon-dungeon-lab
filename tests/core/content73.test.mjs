@@ -21,29 +21,29 @@ const by=Object.fromEntries(roster.species.map(s=>[s.id,s]));
 const memory=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);},map:m};};
 const NEW8=['sandshrew','growlithe','magnemite','onix','dratini','wooper','houndour','makuhita'];
 const FLOORS3={width:20,height:14,floors:3,boss:true};
-const kitOf=id=>by[id].kit.map(k=>[k.move,k.behavior,k.pp]);
+const kitOf=id=>by[id].kit.map(k=>[k.move,k.pp]);
 
 /* ---------- D: data chain ---------- */
-test('D1 the roster has 23 species and the first 15 are byte-identical to the 7.1 roster',()=>{
+test('D1 the roster has 23 species and the first 15 match the approved 7.7a data shape',()=>{
  assert.equal(roster.species.length,23);
- // sha256 of JSON.stringify of the 15 entries of the roster.json at main 2d984ad (before 7.3), computed from that file, not from this code.
- assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,15))).digest('hex'),'d29715e8ac9da8a564584373e324416afd34f285c28e6078b8ae9be2f0dcca78');
+ // Independently checked against f757d51: remove behavior, retain frozen kits, filter learnable to kit + TM and sort by move.
+ assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,15))).digest('hex'),'c9a51da1ddddb971fd379cbbfd6472d530b80101b48a56464ae1557a34cb2e9a');
  assert.deepEqual(roster.species.slice(15).map(s=>s.id),NEW8);
 });
 test('D2 the eight new species are not starters, have a kit of 1-2 moves and a non-empty learnable list; kits are the importer output (assumptions A1-A3, observed 2026-10-30)',()=>{
  for(const id of NEW8){assert.equal(by[id].starter,false);assert.ok(by[id].kit.length>=1&&by[id].kit.length<=2,id);assert.ok(by[id].learnable.length>0,id);}
- assert.deepEqual(kitOf('sandshrew'),[['scratch','strong',3],['defensecurl','guard',4]]);
- assert.deepEqual(kitOf('growlithe'),[['ember','line',2],['bite','strong',2]]);
- assert.deepEqual(kitOf('magnemite'),[['tackle','strong',3],['thundershock','line',3]]);
- assert.deepEqual(kitOf('onix'),[['tackle','strong',3],['harden','guard',3]]);
- assert.deepEqual(kitOf('dratini'),[['dragontail','push',1],['slam','strong',2]]);
- assert.deepEqual(kitOf('wooper'),[['watergun','line',2],['slam','strong',2]]);
- assert.deepEqual(kitOf('houndour'),[['ember','line',2],['roar','push',2]]);
- assert.deepEqual(kitOf('makuhita'),[['tackle','strong',3],['whirlwind','push',2]]);
+ assert.deepEqual(kitOf('sandshrew'),[['scratch',3],['defensecurl',4]]);
+ assert.deepEqual(kitOf('growlithe'),[['ember',2],['bite',2]]);
+ assert.deepEqual(kitOf('magnemite'),[['tackle',3],['thundershock',3]]);
+ assert.deepEqual(kitOf('onix'),[['tackle',3],['harden',3]]);
+ assert.deepEqual(kitOf('dratini'),[['dragontail',1],['slam',2]]);
+ assert.deepEqual(kitOf('wooper'),[['watergun',2],['slam',2]]);
+ assert.deepEqual(kitOf('houndour'),[['ember',2],['roar',2]]);
+ assert.deepEqual(kitOf('makuhita'),[['tackle',3],['whirlwind',2]]);
 });
 test('D3 gate: at least 2 of the new species have push in the kit and at least 2 have guard (shellder failed the gate and onix replaced it)',()=>{
- assert.deepEqual(NEW8.filter(id=>by[id].kit.some(k=>k.behavior==='push')),['dratini','houndour','makuhita']);
- assert.deepEqual(NEW8.filter(id=>by[id].kit.some(k=>k.behavior==='guard')),['sandshrew','onix']);
+ assert.deepEqual(NEW8.filter(id=>by[id].kit.some(k=>['dragontail','roar','whirlwind'].includes(k.move))),['dratini','houndour','makuhita']);
+ assert.deepEqual(NEW8.filter(id=>by[id].kit.some(k=>['defensecurl','harden'].includes(k.move))),['sandshrew','onix']);
  assert.equal(by.shellder,undefined,'the fallback replaced shellder instead of changing the mapping rules');
 });
 test('D4 every new species is in some theme pool; the wild set holds the legacy five and every pool species',()=>{
@@ -72,10 +72,10 @@ test('T2 each new machine move can be learned by at least 2 roster species, with
  const learners=m=>roster.species.filter(s=>s.learnable.some(l=>l.move===m)).map(s=>s.id);
  assert.deepEqual(learners('dragontail'),['charmander','treecko','onix','dratini']);
  assert.equal(learners('helpinghand').length,13);assert.equal(learners('mudslap').length,11);assert.equal(learners('terablast').length,18);
- assert.deepEqual(learnableMove('charmander','dragontail'),{move:'dragontail',behavior:'push',pp:1});
- assert.deepEqual(learnableMove('bulbasaur','helpinghand'),{move:'helpinghand',behavior:'guard',pp:2});
- assert.deepEqual(learnableMove('rattata','mudslap'),{move:'mudslap',behavior:'line',pp:1});
- assert.deepEqual(learnableMove('geodude','terablast'),{move:'terablast',behavior:'line',pp:1});
+ assert.deepEqual(learnableMove('charmander','dragontail'),{move:'dragontail',pp:1});
+ assert.deepEqual(learnableMove('bulbasaur','helpinghand'),{move:'helpinghand',pp:2});
+ assert.deepEqual(learnableMove('rattata','mudslap'),{move:'mudslap',pp:1});
+ assert.deepEqual(learnableMove('geodude','terablast'),{move:'terablast',pp:1});
 });
 const base=()=>squadOf(initialProfile());
 test('T3 without the boss mark the shop machine is always one of the legacy three (seeds 1-200), and the machine seed 2 sells differs by mark',()=>{
@@ -172,8 +172,8 @@ function arena({boss=[4],bossHp=80,units,floor=row(9),exit=null}={}){
  Object.assign(s.units,units);s.queue=Object.keys(units).filter(i=>units[i].side==='friend');s.leader=s.queue[0];s.camp=[];
  s.prog.rng=7;return s;
 }
-const A=(x,hp=20,pp={strong:2,push:2})=>friend('A',x,1,hp,pp);
-const B=(x,hp=20,pp={guard:2})=>friend('B',x,1,hp,pp);
+const A=(x,hp=20,pp={tackle:2,roar:2})=>friend('A',x,1,hp,pp);
+const B=(x,hp=20,pp={protect:2})=>friend('B',x,1,hp,pp);
 const round=(s,action,override)=>{const r=applyCommand(s,{type:'round',action,...(override?{override}:{})});assert.equal(r.ok,true,r.error);return r.state;};
 test('B1 defeating only the boss sends no invitation and moves the recruit stream by exactly one step',()=>{
  const s=arena({bossHp:1,units:{A:A(3),B:B(2)}});
@@ -185,8 +185,8 @@ test('B1 defeating only the boss sends no invitation and moves the recruit strea
 });
 test('B2 push on the boss is refused with the Chinese reason and costs no PP',()=>{
  const s=arena({units:{A:A(3),B:B(2)}});
- const r=applyCommand(s,{type:'round',action:{type:'skill',skill:'push',target:'boss'}});
- assert.equal(r.ok,false);assert.equal(r.error,'首领不会被推退；本轮未执行');assert.deepEqual(r.state,s);assert.equal(s.units.A.pp.push,2);assert.equal(s.units.boss.pos.x,4);
+ const r=applyCommand(s,{type:'round',action:{type:'skill',skill:'roar',target:'boss'}});
+ assert.equal(r.ok,false);assert.equal(r.error,'首领不会被吹飞；本轮未执行');assert.deepEqual(r.state,s);assert.equal(s.units.A.pp.roar,2);assert.equal(s.units.boss.pos.x,4);
 });
 test('B3 the boss attacks twice for 6, never moves, and does not attack when everyone is out of reach and out of line',()=>{
  const s=arena({units:{A:A(3),B:B(0)}});
@@ -201,10 +201,10 @@ test('B3 the boss attacks twice for 6, never moves, and does not attack when eve
  // within 3 cells on the row and clear: a ray attack, twice
  const ray=arena({units:{A:A(7),B:B(9)}});const shot=round(ray,{type:'wait'});assert.equal(shot.units.A.hp,8);
 });
-test('B4 guard cancels only the first attack on its target: 6-4=2 then 6',()=>{
- const s=arena({units:{A:A(3),B:B(2)}});
- const r=round(s,{type:'wait'},{actor:'B',action:{type:'skill',skill:'guard',target:'A'}});
- assert.equal(r.units.A.hp,12,'20 - 2 - 6');assert.equal(r.units.B.hp,20);assert.equal(r.units.B.pp.guard,1);
+test('B4 protect blocks both boss hits on its user for the first enemy phase',()=>{
+ const s=arena({units:{A:A(3,20,{protect:2}),B:B(2)}});
+ const r=round(s,{type:'skill',skill:'protect',target:'A'});
+ assert.equal(r.units.A.hp,20);assert.equal(r.units.B.hp,20);assert.equal(r.units.A.pp.protect,1);assert.equal(r.units.A.protect,2);
 });
 test('B10 when the first attack defeats the adjacent target, the second attack chooses the next one (here by ray); nothing left means no attack',()=>{
  const s=arena({units:{A:A(3,6),B:B(2)}});
@@ -242,7 +242,7 @@ test('B7 leaving by the lobby without challenging: end.boss false, the run ends 
 });
 function profileOf3(){
  const p=newGameProfile('chikorita','cyndaquil').profile;
- p.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',behavior:'strong',pp:3},{move:'gust',behavior:'line',pp:3}],carry:['tackle','gust'],protected:false});
+ p.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
  p.next=4;p.team=['P1','P2','P3'];p.leader='P1';return p;
 }
 test('B8 a wipe on the boss floor: machines are lost, the unprotected partner draws once (stream 7: lost), G still pays 100, and the saved end record loads again',async()=>{
@@ -362,7 +362,7 @@ test('S3 tampering is rejected (each case first checked in its untouched form)',
  {const w=floor3();w.units.w3a.species='arcanine';rejects(w,'boss species on a wild enemy');}
  {const w=floor3();w.units.A.species='arcanine';rejects(w,'boss species on a partner');}
  {const w=floor3();w.units.boss.species='geodude';rejects(w,'boss mark on another species');}
- {const w=floor3();w.units.boss.recruit=friend('N',0,1,10,{strong:1});rejects(w,'recruitable boss');}
+ {const w=floor3();w.units.boss.recruit=friend('N',0,1,10,{tackle:1});rejects(w,'recruitable boss');}
  // H1 hardening: a boss unit in a fixed-map run, as anyone's recruit, or as an invitation
  {const plain=w=>JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:2,current:w,recent:null});
   const bossU=()=>structuredClone(floor3().units.boss);
@@ -373,7 +373,7 @@ test('S3 tampering is rejected (each case first checked in its untouched form)',
   {const w=createExpedition('s3',4,2,base(),0);w.units.w1a.recruit={...bossU(),id:'N',pos:null};rejects(w,'boss as a recruit in a 2 floor run');}
   const inv=createScenario('V8','x');assert.ok(decode(plain(inv)).current,'untouched invitation loads');
   {const w=createScenario('V8','x');w.invitations[0].unit={...bossU(),id:'N',pos:null,hp:0};assert.throws(()=>decode(plain(w)),/存档结构损坏/,'boss as an invitation');}
-  {const w=createScenario('V8','x');w.invitations[0].unit={...friend('N',0,1,10,{strong:1}),species:'arcanine'};assert.throws(()=>decode(plain(w)),/存档结构损坏/,'boss species as an invitation');}
+  {const w=createScenario('V8','x');w.invitations[0].unit={...friend('N',0,1,10,{tackle:1}),species:'arcanine'};assert.throws(()=>decode(plain(w)),/存档结构损坏/,'boss species as an invitation');}
  }
  // a boss that is not the last enemy of its floor
  {const w=floor3();w.enemies=['boss',...w.enemies.filter(i=>i!=='boss')];rejects(w,'boss not last');}
@@ -419,7 +419,7 @@ test('S4 a boss-marked run saved and reloaded at every checkpoint (start, transi
 test('boss info text names the species, HP, and the two refusals; log lines show the Chinese machine names',()=>{
  const s=arena({units:{A:A(3),B:B(2)}});
  const info=enemyInfo(s,'boss');
- assert.equal(info.name,'风速狗（首领）');assert.equal(info.hp,80);assert.equal(info.maxHp,80);assert.match(info.note,/不可招募、不会被推退/);
+ assert.equal(info.name,'风速狗（首领）');assert.equal(info.hp,80);assert.equal(info.maxHp,80);assert.match(info.note,/不可招募、不会被吹飞/);
  assert.equal(localizeLog(s,'取得招式机：dragontail，mudslap，terablast，helpinghand'),'取得招式机：龙尾，掷泥，太晶爆发，帮助');
 });
 test('boss constants',()=>{assert.deepEqual(BOSS,{id:'boss',species:'arcanine',hp:80,damage:6,range:3,attacks:2});assert.equal(PROG.bossExp,2);});

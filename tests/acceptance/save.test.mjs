@@ -36,12 +36,12 @@ async function reopen(s){
 test('S1 ordinary saved state is exact, not replayed',async()=>{
  const {b}=await reopen(scout());
  assert.equal(b.state.round,7);assert.deepEqual(coords(b.state),[pos(2),pos(3),pos(5)]);
- assert.deepEqual(hp(b.state),[20,20,8]);assert.deepEqual(pp(b.state),[{strong:2},{guard:2},{strong:2,line:2}]);
+ assert.deepEqual(hp(b.state),[20,20,8]);assert.deepEqual(pp(b.state),[{tackle:2},{protect:2},{tackle:2,quickattack:2}]);
  assert.equal(b.state.seen.includes('9,1'),true);assert.equal(b.state.units.R.hp,6);
 });
 test('S2 pending invitation survives repeated reads/reopen',async()=>{
  const s=prefix4(),{b,p}=await reopen(s);const before=p.raw();
- for(let i=0;i<3;i++){assert.equal(b.state.phase,'invitation');assert.deepEqual(b.state.anchor,pos(3));assert.equal(b.state.invitations[0].unit.hp,10);assert.deepEqual(b.state.invitations[0].unit.pp,{strong:1,push:1});}
+ for(let i=0;i<3;i++){assert.equal(b.state.phase,'invitation');assert.deepEqual(b.state.anchor,pos(3));assert.equal(b.state.invitations[0].unit.hp,10);assert.deepEqual(b.state.invitations[0].unit.pp,{tackle:1,roar:1});}
  assert.deepEqual(b.state.invitations,s.invitations);assert.equal(p.raw(),before);
 });
 test('S3 one processed invitation resumes second once',async()=>{
@@ -123,7 +123,7 @@ for(const alteration of ['json','format','rules','content','negativePP','missing
  if(alteration==='format')e.format=999;
  if(alteration==='rules')e.rules='future-rules';
  if(alteration==='content')e.content='future-content';
- if(alteration==='negativePP')e.current.units.A.pp.strong=-1;
+ if(alteration==='negativePP')e.current.units.A.pp.tackle=-1;
  if(alteration==='missingInviteUnit')delete e.current.invitations[0].unit;
  if(alteration==='pendingInviteMarkedExit')e.current.phase='exit';
  const raw=alteration==='json'?'{broken':JSON.stringify(e),bad=port(raw),a=new TrialStore(bad,'acceptance');

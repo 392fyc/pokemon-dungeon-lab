@@ -1,4 +1,6 @@
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
+const legacyRecord=name=>JSON.parse(readFileSync(new URL('./fixtures77-regression/'+name+'.json',import.meta.url),'utf8'));
 import assert from 'node:assert/strict';
 import {createExpedition,applyCommand,closeOut,recruitUnit,previewInvitation,reveal,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
 import {newGameProfile,initialProfile,squadOf,settleRun,settleSummary,payRescue,purseProblem,profileProblem,migrateProfile} from '../../src/core/base.ts';
@@ -13,8 +15,8 @@ import {serviceRoll} from '../../src/core/dungeon.ts';
  * cell 17,5); seed 103 has a shop on floor 1 (machine roar, cell 3,10) and an exchanger on floor 1 (cell 7,3); seed 5 has neither.
  */
 const memory=()=>{const m=new Map();let writes=0;return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);writes++;},map:m,writes:()=>writes};};
-const pidgey=id=>({id,species:'pidgey',learned:[{move:'tackle',behavior:'strong',pp:3},{move:'gust',behavior:'line',pp:3}],carry:['tackle','gust'],protected:false});
-const zubat=id=>({id,species:'zubat',learned:[{move:'absorb',behavior:'line',pp:2},{move:'poisonfang',behavior:'strong',pp:1}],carry:['absorb','poisonfang'],protected:false});
+const pidgey=id=>({id,species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
+const zubat=id=>({id,species:'zubat',learned:[{move:'absorb',pp:2},{move:'poisonfang',pp:1}],carry:['absorb','poisonfang'],protected:false});
 /** P1 chikorita and P2 cyndaquil are protected (new flow); P3 pidgey and P4 zubat are ordinary partners. */
 function profile4(over={}){
  const p=newGameProfile('chikorita','cyndaquil').profile;
@@ -107,7 +109,7 @@ test('R7 paying: C = 60 from the account; short accounts are refused with the mi
  const raw=port.getItem(store.key);const r=await store.baseAction({type:'rescue',inst:'P5'});assert.equal(r.ok,false);assert.equal(port.getItem(store.key),raw);
 });
 test('R8 paid partners return at the end of the wait with their own moves; unpaid ones are lost for good',()=>{
- const personal=pidgey('P5');personal.learned.push({move:'protect',behavior:'guard',pp:1});personal.carry=['tackle','protect'];
+ const personal=pidgey('P5');personal.learned.push({move:'protect',pp:1});personal.carry=['tackle','protect'];
  const p=profile4({account:0,rescue:[entry(personal,true,1),entry(zubat('P6'),false,1),entry(pidgey('P7'),false,4)],next:8});
  const after=settleRun(p,finished(p,{goal:true}));
  assert.deepEqual(roster(after),['P1','P2','P3','P4','P5']);
@@ -278,17 +280,11 @@ test('R20 old profiles are read by content: a starter P3 means the old flow; oth
  // a profile that already has the new fields is left alone
  assert.deepEqual(migrateProfile(fresh),fresh);
  // the whole record is migrated on load, never rewritten until the next save
- const raw=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:2,current:null,recent:null,profile:stripped(initialProfile())});
+ const raw=JSON.stringify(legacyRecord('base-before72'));
  assert.equal(decode(raw).profile.origin,'P3');
 });
 test('R21 a run saved mid-way by an older build loads, keeps its machine as one list item, and settles correctly',async()=>{
- const p=initialProfile();
- const w=createExpedition('old-run',7,2,squadOf(p));
- // rewrite it the way 6.5-7.1 saved it: single tm, no purse, no services, no marks on units or profile
- const old=structuredClone(w);delete old.purse;delete old.tms;delete old.dungeon.services;delete old.shop;delete old.exchange;
- for(const u of Object.values(old.units))delete u.protected;
- old.tm='protect';old.bag=1;
- const raw=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:4,current:old,recent:null,profile:stripped(p)});
+ const raw=JSON.stringify(legacyRecord('run-before72'));
  const port=memory();port.setItem('dungeon-trial.player.v1',raw);
  const store=new TrialStore(port);assert.equal(store.status,'ready',store.error);
  const cur=store.state;
@@ -302,12 +298,7 @@ test('R21 a run saved mid-way by an older build loads, keeps its machine as one 
  assert.equal(await store.returnToBase(),true);assert.deepEqual(store.profile.vault,{protect:1});
 });
 test('R22 an old finished run waiting to return gets its end-of-run processing once, from the saved state',()=>{
- const p=initialProfile();const w=createExpedition('old-end',5,2,squadOf(p));
- for(const id of w.queue){w.units[id].hp=0;w.units[id].pos=null;}
- const old=structuredClone(w);delete old.purse;delete old.tms;delete old.dungeon.services;for(const u of Object.values(old.units))delete u.protected;
- old.goal=true;old.prog.exp=2;old.bag=1;old.tm='roar';old.phase='ended';
- old.end={id:'old-end:end',outcome:'wipe',team:['A','B','C'],camp:[],goal:true,acquired:1,brought:0,tm:{move:'roar',brought:false}};
- const raw=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:6,current:old,recent:null,profile:stripped(p)});
+ const raw=JSON.stringify(legacyRecord('ended-before72'));
  const a=decode(raw),b=decode(raw);
  assert.deepEqual(a.current.end,b.current.end);
  assert.deepEqual([a.current.end.lost,a.current.end.reward,a.current.end.effective,a.current.end.reasons],[[],100,true,['goal']]);
@@ -391,14 +382,9 @@ test('R25 every new processing point round-trips, and tampering with it is refus
 });
 
 test('R26 an old, already settled recent run is history: no wipe draw is run on it, whatever the saved random state',()=>{
- const p=profile4({team:['P1','P2','P4'],leader:'P1'});
  for(const rng of [1,7,123]){
-  const w=createExpedition('old-recent',5,2,squadOf(p));
-  for(const id of w.queue){w.units[id].hp=0;w.units[id].pos=null;}
-  w.prog.rng=rng;
-  const old=structuredClone(w);delete old.purse;delete old.tms;delete old.dungeon.services;for(const u of Object.values(old.units))delete u.protected;
-  old.phase='ended';old.end={id:'old-recent:end',outcome:'wipe',team:['A','B','C'],camp:[],goal:false,acquired:0,brought:0};
-  const raw=JSON.stringify({format:1,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:7,current:null,recent:old,profile:p});
+  const legacy=legacyRecord('recent-before72');legacy.recent.prog.rng=rng;
+  const raw=JSON.stringify(legacy);
   const e=decode(raw);
   assert.deepEqual(e.recent.end.lost,[],`state ${rng}`);assert.equal(e.recent.prog.rng,rng,'the random state is untouched');
   assert.deepEqual(e.recent.end.reasons,[]);assert.equal(e.recent.end.effective,false);

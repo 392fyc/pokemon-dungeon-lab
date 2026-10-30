@@ -343,7 +343,11 @@ function candidates(s,memo){
   const adj0=adjacentEnemies(s);
   if(adj0.length){act({type:'wait'});}
   else{const foes=s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&s.seen.includes(key(u.pos)));
-   const r=foes.length?route(s,L.pos,c=>foes.some(e=>same(e.pos,c))):null;
+   // Enemies sight only 2 corridor steps, so a patrolling foe drops out of view as it walks away; without a memory the bot turned back to its
+   // objective, saw the foe again two cells later and swung between the two forever (S66 seed 88109 game 0). Remember where the nearest foe was last seen and keep walking there.
+   if(foes.length)memo.lastFoe=foes.map(e=>({pos:{...e.pos},d:dist(e.pos,L.pos)})).sort((a,b)=>a.d-b.d)[0].pos;
+   else if(memo.lastFoe&&same(memo.lastFoe,L.pos))memo.lastFoe=null;
+   const r=foes.length?route(s,L.pos,c=>foes.some(e=>same(e.pos,c))):memo.lastFoe?route(s,L.pos,c=>same(c,memo.lastFoe)):null;
    if(r){const occ=[...s.queue,...s.enemies].map(i=>s.units[i]).find(u=>aliveU(u)&&same(u.pos,r.step));
     if(!occ)act({type:'move',to:r.step});else if(occ.side==='friend')act({type:'swap',target:occ.id});else act({type:'wait'});}}
  }

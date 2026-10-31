@@ -149,7 +149,9 @@ test('P4e a new member joins at the current level; a member sent back to camp no
  assert.deepEqual([s.units.A.hp,s.units.A.maxHp],[19,20],'the member at camp stays as it was');
 });
 test('P5 damage grows with the actor level: basic 6, tackle 9, seed bomb 14 at Lv5; +floor((L-5)/4) per level, so Lv9 adds 1, Lv13 adds 2, Lv21 adds 4',()=>{
- const hits=(level,action)=>{const s=round(run({level,rng:1,enemies:[wild('w',3,40)]}),action);return 40-s.units.w.hp;};
+ // Remove only the acting leader's species so this test isolates the level bonus (ratio 1).
+ // The wild enemy keeps its species and the rest of the progression fixture stays unchanged.
+ const hits=(level,action)=>{const s=run({level,rng:1,enemies:[wild('w',3,40)]});delete s.units.C.species;delete s.units.C.entrySpecies;const result=round(s,action);return 40-result.units.w.hp;};
  assert.equal(hits(5,basic('w')),6);assert.equal(hits(8,basic('w')),6);assert.equal(hits(9,basic('w')),7);assert.equal(hits(21,basic('w')),10);
  assert.equal(hits(5,skill('tackle','w')),9);assert.equal(hits(9,skill('tackle','w')),10);assert.equal(hits(13,skill('tackle','w')),11);assert.equal(hits(21,skill('seedbomb','w')),18);
 });

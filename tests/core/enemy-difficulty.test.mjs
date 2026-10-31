@@ -3,13 +3,15 @@
    All expected values are written as literals worked out by hand. Units are Lv5 (no level bonus): tackle = 6 + ceil(6/2) = 9, basic attack = 6. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {speciesUnit,applyCommand} from '../../src/core/engine.ts';
+import {friend,applyCommand} from '../../src/core/engine.ts';
 import {generateFloor} from '../../src/core/dungeon.ts';
 import {world,row} from '../acceptance/fixtures.mjs';
 import {foeOf} from './foe-fixture.mjs';
 
 const wait={type:'wait'};
-const mate=(id,x,y,hp=40)=>{const u=speciesUnit(id,'bulbasaur',5,{x,y});u.hp=hp;u.maxHp=hp;u.learned=['tackle'];u.pp={tackle:5};u.maxPp={tackle:5};u.tactic='together';return u;};
+// These cases isolate the difficulty multiplier and its floor. A geometric friend has no
+// species, so the new species-stat ratio is 1 and the old difficulty arithmetic stays testable.
+const mate=(id,x,y,hp=40)=>{const u=friend(id,x,y,hp);u.maxHp=hp;u.learned=['tackle'];u.pp={tackle:5};u.maxPp={tackle:5};u.tactic='together';return u;};
 const W=units=>{const list=Object.values(units);const s=world(units,{floor:row(12),leader:'A',queue:list.filter(u=>u.side==='friend').map(u=>u.id),enemies:list.filter(u=>u.side==='enemy').map(u=>u.id)});s.enemyAiRng=12345;return s;};
 const round=(s,action=wait)=>{const r=applyCommand(s,{type:'round',action});assert.equal(r.ok,true,r.error);return r.state;};
 

@@ -206,7 +206,10 @@ test('普攻类别（规格3.1）：物攻高算物理，特攻高算特殊，�
   // Literal base stats from the roster: geodude atk 80 > spa 30; charmander atk 52 < spa 60; growlithe atk 70 = spa 70. Basic power at level 5 is 6.
   const cases=[['geodude','reflect',3],['geodude','lightscreen',6],['charmander','reflect',6],['charmander','lightscreen',3],['growlithe','reflect',3],['growlithe','lightscreen',6]];
   for(const [species,screen,expected] of cases){
-    const a=speciesUnit('A',species,5,{x:0,y:1}),e=enemy('E',1,1,30,'melee',0);e[screen]=5;
+    const a=speciesUnit('A',species,5,{x:0,y:1}),e=enemy('E',1,1,30,'melee',0);
+    // This assertion covers the actor's basic-attack category and the matching screen.
+    // A species-less target keeps the damage ratio at 1, leaving those mechanics isolated.
+    delete e.species;delete e.entrySpecies;e[screen]=5;
     const s=play(world({floor:row(0,3),friends:[a],enemies:[e]}),{type:'basic',target:'E'});
     assert.equal(30-s.units.E.hp,expected,`${species} basic against ${screen}`);
   }

@@ -79,7 +79,7 @@ await test('M2、S1：开发场景探看与关闭后回到空的内存状态',as
 });
 await test('M3：电光一闪两格射程、合法目标提示与T撤离',async()=>{
  const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
-  await click(p,'skill-quickattack');let label=await p.locator('#skill-quickattack').innerText();assert.match(label,/电光一闪/);assert.match(label,/同排／列1–2格/);assert.match(label,/造成8点基础伤害/);
+  await click(p,'skill-quickattack');let label=await p.locator('#skill-quickattack').innerText();assert.match(label,/电光一闪/);assert.match(label,/同排／列1–2格/);assert.match(label,/造成约8点/);
   await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,2);assert.equal(s.units.C.pp.quickattack,1);   // E has 10 HP; the 8-point Quick Attack leaves 2 and E does not reach C
   await key(p,'ArrowRight');await click(p,'skill-tackle');await cell(p,4,1);s=await state(p);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.hp,15);   // E tackled C once (5) when C stepped next to it
   await key(p,'.');await click(p,'skill-quickattack');await cell(p,5,1);s=await state(p);assert.equal(s.units.R.hp,2);assert.equal(s.units.C.pp.quickattack,0);   // R, two cells away, takes 8 of its 10 HP and steps adjacent
@@ -660,6 +660,34 @@ await test('7.1/7.8 可读性：悬停敌人看等级与招式、组合草稿显
   const order=await p.locator('#draft-order').innerText();assert.match(order,/→.*敌方/);
   assert.match(await p.locator('#draft-steps').innerText(),/默认行为/);
   assert.deepEqual(await state(p),s);assert.deepEqual(errors,[]);return {inspect:true,enemyLevel:h.level,enemyMoves:h.learned.map(moveZh),orderLine:order};
+ }finally{await context.close();}
+});
+await test('#112 能力值：悬停目标与草稿成员即时改变招式估算，预览不执行回合',async()=>{
+ const {context,page:p,errors}=await setup('K1');
+ try{
+  const {createScenario}=await import('../../src/core/scenarios.ts');
+  const fixture=createScenario('K1','stat-damage-preview');
+  fixture.units.A.species='mudkip';fixture.units.B.species='treecko';
+  fixture.units.B.learned=['tackle'];fixture.units.B.pp={tackle:3};fixture.units.B.maxPp={tackle:3};
+  fixture.units.H.species='pidgey';fixture.units.H.hp=200;fixture.units.H.maxHp=200;fixture.units.H.waitOnly=true;
+  await startMemory(p,fixture);const before=await state(p);
+  assert.match(await p.locator('#skill-tackle').innerText(),/约9点（对普通目标）/);
+  await click(p,'skill-tackle');
+  const b=await p.locator('canvas').boundingBox();
+  const xs=before.floor.map(q=>q.x),ys=before.floor.map(q=>q.y),minX=Math.min(...xs),minY=Math.min(...ys),w=Math.max(...xs)-minX+1,h=Math.max(...ys)-minY+1,c=Math.min(66,600/w,270/h);
+  const hover=async pos=>{await p.mouse.move(b.x+(340-w*c/2+(pos.x-minX+.5)*c)*b.width/680,b.y+(175-h*c/2+(pos.y-minY+.5)*c)*b.height/350);};
+  await hover(before.units.H.pos);
+  await p.waitForFunction(()=>document.querySelector('#selected-move-preview')?.textContent.includes('约16点'));
+  assert.match(await p.locator('#skill-tackle').innerText(),/约16点/,'Mudkip atk70 / Pidgey def40 => round(9*1.75)=16');
+  await p.screenshot({path:artifact+'windows-stat-damage-hover.png',fullPage:true});
+  await hover(before.units.A.pos);
+  await p.waitForFunction(()=>document.querySelector('#selected-move-preview')?.textContent.includes('对普通目标'));
+  await click(p,'arrange');await click(p,'partner-B');await click(p,'edit-partner');
+  await hover(before.units.H.pos);
+  await p.waitForFunction(()=>document.querySelector('#skill-tackle')?.textContent.includes('约10点'));
+  assert.match(await p.locator('#skill-tackle').innerText(),/约10点/,'Treecko atk45 / Pidgey def40 => round(9*1.125)=10');
+  assert.deepEqual(await state(p),before);assert.deepEqual(errors,[]);
+  return {uiFixture:true,hoverDamage:16,draftPartnerDamage:10,ordinaryTargetFallback:true,previewDoesNotAct:true};
  }finally{await context.close();}
 });
 /* UI-only fixture: this starts directly at the legal evolution prompt so the browser check

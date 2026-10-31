@@ -1,5 +1,5 @@
 /**
- * Stage 7.2 numbers (docs/04-规格/失败回归与服务点.md). Every value is a WORKING CANDIDATE, not final balance.
+ * Stage 7.2 numbers (https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E5%A4%B1%E8%B4%A5%E5%9B%9E%E5%BD%92%E4%B8%8E%E6%9C%8D%E5%8A%A1%E7%82%B9.md). Every value is a WORKING CANDIDATE, not final balance.
  * No imports: both the engine (in-run) and the base (between runs) read from here.
  */
 export const ECON={

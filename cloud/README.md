@@ -4,7 +4,7 @@
 
 `pokemon-dungeon-lab` 已于 2026 年 10 月 25 日发布，并通过一个新云端任务的复用检查。环境仅连接私有仓库 [392fyc/pokemon-dungeon-lab](https://github.com/392fyc/pokemon-dungeon-lab)，访问范围为 **Only me**，没有添加秘密值。
 
-2026-10-29用户已批准按[当前规格](../docs/90-archive/trial-spec/README.md)开展阶段3—4，采用Phaser 4.2.1＋TypeScript与Vite。本页下方的工具与检查记录均属于2026-10-25历史验证，不能代替本轮工作区、安装、构建或浏览器结果。当前任务按[start-skill.md](start-skill.md)核对实际状态。
+2026-10-29用户已批准按[阶段3—4规格（固定提交 d03ef51）](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/90-archive/trial-spec/README.md)开展阶段3—4，采用Phaser 4.2.1＋TypeScript与Vite。本页下方的工具与检查记录均属于2026-10-25历史验证，不能代替本轮工作区、安装、构建或浏览器结果。当前任务按[start-skill.md](start-skill.md)核对实际状态。
 
 ## 已保存的配置
 

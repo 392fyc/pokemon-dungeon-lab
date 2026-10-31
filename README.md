@@ -13,7 +13,7 @@ npm run dev
 
 打开命令输出的本机地址，选择固定有邀请或无邀请对照。方向键移动，点击相邻敌人普攻，先选技能再点目标；“安排伙伴”进入整轮草稿，确认提交后才执行。G和T是交互点，首次可取得并继续或请求撤离，取得后只提供请求撤离。
 
-进度只保存在同一浏览器、同一网页来源。保存失败时先重试；关闭只能恢复最后成功写入的完整状态。终局后可开始独立试验，同时保留上一份结束记录。详见[运行、检查与交付说明](docs/90-archive/试开发/trial-run.md)。
+进度只保存在同一浏览器、同一网页来源。保存失败时先重试；关闭只能恢复最后成功写入的完整状态。终局后可开始独立试验，同时保留上一份结束记录。详见[运行、检查与交付说明](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/90-archive/%E8%AF%95%E5%BC%80%E5%8F%91/trial-run.md)。
 
 ## 项目方向
 
@@ -30,6 +30,6 @@ npm run dev
 - [游戏规则](docs/01-现行规则/游戏规则.md)
 - [云端环境准备说明](cloud/README.md)
 
-研究库就是本仓库的`docs/`（Obsidian vault，用Obsidian打开主checkout的`docs/`文件夹），2026-10-29由独立仓库pokemon-game-research并入。阶段3—4使用的12份固定规格副本已归档到`docs/90-archive/trial-spec/`。原2026-10-25研究快照已随并入退役，其内容即`docs/`中的同名文件。私有运行证据在被忽略的`.artifacts/trial/`，凭据不进入仓库。
+研究库就是本仓库的`docs/`（Obsidian vault，用Obsidian打开主checkout的`docs/`文件夹），2026-10-29由独立仓库pokemon-game-research并入。阶段3—4使用的12份固定规格副本已从库中删除，需要时查固定提交d03ef51的`docs/90-archive/trial-spec/`。原2026-10-25研究快照已随并入退役，其内容即`docs/`中的同名文件。私有运行证据在被忽略的`.artifacts/trial/`，凭据不进入仓库。
 
 本仓库名称是准备阶段的工作名称，不代表游戏名称或发行决定。

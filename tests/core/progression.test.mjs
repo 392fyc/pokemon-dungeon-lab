@@ -1,6 +1,6 @@
 /* Stage 6.4 engine tests: real species team, recruit draw, shared run level, backpack items, room reveal, save checks.
    Expected values are literals worked out by hand from the roster kit table and the rules in
-   docs/04-规格/招募等级与恢复品.md; fixtures are built by hand, not by the production factories. */
+   https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E6%8B%9B%E5%8B%9F%E7%AD%89%E7%BA%A7%E4%B8%8E%E6%81%A2%E5%A4%8D%E5%93%81.md; fixtures are built by hand, not by the production factories. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createExpedition,createMain,applyCommand,reveal,rngStep,levelFor,PROG} from '../../src/core/engine.ts';

@@ -14,7 +14,7 @@ const rangedMoves=u=>damageMoves(u).filter(k=>['front2','line10'].includes(moveO
  *   base -> depart -> expedition (until ended or the round cap) -> return to base -> learn / carry / team -> depart again.
  * The bot sees only what a player sees: revealed floor cells, units, points and the backpack. It never reads hidden terrain.
  * Every accepted step is read back through a brand-new TrialStore and compared with deepEqual; every rejected command must leave state and bytes unchanged.
- * Statistics are printed, never asserted (this is a soak, not a balance test). Specification: docs/02-进度/自测记录/阶段6—完整循环自测报告.md.
+ * Statistics are printed, never asserted (this is a soak, not a balance test). Specification: https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/02-%E8%BF%9B%E5%BA%A6/%E8%87%AA%E6%B5%8B%E8%AE%B0%E5%BD%95/%E9%98%B6%E6%AE%B56%E2%80%94%E5%AE%8C%E6%95%B4%E5%BE%AA%E7%8E%AF%E8%87%AA%E6%B5%8B%E6%8A%A5%E5%91%8A.md.
  */
 export const GAMES=5,ROUND_CAP=400,COMMAND_CAP=1500;
 const key=p=>`${p.x},${p.y}`;

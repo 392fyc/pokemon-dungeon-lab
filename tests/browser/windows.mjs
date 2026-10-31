@@ -151,7 +151,7 @@ await test('营地存档：终局写入失败可重试，回营不再写入或�
  }finally{await context.close();}
 });
 await test('补充 加载失败：脚本请求失败显示原因并保留原记录',async()=>{
- const context=await browser.newContext();await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();try{await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await p.evaluate(()=>localStorage.setItem('dungeon-trial.player.v1','untouched-original'));await p.route(/\/src\/main\.ts|\/assets\/index-.*\.js/,route=>route.abort('failed'));await p.reload();await p.getByText('试验脚本加载失败',{exact:false}).waitFor();assert.equal(await p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),'untouched-original');return {failedModuleRequest:true,originalRecordPreserved:true};}finally{await context.close();}
+ const context=await browser.newContext();await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();try{await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await p.evaluate(()=>localStorage.setItem('dungeon-trial.player.v1','untouched-original'));await p.route(/\/src\/main\.ts|\/assets\/index-.*\.js/,route=>route.abort('failed'));await p.reload();await p.getByText('脚本加载失败',{exact:false}).waitFor();assert.equal(await p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),'untouched-original');return {failedModuleRequest:true,originalRecordPreserved:true};}finally{await context.close();}
 });
 await test('旧档迁移：进行中的远征丢弃，营地档案写成仅含营地的新格式',async()=>{
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});
@@ -714,7 +714,7 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
   await hoverCell(p,s.units.boss.pos.x,s.units.boss.pos.y);await p.waitForSelector('#enemy-info');
   const info=await p.locator('#enemy-info').innerText();
   const {moveZh}=await import('../../src/core/names.ts'),boss=s.units.boss;assert.match(info,/风速狗（首领）/);assert.ok(info.includes(`${boss.hp}/${boss.maxHp}`));assert.match(info,new RegExp(`等级 Lv${boss.level}`));assert.match(info,/区域首领/);
-  for(const move of boss.learned)assert.ok(info.includes(moveZh(move)),`boss info shows ${move}`);assert.doesNotMatch(info,/不可招募/);
+  for(const move of boss.learned)assert.ok(info.includes(moveZh(move)),`boss info shows ${move}`);assert.match(info,/击败后有概率发出加入邀请/);
   await p.screenshot({path:artifact+'windows-boss-1-floor.png',fullPage:true});
   await click(p,'skill-roar');await cell(p,s.units.boss.pos.x,s.units.boss.pos.y);
   await p.waitForFunction(()=>document.getElementById('message').textContent.includes('首领不能被吹飞'));

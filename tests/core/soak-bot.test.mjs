@@ -32,3 +32,14 @@ test('S74 tactical policy pays rescues: seed 5 replays identically and pays at l
  assert.ok(off.st.lostPartners>=1);assert.equal(off.st.returned,0); // unpaid: the partner keeps waiting
  assert.equal(off.games.filter(g=>g.outcome==='timeout').length,0);
 });
+
+/* Balance round 2: the 'cautious' policy (a careful, low-kill player) is accepted, finishes its games and replays identically; every game reports a kill count.
+ * Kill numbers themselves are statistics, not assertions. */
+test('S75 cautious policy: one seed is accepted, reports kills per game, has no stuck game and replays identically',async()=>{
+ const a=await playSeed(1,{policy:'cautious'}),b=await playSeed(1,{policy:'cautious'});
+ assert.equal(a.policy,'cautious');
+ assert.ok(a.games.length>=1);
+ assert.equal(a.games.filter(g=>g.outcome==='timeout').length,0,`stuck games: ${a.games.filter(g=>g.outcome==='timeout').map(g=>g.reason).join(' | ')}`);
+ a.games.forEach((g,n)=>{assert.ok(Number.isInteger(g.kills)&&g.kills>=0,`game ${n}: kills ${g.kills}`);assert.equal(a.extra[n].kills,g.kills);});
+ assert.deepEqual(a.games,b.games);assert.deepEqual(a.st,b.st);assert.deepEqual(a.extra,b.extra);
+});

@@ -42,6 +42,6 @@ test('S75 cautious policy: one seed is accepted, reports kills per game, has no 
  assert.equal(a.games.filter(g=>g.outcome==='timeout').length,0,`stuck games: ${a.games.filter(g=>g.outcome==='timeout').map(g=>g.reason).join(' | ')}`);
  a.games.forEach((g,n)=>{assert.ok(Number.isInteger(g.kills)&&g.kills>=0,`game ${n}: kills ${g.kills}`);assert.equal(a.extra[n].kills,g.kills);});
  // boss-floor records keep every statistics field (a dropped `survivors` once went unnoticed because nothing asserted it)
- a.extra.forEach((x,n)=>{if(!x.bossRun)return;for(const k of ['reached','defeated','retreat','retreatBeforeContact','survivors','bossHpLeft'])assert.ok(Object.hasOwn(x,k),`game ${n}: boss record lacks ${k}`);if(x.defeated)assert.ok(Number.isInteger(x.survivors)&&x.survivors>=1,`game ${n}: survivors ${x.survivors}`);});
+ a.extra.forEach((x,n)=>{if(!x.bossRun)return;for(const k of ['reached','defeated','retreat','retreatBeforeContact','survivors','bossHpLeft'])assert.ok(Object.hasOwn(x,k),`game ${n}: boss record lacks ${k}`);if(x.defeated)assert.ok(Number.isInteger(x.survivors)&&x.survivors>=0,`game ${n}: survivors ${x.survivors}`); // 0 is possible: the whole team can fall in the round the boss falls});
  assert.deepEqual(a.games,b.games);assert.deepEqual(a.st,b.st);assert.deepEqual(a.extra,b.extra);
 });

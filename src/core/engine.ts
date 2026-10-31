@@ -20,7 +20,7 @@ export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; p
   inst?:string; moves?:string[];
   /** 7.2: true for a founding member of the base profile (the initial two, or the three starters of an old profile); never goes missing in a wipe. */
   protected?:true;
-  /** 7.3: the regional boss. Only the generator sets it (an enemy of species arcanine with the numbers in `BOSS` in dungeon.ts; it never moves, resists blowaway and cannot be recruited). */
+  /** 7.3: the regional boss. Only the generator sets it (an enemy of the species in `BOSS` in dungeon.ts; its traits — level bonus, HP multiplier, whether it moves or can be blown away — come from `BOSS_CONFIG` in roster.ts; when it sees no opponent it always waits in place. Recruiting it yields an ordinary version without these traits). */
   boss?:true};
 // Precondition: generated expedition enemies never carry `recruit`; expedition invitations come only from the
 // round-end draw. A preset `recruit` would issue a species-less invitation that save.ts rejects.

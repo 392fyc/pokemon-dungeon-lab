@@ -87,7 +87,7 @@ function section(title,s){
 - 全灭发生的楼层（共 ${f.wipeFloor.all} 次）：第 1 层 ${f.wipeFloor[1]}，第 2 层 ${f.wipeFloor[2]}，第 3 层 ${f.wipeFloor[3]}。
 - 邀请与招募：邀请 ${i.total}，接受 ${i.accepted}（含换出 ${i.swappedOut}），拒绝 ${i.rejected}。
 - 领队主动出手次数（招式 id → 次数；basic=普攻，只统计领队，伙伴按默认行为出手不计）：${Object.entries(s.moveUse).map(([k,v])=>`${k} ${v}`).join('，')||'-'}。
-- 背包与动作使用次数：树果 ${u.berries}，PP补剂 ${u.tonics}，休整点 ${u.rests}，保护 ${u.guards}，直线 ${u.lines}，领队切换 ${u.switches}。
+- 背包与动作使用次数：树果 ${u.berries}，PP多项小补剂 ${u.tonics}，休整点 ${u.rests}，保护 ${u.guards}，直线 ${u.lines}，领队切换 ${u.switches}。
 `;
 }
 

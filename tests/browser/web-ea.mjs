@@ -8,13 +8,15 @@ if(!base)throw Error('Set TRIAL_URL.');
 const browser=await chromium.launch({...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{channel:'msedge'}),headless:true});
 const result={platform:process.platform,url:base,browser:await browser.version(),checks:[]};
 const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
-const p=await context.newPage(),errors=[],failed=[];
+const p=await context.newPage(),errors=[],failed=[],scriptRequests=[];
+p.on('request',r=>{if(r.resourceType()==='script')scriptRequests.push(r.url());});
 p.on('pageerror',e=>errors.push(e.message));
 p.on('response',r=>{if(r.status()>=400)failed.push(r.url());});
 p.on('requestfailed',r=>failed.push(r.url()));
 p.setDefaultTimeout(15000);
 const raw=()=>p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1'));
 const ready=()=>p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+const capture=name=>p.screenshot({path:'.artifacts/trial/title-load-'+name+'.png',fullPage:true});
 async function upload(text,accept=true){
  p.once('dialog',async d=>{assert.match(d.message(),/覆盖当前存档/);await (accept?d.accept():d.dismiss());});
  await p.locator('#save-file').setInputFiles({name:'save.json',mimeType:'application/json',buffer:Buffer.from(text)});
@@ -26,25 +28,35 @@ async function exported(){
 }
 try{
  await p.goto(base);await p.locator('#title-new').waitFor();
+ await capture('01-title');
  assert.equal(await p.evaluate(()=>performance.getEntriesByType('resource').some(r=>/\/phaser-.*\.js/.test(r.name))),false,'title must not load Phaser');
+ assert.equal(scriptRequests.some(url=>/\/game-data-.*\.js/.test(url)),false,'idle title must not request game data');
+ assert.ok(scriptRequests.length>0&&scriptRequests.every(url=>/\/index-.*\.js/.test(url)),'idle title requests only the small entry script');
  await p.locator('#title-settings').click();await p.locator('#anim-toggle').uncheck();
+ assert.ok(scriptRequests.some(url=>/\/game-data-.*\.js/.test(url)),'entering settings loads the existing save validator and game data');
  assert.match(await p.locator('#settings').innerText(),/设置与存档/);
  await p.locator('#settings summary').click();assert.match(await p.locator('#settings').innerText(),/方向键移动/);
  await p.locator('#settings-close').click();await p.reload();await p.locator('#title-settings').click();
  assert.equal(await p.locator('#anim-toggle').isChecked(),false);await p.locator('#settings-close').click();
- result.checks.push('标题不请求 Phaser；动画偏好重载保留，设置含按键说明');
- await p.locator('#title-new').click();await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
+ result.checks.push('静止标题只请求入口脚本、不请求 Phaser 或数据块；主动打开设置才加载存档校验；动画偏好重载保留，设置含按键说明');
+ await p.locator('#title-new').click();await p.locator('#pick-main-treecko').waitFor();await capture('02-new-game');
+ await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
  await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();await ready();
+ await capture('03-camp');
  assert.ok(await p.evaluate(()=>performance.getEntriesByType('resource').some(r=>/\/phaser-.*\.js/.test(r.name))));
  await p.locator('#depart').click();await ready();
+ await capture('04-departure');
  const before=await raw();
  await p.locator('#open-settings').click();await p.keyboard.press('ArrowRight');assert.equal(await raw(),before,'settings keys must not advance the world');
  await p.screenshot({path:'.artifacts/trial/web-ea-settings.png',fullPage:true});
  await p.locator('#settings-close').click();
  const camp=await p.evaluate(()=>window.trial.profile());await p.keyboard.press('.');await ready();
  assert.equal(await p.evaluate(()=>window.trial.getState().round),1);assert.equal(await raw(),before,'world actions do not write the camp record');
+ await capture('05-round-one');
  await p.reload();await p.locator('#title-continue').waitFor();assert.equal(await raw(),before,'refresh returns to the exact pre-departure bytes');
+ await capture('06-refresh-title');
  await p.locator('#title-continue').click();await ready();assert.equal(await p.evaluate(()=>window.trial.getState()),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),camp);
+ await capture('07-continue-camp');
  await p.locator('#depart').click();await ready();assert.equal(await raw(),before,'a new departure again leaves the camp record unchanged');
  // The first-floor entrance is an ordinary exit. This is a real one-round expedition,
  // not an effective expedition or a three-floor clear; the fixed-map full route below is separate.
@@ -69,11 +81,12 @@ try{
  await upload(backup,false);assert.match(await p.locator('#transfer-message').innerText(),/已取消/);assert.deepEqual(JSON.parse(await raw()),original);
  await upload(backup);assert.match(await p.locator('#transfer-message').innerText(),/已导入并保存/);assert.deepEqual(JSON.parse(await raw()),original);
  await p.locator('#settings-close').click();await p.reload();await p.locator('#title-continue').click();await ready();assert.deepEqual(JSON.parse(await raw()),original);
+ await capture('08-reload-continue');
  result.checks.push('玩家新游戏→基地→出发→中途刷新回基地→再次出发→入口撤离并自动结算；导出导入及重载完全一致；非法营地数据拒绝；取消导入不写入；设置内方向键不推进回合');
  // An incompatible save is injected only to exercise the recovery UI.
  const incompatible=JSON.stringify({...original,format:999},null,2);
  await p.evaluate(text=>localStorage.setItem('dungeon-trial.player.v1',text),incompatible);await p.reload();
- await p.locator('#title-settings').click();assert.match(await p.locator('#transfer-message').innerText(),/版本不兼容/);
+ await p.locator('#title-settings').click();await p.locator('#settings').waitFor({state:'visible'});assert.match(await p.locator('#transfer-message').innerText(),/版本不兼容/);
  const diagnosis=await p.evaluate(()=>window.trial.store.error);
  await upload(backup);assert.match(await p.locator('#transfer-message').innerText(),/先导出/);
  assert.equal(await p.evaluate(()=>window.trial.store.error),diagnosis);assert.equal(await raw(),incompatible);
@@ -99,6 +112,23 @@ try{
   await q.screenshot({path:'.artifacts/trial/web-ea-completed-run.png',fullPage:true});
   result.checks.push('固定主图五轮：移动、两次普攻、拒绝邀请、完成 G 并正常撤离');
  }finally{await runContext.close();}
+ // A failed lazy data request must leave the saved bytes untouched and offer a clear reload action.
+ const failureContext=await browser.newContext();
+ let releaseData;
+ const dataGate=new Promise(resolve=>{releaseData=resolve;});
+ try{
+  await failureContext.addInitScript(record=>localStorage.setItem('dungeon-trial.player.v1',record),backup);
+  const q=await failureContext.newPage();q.setDefaultTimeout(15000);
+  await q.route(/\/game-data-.*\.js/,async route=>{await dataGate;await route.abort('failed');});
+  await q.goto(base);await q.locator('#title-new').click();
+  await q.getByText('正在加载游戏，请稍候…',{exact:true}).waitFor();
+  assert.equal(await q.locator('#title-new').isDisabled(),true);
+  releaseData();
+  await q.getByText('游戏加载失败。请刷新页面后重试；浏览器中的原记录未被清除。',{exact:true}).waitFor();
+  assert.equal(await q.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),backup);
+  assert.equal(await q.locator('#entry-reload').isVisible(),true);
+  result.checks.push('按需加载期间显示中文提示并防止重复点击；数据块加载失败可刷新重试，原存档字节保持不变');
+ }finally{releaseData();await failureContext.close();}
  assert.deepEqual(errors,[]);assert.deepEqual(failed,[]);
  result.status='PASS';console.log(JSON.stringify(result,null,2));
 }catch(e){result.status='FAIL';result.error=String(e.stack??e);throw e;}

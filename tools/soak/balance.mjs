@@ -2,7 +2,7 @@
  * Stage 7.4 balance statistics. Plays the shared soak bot (tests/core/soak-bot.mjs) over many seeds with one or more policies and prints a Chinese Markdown summary;
  * the full numbers (aggregates and every game record) go to a JSON file.
  *
- *   node --experimental-strip-types tools/soak/balance.mjs [--seeds 30] [--policy naive,tactical]  (tactical-stand = tactical without the retreat rule, for measuring the boss fight itself) [--out .tmp/lane-main/balance-<time>.json]
+ *   node --experimental-strip-types tools/soak/balance.mjs [--seeds 30] [--policy naive,tactical]  (tactical-stand = tactical without the retreat rule, for measuring the boss fight itself; cautious = a careful low-kill player: attacks only adjacent enemies, skips the boss, heals early, leaves early) [--out .tmp/lane-main/balance-<time>.json]
  *   --no-pay   tactical policies do not pay rescues (default: they pay every rescue the account allows at the base; naive never pays)
  *   --rescue-compare   run `tactical` twice (pay / no pay) over the same seeds and print the comparison table and the rescue-burden tables
  *
@@ -19,7 +19,7 @@ import {BOSS_CONFIG,ENEMY_DIFFICULTY,THEME_FLOORS} from '../../src/core/dungeon.
 
 const args=process.argv.slice(2),opt=(name,def)=>{const i=args.indexOf('--'+name);return i>=0&&args[i+1]!==undefined?args[i+1]:def;};
 const SEEDS=+opt('seeds',30),POLICIES=opt('policy','naive,tactical').split(',').map(s=>s.trim()).filter(Boolean);
-for(const p of POLICIES)if(!['naive','tactical','tactical-stand'].includes(p)){console.error(`unknown policy ${p}`);process.exit(2);}
+for(const p of POLICIES)if(!['naive','tactical','tactical-stand','cautious'].includes(p)){console.error(`unknown policy ${p}`);process.exit(2);}
 // The old hp/damage/attacks sweep described a retired combat model. Do not silently report those switches as applied.
 if(args.includes('--boss')||args.includes('--sweep'))throw new Error('7.8已取消旧首领hp/damage/attacks扫描；本工具按当前boss.json共用招式模型运行');
 const NO_PAY=args.includes('--no-pay'),COMPARE=args.includes('--rescue-compare');
@@ -31,6 +31,8 @@ const pct=(n,d)=>d?`${(100*n/d).toFixed(1)}%`:'-';
 const mean=xs=>xs.length?sum(xs)/xs.length:null,fmt=(v,n=1)=>v===null||v===undefined?'-':(+v).toFixed(n);
 const median=xs=>{if(!xs.length)return null;const a=[...xs].sort((x,y)=>x-y),m=a.length>>1;return a.length%2?a[m]:(a[m-1]+a[m])/2;};
 const count=(xs,f)=>xs.filter(f).length;
+/** Kill buckets (enemies knocked out in one game, boss included). Keys are ASCII for the JSON file; `label` is what the Markdown shows. */
+const KILL_BUCKETS=[{key:'0-2',label:'0–2',min:0,max:2},{key:'3-5',label:'3–5',min:3,max:5},{key:'6-9',label:'6–9',min:6,max:9},{key:'10+',label:'10+',min:10,max:Infinity}];
 
 /** Aggregates one group of seed results (a list of playSeed results). */
 function summarize(results){
@@ -45,9 +47,12 @@ function summarize(results){
   rounds:{mean:mean(rounds),median:median(rounds),min:rounds.length?Math.min(...rounds):null,max:rounds.length?Math.max(...rounds):null},
   levels:Object.fromEntries([...new Set(games.map(g=>g.level))].sort((a,b)=>a-b).map(l=>[l,count(games,g=>g.level===l)])),
   evolutions:{total:sum(games,g=>g.evolutions??0),games:count(games,g=>(g.evolutions??0)>0)},
+  kills:(k=>({mean:mean(k),median:median(k),min:k.length?Math.min(...k):null,max:k.length?Math.max(...k):null}))(games.map(g=>g.x.kills??g.kills??0)),
+  killBuckets:Object.fromEntries(KILL_BUCKETS.map(b=>{const gs=games.filter(g=>{const k=g.x.kills??g.kills??0;return k>=b.min&&k<=b.max;});
+   return [b.key,{games:gs.length,wipes:count(gs,g=>g.outcome==='wipe'),levelMean:mean(gs.map(g=>g.level)),evolved:count(gs,g=>(g.evolutions??0)>0)}];})),
   boss:{runsWithBoss:bossGames.length,reached:count(bossGames,g=>g.x.reached),defeated:defeated.length,wipedOnBossFloor:count(bossGames,g=>g.x.bossWipe),
    bossHpLeft:(h=>({mean:mean(h),min:h.length?Math.min(...h):null,max:h.length?Math.max(...h):null,games:h.length}))(bossGames.filter(g=>g.x.reached&&g.x.bossHpLeft!==null).map(g=>g.x.bossHpLeft)),
-   lobbyExit:count(bossGames,g=>g.x.lobbyExit),retreatDecided:count(bossGames,g=>g.x.retreat),
+   lobbyExit:count(bossGames,g=>g.x.lobbyExit),retreatDecided:count(bossGames,g=>g.x.retreat),retreatBeforeContact:count(bossGames,g=>g.x.retreatBeforeContact),
    survivorsWhenDefeated:{0:count(defeated,g=>g.x.survivors===0),1:count(defeated,g=>g.x.survivors===1),2:count(defeated,g=>g.x.survivors===2),3:count(defeated,g=>g.x.survivors===3)}},
   rescue:{lostPartners:st.lostPartners,paid:st.paid,returned:st.returned,goneForGood:st.goneForGood,
    account:{mean:mean(accounts),min:accounts.length?Math.min(...accounts):null,max:accounts.length?Math.max(...accounts):null,seeds:accounts.length}},
@@ -78,7 +83,9 @@ function section(title,s){
 - 轮数：平均 ${fmt(s.rounds.mean)}，中位 ${fmt(s.rounds.median)}，最小 ${s.rounds.min}，最大 ${s.rounds.max}。
 - 结束时本局等级：${Object.keys(lv).map(Number).sort((x,y)=>x-y).map(k=>`Lv${k} ${lv[k]}`).join("，")||"-"}（局数）。
 - 局内进化：${s.evolutions.games} 局发生过进化（${pct(s.evolutions.games,s.games)}），共 ${s.evolutions.total} 次。
+- 击杀（每局打倒的敌人数，含首领）：平均 ${fmt(s.kills.mean)}，中位 ${fmt(s.kills.median)}，最小 ${s.kills.min??'-'}，最大 ${s.kills.max??'-'}；按击杀分档：${KILL_BUCKETS.map(k=>{const q=s.killBuckets[k.key];return `${k.label} ${q.games} 局（全灭 ${q.wipes}，等级均值 ${fmt(q.levelMean,2)}，进化 ${q.evolved}）`;}).join('，')}。
 - 首领（${b.runsWithBoss} 局带首领）：到达首领层 ${b.reached}，击败首领 ${b.defeated}（到达首领层的局结束时首领剩余 HP：平均 ${fmt(b.bossHpLeft.mean)}，最小 ${b.bossHpLeft.min??'-'}，最大 ${b.bossHpLeft.max??'-'}），在首领层全灭 ${b.wipedOnBossFloor}，从大厅出口撤离 ${b.lobbyExit}（其中机器人判定“打不过”而撤退 ${b.retreatDecided} 局）；击败首领时存活成员数：1 人 ${b.survivorsWhenDefeated[1]}，2 人 ${b.survivorsWhenDefeated[2]}，3 人 ${b.survivorsWhenDefeated[3]}。
+- 决定撤退时尚未接触过首领 ${b.retreatBeforeContact} 局（判定“打不过”的那一轮之前没有队员与首领相邻或进入其射线；只有 tactical 会做这个判定，其他策略恒为 0；到达首领层 ${b.reached} 局）。
 - 走失与救援：走失伙伴 ${r.lostPartners}，支付救援 ${r.paid}，成功归来 ${r.returned}，永久失去 ${r.goneForGood}；每个种子 ${GAMES} 局后账户余额：平均 ${fmt(r.account.mean)}，最小 ${r.account.min??'-'}，最大 ${r.account.max??'-'}（${r.account.seeds} 个种子）。
 - 招式机：获得 ${t.got}，带回 ${t.brought}，基地学会 ${t.learned}，局后金库未用 ${t.vaultUnused}（${ALL_TM_MOVES.map(m=>`${m} ${t.vaultByMove[m]}`).join('，')}）。
 - 进入首领层时：${f.entry.games} 局有记录；存活 3 人 ${f.entry.alive[3]}，2 人 ${f.entry.alive[2]}，1 人 ${f.entry.alive[1]}；每名成员（含已倒下者按 0）HP 比例平均 ${fmt(f.entry.memberHpRatio,2)}，仅存活者平均 ${fmt(f.entry.aliveMemberHpRatio,2)}；全队 HP 平均 ${fmt(f.entry.teamHp)}/${fmt(f.entry.teamMax)}（${fmt(f.entry.teamHpRatio,2)}，最低 ${fmt(f.entry.teamHpRatioMin,2)}）。

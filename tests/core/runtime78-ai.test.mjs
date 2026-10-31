@@ -3,7 +3,7 @@
    Every expected value is a literal worked out by hand from the move table (src/data/pmd-moves.json power) and the damage rule
    "6 + ceil(power/2) + floor(max(0, level-5)/4), minus the target's defence stage": tackle(6)=9, scratch(6)=9, ember(7)=10, absorb(1)=7,
    quickattack(4)=8, dragontail(3)=8, flamethrower(18)=15, basic attack=6. Units are Lv5, so the level bonus is 0.
-   Damage dealt BY an enemy is then multiplied by the difficulty 0.5 (round, at least 1): 9->5, 10->5, 8->4, 15->8, 11->6; damage dealt by the player is not. */
+   Damage dealt BY an enemy is then multiplied by the confirmed 0.4 difficulty (round, at least 1): 9->4, 10->4, 8->3, 15->6, 11->4; damage dealt by the player is not. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {speciesUnit,applyCommand,traceRound,currentlyVisible} from '../../src/core/engine.ts';
@@ -69,16 +69,16 @@ test('3.b a countering enemy reflects a player melee hit, of either category; a 
 test('3.b reverse: a countering player reflects an enemy melee hit',()=>{
  const s0=W({A:withoutSpecies(mate('A',3,1,{moves:{tackle:5}})),E:foeOf('E','geodude',4,1,40,{tackle:5})});
  s0.units.A.counter=3;
- const s=round(s0);                                    // A waits; E tackles A for 9 x 0.5 = 5 and takes 5 back
- assert.deepEqual([s.units.A.hp,s.units.E.hp],[35,35]);
+ const s=round(s0);                                    // A waits; E tackles A for round(9 x 0.4) = 4 and takes 4 back
+ assert.deepEqual([s.units.A.hp,s.units.E.hp],[36,36]);
 });
 
 test('3.c an enemy helps another enemy: helping hand raises that enemy\'s attack stage and its next hit; it never targets the player',()=>{
- // E1 only knows helpinghand, E2 tackles A. Both stand in the same room. E1 acts first, E2's tackle becomes (9 x 0.5 = 5) + 1 = 6.
+ // E1 only knows helpinghand, E2 tackles A. Both stand in the same room. E1 acts first, E2's tackle becomes round(9 x 0.4) = 4, then its +1 attack stage raises the hit to 5.
  const s0=W({A:withoutSpecies(mate('A',3,1,{moves:{tackle:5}})),E1:foeOf('E1','geodude',6,1,40,{helpinghand:3}),E2:foeOf('E2','geodude',4,1,40,{tackle:5})},{rooms:bigRoom});
  const s=round(s0);
  assert.equal(s.units.E2.stages.atk,1);assert.equal(s.units.A.stages.atk,0);
- assert.equal(s.units.A.hp,34,'A takes the boosted 6 (tackle 9 x 0.5 = 5, +1 attack stage)');
+ assert.equal(s.units.A.hp,35,'A takes the boosted 5 (round(tackle 9 x 0.4) = 4, +1 attack stage)');
  // the stage is capped at +2 for the choice: with E2 already at +2 there is nothing to help
  const capped=W({A:withoutSpecies(mate('A',3,1,{moves:{tackle:5}})),E1:foeOf('E1','geodude',6,1,40,{helpinghand:3}),E2:foeOf('E2','geodude',4,1,40,{tackle:5})},{rooms:bigRoom});
  capped.units.E2.stages.atk=2;
@@ -92,7 +92,7 @@ test('3.c reverse: a player helping hand raises a friend only, never an enemy in
 });
 
 test('3.d quick guard blocks an enemy front2, line10 and room move from a distance, but not a melee hit; it lasts one enemy phase',()=>{
- const attackers=[['quickattack',{x:2,y:1},4],['flamethrower',{x:6,y:1},8],['earthpower',{x:6,y:1},6]];  // damage with no guard: 8, 15, 11, times the difficulty 0.5 = 4, 8 (7.5 rounds up), 6 (5.5 rounds up)
+ const attackers=[['quickattack',{x:2,y:1},3],['flamethrower',{x:6,y:1},6],['earthpower',{x:6,y:1},4]];  // base 8, 15, 11 times 0.4 -> round(3.2), 6, round(4.4)
  for(const [move,at,damage] of attackers){
   const mk=()=>W({A:withoutSpecies(mate('A',0,1,{moves:{quickguard:3}})),E:foeOf('E','geodude',at.x,at.y,40,{[move]:5})},{rooms:bigRoom});
   const open_=round(mk());
@@ -102,7 +102,7 @@ test('3.d quick guard blocks an enemy front2, line10 and room move from a distan
   assert.equal(guarded.units.E.pp[move],5,move+': E did not spend PP on a blocked hit');
  }
  const melee=round(W({A:withoutSpecies(mate('A',0,1,{moves:{quickguard:3}})),E:foeOf('E','geodude',1,1,40,{tackle:5})},{rooms:bigRoom}),{type:'skill',skill:'quickguard',target:'A'});
- assert.equal(melee.units.A.hp,35,'an adjacent attack is not a distance attack: quick guard does not stop it');
+ assert.equal(melee.units.A.hp,36,'an adjacent tackle deals round(9 x 0.4) = 4; quick guard does not stop it');
 });
 test('3.d reverse: an enemy quick guard blocks the player\'s front2, line10 and room moves, and not a melee hit',()=>{
  for(const [move,from,kit] of [['quickattack',2,{quickattack:5}],['flamethrower',6,{flamethrower:5}],['earthpower',6,{earthpower:5}]]){
@@ -129,10 +129,10 @@ const skillOf=a=>a.type==='skill'?[a.skill,a.target]:[a.type,a.target];
 
 test('4.1 the highest estimated damage wins; ties go to more PP, then move order, then the nearer target, then queue order',()=>{
  const adj=(moves)=>W({A:L(),X:X(moves),F:dummy('F',6,1)},{rooms:bigRoom});
- assert.deepEqual(skillOf(actionOf(adj({tackle:3,ember:3}),'X')),['ember','F'],'ember 10 beats tackle 9');
- assert.deepEqual(skillOf(actionOf(adj({scratch:2,tackle:4}),'X')),['tackle','F'],'equal damage 9: tackle has more PP');
+ assert.deepEqual(skillOf(actionOf(adj({tackle:3,ember:3}),'X')),['ember','F'],'Bulbasaur versus Geodude: Ember is 13 after the capped 1.25 ratio; tackle is 7 after the 0.8 floor');
+ assert.deepEqual(skillOf(actionOf(adj({scratch:2,tackle:4}),'X')),['tackle','F'],'the 0.8 ratio gives both 7 damage; tackle has more PP');
  assert.deepEqual(skillOf(actionOf(adj({scratch:3,tackle:3}),'X')),['scratch','F'],'equal damage and PP: the first learned move');
- // nearer target: quickattack reaches F1 two cells right and F2 one cell left, both 8 damage
+ // nearer target: quickattack reaches F1 two cells right and F2 one cell left; both are Geodude and take 6 after the 0.8 ratio
  const near=W({A:mate('A',0,1,{moves:{tackle:5}}),X:X({quickattack:3},{}),F1:dummy('F1',7,1),F2:dummy('F2',4,1)},{rooms:bigRoom});
  assert.deepEqual(skillOf(actionOf(near,'X')),['quickattack','F2'],'the target at distance 1 beats the one at distance 2');
  // equal distance: queue order (enemy list order F1 before F2)
@@ -171,15 +171,15 @@ test('4.1 blow-away moves: +5 when the path ends at a wall or an opposing unit, 
  assert.deepEqual(skillOf(actionOf(foeBehind,'X')),['roar','F'],'an opposing unit behind: +5');
  const friendBehind=W({A:L(),X:X({roar:3}),F:dummy('F',6,1),Y:mate('Y',8,1)},{rooms:bigRoom});
  assert.equal(actionOf(friendBehind,'X').type,'basic','a friend behind would be hit: the combination is invalid');
- // dragon tail: damage 8, plus 5 when the push collides
- assert.deepEqual(skillOf(actionOf(W({A:L(),X:X({tackle:3,dragontail:3}),F:dummy('F',6,1)},{floor:row(7),rooms:[{x:0,y:1,w:8,h:1}]}),'X')),['dragontail','F'],'8+5=13 beats tackle 9');
+ // Against Geodude, the 0.8 ratio makes Dragon Tail 6; collision adds 5, beating tackle's 7.
+ assert.deepEqual(skillOf(actionOf(W({A:L(),X:X({tackle:3,dragontail:3}),F:dummy('F',6,1)},{floor:row(7),rooms:[{x:0,y:1,w:8,h:1}]}),'X')),['dragontail','F'],'6+5=11 beats tackle 7');
  assert.deepEqual(skillOf(actionOf(W({A:L(),X:X({tackle:3,dragontail:3}),F:dummy('F',6,1),Y:mate('Y',7,1)},{floor:row(8),rooms:[{x:0,y:1,w:9,h:1}]}),'X')),['tackle','F'],'a friend behind makes dragon tail invalid');
 });
-test('4.1 an unmovable boss cannot be targeted by roar, and dragon tail counts only its damage (8 < tackle 9)',()=>{
+test('4.1 an unmovable boss cannot be targeted by roar, and dragon tail counts only its damage (6 < tackle 7)',()=>{
  const mk=moves=>W({A:L(),X:X(moves),F:bossOf('F',6,1,60)},{floor:row(7),rooms:[{x:0,y:1,w:8,h:1}]});
  assert.equal(actionOf(mk({roar:3}),'X').type,'basic');
  assert.deepEqual(skillOf(actionOf(mk({tackle:3,dragontail:3}),'X')),['tackle','F']);
- assert.deepEqual(skillOf(actionOf(mk({dragontail:3}),'X')),['dragontail','F'],'alone it still hits for its 8 damage');
+ assert.deepEqual(skillOf(actionOf(mk({dragontail:3}),'X')),['dragontail','F'],'alone it still hits for its ratio-scaled 6 damage');
 });
 
 test('4.3 with no damage to gain, support moves come before the basic attack, in the listed order',()=>{
@@ -217,12 +217,12 @@ test('4.* the same algorithm drives an enemy: highest gain, never an ally, never
  // E1 holds flamethrower with its friend E2 in front of A on the line: the shot is invalid, so E1 walks instead of firing
  const blocked=W({A:withoutSpecies(mate('A',0,1)),E1:foeOf('E1','geodude',9,1,40,{flamethrower:3}),E2:dummy('E2',5,1)},{rooms:bigRoom});
  const s=round(blocked);assert.equal(s.units.E1.pp.flamethrower,3);assert.equal(s.units.A.hp,40);
- // with a clear line E1 fires: 15 x 0.5 = 8 damage
+ // with a clear line E1 fires: round(15 x 0.4) = 6 damage
  const clear=W({A:withoutSpecies(mate('A',0,1)),E1:foeOf('E1','geodude',9,1,40,{flamethrower:3})},{rooms:bigRoom});
- assert.equal(round(clear).units.A.hp,32);
- // gain ordering: ember 10 over quickattack 8 (after the difficulty multiplier 5 over 4; tackle 9 -> 5 would tie with ember, so it is not used here)
+ assert.equal(round(clear).units.A.hp,34);
+ // Gain ordering: Ember 10 -> 4 and quickattack 8 -> 3; tackle 9 also rounds to 4, but is not in this kit.
  const pick=W({A:withoutSpecies(mate('A',3,1)),E:foeOf('E','geodude',4,1,40,{quickattack:3,ember:3})},{rooms:bigRoom});
- const t=round(pick);assert.equal(t.units.A.hp,35);assert.equal(t.units.E.pp.ember,2);
+ const t=round(pick);assert.equal(t.units.A.hp,36);assert.equal(t.units.E.pp.ember,2);
 });
 
 
@@ -346,7 +346,7 @@ test('12.2 being attacked wakes an enemy, and it does not act in that round; nex
  const mk=()=>{const s=W({A:withoutSpecies(mate('A',3,1,{moves:{tackle:5,roar:5}})),E:foeOf('E','geodude',4,1,40,{tackle:5})},{rooms:bigRoom});s.units.E.asleep=true;return s;};
  let s=round(mk(),{type:'basic',target:'E'});
  assert.deepEqual([s.units.E.asleep,s.units.E.hp,s.units.A.hp],[false,34,40],'hit for 6, awake, and no reply this round');
- s=round(s);assert.equal(s.units.A.hp,35,'the next round E tackles: 9 x 0.5 = 5');
+ s=round(s);assert.equal(s.units.A.hp,36,'the next round E tackles: round(9 x 0.4) = 4');
  const pushed=round(mk(),{type:'skill',skill:'roar',target:'E'});
  assert.equal(pushed.units.E.asleep,false,'being blown away also wakes it');assert.equal(pushed.units.A.hp,40);
 });

@@ -544,7 +544,7 @@ function basicCategory(u:Unit):'Physical'|'Special' {
   const b=u.species?speciesOf(u.species)?.baseStats:undefined;
   return b&&b.spa>b.atk?'Special':'Physical';
 }
-export const STAT_DAMAGE_RATIO={min:0.6,max:2.0} as const;
+export const STAT_DAMAGE_RATIO=Object.freeze({min:0.8,max:1.25} as const);
 /** Shared, side-effect-free damage calculation. An absent target represents an ordinary ratio-1 target. */
 function damageAmount(source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>):number {
   const attackStats=source.species?speciesOf(source.species)?.baseStats:undefined;

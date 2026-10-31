@@ -47,7 +47,7 @@ test('P1 a new expedition starts three roster starters at run level 5 with roste
  assert.equal(s.enemies.length,3);
  assert.ok(s.enemies.every(id=>pool.has(s.units[id].species)),'wild enemies come from the floor-1 theme pool');
  assert.ok(s.enemies.every(id=>s.units[id].level===5&&s.units[id].tactic==='gofoes'));
- assert.ok(s.enemies.every(id=>{const u=s.units[id];return u.maxHp===Math.round(roster.species.find(x=>x.id===u.species).maxHp*0.5)&&u.hp===u.maxHp;}),'Lv5 enemy HP is the roster HP times the difficulty multiplier 0.5');
+ assert.ok(s.enemies.every(id=>{const u=s.units[id];return u.maxHp===Math.round(roster.species.find(x=>x.id===u.species).maxHp*0.4)&&u.hp===u.maxHp;}),'Lv5 enemy HP is the roster HP times the user-confirmed difficulty multiplier 0.4');
 });
 
 /* ---------- the recoverable random stream ---------- */

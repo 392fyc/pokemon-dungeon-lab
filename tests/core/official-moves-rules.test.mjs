@@ -96,7 +96,7 @@ test('能力阶段有 ±3 上下限；帮助只提升房间内队友，走廊退
 ));
 
 test('守住覆盖施用当回合的敌方阶段并持续三次；连续使用拒绝且不扣 PP',()=>{
-  // Enemies attack only with roster moves: geodude tackle (front, 6+ceil(6/2)=9, 5 after the enemy difficulty multiplier 0.5) and a quickattack user two cells away (front2, 6+ceil(4/2)=8, 4 after difficulty).
+  // Enemies attack only with roster moves: against this species-less fixture, geodude tackle 9 rounds to 4 at 0.4; pidgey quickattack 8 rounds to 3.
   const a=friend('A',2,1,20,{protect:5}),e=enemy('E',3,1,30,'melee',4);
   const shooter=foeOf('R','pidgey',2,3,30,{quickattack:3});
   let s=world({floor:rect(0,5,0,5),friends:[a],enemies:[e,shooter]});
@@ -104,7 +104,7 @@ test('守住覆盖施用当回合的敌方阶段并持续三次；连续使用�
   assert.deepEqual(skillTargets(s,'A','protect'),[]);assert.match(reject(s,'protect','A'),/不能连续使用/);assert.equal(s.units.A.pp.protect,4);
   s=play(s,{type:'wait'});assert.equal(s.units.A.hp,20);assert.equal(s.units.A.protect,1);
   s=play(s,{type:'wait'});assert.equal(s.units.A.hp,20);assert.equal(s.units.A.protect,0);
-  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,11); // 20 - 5 (E tackle 9 x 0.5) - 4 (R quickattack 8 x 0.5)
+  s=play(s,{type:'wait'});assert.equal(s.units.A.hp,13); // 20 - round(9 x 0.4) - round(8 x 0.4) = 20 - 4 - 3
 });
 
 test('守住后等待一回合即可再次使用',()=>{
@@ -116,10 +116,10 @@ test('守住后等待一回合即可再次使用',()=>{
 });
 
 test('反击对每次相邻敌方命中各反射同额伤害；被守住挡掉或来自远处时不触发',()=>{
-  // Every enemy hit is a geodude tackle for 9 (6+ceil(6/2)), 5 after the enemy difficulty multiplier 0.5; the reflected amount equals the HP actually lost.
+  // Every enemy hit is a geodude tackle for 9 (6+ceil(6/2)), rounded to 4 at the enemy difficulty multiplier 0.4; the reflected amount equals the HP actually lost.
   let a=friend('A',1,1,20,{pursuit:2}),e1=enemy('E1',2,1,1,'melee',2),e2=enemy('E2',1,2,20,'melee',3);
   let s=world({floor:rect(0,4,0,4),friends:[a],enemies:[e1,e2]});
-  s=use(s,'pursuit','A');assert.equal(s.units.E1.hp,0);assert.equal(s.units.E2.hp,15);assert.equal(s.units.A.hp,10);assert.equal(s.units.A.counter,2);
+  s=use(s,'pursuit','A');assert.equal(s.units.E1.hp,0);assert.equal(s.units.E2.hp,16);assert.equal(s.units.A.hp,12);assert.equal(s.units.A.counter,2);
 
   a=friend('A',1,1,20);a.counter=1;a.protect=1;e1=enemy('E',2,1,10,'melee',5);
   s=world({floor:rect(0,3,0,3),friends:[a],enemies:[e1]});s=play(s,{type:'wait'});
@@ -127,7 +127,7 @@ test('反击对每次相邻敌方命中各反射同额伤害；被守住挡掉�
 
   a=friend('A',1,1,20);a.counter=1;const r=foeOf('R','pidgey',1,3,10,{quickattack:2});
   s=world({floor:rect(0,4,0,4),friends:[a],enemies:[r]});s=play(s,{type:'wait'});
-  assert.equal(s.units.A.hp,16);assert.equal(s.units.R.hp,10); // 两格外的 quickattack 伤 8（难度后 4），不触发反击
+  assert.equal(s.units.A.hp,17);assert.equal(s.units.R.hp,10); // 两格外的 quickattack 伤 round(8 x 0.4)=3，不触发反击
 
   a=friend('A',1,1,20);a.counter=1;e1=enemy('E',2,1,10,'melee',0);
   s=world({floor:rect(0,3,0,3),friends:[a],enemies:[e1]});s=play(s,{type:'wait'});
@@ -135,7 +135,7 @@ test('反击对每次相邻敌方命中各反射同额伤害；被守住挡掉�
 
   a=friend('A',2,1,20);a.counter=3;const boss=bossOf('Boss',1,1,20,{bite:2});
   s=world({floor:rect(0,4,0,4),friends:[a],enemies:[boss]});s=play(s,{type:'wait'});
-  assert.equal(s.units.A.hp,15);assert.equal(s.units.Boss.hp,15);assert.equal(s.units.A.counter,2); // 咬 6+ceil(7/2)=10，难度后 5，反射 5
+  assert.equal(s.units.A.hp,16);assert.equal(s.units.Boss.hp,16);assert.equal(s.units.A.counter,2); // 咬基础10，难度后4，反射实际4
 });
 
 test('吹飞遇墙或单位各造成 5 点撞击伤害；撞击不受守住影响也不触发反击',()=>withMove('testBlow',{range:'front',target:'teammates',power:null,effects:['blowaway']},()=>{

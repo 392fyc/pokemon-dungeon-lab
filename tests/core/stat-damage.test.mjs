@@ -23,12 +23,12 @@ function strike(s,move){
  return result.state;
 }
 for(const [attacker,defender,move,level,friendDamage,enemyDamage] of [
- ['mudkip','pidgey','tackle',5,16,8], // round(9*70/40)=16, then enemy round(16*.5)=8
- ['pidgey','mudkip','tackle',5,8,4], // round(9*45/50)=8
- ['charmander','squirtle','ember',5,9,5], // round(10*60/64)=9, then round(9*.5)=5
- ['arcanine','mudkip','bite',22,28,14], // (10+4)*clamp(110/50)=28
- ['mudkip','arcanine','tackle',5,8,4], // round(9*70/80)=8
- ['treecko','arcanine','tackle',5,5,3], // round(9*.6)=5
+ ['mudkip','pidgey','tackle',5,11,4], // round(9*1.25)=11, then enemy round(11*.4)=4
+ ['pidgey','mudkip','tackle',5,8,3], // round(9*45/50)=8, then round(8*.4)=3
+ ['charmander','squirtle','ember',5,9,4], // round(10*60/64)=9, then round(9*.4)=4
+ ['arcanine','mudkip','bite',22,18,7], // round((10+4)*1.25)=18, then round(18*.4)=7
+ ['mudkip','arcanine','tackle',5,8,3], // round(9*70/80)=8
+ ['treecko','arcanine','tackle',5,7,3], // round(9*.8)=7
 ])for(const [side,expected] of [['friend',friendDamage],['enemy',enemyDamage]]){
  test(`#112 ${attacker} -> ${defender}, ${move}, Lv${level}, ${side}: ${expected}`,()=>{
   const s=duel(attacker,defender,{side,level,move});
@@ -43,10 +43,10 @@ for(const [attacker,defender,move,level,friendDamage,enemyDamage] of [
 
 test('#112 普攻采用较高攻击对应的防御，相等时物理',()=>{
  for(const [attacker,defender,expected] of [
-  ['mudkip','pidgey',11], // round(6*70/40)=11, Physical
-  ['bulbasaur','geodude',12], // spa65 > atk49; 65/spd30 reaches the upper clamp
+  ['mudkip','pidgey',8], // round(6*1.25)=8, Physical upper clamp
+  ['bulbasaur','geodude',8], // spa65 > atk49; 65/spd30 reaches the upper clamp
   ['pikachu','squirtle',5], // atk55 > spa50; round(6*55/65)=5
-  ['pidgey','squirtle',4], // atk45 > spa35; round(6*45/65)=4
+  ['pidgey','squirtle',5], // atk45 > spa35; 45/65 reaches lower clamp; round(6*.8)=5
   ['mew','geodude',6], // atk=spa=100; def100 (not spd30)
  ]){
   const s=duel(attacker,defender,{move:null});
@@ -67,10 +67,10 @@ test('#112 任一方无物种时比例为1，缺目标用于普通目标说明',
 test('#112 比例取整后乘难度，再处理阶段、屏障与反击；AI估算与实际一致',()=>{
  const s=duel('mudkip','pidgey',{side:'enemy'});
  s.units.A.stages.atk=2;s.units.D.stages.def=1;s.units.D.reflect=3;s.units.D.counter=3;
- // round(9*1.75)=16; round(16*.5)=8; +2-1=9; floor(9/2)=4.
- assert.equal(estimateAttackDamage(s,'A','D','tackle'),4);
+ // round(9*1.25)=11; round(11*.4)=4; +2-1=5; floor(5/2)=2.
+ assert.equal(estimateAttackDamage(s,'A','D','tackle'),2);
  const after=strike(s,'tackle');
- assert.equal(after.units.D.hp,196);assert.equal(after.units.A.hp,196,'counter reflects actual lost HP');
+ assert.equal(after.units.D.hp,198);assert.equal(after.units.A.hp,198,'counter reflects actual lost HP');
  const guarded=structuredClone(s);guarded.units.D.protect=3;
  assert.equal(estimateAttackDamage(guarded,'A','D','tackle'),0);
  assert.equal(strike(guarded,'tackle').units.D.hp,200);
@@ -79,10 +79,10 @@ test('#112 比例取整后乘难度，再处理阶段、屏障与反击；AI估�
 test('#112 自动选招比较物理和特殊的实际伤害',()=>{
  const s=duel('bulbasaur','geodude',{side:'enemy'});
  s.units.A.learned=['tackle','absorb'];s.units.A.pp={tackle:5,absorb:5};s.units.A.maxPp={...s.units.A.pp};
- // Physical: round(9*.6)=5 -> 3; Special: round(7*2)=14 -> 7.
+ // Physical: round(9*.8)=7 -> 3; Special: round(7*1.25)=9 -> 4.
  assert.equal(estimateAttackDamage(s,'A','D','tackle'),3);
- assert.equal(estimateAttackDamage(s,'A','D','absorb'),7);
+ assert.equal(estimateAttackDamage(s,'A','D','absorb'),4);
  const after=strike(s);
  assert.equal(after.units.A.lastMove,'absorb');
- assert.equal(after.units.D.hp,193);
+ assert.equal(after.units.D.hp,196);
 });

@@ -127,7 +127,7 @@ test('finishing an expedition settles once; a failed terminal write retries the 
 test('a real one-member expedition wipe is settled and saved at the terminal transition',async()=>{
  const one=profile();one.team=['P1'];one.leader='P1';
  const port=storage(),{store}=await makeSavedBase(port,one),beforeWrites=port.writes();
- assert.equal(await store.depart('terminal-wipe',1,0) /* seed 1: seed 3 no longer wipes a lone member once enemies deal half damage (searched: seeds 1-60) */,true);
+ assert.equal(await store.depart('terminal-wipe',2,0) /* seed 1 no longer wipes at the confirmed 0.4 multiplier; seed 2 does in 17 accepted rounds */,true);
  assert.equal(port.writes(),beforeWrites,'departing did not write');
  const ended=await finishByWipe(store);
  assert.equal(ended.end.outcome,'wipe');assert.equal(store.status,'ready');

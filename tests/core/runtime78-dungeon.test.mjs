@@ -41,10 +41,10 @@ test('7.8 independent streams, three enemies per floor, level bands and boss HP 
   for(const e of ordinary){
    const sp=SPECIES[e.species];assert.ok(eligibleSpecies(level).includes(e.species));
    assert.ok(e.level>=Math.max(bands[level-1][0],sp.evoLevel)&&e.level<=bands[level-1][1]);
-   assert.equal(e.hp,Math.round((sp.maxHp+Math.max(0,e.level-5))*0.5)); // difficulty multiplier 0.5
+   assert.equal(e.hp,Math.round((sp.maxHp+Math.max(0,e.level-5))*0.4)); // user-confirmed normal enemy HP multiplier
    assert.equal(typeof e.asleep,'boolean');
   }
   assert.equal(g.enemyAiRng,(streamSeed(seed,level,'enemy-ai')+3*0x6D2B79F5)>>>0);
-  if(level===3){const boss=g.enemies.find(e=>e.boss);assert.equal(boss.level,22);assert.equal(boss.hp,71);assert.equal(boss.asleep,false);assert.equal(BOSS_CONFIG.arcanine.canMove,false);}
+  if(level===3){const boss=g.enemies.find(e=>e.boss);assert.equal(boss.level,22);assert.equal(boss.hp,56);assert.equal(boss.asleep,false);assert.equal(BOSS_CONFIG.arcanine.canMove,false);}
  }
 });

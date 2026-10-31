@@ -211,10 +211,10 @@ test('B5 after the boss falls the last machine is the boss machine (held), exper
  const s=arena({bossHp:1,units:{A:A(3),B:B(2)}});
  const r=round(s,{type:'basic',target:'boss'});
  assert.deepEqual(r.tms,[{move:'protect',source:'boss',fate:'held'}],'stream value 0.0117 x 7 = index 0');
- assert.equal(r.prog.exp,22);assert.equal(r.prog.level,8);assert.equal(r.units.A.maxHp,23);
+ assert.equal(r.prog.exp,44);assert.equal(r.prog.level,10);assert.equal(r.units.A.maxHp,25);   // boss Lv22 x expMultiplier 2 = 44 exp; Lv10 needs 35, Lv11 needs 45; A max HP 20+(10-5)
  assert.ok(r.log.some(l=>l.includes('区域首领被讨伐')));
  // a second round does not give a second machine or more experience
- const again=round(resolveInvites(r),{type:'wait'});assert.equal(again.tms.length,1);assert.equal(again.prog.exp,22);assert.equal(again.prog.rng,r.prog.rng);
+ const again=round(resolveInvites(r),{type:'wait'});assert.equal(again.tms.length,1);assert.equal(again.prog.exp,44);assert.equal(again.prog.rng,r.prog.rng);
 });
 test('B6 after the boss fell, a normal exit brings the boss machine home: end.boss true, fate brought, reason includes 带回招式机',()=>{
  const s=arena({bossHp:1,units:{A:A(3),B:B(2)},exit:pos(1)});
@@ -389,7 +389,7 @@ test('S4 a boss-marked run moves through transit, battle and exit in memory with
   w.queue.forEach((id,i)=>{w.units[id].pos=spots[i];});w.leader=w.queue[0];w.seen=w.floor.map(key);});
  check('beside the boss');
  await send({type:'round',action:{type:'basic',target:'boss'}},'boss falls');
- assert.equal(store.state.units.boss.hp,0);assert.equal(store.state.tms.at(-1).source,'boss');assert.equal(store.state.tms.at(-1).fate,'held');assert.equal(store.state.prog.exp,22);
+ assert.equal(store.state.units.boss.hp,0);assert.equal(store.state.tms.at(-1).source,'boss');assert.equal(store.state.tms.at(-1).fate,'held');assert.equal(store.state.prog.exp,44);
  while(store.state.phase==='invitation')await send({type:'invite',choice:'reject'},'decline boss recruitment');
  // back to the lobby: put the team on the exit cell and its neighbour, then leave
  edit(w=>{const exit=w.points.find(p=>p.kind==='exit').pos,frees=[[0,1],[1,0],[-1,0],[0,-1]].map(([dx,dy])=>({x:exit.x+dx,y:exit.y+dy})).filter(c=>w.floor.some(f=>f.x===c.x&&f.y===c.y)&&!w.enemies.some(i=>w.units[i].hp>0&&w.units[i].pos.x===c.x&&w.units[i].pos.y===c.y));

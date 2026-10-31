@@ -51,7 +51,7 @@ export type Rect={x:number;y:number;w:number;h:number};
 export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:Record<Item,number>};
 /** Cumulative experience thresholds: reaching Lv L costs the sum of levels 5 through L-1. */
 const expThreshold=(level:number)=>level<=INITIAL_LEVEL?0:level*(level-1)/2-((INITIAL_LEVEL-1)*INITIAL_LEVEL)/2;
-export const PROG={recruitChance:0.3,thresholds:Array.from({length:101},(_,level)=>expThreshold(level)),initialLevel:INITIAL_LEVEL,maxLevel:100,hpPerLevel:1,damagePerLevel:1,damageEveryLevels:4,goalExp:0,bossExp:0,berryHeal:8,tonicPp:1,restPp:2};
+export const PROG={recruitChance:0.3,thresholds:Array.from({length:101},(_,level)=>expThreshold(level)),initialLevel:INITIAL_LEVEL,maxLevel:100,hpPerLevel:1,damagePerLevel:1,damageEveryLevels:4,expMultiplier:2,goalExp:0,bossExp:0,berryHeal:8,tonicPp:1,restPp:2};
 export const levelFor=(exp:number)=>Math.max(INITIAL_LEVEL,PROG.thresholds.reduce((best,t,level)=>t<=exp?level:best,INITIAL_LEVEL));
 export const levelDamageBonus=(level:number)=>Math.floor(Math.max(0,level-INITIAL_LEVEL)/PROG.damageEveryLevels);
 export type Point={pos:Pos;kind:PointKind;used:boolean};
@@ -538,7 +538,7 @@ function hit(s:World,id:string,n:number):void {
   if(u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
   if(u.hp===0){u.pos=null;note(s,`${id}倒下退图`);if(u.side==='enemy'&&s.prog){
       if(!u.recruit&&u.species)s.prog.kills.push(u.species);
-      s.prog.exp+=u.level??INITIAL_LEVEL;
+      s.prog.exp+=Math.round((u.level??INITIAL_LEVEL)*PROG.expMultiplier);
     }
     if(u.side==='enemy'&&u.recruit){
     const unit=clone(u.recruit);unit.id=`${u.recruit.id}`; // fixture IDs are stable; each event initializes once

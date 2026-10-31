@@ -1,6 +1,6 @@
 /* Stage 7.8 level and evolution model (docs/玩法研究/敌我对等招式与强化模型规格.md section 13): evolution-level samples,
    round-end evolution (current HP kept, one stage per settlement, Eevee branch choice), recovery after the run, and recruits settled by the species they joined as.
-   Experience facts used (worked by hand): a kill is worth the enemy's level; Lv L -> L+1 costs L, so the cumulative exp to reach Lv N is N(N-1)/2 - 10
+   Experience facts used (worked by hand): a kill is worth the enemy's level x PROG.expMultiplier (2); Lv L -> L+1 costs L, so the cumulative exp to reach Lv N is N(N-1)/2 - 10
    (Lv6 5, Lv16 110, Lv20 180, Lv21 200, Lv36 620). Max HP = roster HP + max(0, Lv-5). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,8 +38,8 @@ const kill=(s)=>{const r=applyCommand(s,{type:'round',action:{type:'basic',targe
 const idle=(s)=>{const r=applyCommand(s,{type:'round',action:{type:'wait'}});assert.equal(r.ok,true,r.error);return r.state;};
 
 test('13.4 reaching an evolution level evolves at the round end: new max HP by the new species, current HP unchanged',()=>{
- // all three are Lv15 with 95 exp; one Lv15 kill is 110 exp = Lv16, the level of ivysaur, charmeleon and wartortle
- const s0=run({level:15,exp:95,foeLevel:15,hp:{C:12}});
+ // all three are Lv15 with 95 exp; one Lv8 kill is 16 exp, 95+16=111 exp = Lv16, the level of ivysaur, charmeleon and wartortle
+ const s0=run({level:15,exp:95,foeLevel:8,hp:{C:12}});
  assert.deepEqual(['A','B','C'].map(i=>s0.units[i].species),['charmander','squirtle','bulbasaur']);
  assert.deepEqual(['A','B','C'].map(i=>s0.units[i].maxHp),[19+10,20+10,21+10]);
  const s=kill(s0);
@@ -50,13 +50,13 @@ test('13.4 reaching an evolution level evolves at the round end: new max HP by t
  assert.deepEqual(['A','B','C'].map(i=>s.units[i].entrySpecies),['charmander','squirtle','bulbasaur'],'the form it joined the run as is remembered');
  assert.deepEqual(s.units.C.learned,s0.units.C.learned,'no new moves are learned by evolving');
  // below the level nothing evolves: Lv15 stays
- const early=kill(run({level:14,exp:81,foeLevel:14}));          // 81+14=95 exp = Lv15
+ const early=kill(run({level:14,exp:81,foeLevel:7}));          // a Lv7 kill is 14 exp: 81+14=95 exp = Lv15
  assert.equal(early.prog.level,15);assert.equal(early.units.A.species,'charmander');
 });
 
 test('13.4 evolution is at most one stage per round-end settlement',()=>{
- // charmander Lv35 (585 exp) kills a Lv36 enemy: 621 exp = Lv36, which allows both charmeleon (16) and charizard (36), but only one stage now
- const s0=run({species:['charmander','squirtle','bulbasaur'],level:35,exp:585,foeLevel:36});
+ // charmander Lv35 (585 exp) kills a Lv18 enemy (36 exp): 585+36=621 exp = Lv36, which allows both charmeleon (16) and charizard (36), but only one stage now
+ const s0=run({species:['charmander','squirtle','bulbasaur'],level:35,exp:585,foeLevel:18});
  const s1=kill(s0);
  assert.equal(s1.prog.level,36);
  assert.equal(s1.units.A.species,'charmeleon','first stage this round');
@@ -68,7 +68,7 @@ test('13.4 evolution is at most one stage per round-end settlement',()=>{
 });
 
 test('13.4 Eevee: the choice is asked after the level-up and before recruiting; closing it defers to the next level-up; the choice must be one of the options',()=>{
- // Eevee Lv19 with 161 exp kills a Lv19 enemy (rng state 7 draws 0.0117: an invitation follows): 180 exp = Lv20
+ // Eevee Lv19 with 161 exp kills a Lv19 enemy, worth 38 exp (rng state 7 draws 0.0117: an invitation follows): 199 exp = Lv20 (Lv21 needs 200)
  let s=kill(run({species:['eevee','squirtle','bulbasaur'],level:19,exp:161,foeLevel:19,rng:7,hp:{A:10}}));
  assert.equal(s.prog.level,20);assert.equal(s.phase,'evolution','the choice comes first');
  assert.deepEqual(s.pendingEvolutions,[{actor:'A',choices:['vaporeon','jolteon','flareon']}]);
@@ -81,8 +81,8 @@ test('13.4 Eevee: the choice is asked after the level-up and before recruiting; 
  s=doCmd(s,{type:'invite',choice:'reject'});
  // another round at the same level does not ask again
  assert.equal(idle(s).phase,'playing');
- // the next level-up (Lv21 needs 200 exp: a Lv20 kill from 180) asks again; choose jolteon
- s.units.w=foeOf('w','rattata',3,1,6);s.units.w.level=20;s.units.w.waitOnly=true;s.enemies=['w'];s.prog.rng=1;
+ // the next level-up (Lv21 needs 200 exp: a Lv1 kill is 2 exp, from 199) asks again; choose jolteon
+ s.units.w=foeOf('w','rattata',3,1,6);s.units.w.level=1;s.units.w.waitOnly=true;s.enemies=['w'];s.prog.rng=1;
  s=kill(s);
  assert.equal(s.prog.level,21);assert.equal(s.phase,'evolution');
  s=doCmd(s,{type:'evolve',species:'jolteon'});
@@ -110,7 +110,7 @@ test('13.4 a recruit already above its evolution level evolves one stage at the 
 
 test('13.4 after the run every member is restored to the form it entered with; recruits are settled by the species they joined as',()=>{
  // A, B, C evolve in the run; N1 (pikachu) evolves to raichu; N2 was recruited as raichu. Settlement keeps the entry forms.
- let s=kill(run({level:15,exp:95,foeLevel:15}));
+ let s=kill(run({level:15,exp:95,foeLevel:8}));
  assert.deepEqual(['A','B','C'].map(i=>s.units[i].species),['charmeleon','wartortle','ivysaur']);
  const n1=recruitUnit('N1','pikachu',16),n2=recruitUnit('N2','raichu',16);
  n1.species='raichu';          // it evolved during the run (the run-time species changes, the entry species does not)

@@ -63,7 +63,7 @@ export function enemyInfo(s:World,id:string):EnemyInfo|null {
   const u=s.units[id];
   if(!u||u.side!=='enemy'||u.hp<=0||!u.pos||!s.seen.includes(key(u.pos)))return null;
   const sp=u.species?SPECIES[u.species]:undefined;
-  const tactic=tacticFor(u),note=u.boss?'区域首领；招式与 PP 来自同物种名单数据。':u.species?'击败后有概率发出加入邀请。':'';
+  const tactic=tacticFor(u),note=u.boss?'区域首领；击败后有概率发出加入邀请，入队的是普通形态。':u.species?'击败后有概率发出加入邀请。':'';
   return {id,name:u.boss?`${unitName(u)}（首领）`:unitLabel(u,id),types:sp?(sp.types??[]).map(typeZh).join('／'):'',hp:u.hp,maxHp:u.maxHp,
     level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:moveRows(u),note};
 }

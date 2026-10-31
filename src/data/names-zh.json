@@ -299,7 +299,7 @@
     "doublekick": "二连踢",
     "doubleteam": "影子分身",
     "dracometeor": "流星群",
-    "dragonbreath": "龙之吐息",
+    "dragonbreath": "龙息",
     "dragoncheer": "龙声鼓舞",
     "dragonclaw": "龙爪",
     "dragondance": "龙之舞",
@@ -360,7 +360,7 @@
     "fly": "飞翔",
     "focusblast": "真气弹",
     "focusenergy": "聚气",
-    "focuspunch": "聚气拳",
+    "focuspunch": "真气拳",
     "followme": "看我嘛",
     "forcepalm": "发劲",
     "foresight": "识破",
@@ -466,7 +466,7 @@
     "megadrain": "超级吸取",
     "megahorn": "超级角击",
     "megakick": "百万吨重踢",
-    "megapunch": "百万吨拳击",
+    "megapunch": "百万吨重拳",
     "memento": "临别礼物",
     "metalburst": "金属爆炸",
     "metalclaw": "金属爪",
@@ -615,7 +615,7 @@
     "softboiled": "生蛋",
     "solarbeam": "日光束",
     "solarblade": "日光刃",
-    "spark": "电火花",
+    "spark": "电光",
     "sparklingaria": "泡影的咏叹调",
     "speedswap": "速度互换",
     "spikes": "撒菱",
@@ -667,7 +667,7 @@
     "terrainpulse": "大地波动",
     "thief": "小偷",
     "thrash": "大闹一番",
-    "throatchop": "深渊突刺",
+    "throatchop": "地狱突刺",
     "thunder": "打雷",
     "thunderbolt": "十万伏特",
     "thunderfang": "雷电牙",
@@ -734,6 +734,6 @@
   },
   "items": {
     "berry": "橙橙果",
-    "tonic": "PP补剂"
+    "tonic": "PP多项小补剂"
   }
 }

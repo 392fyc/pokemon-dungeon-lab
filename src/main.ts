@@ -25,7 +25,7 @@ const experienceProgress=(s:World)=>{
  const level=Math.min(p.level,PROG.maxLevel),currentThreshold=PROG.thresholds[level]??0,nextThreshold=PROG.thresholds[level+1];
  if(nextThreshold===undefined)return `本局等级 Lv${level} · 升级经验已满（累计 ${p.exp}）`;
  const required=nextThreshold-currentThreshold,progress=Math.max(0,Math.min(required,p.exp-currentThreshold));
- return `本局等级 Lv${level} · 升级经验 ${progress}/${required}（升到下一级需当前等级经验；击倒敌人获得其等级经验）`;
+ return `本局等级 Lv${level} · 升级经验 ${progress}/${required}（升到下一级需当前等级经验；击倒敌人获得其等级×${PROG.expMultiplier}的经验）`;
 };
 const FATE:Record<TmItem['fate'],string>={held:'持有中',brought:'已带回',sent:'已安全送回',lost:'已取得、未带出'};
 const SRC:Record<TmItem['source'],string>={target:'成果 T',shop:'商店',boss:'区域首领'};

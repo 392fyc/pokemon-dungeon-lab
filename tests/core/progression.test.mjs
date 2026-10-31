@@ -3,7 +3,7 @@
    docs/玩法研究/招募等级与恢复品.md; fixtures are built by hand, not by the production factories. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createExpedition,createMain,applyCommand,reveal,rngStep,levelFor} from '../../src/core/engine.ts';
+import {createExpedition,createMain,applyCommand,reveal,rngStep,levelFor,PROG} from '../../src/core/engine.ts';
 import {generateFloor,mulberry32} from '../../src/core/dungeon.ts';
 import {TrialStore,BUILD_ID} from '../../src/core/save.ts';
 import roster from '../../src/data/roster.json' with {type:'json'};
@@ -60,19 +60,19 @@ test('P2 rngStep walks the same sequence as the floor generator stream and retur
 });
 
 /* ---------- recruit draw ---------- */
-/* Killing a Lv5 enemy gives 5 exp = exactly the 5 needed for Lv6, so every kill below also settles Lv6 first; recruit snapshots are taken at Lv6. */
+/* Killing a Lv5 enemy gives 5 x 2 = 10 exp (PROG.expMultiplier 2): that crosses the 5 needed for Lv6 but not the 11 for Lv7, so every kill below also settles Lv6 first; recruit snapshots are taken at Lv6. */
 const recruit=(id,species,hp,maxHp,pp,maxPp,level=6)=>({id,side:'friend',level,tactic:'together',entrySpecies:species,stages:{atk:0,def:0},protect:0,counter:0,reflect:0,lightscreen:0,lastMove:null,hp,maxHp,pos:null,pp,maxPp,learned:Object.keys(maxPp),species});
 test('P3 a defeated wild enemy invites when the draw is under 0.3: R07 half snapshot of its species at the settled run level',()=>{
  const s=round(run({rng:7}),basic('w'));          // first draw from state 7 is 0.0117
  assert.equal(s.phase,'invitation');assert.equal(s.invitations.length,1);
  // rattata roster HP 18 -> Lv6 max 19 (18+1), half 9; tackle PP 3 -> 1
  assert.deepEqual(s.invitations[0].unit,recruit('N1','rattata',9,19,{tackle:1},{tackle:3}));
- assert.deepEqual(s.prog,{level:6,exp:5,rng:1831565820,made:1,kills:[],items:{berry:0,tonic:0}});
+ assert.deepEqual(s.prog,{level:6,exp:10,rng:1831565820,made:1,kills:[],items:{berry:0,tonic:0}});
 });
 test('P3b no invitation when the draw is 0.3 or more; the draw is still spent',()=>{
  const s=round(run({rng:1}),basic('w'));          // first draw from state 1 is 0.627
  assert.equal(s.phase,'playing');assert.deepEqual(s.invitations,[]);
- assert.deepEqual(s.prog,{level:6,exp:5,rng:1831565814,made:0,kills:[],items:{berry:0,tonic:0}});
+ assert.deepEqual(s.prog,{level:6,exp:10,rng:1831565814,made:0,kills:[],items:{berry:0,tonic:0}});
 });
 test('P3c a wild species with two moves halves each, never below 1: pidgey Lv6 21 HP gives 10 HP, strong3/line3 gives 1/1',()=>{
  const s=round(run({rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));
@@ -84,13 +84,13 @@ test('P3d geodude keeps its guard move: defense curl 4 gives 2, tackle 3 gives 1
 });
 test('P3e two defeats in one round draw in defeat order (queue order): B kills pidgey first, then C kills rattata',()=>{
  const floor=[...row(5),...row(5).map(p=>({x:p.x,y:2}))];
- const low=wild('e2',1,6,'pidgey');low.pos=pos(1,2);
- const base=run({rng:8,floor,enemies:[wild('e1',3,6,'rattata'),low]});
+ const low=wild('e2',1,6,'pidgey',2);low.pos=pos(1,2);
+ const base=run({rng:8,floor,enemies:[wild('e1',3,6,'rattata',2),low]});
  const s=round(base,basic('e1'),'B',basic('e2'));
  // state 8: first draw 0.156 (invite), second draw 0.625 (none): the invitation belongs to the first defeat, B's pidgey
  assert.equal(s.invitations.length,1);assert.equal(s.invitations[0].unit.species,'pidgey');
- assert.deepEqual(s.prog,{level:6,exp:10,rng:3663131634,made:1,kills:[],items:{berry:0,tonic:0}});   // 5+5 exp, still below the 11 for Lv7
- const both=round(run({rng:7,floor,enemies:[wild('e1',3,6,'rattata'),low]}),basic('e1'),'B',basic('e2'));
+ assert.deepEqual(s.prog,{level:6,exp:8,rng:3663131634,made:1,kills:[],items:{berry:0,tonic:0}});   // two Lv2 kills: 4+4 exp, still below the 11 for Lv7
+ const both=round(run({rng:7,floor,enemies:[wild('e1',3,6,'rattata',2),low]}),basic('e1'),'B',basic('e2'));
  assert.deepEqual(both.invitations.map(i=>[i.unit.id,i.unit.species]),[['N1','pidgey'],['N2','rattata']]);
  assert.equal(both.prog.rng,3663131633);
 });
@@ -99,19 +99,26 @@ test('P3f a fixed seed reproduces the same outcome in a fresh process state: sam
 });
 
 /* ---------- shared run level ---------- */
-test('P4 3 exp plus a Lv5 kill is 8 exp = Lv6: every member +1 max HP, current HP unchanged; the invitation is taken at the settled level',()=>{
- const s=round(run({exp:3,rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));
- assert.deepEqual([s.prog.level,s.prog.exp],[6,8]);
+test('P4 3 exp plus a Lv3 kill is 9 exp = Lv6: every member +1 max HP, current HP unchanged; the invitation is taken at the settled level',()=>{
+ const s=round(run({exp:3,rng:7,enemies:[wild('w',3,6,'pidgey',3)]}),basic('w'));   // a Lv3 kill is 3 x 2 = 6 exp: 3+6=9
+ assert.deepEqual([s.prog.level,s.prog.exp],[6,9]);
  assert.deepEqual(s.queue.map(i=>[s.units[i].hp,s.units[i].maxHp,s.units[i].level]),[[19,20,6],[20,21,6],[21,22,6]]);
  assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,21,{tackle:1,gust:1},{tackle:3,gust:3}));
  const up=s.log.findIndex(t=>/升到Lv6/.test(t)),inv=s.log.findIndex(t=>/发出邀请/.test(t));
  assert.ok(up>=0&&inv>up,'level-up is settled before the invitation appears');
 });
-test('P4b below the threshold nothing changes: a Lv4 kill gives 4 exp (the 5th is missing); one more exp point then crosses it',()=>{
- const s=round(run({exp:0,rng:1,enemies:[wild('w',3,6,'rattata',4)]}),basic('w'));
+test('P4b below the threshold nothing changes: a Lv2 kill gives 4 exp (the 5th is missing); one more exp point then crosses it',()=>{
+ const s=round(run({exp:0,rng:1,enemies:[wild('w',3,6,'rattata',2)]}),basic('w'));
  assert.deepEqual([s.prog.level,s.prog.exp],[5,4]);assert.deepEqual(s.queue.map(i=>s.units[i].maxHp),[19,20,21]);
- const t=round(run({exp:1,rng:1,enemies:[wild('w',3,6,'rattata',4)]}),basic('w'));
+ const t=round(run({exp:1,rng:1,enemies:[wild('w',3,6,'rattata',2)]}),basic('w'));
  assert.deepEqual([t.prog.level,t.prog.exp],[6,5]);assert.deepEqual(t.queue.map(i=>t.units[i].maxHp),[20,21,22]);
+});
+test('P4a a kill is worth 2 x the enemy level: PROG.expMultiplier is 2, a Lv N enemy gives 2N exp (Lv1 2, Lv3 6, Lv5 10, Lv12 24)',()=>{
+ assert.equal(PROG.expMultiplier,2);
+ for(const lv of [1,3,5,12]){
+  const s=round(run({exp:0,rng:1,enemies:[wild('w',3,6,'rattata',lv)]}),basic('w'));
+  assert.equal(s.prog.exp,2*lv,`Lv${lv} kill`);
+ }
 });
 test('P4c completing G gives no experience (goal exp 0): no level, no invitation, no draw spent; still recorded once',()=>{
  const g=run({exp:4,enemies:[],points:[{pos:pos(2),kind:'goal',used:false}]});
@@ -120,22 +127,22 @@ test('P4c completing G gives no experience (goal exp 0): no level, no invitation
  assert.deepEqual(s.queue.map(i=>s.units[i].maxHp),[19,20,21]);assert.deepEqual(s.invitations,[]);
  reject(s,{type:'round',action:interact(false)});   // G is recorded: no second completion
 });
-test('P4d there is no Lv5 cap: Lv6 at 10 exp plus a Lv5 kill is 15 exp = Lv7; one big kill can climb two levels; the level caps at 100',()=>{
- const s=round(run({level:6,exp:10,rng:1}),basic('w'));
- assert.deepEqual([s.prog.level,s.prog.exp],[7,15]);assert.deepEqual(s.queue.map(i=>s.units[i].maxHp),[21,22,23]);
- // from Lv5 with 4 exp, a Lv12 kill is 16 exp: Lv6 needs 5, Lv7 needs 11, Lv8 needs 18 -> Lv7
- const t=round(run({exp:4,rng:1,enemies:[wild('w',3,6,'rattata',12)]}),basic('w'));
+test('P4d there is no Lv5 cap: Lv6 at 10 exp plus a Lv3 kill is 16 exp = Lv7; one big kill can climb two levels; the level caps at 100',()=>{
+ const s=round(run({level:6,exp:10,rng:1,enemies:[wild('w',3,6,'rattata',3)]}),basic('w'));   // Lv3 kill = 6 exp: 10+6=16, below the 18 for Lv8
+ assert.deepEqual([s.prog.level,s.prog.exp],[7,16]);assert.deepEqual(s.queue.map(i=>s.units[i].maxHp),[21,22,23]);
+ // from Lv5 with 4 exp, a Lv6 kill is 12 exp (4+12=16): Lv6 needs 5, Lv7 needs 11, Lv8 needs 18 -> Lv7
+ const t=round(run({exp:4,rng:1,enemies:[wild('w',3,6,'rattata',6)]}),basic('w'));
  assert.deepEqual([t.prog.level,t.prog.exp],[7,16]);assert.deepEqual(t.queue.map(i=>t.units[i].maxHp),[21,22,23]);
  assert.deepEqual([0,4,5,10,11,17,18,200].map(levelFor),[5,5,6,6,7,7,8,21]);
  assert.equal(levelFor(4939),99);assert.equal(levelFor(4940),100);assert.equal(levelFor(99999),100);
 });
 test('P4e a new member joins at the current level; a member sent back to camp no longer grows',()=>{
- let s=round(run({exp:2,rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));   // 2+5=7 exp: Lv6
+ let s=round(run({exp:2,rng:7,enemies:[wild('w',3,6,'pidgey',3)]}),basic('w'));   // a Lv3 kill is 6 exp: 2+6=8 exp: Lv6
  s=accept(s,'A');                                  // pidgey N1 (21 max, 10 now) replaces A
  assert.deepEqual(s.queue,['B','C','N1']);assert.deepEqual(s.camp,['A']);
  assert.deepEqual([s.units.N1.hp,s.units.N1.maxHp,s.units.N1.species,s.units.N1.level],[10,21,'pidgey',6]);
  assert.deepEqual([s.units.A.hp,s.units.A.maxHp],[19,20]);
- s.prog.exp=10;s.units.w2=wild('w2',3,6);s.enemies=['w2'];     // test edit: one more enemy next to C, exp one short of Lv7 (11) before the +5
+ s.prog.exp=10;s.units.w2=wild('w2',3,6,'rattata',3);s.enemies=['w2'];     // test edit: one more Lv3 enemy next to C (+6 exp), exp one short of Lv7 (11) before the kill
  s=round(s,basic('w2'));
  assert.equal(s.prog.level,7);
  assert.deepEqual([s.units.B,s.units.C,s.units.N1].map(u=>[u.hp,u.maxHp]),[[20,22],[21,23],[10,22]]);   // +1 each, HP untouched

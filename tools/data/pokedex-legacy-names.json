@@ -76,7 +76,6 @@
   "dig": "挖洞",
   "doubleedge": "舍身冲撞",
   "dracometeor": "流星群",
-  "dragonbreath": "龙之吐息",
   "dragonclaw": "龙爪",
   "dragonpulse": "龙之波动",
   "dragonrush": "龙之俯冲",
@@ -107,7 +106,6 @@
   "flareblitz": "闪焰冲锋",
   "flashcannon": "加农光炮",
   "focusblast": "真气弹",
-  "focuspunch": "聚气拳",
   "forcepalm": "发劲",
   "foulplay": "欺诈",
   "furycutter": "连斩",
@@ -145,7 +143,6 @@
   "lowsweep": "下盘踢",
   "magicalleaf": "魔法叶",
   "megadrain": "超级吸取",
-  "megapunch": "百万吨拳击",
   "metalclaw": "金属爪",
   "meteorbeam": "流星光束",
   "mudshot": "泥巴射击",
@@ -190,7 +187,6 @@
   "snore": "打鼾",
   "solarbeam": "日光束",
   "solarblade": "日光刃",
-  "spark": "电火花",
   "steelbeam": "铁蹄光线",
   "steelwing": "钢翼",
   "stomp": "踩踏",
@@ -203,7 +199,6 @@
   "temperflare": "豁出去",
   "terablast": "太晶爆发",
   "thief": "小偷",
-  "throatchop": "深渊突刺",
   "thunder": "打雷",
   "thunderbolt": "十万伏特",
   "thunderfang": "雷电牙",
@@ -240,6 +235,6 @@
  },
  "items": {
   "berry": "橙橙果",
-  "tonic": "PP补剂"
+  "tonic": "PP多项小补剂"
  }
 }

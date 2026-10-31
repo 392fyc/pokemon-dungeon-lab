@@ -41,7 +41,7 @@ export type ShopItem='berry'|'tonic'|'tm';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
 export type Item='berry'|'tonic';
 export const SKILL_CN:Record<Skill,string>=(names as unknown as {moves:Record<string,string>}).moves;
-export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP补剂'};
+export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂'};
 export type Rect={x:number;y:number;w:number;h:number};
 /**
  * 6.4 shared run level and counters (expedition only; absent in the fixed map and in expeditions saved before 6.4).
@@ -766,7 +766,7 @@ export function closeOut(s:World,outcome:End['outcome'],draw=true):End {
 function end(s:World,outcome:End['outcome']):void {
   clearCombatState(s);
   s.end=closeOut(s,outcome);
-  s.phase='ended';s.request=null;s.anchor=null;note(s,outcome==='normal'?'正常撤离':'全队倒下，本试验结束');
+  s.phase='ended';s.request=null;s.anchor=null;note(s,outcome==='normal'?'正常撤离':'全队倒下，本局结束');
 }
 function clearUnitCombatState(u:Unit):void {
   u.stages={atk:0,def:0};u.protect=0;u.counter=0;u.lastMove=null;

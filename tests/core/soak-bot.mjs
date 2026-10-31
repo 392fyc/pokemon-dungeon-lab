@@ -470,8 +470,9 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
     if(s.end.boss)st.bossDefeated++;
     if(s.end.outcome==='wipe'&&s.dungeon.level===3)st.bossWipes++;
     if(s.end.outcome==='normal'&&s.dungeon.level===3)st.lobbyExits++;
+    // retreatBeforeContact: a contact observed only after the retreat decision does not count ('decided before any contact').
     Object.assign(x,{bossRun:true,reached:s.dungeon.level===3||'3' in s.dungeon.stored,defeated:!!s.end.boss,bossWipe:s.end.outcome==='wipe'&&s.dungeon.level===3,
-     lobbyExit:s.end.outcome==='normal'&&s.dungeon.level===3,retreat:memo.retreat,retreatBeforeContact:!!memo.retreat&&(!x.contact||x.contact.round>memo.retreatRound), // contact observed after the decision does not count: 'decided before any contact'survivors:s.end.boss?s.queue.filter(id=>aliveU(s.units[id])).length:null,
+     lobbyExit:s.end.outcome==='normal'&&s.dungeon.level===3,retreat:memo.retreat,retreatBeforeContact:!!memo.retreat&&(!x.contact||x.contact.round>memo.retreatRound),survivors:s.end.boss?s.queue.filter(id=>aliveU(s.units[id])).length:null,
      bossHpLeft:(Object.values(s.units).find(u=>u.boss)??Object.values(s.dungeon.stored).flatMap(f=>Object.values(f.units)).find(u=>u.boss))?.hp??null});
     assert.equal(s.end.boss,s.units.boss?.hp===0||Object.values(s.dungeon.stored).some(f=>f.units.boss?.hp===0),`${where}: end.boss disagrees with the boss unit`);
    }

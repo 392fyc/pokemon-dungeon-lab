@@ -32,3 +32,16 @@ test('S74 tactical policy pays rescues: seed 5 replays identically and pays at l
  assert.ok(off.st.lostPartners>=1);assert.equal(off.st.returned,0); // unpaid: the partner keeps waiting
  assert.equal(off.games.filter(g=>g.outcome==='timeout').length,0);
 });
+
+/* Balance round 2: the 'cautious' policy (a careful, low-kill player) is accepted, finishes its games and replays identically; every game reports a kill count.
+ * Kill numbers themselves are statistics, not assertions. */
+test('S75 cautious policy: one seed is accepted, reports kills per game, has no stuck game and replays identically',async()=>{
+ const a=await playSeed(1,{policy:'cautious'}),b=await playSeed(1,{policy:'cautious'});
+ assert.equal(a.policy,'cautious');
+ assert.ok(a.games.length>=1);
+ assert.equal(a.games.filter(g=>g.outcome==='timeout').length,0,`stuck games: ${a.games.filter(g=>g.outcome==='timeout').map(g=>g.reason).join(' | ')}`);
+ a.games.forEach((g,n)=>{assert.ok(Number.isInteger(g.kills)&&g.kills>=0,`game ${n}: kills ${g.kills}`);assert.equal(a.extra[n].kills,g.kills);});
+ // boss-floor records keep every statistics field (a dropped `survivors` once went unnoticed because nothing asserted it); survivors may be 0 when the whole team falls in the round the boss falls
+ a.extra.forEach((x,n)=>{if(!x.bossRun)return;for(const k of ['reached','defeated','retreat','retreatBeforeContact','survivors','bossHpLeft'])assert.ok(Object.hasOwn(x,k),`game ${n}: boss record lacks ${k}`);if(x.defeated)assert.ok(Number.isInteger(x.survivors)&&x.survivors>=0,`game ${n}: survivors ${x.survivors}`);});
+ assert.deepEqual(a.games,b.games);assert.deepEqual(a.st,b.st);assert.deepEqual(a.extra,b.extra);
+});

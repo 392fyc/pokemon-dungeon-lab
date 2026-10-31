@@ -15,7 +15,7 @@ updated: 2026-10-30
 | lane | 主导方（lead harness） | 负责什么 | 不做什么 |
 | --- | --- | --- | --- |
 | `main` | Claude Code | 阶段计划与路线图、规则规格、研究与设计、平衡分析（当前为 7.4）、审查并合并 `dev` 的 PR、图片生成、与用户沟通 | 不和 `dev` 同时改同一批文件 |
-| `dev` | Codex | 按 `main` 写好的规格实现里程碑（当前为 7.5）；写自己的自测记录 | 不改阶段计划、路线图和规则规格（需要改时开 issue 给 `main`）；不调用图片生成；不合并 PR |
+| `dev` | Codex | 按 `main` 写好的规格实现里程碑（当前为 7.5）；在 PR 描述里写自测证据 | 不改阶段计划、路线图和规则规格（需要改时开 issue 给 `main`）；不调用图片生成；不合并 PR |
 
 - 两条 lane 互为同伴（peers），地位平行；`main` 只多管“计划和规格”这一类单写者文件（Mercury 规则 4）。
 - 每条 lane 至多一个 Claude 会话和一个 Codex 会话；各自可以用子代理，子代理只在父会话的授权与写入范围内工作。
@@ -86,7 +86,7 @@ lane 状态与工作区只放本机，不进提交，不放凭据。
 | `tests/core/loop-soak*`、长测脚本与统计工具 | `main` | 7.4 |
 | `tools/art/`（含 `usage-ledger.json`） | `main` | 只有 `main` 生成图片，见第 8 节 |
 | 各自新加的测试文件 | 新建者 | 文件名带上主题，避免同名 |
-| `docs/01-现行规则/`、`docs/03-决策/`、`docs/04-规格/`、`docs/02-进度/进度.md` 与 `docs/02-进度/计划/` | `main` | `dev` 只新增自己的自测记录（`docs/02-进度/自测记录/`）；需要改规则或进度时在 PR 描述的 `KB:` 行写明，由 `main` 合并前更新（2026-10-31 KB 分级整改后的目录） |
+| `docs/01-现行规则/`、`docs/03-决策/`、`docs/02-进度/进度.md` 与 `docs/02-进度/计划/` | `main` | `dev` 把自测证据写在 PR 描述里；需要改规则或进度时在 PR 描述的 `KB:` 行写明，由 `main` 合并前更新（2026-10-31 KB 分级整改后的目录） |
 | 各目录 `README.md` 索引 | 两边都可加行 | 新文档必须在所在目录索引加一行；只加行时的文本冲突由后合并的一方用 `git-safe.ps1 sync` 解决 |
 
   新里程碑开工前，由 `main` 在协调 issue 里写明这一张表的新分配。**写进协调 issue 的文件分配直接生效**（仅限两边不重叠的分配：不把同一个文件、单写者区域或共享规则同时交给两边），`dev` 据此开工，不需要用户再在 Codex 里确认；版本号变更仍按下一条开协调 issue 并由用户确认（2026-10-30 用户决定，原话：“改为直接生效”；针对的问题是“已写进协调 issue 的文件分配，以后要不要直接生效、不再需要你在 Codex 里确认”）。
@@ -143,8 +143,8 @@ GitHub issue 与 PR 评论仍用于留存决定与审查结论（可追溯的记
 
 | 环境 | 已知事实 | 未核实 |
 | --- | --- | --- |
-| `pokemon-dungeon-lab`（游戏） | 只绑定本仓库，访问范围 Only me，无秘密值；Linux，已验证 Node 24、Playwright 与 Chromium；联网只允许 `registry.npmjs.org`、`pypi.org`、`files.pythonhosted.org`（见 [`cloud/README.md`](../../cloud/README.md)、[REA 与 Codex Cloud](REA与CodexCloud.md)） | 云端 Shell 能否推送 GitHub、能否自定分支名 |
-| `REA-research-lab`（逆向研究） | 曾用于只读研究，结论在聊天里交付（见[研究范围与双云分工](../06-研究/市场研究/研究范围与双云分工.md)） | 绑定哪个仓库、访问范围、联网设置 |
+| `pokemon-dungeon-lab`（游戏） | 只绑定本仓库，访问范围 Only me，无秘密值；Linux，已验证 Node 24、Playwright 与 Chromium；联网只允许 `registry.npmjs.org`、`pypi.org`、`files.pythonhosted.org`（见 [`cloud/README.md`](../../cloud/README.md)、[REA 与 Codex Cloud](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/07-%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83/REA%E4%B8%8ECodexCloud.md)） | 云端 Shell 能否推送 GitHub、能否自定分支名 |
+| `REA-research-lab`（逆向研究） | 曾用于只读研究，结论在聊天里交付（见[研究范围与双云分工](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/06-%E7%A0%94%E7%A9%B6/%E5%B8%82%E5%9C%BA%E7%A0%94%E7%A9%B6/%E7%A0%94%E7%A9%B6%E8%8C%83%E5%9B%B4%E4%B8%8E%E5%8F%8C%E4%BA%91%E5%88%86%E5%B7%A5.md)） | 绑定哪个仓库、访问范围、联网设置 |
 
 Claude 无法向它们派任务；`dev` lane 的本机 Codex 可以。本节是 `main` lane **应用户要求拟定的方针**（工作候选），用户可以随时修改或收回。
 
@@ -165,18 +165,18 @@ Claude 无法向它们派任务；`dev` lane 的本机 Codex 可以。本节是 
 
 - 把 `.env`、OpenAI key 或任何凭据放进云端；在云端生成图片（图片只由 `main` 在本机生成，见第 8 节）。
 - 修改云环境的联网域名、访问范围、安装脚本或保存的启动规则；这些是环境设置，交给用户决定。
-- 在云端合并 PR、推送 `main`、改 `docs/01-现行规则/`、`docs/03-决策/` 和 `docs/04-规格/`。
+- 在云端合并 PR、推送 `main`、改 `docs/01-现行规则/`、`docs/03-决策/` 和 `docs/02-进度/计划/`。
 - 用 Linux 结果宣称 Windows 本机运行已通过。
 
 **怎样交回结果（只限 `pokemon-dungeon-lab`）。** 云端能否推送、能否自定分支名都未核实，所以分两步：
 
 - **默认：取回差异，由本机提交。** 云任务把改动交回（平台生成的分支、补丁或聊天中的差异均可）。本机 Codex 逐项核对后应用到自己的 worktree，在本机重跑相关检查，再经 `git-safe.ps1` 提交。这样所有进仓库的提交都走受控入口和 `main` 的按 SHA 审查。
-- **核实可行后：独立 PR。** 若实测云端能用 Codex 已连接的 GitHub 授权推送分支，且改动与本机任务的文件互不重叠，可以作为独立 PR（分支尽量命名为 `<type>/<用途>-cloud-dev-codex`；平台只能自动命名时，把实际分支名写在 issue 里），加 `lane:dev` 标签，由 `main` 审查与合并。推送沿用 [当前规格的受控发布约定](../90-archive/trial-spec/README.md)（检查分支头、`expected_sha`、`force=false`，不直写 `main`、不强推）。
+- **核实可行后：独立 PR。** 若实测云端能用 Codex 已连接的 GitHub 授权推送分支，且改动与本机任务的文件互不重叠，可以作为独立 PR（分支尽量命名为 `<type>/<用途>-cloud-dev-codex`；平台只能自动命名时，把实际分支名写在 issue 里），加 `lane:dev` 标签，由 `main` 审查与合并。推送沿用 [阶段3—4规格的受控发布约定（d03ef51）](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/90-archive/trial-spec/README.md)（检查分支头、`expected_sha`、`force=false`，不直写 `main`、不强推）。
 
-云端交回的结论按“其他代理的结论”处理：本机核对固定提交和实际运行结果后才采用。PR 说明或自测记录写明云任务链接、运行平台和实际跑过的检查。没有合并的云端分支在 issue 里列出，删除前先经用户确认。
+云端交回的结论按“其他代理的结论”处理：本机核对固定提交和实际运行结果后才采用。PR 说明写明云任务链接、运行平台和实际跑过的检查。没有合并的云端分支在 issue 里列出，删除前先经用户确认。
 
 **派发时的任务说明要写清：** `[WORKER-OF=dev ISSUE=#<号>]`、本次范围和不许改的文件、要跑的检查、完成期限（按 AGENTS.md 的等待规则）、交回方式。仓库里的 [`cloud/start-skill.md`](../../cloud/start-skill.md) 仍写着阶段 3—4 的范围，已经过时；以任务说明和本页为准。是否更新环境里保存的启动规则，交给用户决定。
 
 **费用。** 云任务若需要超出现有 ChatGPT 套餐的付费额度，属于新增付费服务，先问用户。
 
-返回：[研究总索引](../README.md)；关联：[Claude 作业方式](Claude作业方式.md)、[阶段7计划](../02-进度/计划/阶段7—可试玩EA计划.md)。
+返回：[研究总索引](../README.md)；关联：[Claude 作业方式](Claude作业方式.md)、[阶段7计划](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/02-%E8%BF%9B%E5%BA%A6/%E8%AE%A1%E5%88%92/%E9%98%B6%E6%AE%B57%E2%80%94%E5%8F%AF%E8%AF%95%E7%8E%A9EA%E8%AE%A1%E5%88%92.md)。

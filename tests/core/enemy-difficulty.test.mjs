@@ -1,4 +1,4 @@
-/* Stage 7.8 difficulty multiplier (docs/04-规格/敌我对等招式与强化模型规格.md section 5.1): ENEMY_DIFFICULTY = 0.5.
+/* Stage 7.8 difficulty multiplier (https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E6%95%8C%E6%88%91%E5%AF%B9%E7%AD%89%E6%8B%9B%E5%BC%8F%E4%B8%8E%E5%BC%BA%E5%8C%96%E6%A8%A1%E5%9E%8B%E8%A7%84%E6%A0%BC.md section 5.1): ENEMY_DIFFICULTY = 0.5.
    It multiplies an enemy's max HP and every hit an enemy deals (rounded, at least 1); the player's hits are not multiplied.
    All expected values are written as literals worked out by hand. Units are Lv5 (no level bonus): tackle = 6 + ceil(6/2) = 9, basic attack = 6. */
 import test from 'node:test';

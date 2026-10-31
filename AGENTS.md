@@ -61,9 +61,9 @@ The full lane contract is `.mercury/packs/lanes/docs/mercury-lane-contract.md`; 
 
 ## Knowledge base
 
-- The project's knowledge base follows `.mercury/packs/kb/docs/kb-conventions.md`: one entry page leading to the current rules, the progress page and the decision register; a README index with a status for every document in every directory; history in the archive.
-- Before editing, read the KB documents that govern the task, starting from the entry page. When a change alters a rule, a decision or progress, update the current document and mark what it replaces (status `superseded` with its replacement) in the same pull request.
-- Every pull request names its Issue and has a line starting with `KB:` that lists the KB documents it updated, or says `KB: no impact` and why. `guard.ps1 pre-merge` refuses a pull request without both. Check the KB with `python -B .mercury/packs/kb/scripts/kb_check.py <kb-root>`.
+- The project's knowledge base follows `.mercury/packs/kb/docs/kb-conventions.md`: one entry page leading to the current rules, the progress page and the decision register; a README index with a status (`current` or `draft`) for every document in every directory; no archive.
+- Before editing, read the KB documents that govern the task, starting from the entry page. When a change alters a rule, a decision or progress, update the current document and delete what it makes outdated or wrong, with every link to it, in the same pull request. Do not keep outdated text marked as superseded: search finds it as if it were current. Git history, Issues and pull requests keep the record; cite a fixed-commit permanent link when old text must stay citable.
+- Every pull request names its Issue and has a line starting with `KB:` that lists the KB documents it updated or deleted, or says `KB: no impact` and why. `guard.ps1 pre-merge` refuses a pull request without both. Check the KB with `python -B .mercury/packs/kb/scripts/kb_check.py <kb-root>`.
 <!-- MERCURY:END -->
 
 # 代理工作约定
@@ -72,9 +72,9 @@ The full lane contract is `.mercury/packs/lanes/docs/mercury-lane-contract.md`; 
 
 2026-10-29用户已批准按研究PR #4准备包开始阶段3—4试开发，并采用Vite。固定来源为pokemon-game-research@5f3547889b30e59f6cdfebc5af8c91e46cba4ee4。范围内同步规格、安装锁定依赖、建立工程、运行规则／保存／浏览器检查和交付私有可玩片段连续执行，不逐步询问。正式平衡、公开发布、网络扩权及第三方素材／数据引入不在当时（阶段3—4）的范围；其中第三方素材与数据已由下文2026-10-30授权在私有构建内放开。
 
-先读docs/README.md（KB入口），按`docs/01-现行规则/KB维护规则.md`的K3顺序读进度、游戏规则和决策登记，再读任务Issue列出的规格或研究。`docs/90-archive/trial-spec/`是阶段3—4获准试验的固定规格副本，已归档，只作历史依据。云端范围以本文件和用户较新的指令为准；本仓已包含完整研究库，不需要访问本机vault。
+先读docs/README.md（KB入口），按`docs/01-现行规则/KB维护规则.md`的K3顺序读进度、游戏规则和决策登记，再读任务Issue列出的计划或研究。阶段3—4的固定规格副本已从库中删除，需要时查固定提交 d03ef51 的 `docs/90-archive/trial-spec/`。云端范围以本文件和用户较新的指令为准；本仓已包含完整研究库，不需要访问本机vault。
 
-阶段3—4已以PR #5合并（03e0c2b）。阶段5完成制作者自测；2026-10-30用户决定暂不请独立体验者，并授权自主推进阶段6（`docs/02-进度/计划/阶段6—完整首版最小循环计划.md`）：自主规划与测试，合并PR、删除废弃worktree与分支无需另行询问；可用gpt-image生成原创场景、界面与特效，角色素材按计划取自SpriteCollab并逐文件记录来源与许可，数据取自固定提交的Pokémon Showdown，均只用于私有构建。OpenAI API key只从主checkout被忽略的`.env`读取，不复制、不打印、不提交；该API总额度为50美元，按阶段计划的预算与账本控制用量。目标是把demo推进到可试玩的EA阶段，计划定好后自主执行。危险操作（运行来源不明的代码、改动系统或全局环境、可能破坏用户数据的批量删除等）不直接在本机执行，改用云环境或其他隔离方式。公开发布、联系体验者、扩大网络权限和新增付费服务仍需用户决定。2026-10-30起由本机Claude主会话接手：实现交给`mercury-dev`子代理，独立验收交给只读的`mercury-acceptance`与`mercury-reviewer`，两个Codex云当时只由用户手动派发（本机Codex上线后的放宽见下文“另：”一段）；Claude云环境等确有需要时再建。详见`docs/07-工作环境/Claude作业方式.md`。
+阶段3—4已以PR #5合并（03e0c2b）。阶段5完成制作者自测；2026-10-30用户决定暂不请独立体验者，并授权自主推进阶段6（计划已完成并删除，当时版本见固定提交 d03ef51 的 `docs/02-进度/计划/阶段6—完整首版最小循环计划.md`）：自主规划与测试，合并PR、删除废弃worktree与分支无需另行询问；可用gpt-image生成原创场景、界面与特效，角色素材按计划取自SpriteCollab并逐文件记录来源与许可，数据取自固定提交的Pokémon Showdown，均只用于私有构建。OpenAI API key只从主checkout被忽略的`.env`读取，不复制、不打印、不提交；该API总额度为50美元，按阶段计划的预算与账本控制用量。目标是把demo推进到可试玩的EA阶段，计划定好后自主执行。危险操作（运行来源不明的代码、改动系统或全局环境、可能破坏用户数据的批量删除等）不直接在本机执行，改用云环境或其他隔离方式。公开发布、联系体验者、扩大网络权限和新增付费服务仍需用户决定。2026-10-30起由本机Claude主会话接手：实现交给`mercury-dev`子代理，独立验收交给只读的`mercury-acceptance`与`mercury-reviewer`，两个Codex云当时只由用户手动派发（本机Codex上线后的放宽见下文“另：”一段）；Claude云环境等确有需要时再建。详见`docs/07-工作环境/Claude作业方式.md`。
 
 2026-10-30用户决定本机Codex重新上线，与Claude并行推进，并登记lane：`main`由Claude主导（计划、规格、研究设计、平衡分析、图片生成、审查并合并PR），`dev`由Codex主导（按规格实现里程碑，不合并PR、不调用图片生成）。两条lane的位置、文件分工、认领、审查与合并方式以`docs/07-工作环境/多lane并行协作.md`为准；会话开始时必须从起始指令的`[LANE=<id>]`得知自己的lane，不能按任务猜。本月GitHub Actions停用期间，合并前按该文档手工运行Mercury检查。
 
@@ -84,7 +84,7 @@ The full lane contract is `.mercury/packs/lanes/docs/mercury-lane-contract.md`; 
 
 目标平台为网页和 Windows，二维随机迷宫，包含轻度撤离带出元素。可使用 Pokémon Showdown 数据；阵容以某个时代的有限多样子集起步。用户喜欢 Big Kid Nation 的 Pokémon Arena 2D 角色视觉样式。
 
-本片段已采用Phaser 4.2.1＋TypeScript、Vite、行动推进回合和三人上限，当时的执行入口已归档于docs/90-archive/trial-spec/；现行规则见docs/01-现行规则/游戏规则.md。当时为一张固定单层图、人工参数和自制几何占位；可返回、半额邀请、终局记录与独立重开是本轮获准的试验基准。时代基准、正式名单、长期培养、完整救援经济、公开发布的素材许可路线和最终平衡仍待后续决定。
+本片段已采用Phaser 4.2.1＋TypeScript、Vite、行动推进回合和三人上限，现行规则见docs/01-现行规则/游戏规则.md。当时为一张固定单层图、人工参数和自制几何占位；可返回、半额邀请、终局记录与独立重开是本轮获准的试验基准。时代基准、正式名单、长期培养、完整救援经济、公开发布的素材许可路线和最终平衡仍待后续决定。
 
 ## 研究与验证
 
@@ -96,12 +96,12 @@ The full lane contract is `.mercury/packs/lanes/docs/mercury-lane-contract.md`; 
 
 ## 文件维护
 
-保留用户已有改动，修改前读当前内容。KB按`docs/01-现行规则/KB维护规则.md`维护：每个目录有带状态的索引，入口为docs/README.md，规则、决策或进度变化时在同一个PR里更新对应现行文档。
+保留用户已有改动，修改前读当前内容。KB按`docs/01-现行规则/KB维护规则.md`维护：每个目录有带状态的索引，入口为docs/README.md，规则、决策或进度变化时在同一个PR里更新对应现行文档，并删除因此过时或错误的内容；不设归档，不标“已取代”。
 
-研究库就是本仓库的 `docs/`，同时是 Obsidian vault（2026-10-29 由独立仓库 pokemon-game-research 的 main `5f35478` 以当前快照并入，旧仓库已归档）。文档与代码在同一个任务 worktree 中一起修改、一起走 PR；用 Obsidian 打开主 checkout 的 `docs/` 浏览，代理直接编辑任务 worktree 中的文件，不经 Obsidian MCP 写入，不使用 Computer Use 编辑笔记。`docs/90-archive/审核版本/` 等冻结史稿与带 SHA 清单的文件保持原字节，`docs/.gitattributes` 中标为 `-text` 的文件不做换行转换。
+研究库就是本仓库的 `docs/`，同时是 Obsidian vault（2026-10-29 由独立仓库 pokemon-game-research 的 main `5f35478` 以当前快照并入，旧仓库已归档）。文档与代码在同一个任务 worktree 中一起修改、一起走 PR；用 Obsidian 打开主 checkout 的 `docs/` 浏览，代理直接编辑任务 worktree 中的文件，不经 Obsidian MCP 写入，不使用 Computer Use 编辑笔记。Obsidian 里新写的链接用标准 Markdown 链接（关闭“Use [[Wikilinks]]”）。
 
 环境验证产物写入忽略目录，不能提交凭据或整个环境。
 
 ## Git 写入
 
-Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。在本机（含从其他仓库启动的会话）提交与推送任务分支，经受管段「Controlled Git entry」所述的 `.mercury/packs/git-safe/scripts/git-safe.ps1`；调用任务 worktree 中的那一份。用户手动派发的Codex云任务（阶段3—4曾采用），以及`dev` lane派发、经核实能推送的云任务，通过[当前规格的受控发布约定](docs/90-archive/trial-spec/README.md)交付（`dev`派发的云任务默认由本机Codex取回差异后经git-safe提交，见`docs/07-工作环境/多lane并行协作.md`第11节）：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。
+Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。在本机（含从其他仓库启动的会话）提交与推送任务分支，经受管段「Controlled Git entry」所述的 `.mercury/packs/git-safe/scripts/git-safe.ps1`；调用任务 worktree 中的那一份。用户手动派发的Codex云任务（阶段3—4曾采用），以及`dev` lane派发、经核实能推送的云任务，通过阶段3—4规格的受控发布约定（固定提交 d03ef51 的 `docs/90-archive/trial-spec/README.md`）交付（`dev`派发的云任务默认由本机Codex取回差异后经git-safe提交，见`docs/07-工作环境/多lane并行协作.md`第11节）：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。

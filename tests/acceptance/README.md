@@ -35,7 +35,7 @@ node --experimental-strip-types tests/acceptance/save.test.mjs
 保存隔离机制不变，不用内部命令注入替代按钮操作。
 正常揭示总会暴露相邻地面，因此“未揭示格”只用独立引擎夹具，不伪称浏览器自然流程已覆盖。
 
-本轮REA没有候选Phaser/Vite依赖及已运行构建，未执行这4组或全19组浏览器检查。主会话在Windows实际运行的19组结果见[实现验收记录](../../docs/90-archive/试开发/trial-acceptance-2026-10-29.md)，不算作REA亲测。
+本轮REA没有候选Phaser/Vite依赖及已运行构建，未执行这4组或全19组浏览器检查。主会话在Windows实际运行的19组结果见[实现验收记录](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/90-archive/%E8%AF%95%E5%BC%80%E5%8F%91/trial-acceptance-2026-10-29.md)，不算作REA亲测。
 不把代码差异检查称为真实UI验证，不把程序通过称为玩家体验通过。
 未重做依赖安装、生产构建、操作系统焦点或性能检查。
 

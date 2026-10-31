@@ -1,4 +1,4 @@
-/* Stage 7.8 level and evolution model (docs/04-规格/敌我对等招式与强化模型规格.md section 13): evolution-level samples,
+/* Stage 7.8 level and evolution model (https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E6%95%8C%E6%88%91%E5%AF%B9%E7%AD%89%E6%8B%9B%E5%BC%8F%E4%B8%8E%E5%BC%BA%E5%8C%96%E6%A8%A1%E5%9E%8B%E8%A7%84%E6%A0%BC.md section 13): evolution-level samples,
    round-end evolution (current HP kept, one stage per settlement, Eevee branch choice), recovery after the run, and recruits settled by the species they joined as.
    Experience facts used (worked by hand): a kill is worth the enemy's level x PROG.expMultiplier (2); Lv L -> L+1 costs L, so the cumulative exp to reach Lv N is N(N-1)/2 - 10
    (Lv6 5, Lv16 110, Lv20 180, Lv21 200, Lv36 620). Max HP = roster HP + max(0, Lv-5). */

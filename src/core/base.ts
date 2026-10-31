@@ -1,6 +1,6 @@
 /**
  * 6.5 base profile: the part of the player's progress that outlives one run. Pure data and pure functions; no storage, no renderer.
- * Specification: docs/04-规格/基地与培养.md. All numbers (two carried moves, three-member squads) are working candidates.
+ * Specification: https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E5%9F%BA%E5%9C%B0%E4%B8%8E%E5%9F%B9%E5%85%BB.md. All numbers (two carried moves, three-member squads) are working candidates.
  */
 import {SPECIES,speciesOf,learnableMove,ALL_TM_MOVES,STARTER_IDS,type KitMove} from './roster.ts';
 import type {World,SquadMember} from './engine.ts';
@@ -35,7 +35,7 @@ export function initialProfile():Profile {
   return {expeditions:0,next:4,roster:[newInstance('P1','charmander',true),newInstance('P2','squirtle',true),newInstance('P3','bulbasaur',true)],vault:{},team:['P1','P2','P3'],leader:'P3',account:0,rescue:[],lost:[],origin:'P3'};
 }
 /**
- * Stage 7.1 new game (WORKING CANDIDATE, docs/04-规格/新游戏流程与界面.md): the player picks a main character from the nine starters and one
+ * Stage 7.1 new game (WORKING CANDIDATE, https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E6%96%B0%E6%B8%B8%E6%88%8F%E6%B5%81%E7%A8%8B%E4%B8%8E%E7%95%8C%E9%9D%A2.md): the player picks a main character from the nine starters and one
  * deputy from the other eight. The profile starts with these two only (P1 main and leader, P2 deputy); a third member has to be recruited.
  */
 export function newGameProfile(mainSpecies:string,deputySpecies:string):BaseResult {

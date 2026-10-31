@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto';
 import {THEME_FLOORS,ARENA_TILE} from '../../src/core/dungeon.ts';
 import {BOSS_SPECIES} from '../../src/core/roster.ts';
 
-/* Stage 7.3 asset completeness (docs/04-规格/内容扩充与首领.md, section 四 "素材清单完整性测试"). Everything is read from files; nothing is generated here. */
+/* Stage 7.3 asset completeness (https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E5%86%85%E5%AE%B9%E6%89%A9%E5%85%85%E4%B8%8E%E9%A6%96%E9%A2%86.md, section 四 "素材清单完整性测试"). Everything is read from files; nothing is generated here. */
 const root=new URL('../../public/assets/',import.meta.url);
 const manifest=JSON.parse(readFileSync(new URL('manifest.json',root),'utf8'));
 const roster=JSON.parse(readFileSync(new URL('../../src/data/roster.json',import.meta.url),'utf8'));

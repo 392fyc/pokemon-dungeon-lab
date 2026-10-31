@@ -6,7 +6,7 @@ import {playSeed,stats,ROUND_CAP} from './soak-bot.mjs';
 /*
  * Stage 6.6 (automatic part): full-loop soak. The bot, its invariants and its per-step round-trip / illegal-command checks live in ./soak-bot.mjs
  * (shared with tools/soak/balance.mjs, stage 7.4). This file only runs the default (naive) policy over many seeds and prints the statistics.
- * Statistics are printed, never asserted (this is a soak, not a balance test). Specification: docs/02-进度/自测记录/阶段6—完整循环自测报告.md.
+ * Statistics are printed, never asserted (this is a soak, not a balance test). Specification: https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/02-%E8%BF%9B%E5%BA%A6/%E8%87%AA%E6%B5%8B%E8%AE%B0%E5%BD%95/%E9%98%B6%E6%AE%B56%E2%80%94%E5%AE%8C%E6%95%B4%E5%BE%AA%E7%8E%AF%E8%87%AA%E6%B5%8B%E6%8A%A5%E5%91%8A.md.
  */
 const SEEDS=+(process.env.SOAK_SEEDS??30);
 

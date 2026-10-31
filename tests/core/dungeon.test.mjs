@@ -64,7 +64,7 @@ test('D6 stairs, points and enemies sit on legal, distinct cells',()=>{
 });
 test('D7 enemy HP comes from the shared roster and developer floors use Lv5',()=>{
  const g=generateFloor(3,2),by=Object.fromEntries(roster.species.map(s=>[s.id,s]));
- for(const e of g.enemies){assert.equal(e.level,5);assert.equal(e.hp,Math.round(by[e.species].maxHp*0.5)); // difficulty multiplier 0.5 on enemy HP
+ for(const e of g.enemies){assert.equal(e.level,5);assert.equal(e.hp,Math.round(by[e.species].maxHp*0.4)); // user-confirmed normal enemy HP multiplier
  assert.equal(e.damage,undefined);assert.equal(e.ai,undefined);}
  for(const [id,dex] of Object.entries(WILD_SPECIES))assert.equal(by[id].dex,dex);
  assert.ok('arcanine' in WILD_SPECIES);

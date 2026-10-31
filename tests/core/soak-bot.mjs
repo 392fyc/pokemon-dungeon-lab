@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {createExpedition,createMain,PROG,bossDefeated,applyCommand,skillTargets} from '../../src/core/engine.ts';
+import {createExpedition,createMain,PROG,bossDefeated,applyCommand,skillTargets,estimateAttackDamage} from '../../src/core/engine.ts';
 import {initialProfile,newGameProfile,profileProblem,settleRun} from '../../src/core/base.ts';
 import {TrialStore} from '../../src/core/save.ts';
 import {ECON} from '../../src/core/economy.ts';
@@ -168,8 +168,8 @@ function skillKills(s,L,e){
 }
 /* 7.7 official-move helpers (tactical policies only). Damage rule read from engine.ts resolveDamage/executeSkill: base = 6+ceil(power/2)+level bonus,
  * plus the attacker's attack stage, minus the target's defence stage, at least 1. A basic attack is the same with power 0. */
-function estDamage(s,L,e,k){return Math.max(1,6+Math.ceil(moveOf(k).power/2)+dmgBonus(s)+(L.stages?.atk??0)-(e.stages?.def??0));}
-function basicDamage(s,L,e){return Math.max(1,6+dmgBonus(s)+(L.stages?.atk??0)-(e.stages?.def??0));}
+function estDamage(s,L,e,k){return estimateAttackDamage(s,L.id,e.id,k);}
+function basicDamage(s,L,e){return estimateAttackDamage(s,L.id,e.id);}
 /** Usable damage moves that can hit `e` now, strongest first (estimated damage this round), ties: more PP left first. */
 function bestMoves(s,L,e){return hitMoves(s,L,e).sort((a,c)=>estDamage(s,L,e,c)-estDamage(s,L,e,a)||(L.pp[c]??0)-(L.pp[a]??0));}
 /** Learned moves with PP left whose effect list satisfies `test` (e.g. protect, counter, a defence-stage raise). */

@@ -96,7 +96,7 @@ try{
  assert.equal(await exported(),incompatible);await upload(backup);assert.deepEqual(JSON.parse(await raw()),original);
  result.checks.push('不兼容存档有中文原因，可按原字节导出后导入有效记录');
  await p.locator('#settings-close').click();
- // Complete the fixed-map five-round route (7.8: the real geodude E has 10 HP, so two basic attacks defeat it) using keys, canvas attacks and invitation/exit buttons.
+ // Complete the fixed-map five-round route (7.8: real Geodude E has 8 HP, so two 6-point basic attacks defeat it) using keys, canvas attacks and invitation/exit buttons.
  // Use a separate browser context below, so the player save is not replaced by a developer trial.
  const runContext=await browser.newContext({viewport:{width:1440,height:1100}});
  try{

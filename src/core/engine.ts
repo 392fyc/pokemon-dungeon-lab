@@ -303,23 +303,17 @@ function blowawayCollision(s:World,actor:Unit,target:Unit):'wall'|'opponent'|'fr
 }
 function pickDamageAction(s:World,id:string,tactic:Tactic,quickguard:ReadonlySet<string>,visibleOnly?:ReadonlySet<string>):Action|null {
   const actor=s.units[id];if(!alive(actor)||tactic==='avoid')return null;
-  const candidates:ScoredAction[]=[];const opponents=opponentIds(s,actor.side),actorLevel=actor.side==='friend'?(s.prog?.level??actor.level??INITIAL_LEVEL):(actor.level??INITIAL_LEVEL);
+  const candidates:ScoredAction[]=[];const opponents=opponentIds(s,actor.side);
   actor.learned.forEach((move,moveIndex)=>{
     const spec=moveOf(move),pp=actor.pp[move]??0;if(!spec||pp<1||(!spec.effects.includes('damage')&&!spec.effects.includes('blowaway'))||isProtectionMove(spec)&&isProtectionMoveId(actor.lastMove))return;
     const targets=attackableTargets(s,id,spec);
     for(const target of targets){
       if(visibleOnly&&!visibleOnly.has(target.id))continue;
       if(!tacticalTargetAllowed(s,actor,target,tactic)||rejectedForBoss(spec,target))continue;
-      const dist=distance(actor.pos!,target.pos!),guarded=target.protect>0||(quickguard.has(target.id)&&dist>1);
+      const dist=distance(actor.pos!,target.pos!);
       let score=0;
       if(spec.effects.includes('damage')&&spec.power!==null){
-        const base=actor.side==='enemy'?Math.max(1,Math.round((6+Math.ceil(spec.power/2)+levelDamageBonus(actorLevel))*ENEMY_DIFFICULTY)):6+Math.ceil(spec.power/2)+levelDamageBonus(actorLevel);
-        let hitDamage=Math.max(1,base+(actor.stages?.atk??0)-(target.stages?.def??0));
-        const category=moveCategory(move);
-        if(!category)throw new Error(`缺少招式类别：${move}`);
-        if(category==='Physical'&&(target.reflect??0)>0)hitDamage=Math.max(1,Math.floor(hitDamage/2));
-        if(category==='Special'&&(target.lightscreen??0)>0)hitDamage=Math.max(1,Math.floor(hitDamage/2));
-        if(!guarded)score+=hitDamage;
+        score+=estimateAttackDamage(s,id,target.id,move,quickguard);
       }
       if(spec.effects.includes('blowaway')){
         const collision=blowawayCollision(s,actor,target);
@@ -550,21 +544,45 @@ function basicCategory(u:Unit):'Physical'|'Special' {
   const b=u.species?speciesOf(u.species)?.baseStats:undefined;
   return b&&b.spa>b.atk?'Special':'Physical';
 }
-/** Apply defence, the matching ally screen, then protect/quickguard; return actual HP lost for drain and counter. */
-function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set()):number {
-  const source=s.units[sourceId],target=s.units[targetId];
-  const opposing=source.side!==target.side;
-  const attackDistance=source.pos&&target.pos?distance(source.pos,target.pos):0;
-  const base=source.side==='enemy'?Math.max(1,Math.round(baseDamage*ENEMY_DIFFICULTY)):baseDamage;
+export const STAT_DAMAGE_RATIO=Object.freeze({min:0.8,max:1.25} as const);
+/** Shared, side-effect-free damage calculation. An absent target represents an ordinary ratio-1 target. */
+function damageAmount(source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>):number {
+  const attackStats=source.species?speciesOf(source.species)?.baseStats:undefined;
+  const defenceStats=target?.species?speciesOf(target.species)?.baseStats:undefined;
+  const ratio=attackStats&&defenceStats&&category!=='Status'
+    ?Math.max(STAT_DAMAGE_RATIO.min,Math.min(STAT_DAMAGE_RATIO.max,category==='Special'?attackStats.spa/defenceStats.spd:attackStats.atk/defenceStats.def)):1;
+  const scaled=Math.max(1,Math.round(baseDamage*ratio));
+  const opposing=!!target&&source.side!==target.side;
+  const attackDistance=source.pos&&target?.pos?distance(source.pos,target.pos):0;
+  const base=source.side==='enemy'?Math.max(1,Math.round(scaled*ENEMY_DIFFICULTY)):scaled;
   const raw=base+(source.stages?.atk??0);
-  let amount=raw<=0?0:Math.max(0,raw-(target.stages?.def??0));
+  let amount=raw<=0?0:Math.max(0,raw-(target?.stages?.def??0));
   if(opposing&&amount>0){
-    if(category==='Physical'&&(target.reflect??0)>0)amount=Math.floor(amount/2);
-    if(category==='Special'&&(target.lightscreen??0)>0)amount=Math.floor(amount/2);
+    if(category==='Physical'&&(target!.reflect??0)>0)amount=Math.floor(amount/2);
+    if(category==='Special'&&(target!.lightscreen??0)>0)amount=Math.floor(amount/2);
   }
-  const blocked=opposing&&(target.protect>0||(quickguard.has(target.id)&&attackDistance>1));
+  const blocked=opposing&&(target!.protect>0||(quickguard.has(target!.id)&&attackDistance>1));
   if(blocked)amount=0;
   else if(raw>0)amount=Math.max(1,amount);
+  return amount;
+}
+/** HP loss for the damage part of a move/basic attack; AI and UI use the same arithmetic as resolution. */
+export function estimateAttackDamage(s:World,sourceId:string,targetId:string|undefined,skill?:Skill,quickguard:ReadonlySet<string>=new Set()):number {
+  const source=s.units[sourceId],target=targetId===undefined?undefined:s.units[targetId];
+  if(!source)return 0;
+  const spec=skill===undefined?undefined:moveOf(skill);
+  if(skill!==undefined&&(!spec||!spec.effects.includes('damage')||spec.power===null))return 0;
+  const level=source.side==='friend'?(s.prog?.level??source.level??INITIAL_LEVEL):(source.level??INITIAL_LEVEL);
+  const base=6+(spec?Math.ceil(spec.power!/2):0)+levelDamageBonus(level);
+  const category=skill===undefined?basicCategory(source):moveCategory(skill);
+  if(!category)throw new Error(`缺少招式类别：${skill}`);
+  const amount=damageAmount(source,target,base,category,quickguard);
+  return target?Math.min(target.hp,amount):amount;
+}
+/** Apply the shared damage amount; return actual HP lost for drain and counter. */
+function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set()):number {
+  const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
+  const amount=damageAmount(source,target,baseDamage,category,quickguard);
   const hpBefore=target.hp;
   hit(s,targetId,amount);
   const actual=hpBefore-target.hp;

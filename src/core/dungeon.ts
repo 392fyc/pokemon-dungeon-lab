@@ -29,7 +29,7 @@ export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[]
 export type ThemeId='moss'|'wet'|'ash';
 export const INITIAL_LEVEL=5;
 /** Difficulty multiplier on every generated enemy's max HP and on every damage dealt by an enemy (only `normal` exists for now; easy/hard and a picker come later). */
-export const DIFFICULTY:{normal:number}={normal:0.5};
+export const DIFFICULTY:{normal:number}={normal:0.4};
 export const ENEMY_DIFFICULTY=DIFFICULTY.normal;
 /** First-type partitions and level bands from the 7.8 working specification. */
 export const THEME_FLOORS:{theme:ThemeId;name:string;types:string[];levels:[number,number];count:number;floorTile:string;wallTile:string}[]=[

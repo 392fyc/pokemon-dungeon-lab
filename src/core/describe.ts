@@ -1,5 +1,5 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
-import {SKILL_CN,key,type Action,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
+import {SKILL_CN,key,estimateAttackDamage,type Action,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
 import {SPECIES} from './roster.ts';
 import {MOVE_DEFS,moveOf,type MoveRange} from './moves.ts';
 import {speciesZh,moveZh,typeZh,itemZh} from './names.ts';
@@ -13,11 +13,18 @@ export const unitLabel=(u:Unit|undefined,id:string):string=>{const n=unitName(u)
 export const skillLabel=(_u:Unit|undefined,skill:Skill):string=>SKILL_CN[skill]??moveZh(skill);
 const RANGE_CN:Record<MoveRange,string>={front:'上下左右相邻',front2:'同排／列1–2格，无遮挡',line10:'同排／列至多10格，命中首个单位（队友也会被命中）',around:'使用者周围8格',room:'同房间；走廊或无房间数据时周围2格',user:'自身'};
 export function moveRangeLabel(id:string):string{const spec=moveOf(id);return spec?RANGE_CN[spec.range]:'未知射程';}
-export function moveEffectLabel(id:string):string{
+export type DamageSummaryContext={s:World;sourceId:string;targetId?:string};
+/** Uses the engine estimate for player-facing action previews; without context, existing reference text stays intact. */
+export function damageEstimateText(s:World,sourceId:string,targetId?:string,skill?:Skill):string {
+  const source=s.units[sourceId],quickguard=source&&s.quickguard&&s.quickguard.owner!==source.side?new Set(s.quickguard.units):undefined;
+  const amount=estimateAttackDamage(s,sourceId,targetId,skill,quickguard);
+  return `约${amount}点${targetId===undefined?'（对普通目标）':''}`;
+}
+export function moveEffectLabel(id:string,context?:DamageSummaryContext):string{
   const spec=moveOf(id);if(!spec)return '招式数据缺失';
   const parts:string[]=[];
   for(const effect of spec.effects){
-    if(effect==='damage')parts.push(spec.power===null?'造成伤害':`造成${6+Math.ceil(spec.power/2)}点基础伤害`);
+    if(effect==='damage')parts.push(spec.power===null?'造成伤害':context?`造成${damageEstimateText(context.s,context.sourceId,context.targetId,id)}`:`造成${6+Math.ceil(spec.power/2)}点基础伤害`);
     else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
     else if(effect==='protect')parts.push('自身受到敌方攻击伤害为0（3个敌方阶段）');
     else if(effect==='counter')parts.push('反击相邻敌人的有效伤害（3个敌方阶段）');
@@ -29,7 +36,7 @@ export function moveEffectLabel(id:string):string{
   }
   return parts.join('；')||'无效果说明';
 }
-export const moveSummary=(id:string):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id)}`;
+export const moveSummary=(id:string,context?:DamageSummaryContext):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id,context)}`;
 
 /** Short plain text for one action. `s` is the state before the round, so ids can be turned into species names. */
 export function actionText(s:World,actor:string,a:Action):string {
@@ -57,7 +64,7 @@ export function stepRows(s:World,steps:TraceStep[]):{id:string;text:string}[] {
 export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];note:string};
 export type TeammateInfo={id:string;name:string;level:number|null;tactic:Tactic;moves:string[]};
 const tacticFor=(u:Unit):Tactic=>isTactic(u.tactic)?u.tactic:u.side==='enemy'?'gofoes':'together';
-const moveRows=(u:Unit):string[]=>u.learned.map(m=>`${moveZh(m)}（${moveSummary(m)}） PP ${u.pp[m]??0}/${u.maxPp[m]??u.pp[m]??0}`);
+const moveRows=(u:Unit,context?:DamageSummaryContext):string[]=>u.learned.map(m=>`${moveZh(m)}（${moveSummary(m,context)}） PP ${u.pp[m]??0}/${u.maxPp[m]??u.pp[m]??0}`);
 /** What a revealed enemy shows. Returns null for anything the player cannot see yet (unrevealed cell, fallen, or not an enemy). */
 export function enemyInfo(s:World,id:string):EnemyInfo|null {
   const u=s.units[id];
@@ -68,9 +75,9 @@ export function enemyInfo(s:World,id:string):EnemyInfo|null {
     level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:moveRows(u),note};
 }
 /** Read-only detail for a teammate card while it is hovered. */
-export function teammateInfo(s:World,id:string):TeammateInfo|null {
+export function teammateInfo(s:World,id:string,targetId?:string):TeammateInfo|null {
   const u=s.units[id];if(!u||u.side!=='friend')return null;
-  return {id,name:unitLabel(u,id),level:typeof u.level==='number'?u.level:null,tactic:tacticFor(u),moves:moveRows(u)};
+  return {id,name:unitLabel(u,id),level:typeof u.level==='number'?u.level:null,tactic:tacticFor(u),moves:moveRows(u,{s,sourceId:id,targetId})};
 }
 
 const escapeRe=(t:string)=>t.replace(/[.*+?^$|()[\]{}\\]/g,'\\$&');

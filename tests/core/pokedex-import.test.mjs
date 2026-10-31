@@ -400,6 +400,11 @@ test('图鉴正式静态产物覆盖175种，保留旧名单、25招原文字节
   const names = readJson(path.join(repoRoot, 'src', 'data', 'names-zh.json'));
   assertLegacyAndRosterArtifacts(roster, moveDoc, 'production');
   assertTeamProtectionData(moveDoc, names);
+  // #93: official Simplified Chinese names from the pinned PokeAPI snapshot.
+  for (const [id, name] of Object.entries({dragonbreath:'龙息',focuspunch:'真气拳',megapunch:'百万吨重拳',spark:'电光',throatchop:'地狱突刺'})) {
+    assert.equal(names.moves[id], name, `${id} official move label`);
+  }
+  assert.equal(names.items.tonic, 'PP多项小补剂');
   assert.deepEqual(evolutionIds.map(id => names.species[id]), ['月桂叶', '大竺葵', '火岩鼠', '火暴兽', '蓝鳄', '大力鳄', '森林蜥蜴', '蜥蜴王', '力壮鸡', '火焰鸡', '沼跃鱼', '巨沼怪', '沼王', '黑鲁加', '铁掌力士']);
   assert.equal(moveDoc.categories.ember,'Special');assert.equal(moveDoc.categories.extremespeed,'Physical');assert.equal(moveDoc.categories.reflect,'Status');
   assert.deepEqual(Object.keys(moveDoc.categories).sort(),Object.keys(moveDoc.moves).sort());

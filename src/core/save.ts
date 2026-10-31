@@ -498,7 +498,7 @@ export class TrialStore {
   get settlementSummary():SettleSummary|null{return this.savedSettlement?clone(this.savedSettlement):null;}
   /** During a run this exports the untouched camp record, never the memory-only World. */
   exportRecord():string|null {return this.status==='ready'&&this.record?JSON.stringify(this.record):null;}
-  private label():string|null {return this.record?`基地 · 待出发 · 保存${this.record.sequence}`:null;}
+  private label():string|null {return this.record?'基地 · 待出发':null;}
   private async persist():Promise<boolean> {
     if(!this.record){this.status='failed';this.error='没有可保存的营地档案';return false;}
     this.status='saving';
@@ -511,7 +511,7 @@ export class TrialStore {
     this.world=clone(s);this.activeProfile=profile?clone(profile):null;this.activeKind='developer';this.savedSettlement=null;this.status='ready';this.error='';return true;
   }
   async dispatch(cmd:Command):Promise<Result> {
-    const s=this.world;if(!s)throw Error('没有已加载试验');
+    const s=this.world;if(!s)throw Error('没有进行中的远征');
     if(this.status!=='ready')return {ok:false,state:clone(s),error:'保存未完成；仅可查看或重试'};
     const result=applyCommand(s,cmd);if(!result.ok)return result;
     this.world=result.state;

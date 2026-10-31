@@ -185,7 +185,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
         emit({k:'hit', by, attacker, target:id, from, at, fx, amount:Number(m[1]), dead});
       }
       if (dead) pos[id] = null;
-    } else if ((m = rest.match(/^对(.+?)使用(橙橙果|PP补剂)，(?:HP (\d+)→(\d+)|每招PP\+(\d+))/))) {
+    } else if ((m = rest.match(/^对(.+?)使用(橙橙果|PP多项小补剂)，(?:HP (\d+)→(\d+)|每招PP\+(\d+))/))) {
       const t = head(`${m[1]}。`)?.id ?? null, item:Item = m[2] === '橙橙果' ? 'berry' : 'tonic';
       const at = t ? pos[t] : null, actorAt = pos[id];
       if (t && at && actorAt) emit({k:'heal', by:id, target:t, item, amount:item === 'berry' ? Number(m[4]) - Number(m[3]) : Number(m[5]), at, actorAt});

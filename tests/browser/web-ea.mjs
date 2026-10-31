@@ -28,6 +28,7 @@ async function exported(){
 }
 try{
  await p.goto(base);await p.locator('#title-new').waitFor();
+ await p.waitForLoadState('networkidle');
  await capture('01-title');
  assert.equal(await p.evaluate(()=>performance.getEntriesByType('resource').some(r=>/\/phaser-.*\.js/.test(r.name))),false,'title must not load Phaser');
  assert.equal(scriptRequests.some(url=>/\/game-data-.*\.js/.test(url)),false,'idle title must not request game data');
@@ -112,6 +113,21 @@ try{
   await q.screenshot({path:'.artifacts/trial/web-ea-completed-run.png',fullPage:true});
   result.checks.push('固定主图五轮：移动、两次普攻、拒绝邀请、完成 G 并正常撤离');
  }finally{await runContext.close();}
+ // Presence alone does not promise a valid save; the existing validator runs on entry.
+ const corruptContext=await browser.newContext();
+ try{
+  await corruptContext.addInitScript(()=>localStorage.setItem('dungeon-trial.player.v1','broken-json-record'));
+  const q=await corruptContext.newPage();q.setDefaultTimeout(15000);
+  q.on('pageerror',e=>errors.push(e.message));
+  await q.goto(base);await q.locator('#title-continue').waitFor();
+  assert.equal(await q.locator('#title-continue').innerText(),'读取存档');
+  assert.equal(await q.locator('#title-save-line').innerText(),'读取存档详情需要加载游戏');
+  await q.locator('#title-continue').click();
+  await q.getByText(/存档无法载入：/).waitFor();
+  assert.equal(await q.locator('#title-continue').count(),0);
+  assert.equal(await q.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),'broken-json-record');
+  result.checks.push('未校验的记录显示中性读取入口；损坏记录进入后提示无法载入且原字节不变');
+ }finally{await corruptContext.close();}
  // A failed lazy data request must leave the saved bytes untouched and offer a clear reload action.
  const failureContext=await browser.newContext();
  let releaseData;

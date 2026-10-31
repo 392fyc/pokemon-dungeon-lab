@@ -10,7 +10,7 @@ function titleContext():TitleContext{
  try{
   // This is the existing public storage key (G11.4), not a second save reader.
   const hasRecord=window.localStorage.getItem('dungeon-trial.player.v1')!==null;
-  return {hasRecord,status:hasRecord?'pending':'empty',error:'',saveLine:'有存档，进入后读取详情',asking:false,exported:false};
+  return {hasRecord,status:hasRecord?'pending':'empty',error:'',saveLine:'读取存档详情需要加载游戏',asking:false,exported:false};
  }catch{
   return {hasRecord:true,status:'blocked',error:'浏览器拒绝读取本地存储',saveLine:'',asking:false,exported:false};
  }
@@ -38,6 +38,9 @@ async function enter(action?:'new'|'continue'|'settings'){
   const game=await import('./app/game.ts');
   await game.openTitleAction(action);
  }catch{
+  // A module that already ran may own timers, listeners and a Phaser scene. Replacing
+  // the title does not dispose those resources; only a full reload resets them safely.
+  // Keep all entry actions disabled on this error screen instead of retrying in place.
   loading=false;
   showTitle(true);
  }

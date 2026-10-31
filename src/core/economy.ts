@@ -1,5 +1,5 @@
 /**
- * Stage 7.2 numbers (docs/玩法研究/失败回归与服务点.md). Every value is a WORKING CANDIDATE, not final balance.
+ * Stage 7.2 numbers (docs/04-规格/失败回归与服务点.md). Every value is a WORKING CANDIDATE, not final balance.
  * No imports: both the engine (in-run) and the base (between runs) read from here.
  */
 export const ECON={

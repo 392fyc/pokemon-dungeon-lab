@@ -1,6 +1,6 @@
 /**
  * 6.5 base profile: the part of the player's progress that outlives one run. Pure data and pure functions; no storage, no renderer.
- * Specification: docs/玩法研究/基地与培养.md. All numbers (two carried moves, three-member squads) are working candidates.
+ * Specification: docs/04-规格/基地与培养.md. All numbers (two carried moves, three-member squads) are working candidates.
  */
 import {SPECIES,speciesOf,learnableMove,ALL_TM_MOVES,STARTER_IDS,type KitMove} from './roster.ts';
 import type {World,SquadMember} from './engine.ts';
@@ -35,7 +35,7 @@ export function initialProfile():Profile {
   return {expeditions:0,next:4,roster:[newInstance('P1','charmander',true),newInstance('P2','squirtle',true),newInstance('P3','bulbasaur',true)],vault:{},team:['P1','P2','P3'],leader:'P3',account:0,rescue:[],lost:[],origin:'P3'};
 }
 /**
- * Stage 7.1 new game (WORKING CANDIDATE, docs/玩法研究/新游戏流程与界面.md): the player picks a main character from the nine starters and one
+ * Stage 7.1 new game (WORKING CANDIDATE, docs/04-规格/新游戏流程与界面.md): the player picks a main character from the nine starters and one
  * deputy from the other eight. The profile starts with these two only (P1 main and leader, P2 deputy); a third member has to be recruited.
  */
 export function newGameProfile(mainSpecies:string,deputySpecies:string):BaseResult {

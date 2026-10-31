@@ -5,7 +5,7 @@ import {createExpedition,createMain,applyCommand,recruitUnit,closeOut,RULE_VERSI
 import {initialProfile,learnTm,setCarry,setTeam,squadOf,settleRun,profileProblem} from '../../src/core/base.ts';
 import {SPECIES} from '../../src/core/roster.ts';
 import {TrialStore,decode,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
-// Stage 6.5 rule tests. Every expected value below is a literal written from docs/玩法研究/基地与培养.md and the roster data
+// Stage 6.5 rule tests. Every expected value below is a literal written from docs/04-规格/基地与培养.md and the roster data
 // (charmander kit scratch+ember, squirtle tackle+watergun, bulbasaur tackle+seedbomb); none is computed with the code under test.
 
 const memory=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);},map:m};};

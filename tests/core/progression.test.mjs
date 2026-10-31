@@ -1,6 +1,6 @@
 /* Stage 6.4 engine tests: real species team, recruit draw, shared run level, backpack items, room reveal, save checks.
    Expected values are literals worked out by hand from the roster kit table and the rules in
-   docs/玩法研究/招募等级与恢复品.md; fixtures are built by hand, not by the production factories. */
+   docs/04-规格/招募等级与恢复品.md; fixtures are built by hand, not by the production factories. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createExpedition,createMain,applyCommand,reveal,rngStep,levelFor,PROG} from '../../src/core/engine.ts';

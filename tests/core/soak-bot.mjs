@@ -14,7 +14,7 @@ const rangedMoves=u=>damageMoves(u).filter(k=>['front2','line10'].includes(moveO
  *   base -> depart -> expedition (until ended or the round cap) -> return to base -> learn / carry / team -> depart again.
  * The bot sees only what a player sees: revealed floor cells, units, points and the backpack. It never reads hidden terrain.
  * Every accepted step is read back through a brand-new TrialStore and compared with deepEqual; every rejected command must leave state and bytes unchanged.
- * Statistics are printed, never asserted (this is a soak, not a balance test). Specification: docs/项目框架/阶段6—完整循环自测报告.md.
+ * Statistics are printed, never asserted (this is a soak, not a balance test). Specification: docs/02-进度/自测记录/阶段6—完整循环自测报告.md.
  */
 export const GAMES=5,ROUND_CAP=400,COMMAND_CAP=1500;
 const key=p=>`${p.x},${p.y}`;

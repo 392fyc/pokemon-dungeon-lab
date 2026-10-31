@@ -1,5 +1,5 @@
 {
-  "note": "Private build only. Every file lists its source and licence; see docs/制作流程/素材管线.md.",
+  "note": "Private build only. Every file lists its source and licence; see docs/05-制作流程/素材管线.md.",
   "files": {
     "characters/0001/AnimData.xml": {
       "bytes": 11551,

@@ -1,4 +1,4 @@
-/* Stage 7.8 level and evolution model (docs/玩法研究/敌我对等招式与强化模型规格.md section 13): evolution-level samples,
+/* Stage 7.8 level and evolution model (docs/04-规格/敌我对等招式与强化模型规格.md section 13): evolution-level samples,
    round-end evolution (current HP kept, one stage per settlement, Eevee branch choice), recovery after the run, and recruits settled by the species they joined as.
    Experience facts used (worked by hand): a kill is worth the enemy's level x PROG.expMultiplier (2); Lv L -> L+1 costs L, so the cumulative exp to reach Lv N is N(N-1)/2 - 10
    (Lv6 5, Lv16 110, Lv20 180, Lv21 200, Lv36 620). Max HP = roster HP + max(0, Lv-5). */

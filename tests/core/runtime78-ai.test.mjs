@@ -1,4 +1,4 @@
-/* Stage 7.8 behaviour tests for docs/玩法研究/敌我对等招式与强化模型规格.md: section 3 (relative sides), section 4 (shared move choice),
+/* Stage 7.8 behaviour tests for docs/04-规格/敌我对等招式与强化模型规格.md: section 3 (relative sides), section 4 (shared move choice),
    section 11.6 (six tactics) and section 12.3 (sight, sleep, chase memory, roaming).
    Every expected value is a literal worked out by hand from the move table (src/data/pmd-moves.json power) and the damage rule
    "6 + ceil(power/2) + floor(max(0, level-5)/4), minus the target's defence stage": tackle(6)=9, scratch(6)=9, ember(7)=10, absorb(1)=7,

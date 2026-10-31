@@ -6,7 +6,6 @@ import fs from 'node:fs';
 import {createRequire} from 'node:module';
 
 const artifactDir='.artifacts/trial';
-fs.mkdirSync('.artifacts/visible-routes-99',{recursive:true});
 fs.mkdirSync(artifactDir,{recursive:true});
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
@@ -70,6 +69,7 @@ async function command(c){
    assert.equal(after.invitations.find(i=>i.id===pending.id).status,'accepted');
    assert.ok(after.queue.includes(pending.unit.id),'accepted recruit must actually join the party');
   }else{await click('reject');await click('reject-confirm');}
+  assert.notEqual((await state()).invitations.find(i=>i.id===pending.id)?.status,'pending','the chosen invitation must be resolved');
   return;
  }
  if(c.type==='buy'){await click('buy-'+c.item);return;}
@@ -172,6 +172,25 @@ function adjacentEnemy(view,{awakeOnly=false}={}){
  return view.enemies.filter(e=>manhattan(view.leaderPos,e.pos)===1&&(!awakeOnly||!e.asleep))
   .sort((a,b)=>a.hp-b.hp||a.pos.y-b.pos.y||a.pos.x-b.pos.x)[0]??null;
 }
+function recoverBlockedRoute(view,memory){
+ const adjacent=adjacentEnemy(view);
+ if(adjacent)return {kind:'round',action:{type:'basic',targetPos:adjacent.pos}};
+ const edge=nearestRevealedEdge(view,memory);
+ if(edge)return {kind:'scout',edge};
+ // A sleeping enemy cannot approach us. Walk to a reachable, revealed cell beside
+ // a visible enemy instead of waiting forever on this side of the obstruction.
+ const distances=visibleDistances(view,view.leaderPos),approaches=[];
+ for(const enemy of view.enemies)for(const d of directions){
+  const pos=add(enemy.pos,d),distance=distances.get(posKey(pos));
+  if(distance!==undefined&&distance>0)approaches.push({pos,distance});
+ }
+ approaches.sort((a,b)=>a.distance-b.distance||a.pos.y-b.pos.y||a.pos.x-b.pos.x);
+ for(const approach of approaches){
+  const step=nextStep(view,approach.pos);
+  if(step?.action)return {kind:'round',action:step.action};
+ }
+ return null;
+}
 function planVisibleAction(view,route,memory,shopBought){
  // Combat uses only enemies whose positions are already in the revealed-cell set.
  const awake=adjacentEnemy(view,{awakeOnly:true});
@@ -186,8 +205,7 @@ function planVisibleAction(view,route,memory,shopBought){
   const step=nextStep(view,visibleGoal.pos);
   if(step?.arrived)return {kind:'round',action:{type:'interact',exit:false}};
   if(step)return {kind:'round',action:step.action};
-  const blocked=adjacentEnemy(view);
-  return blocked?{kind:'round',action:{type:'basic',targetPos:blocked.pos}}:{kind:'round',action:{type:'wait'}};
+  return recoverBlockedRoute(view,memory);
  }
  if(route.purse>0&&!shopBought){
   const shop=view.points.find(p=>p.kind==='shop');
@@ -196,8 +214,7 @@ function planVisibleAction(view,route,memory,shopBought){
    const step=nextStep(view,shop.pos);
    if(step?.arrived)return {kind:'buy',item:'tm'};
    if(step)return {kind:'round',action:step.action};
-   const blocked=adjacentEnemy(view);
-   return blocked?{kind:'round',action:{type:'basic',targetPos:blocked.pos}}:{kind:'round',action:{type:'wait'}};
+   return recoverBlockedRoute(view,memory);
   }
   const edge=nearestRevealedEdge(view,memory);
   if(edge)return {kind:'scout',edge};
@@ -208,6 +225,7 @@ function planVisibleAction(view,route,memory,shopBought){
   const step=nextStep(view,exit.pos);
   if(step?.arrived)return {kind:'round',action:{type:'interact',exit:true}};
   if(step)return {kind:'round',action:step.action};
+  return recoverBlockedRoute(view,memory);
  }
  const edge=nearestRevealedEdge(view,memory);
  return edge?{kind:'scout',edge}:null;
@@ -216,12 +234,13 @@ let acceptedInRun=0;
 async function playRun(index,route){
  acceptedInRun=0;
  const memory={known:new Set(),tried:new Set()};
- let shopBought=false,roundActions=0;
+ let shopBought=false,roundActions=0,invitationActions=0;
  const maxActions=200;
  while(roundActions<maxActions){
   const s=await state();
   if(s.phase==='ended')return acceptedInRun;
   if(s.phase==='invitation'){
+   assert.ok(++invitationActions<=maxActions,'single-run invitation handling exceeded its limit');
    const view=visibleView(s);
    const choice=view.team.length<3?'accept':'reject';
    await command({type:'invite',choice});
@@ -258,6 +277,17 @@ async function playRun(index,route){
 }
 
 try{
+ // Regression: the known corridor to a goal/shop is blocked by a distant sleeper.
+ // Exhausted edges must lead toward that visible blocker, then attack when adjacent.
+ for(const kind of ['goal','shop']){
+  const seen=['0,0','1,0','2,0','3,0'];
+  const view={seen,leaderId:'A',leaderPos:{x:0,y:0},team:[{id:'A',hp:10,pos:{x:0,y:0}}],enemies:[{id:'E',hp:5,asleep:true,pos:{x:2,y:0}}],points:[{kind:'goal',pos:{x:3,y:0},used:kind==='shop'},...(kind==='shop'?[{kind:'shop',pos:{x:3,y:0},used:false}]:[])]};
+  const memory={known:new Set(seen),tried:new Set(seen)},route={purse:20};
+  assert.deepEqual(planVisibleAction(view,route,memory,false),{kind:'round',action:{type:'move',key:'ArrowRight'}},kind+' approaches a visible sleeping blocker');
+  view.leaderPos={x:1,y:0};view.team[0].pos=view.leaderPos;
+  assert.deepEqual(planVisibleAction(view,route,memory,false),{kind:'round',action:{type:'basic',targetPos:{x:2,y:0}}},kind+' attacks the now-adjacent visible blocker');
+ }
+ report.sleepingBlockerRegression=true;
  await page.goto(base);await page.locator('#title-new').waitFor();
  assert.equal(await page.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),null);
  await page.locator('#title-new').click();await page.locator('#pick-main-'+routes.main).click();

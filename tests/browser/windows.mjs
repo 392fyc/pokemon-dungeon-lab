@@ -588,6 +588,7 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   await p.goto(base);await p.locator('#title-new').waitFor();
   for(const sel of ['#start','#fixture','#config','#coords-toggle','#title-continue','#open-fixture'])assert.equal(await p.locator(sel).count(),0,sel+' must not exist on the player path');
   await p.locator('#title-new').click();
+  await p.locator('.starter-card').nth(8).waitFor({state:'visible'});
   assert.equal(await p.locator('.starter-card').count(),9);
   const text=await p.locator('#title-screen').innerText();
   for(const n of ['妙蛙种子','小火龙','杰尼龟','菊草叶','火球鼠','小锯鳄','木守宫','火稚鸡','水跃鱼'])assert.ok(text.includes(n),n);
@@ -618,7 +619,7 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
    assert.ok((await state(p)).round>0,'a real key press advanced the run');assert.equal(await raw(p),campBeforeRun,'run actions do not change the camp record');
   assert.ok((await p.locator('#recent-list li').count())>0,'recent events are visible');
   await p.reload();await p.locator('#title-continue').waitFor();
-   assert.equal(await raw(p),campBeforeRun,'refresh preserves the exact pre-departure camp bytes');
+   assert.equal(await p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),campBeforeRun,'refresh preserves the exact pre-departure camp bytes');
     await p.locator('#title-continue').click();await ready(p);assert.equal(await state(p),null);assert.equal(await p.locator('#depart').isEnabled(),true);assert.equal(await p.locator('#guide-card').count(),0,'the guide stays closed');
     assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(i=>i.tactic),['followme','avoid'],'unsettled maze tactic edits are discarded by refresh');
     assert.deepEqual(errors,[]);return {roster:pr.roster.map(i=>i.species),baseTactics:['followme','avoid'],mazeEditNoTurn:true,tacticHover:true,refreshReturnsToCamp:true};

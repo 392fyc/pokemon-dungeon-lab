@@ -252,7 +252,7 @@ function bossTurn(s,memo,B){
  // Retreat rule: lost fight = boss HP above what we can deal in the next 3 rounds AND someone has already fallen. Sticky once decided.
  const attacks=damageMoves(L),sk=Math.min(3,attacks.reduce((n,k)=>n+L.pp[k],0)),power=Math.max(0,...attacks.map(k=>Math.ceil(moveOf(k).power/2))),leader3=sk*(6+power+b)+(3-sk)*(6+b),team3=leader3+(members.length-1)*3*(6+b);
  const fallen=s.queue.some(i=>s.units[i].hp<=0);
- if(!memo.retreat&&!memo.noRetreat&&fallen&&B.hp>team3)memo.retreat=true; // policy 'tactical-stand' never retreats (measures the fight itself)
+ if(!memo.retreat&&!memo.noRetreat&&fallen&&B.hp>team3){memo.retreat=true;memo.retreatRound=s.round;} // policy 'tactical-stand' never retreats (measures the fight itself); the round is kept so the statistics can tell whether the boss had been contacted by then
  if(memo.retreat){
   const exit=pts.find(p=>p.kind==='exit');
   if(exit){
@@ -471,7 +471,7 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
     if(s.end.outcome==='wipe'&&s.dungeon.level===3)st.bossWipes++;
     if(s.end.outcome==='normal'&&s.dungeon.level===3)st.lobbyExits++;
     Object.assign(x,{bossRun:true,reached:s.dungeon.level===3||'3' in s.dungeon.stored,defeated:!!s.end.boss,bossWipe:s.end.outcome==='wipe'&&s.dungeon.level===3,
-     lobbyExit:s.end.outcome==='normal'&&s.dungeon.level===3,retreat:memo.retreat,retreatBeforeContact:!!memo.retreat&&!x.contact,survivors:s.end.boss?s.queue.filter(id=>aliveU(s.units[id])).length:null,
+     lobbyExit:s.end.outcome==='normal'&&s.dungeon.level===3,retreat:memo.retreat,retreatBeforeContact:!!memo.retreat&&(!x.contact||x.contact.round>memo.retreatRound), // contact observed after the decision does not count: 'decided before any contact'survivors:s.end.boss?s.queue.filter(id=>aliveU(s.units[id])).length:null,
      bossHpLeft:(Object.values(s.units).find(u=>u.boss)??Object.values(s.dungeon.stored).flatMap(f=>Object.values(f.units)).find(u=>u.boss))?.hp??null});
     assert.equal(s.end.boss,s.units.boss?.hp===0||Object.values(s.dungeon.stored).some(f=>f.units.boss?.hp===0),`${where}: end.boss disagrees with the boss unit`);
    }

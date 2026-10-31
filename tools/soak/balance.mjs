@@ -85,7 +85,7 @@ function section(title,s){
 - 局内进化：${s.evolutions.games} 局发生过进化（${pct(s.evolutions.games,s.games)}），共 ${s.evolutions.total} 次。
 - 击杀（每局打倒的敌人数，含首领）：平均 ${fmt(s.kills.mean)}，中位 ${fmt(s.kills.median)}，最小 ${s.kills.min??'-'}，最大 ${s.kills.max??'-'}；按击杀分档：${KILL_BUCKETS.map(k=>{const q=s.killBuckets[k.key];return `${k.label} ${q.games} 局（全灭 ${q.wipes}，等级均值 ${fmt(q.levelMean,2)}，进化 ${q.evolved}）`;}).join('，')}。
 - 首领（${b.runsWithBoss} 局带首领）：到达首领层 ${b.reached}，击败首领 ${b.defeated}（到达首领层的局结束时首领剩余 HP：平均 ${fmt(b.bossHpLeft.mean)}，最小 ${b.bossHpLeft.min??'-'}，最大 ${b.bossHpLeft.max??'-'}），在首领层全灭 ${b.wipedOnBossFloor}，从大厅出口撤离 ${b.lobbyExit}（其中机器人判定“打不过”而撤退 ${b.retreatDecided} 局）；击败首领时存活成员数：1 人 ${b.survivorsWhenDefeated[1]}，2 人 ${b.survivorsWhenDefeated[2]}，3 人 ${b.survivorsWhenDefeated[3]}。
-- 在接触首领前就决定撤退 ${b.retreatBeforeContact} 局（到达首领层 ${b.reached} 局；“接触”指首次与首领相邻或进入其射线，见下文）。
+- 决定撤退时尚未接触过首领 ${b.retreatBeforeContact} 局（判定“打不过”的那一轮之前没有队员与首领相邻或进入其射线；只有 tactical 会做这个判定，其他策略恒为 0；到达首领层 ${b.reached} 局）。
 - 走失与救援：走失伙伴 ${r.lostPartners}，支付救援 ${r.paid}，成功归来 ${r.returned}，永久失去 ${r.goneForGood}；每个种子 ${GAMES} 局后账户余额：平均 ${fmt(r.account.mean)}，最小 ${r.account.min??'-'}，最大 ${r.account.max??'-'}（${r.account.seeds} 个种子）。
 - 招式机：获得 ${t.got}，带回 ${t.brought}，基地学会 ${t.learned}，局后金库未用 ${t.vaultUnused}（${ALL_TM_MOVES.map(m=>`${m} ${t.vaultByMove[m]}`).join('，')}）。
 - 进入首领层时：${f.entry.games} 局有记录；存活 3 人 ${f.entry.alive[3]}，2 人 ${f.entry.alive[2]}，1 人 ${f.entry.alive[1]}；每名成员（含已倒下者按 0）HP 比例平均 ${fmt(f.entry.memberHpRatio,2)}，仅存活者平均 ${fmt(f.entry.aliveMemberHpRatio,2)}；全队 HP 平均 ${fmt(f.entry.teamHp)}/${fmt(f.entry.teamMax)}（${fmt(f.entry.teamHpRatio,2)}，最低 ${fmt(f.entry.teamHpRatioMin,2)}）。

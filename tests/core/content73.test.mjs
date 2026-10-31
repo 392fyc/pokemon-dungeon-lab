@@ -12,7 +12,7 @@ import {enemyInfo,localizeLog} from '../../src/core/describe.ts';
 import {friend,enemy,pos,row} from '../acceptance/fixtures.mjs';
 
 /*
- * Stage 7.3 tests: docs/玩法研究/内容扩充与首领.md, section "验收" (groups D, T, L, B, S). Expected values are literals: either the spec's numbers, or values
+ * Stage 7.3 tests: docs/04-规格/内容扩充与首领.md, section "验收" (groups D, T, L, B, S). Expected values are literals: either the spec's numbers, or values
  * observed once from the Showdown import / the generator and then frozen (each such literal says so). Seeds for "some seed shows X" cases were searched first.
  */
 const roster=JSON.parse(readFileSync(new URL('../../src/data/roster.json',import.meta.url),'utf8'));

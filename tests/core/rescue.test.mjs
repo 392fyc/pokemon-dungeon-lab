@@ -8,7 +8,7 @@ import {TrialStore,decode,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 import {serviceRoll} from '../../src/core/dungeon.ts';
 
 /*
- * Stage 7.2 rule tests: docs/玩法研究/失败回归与服务点.md, section "验收".
+ * Stage 7.2 rule tests: docs/04-规格/失败回归与服务点.md, section "验收".
  * Expected values are literals taken from that spec, from the roster data (pidgey: tackle strong 3, gust line 3), and from draws of the saved random
  * stream worked out once by hand: with state 7 the first two values are 0.012 and 0.062 (both below 0.5: lost); state 5 gives 0.690 and 0.773 (kept);
  * state 1 gives 0.627 (kept) then 0.003 (lost). Seeds with a shop or exchanger come from serviceRoll: seed 2 has a shop on floor 1 (machine whirlwind,

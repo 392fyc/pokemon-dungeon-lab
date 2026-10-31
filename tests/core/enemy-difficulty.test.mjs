@@ -1,4 +1,4 @@
-/* Stage 7.8 difficulty multiplier (docs/玩法研究/敌我对等招式与强化模型规格.md section 5.1): ENEMY_DIFFICULTY = 0.5.
+/* Stage 7.8 difficulty multiplier (docs/04-规格/敌我对等招式与强化模型规格.md section 5.1): ENEMY_DIFFICULTY = 0.5.
    It multiplies an enemy's max HP and every hit an enemy deals (rounded, at least 1); the player's hits are not multiplied.
    All expected values are written as literals worked out by hand. Units are Lv5 (no level bonus): tackle = 6 + ceil(6/2) = 9, basic attack = 6. */
 import test from 'node:test';

@@ -15,7 +15,7 @@ def sha256(data: bytes) -> str:
 def load_manifest() -> dict:
     if MANIFEST.exists():
         return json.loads(MANIFEST.read_text(encoding='utf-8'))
-    return {'note': 'Private build only. Every file lists its source and licence; see docs/制作流程/素材管线.md.', 'files': {}}
+    return {'note': 'Private build only. Every file lists its source and licence; see docs/05-制作流程/素材管线.md.', 'files': {}}
 
 
 def save_manifest(m: dict) -> None:

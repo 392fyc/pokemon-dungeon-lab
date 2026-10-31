@@ -2,7 +2,7 @@
 """从 Pokémon Showdown 的 JSON 数据生成首批伙伴的本作数据 src/data/roster.json。
 
 只使用 Python 标准库。输入文件只当数据读取，先校验 sha256，不一致就退出。
-规则说明见 docs/制作流程/数据导入与招式映射.md。
+规则说明见 docs/05-制作流程/数据导入与招式映射.md。
 
 用法：
   python -I tools/data/import_showdown.py [--src 目录] [--out 文件]

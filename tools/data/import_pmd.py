@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """从官方《宝可梦不可思议的迷宫》招式数据快照生成 src/data/pmd-moves.json（阶段7.7）。
 
-规格：docs/玩法研究/官方招式模型规格.md（第 2–5 节）。只使用 Python 标准库。
+规格：docs/04-规格/官方招式模型规格.md（第 2–5 节）。只使用 Python 标准库。
 快照由 main 用内置浏览器读取 Bulbapedia 各招式页 “Pokémon Mystery Dungeon series” 一节的表格得到，
 存于主 checkout 被忽略的 .artifacts/pmd/；先校验文件 sha256 与表格行的 sha256，不一致就退出。
 
@@ -147,7 +147,7 @@ def build(snap):
         fail(f"快照里没有 7.7b 候选 {missing}")
     candidates = {m: official(m, moves[m]) for m in CANDIDATES_77B}
     return {
-        "note": "阶段7.7 官方招式模型的数据（规格：docs/玩法研究/官方招式模型规格.md）。由 tools/data/import_pmd.py 生成，勿手改。仅用于私有构建。",
+        "note": "阶段7.7 官方招式模型的数据（规格：docs/04-规格/官方招式模型规格.md）。由 tools/data/import_pmd.py 生成，勿手改。仅用于私有构建。",
         "source": snap["source"], "retrieved": snap["retrieved"], "snapshotSha256": EXPECTED_SHA256,
         "gamePriority": GAME_PRIORITY,
         "moves": dict(sorted(out.items())),

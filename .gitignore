@@ -21,7 +21,7 @@ playwright-report/
 /docs/.tmp/
 __pycache__/
 
-# Lane state, handoffs and work areas (docs/工作环境/多lane并行协作.md)
+# Lane state, handoffs and work areas (docs/07-工作环境/多lane并行协作.md)
 /.mercury/memory/
 /.handoff/
 /.tmp/

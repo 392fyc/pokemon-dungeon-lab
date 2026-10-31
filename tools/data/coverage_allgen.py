@@ -1,5 +1,5 @@
 """Per-generation coverage of the frozen data snapshots, using the batch import rules
-(docs/制作流程/图鉴批量导入规格.md 2.2–2.4, 7.8 spec 13.2). Read-only; prints Markdown."""
+(docs/05-制作流程/图鉴批量导入规格.md 2.2–2.4, 7.8 spec 13.2). Read-only; prints Markdown."""
 import csv, json, re, sys, collections
 from pathlib import Path
 

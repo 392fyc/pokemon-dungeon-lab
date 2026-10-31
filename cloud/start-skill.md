@@ -1,4 +1,4 @@
-使用简体中文。先读实际工作区的AGENTS.md、README.md、docs/trial-spec/README.md和cloud/README.md。2026-10-29用户已批准准备包阶段3—4及Vite；按固定规格连续实现和验证。本次不做正式经济、第三方角色／数据、公开部署或网络扩权。保留既有改动，核对实际分支、HEAD和工作区；旧work与远端main不同时先解释差异，不reset、stash或强拉。
+使用简体中文。先读实际工作区的AGENTS.md、README.md、docs/90-archive/trial-spec/README.md和cloud/README.md。2026-10-29用户已批准准备包阶段3—4及Vite；按固定规格连续实现和验证。本次不做正式经济、第三方角色／数据、公开部署或网络扩权。保留既有改动，核对实际分支、HEAD和工作区；旧work与远端main不同时先解释差异，不reset、stash或强拉。
 
 存在已有工具链时，先读并source /workspace/.local/onboarding/activate.sh，再进入游戏工作区，记录实际Node/npm版本。2026-10-29只读观察为激活后Node24.22.1、npm11.16.0，不把历史值当每次实测。依据本次锁文件安装游戏依赖；下载失败报告具体依赖和来源，不无条件重跑环境安装脚本或升级REA。
 

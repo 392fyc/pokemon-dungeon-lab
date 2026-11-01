@@ -147,7 +147,8 @@ function assertEnemyPlacement(g,seed,level,arrivalRoom,relaxations){
  // with an independent breadth-first search and compare the fallback against
  // still-free ordinary-room cells before each wanderer is placed.
  const route=distances(g.floor,g.arrival);
- const anchors=g.points.map(p=>p.pos);
+ // 8.3 hides G but retains its original placement exclusion anchor.
+ const anchors=[...g.points.map(p=>p.pos),...(g.goalAnchor?[g.goalAnchor]:[])];
  const wanderingRooms=g.rooms.flatMap((room,i)=>i===arrivalRoom||i===g.bossRoom?[]:
   Array.from({length:room.h},(_,dy)=>Array.from({length:room.w},(_,dx)=>({x:room.x+dx,y:room.y+dy}))).flat());
  const occupied=new Set([...anchors.map(key),...fixed.map(e=>key(e.pos))]);

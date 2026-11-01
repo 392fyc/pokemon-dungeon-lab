@@ -248,7 +248,7 @@ test('P8f floor 2 pickups: berry and tonic exist exactly once each, floor 1 hold
   const g1=generateFloor(seed,1),g2=generateFloor(seed,2),k=p=>(p.pos?p.pos:p).x+','+(p.pos?p.pos:p).y;
   assert.deepEqual(g1.pickups.map(p=>p.kind),['berry']);assert.deepEqual(g2.pickups.map(p=>p.kind),['berry','tonic']);
   for(const g of [g1,g2]){
-   const taken=new Set([...g.points.map(k),...g.enemies.map(k)]),cells=new Set(g.floor.map(k)),mine=g.pickups.map(k);
+   const taken=new Set([...g.points.map(k),...g.enemies.map(k),...(g.goalAnchor?[k(g.goalAnchor)]:[])]),cells=new Set(g.floor.map(k)),mine=g.pickups.map(k);
    assert.equal(new Set(mine).size,mine.length);
    assert.ok(mine.every(c=>cells.has(c)&&!taken.has(c)),'pickup on a floor cell, off every point and enemy');
    const arrival=g.rooms[0];assert.ok(g.pickups.every(p=>!(p.pos.x>=arrival.x&&p.pos.x<arrival.x+arrival.w&&p.pos.y>=arrival.y&&p.pos.y<arrival.y+arrival.h)),'not in the arrival room');

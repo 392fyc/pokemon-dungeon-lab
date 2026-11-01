@@ -12,7 +12,7 @@ import {serviceRoll} from '../../src/core/dungeon.ts';
  * Expected values are literals taken from that spec, from the roster data (pidgey: tackle strong 3, gust line 3), and from draws of the saved random
  * stream worked out once by hand: with state 7 the first two values are 0.012 and 0.062 (both below 0.5: lost); state 5 gives 0.690 and 0.773 (kept);
  * state 1 gives 0.627 (kept) then 0.003 (lost). Seeds with a shop or exchanger come from serviceRoll: seed 2 has a shop on floor 1 (machine whirlwind,
- * seed 103 has a shop on floor 1 (machine roar) and an exchanger on floor 1; seed 5 has neither.
+ * seed 103 has a shop on floor 1 (machine roar) and still rolls an exchanger on floor 1; the compatibility fixture places that cell by hand while retaining v0.1 settlement rules. Seed 5 has neither.
  */
 const memory=()=>{const m=new Map();let writes=0;return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);writes++;},map:m,writes:()=>writes};};
 const pidgey=id=>({id,species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false,tactic:'together'});
@@ -204,9 +204,16 @@ test('R15 shop: only on the shop cell, never as an interact, and no shop in a ru
 });
 
 /* ---------- exchanger ---------- */
+const cellKey=p=>`${p.x},${p.y}`;
 function exchangeRun(){
  const p=profile4();const s=createExpedition('ex-run',103,2,squadOf(p),0);
- s.units.A.pos={...s.points.find(p=>p.kind==='exchange').pos};
+ const roll=serviceRoll(103,2).exchange;assert.ok(roll);
+ s.exchange={level:roll.level,used:false,sent:null};
+ const occupied=new Set([...s.points.map(p=>cellKey(p.pos)),...Object.values(s.units).filter(u=>u.pos).map(u=>cellKey(u.pos)),...(s.adventureRooms??[]).map(r=>cellKey(r.interaction))]);
+ const cell=s.floor.find(p=>!occupied.has(cellKey(p))&&cellKey(p)!=='10,11');
+ assert.ok(cell,'legacy exchange fixture needs a free floor cell distinct from the off-cell case');
+ const exchangePoint={pos:structuredClone(cell),kind:'exchange',used:false};s.points.push(exchangePoint);
+ s.units.A.pos={...exchangePoint.pos};
  s.tms=[{move:'protect',source:'target',fate:'held'},{move:'roar',source:'shop',fate:'held'},{move:'whirlwind',source:'target',fate:'held'}];s.bag=2;
  s.shop.trades=[{item:'tm',price:80}];s.shop.stock.tm=null;
  return s;

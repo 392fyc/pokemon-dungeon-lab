@@ -9,12 +9,21 @@ export type Cell={x:number;y:number};
 export type FloorParams={width:number;height:number;floors:number;boss?:boolean;roguelike?:true;difficulty?:Difficulty};
 export const DEFAULT_PARAMS:FloorParams={width:36,height:24,floors:3,boss:true,roguelike:true};
 import {ECON} from './economy.ts';
-import {SPECIES,BOSS_CONFIG,speciesMaxHp} from './roster.ts';
+import {SPECIES,BOSS_CONFIG,speciesMaxHp,tmPool} from './roster.ts';
+import rooms83 from '../data/rooms-83.json' with {type:'json'};
 export {BOSS_CONFIG} from './roster.ts';
 export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest'|'shop'|'exchange';
 export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
 export type EnemySpec={id:string;species:string;level:number;hp:number;pos:Cell;post?:Cell;boss?:true;asleep?:boolean};
 export type Room={x:number;y:number;w:number;h:number};
+export type AdventureRoomType='challenge'|'commission'|'blessing'|'item';
+export type AdventureRoomState='idle'|'sealed'|'cleared'|'done';
+export type AdventureItemId='bigBerry'|'teamTonic';
+export type ChallengeRewardType='currency'|'item'|'invite'|'tm'|'blessing';
+export type AdventureRoom={room:number;type:AdventureRoomType;state:AdventureRoomState;interaction:Cell;doors:Cell[];sealedCells:Cell[];
+  enemyIds:string[];reward:ChallengeRewardType|null;rewardCurrency:number|null;item:AdventureItemId|null;rewardItem:AdventureItemId|null;rewardMove:string|null};
+export type ChallengeEnemySpec=Omit<EnemySpec,'pos'|'post'|'boss'> & {asleep:false};
+export type ChallengeEncounter={enemies:ChallengeEnemySpec[];reward:ChallengeRewardType;rewardItem:AdventureItemId|null;rewardMove:string|null;currencyAmount:number};
 export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[];rooms:Room[];
   /** Where the team first arrives from outside or from the floor above. */
   arrivalRoom:number;arrival:Cell;up:Cell|null;down:Cell|null;points:PointSpec[];enemies:EnemySpec[];enemyAiRng:number;
@@ -25,7 +34,9 @@ export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[]
   /** 7.2 rare service cells (shop, exchanger) of this floor, own random stream, never part of `points`. The caller adds them only for runs that carry the services. */
   services:PointSpec[];
   /** 7.3 (boss-marked runs only): the floor theme, and on the last floor the index of the boss room. Absent on developer expeditions without a boss. */
-  theme?:ThemeId;bossRoom?:number};
+  theme?:ThemeId;bossRoom?:number;
+  /** 8.3 run-only rooms. Absent for legacy floors so their generated shape and points stay unchanged. */
+  adventureRooms?:AdventureRoom[];goalAnchor?:Cell};
 export type ThemeId='moss'|'wet'|'ash';
 export const INITIAL_LEVEL=5;
 /** Difficulty multiplier on generated enemy HP and damage dealt by enemies. */
@@ -83,6 +94,84 @@ export function serviceRoll(seed:number,floors:number):ServiceRoll {
   const shopOn=r()<ECON.shopChance,shopLevel=1+Math.floor(r()*Math.min(2,floors)),tmDraw=r();
   const exOn=r()<ECON.exchangeChance,exLevel=1+Math.floor(r()*floors);
   return {shop:shopOn?{level:shopLevel,tmDraw}:null,exchange:exOn?{level:exLevel}:null};
+}
+type Rooms83Data={roomTypeWeights:Record<AdventureRoomType,number>;challengeRewardWeights:Record<ChallengeRewardType,number>;
+  itemWeights:Record<AdventureItemId,number>;challengeCurrencyAmount:number;
+  items:Record<AdventureItemId,{name:string;effect:{type:'fullHeal'|'restorePp';target:'selfOrAdjacent'|'allLivingCompanions';perMove?:number}}>};
+const ROOMS_83=rooms83 as Rooms83Data;
+const ADVENTURE_STREAMS={roomItem:0x4C957F2D,challengeCount:0x165667B1,challengeSpecies:0x9E3779B9,
+  challengeLevel:0x85EBCA6B,challengeReward:0xA511E9B3,challengeItem:0x63D83595,challengeMove:0xB7E15162} as const;
+const adventureSeed=(seed:number,level:number,tag:number)=>(Math.imul(seed>>>0,0x9E3779B1)^Math.imul(level,0x85EBCA6B)^tag)>>>0;
+const drawWeighted=<T extends string>(weights:Record<T,number>,random:()=>number):T=>{
+  const entries=Object.entries(weights) as [T,number][];
+  const total=entries.reduce((sum,[,weight])=>sum+weight,0);
+  let roll=random()*total;
+  for(const [value,weight] of entries){if(roll<weight)return value;roll-=weight;}
+  return entries[entries.length-1][0];
+};
+const inRoom=(p:Cell,r:Room)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
+const isLargeRoom=(r:Room)=>r.w>=6&&r.h>=5;
+type AdventureLayout={rooms:Room[];arrivalRoom:number;downRoom:number;bossRoom?:number;enemies:EnemySpec[];floor:Cell[];occupied:Set<string>};
+/** The room assignment stream follows tools/verify/rooms-83.mjs exactly and never consumes the 8.2 streams. */
+function makeAdventureRooms(seed:number,level:number,layout:AdventureLayout):AdventureRoom[]{
+  const random=mulberry32((Math.imul(seed>>>0,0x27D4EB2F)^Math.imul(level,0x165667B1)^0x3C6EF372)>>>0);
+  const fixedRooms=new Set(layout.enemies.filter(e=>e.post).map(e=>layout.rooms.findIndex(r=>inRoom(e.post!,r))).filter(i=>i>=0));
+  const candidates=layout.rooms.map((_,i)=>i).filter(i=>i!==layout.arrivalRoom&&i!==layout.downRoom&&i!==layout.bossRoom&&!fixedRooms.has(i));
+  const want=random()<0.5?2:3;
+  const left=new Set(candidates),assigned:{room:number;type:AdventureRoomType}[]=[];
+  for(let n=0;n<want&&left.size;n++){
+    const large=[...left].filter(i=>isLargeRoom(layout.rooms[i]));
+    const small=[...left].filter(i=>!isLargeRoom(layout.rooms[i]));
+    const weights:Partial<Record<AdventureRoomType,number>>={...ROOMS_83.roomTypeWeights};
+    if(assigned.some(a=>a.type==='challenge')||!large.length)delete weights.challenge;
+    const entries=Object.entries(weights) as [AdventureRoomType,number][];
+    const total=entries.reduce((sum,[,weight])=>sum+weight,0);
+    let roll=random()*total,type=entries[entries.length-1][0];
+    for(const [candidate,weight] of entries){if(roll<weight){type=candidate;break;}roll-=weight;}
+    const pool=type==='challenge'?large:(small.length?small:large);
+    const room=pool[Math.floor(random()*pool.length)];
+    left.delete(room);assigned.push({room,type});
+  }
+  const walkable=new Set(layout.floor.map(k)),occupied=new Set(layout.occupied);
+  const itemRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.roomItem));
+  return assigned.map(({room:roomIndex,type})=>{
+    const room=layout.rooms[roomIndex],origin=center(room);
+    const interaction=roomCells(room).filter(c=>!occupied.has(k(c)))
+      .sort((a,b)=>dist(a,origin)-dist(b,origin)||a.y-b.y||a.x-b.x)[0];
+    if(!interaction)throw new Error('adventure room has no free interaction cell');
+    occupied.add(k(interaction));
+    const doors=roomCells(room).filter(c=>DIRS.some(d=>{
+      const outside={x:c.x+d.x,y:c.y+d.y};return !inRoom(outside,room)&&walkable.has(k(outside));
+    })).map(c=>({x:c.x,y:c.y}));
+    return {room:roomIndex,type,state:'idle',interaction:{x:interaction.x,y:interaction.y},doors,sealedCells:[],enemyIds:[],reward:null,rewardCurrency:null,
+      item:type==='item'?drawWeighted(ROOMS_83.itemWeights,itemRandom):null,rewardItem:null,rewardMove:null};
+  });
+}
+/** Pre-draw a challenge fight and its reward from streams independent of map, ordinary enemies, and expedition recruitment. */
+export function generateChallengeEncounter(seed:number,level:number,difficulty:Difficulty,bossEnabled:boolean,tmPoolVersion?:3):ChallengeEncounter {
+  const countRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeCount));
+  const speciesRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeSpecies));
+  const levelRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeLevel));
+  const rewardRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeReward));
+  const itemRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeItem));
+  const moveRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeMove));
+  const count=countRandom()<0.5?3:4;
+  const themed=THEME_FLOORS[bossEnabled?Math.min(Math.max(level,1),THEME_FLOORS.length)-1:0];
+  const speciesPool=eligibleSpecies(level,bossEnabled);
+  if(!speciesPool.length)throw new Error('No eligible species for challenge on floor '+level);
+  const multiplier=DIFFICULTY[difficulty]??DIFFICULTY.normal;
+  const enemies:ChallengeEnemySpec[]=[];
+  for(let n=0;n<count;n++){
+    const species=speciesPool[Math.floor(speciesRandom()*speciesPool.length)];
+    const lower=Math.max(themed.levels[0],SPECIES[species].evoLevel),upper=themed.levels[1];
+    const enemyLevel=bossEnabled?lower+Math.floor(levelRandom()*(upper-lower+1)):INITIAL_LEVEL;
+    enemies.push({id:'c'+level+'abcd'[n],species,level:enemyLevel,hp:speciesMaxHp(species,enemyLevel,multiplier),asleep:false});
+  }
+  const reward=drawWeighted(ROOMS_83.challengeRewardWeights,rewardRandom);
+  const rewardItem=reward==='item'?drawWeighted(ROOMS_83.itemWeights,itemRandom):null;
+  const pool=tmPool({boss:bossEnabled,tmPool:tmPoolVersion});
+  const rewardMove=reward==='tm'?pool[Math.floor(moveRandom()*pool.length)]:null;
+  return {enemies,reward,rewardItem,rewardMove,currencyAmount:ROOMS_83.challengeCurrencyAmount};
 }
 export function generateFloor(seed:number,level:number,params:FloorParams=DEFAULT_PARAMS):GeneratedFloor {
   const {width:W,height:H,floors}=params;
@@ -352,6 +441,21 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     used.add(k(pos));
     services.push({pos:{x:pos.x,y:pos.y},kind,used:false});
   }
-  return {level,width:W,height:H,floor,rooms,arrivalRoom,arrival,up:null,down,points,enemies,enemyAiRng,
-    pickups,rest,services,...(bossEnabled?{theme:themed.theme}:{}),...(bossFloor?{bossRoom}:{})};
+  const roguelike=params.roguelike===true;
+  const goalAnchor=points.find(p=>p.kind==='goal')?.pos;
+  let adventureRooms:AdventureRoom[]|undefined;
+  let outputPoints=points,outputServices=services;
+  if(roguelike){
+    // G remains occupied as an anchor, but disappears from the v0.1 map. The exchanger is the
+    // final service placement, so releasing its cell does not move any 8.2 point or enemy.
+    if(goalAnchor)outputPoints=points.filter(p=>p.kind!=='goal');
+    for(const exchange of services.filter(p=>p.kind==='exchange'))used.delete(k(exchange.pos));
+    outputServices=services.filter(p=>p.kind!=='exchange');
+    adventureRooms=makeAdventureRooms(seed,level,{rooms,arrivalRoom,downRoom,bossRoom:bossFloor?bossRoom:undefined,
+      enemies,floor,occupied:used});
+  }
+  return {level,width:W,height:H,floor,rooms,arrivalRoom,arrival,up:null,down,points:outputPoints,enemies,enemyAiRng,
+    pickups,rest,services:outputServices,...(roguelike?{adventureRooms,
+      ...(goalAnchor?{goalAnchor:{x:goalAnchor.x,y:goalAnchor.y}}:{})}:{}),
+    ...(bossEnabled?{theme:themed.theme}:{}),...(bossFloor?{bossRoom}:{})};
 }

@@ -10,6 +10,8 @@ import blessingData from '../data/blessings.json' with {type:'json'};
 export type Pos = {x:number;y:number};
 /** Skills are move ids; PP and learned use the same keys. */
 export type Skill = string;
+/** Camp talent levels copied into a new camp expedition; absent on developer and legacy worlds. */
+export type ExpeditionTalents=Partial<Record<'vitality'|'offense'|'supplies',number>>;
 export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; pos:Pos|null;
   pp:Partial<Record<Skill,number>>; maxPp:Partial<Record<Skill,number>>; learned:Skill[];
   stages:{atk:number;def:number}; protect:number; counter:number; lastMove:string|null;
@@ -99,6 +101,8 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:
   adventureRooms?:AdventureRoom[];pendingAdventureStart?:{room:number;actor:string;pos:Pos};
   /** 8.4 contract and blessing state is run-only and is never serialized. */
   commissions?:ActiveCommission[];blessings?:BlessingId[];pendingChoices?:PendingChoice[];lullabyPending?:boolean;tmChoiceReady?:boolean;pendingEnd?:'won'|'wipe'|'normal';
+  /** 8.5: only a new camp expedition has these; missing completedCommissions marks a legacy/developer world with no new score. */
+  talents?:ExpeditionTalents;completedCommissions?:number;
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
   pendingEvolutions?:{actor:string;choices:string[]}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
@@ -135,9 +139,12 @@ export function speciesUnit(id:string,speciesId:string,level=INITIAL_LEVEL,pos:P
   const sp=SPECIES[speciesId],maxHp=speciesMaxHp(speciesId,level);
   return {id,side:'friend',hp:maxHp,maxHp,pos,pp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),learned:sp.kit.map(k=>k.move),species:speciesId,entrySpecies:speciesId,level,...freshCombatState(),reflect:0,lightscreen:0,tactic:'together'};
 }
+function vitalityMaxHp(speciesId:string,level:number,vitality=0):number {
+  return Math.round(speciesMaxHp(speciesId,level)*(1+0.05*vitality));
+}
 /** R07 half snapshot of a new recruit: HP floor(max/2) (at least 1); each kit move PP floor(max/2) (at least 1, at most max). */
-export function recruitUnit(id:string,speciesId:string,level:number):Unit {
-  const u=speciesUnit(id,speciesId,level);u.hp=Math.max(1,Math.floor(u.maxHp/2));
+export function recruitUnit(id:string,speciesId:string,level:number,vitality=0):Unit {
+  const u=speciesUnit(id,speciesId,level);u.maxHp=vitalityMaxHp(speciesId,level,vitality);u.hp=Math.max(1,Math.floor(u.maxHp/2));
   for(const k of Object.keys(u.maxPp))u.pp[k]=Math.min(u.maxPp[k]!,Math.max(1,Math.floor(u.maxPp[k]!/2)));
   return u;
 }
@@ -346,6 +353,7 @@ function commissionRewardExp(c:ActiveCommission):number {
 }
 function finishCommission(s:World,c:ActiveCommission):void {
   s.commissions=(s.commissions??[]).filter(v=>v!==c);
+  if(s.completedCommissions!==undefined)s.completedCommissions++;
   const exp=commissionRewardExp(c);if(s.prog)s.prog.exp+=exp;
   note(s,`${COMMISSIONS[c.id].name}委托完成，队伍经验+${exp}`);
 }
@@ -748,7 +756,9 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
   const defenceStats=target?.species?speciesOf(target.species)?.baseStats:undefined;
   const ratio=attackStats&&defenceStats&&category!=='Status'
     ?Math.max(STAT_DAMAGE_RATIO.min,Math.min(STAT_DAMAGE_RATIO.max,category==='Special'?attackStats.spa/defenceStats.spd:attackStats.atk/defenceStats.def)):1;
-  const scaled=Math.max(1,Math.round(baseDamage*ratio));
+  const afterSpeciesRatio=Math.max(1,Math.round(baseDamage*ratio));
+  const offense=source.side==='friend'&&category!=='Status'?1+0.03*(s.talents?.offense??0):1;
+  const scaled=Math.max(1,Math.round(afterSpeciesRatio*offense));
   const opposing=!!target&&source.side!==target.side;
   const attackDistance=source.pos&&target?.pos?distance(source.pos,target.pos):0;
   const base=source.side==='enemy'?Math.max(1,Math.round(scaled*DIFFICULTY[s.difficulty??'normal'])):scaled;
@@ -875,7 +885,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
       const before=t.hp,heal=activeCommission(s,'guardian')?Math.floor(t.maxHp/2):t.maxHp;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.bigBerry}，HP ${before}→${t.hp}`);
     }else if(a.item==='berry'){
       const before=t.hp,boost=(s.blessings??[]).includes('berryBoost')?(BLESSINGS.berryBoost.berryHealBonus??0):0;
-      const raw=PROG.berryHeal+boost,heal=activeCommission(s,'guardian')?Math.floor(raw/2):raw;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
+      const raw=PROG.berryHeal+boost+(s.talents?.supplies??0),heal=activeCommission(s,'guardian')?Math.floor(raw/2):raw;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
     }else if(a.item==='teamTonic'){
       const restored:string[]=[];
       for(const member of s.queue){const ally=s.units[member];if(!alive(ally))continue;
@@ -1128,13 +1138,13 @@ const settled=(s:World):World['phase']=>s.request?.locked?(s.request.to!==undefi
 function refreshPartyLevel(s:World):void {
   const level=s.prog?.level??INITIAL_LEVEL;
   for(const id of s.queue){const u=s.units[id],previous=u.level??INITIAL_LEVEL;u.level=level;
-    const max=u.species?speciesMaxHp(u.species,level):u.maxHp+Math.max(0,level-previous);
+    const max=u.species?vitalityMaxHp(u.species,level,s.talents?.vitality??0):u.maxHp+Math.max(0,level-previous);
     u.maxHp=max;u.hp=Math.min(u.hp,max);
   }
 }
 function evolveUnit(s:World,id:string,species:string):void {
   const u=s.units[id],level=u.level??s.prog?.level??INITIAL_LEVEL,before=u.hp;u.species=species;u.level=level;
-  u.maxHp=speciesMaxHp(species,level);u.hp=Math.min(before,u.maxHp);note(s,`${id}进化为${species}，生命上限${u.maxHp}，当前HP${u.hp}`);
+  u.maxHp=vitalityMaxHp(species,level,s.talents?.vitality??0);u.hp=Math.min(before,u.maxHp);note(s,`${id}进化为${species}，生命上限${u.maxHp}，当前HP${u.hp}`);
 }
 function findEvolutions(s:World):{actor:string;choices:string[]}[] {
   const p=s.prog;if(!p)return [];
@@ -1160,7 +1170,7 @@ function drawRecruitmentAndBossTm(s:World):void {
     const recruitChance=(s.blessings??[]).includes('rally')?(BLESSINGS.rally.recruitChance??PROG.recruitChance):PROG.recruitChance;
     if(r.value>=recruitChance){note(s,`${sp}被击败，没有发出邀请`);continue;}
     do p.made++;while(s.units[`N${p.made}`]||s.invitations.some(i=>i.unit.id===`N${p.made}`));
-    const unit=recruitUnit(`N${p.made}`,sp,p.level);
+    const unit=recruitUnit(`N${p.made}`,sp,p.level,s.talents?.vitality??0);
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});
     note(s,`${sp}被击败并发出邀请：${unit.id} Lv${p.level} ${unit.hp}/${unit.maxHp}HP`);
   }
@@ -1216,7 +1226,7 @@ function completeAdventureIfReady(s:World):boolean{
     const p=s.prog,species=s.units[`c${s.dungeon?.level??1}a`]?.species;
     if(p&&species){
       do p.made++;while(s.units[`N${p.made}`]||s.invitations.some(i=>i.unit.id===`N${p.made}`));
-      const unit=recruitUnit(`N${p.made}`,species,p.level);
+      const unit=recruitUnit(`N${p.made}`,species,p.level,s.talents?.vitality??0);
       s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});
       openAdventureRoom(s,room);s.anchor=clone(s.units[s.leader].pos!);s.phase='invitation';
       note(s,`挑战奖励：邀请${species}/${unit.id}已送入现有邀请流程`);return true;
@@ -1478,20 +1488,22 @@ export function jumpToFloor(original:World,to:number):World {
  */
 export type SquadMember={inst:string;species:string;carry:KitMove[];protected?:boolean;tactic?:Tactic};
 /** A roster instance enters at the dungeon start level, carrying its saved tactic and selected moves at full PP. */
-export function carriedUnit(id:string,m:SquadMember):Unit {
-  const sp=SPECIES[m.species],maxHp=speciesMaxHp(m.species,INITIAL_LEVEL);
+export function carriedUnit(id:string,m:SquadMember,vitality=0):Unit {
+  const sp=SPECIES[m.species],maxHp=vitalityMaxHp(m.species,INITIAL_LEVEL,vitality);
   return {id,side:'friend',hp:maxHp,maxHp,pos:null,pp:Object.fromEntries(m.carry.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(m.carry.map(k=>[k.move,k.pp])),
     learned:m.carry.map(k=>k.move),species:m.species,entrySpecies:m.species,level:INITIAL_LEVEL,tactic:m.tactic??'together',inst:m.inst,moves:m.carry.map(k=>k.move),...freshCombatState(),reflect:0,lightscreen:0,...(m.protected?{protected:true as const}:{})};
 }
 /** `boss` defaults to true for a base run of 3 floors. New expeditions start as one-way roguelike runs. */
-export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3,difficulty:Difficulty='normal'):World {
+export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number;talents?:ExpeditionTalents},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3,difficulty:Difficulty='normal'):World {
   const selectedDifficulty=isDifficulty(difficulty)?difficulty:'normal';
   const d:Dungeon={seed:seed>>>0,width:36,height:24,floors,level:1,stored:{},roguelike:true,...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...(tmPoolVersion===3&&squad&&boss?{tmPool:3 as const}:{})};
   const f=freshFloor(d,1,true,selectedDifficulty);
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,seen:[],
-    units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m)])):{A:speciesUnit('A','charmander',INITIAL_LEVEL),B:speciesUnit('B','squirtle',INITIAL_LEVEL),C:speciesUnit('C','bulbasaur',INITIAL_LEVEL)}),...f.units},
+    units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m,squad.talents?.vitality??0)])):{A:speciesUnit('A','charmander',INITIAL_LEVEL),B:speciesUnit('B','squirtle',INITIAL_LEVEL),C:speciesUnit('C','bulbasaur',INITIAL_LEVEL)}),...f.units},
     queue:squad?squad.members.map((_,i)=>'ABC'[i]):['A','B','C'],enemies:f.enemies,camp:[],leader:squad?'ABC'[squad.leader]:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d,
-    rooms:f.rooms,...(f.adventureRooms?{adventureRooms:clone(f.adventureRooms)}:{}),...(f.bossRoom!==undefined?{bossRoom:f.bossRoom}:{}),enemyAiRng:f.enemyAiRng,difficulty:selectedDifficulty,prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}},purse:0,tms:[]};
+    rooms:f.rooms,...(f.adventureRooms?{adventureRooms:clone(f.adventureRooms)}:{}),...(f.bossRoom!==undefined?{bossRoom:f.bossRoom}:{}),enemyAiRng:f.enemyAiRng,difficulty:selectedDifficulty,
+    ...(squad?.talents!==undefined?{talents:{...squad.talents},completedCommissions:0}:{}),
+    prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:(squad?.talents?.supplies??0)>=3?1:0,tonic:0}},purse:0,tms:[]};
   if(squad){
     const roll=serviceRoll(d.seed,floors);
     if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};

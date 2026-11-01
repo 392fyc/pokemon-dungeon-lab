@@ -6,7 +6,7 @@ import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomSta
 import {moveOf} from '../core/moves.ts';
 import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,teammateInfo,localizeLog,moveSummary,damageEstimateText,adventureRoomMarkers} from '../core/describe.ts';
 import {renderTitle,renderNewGame,portraitTick,type NewGameState} from '../ui/title.ts';
-import {learnTm,newGameProfile,initialProfile,squadOf,MAX_TEAM,type BaseAction} from '../core/base.ts';
+import {learnTm,newGameProfile,initialProfile,squadOf,MAX_TEAM,TALENTS,rankLevel,rankThreshold,availableTalentPoints,type BaseAction,type Profile,type TalentId} from '../core/base.ts';
 import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
 import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from '../core/save.ts';
 import {createScenario,scenarioProfile,SCENARIOS,SCENARIO_LABEL,type ScenarioId} from '../core/scenarios.ts';
@@ -56,6 +56,7 @@ let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
 let inviteChoice:string|undefined,inviteReject=false,notice='',detailsId:string|null=null;
 let tmPick:string|null=null;
+let talentsOpen=false;
 /** 7.2: the purse chosen at the base, and the exchanger choices (companion to send, indexes of the machines to carry) before they are confirmed. */
 let exTarget:string|null=null,exCargo:number[]=[];
 type BoardScene=InstanceType<ReturnType<typeof makeBoardScene>>;
@@ -265,6 +266,15 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  bind('submit',()=>{if(draft?.main){const cmd={type:'round' as const,action:draft.main,...(!draft.swap?{override:{actor:draft.partner,action:draft.action!}}:{})};void send(cmd);}});
 }
 /** 6.5 base screen: roster, technique machines, carried moves, squad and departure. Every edit is one saved write; the next edit waits for it. */
+function rankPanel(p:Profile,ready:boolean):string{
+ const level=rankLevel(p.rankExp),floor=rankThreshold(level),next=rankThreshold(level+1),points=availableTalentPoints(p);
+ const rows=(['vitality','offense','supplies'] as TalentId[]).map(id=>{
+  const n=p.talents[id]??0;
+  const effect=id==='vitality'?`全队最大 HP +${n*5}%`:id==='offense'?`伙伴普攻与招式伤害 +${n*3}%`:`橙橙果额外回复 ${n} HP${n>=3?'，出发自带 1 个橙橙果':'；达到 3 级时出发自带 1 个橙橙果'}`;
+  return `<article class="unit" id="talent-${id}"><h3>${esc(TALENTS[id].name)} <small>${n}/5</small></h3><p>${effect}</p>${button(`talent-add-${id}`,'加一点',!ready||points<1||n>=5)}</article>`;
+ }).join('');
+ return `<section id="rank-panel"><h2>探险队成长</h2><p id="rank-level">探险队 Lv${level} · 累计经验 ${p.rankExp}</p><p id="rank-progress">升到 Lv${level+1}：${p.rankExp-floor}/${next-floor}</p><p id="talent-points">未分配天赋点：${points}</p>${button('talent-tree-toggle',talentsOpen?'收起天赋树':'天赋树',!ready,`aria-expanded="${talentsOpen}" aria-controls="talent-tree"`)}${talentsOpen?`<section id="talent-tree"><h3>自由分配天赋点</h3>${rows}${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0))}<p class="muted">每升一级获得 1 点，每项最多 5 级。加点立即保存，下一次出发生效；免费重置会退回全部已用点数。</p></section>`:''}</section>`;
+}
 function renderBase(){
  const p=store.profile;const ready=store.status==='ready';
  if(!p){$('flow').innerHTML='<p class="error">基地档案缺失。</p>';$('party').innerHTML='';$('controls').innerHTML='';return;}
@@ -278,6 +288,7 @@ function renderBase(){
  const learnRows=tmPick?`<p>把${esc(tmName(tmPick))}招式机教给：</p>${p.roster.map(i=>{const r=learnTm(p,i.id,tmPick!);return button(`learn-${i.id}`,`${esc(i.id)} ${esc(spName(i.species))}：${r.ok?'可学习':esc(r.error.split('；')[0])}`,!ready);}).join('')}`:'';
  $('flow').innerHTML=`<div class="result" id="base"><small>基地</small><h2>整备后再出发</h2>
   <p>已完成远征 ${p.expeditions} 次。招式机在这里永久教给一只伙伴；换下的招式不会丢，也不会退还招式机。</p>
+  ${rankPanel(p,ready)}
   <h2>伙伴碎片</h2><p id="camp-shards">${Object.entries(p.shards).length?Object.entries(p.shards).map(([species,count])=>`${esc(spName(species))} ×${count}`).join('、'):'暂无伙伴碎片'}</p>
   <h2>仓库（招式机）</h2><div>${vault}</div>${learnRows}
   <h2>出发队伍</h2><p id="squad">${p.team.map((id,n)=>`${n+1}. ${esc(id)} ${esc(spName(p.roster.find(i=>i.id===id)!.species))}${id===p.leader?'（主控）':''}`).join(' → ')}（选择顺序即队列顺序，最多${MAX_TEAM}只）</p>
@@ -286,6 +297,9 @@ function renderBase(){
   ${button('depart','出发',!ready,'data-confirm="true" class="primary"')}</div>`;
  $('controls').innerHTML='';
  const edit=async(a:BaseAction,after?:()=>void)=>{if(anim.active||store.status!=='ready')return;const pending=store.baseAction(a);render();const r=await pending;notice=r.ok?(r.saved?'':'这次改动尚未保存；请重试保存'):r.error;if(r.ok&&r.saved)after?.();render();};
+ bind('talent-tree-toggle',()=>{talentsOpen=!talentsOpen;render();});
+ for(const talent of ['vitality','offense','supplies'] as TalentId[])bind(`talent-add-${talent}`,()=>void edit({type:'talent',talent}));
+ bind('talent-reset',()=>void edit({type:'resetTalents'}));
  for(const i of p.roster){
    const tactic=$(`tactic-base-${i.id}`) as HTMLSelectElement;tactic.addEventListener('change',()=>{if(isTactic(tactic.value))void edit({type:'tactic',inst:i.id,tactic:tactic.value});});
   for(const l of i.learned)bind(`carry-${i.id}-${l.move}`,()=>void edit({type:'carry',inst:i.id,moves:i.carry.includes(l.move)?i.carry.filter(n=>n!==l.move):[...i.carry,l.move]}));
@@ -306,7 +320,9 @@ function resultDetails(s:World):string{
   const summary=store.settlementSummary,won=s.end.outcome==='won';
   const brought=summary?.brought??[...s.queue,...s.camp,...(s.exchange?.sent?[s.exchange.sent]:[])].map(id=>({id,species:s.units[id].entrySpecies??s.units[id].species??''}));
   const shards=summary?.shards??[];
-  return `<div id="settle"><section id="depth-rewards"><h2>深度和难度奖励</h2><p>到达第 ${s.dungeon.level} 层 · ${DIFFICULTY_LABEL[s.difficulty??'normal']}</p><p>本局无此项奖励</p></section><section id="harvest-rewards"><h2>收获型奖励</h2><h3>带回的伙伴</h3><ul id="brought-partners">${brought.length?brought.map(i=>`<li>${esc(spName(i.species)||i.id)}</li>`).join(''):'<li>无新增伙伴</li>'}</ul><h3>伙伴碎片</h3><ul id="brought-shards">${shards.length?shards.map(i=>`<li>${esc(spName(i.species))}碎片 ×${i.count}</li>`).join(''):'<li>无</li>'}</ul><h3>招式机（${won?'已带回':'全队倒下，未带回'}）</h3><ul id="tm-list">${s.end.tms?.length?s.end.tms.map(t=>`<li>${esc(tmLine(t))}</li>`).join(''):'<li>本局没有取得招式机。</li>'}</ul></section><section id="camp-task-rewards"><h2>营地任务奖励</h2><p>本局无此项奖励</p></section></div>`;
+  const rank=summary?.rank;
+  const rankRewards=rank?`<ul id="rank-breakdown"><li>深度：+${rank.depth}</li><li>击败首领：+${rank.boss}</li><li>完成委托：+${rank.commissions}（最多 3）</li><li>新招募伙伴：+${rank.recruits}（最多 2，碎片不计）</li><li>带回招式机：+${rank.tms}（最多 4）</li></ul><p id="rank-gain"><strong>探险队经验 +${rank.total}</strong> · 累计 ${rank.before} → ${rank.after}</p><p id="rank-level-change">${rank.levelAfter>rank.levelBefore?`探险队升级：Lv${rank.levelBefore} → Lv${rank.levelAfter}，获得 ${rank.levelAfter-rank.levelBefore} 个天赋点`:`探险队 Lv${rank.levelAfter}`}</p><p class="muted">三档难度的探险队经验计算相同。</p>`:'<p>本局无此项奖励</p>';
+  return `<div id="settle"><section id="depth-rewards"><h2>深度和难度奖励</h2><p>到达第 ${s.dungeon.level} 层 · ${DIFFICULTY_LABEL[s.difficulty??'normal']}</p>${rankRewards}</section><section id="harvest-rewards"><h2>收获型奖励</h2><h3>带回的伙伴</h3><ul id="brought-partners">${brought.length?brought.map(i=>`<li>${esc(spName(i.species)||i.id)}</li>`).join(''):'<li>无新增伙伴</li>'}</ul><h3>伙伴碎片</h3><ul id="brought-shards">${shards.length?shards.map(i=>`<li>${esc(spName(i.species))}碎片 ×${i.count}</li>`).join(''):'<li>无</li>'}</ul><h3>招式机（${won?'已带回':'全队倒下，未带回'}）</h3><ul id="tm-list">${s.end.tms?.length?s.end.tms.map(t=>`<li>${esc(tmLine(t))}</li>`).join(''):'<li>本局没有取得招式机。</li>'}</ul></section><section id="camp-task-rewards"><h2>营地任务奖励</h2><p>本局无此项奖励</p></section></div>`;
  }
 
  const end=s.end!;

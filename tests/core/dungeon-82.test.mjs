@@ -6,6 +6,7 @@ import {enemy,friend,world} from '../acceptance/fixtures.mjs';
 
 const DIRS=[[1,0],[0,1],[-1,0],[0,-1]];
 const key=p=>`${p.x},${p.y}`;
+const manhattan=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const center=r=>({x:r.x+Math.floor(r.w/2),y:r.y+Math.floor(r.h/2)});
 const contains=(r,p)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
 const insideBoss=(r,p)=>contains(r,p);
@@ -19,11 +20,11 @@ function flood(cells,start){
  return visited;
 }
 function roomIndexAt(rooms,p){return rooms.findIndex(r=>contains(r,p));}
-function distances(cells,start){
+function distances(cells,start,blocked=new Set()){
  const set=new Set(cells.map(key)),dist=new Map([[key(start),0]]),queue=[start];
  for(let i=0;i<queue.length;i++)for(const [dx,dy] of DIRS){
   const p={x:queue[i].x+dx,y:queue[i].y+dy},k=key(p);
-  if(set.has(k)&&!dist.has(k)){dist.set(k,dist.get(key(queue[i]))+1);queue.push(p);}
+  if(set.has(k)&&!blocked.has(k)&&!dist.has(k)){dist.set(k,dist.get(key(queue[i]))+1);queue.push(p);}
  }
  return dist;
 }
@@ -119,7 +120,7 @@ function assertBossRoom(g,seed){
  const farthest=g.rooms.map((room,i)=>({i,d:route.get(key(center(room)))})).filter(x=>x.i!==g.bossRoom).sort((a,b)=>b.d-a.d||a.i-b.i)[0];
  assert.equal(roomIndexAt(g.rooms,g.arrival),farthest.i,`seed ${seed} floor 3: arrival room is farthest from the boss room`);
 }
-function assertEnemyPlacement(g,seed,level,arrivalRoom){
+function assertEnemyPlacement(g,seed,level,arrivalRoom,relaxations){
  const normal=g.enemies.filter(e=>!e.boss),expectedIds='abcdef'.split('').map(c=>`w${level}${c}`);
  assert.equal(normal.length,6,`seed ${seed} floor ${level}: six ordinary enemies`);
  assert.deepEqual(normal.map(e=>e.id),expectedIds,`seed ${seed} floor ${level}: ordinary enemy IDs are stable`);
@@ -141,10 +142,37 @@ function assertEnemyPlacement(g,seed,level,arrivalRoom){
  const stairRoom=level<3?roomIndexAt(g.rooms,g.down):-1;
  assert.ok(!postRooms.has(stairRoom),`seed ${seed} floor ${level}: fixed enemies avoid the stair room`);
  for(const e of g.enemies)assert.notEqual(roomIndexAt(g.rooms,e.pos),arrivalRoom,`seed ${seed} floor ${level}: no enemy is in the arrival room`);
+
+ // G3.1 measures the arrival distance along walkable cells, so compute it here
+ // with an independent breadth-first search and compare the fallback against
+ // still-free ordinary-room cells before each wanderer is placed.
+ const route=distances(g.floor,g.arrival);
+ const anchors=g.points.map(p=>p.pos);
+ const wanderingRooms=g.rooms.flatMap((room,i)=>i===arrivalRoom||i===g.bossRoom?[]:
+  Array.from({length:room.h},(_,dy)=>Array.from({length:room.w},(_,dx)=>({x:room.x+dx,y:room.y+dy}))).flat());
+ const occupied=new Set([...anchors.map(key),...fixed.map(e=>key(e.pos))]);
+ for(const e of wanderers){
+  const candidates=wanderingRooms.filter(p=>!occupied.has(key(p))&&anchors.every(a=>manhattan(a,p)>=2));
+  const availableDistances=candidates.map(p=>route.get(key(p))).filter(Number.isInteger);
+  const required=[6,4,2].find(min=>availableDistances.some(d=>d>=min));
+  assert.ok(required!==undefined,`seed ${seed} floor ${level}: ${e.id} has at least one legal room cell at distance two or more`);
+  const actual=route.get(key(e.pos));
+  assert.ok(Number.isInteger(actual),`seed ${seed} floor ${level}: ${e.id} is reachable from arrival`);
+  assert.ok(actual>=required,
+   `seed ${seed} floor ${level}: ${e.id} is ${actual} steps from arrival; require ${required} because no remaining legal room cell supports the next higher distance tier`);
+  relaxations.checked++;
+  if(required<6){
+   assert.ok(actual<6,`seed ${seed} floor ${level}: ${e.id} may relax below six only after every six-step cell is unavailable`);
+   if(required===2)assert.ok(actual<4,`seed ${seed} floor ${level}: ${e.id} may relax below four only after every four-step cell is unavailable`);
+   relaxations[`to${required}`]++;
+  }
+  occupied.add(key(e.pos));
+ }
  return arrivalRoom;
 }
 
-test('8.2 T1-T5, T7 and T10: 200 fixed seeds cover all three independently checked floors',()=>{
+test('8.2 T1-T5, T7 and T10: 200 fixed seeds cover all three independently checked floors',(t)=>{
+ const relaxations={checked:0,to4:0,to2:0};
  for(let seed=1;seed<=200;seed++)for(let level=1;level<=3;level++){
   const g=generateFloor(seed,level);
   assert.equal(g.width,36,`seed ${seed} floor ${level}: width`);
@@ -152,11 +180,12 @@ test('8.2 T1-T5, T7 and T10: 200 fixed seeds cover all three independently check
   assertRoomLayout(g,seed,level);
   assertTwoWideAndConnected(g,seed,level);
   const arrivalRoom=assertArrivalAndStairs(g,seed,level);
-  assertEnemyPlacement(g,seed,level,arrivalRoom);
+  assertEnemyPlacement(g,seed,level,arrivalRoom,relaxations);
   if(level===3)assertBossRoom(g,seed);
   const downRoom=level<3?roomIndexAt(g.rooms,g.down):-1;
   assert.ok(g.rooms.some((r,i)=>i!==arrivalRoom&&i!==downRoom&&i!==g.bossRoom&&r.w>=6&&r.h>=5),`seed ${seed} floor ${level}: a large room remains for 8.3`);
  }
+ t.diagnostic(`独立核验 ${relaxations.checked} 只游荡敌人；出生距离放宽 ${relaxations.to4} 次降至 4 格、${relaxations.to2} 次降至 2 格，均按剩余合法房间格重新计算可用距离。`);
 });
 
 test('8.2 T6: five pinned seeds each produce one specified boss-room position',()=>{
@@ -249,8 +278,7 @@ test('8.2 Q6: room reveal and currentlyVisible keep their prior rules',()=>{
  assert.equal(currentlyVisible(s,{x:8,y:3},{x:11,y:3}),false,'a corridor still hides cells beyond two steps');
 });
 
-function postWorld({friendAt,enemyAt,post,rooms=[]}){
- const floor=Array.from({length:13},(_,x)=>({x,y:1}));
+function postWorld({friendAt,enemyAt,post,rooms=[],floor=Array.from({length:13},(_,x)=>({x,y:1}))}){
  const a=friend('A',friendAt.x,friendAt.y);a.tactic='wait';
  const e=enemy('E',enemyAt.x,enemyAt.y,40,'melee',4);e.learned=[];e.pp={};e.maxPp={};e.post={...post};e.targetMemory=null;e.lostSightTurns=0;
  const s=world({A:a,E:e},{floor,leader:'A',queue:['A'],enemies:['E']});s.rooms=rooms;s.enemyAiRng=0x12345678;
@@ -290,4 +318,37 @@ test('8.2 T8: after four unseen turns the enemy forgets the target and returns a
   assert.deepEqual(s.units.E.pos,{x,y:1});
   assert.ok(Math.abs(s.units.E.pos.x-s.units.E.post.x)<before,'each return step shortens the path');
  }
+});
+
+test('8.2 T8: after forgetting, a posted enemy walks the full shortest route through a fork and detour',()=>{
+ const floor=[
+  {x:3,y:3},{x:3,y:4},{x:2,y:4},{x:2,y:5},{x:3,y:5},{x:4,y:5},{x:5,y:5},{x:6,y:5},{x:7,y:5},{x:8,y:5},{x:8,y:4},{x:8,y:3},
+  {x:4,y:3},{x:4,y:2},{x:3,y:2},{x:2,y:2},{x:2,y:1},{x:2,y:0},{x:3,y:0},{x:4,y:0},{x:5,y:0},{x:5,y:1},{x:6,y:1},{x:7,y:1},{x:8,y:1},{x:8,y:2},
+  {x:9,y:3},{x:10,y:3},{x:11,y:3},{x:12,y:3},{x:12,y:4},
+ ];
+ const start={x:3,y:3},post={x:8,y:3},shortStep={x:3,y:4},temptingStep={x:4,y:3};
+ const fromStart=distances(floor,start),toPost=distances(floor,post);
+ const afterFirstStep=distances(floor,post,new Set([key(start)]));
+ assert.equal(fromStart.get(key(post)),9,'the route around the lower branch is nine steps');
+ assert.equal(toPost.get(key(shortStep)),8,'the downward first step is on the shortest route');
+ assert.equal(afterFirstStep.get(key(temptingStep)),14,'with the occupied starting cell blocked, the open right turn leads through a longer detour');
+ assert.ok(manhattan(temptingStep,post)<manhattan(shortStep,post),'a greedy Manhattan step would choose the longer right turn');
+
+ let s=postWorld({friendAt:{x:12,y:4},enemyAt:start,post,floor});
+ s.units.E.targetMemory={x:12,y:4};s.units.E.lostSightTurns=3;
+ for(let turn=0;turn<fromStart.get(key(post));turn++){
+  const before=toPost.get(key(s.units.E.pos));
+  assert.equal(currentlyVisible(s,s.units.E.pos,s.units.A.pos),false,`turn ${turn+1}: the player at 12,4 stays unseen`);
+  const after=nextRound(s),afterDistance=toPost.get(key(after.units.E.pos));
+  assert.equal(afterDistance,before-1,`turn ${turn+1}: the enemy reduces its independently measured distance to post by one`);
+  if(turn===0){
+   assert.equal(after.units.E.targetMemory,null,'the fourth unseen turn clears the remembered target');
+   assert.equal(after.units.E.lostSightTurns,0);
+   assert.deepEqual(after.units.E.pos,shortStep,'the enemy takes the downward first step, not the tempting right turn');
+  }
+  assert.equal(currentlyVisible(after,after.units.E.pos,after.units.A.pos),false,`turn ${turn+1}: returning does not reveal the player`);
+  s=after;
+ }
+ assert.deepEqual(s.units.E.pos,post,'after nine shortest-path steps, the enemy reaches its post');
+ assert.deepEqual(s.units.E.post,post);
 });

@@ -2,7 +2,7 @@
 //
 // 1. 按用户决定 D-20261101-19 的新走廊视野（直线最多 4 格、遇墙停、墙与该处两侧揭示、距离 d 的两侧格随直线格揭示），
 //    重算“迷雾机器人”从到达点找到下楼梯的步数，并与旧视野（只看直线）对比；评估速通 N＝⌈2.5×最短路⌉。
-// 2. 速通委托的两种起算法：从进入本层起算（main 现行决定）与从接下委托起算（对照）。
+// 2. 速通委托的两种起算法：从进入本层起算（main 原先的决定）与从委托点接下委托起算（main 定稿）。
 // 3. 探路委托的可行性：下一层有没有祝福房或道具房，机器人要多走多少步。
 // 4. 收集委托：每层能捡到的道具个数（拾取物＋道具房＋挑战房奖励的期望）。
 // 地图来自 8.2 参考生成器（map-feasibility.mjs），探险房间来自 8.3 草案的分配（rooms-83.mjs）。
@@ -80,10 +80,14 @@ if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
       // 速通委托：机器人先去本层的委托房接委托（看到委托房就去），再找楼梯
       const comm=a.assigned.find(o=>o.type==='commission');
       if(comm){
+        // 走进委托房后，再走到委托点（交互格：参考生成器的委托房中心没有被占用，取房间中心）接下委托；
+        // 速通的起算格是委托点，N＝⌈2.5×委托点到楼梯的最短路⌉（8.4 第 2.2 节，main 定稿）。
         const w1=walk(f,f.arrival,roomGoal(f,comm.room),'d19');commissionSeen.push(w1.steps);
-        const w2=walk(f,w1.pos,stairsGoal(f),'d19',w1.seen);
-        const fromAccept=bfs(f.cells,w1.pos).get(k(f.down));
-        speedFloor.push((w1.steps+w2.steps)<=N?1:0);
+        const point=center(f.rooms[comm.room]);
+        const w1b=walk(f,w1.pos,(seen,pos)=>({reached:k(pos)===k(point),cells:[point]}),'d19',w1.seen);
+        const w2=walk(f,w1b.pos,stairsGoal(f),'d19',w1b.seen);
+        const fromAccept=bfs(f.cells,point).get(k(f.down));
+        speedFloor.push((w1.steps+w1b.steps+w2.steps)<=N?1:0);
         speedAccept.push(w2.steps<=Math.ceil(2.5*fromAccept)?1:0);
       }
       // 探路（只在第 1 层接、第 2 层完成才可能：第 3 层没有楼梯）：下一层要有祝福房或道具房

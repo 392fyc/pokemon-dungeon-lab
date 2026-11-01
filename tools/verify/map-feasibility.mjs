@@ -11,6 +11,7 @@
 // 结果打印成中文表格；--out 时另写一份 JSON（建议写到被忽略的 .artifacts/ 或 .tmp/）。
 
 import {writeFileSync} from 'node:fs';
+import {pathToFileURL} from 'node:url';
 import {performance} from 'node:perf_hooks';
 import {mulberry32,center,roomCells,generateFloor} from '../../src/core/dungeon.ts';
 
@@ -33,9 +34,9 @@ export const P={
 };
 const BOSS_SPOTS=['center','east','south','west','north'];
 
-const k=p=>`${p.x},${p.y}`;
-const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
-const inRect=(p,r)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
+export const k=p=>`${p.x},${p.y}`;
+export const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
+export const inRect=(p,r)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
 
 /** 首领房矩形。中心＝地图正中；四边＝贴着该边（留 1 格边框墙），另一轴居中。 */
 export function bossRect(spot,W=P.width,H=P.height,s=P.bossSize){
@@ -44,7 +45,7 @@ export function bossRect(spot,W=P.width,H=P.height,s=P.bossSize){
   return {...at,w:s,h:s};
 }
 
-function bfs(cells,start,blocked=null){
+export function bfs(cells,start,blocked=null){
   const dist=new Map([[k(start),0]]),q=[start];
   for(let i=0;i<q.length;i++)for(const d of DIRS){const c={x:q[i].x+d.x,y:q[i].y+d.y},kc=k(c);
     if(cells.has(kc)&&!dist.has(kc)&&!(blocked&&blocked(c))){dist.set(kc,dist.get(k(q[i]))+1);q.push(c);}}
@@ -166,7 +167,7 @@ function bossLeaf(f){
 }
 /** 迷雾探索机器人：只按 G4.4 的玩家地图规则揭示（房间里看整间、走廊里四向各 4 格），每回合走一步，
  * 去最近的“边界格”（已揭示、且有未揭示的相邻地面），看到目标后走最短已知路。返回到达目标所用步数。 */
-function fogSteps(f,goalCell,maxSteps=2000){
+export function fogSteps(f,goalCell,maxSteps=2000){
   const seen=new Set();let pos=f.arrival;
   const reveal=p=>{seen.add(k(p));for(const d of DIRS){let c=p;for(let n=0;n<4;n++){c={x:c.x+d.x,y:c.y+d.y};if(!f.cells.has(k(c)))break;seen.add(k(c));}}
     for(const r of f.rooms)if(inRect(p,r))roomCells(r).forEach(c=>seen.add(k(c)));};
@@ -189,7 +190,8 @@ const hist=xs=>{const m=new Map();xs.forEach(x=>m.set(x,(m.get(x)??0)+1));return
 const q=(xs,p)=>{const s=[...xs].sort((a,b)=>a-b);return s[Math.min(s.length-1,Math.floor(p*(s.length-1)))];};
 const stats=xs=>({min:Math.min(...xs),p10:q(xs,.1),p50:q(xs,.5),p90:q(xs,.9),max:Math.max(...xs),mean:+(xs.reduce((a,b)=>a+b,0)/xs.length).toFixed(1)});
 
-// ---------- 运行 ----------
+// ---------- 运行（只在直接执行本文件时运行；被其他验证脚本 import 时只提供函数） ----------
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
 const t0=performance.now();
 const R={seeds:SEEDS,params:P,platform:process.platform,node:process.version,reference:{},current:{},bossSpots:{}};
 const bossSpotN=[],openN=[],corrN=[],largeN=[],layoutN=[],detourN=[],roomsN=[],placedShort=[],skipped=[],disconnected=[],narrow=[],stairsUnreach=[],shortest=[],fog=[],fogRatio=[],fixedDist=[],fixedSameRoom=[],genMs=[],bossLeafBad=[],bossDoors=[],bossPath=[],enemyFail=[],cellsN=[];
@@ -255,3 +257,4 @@ if(asciiSeed!==null){for(let level=1;level<=P.floors;level++){const f=referenceF
   f.enemies.forEach(e=>e.pos&&mark.set(k(e.pos),e.kind==='fixed'?'F':'w'));
   console.log(`\n种子 ${asciiSeed} 第 ${level} 层${f.spot?'（首领房：'+f.spot+'）':''}，${f.rooms.length} 间`);
   for(let y=0;y<P.height;y++){let line='';for(let x=0;x<P.width;x++){const c=`${x},${y}`;line+=mark.get(c)??(f.cells.has(c)?'.':'#');}console.log(line);}}}
+}

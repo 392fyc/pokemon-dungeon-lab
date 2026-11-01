@@ -9,6 +9,8 @@ const results=[];
 const base=process.env.TRIAL_URL;
 if(!base) throw Error('Set TRIAL_URL to the local running trial.');
 const artifact='.artifacts/trial/';
+const map122Artifact='.artifacts/map122/';
+fs.mkdirSync(map122Artifact,{recursive:true});
 async function setup(fixture,mode='pass',animate=false){
  const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
  // Stage 6.4: the 22 existing checks run with animations off; only the animation check turns them on.
@@ -342,28 +344,121 @@ await test('远征：随机楼层真实键鼠，只能下楼，无上楼或撤�
   assert.deepEqual(errors,[]);return {seed:EXPEDITION_SEED,steps,cameraAtStairs:cam,crossed:'1->2',downwardOnly:true};
  }finally{await context.close();}
 });
+
+await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位置与镜头点击',async()=>{
+ const {createExpedition,jumpToFloor,reveal}=await import('../../src/core/engine.ts');
+ const {initialProfile,squadOf}=await import('../../src/core/base.ts');
+ const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});
+ const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
+ const report={browser:await browser.version(),viewport:{width:1440,height:1100},canvas:{width:680,height:350,cell:40},screenshots:[],actualInputs:[],fixtureBoundary:'生成截图使用固定种子生成的地图，并通过开发者内存状态装入；楼层截图从各层到达点显示，boss截图会把小队直接摆进首领房。它们不表示自然走完楼层或完整通关。相机点击检查在该夹具上通过真实方向键和画布鼠标点击。',status:'FAIL'};
+ const makeWorld=(seed,level)=>{let w=createExpedition(`map122-${seed}`,seed,3,squadOf(initialProfile()),0,true,3);if(level>1)w=jumpToFloor(w,level);return w;};
+ const openEmpty=async()=>{await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await emptyReady(p);};
+ const resetEmpty=async()=>{await p.reload();await p.locator('#start').waitFor();await emptyReady(p);};
+ const load=async w=>{await startMemory(p,w);return state(p);};
+ try{
+  await openEmpty();
+  const expectedFloors=[
+   {level:1,floor:355,rooms:9,arrival:{x:13,y:20},down:{x:28,y:8}},
+   {level:2,floor:453,rooms:10,arrival:{x:13,y:13},down:{x:32,y:8}},
+   {level:3,floor:373,rooms:10,arrival:{x:18,y:3},down:null}
+  ];
+  for(const expected of expectedFloors){
+   if(expected.level>1)await resetEmpty();
+   const s=await load(makeWorld(3,expected.level));
+   assert.equal(s.dungeon.level,expected.level);assert.deepEqual([s.dungeon.width,s.dungeon.height],[36,24]);
+   assert.equal(s.floor.length,expected.floor,`seed 3 floor ${expected.level}: exact ground-cell count`);
+   assert.equal(s.rooms.length,expected.rooms,`seed 3 floor ${expected.level}: exact room count`);
+   assert.deepEqual(s.units[s.leader].pos,expected.arrival,`seed 3 floor ${expected.level}: arrival coordinate`);
+   assert.equal(s.points.some(q=>q.kind==='up'||q.kind==='exit'),false,`seed 3 floor ${expected.level}: no upward stair or exit`);
+   if(expected.down)assert.deepEqual(s.points.find(q=>q.kind==='down')?.pos,expected.down,`seed 3 floor ${expected.level}: exact down-stair coordinate`);
+   else assert.equal(s.points.some(q=>q.kind==='down'),false,'boss floor has no down stair');
+   if(expected.level===3){assert.ok(Number.isInteger(s.bossRoom));assert.ok(s.units.boss?.pos);}
+   const camera=await p.evaluate(()=>window.trial.camera()),view=await p.evaluate(()=>window.trial.view());
+   assert.ok(view.tiles.length>0,'the generated floor draws terrain');assert.deepEqual(errors,[]);
+   const filename=`floor-${expected.level}-arrival.png`;await p.screenshot({path:map122Artifact+filename,fullPage:true});
+   report.screenshots.push({file:filename,seed:3,level:expected.level,ground:s.floor.length,rooms:s.rooms.length,arrival:s.units[s.leader].pos,camera});
+  }
+
+  await resetEmpty();
+  const sight=makeWorld(3,1),corridorStart={x:9,y:4},corridor={x:9,y:5};
+  const inside=(r,p)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
+  assert.ok(sight.rooms.some(r=>inside(r,corridorStart)),'the Q6 fixture starts in a room');
+  assert.ok(!sight.rooms.some(r=>inside(r,corridor)),'the Q6 fixture steps into a corridor');
+  assert.ok(sight.floor.some(p=>p.x===corridorStart.x&&p.y===corridorStart.y));assert.ok(sight.floor.some(p=>p.x===corridor.x&&p.y===corridor.y));
+  for(const id of sight.queue)if(id!==sight.leader){sight.units[id].hp=0;sight.units[id].pos=null;}
+  sight.units[sight.leader].pos=corridorStart;sight.seen=[];delete sight.seenWalls;reveal(sight);
+  const room=sight.rooms.find(r=>inside(r,corridorStart));
+  const groundKeys=new Set(sight.floor.map(q=>`${q.x},${q.y}`));
+  const before=await load(sight);for(let y=room.y;y<room.y+room.h;y++)for(let x=room.x;x<room.x+room.w;x++)assert.ok(before.seen.includes(`${x},${y}`),`room ground ${x},${y} remains visible`);
+  await key(p,'ArrowDown');const seenState=await state(p);assert.deepEqual(seenState.units[seenState.leader].pos,corridor,'the real keyboard input enters the corridor');
+  const seen=new Set(seenState.seen),walls=new Set(seenState.seenWalls??[]),dirs=[[1,0],[0,1],[-1,0],[0,-1]],insideMap=(q)=>q.x>=0&&q.y>=0&&q.x<seenState.dungeon.width&&q.y<seenState.dungeon.height;
+  for(const [dx,dy] of dirs)for(let n=1;n<=4;n++){
+   const c={x:corridor.x+dx*n,y:corridor.y+dy*n},sideA={x:c.x-dy,y:c.y+dx},sideB={x:c.x+dy,y:c.y-dx};
+   for(const q of [c,sideA,sideB])if(insideMap(q)){const k=`${q.x},${q.y}`;if(groundKeys.has(k))assert.ok(seen.has(k),`Q6 ground ${k} is revealed`);else assert.ok(walls.has(k),`Q6 wall ${k} is revealed separately`);}
+   if(!groundKeys.has(`${c.x},${c.y}`))break;
+  }
+  assert.ok(seenState.seenWalls?.length>0,'corridor sight records walls separately from ground');
+  assert.ok(seenState.seen.every(k=>groundKeys.has(k)),'seen contains ground cells only');
+  assert.ok(seenState.seenWalls.every(k=>!groundKeys.has(k)&&!seen.has(k)),'seenWalls contains unrevealed wall cells only');
+  const q6file='corridor-q6.png';await p.screenshot({path:map122Artifact+q6file,fullPage:true});
+  report.screenshots.push({file:q6file,seed:3,level:1,corridorStart,corridor,seenGround:seenState.seen.length,seenWalls:seenState.seenWalls.length});
+
+  const bossCases=[
+   {spot:'center',seed:1,boss:{x:17,y:11},leader:{x:20,y:11},friends:{A:{x:15,y:12},B:{x:15,y:13}},camera:{x:480,y:285}},
+   {spot:'east',seed:4,boss:{x:31,y:11},leader:{x:34,y:11},friends:{A:{x:29,y:9},B:{x:29,y:13}},camera:{x:760,y:285}}
+  ];
+  for(const [index,c] of bossCases.entries()){
+   await resetEmpty();const w=makeWorld(c.seed,3),r=w.rooms[w.bossRoom],boss=w.units.boss;
+   assert.ok(r,'World.bossRoom resolves to an existing room');assert.deepEqual([r.w,r.h],[7,7]);
+   assert.deepEqual({x:r.x+3,y:r.y+3},c.boss,`${c.spot} seed ${c.seed}: exact room centre`);assert.deepEqual(boss.pos,c.boss,'boss stands at the room centre');
+   w.units.C.pos=c.leader;w.units.A.pos=c.friends.A;w.units.B.pos=c.friends.B;for(const id of w.queue)w.units[id].tactic='wait';
+   w.seen=[];delete w.seenWalls;reveal(w);
+   assert.ok(w.seen.includes(`${boss.pos.x},${boss.pos.y}`),'boss is in the revealed room');
+   const start=await load(w);assert.equal(start.dungeon.level,3);assert.deepEqual(start.units[start.leader].pos,c.leader);
+   const cam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(cam,c.camera,`${c.spot}: camera follows the exact placed leader cell`);
+   const v=await p.evaluate(()=>window.trial.view());assert.ok(v.boss?.labels.includes('首领'));assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01);
+   const filename=`boss-${c.spot}.png`;await p.screenshot({path:map122Artifact+filename,fullPage:true});
+   report.screenshots.push({file:filename,seed:c.seed,level:3,bossRoom:w.bossRoom,boss:c.boss,leader:c.leader,camera:cam,placement:'fixture'});
+   if(index===0){
+    await key(p,'ArrowDown');let s=await state(p);assert.equal(s.round,1);assert.deepEqual(s.units[s.leader].pos,{x:20,y:12},'ArrowDown moves the leader one generated floor cell');
+    let movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,{x:480,y:325},'camera follows keyboard movement');
+    await cell(p,19,12);s=await state(p);assert.equal(s.round,2);assert.deepEqual(s.units[s.leader].pos,{x:19,y:12},'canvas click maps to the intended world cell after camera scroll');
+    movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,{x:440,y:325},'camera follows the canvas click destination');
+    const clickfile='camera-keyboard-canvas-click.png';await p.screenshot({path:map122Artifact+clickfile,fullPage:true});
+    report.screenshots.push({file:clickfile,seed:c.seed,level:3,afterKeyboard:{leader:{x:20,y:12},camera:{x:480,y:325}},afterCanvasClick:{leader:{x:19,y:12},camera:movedCam},inputChain:'real ArrowDown key then real canvas mouse click'});
+    report.actualInputs.push({input:'ArrowDown',round:s.round-1,leaderAfterKey:{x:20,y:12},cameraAfterKey:{x:480,y:325}});
+    report.actualInputs.push({input:'canvas click cell 19,12',round:s.round,leaderAfterClick:{x:19,y:12},cameraAfterClick:movedCam});
+   }
+  }
+  assert.deepEqual(errors,[]);report.status='PASS';return {screenshots:report.screenshots.map(s=>s.file),actualInputs:report.actualInputs,fixtureBoundary:report.fixtureBoundary};
+ }catch(e){report.error=String(e.stack??e);throw e;}
+ finally{fs.writeFileSync(map122Artifact+'map122-browser-results.json',JSON.stringify(report,null,2));await context.close();}
+});
 /* Stage 6.4: real keys and clicks on a fixed seed. The route reads the state only to choose the next key; invitations are refused by button. */
 await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用物品回复；进度只在内存',async()=>{
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
-  await p.goto(base+'?dev=1&seed=3');await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
+   await p.goto(base+'?dev=1&seed=3');await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
+   for(const id of ['A','B'])await p.locator('#tactic-run-'+id).selectOption('wait');await p.waitForFunction(()=>['A','B'].every(id=>window.trial.getState().units[id].tactic==='wait'));
   let s=await state(p);assert.equal(s.prog.level,5);assert.deepEqual(s.queue.map(i=>s.units[i].species),['charmander','squirtle','bulbasaur']);
   assert.match(await p.locator('#party').innerText(),/小火龙.*Lv5/s);assert.match(await p.locator('#goal-label').innerText(),/橙橙果×0/);
   const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
-  const settleInvite=async()=>{while((await state(p)).phase==='invitation')await reject(p);};
+  const settlePrompt=async()=>{for(let i=0;i<20;i++){const phase=(await state(p)).phase;if(phase==='invitation')await reject(p);else if(phase==='evolution')await click(p,'evolution-close');else return;}throw Error('too many pending invitation/evolution prompts');};
   async function go(target){
+   let last;const trail=[];
    for(let step=0;step<80;step++){
-    await settleInvite();const t=await state(p),c=t.units[t.leader].pos;if(c.x===target.x&&c.y===target.y)return;
+    await settlePrompt();const t=await state(p),c=t.units[t.leader].pos;if(c.x===target.x&&c.y===target.y)return;
     const floor=new Set(t.floor.map(q=>q.x+','+q.y)),dist=new Map([[target.x+','+target.y,0]]),q=[target];
     for(let i=0;i<q.length;i++)for(const d of Object.keys(arrows)){const [dx,dy]=d.split(',').map(Number),n={x:q[i].x+dx,y:q[i].y+dy},k=n.x+','+n.y;if(floor.has(k)&&!dist.has(k)){dist.set(k,dist.get(q[i].x+','+q[i].y)+1);q.push(n);}}
     const taken=new Set([...t.queue,...t.enemies].map(id=>t.units[id]).filter(u=>u.hp>0&&u.pos).map(u=>u.pos.x+','+u.pos.y));
     const opts=Object.keys(arrows).map(d=>{const [dx,dy]=d.split(',').map(Number);return {d,k:(c.x+dx)+','+(c.y+dy)};}).filter(o=>t.seen.includes(o.k)&&!taken.has(o.k)&&dist.has(o.k)).sort((a,b)=>dist.get(a.k)-dist.get(b.k));
-    assert.ok(opts.length,'no step at '+JSON.stringify(c));await key(p,arrows[opts[0].d]);
+    assert.ok(opts.length,'no step at '+JSON.stringify(c));last={step,pos:c,distance:dist.get(c.x+','+c.y),round:t.round,choice:opts[0].d};await key(p,arrows[opts[0].d]);const after=await state(p),afterPos=after.units[after.leader]?.pos;trail.push({step,before:c,key:arrows[opts[0].d],after:afterPos,roundBefore:t.round,roundAfter:after.round});
+    if(after.round===t.round&&afterPos?.x===c.x&&afterPos?.y===c.y)throw Error('route input made no progress: '+JSON.stringify({target,last,candidate:opts[0],phase:after.phase,message:await p.locator('#message').innerText(),controls:(await p.locator('#controls').innerText()).slice(0,160),focus:await p.evaluate(()=>({tag:document.activeElement?.tagName,id:document.activeElement?.id}))}));
    }
-   throw Error('route not finished');
+   throw Error('route not finished: '+JSON.stringify({target,last,state:(await state(p)).units[(await state(p)).leader]?.pos,trail:trail.slice(-8)}));
   }
   const berry=s.points.find(q=>q.kind==='berry').pos;
-  await go(berry);await settleInvite();s=await state(p);
+  await go(berry);await settlePrompt();s=await state(p);
   await click(p,'take');s=await state(p);assert.deepEqual(s.prog.items,{berry:1,tonic:0});assert.equal(s.points.find(q=>q.kind==='berry').used,true);
   assert.match(await p.locator('#goal-label').innerText(),/橙橙果×1/);assert.equal(await p.locator('#take').count(),0);
   // refusal: everyone is still at full HP (or the user is healthy), so the berry is refused with its reason
@@ -371,8 +466,8 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   if(full){await click(p,'use-berry');await p.locator('#item-target-C').click();await ready(p);assert.match(await p.locator('#message').innerText(),/HP已满.*本轮未执行/);assert.deepEqual(await state(p),s);}
   // get hurt: walk next to the melee enemy and hold the line until someone is below max HP
     await go(await (async()=>{const t=await state(p);const f=t.units[t.enemies.find(i=>t.units[i].hp>0&&t.units[i].pos)].pos;const floor=new Set(t.floor.map(q=>q.x+','+q.y));return [{x:f.x+1,y:f.y},{x:f.x-1,y:f.y},{x:f.x,y:f.y+1},{x:f.x,y:f.y-1}].find(c=>floor.has(c.x+','+c.y));})());
-  for(let i=0;i<8;i++){await settleInvite();s=await state(p);if(s.queue.some(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp))break;await key(p,'.');}
-  await settleInvite();s=await state(p);
+  for(let i=0;i<8;i++){await settlePrompt();s=await state(p);if(s.queue.some(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp))break;await key(p,'.');}
+  await settlePrompt();s=await state(p);
   const hurt=s.queue.filter(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp);assert.ok(hurt.length,'someone was hurt');
   const lead=s.units[s.leader].pos,near=hurt.find(id=>Math.abs(s.units[id].pos.x-lead.x)+Math.abs(s.units[id].pos.y-lead.y)<=1);
   assert.ok(near,'hurt member within reach of the leader: '+JSON.stringify({hurt,lead}));
@@ -467,10 +562,11 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
  const {createExpedition,applyCommand}=await import('../../src/core/engine.ts');
  const {initialProfile,squadOf}=await import('../../src/core/base.ts');
  const profile=initialProfile();let spentMove='';
- const makeWorld=(spent)=>{let w=createExpedition('rest-run',3,2,squadOf(profile));w.units.C.pos=w.points.find(q=>q.kind==='down').pos;
+  const makeWorld=(spent)=>{let w=createExpedition('rest-run',3,2,squadOf(profile));w.units.C.pos=w.points.find(q=>q.kind==='down').pos;
   spentMove=w.units.C.learned[0];assert.ok(spentMove,'the rest fixture needs one learned move');
   w=applyCommand(w,{type:'round',action:{type:'interact',exit:true}}).state;w=applyCommand(w,{type:'finishTransit'}).state;
-  for(const id of ['A','B']){w.units[id].hp=0;w.units[id].pos=null;}w.units.C.pos={x:14,y:9};if(spent)w.units.C.pp[spentMove]=0;return w;};
+   const rest=w.points.find(q=>q.kind==='rest');assert.ok(rest,'the generated second floor has its rest point');assert.deepEqual(rest.pos,{x:13,y:12},'seed 3 places the level 2 rest point at its exact new coordinate');
+   for(const id of ['A','B']){w.units[id].hp=0;w.units[id].pos=null;}w.units.C.pos={...rest.pos};if(spent)w.units.C.pp[spentMove]=0;return w;};
  const full=makeWorld(false),spent=makeWorld(true);
  const context=await browser.newContext({viewport:{width:1440,height:1100}});
  await context.addInitScript(()=>{window.__trialNoAnim=true;});

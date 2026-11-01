@@ -324,11 +324,11 @@ test('12.2 sight: a room shows the whole room and its mouth cell; a corridor sho
 test('12.2 sleep at birth: about a quarter of ordinary enemies sleep, never the boss, and the same seed gives the same sleepers',()=>{
  let ordinary=0,asleep=0;
  for(let seed=1;seed<=100;seed++)for(let level=1;level<=3;level++){
-  const g=generateFloor(seed,level,{width:20,height:14,floors:3,boss:true}),again=generateFloor(seed,level,{width:20,height:14,floors:3,boss:true});
+  const g=generateFloor(seed,level,{width:36,height:24,floors:3,boss:true,roguelike:true}),again=generateFloor(seed,level,{width:36,height:24,floors:3,boss:true,roguelike:true});
   assert.deepEqual(g.enemies.map(e=>e.asleep),again.enemies.map(e=>e.asleep));
   for(const e of g.enemies){if(e.boss){assert.equal(e.asleep,false);continue;}ordinary++;if(e.asleep)asleep++;}
  }
- assert.equal(ordinary,900); // 100 seeds x 3 floors x 3 ordinary enemies
+ assert.equal(ordinary,1800); // 100 seeds x 3 floors x 6 ordinary enemies
  assert.ok(asleep>=0.2*ordinary&&asleep<=0.3*ordinary,`about 25% sleep, got ${asleep}/${ordinary}`);
 });
 test('12.2 a sleeping enemy does not act; an opposing unit ending the round next to it (diagonal counts) wakes it',()=>{

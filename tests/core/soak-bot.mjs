@@ -16,7 +16,7 @@ const rangedMoves=u=>damageMoves(u).filter(k=>['front2','line10'].includes(moveO
  * Every accepted step is read back through a brand-new TrialStore and compared with deepEqual; every rejected command must leave state and bytes unchanged.
  * Statistics are printed, never asserted (this is a soak, not a balance test). Specification: https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/02-%E8%BF%9B%E5%BA%A6/%E8%87%AA%E6%B5%8B%E8%AE%B0%E5%BD%95/%E9%98%B6%E6%AE%B56%E2%80%94%E5%AE%8C%E6%95%B4%E5%BE%AA%E7%8E%AF%E8%87%AA%E6%B5%8B%E6%8A%A5%E5%91%8A.md.
  */
-export const GAMES=5,ROUND_CAP=400,COMMAND_CAP=1500;
+export const GAMES=5,ROUND_CAP=1200,COMMAND_CAP=4500;
 const key=p=>`${p.x},${p.y}`;
 const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 const dist=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
@@ -105,7 +105,7 @@ function route(s,from,wanted){
  return null;
 }
 const affordable=s=>s.shop&&s.dungeon.level===s.shop.level?['berry','tonic','tm'].filter(i=>(i==='tm'?s.shop.stock.tm!==null:s.shop.stock[i]>0)&&s.purse>=ECON.price[i]):[];
-/** Where the bot wants to go: the plan is goal G on floor 1, then T on floor 2, then back up and out; cheap pickups on the way. */
+/** Visible stairs and boss remain the objectives, with the existing nearby pickup/service priorities. */
 function objective(s,memo){
  const L=s.units[s.leader],level=s.dungeon.level,seen=new Set(s.seen);
  const pts=s.points.filter(p=>seen.has(key(p.pos)));
@@ -121,13 +121,26 @@ function objective(s,memo){
  // On the final floor every policy keeps searching for the boss. Its position is used only after it is revealed.
  const boss=s.enemies.map(i=>s.units[i]).find(u=>u.boss&&aliveU(u)&&seen.has(key(u.pos)));
  if(boss)return {kind:'boss',pos:boss.pos,used:false};
- return null; // candidates() explores revealed cells until another room is revealed
+ return null; // candidates() moves to the nearest unexplored boundary
+}
+/** Only ground already revealed and walls already drawn by the renderer participate in scouting.
+ * The renderer paints walls beside revealed ground (including room walls); unseen ground never enters the route map.
+ */
+export function explorationRoute(s){
+ const seen=new Set(s.seen),walls=new Set(s.seenWalls??[]),terrain=new Set(s.floor.map(key));
+ for(const value of seen){const [x,y]=value.split(',').map(Number);
+  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+   const cell=`${x+dx},${y+dy}`;if(!terrain.has(cell))walls.add(cell);
+  }
+ }
+ return route(s,s.units[s.leader].pos,c=>DIRS.some(d=>{
+  const next=key({x:c.x+d.x,y:c.y+d.y});return !seen.has(next)&&!walls.has(next);
+ }));
 }
 function stepToward(s,memo,target){
  const L=s.units[s.leader];
  const r=target?route(s,L.pos,c=>same(c,target.pos)):null;
- const visited=memo.visited[s.dungeon.level]??=new Set();
- const go=r??route(s,L.pos,c=>!visited.has(key(c)));
+ const go=r??explorationRoute(s);
  if(!go)return null;
  const occ=[...s.queue,...s.enemies].map(i=>s.units[i]).find(u=>aliveU(u)&&same(u.pos,go.step));
  if(!occ)return {type:'move',to:go.step};
@@ -464,10 +477,21 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    assert.equal(s.purse,0,where+': end purse must be zero');
    return {outcome:s.end.outcome,rounds,commands,goal:s.goal,level:s.prog.level,evolutions,floor:s.dungeon.level,kills:x.kills};
   }
-  if(rounds>=ROUND_CAP||commands>=COMMAND_CAP){
+  const capped=rounds>=ROUND_CAP||commands>=COMMAND_CAP;
+  // The final accepted action may open an invitation/evolution dialog: observe it before a cap in any live phase.
+  if((s.phase==='playing'||capped)&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors)observeBossFloor(s,x);
+  if(capped){
    const L=s.units[s.leader],visited=memo.visited[s.dungeon.level]??new Set(),obj=objective(s,memo);
    if(process.env.SOAK_DEBUG)console.log(where,memo.trail.slice(-30).join(' '),s.log.slice(-6));
    x.kills=killsOf(s);
+   // A timeout is still an observed run: include progress before the cap in the report.
+   if(s.dungeon.boss){
+    const reached=s.dungeon.level===s.dungeon.floors||String(s.dungeon.floors) in s.dungeon.stored;
+    const defeated=bossDefeated(s),contacted=!!x.contact;
+    if(reached)st.reachedBoss++;if(defeated)st.bossDefeated++;if(contacted)st.bossContacts++;
+    Object.assign(x,{bossRun:true,reached,defeated,bossWipe:false,contacted,survivors:null,
+     bossHpLeft:(Object.values(s.units).find(u=>u.boss)??Object.values(s.dungeon.stored).flatMap(f=>Object.values(f.units)).find(u=>u.boss))?.hp??null});
+   }
    return {outcome:'timeout',rounds,commands,goal:s.goal,level:s.prog.level,evolutions,floor:s.dungeon.level,kills:x.kills,
     reason:'phase='+s.phase+' floor='+s.dungeon.level+' leader@'+key(L.pos)+' objective='+(obj?obj.kind+'@'+key(obj.pos):'none')+' visited='+visited.size+'/'+s.seen.length};
   }
@@ -479,7 +503,6 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    memoryRun(port,store,where+' forced-wipe input');memo.suicidal=true;continue;
   }
   commands++;(memo.trail??=[]).push(`${s.round}:${key(s.units[s.leader].pos)}:${s.phase}`);
-  if(s.phase==='playing'&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors)observeBossFloor(s,x);
   if(commands%9===0)await probe(port,store,st,where);
   if(s.phase==='evolution'){const r=await send(port,store,{type:'evolve',species:s.pendingEvolutions[0].choices[0]},st,where+' evolution');assert.ok(r.ok,r.error);continue;}
   if(s.phase==='invitation'){

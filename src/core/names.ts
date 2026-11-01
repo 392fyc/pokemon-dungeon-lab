@@ -10,7 +10,7 @@ export type AdventureRoomType=keyof typeof ADVENTURE_ROOM_NAMES;
 export const ADVENTURE_ROOM_MARKS:Record<AdventureRoomType,string>={challenge:'挑',commission:'委',blessing:'祝',item:'道'};
 export type ChallengeRewardType='currency'|'item'|'invite'|'tm'|'blessing';
 export const CHALLENGE_REWARD_NAMES:Record<ChallengeRewardType,string>={currency:'钱袋 +40',item:'道具',invite:'伙伴邀请',tm:'招式机',blessing:'祝福'};
-const EXTRA_ITEM_NAMES:Record<string,string>={bigBerry:'大树果',teamTonic:'全员PP补剂'};
+const EXTRA_ITEM_NAMES:Record<string,string>={bigBerry:'大树果',teamTonic:'全员 PP 补剂'};
 export const itemZh=(id:string)=>EXTRA_ITEM_NAMES[id]??pick(table.items,id);
 export const adventureRoomTypeZh=(type:AdventureRoomType)=>ADVENTURE_ROOM_NAMES[type];
 export const adventureRoomMark=(type:AdventureRoomType,item?:string|null)=>type==='item'?(item==='teamTonic'?'剂':item==='bigBerry'?'果':'道'):ADVENTURE_ROOM_MARKS[type];

@@ -39,13 +39,14 @@ export function moveEffectLabel(id:string,context?:DamageSummaryContext):string{
 export const moveSummary=(id:string,context?:DamageSummaryContext):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id,context)}`;
 
 export type AdventureRoomMarker={room:number;at:Pos;kind:'door'|'interaction';roomType:AdventureRoomType;state:'idle'|'sealed'|'cleared'|'done';label:string;typeLabel:string;stateLabel:string;dimmed:boolean;itemLabel?:string};
-/** Visible map labels for the room's known doors and interaction cell. Hidden doors produce no marker. */
+/** Show a room label on its first discovered door and keep the interaction marker separate. Hidden doors produce no marker. */
 export function adventureRoomMarkers(s:World):AdventureRoomMarker[] {
   const seen=new Set(s.seen),markers:AdventureRoomMarker[]=[];
   for(const room of s.adventureRooms??[]){
     const dimmed=room.state==='cleared'||room.state==='done';
     const typeLabel=adventureRoomTypeZh(room.type),stateLabel=adventureRoomStateZh(room.type,room.state);
-    for(const at of room.doors)if(seen.has(key(at)))markers.push({room:room.room,at:{...at},kind:'door',roomType:room.type,state:room.state,
+    const discoveredDoor=room.doors.find(at=>seen.has(key(at)));
+    if(discoveredDoor)markers.push({room:room.room,at:{...discoveredDoor},kind:'door',roomType:room.type,state:room.state,
       label:room.state==='sealed'?'封闭':typeLabel,typeLabel,stateLabel,dimmed});
     if(seen.has(key(room.interaction)))markers.push({room:room.room,at:{...room.interaction},kind:'interaction',roomType:room.type,state:room.state,
       label:room.type==='challenge'&&room.state==='sealed'?'战':adventureRoomMark(room.type,room.item),typeLabel,stateLabel,dimmed,
@@ -108,6 +109,6 @@ export function localizeLog(s:World,line:string):string {
   for(const id of Object.keys(SPECIES))guard(id,speciesZh(id));
   for(const move of Object.keys(MOVE_DEFS))guard(move,moveZh(move));
   for(const [token,to] of swaps)out=out.split(token).join(to);
-  return out;
+  return out.replace(/全员\s*PP\s*补剂/g,itemZh('teamTonic'));
 }
 export const skillSummary=(u:Unit):string=>u.learned.length?u.learned.map(k=>skillLabel(u,k)).join('、'):'普攻';

@@ -1,0 +1,44 @@
+{
+  "berryBoost": {
+    "name": "树果加量",
+    "description": "橙橙果额外回复4点HP。",
+    "floors": [1, 2, 3],
+    "effect": "berryBoost",
+    "berryHealBonus": 4
+  },
+  "floorHeal": {
+    "name": "换层回复",
+    "description": "进入下一层时，在场存活同行各回复3点HP。",
+    "floors": [1, 2],
+    "effect": "floorHeal",
+    "floorHealHp": 3
+  },
+  "battleSpirit": {
+    "name": "战意",
+    "description": "全队攻击阶段立即提高1级，到换层时清除。",
+    "floors": [1, 2, 3],
+    "effect": "battleSpirit",
+    "attackStage": 1
+  },
+  "lullaby": {
+    "name": "安眠",
+    "description": "下一层普通敌人出生睡着的概率提高到50%。",
+    "floors": [1, 2],
+    "effect": "lullaby",
+    "sleepChance": 0.5
+  },
+  "rally": {
+    "name": "号召",
+    "description": "之后的招募成功概率提高到45%。",
+    "floors": [1, 2, 3],
+    "effect": "rally",
+    "recruitChance": 0.45
+  },
+  "tmChoice": {
+    "name": "选机",
+    "description": "下一张非商店招式机可从三个选项中选一张。",
+    "floors": [1, 2, 3],
+    "effect": "tmChoice",
+    "choiceCount": 3
+  }
+}

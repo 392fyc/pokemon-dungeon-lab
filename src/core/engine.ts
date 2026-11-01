@@ -162,10 +162,13 @@ export function reveal(s:World):void {
 /** BFS insertion order is also the right/down/left/up final tie break. */
 function paths(s:World,start:Pos,blocked:boolean):Map<string,{p:Pos;len:number;first:Pos}> {
   const result=new Map<string,{p:Pos;len:number;first:Pos}>();const seen=new Set(s.seen);
+  // Query-local indexes: callers may edit fixture arrays or move units between searches.
+  // Keep BFS insertion order intact; only replace repeated membership scans.
+  const floor=new Set(s.floor.map(key)),occupiedCells=blocked?new Set(active(s).map(u=>key(u.pos!))):null;
   result.set(key(start),{p:start,len:0,first:start});const q=[start];
   for(let i=0;i<q.length;i++){const cur=result.get(key(q[i]))!;
-    for(const d of DIRS){const p=plus(cur.p,d);if(!walk(s,p)||!seen.has(key(p))||result.has(key(p))||(blocked&&occupied(s,p)))continue;
-      result.set(key(p),{p,len:cur.len+1,first:cur.len===0?p:cur.first});q.push(p);}}
+    for(const d of DIRS){const p=plus(cur.p,d),k=key(p);if(!floor.has(k)||!seen.has(k)||result.has(k)||occupiedCells?.has(k))continue;
+      result.set(k,{p,len:cur.len+1,first:cur.len===0?p:cur.first});q.push(p);}}
   return result;
 }
 function defaultAction(s:World,id:string,blockingGuard:ReadonlySet<string>=new Set(),createdGuard:ReadonlySet<string>=new Set()):Action {
@@ -270,10 +273,11 @@ export function currentlyVisible(s:World,from:Pos,to:Pos):boolean {
 function firstStepTo(s:World,start:Pos,target:Pos,seenOnly:boolean):Pos|null {
   if(same(start,target))return null;
   const q:{p:Pos;first:Pos|null}[]=[{p:start,first:null}],seen=new Set([key(start)]);
+  const floor=new Set(s.floor.map(key)),known=seenOnly?new Set(s.seen):null,occupiedCells=new Set(active(s).map(u=>key(u.pos!)));
   for(let i=0;i<q.length;i++){
-    const cur=q[i];for(const d of DIRS){const p=plus(cur.p,d),k=key(p);if(!walk(s,p)||seen.has(k)||(seenOnly&&!s.seen.includes(k)))continue;
+    const cur=q[i];for(const d of DIRS){const p=plus(cur.p,d),k=key(p);if(!floor.has(k)||seen.has(k)||(known&&!known.has(k)))continue;
       const first=cur.first??p;if(same(p,target))return first;
-      if(occupied(s,p))continue;seen.add(k);q.push({p,first});
+      if(occupiedCells.has(k))continue;seen.add(k);q.push({p,first});
     }
   }
   return null;

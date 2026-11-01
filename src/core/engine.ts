@@ -1,10 +1,12 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
-import {generateFloor,generateChallengeEncounter,serviceRoll,ENEMY_DIFFICULTY,DIFFICULTY,isDifficulty,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,type Difficulty,type GeneratedFloor,type AdventureRoom} from './dungeon.ts';
+import {generateFloor,generateChallengeEncounter,serviceRoll,ENEMY_DIFFICULTY,DIFFICULTY,isDifficulty,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,mulberry32,type Difficulty,type GeneratedFloor,type AdventureRoom} from './dungeon.ts';
 import {ECON} from './economy.ts';
 import {SPECIES,speciesOf,tmPool,learnableMove,speciesMaxHp,type KitMove} from './roster.ts';
 import {TACTICS,isTactic,type Tactic} from './tactics.ts';
 import {moveOf,moveCategory,type MoveSpec} from './moves.ts';
 import names from '../data/names-zh.json' with {type:'json'};
+import commissionData from '../data/commissions.json' with {type:'json'};
+import blessingData from '../data/blessings.json' with {type:'json'};
 export type Pos = {x:number;y:number};
 /** Skills are move ids; PP and learned use the same keys. */
 export type Skill = string;
@@ -32,6 +34,7 @@ export type Action = {type:'move';to:Pos}|{type:'basic';target:string}|{type:'sk
 export type Command = {type:'switch';actor:string}|{type:'round';action:Action;override?:{actor:string;action:Action}}
   |{type:'tactic';actor:string;tactic:Tactic}|{type:'evolve';species:string|null}
   |{type:'invite';choice:'accept'|'reject';outgoing?:string}|{type:'finishExit'}|{type:'finishTransit'}
+  |{type:'commissionChoice';choice:'accept'|'reject'}|{type:'blessingChoice';blessing:BlessingId|null}|{type:'tmChoice';move:string}
   /** 7.2 shop purchase: needs the leader on the shop cell; takes no round. */
   |{type:'buy';item:ShopItem};
 export type Invitation = {id:string;unit:Unit;status:'pending'|'accepted'|'rejected'|'cancelled'};
@@ -42,7 +45,18 @@ export type ShopItem='berry'|'tonic'|'tm';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
 export type Item='berry'|'tonic'|'bigBerry'|'teamTonic';
 export const SKILL_CN:Record<Skill,string>=(names as unknown as {moves:Record<string,string>}).moves;
-export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员PP补剂'};
+export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂'};
+export type CommissionId='hunter'|'collector'|'scout'|'guardian'|'speedrun';
+export type BlessingId='berryBoost'|'floorHeal'|'battleSpirit'|'lullaby'|'rally'|'tmChoice';
+export type CommissionDefinition={name:string;description:string;progressTarget:number|null;equivalentEnemies:number;penalty:'defenseMinusOne'|'berryHealHalf'|null;floors:number[];speedMultiplier?:number;requiresRoomTypes?:AdventureRoom['type'][]};
+export type BlessingDefinition={name:string;description:string;floors:number[];effect:BlessingId;berryHealBonus?:number;floorHealHp?:number;attackStage?:number;sleepChance?:number;recruitChance?:number;choiceCount?:number};
+export const COMMISSIONS=commissionData as Record<CommissionId,CommissionDefinition>;
+export const BLESSINGS=blessingData as Record<BlessingId,BlessingDefinition>;
+export type ActiveCommission={id:CommissionId;floor:number;acceptedRound:number;progress:number;progressTarget:number;speedLimit:number|null};
+export type PendingChoice=
+  |{type:'commission';room:number;commission:CommissionId}
+  |{type:'blessing';source:'room'|'challenge';room:number|null;options:BlessingId[]}
+  |{type:'tmChoice';source:'target'|'challenge'|'boss';options:string[]};
 export type Rect={x:number;y:number;w:number;h:number};
 /**
  * 6.4 shared run level and counters (expedition only; absent in the fixed map and in expeditions saved before 6.4).
@@ -64,7 +78,7 @@ export type StoredFloor={floor:Pos[];seen:string[];seenWalls?:string[];enemies:s
 /** `boss` (7.3): themed floors and a regional boss on the last floor. `roguelike` marks the new one-way rules; absent means a legacy run. */
 export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true;tmPool?:3;roguelike?:true};
 /** A technique machine obtained in this run; `sent` remains a possible in-run fate, while final rogue fate is decided by win or wipe. */
-export type TmItem={move:string;source:'target'|'shop'|'boss';fate:'held'|'brought'|'sent'|'lost'};
+export type TmItem={move:string;source:'target'|'shop'|'boss'|'challenge';fate:'held'|'brought'|'sent'|'lost'};
 /** 7.2 the shop of this run: fixed stock decided at the start, and every sale so far. `tm` is null once sold. */
 export type Shop={level:number;stock:{berry:number;tonic:number;tm:string|null};trades:{item:ShopItem;price:number}[]};
 /** 7.2 the exchanger of this run: used at most once; `sent` is the companion it took home. */
@@ -79,10 +93,12 @@ export type End = {id:string;outcome:'normal'|'won'|'wipe';team:string[];camp:st
   boss?:boolean;tms?:TmItem[];lost?:string[];effective?:boolean;reasons?:string[];reward?:number;purse?:number;refund?:number};
 export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:string[];seenWalls?:string[];units:Record<string,Unit>;
   queue:string[];enemies:string[];camp:string[];leader:string;points:Point[];
-  goal:boolean;bag:number;phase:'playing'|'evolution'|'invitation'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
+  goal:boolean;bag:number;phase:'playing'|'evolution'|'invitation'|'commission'|'blessing'|'tmChoice'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
   request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;difficulty?:Difficulty;prog?:Progress;rooms?:Rect[];bossRoom?:number;
   /** 8.3 room state stays in the in-memory expedition (current World or StoredFloor) and is never saved. */
   adventureRooms?:AdventureRoom[];pendingAdventureStart?:{room:number;actor:string;pos:Pos};
+  /** 8.4 contract and blessing state is run-only and is never serialized. */
+  commissions?:ActiveCommission[];blessings?:BlessingId[];pendingChoices?:PendingChoice[];lullabyPending?:boolean;tmChoiceReady?:boolean;pendingEnd?:'won'|'wipe'|'normal';
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
   pendingEvolutions?:{actor:string;choices:string[]}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
@@ -254,6 +270,120 @@ function moveRangeProblem(s:World,actor:Unit,target:Unit,spec:MoveSpec):string {
 const sideIds=(s:World,side:Unit['side'])=>side==='friend'?s.queue:s.enemies;
 const opponentIds=(s:World,side:Unit['side'])=>side==='friend'?s.enemies:s.queue;
 function roomAt(s:World,p:Pos):Rect|undefined{return (s.rooms??[]).find(r=>inRect(p,r));}
+const hashText=(text:string):number=>{let h=0x811C9DC5;for(let i=0;i<text.length;i++)h=Math.imul(h^text.charCodeAt(i),0x01000193);return h>>>0;};
+const COMMISSION_STREAM=0x6A09E667;
+function choiceRandom(s:World,purpose:string,room:number|null=null,salt=''):()=>number {
+  const seed=s.dungeon?.seed??hashText(s.runId),level=s.dungeon?.level??0,roomTag=room===null?0:room+1;
+  return mulberry32((Math.imul(seed>>>0,0x9E3779B1)^Math.imul(level,0x85EBCA6B)^Math.imul(roomTag,0xC2B2AE35)^COMMISSION_STREAM^hashText(`${purpose}:${salt}`))>>>0);
+}
+function sampleWithoutReplacement<T>(items:readonly T[],count:number,random:()=>number):T[] {
+  const pool=[...items],out:T[]=[];while(out.length<count&&pool.length){const i=Math.floor(random()*pool.length);out.push(pool.splice(i,1)[0]);}return out;
+}
+function currentFloorLevel(s:World):number{return s.dungeon?.level??1;}
+function scoutTargetExists(s:World,fromRoom:number):boolean {
+  const target=COMMISSIONS.scout.requiresRoomTypes??['blessing','item'];
+  return (s.adventureRooms??[]).some(r=>r.room!==fromRoom&&target.includes(r.type));
+}
+function commissionChoicesForRoom(s:World,room:AdventureRoom):CommissionId[] {
+  const level=currentFloorLevel(s),hasDown=s.points.some(p=>p.kind==='down');
+  return (Object.keys(COMMISSIONS) as CommissionId[]).filter(id=>{
+    const def=COMMISSIONS[id];if(!def.floors.includes(level))return false;
+    if((id==='guardian'||id==='speedrun'||id==='scout')&&!hasDown)return false;
+    if(id==='scout'&&!scoutTargetExists(s,room.room))return false;
+    return true;
+  });
+}
+function commissionOffer(s:World,room:AdventureRoom):CommissionId|null {
+  const available=commissionChoicesForRoom(s,room);if(!available.length)return null;
+  const random=choiceRandom(s,'commission',room.room);return available[Math.floor(random()*available.length)];
+}
+function eligibleBlessings(s:World):BlessingId[] {
+  const level=currentFloorLevel(s),owned=new Set(s.blessings??[]);
+  return (Object.keys(BLESSINGS) as BlessingId[]).filter(id=>BLESSINGS[id].floors.includes(level)&&!owned.has(id));
+}
+function blessingOffer(s:World,source:'room'|'challenge',room:number|null):BlessingId[] {
+  const available=eligibleBlessings(s),random=choiceRandom(s,`blessing:${source}`,room);
+  return sampleWithoutReplacement(available,Math.min(3,available.length),random);
+}
+function queueBlessingChoice(s:World,source:'room'|'challenge',room:number|null):boolean {
+  const options=blessingOffer(s,source,room);if(!options.length)return false;
+  (s.pendingChoices??=[]).push({type:'blessing',source,room,options});return true;
+}
+function shortestFloorDistance(s:World,start:Pos,goal:Pos):number|null {
+  const floor=new Set(s.floor.map(key)),depth=new Map<string,number>([[key(start),0]]),queue=[start];
+  for(let i=0;i<queue.length;i++){
+    const p=queue[i],n=depth.get(key(p))!;if(same(p,goal))return n;
+    for(const d of DIRS){const next=plus(p,d),k=key(next);if(floor.has(k)&&!depth.has(k)){depth.set(k,n+1);queue.push(next);}}
+  }
+  return null;
+}
+function speedLimitFor(s:World,room:AdventureRoom):number|null {
+  const down=s.points.find(p=>p.kind==='down'),distance=down?shortestFloorDistance(s,room.interaction,down.pos):null;
+  return distance===null?null:Math.ceil(distance*(COMMISSIONS.speedrun.speedMultiplier??2.5));
+}
+function tmChoiceOptions(s:World,source:Extract<PendingChoice,{type:'tmChoice'}>['source'],room:number|null,salt=''):string[] {
+  const count=BLESSINGS.tmChoice.choiceCount??3,pool=tmPool(s.dungeon),random=choiceRandom(s,`tm:${source}`,room,salt);
+  return sampleWithoutReplacement([...new Set(pool)],Math.min(count,new Set(pool).size),random);
+}
+function addPendingTmChoice(s:World,source:'target'|'challenge'|'boss',room:number|null,salt=''):boolean {
+  const options=tmChoiceOptions(s,source,room,salt);if(!options.length)return false;
+  (s.pendingChoices??=[]).push({type:'tmChoice',source,options});s.tmChoiceReady=false;return true;
+}
+function setPendingChoicePhase(s:World):boolean {
+  const next=s.pendingChoices?.[0];if(!next)return false;
+  s.phase=next.type==='tmChoice'?'tmChoice':next.type;return true;
+}
+function queueTmItem(s:World,move:string,source:TmItem['source'],room:number|null=null,salt=''):void {
+  if(s.tmChoiceReady&&source!=='shop'){
+    if(addPendingTmChoice(s,source,room,salt)){note(s,`${BLESSINGS.tmChoice.name}生效：招式机提供${BLESSINGS.tmChoice.choiceCount??3}个选项`);return;}
+  }
+  (s.tms??=[]).push({move,source,fate:'held'});
+}
+function activeCommission(s:World,id:CommissionId):ActiveCommission|undefined{return s.commissions?.find(c=>c.id===id);}
+function commissionRewardExp(c:ActiveCommission):number {
+  const midpoint=({1:5.5,2:9.5,3:16} as Record<number,number>)[c.floor]??5.5;
+  return Math.round(COMMISSIONS[c.id].equivalentEnemies*PROG.expMultiplier*midpoint);
+}
+function finishCommission(s:World,c:ActiveCommission):void {
+  s.commissions=(s.commissions??[]).filter(v=>v!==c);
+  const exp=commissionRewardExp(c);if(s.prog)s.prog.exp+=exp;
+  note(s,`${COMMISSIONS[c.id].name}委托完成，队伍经验+${exp}`);
+}
+function failCommission(s:World,c:ActiveCommission,reason:string):void {
+  s.commissions=(s.commissions??[]).filter(v=>v!==c);
+  note(s,`${COMMISSIONS[c.id].name}委托失败（${reason}），负面效果解除`);
+}
+function progressCommission(s:World,id:CommissionId,amount=1):void {
+  for(const c of [...(s.commissions??[])].filter(v=>v.id===id)){
+    c.progress=Math.min(c.progressTarget,c.progress+amount);
+    if(c.progress>=c.progressTarget)finishCommission(s,c);
+    else note(s,`${COMMISSIONS[id].name}委托进度${c.progress}/${c.progressTarget}`);
+  }
+}
+function onRoomEntry(s:World,from:Pos,to:Pos):void {
+  const room=roomAt(s,to);if(!room||inRect(from,room))return;
+  const roomIndex=s.rooms?.indexOf(room)??-1;
+  const target=COMMISSIONS.scout.requiresRoomTypes??['blessing','item'];
+  const adventure=(s.adventureRooms??[]).find(r=>r.room===roomIndex&&target.includes(r.type));
+  if(!adventure)return;
+  for(const c of s.commissions??[])if(c.id==='scout'&&c.progress===0){c.progress=1;note(s,'探路委托已发现本层目标房');}
+}
+function applyBlessing(s:World,id:BlessingId):void {
+  const def=BLESSINGS[id];(s.blessings??=[]).push(id);
+  if(def.effect==='battleSpirit')for(const member of s.queue)if(alive(s.units[member]))changeStage(s,member,'atk',def.attackStage??1);
+  if(def.effect==='lullaby')s.lullabyPending=true;
+  if(def.effect==='tmChoice')s.tmChoiceReady=true;
+  note(s,`获得祝福：${def.name}。${def.description}`);
+}
+function updateLevelsAfterCommissionReward(s:World):boolean {
+  const p=s.prog;if(!p)return false;
+  let changed=false;while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level+1]){
+    p.level++;changed=true;refreshPartyLevel(s);note(s,`本局等级升到Lv${p.level}：基础生命上限增加1点，攻击等级加成${levelDamageBonus(p.level)}`);
+  }
+  if(!changed)return false;
+  const pending=findEvolutions(s);if(!pending.length)return false;
+  s.pendingEvolutions=pending;s.phase='evolution';note(s,'委托经验使队伍成长，出现进化选择');return true;
+}
 function adventureAt(s:World,p:Pos):AdventureRoom|undefined{return s.adventureRooms?.find(r=>same(r.interaction,p));}
 /** Current sight is recomputed from the unit's position; `seen` remains only the player's remembered map. */
 export function currentlyVisible(s:World,from:Pos,to:Pos):boolean {
@@ -513,6 +643,15 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
         if(!room.item)return '道具房没有可领取的道具';
         return s.prog?null:'这里没有可领取本局道具的背包';
       }
+      if(room.type==='commission'){
+        if(room.state==='done')return '这间委托房已经处理过';
+        if((s.commissions?.length??0)>=3)return '同时只能接下3条委托；本房间未完成，可先处理已接委托';
+        return commissionOffer(s,room)?null:'本层没有可接的委托';
+      }
+      if(room.type==='blessing'){
+        if(room.state==='done')return '这间祝福房已经处理过';
+        return eligibleBlessings(s).length?null:'没有尚未拥有且适用于本层的祝福';
+      }
       return '这个房间点位尚未开放';
     }
     const point=s.points.find(p=>same(p.pos,u.pos));
@@ -584,7 +723,10 @@ function restTargets(s:World):{id:string;skill:Skill}[] {
 function hit(s:World,id:string,n:number):void {
   const u=s.units[id],before=u.hp;u.hp=Math.max(0,u.hp-n);note(s,`${id}受到${n}伤害，HP ${u.hp}`);
   if(u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
-  if(before>0&&u.hp===0){u.pos=null;note(s,`${id}倒下退图`);if(u.side==='enemy'&&s.prog){
+  if(before>0&&u.hp===0){u.pos=null;note(s,`${id}倒下退图`);
+    if(u.side==='friend')for(const c of [...(s.commissions??[])].filter(c=>c.id==='guardian'))failCommission(s,c,'同行倒下');
+    if(u.side==='enemy')progressCommission(s,'hunter');
+    if(u.side==='enemy'&&s.prog){
       if(s.dungeon?.roguelike){const coins=Math.min(15,Math.max(5,u.level??INITIAL_LEVEL));s.purse=(s.purse??0)+coins;note(s,`${id}被击败，钱袋增加${coins}`);}
       if(!u.recruit&&u.species)s.prog.kills.push(u.species);
       s.prog.exp+=Math.round((u.level??INITIAL_LEVEL)*PROG.expMultiplier);
@@ -611,7 +753,9 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
   const attackDistance=source.pos&&target?.pos?distance(source.pos,target.pos):0;
   const base=source.side==='enemy'?Math.max(1,Math.round(scaled*DIFFICULTY[s.difficulty??'normal'])):scaled;
   const raw=base+(source.stages?.atk??0);
-  let amount=raw<=0?0:Math.max(0,raw-(target?.stages?.def??0));
+  const hunterPenalty=target?.side==='friend'&&activeCommission(s,'hunter')?1:0;
+  const defenceStage=Math.max(-3,Math.min(3,(target?.stages?.def??0)-hunterPenalty));
+  let amount=raw<=0?0:Math.max(0,raw-defenceStage);
   if(opposing&&amount>0){
     if(category==='Physical'&&(target!.reflect??0)>0)amount=Math.floor(amount/2);
     if(category==='Special'&&(target!.lightscreen??0)>0)amount=Math.floor(amount/2);
@@ -723,14 +867,15 @@ function sendHome(s:World,a:Extract<Action,{type:'exchange'}>):void {
 function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>):void {
   const u=s.units[id],level=u.side==='friend'?(s.prog?.level??u.level??INITIAL_LEVEL):(u.level??INITIAL_LEVEL),bonus=levelDamageBonus(level);
   if(a.type!=='skill')u.lastMove=null;
-  if(a.type==='move'){u.pos=clone(a.to);reveal(s);note(s,`${id}移动到${key(a.to)}`);}
+  if(a.type==='move'){const from=clone(u.pos!);u.pos=clone(a.to);if(u.side==='friend')onRoomEntry(s,from,a.to);reveal(s);note(s,`${id}移动到${key(a.to)}`);}
   else if(a.type==='basic')resolveDamage(s,id,a.target,6+bonus,basicCategory(u),blockingGuard);
   else if(a.type==='use'){
     const t=s.units[a.target];s.prog!.items[a.item]=(s.prog!.items[a.item]??0)-1;
     if(a.item==='bigBerry'){
-      const before=t.hp;t.hp=t.maxHp;note(s,`${id}对${t.id}使用${ITEM_NAMES.bigBerry}，HP ${before}→${t.hp}`);
+      const before=t.hp,heal=activeCommission(s,'guardian')?Math.floor(t.maxHp/2):t.maxHp;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.bigBerry}，HP ${before}→${t.hp}`);
     }else if(a.item==='berry'){
-      const before=t.hp;t.hp=Math.min(t.maxHp,t.hp+PROG.berryHeal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
+      const before=t.hp,boost=(s.blessings??[]).includes('berryBoost')?(BLESSINGS.berryBoost.berryHealBonus??0):0;
+      const raw=PROG.berryHeal+boost,heal=activeCommission(s,'guardian')?Math.floor(raw/2):raw;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
     }else if(a.item==='teamTonic'){
       const restored:string[]=[];
       for(const member of s.queue){const ally=s.units[member];if(!alive(ally))continue;
@@ -751,7 +896,13 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
       }else if(room.type==='item'&&room.item){
         const item=room.item,amount=(s.prog!.items[item]??0)+1;
         s.prog!.items[item]=amount;room.state='done';
-        note(s,`道具房：取得${ITEM_NAMES[item]}，背包共${amount}`);
+        note(s,`道具房：取得${ITEM_NAMES[item]}，背包共${amount}`);progressCommission(s,'collector');
+      }else if(room.type==='commission'){
+        const commission=commissionOffer(s,room);
+        if(commission){(s.pendingChoices??=[]).push({type:'commission',room:room.room,commission});
+          note(s,`委托房提出「${COMMISSIONS[commission].name}」：${COMMISSIONS[commission].description}`);}
+      }else if(room.type==='blessing'){
+        if(queueBlessingChoice(s,'room',room.room))note(s,'祝福房提供三选一；也可放弃');
       }
       return;
     }
@@ -762,8 +913,11 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
       p.used=true;note(s,`休整点：整理招式补给，${parts.join('，')}`);return;
     }
     if(!stairs&&!p.used){if(p.kind==='goal'){s.goal=true;if(s.prog)s.prog.exp+=PROG.goalExp;}
-      if(p.kind==='item'){s.bag++;if(s.prog){const r=rngStep(s.prog.rng);s.prog.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];(s.tms??=[]).push({move,source:'target',fate:'held'});note(s,`${id}取得招式机：${move}`);}}
-      if((p.kind==='berry'||p.kind==='tonic')&&s.prog){s.prog.items[p.kind]++;note(s,`${id}拾取${ITEM_NAMES[p.kind]}，背包共${s.prog.items[p.kind]}`);}p.used=true;}
+      if(p.kind==='item'){s.bag++;if(s.prog){
+        if(s.tmChoiceReady){if(addPendingTmChoice(s,'target',s.dungeon?.level??null,key(p.pos)))note(s,`${id}取得招式机，${BLESSINGS.tmChoice.name}提供选择`);}
+        else{const r=rngStep(s.prog.rng);s.prog.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];queueTmItem(s,move,'target');note(s,`${id}取得招式机：${move}`);}
+      }}
+      if((p.kind==='berry'||p.kind==='tonic')&&s.prog){s.prog.items[p.kind]++;note(s,`${id}拾取${ITEM_NAMES[p.kind]}，背包共${s.prog.items[p.kind]}`);progressCommission(s,'collector');}p.used=true;}
     if(p.kind==='berry'||p.kind==='tonic'){/* a pickup is never an exit */}
     else if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
     if(p.kind!=='berry'&&p.kind!=='tonic')note(s,stairs?`${id}请求${p.kind==='down'?'下':'上'}楼梯跨层`:`${id}交互${a.exit?'并请求撤离':''}`);
@@ -884,7 +1038,8 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   for(let i=0;i<order.length;i++){const id=order[i];if(!s.queue.includes(id)||!alive(s.units[id])||(ex&&id===lead))continue;
     if(swap&&(id===lead||id===swap)){
       if(i===later){const err=invalid(s,lead,cmd.action);if(err){if(preflight)return err;continue;}
-        const p=s.units[lead].pos;s.units[lead].pos=s.units[swap].pos;s.units[swap].pos=p;s.units[lead].lastMove=null;s.units[swap].lastMove=null;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
+        const p=s.units[lead].pos,q=s.units[swap].pos;if(p&&q){onRoomEntry(s,p,q);onRoomEntry(s,q,p);}
+        s.units[lead].pos=q;s.units[swap].pos=p;s.units[lead].lastMove=null;s.units[swap].lastMove=null;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
     const explicit=id===lead?cmd.action:cmd.override?.actor===id?cmd.override.action:null;
     const a=explicit??defaultAction(s,id,blockingFromEnemies,friendGuard);const err=invalid(s,id,a,moved);
     if(err){if(explicit&&preflight)return err;s.units[id].lastMove=null;note(s,`${id}动作失效，等待，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
@@ -952,6 +1107,7 @@ export function closeOut(s:World,outcome:End['outcome'],draw=true):End {
 function end(s:World,outcome:End['outcome']):void {
   clearCombatState(s);
   s.end=closeOut(s,outcome);
+  s.commissions=undefined;s.pendingChoices=undefined;s.lullabyPending=undefined;s.tmChoiceReady=undefined;s.pendingEnd=undefined;
   s.phase='ended';s.request=null;s.anchor=null;note(s,outcome==='won'?'首领被击败，本局胜利':outcome==='normal'?'正常撤离':'全队倒下，本局结束');
 }
 function clearUnitCombatState(u:Unit):void {
@@ -994,19 +1150,39 @@ function drawRecruitmentAndBossTm(s:World):void {
   const p=s.prog,settlement=s.pendingSettlement;if(!settlement)return;
   if(!p){s.pendingSettlement=undefined;return;}
   if(settlement.bossDrop){
-    const r=rngStep(p.rng);p.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];
-    (s.tms??=[]).push({move,source:'boss',fate:'held'});note(s,`区域首领被讨伐，掉落招式机：${move}（持有中）`);
+    if(s.tmChoiceReady){if(addPendingTmChoice(s,'boss',s.dungeon?.level??null,'boss-drop'))note(s,`区域首领被讨伐，${BLESSINGS.tmChoice.name}提供招式机选择`);}
+    else{const r=rngStep(p.rng);p.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];
+      (s.tms??=[]).push({move,source:'boss',fate:'held'});note(s,`区域首领被讨伐，掉落招式机：${move}（持有中）`);}
   }
   for(const sp of settlement.kills){
     if(!speciesOf(sp))continue;
     const r=rngStep(p.rng);p.rng=r.state;
-    if(r.value>=PROG.recruitChance){note(s,`${sp}被击败，没有发出邀请`);continue;}
+    const recruitChance=(s.blessings??[]).includes('rally')?(BLESSINGS.rally.recruitChance??PROG.recruitChance):PROG.recruitChance;
+    if(r.value>=recruitChance){note(s,`${sp}被击败，没有发出邀请`);continue;}
     do p.made++;while(s.units[`N${p.made}`]||s.invitations.some(i=>i.unit.id===`N${p.made}`));
     const unit=recruitUnit(`N${p.made}`,sp,p.level);
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});
     note(s,`${sp}被击败并发出邀请：${unit.id} Lv${p.level} ${unit.hp}/${unit.maxHp}HP`);
   }
   s.pendingSettlement=undefined;
+}
+function isDownRequestEstablished(s:World):boolean{return !!s.request?.locked&&s.request.to!==undefined&&s.request.to>(s.dungeon?.level??0);}
+function updateSpeedrunProgress(s:World):void {
+  const down=isDownRequestEstablished(s);
+  for(const c of [...(s.commissions??[])].filter(v=>v.id==='speedrun')){
+    const elapsed=Math.max(1,s.round-c.acceptedRound+1);c.progress=elapsed;
+    if(!down&&c.speedLimit!==null&&elapsed>c.speedLimit)failCommission(s,c,'超过限时');
+  }
+}
+function settleDownCommissions(s:World):void {
+  if(!isDownRequestEstablished(s))return;
+  const active=[...(s.commissions??[])];
+  for(const c of active){
+    if(c.id==='guardian'&&s.queue.every(id=>alive(s.units[id]))){c.progress=1;finishCommission(s,c);}
+    else if(c.id==='speedrun'&&c.speedLimit!==null&&s.round-c.acceptedRound+1<=c.speedLimit){c.progress=Math.max(c.progress,s.round-c.acceptedRound+1);finishCommission(s,c);}
+    else if(c.id==='scout'&&c.progress>=1)finishCommission(s,c);
+  }
+  for(const c of [...(s.commissions??[])])failCommission(s,c,'本层下楼时尚未完成');
 }
 function openAdventureRoom(s:World,room:AdventureRoom):void{
   const keys=new Set((room.sealedCells??[]).map(key)),floor=new Set(s.floor.map(key));
@@ -1018,14 +1194,17 @@ function openAdventureRoom(s:World,room:AdventureRoom):void{
 }
 function awardAdventureChallenge(s:World,room:AdventureRoom):void{
   const amount=room.rewardCurrency??40;
-  if(room.reward==='currency'||room.reward==='blessing'){
+  if(room.reward==='currency'){
     s.purse=(s.purse??0)+amount;note(s,`挑战奖励：钱袋+${amount}（当前零钱${s.purse}）`);
+  }else if(room.reward==='blessing'){
+    if(queueBlessingChoice(s,'challenge',room.room))note(s,'挑战奖励：祝福三选一；也可放弃');
+    else note(s,'挑战奖励：没有尚未拥有且适用于本层的祝福可选');
   }else if(room.reward==='item'&&room.rewardItem&&s.prog){
     const item=room.rewardItem,count=(s.prog.items[item]??0)+1;s.prog.items[item]=count;
-    note(s,`挑战奖励：道具${ITEM_NAMES[item]}入包（共${count}件）`);
+    note(s,`挑战奖励：道具${ITEM_NAMES[item]}入包（共${count}件）`);progressCommission(s,'collector');
   }else if(room.reward==='tm'&&room.rewardMove){
-    (s.tms??=[]).push({move:room.rewardMove,source:'target',fate:'held'});
-    note(s,`挑战奖励：招式机${room.rewardMove}入包`);
+    const waiting=s.tmChoiceReady;queueTmItem(s,room.rewardMove,'challenge',room.room);
+    note(s,waiting?`挑战奖励：招式机${BLESSINGS.tmChoice.name}提供选择`:`挑战奖励：招式机${room.rewardMove}入包`);
   }
 }
 /** Returns true only when a challenge reward invitation has just been issued and must be answered first. */
@@ -1052,18 +1231,24 @@ function finishRoundSettlement(s:World):void {
   const living=s.queue.find(i=>alive(s.units[i]));
   if(!living){
     s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});
-    end(s,s.dungeon?.roguelike&&bossDefeated(s)?'won':'wipe');return;
+    const outcome=s.dungeon?.roguelike&&bossDefeated(s)?'won':'wipe';
+    if(outcome==='won'&&s.pendingChoices?.length){s.pendingEnd=outcome;setPendingChoicePhase(s);return;}
+    end(s,outcome);return;
   }
   if(!alive(s.units[s.leader]))s.leader=living;
-  if(s.request){const u=s.units[s.request.actor];if(alive(u)&&same(u.pos,s.request.pos))s.request.locked=true;else s.request=null;}
   if(s.invitations.some(i=>i.status==='pending')){s.anchor=clone(s.units[s.leader].pos);s.phase='invitation';}
   else if(completeAdventureIfReady(s))return;
+  else if(updateLevelsAfterCommissionReward(s))return;
+  else if(setPendingChoicePhase(s))return;
   else if(s.dungeon?.roguelike&&bossDefeated(s))end(s,'won');
   else s.phase=settled(s);
 }
 function afterRound(s:World):void {
   resolveAdventureStart(s);
+  if(s.request){const u=s.units[s.request.actor];if(alive(u)&&same(u.pos,s.request.pos))s.request.locked=true;else s.request=null;}
+  settleDownCommissions(s);
   const bossWin=!!s.dungeon?.roguelike&&bossDefeated(s);
+  updateSpeedrunProgress(s);
   if(!s.queue.some(i=>alive(s.units[i]))&&!bossWin){s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});if(s.prog)s.prog.kills=[];end(s,'wipe');return;}
   const p=s.prog,kills=p?[...p.kills]:[];if(p){p.kills=[];}
   const bossDrop=!!s.dungeon?.boss&&bossDefeated(s)&&!(s.tms??[]).some(t=>t.source==='boss');
@@ -1116,8 +1301,51 @@ function buy(original:World,item:ShopItem):World {
   else{sh.stock[item]--;s.prog!.items[item]++;note(s,`${s.leader}在商店买下${ITEM_NAMES[item]}，花费${price}，背包共${s.prog!.items[item]}`);}
   return s;
 }
+function resumeAfterChoice(s:World):void {
+  if(setPendingChoicePhase(s))return;
+  if(s.pendingEnd){const outcome=s.pendingEnd;s.pendingEnd=undefined;end(s,outcome);return;}
+  if(s.invitations.some(i=>i.status==='pending')){s.anchor=clone(s.units[s.leader]?.pos??{x:0,y:0});s.phase='invitation';return;}
+  s.anchor=null;
+  if(s.dungeon?.roguelike&&bossDefeated(s))end(s,'won');else s.phase=settled(s);
+}
 export function applyCommand(original:World,cmd:Command):Result {
   const fail=(error:string):Result=>({ok:false,state:original,error:`${error}；本轮未执行`});
+  if(cmd.type==='commissionChoice'){
+    const pending=original.pendingChoices?.[0];
+    if(original.phase!=='commission'||pending?.type!=='commission')return fail('当前没有待处理的委托选择');
+    const room=original.adventureRooms?.find(r=>r.room===pending.room);
+    if(!room||room.type!=='commission'||room.state!=='idle')return fail('委托房状态已变化，无法处理选择');
+    if(cmd.choice==='accept'&&(original.commissions?.length??0)>=3)return fail('同时只能接下3条委托');
+    const s=clone(original),choice=s.pendingChoices!.shift() as Extract<PendingChoice,{type:'commission'}>,target=s.adventureRooms!.find(r=>r.room===choice.room)!;
+    target.state='done';
+    if(cmd.choice==='accept'){
+      const def=COMMISSIONS[choice.commission],speedLimit=choice.commission==='speedrun'?speedLimitFor(s,target):null;
+      if(choice.commission==='speedrun'&&speedLimit===null)return fail('委托点与楼梯之间没有可走路线');
+      const progress=choice.commission==='speedrun'?1:0,progressTarget=speedLimit??def.progressTarget??1;
+      (s.commissions??=[]).push({id:choice.commission,floor:currentFloorLevel(s),acceptedRound:s.round,progress,progressTarget,speedLimit});
+      note(s,`接下${def.name}委托${speedLimit===null?'':`，限${speedLimit}轮（接下本轮计1轮）`}`);
+    }else note(s,`拒绝${COMMISSIONS[choice.commission].name}委托，委托房已完成`);
+    resumeAfterChoice(s);return {ok:true,state:s};
+  }
+  if(cmd.type==='blessingChoice'){
+    const pending=original.pendingChoices?.[0];if(original.phase!=='blessing'||pending?.type!=='blessing')return fail('当前没有待处理的祝福选择');
+    if(cmd.blessing!==null&&!pending.options.includes(cmd.blessing))return fail('所选祝福不在本次选项中');
+    if(cmd.blessing!==null&&(original.blessings??[]).includes(cmd.blessing))return fail('该祝福已经拥有');
+    if(pending.source==='room'){
+      const room=original.adventureRooms?.find(r=>r.room===pending.room);if(!room||room.type!=='blessing'||room.state!=='idle')return fail('祝福房状态已变化，无法处理选择');
+    }
+    const s=clone(original),choice=s.pendingChoices!.shift() as Extract<PendingChoice,{type:'blessing'}>;
+    if(choice.source==='room')s.adventureRooms!.find(r=>r.room===choice.room)!.state='done';
+    if(cmd.blessing===null)note(s,'放弃本次祝福，房间已完成');else applyBlessing(s,cmd.blessing);
+    resumeAfterChoice(s);return {ok:true,state:s};
+  }
+  if(cmd.type==='tmChoice'){
+    const pending=original.pendingChoices?.[0];if(original.phase!=='tmChoice'||pending?.type!=='tmChoice')return fail('当前没有待处理的招式机选择');
+    if(!pending.options.includes(cmd.move))return fail('所选招式不在本次选项中');
+    const s=clone(original),choice=s.pendingChoices!.shift() as Extract<PendingChoice,{type:'tmChoice'}>;
+    (s.tms??=[]).push({move:cmd.move,source:choice.source,fate:'held'});note(s,`取得${choice.source==='challenge'?'挑战奖励':choice.source==='boss'?'首领掉落':'目标奖励'}招式机：${cmd.move}`);
+    resumeAfterChoice(s);return {ok:true,state:s};
+  }
   if(cmd.type==='tactic'){
     const unit=original.units[cmd.actor];
     if(original.phase!=='playing'||!original.queue.includes(cmd.actor)||!alive(unit))return fail('只能更改当前存活的同行单位方针');
@@ -1163,8 +1391,7 @@ export function applyCommand(original:World,cmd:Command):Result {
   }else{invite.status='rejected';note(s,`拒绝${invite.unit.id}`);}
   if(!s.invitations.some(i=>i.status==='pending')){
     if(completeAdventureIfReady(s))return {ok:true,state:s};
-    s.anchor=null;
-    if(s.dungeon?.roguelike&&bossDefeated(s))end(s,'won');else s.phase=settled(s);
+    s.anchor=null;resumeAfterChoice(s);
   }
   return {ok:true,state:s};
 }
@@ -1180,8 +1407,8 @@ function floorUnits(g:GeneratedFloor):{units:Record<string,Unit>;enemies:string[
   return {units,enemies:g.enemies.map(e=>e.id)};
 }
 /** Active expeditions use the current generator; legacy save validation never regenerates their historical maps. */
-function freshFloor(d:Dungeon,level:number,run:boolean,difficulty:Difficulty='normal'):StoredFloor&{arrival:Pos;adventureRooms?:AdventureRoom[]} {
-  const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors,...(d.boss?{boss:true}:{}),...(d.roguelike?{roguelike:true}:{}),difficulty});
+function freshFloor(d:Dungeon,level:number,run:boolean,difficulty:Difficulty='normal',enemySleepChance=0.25):StoredFloor&{arrival:Pos;adventureRooms?:AdventureRoom[]} {
+  const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors,...(d.boss?{boss:true}:{}),...(d.roguelike?{roguelike:true}:{}),difficulty,enemySleepChance});
   return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),enemyAiRng:g.enemyAiRng,...(run?{rooms:g.rooms.map(r=>({...r}))}:{}),...(run&&g.adventureRooms?{adventureRooms:clone(g.adventureRooms)}:{}),...(g.bossRoom!==undefined?{bossRoom:g.bossRoom}:{}),arrival:g.arrival};
 }
 function stashFloor(s:World):StoredFloor {
@@ -1223,7 +1450,8 @@ function transit(original:World):World {
   const cancelled=(why:string)=>{const c=clone(original);c.request=null;c.phase='playing';note(c,`跨层取消：${why}；动作已用，留在原层`);return c;};
   if(d.roguelike&&to<=from)return cancelled('本局只能向下');
   const cur=stashFloor(s);
-  const next=d.stored[to]??freshFloor(d,to,!!s.prog,original.difficulty??'normal');
+  const generating=!d.stored[to],sleepChance=(s.lullabyPending&&generating)?(BLESSINGS.lullaby.sleepChance??0.5):0.25;
+  const next=d.stored[to]??freshFloor(d,to,!!s.prog,original.difficulty??'normal',sleepChance);
   loadFloor(s,clone(next));
   const stair=s.points.find(p=>p.kind===(to>from?'up':'down'));
   const entry:Pos|undefined=d.roguelike
@@ -1232,6 +1460,8 @@ function transit(original:World):World {
   if(!entry)return cancelled('目标层没有对应楼梯');
   if(!placeTeam(s,entry))return cancelled('目标层入口附近没有合法位置');
   delete d.stored[to];d.stored[String(from)]=cur;clearCombatState(s);d.level=to;s.request=null;s.phase='playing';
+  if(s.lullabyPending&&generating){s.lullabyPending=false;note(s,'安眠的待用效果已用于本层生成');}
+  if((s.blessings??[]).includes('floorHeal'))for(const id of s.queue){const u=s.units[id];if(!alive(u))continue;const before=u.hp;u.hp=Math.min(u.maxHp,u.hp+(BLESSINGS.floorHeal.floorHealHp??3));note(s,`换层回复：${id} HP ${before}→${u.hp}`);}
   note(s,`同行抵达第${to}层`);return s;
 }
 /**

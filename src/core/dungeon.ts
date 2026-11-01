@@ -6,7 +6,7 @@
  */
 export type Cell={x:number;y:number};
 /** `boss` (7.3): themed floors, the new enemy pools and a regional boss on the last floor. */
-export type FloorParams={width:number;height:number;floors:number;boss?:boolean;roguelike?:true;difficulty?:Difficulty};
+export type FloorParams={width:number;height:number;floors:number;boss?:boolean;roguelike?:true;difficulty?:Difficulty;enemySleepChance?:number};
 export const DEFAULT_PARAMS:FloorParams={width:36,height:24,floors:3,boss:true,roguelike:true};
 import {ECON} from './economy.ts';
 import {SPECIES,BOSS_CONFIG,speciesMaxHp,tmPool} from './roster.ts';
@@ -97,7 +97,7 @@ export function serviceRoll(seed:number,floors:number):ServiceRoll {
 }
 type Rooms83Data={roomTypeWeights:Record<AdventureRoomType,number>;challengeRewardWeights:Record<ChallengeRewardType,number>;
   itemWeights:Record<AdventureItemId,number>;challengeCurrencyAmount:number;
-  items:Record<AdventureItemId,{name:string;effect:{type:'fullHeal'|'restorePp';target:'selfOrAdjacent'|'allLivingCompanions';perMove?:number}}>};
+};
 const ROOMS_83=rooms83 as Rooms83Data;
 const ADVENTURE_STREAMS={roomItem:0x4C957F2D,challengeCount:0x165667B1,challengeSpecies:0x9E3779B9,
   challengeLevel:0x85EBCA6B,challengeReward:0xA511E9B3,challengeItem:0x63D83595,challengeMove:0xB7E15162} as const;
@@ -372,7 +372,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const species=speciesPool[Math.floor(speciesRng()*speciesPool.length)];
     const lower=Math.max(themed.levels[0],SPECIES[species].evoLevel),upper=themed.levels[1];
     const enemyLevel=bossEnabled?lower+Math.floor(levelRng()*(upper-lower+1)):INITIAL_LEVEL;
-    const asleep=sleepRng()<0.25;
+    const asleep=sleepRng()<(params.enemySleepChance??0.25);
     enemyAiRng=(enemyAiRng+0x6D2B79F5)>>>0;
     return {id:'w'+level+'abcdef'[n],species,level:enemyLevel,
       hp:speciesMaxHp(species,enemyLevel,difficulty),pos,

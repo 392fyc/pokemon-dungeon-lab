@@ -125,11 +125,8 @@ test('8.3 R8: a wipe inside the sealed room has the normal roguelike terminal ou
  assert.deepEqual(after.end.tms,[{move:'protect',source:'target',fate:'lost'}]);assert.deepEqual(after.end.lost,[]);
 });
 
-test('8.3 R9/R10: new room items use an action only when useful; placeholder points refuse without mutation',()=>{
- for(const type of ['commission','blessing']){
-  const s=challengeWorld({type}),r=applyCommand(s,{type:'round',action:{type:'interact',exit:false}});
-  assert.equal(r.ok,false);assert.match(r.error,/尚未开放/);assert.equal(r.state,s);
- }
+test('8.3 R9: new room items use an action only when useful',()=>{
+ // The former unopened commission/blessing assertions are replaced by 8.4 C1/C5/C12.
  let s=challengeWorld({type:'item',item:'bigBerry'});s=act(s,{type:'interact',exit:false});
  assert.equal(s.adventureRooms[0].state,'done');assert.equal(s.prog.items.bigBerry,1);
  const full=applyCommand(s,{type:'round',action:{type:'use',item:'bigBerry',target:'A'}});assert.equal(full.ok,false);assert.equal(full.state,s);
@@ -151,11 +148,14 @@ test('8.3 R11: walking across a multi-door challenge room never triggers it',()=
  assert.deepEqual(s.enemies,['X','E']);assert.deepEqual(s.adventureRooms[0].sealedCells,[]);
 });
 
-test('8.3 R4/R12: door markers reveal individually and display sealed or completed state',()=>{
+test('8.3 R4/R12: one discovered door per room displays its sealed or completed state',()=>{
  const s=challengeWorld(),a=s.adventureRooms[0];s.seen=[];
  assert.deepEqual(adventureRoomMarkers(s),[]);
  s.seen=['3,3'];let markers=adventureRoomMarkers(s);assert.equal(markers.length,1);
  assert.equal(markers[0].kind,'door');assert.equal(markers[0].roomType,'challenge');assert.equal(markers[0].dimmed,false);
+ s.seen=a.doors.map(key);markers=adventureRoomMarkers(s);assert.equal(markers.length,1,'multiple known doors share one type label');
+ assert.deepEqual(markers[0].at,a.doors[0]);
+ s.seen=[key(a.doors[2])];assert.deepEqual(adventureRoomMarkers(s)[0].at,a.doors[2],'an unseen earlier door must not hide the discovered entrance label');
  a.state='sealed';markers=adventureRoomMarkers(s);assert.equal(markers[0].label,'封闭');
  a.state='cleared';markers=adventureRoomMarkers(s);assert.equal(markers[0].dimmed,true);
  for(const type of ['commission','blessing','item']){a.type=type;a.state='idle';assert.equal(adventureRoomMarkers(s)[0].roomType,type);a.state='done';assert.equal(adventureRoomMarkers(s)[0].dimmed,true);}
@@ -179,11 +179,14 @@ test('8.3 R17: independent reward streams give exact fixed 10000-draw counts',()
  assert.deepEqual(items,{bigBerry:1261,teamTonic:1260});
 });
 
-test('8.3 R18: a blessing reward pays exactly 40 before 8.4 and opens no choice panel',()=>{
+test('8.4 replaces R18: challenge blessing opens a choice and gives no substitute money',()=>{
  let s=startChallenge(challengeWorld());s.adventureRooms[0].reward='blessing';s.adventureRooms[0].rewardItem=null;
  const target=finalEnemyFixture(s),before=s.purse;s.prog.rng=1;
  s=resolvePrompts(act(s,{type:'basic',target}));
- assert.equal(s.adventureRooms[0].state,'cleared');assert.equal(s.phase,'playing');assert.equal(s.purse,before+5+40);
+ assert.equal(s.adventureRooms[0].state,'cleared');assert.equal(s.phase,'blessing');assert.equal(s.purse,before+5);
+ const choices=s.pendingChoices[0].options;assert.equal(choices.length,3);assert.equal(new Set(choices).size,3);
+ s=command(s,{type:'blessingChoice',blessing:choices[0]});assert.equal(s.phase,'playing');assert.ok(s.blessings.includes(choices[0]));
+ assert.equal(s.purse,before+5);
 });
 
 test('8.3 R7: a preselected item reward goes directly to the backpack exactly once',()=>{
@@ -213,7 +216,7 @@ test('8.3 R7: evolution choice precedes opening and an independent preselected T
  s=act(s,{type:'basic',target});assert.equal(s.phase,'evolution');assert.equal(s.adventureRooms[0].state,'sealed');
  assert.equal(s.tms.length,0);s=command(s,{type:'evolve',species:null});
  assert.equal(s.phase,'invitation');assert.equal(s.adventureRooms[0].state,'sealed');s=resolvePrompts(s);
- assert.equal(s.adventureRooms[0].state,'cleared');assert.deepEqual(s.tms,[{move:'protect',source:'target',fate:'held'}]);
+ assert.equal(s.adventureRooms[0].state,'cleared');assert.deepEqual(s.tms,[{move:'protect',source:'challenge',fate:'held'}]);
 });
 
 test('8.3 R1/R2/R13/R14/R16: 600 floors retain the fixed 8.2 content and independently valid room sites',()=>{

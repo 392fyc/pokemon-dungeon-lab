@@ -2,7 +2,7 @@
 tags:
   - 工作环境/配置
   - 项目/分工
-updated: 2026-10-30
+updated: 2026-11-01
 ---
 # Claude 主会话的作业方式
 
@@ -17,7 +17,7 @@ updated: 2026-10-30
 | 本机 Windows | Node 24.22.1、npm 11.16.0、Edge 156、Playwright（npx 缓存中的 1.59.1）、`gh`、git-safe 均可用；Claude 对 PR #5 的两轮审核就用这套环境跑通（实现方的 Windows 检查另用 Playwright 1.62.1，见验收记录） | 能 |
 | 本机原生子代理 | 项目已装 `mercury-dev`（Sonnet）、`mercury-reviewer` 与 `mercury-acceptance`（Opus）；后两者是只读角色，有防写守卫 | 能 |
 | Codex Cloud：`pokemon-dungeon-lab` 与 REA 环境 | 属于 ChatGPT 账号，见 [REA 与 Codex Cloud](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/07-%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83/REA%E4%B8%8ECodexCloud.md) 和仓库的 `cloud/README.md` | 不能；只有用户能手动开任务 |
-| Claude 云环境 | 账号下只有一个与本项目无关的环境；本项目尚未建立专用环境 | 能，但需先建环境（见下文） |
+| Claude 云环境 | 2026-11-01 已建 `pokemon-dungeon-lab` 环境与云会话（见下文） | 能，用跨会话消息派任务 |
 
 ## 原角色怎样对应
 
@@ -33,7 +33,7 @@ updated: 2026-10-30
 这里有两个限制，需要如实说明：
 
 - **独立性比两个云环境弱。** 子代理和主会话在同一台机器、同一账号下运行，能防止验收者照抄实现思路，却挡不住共用环境的问题。因此关键结论仍由主会话亲自复跑，并在报告中分开写明"亲自运行""复用"和"子代理自述"。
-- **没有 Linux 交叉检查。** 需要时按下文建立 Claude 云环境，或请用户手动派一个 Codex 云任务。
+- **Linux 交叉检查由 Claude 云会话做**（见下文“Claude 云环境”）。
 
 ## 交付方式
 
@@ -45,31 +45,17 @@ updated: 2026-10-30
 
 两个 Codex 云环境保留不动，作为用户手动派发的可选通道，例如需要 Linux 交叉检查，或需要 REA 工具时。2026-10-30 本机 Codex 重新上线后，`dev` lane 的本机 Codex 也可以为自己认领的 issue 派发云任务，方针见[多 lane 并行协作](多lane并行协作.md)第 11 节；Claude 仍不能派发。它们交回的结果按其他代理的结论处理：先在本机核对固定提交和实际运行结果，再决定是否采用。
 
-## Claude 云环境：需要时再建
+## Claude 云环境
 
-2026-10-30 用户授权可以创建 Claude 云环境，并决定**等真正需要时再建**。以下情形值得建：
+2026-11-01 用户建立了 Claude 云会话，作为 `main` 的云端工作者（D-20261101-18）：负责视觉审核、路线规划（里程碑规格草案）、代码核验、玩法与算法验证；没有生图模型，不生成图片。v0.1 各环节的分工见 [v0.1 计划](../02-进度/计划/v0.1纯肉鸽计划.md)第 7 节（D-20261101-22）。
 
-| 情形 | 云端带来的价值 |
+| 项目 | 现状 |
 | --- | --- |
-| 需要 Linux 交叉检查 | 系统与本机不同，能发现与环境相关的问题 |
-| 长任务要在用户关机后继续运行 | 云会话在关闭电脑后仍然运行 |
-| 需要"另一台机器"级别的独立验收 | 隔离程度比本机子代理更高 |
-
-Claude 云会话不会把结果直接回报给主会话，只留下分支或 PR。因此它适合可以无人值守的独立任务，不适合主会话边做边整合的工作。
-
-依据 [Claude 云环境官方文档](https://code.claude.com/docs/en/cloud-environments)（2026-10-30 读取），准备好的配置如下：
-
-| 项目 | 设定 | 依据或未核实之处 |
-| --- | --- | --- |
-| 名称 | `pokemon-dungeon-lab` | 不与其他项目共用环境 |
-| 创建方式 | 在 claude.ai/code 或桌面应用新会话界面的环境选择器中选 **New environment** | 文档写明只能在界面中创建 |
-| 网络 | **Trusted** | 默认允许列表包含 npm、nodejs.org、GitHub 和 `*.googleapis.com`，但不含 Playwright 的浏览器下载站。下载失败时改为 **Custom** 并加入 `cdn.playwright.dev`；这个域名是否足够尚未核实 |
-| 安装脚本 | 从 nodejs.org 安装 Node 24.22.1 并按官方 SHASUMS256 校验，再安装 Playwright 的 Chromium | 默认镜像只有 Node 20、21、22，而本项目 `engines` 要求 Node ≥ 24.22.1；脚本须在约 5 分钟内完成，环境才会被缓存 |
-| 依赖安装 | 会话开始后按锁文件执行 `npm ci` | 不写进环境镜像，以免锁文件更新后镜像过时 |
-| 密钥与环境变量 | 不设置 | 本项目不需要 |
-| GitHub 访问 | 需在私有仓库安装 Claude GitHub App，或通过 `/web-setup` 连接 | 本仓库是否已连接尚未核实 |
-
-环境建好后，先开一个只读会话核对工具链，确认无误再派正式任务。Linux 上的检查结果不能当作 Windows 已通过。
+| 环境 | `pokemon-dungeon-lab`，只绑定本仓库，不放密钥；安装脚本装 Node 24.22.1（按官方 SHASUMS256 校验）与 Playwright 1.59.1 的 Chromium，环境变量 `PLAYWRIGHT_MODULE` 指向它 |
+| Linux 实测 | 云会话在 PR #120 评论记录：`npm test` 只跳过 1 项（缺数据快照），`test:acceptance`、`test:browser` 全部通过；Linux 结果不代替 Windows |
+| 身份 | 任务说明以 `[CLOUD-OF=main]` 开头；不是 lane 会话，不认领 issue、不用 lane bus |
+| 沟通 | 本机 `main` 用跨会话消息直接派任务（云会话权限模式不同时，消息要用户在云会话里批准后才送达）；云会话不能回发消息，结论写成 PR 评论或草稿 PR，`main` 从 GitHub 读取；需要转给 Codex 的内容由用户转交 |
+| 限制 | 看不到本机 lane bus、`.tmp/`、`.artifacts/`；不推送 `main`、不强推、不改他人分支；`main` 在线时不合并（`main` 下线时按 D-20261101-18 代行） |
 
 ## 共同规则
 

@@ -28,13 +28,16 @@ def cost(usage: dict) -> float:
 
 def transparent_ok(png: bytes) -> bool:
     """True when a transparent-background card really came back transparent: the four corners and the mean of the
-    outer one-pixel border are (almost) fully transparent. 2026-11-01: 2 of 9 transparent cards came back with an
-    opaque backdrop, which pixelize.py --trim cannot remove."""
+    outer one-pixel border are (almost) fully transparent. 2026-11-01: 2 of the 7 transparent-background candidates
+    in batch 2 came back with an opaque backdrop, which pixelize.py --trim cannot remove."""
     from io import BytesIO
     from PIL import Image
     a = Image.open(BytesIO(png)).convert('RGBA').getchannel('A')
     w, h = a.size
-    border = [a.getpixel((x, 0)) for x in range(w)] + [a.getpixel((x, h - 1)) for x in range(w)]         + [a.getpixel((0, y)) for y in range(h)] + [a.getpixel((w - 1, y)) for y in range(h)]
+    border = ([a.getpixel((x, 0)) for x in range(w)]
+              + [a.getpixel((x, h - 1)) for x in range(w)]
+              + [a.getpixel((0, y)) for y in range(h)]
+              + [a.getpixel((w - 1, y)) for y in range(h)])
     corners = [a.getpixel(p) for p in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1))]
     return max(corners) <= 16 and sum(border) / len(border) <= 16
 

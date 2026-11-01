@@ -10,7 +10,7 @@ import {learnTm,newGameProfile,initialProfile,squadOf,MAX_TEAM,type BaseAction} 
 import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
 import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from '../core/save.ts';
 import {createScenario,scenarioProfile,SCENARIOS,SCENARIO_LABEL,type ScenarioId} from '../core/scenarios.ts';
-import {THEME_FLOORS,themeOfLevel,farthestRoom,ARENA_TILE,isDifficulty,type Difficulty} from '../core/dungeon.ts';
+import {THEME_FLOORS,themeOfLevel,ARENA_TILE,isDifficulty,type Difficulty} from '../core/dungeon.ts';
 import {preloadArt,createAnims,skinFor,facingRow,animKey,TILE} from '../render/sprites.ts';
 import {inferEvents,plan,newLines,type AnimEvent} from '../render/animation.ts';
 import {playEvents,type Stage,type UnitView} from '../render/playback.ts';
@@ -408,9 +408,10 @@ class BoardScene extends Phaser.Scene {
  const theme=themeOfLevel(s.dungeon?.boss,s.dungeon?.level??1),themeCfg=THEME_FLOORS.find(t=>t.theme===theme)!;
  const tileImg=(kind:'floor'|'wall',name:string,c:{x:number;y:number},alpha:number)=>{const have=this.textures.exists(name);const im=this.add.image(c.x,c.y,have?name:kind).setScale(scale).setAlpha(alpha).setDepth(1);if(!have&&theme!=='moss')im.setTint(theme==='wet'?0x6aa8d8:0xa08c80);this.tiles.push(im);};
  const floorName=theme==='moss'?'floor':themeCfg.floorTile,wallName=theme==='moss'?'wall':themeCfg.wallTile;
- const arena=theme==='ash'&&s.rooms&&s.dungeon?.boss?(()=>{const n=farthestRoom(s.rooms,new Set(s.floor.map(key)));return n<0?null:s.rooms[n];})():null;
+ const arena=s.bossRoom!==undefined?s.rooms?.[s.bossRoom]??null:null;
  const inArena=(p:Pos)=>!!arena&&p.x>=arena.x&&p.x<arena.x+arena.w&&p.y>=arena.y&&p.y<arena.y+arena.h;
  const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){if(fog&&!s.seen.includes(key(p)))continue;walls.add(key(q));tileImg('wall',wallName,center(q),s.seen.includes(key(p))?.85:.3);}}
+ for(const wall of s.seenWalls??[]){if(floorKeys.has(wall)||walls.has(wall))continue;const [x,y]=wall.split(',').map(Number);tileImg('wall',wallName,center({x,y}),.85);walls.add(wall);}
  for(const p of s.floor){const c=center(p),seen=s.seen.includes(key(p));if(fog&&!seen)continue;tileImg('floor',inArena(p)?ARENA_TILE:floorName,c,seen?1:.28);if(seen){const point=s.points.find(q=>same(p,q.pos));if(point&&point.kind==='rest'){this.overlay.fillStyle(0x6ec3ff,point.used?.18:.4);this.overlay.fillCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(2,0x9fdcff,point.used?.3:1);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);text(c.x,c.y,'休','#e4f4ff',16);}else if(point&&(point.kind==='shop'||point.kind==='exchange')){const col=point.kind==='shop'?0xf2b84b:0xc58bff;this.overlay.fillStyle(col,point.used?.2:.4);this.overlay.fillCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(2,col,point.used?.3:1);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);text(c.x,c.y,point.kind==='shop'?'商':'换','#fff4dc',16);}else if(point&&(point.kind==='berry'||point.kind==='tonic')){img(point.kind==='berry'?'item-berry':'item-tonic',c,point.used?.3:1,2,.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='berry'?'果':'剂','#e4efb0',11);}else if(point){const stairs=point.kind==='down'||point.kind==='up';img(point.kind==='goal'?'goal':point.kind==='item'?'item':point.kind==='down'?'stairs-down':point.kind==='up'?'stairs-up':'exit',c,point.used?.45:1,2,point.kind==='exit'||stairs?1:.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='goal'?'G':point.kind==='item'?'T':point.kind==='down'?'下':point.kind==='up'?'上':'出口','#e4efb0',11);}}if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,`${p.x},${p.y}`,'#8fa89c',9);}
  const shown=new Set<string>();const visible=(id:string)=>{const u=s.units[id];return u.pos&&u.hp>0&&s.seen.includes(key(u.pos))?u:null;};
  for(const id of [...s.enemies,...s.queue]){const u=visible(id);if(!u||!u.pos)continue;shown.add(id);const c=center(u.pos);

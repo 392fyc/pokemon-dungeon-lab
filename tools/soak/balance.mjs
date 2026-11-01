@@ -10,7 +10,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import {playSeed,stats,GAMES,ROUND_CAP} from '../../tests/core/soak-bot.mjs';
+import {playSeed,stats,GAMES,ROUND_CAP,COMMAND_CAP} from '../../tests/core/soak-bot.mjs';
 import {DIFFICULTY} from '../../src/core/dungeon.ts';
 
 const args=process.argv.slice(2);
@@ -39,7 +39,7 @@ function summarize(results){
  const reached=games.filter(g=>g.run?.reached),contacted=games.filter(g=>g.run?.contacted),defeated=games.filter(g=>g.run?.defeated);
  const evolved=games.filter(g=>(g.evolutions??0)>0),shardsBySpecies={};
  for(const game of games)for(const row of game.run?.summary?.shards??[])shardsBySpecies[row.species]=(shardsBySpecies[row.species]??0)+row.count;
- const rounds=games.map(g=>g.rounds);
+ const rounds=games.map(g=>g.rounds),orderedRounds=[...rounds].sort((a,b)=>a-b);
  return {seeds:results.length,games:total,
   outcomes:{won:count(games,g=>g.outcome==='won'),wipe:count(games,g=>g.outcome==='wipe'),timeout:count(games,g=>g.outcome==='timeout')},
   wipeRate:pct(count(games,g=>g.outcome==='wipe'),total),
@@ -47,12 +47,12 @@ function summarize(results){
   evolution:{total:st.evolutions,games:evolved.length,rate:pct(evolved.length,total)},
   partners:{brought:st.partnersBrought,shards:st.shards,shardsBySpecies},
   techniqueMachines:{obtained:st.tmGot,brought:st.tmBrought},
-  kills:{mean:mean(games.map(g=>g.kills))},rounds:{mean:mean(rounds),min:rounds.length?Math.min(...rounds):null,max:rounds.length?Math.max(...rounds):null},
+  kills:{mean:mean(games.map(g=>g.kills))},rounds:{mean:mean(rounds),median:rounds.length?(orderedRounds[Math.floor((rounds.length-1)/2)]+orderedRounds[Math.floor(rounds.length/2)])/2:null,min:rounds.length?Math.min(...rounds):null,max:rounds.length?Math.max(...rounds):null},
   stats:st};
 }
 function mdRow(policy,name,s){
  const o=s.outcomes,b=s.boss,e=s.evolution,p=s.partners,t=s.techniqueMachines;
- return '| '+policy+' | '+name+' | '+s.seeds+' | '+s.games+' | '+o.wipe+' ('+(s.wipeRate??'-')+'%) | '+o.timeout+' | '+b.arrived+' | '+b.contacted+' | '+b.defeated+' | '+e.games+' ('+(e.rate??'-')+'%) | '+p.brought+' | '+p.shards+' | '+t.brought+' / '+t.obtained+' |';
+ return '| '+policy+' | '+name+' | '+s.seeds+' | '+s.games+' | '+o.wipe+' ('+(s.wipeRate??'-')+'%) | '+o.timeout+' | '+b.arrived+' | '+b.contacted+' | '+b.defeated+' | '+e.games+' ('+(e.rate??'-')+'%) | '+p.brought+' | '+p.shards+' | '+t.brought+' / '+t.obtained+' | '+(s.kills.mean?.toFixed(2)??'-')+' | '+(s.rounds.mean?.toFixed(2)??'-')+' / '+s.rounds.median+' / '+s.rounds.max+' |';
 }
 async function runPolicy(policy){
  const started=Date.now(),results=[];
@@ -63,7 +63,7 @@ async function runPolicy(policy){
 }
 
 fs.mkdirSync(path.dirname(OUT),{recursive:true});
-const report={generated:new Date().toISOString(),difficulty:DIFFICULTY_NAME,multiplier:DIFFICULTY[DIFFICULTY_NAME],seedsPerPolicy:SEEDS,gamesPerSeed:GAMES,roundCap:ROUND_CAP,policies:{}};
+const report={generated:new Date().toISOString(),difficulty:DIFFICULTY_NAME,multiplier:DIFFICULTY[DIFFICULTY_NAME],seedsPerPolicy:SEEDS,gamesPerSeed:GAMES,roundCap:ROUND_CAP,commandCap:COMMAND_CAP,exploration:'nearest-visible-frontier',policies:{}};
 const rows=[];
 for(const policy of POLICIES){
  const result=await runPolicy(policy);
@@ -72,10 +72,10 @@ for(const policy of POLICIES){
 }
 fs.writeFileSync(OUT,JSON.stringify(report));
 console.log([
- '## v0.1 平衡长测（难度：'+DIFFICULTY_NAME+'，敌人 HP／伤害倍率 '+DIFFICULTY[DIFFICULTY_NAME]+'；每种策略 '+SEEDS+' 个种子 × '+GAMES+' 局；回合上限 '+ROUND_CAP+'）',
+ '## v0.1 平衡长测（难度：'+DIFFICULTY_NAME+'，敌人 HP／伤害倍率 '+DIFFICULTY[DIFFICULTY_NAME]+'；每种策略 '+SEEDS+' 个种子 × '+GAMES+' 局；回合上限 '+ROUND_CAP+'，命令上限 '+COMMAND_CAP+'；探索最近已知边界）',
  '',
- '| 策略 | 种子组 | 种子数 | 局数 | 全灭 | 超时／卡住 | 到达首领层 | 接触首领 | 击败首领 | 进化局数 | 带回伙伴 | 碎片 | 带回招式机 / 获得 |',
- '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+ '| 策略 | 种子组 | 种子数 | 局数 | 全灭 | 超时／卡住 | 到达首领层 | 接触首领 | 击败首领 | 进化局数 | 带回伙伴 | 碎片 | 带回招式机 / 获得 | 平均击杀 | 回合均值 / 中位 / 最大 |',
+ '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
  ...rows,
  '',
  '逐局记录已写入 '+OUT

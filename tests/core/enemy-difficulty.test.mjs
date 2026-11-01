@@ -36,7 +36,9 @@ test('difficulty: the player is not multiplied (basic 6, tackle 9)',()=>{
 
 test('difficulty: enemy max HP is the roster value times 0.4; the boss also takes its hpMultiplier',()=>{
  const f=generateFloor(3,2);
- assert.deepEqual(f.enemies.map(e=>[e.species,e.level,e.hp]),[['lickitung',5,12],['lickitung',5,12],['sandshrew',5,9]],'roster Lv5 HP 30, 30, 22 -> round(12), round(12), round(8.8) = 12, 12, 9');
- const b=generateFloor(7,3,{width:20,height:14,floors:3,boss:true}).enemies.find(e=>e.boss);
+ assert.deepEqual(f.enemies.map(e=>[e.species,e.level,e.hp]),[
+  ['shellder',8,8],['drowzee',11,12],['wooper',8,10],['drowzee',8,11],['wooper',8,10],['shellder',9,9]
+ ],'each literal is the roster HP at that level multiplied by 0.4 and rounded');
+ const b=generateFloor(7,3,{width:36,height:24,floors:3,boss:true,roguelike:true}).enemies.find(e=>e.boss);
  assert.deepEqual([b.species,b.level,b.hp],['arcanine',22,56],'Lv22 HP 47 x hpMultiplier 3 x 0.4 = 56.4 -> 56');
 });

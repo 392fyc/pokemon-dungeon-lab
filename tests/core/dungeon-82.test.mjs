@@ -1,0 +1,293 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {generateFloor} from '../../src/core/dungeon.ts';
+import {applyCommand,createExpedition,reveal,currentlyVisible} from '../../src/core/engine.ts';
+import {enemy,friend,world} from '../acceptance/fixtures.mjs';
+
+const DIRS=[[1,0],[0,1],[-1,0],[0,-1]];
+const key=p=>`${p.x},${p.y}`;
+const center=r=>({x:r.x+Math.floor(r.w/2),y:r.y+Math.floor(r.h/2)});
+const contains=(r,p)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
+const insideBoss=(r,p)=>contains(r,p);
+
+function flood(cells,start){
+ const set=new Set(cells.map(key)),visited=new Set([key(start)]),queue=[start];
+ for(let i=0;i<queue.length;i++)for(const [dx,dy] of DIRS){
+  const p={x:queue[i].x+dx,y:queue[i].y+dy},k=key(p);
+  if(set.has(k)&&!visited.has(k)){visited.add(k);queue.push(p);}
+ }
+ return visited;
+}
+function roomIndexAt(rooms,p){return rooms.findIndex(r=>contains(r,p));}
+function distances(cells,start){
+ const set=new Set(cells.map(key)),dist=new Map([[key(start),0]]),queue=[start];
+ for(let i=0;i<queue.length;i++)for(const [dx,dy] of DIRS){
+  const p={x:queue[i].x+dx,y:queue[i].y+dy},k=key(p);
+  if(set.has(k)&&!dist.has(k)){dist.set(k,dist.get(key(queue[i]))+1);queue.push(p);}
+ }
+ return dist;
+}
+function separatedByTwoWalls(a,b){
+ return a.x+a.w+2<=b.x||b.x+b.w+2<=a.x||a.y+a.h+2<=b.y||b.y+b.h+2<=a.y;
+}
+function hasFloor2x2(cell,floor){
+ for(const x of [cell.x-1,cell.x])for(const y of [cell.y-1,cell.y]){
+  if([[x,y],[x+1,y],[x,y+1],[x+1,y+1]].every(([cx,cy])=>floor.has(`${cx},${cy}`)))return true;
+ }
+ return false;
+}
+function fixedBossSpot(g){
+ const r=g.rooms[g.bossRoom],c=center(r);
+ const spots=new Map([
+  ['17,11','center'],['31,11','east'],['17,19','south'],['4,11','west'],['17,4','north']
+ ]);
+ return spots.get(key(c))??null;
+}
+function assertTwoWideAndConnected(g,seed,level){
+ const floor=new Set(g.floor.map(key));
+ assert.equal(floor.size,g.floor.length,`seed ${seed} floor ${level}: no duplicate ground cells`);
+ assert.ok(g.floor.every(p=>p.x>=1&&p.x<=34&&p.y>=1&&p.y<=22),`seed ${seed} floor ${level}: outer ring stays wall`);
+ assert.equal(flood(g.floor,g.floor[0]).size,floor.size,`seed ${seed} floor ${level}: every ground cell connects`);
+ for(const cell of g.floor){
+  if(g.rooms.some(r=>contains(r,cell)))continue;
+  assert.ok(hasFloor2x2(cell,floor),`seed ${seed} floor ${level}: corridor cell ${key(cell)} belongs to a 2x2 ground block`);
+ }
+}
+function assertRoomLayout(g,seed,level){
+ assert.ok(g.rooms.length>=9&&g.rooms.length<=12,`seed ${seed} floor ${level}: ${g.rooms.length} rooms`);
+ for(const [i,r] of g.rooms.entries()){
+  const boss=i===g.bossRoom;
+  if(boss)assert.deepEqual([r.w,r.h],[7,7],`seed ${seed} floor ${level}: boss room is 7x7`);
+  else assert.ok(r.w>=4&&r.w<=8&&r.h>=3&&r.h<=6,`seed ${seed} floor ${level}: ordinary room ${i} has planned dimensions`);
+  assert.ok(r.x>=1&&r.y>=1&&r.x+r.w<=35&&r.y+r.h<=23,`seed ${seed} floor ${level}: room ${i} stays inside the outer wall`);
+  for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)assert.ok(g.floor.some(p=>p.x===x&&p.y===y),`seed ${seed} floor ${level}: room ${i} is fully ground`);
+  for(const other of g.rooms.slice(i+1))assert.ok(separatedByTwoWalls(r,other),`seed ${seed} floor ${level}: rooms keep two wall cells between them`);
+ }
+}
+function assertArrivalAndStairs(g,seed,level){
+ const floor=new Set(g.floor.map(key));
+ const arrivalRoom=roomIndexAt(g.rooms,g.arrival);
+ assert.notEqual(arrivalRoom,-1,`seed ${seed} floor ${level}: arrival is inside a room`);
+ assert.deepEqual(center(g.rooms[arrivalRoom]),g.arrival,`seed ${seed} floor ${level}: arrival is at the room centre`);
+ assert.ok(floor.has(key(g.arrival)),`seed ${seed} floor ${level}: arrival is walkable`);
+ assert.equal(g.points.some(p=>p.kind==='exit'||p.kind==='up'),false,`seed ${seed} floor ${level}: no exit or upward stairs`);
+ assert.equal(g.up,null,`seed ${seed} floor ${level}: up is absent`);
+ const downs=g.points.filter(p=>p.kind==='down');
+ if(level<3){
+  assert.equal(downs.length,1,`seed ${seed} floor ${level}: exactly one down stair`);
+  assert.deepEqual(g.down,downs[0].pos,`seed ${seed} floor ${level}: point and down property agree`);
+  const route=distances(g.floor,g.arrival);
+  assert.ok(route.has(key(g.down)),`seed ${seed} floor ${level}: down stair is reachable`);
+  const farthest=g.rooms.map((r,i)=>({i,d:route.get(key(center(r)))})).sort((a,b)=>b.d-a.d||a.i-b.i)[0];
+  assert.deepEqual(g.down,center(g.rooms[farthest.i]),`seed ${seed} floor ${level}: down stair is at the farthest room centre`);
+ }else{
+  assert.equal(downs.length,0,`seed ${seed} floor ${level}: no stairs on the boss floor`);
+  assert.equal(g.down,null,`seed ${seed} floor ${level}: down property is absent`);
+ }
+ return arrivalRoom;
+}
+function assertBossRoom(g,seed){
+ const r=g.rooms[g.bossRoom];
+ assert.ok(Number.isInteger(g.bossRoom)&&g.bossRoom>=0&&g.bossRoom<g.rooms.length,`seed ${seed} floor 3: boss room index is valid`);
+ assert.deepEqual([r.w,r.h],[7,7],`seed ${seed} floor 3: boss room is 7x7`);
+ assert.ok(fixedBossSpot(g),`seed ${seed} floor 3: boss room is at a specified map position`);
+ const boss=g.enemies.filter(e=>e.boss);
+ assert.equal(boss.length,1,`seed ${seed} floor 3: exactly one boss`);
+ assert.deepEqual(boss[0].pos,center(r),`seed ${seed} floor 3: boss stands in the room centre`);
+ const floor=new Set(g.floor.map(key)),remaining=g.floor.filter(p=>!insideBoss(r,p));
+ assert.equal(remaining.length,floor.size-49,`seed ${seed} floor 3: the 7x7 boss room is carved out`);
+ assert.equal(flood(remaining,remaining[0]).size,remaining.length,`seed ${seed} floor 3: removing the boss room leaves one connected map`);
+ const doors=[];
+ for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)for(const [dx,dy] of DIRS){
+  const inside={x,y},outside={x:x+dx,y:y+dy};
+  if(!contains(r,outside)&&floor.has(key(outside)))doors.push({inside,outside,side:dx===1?'east':dx===-1?'west':dy===1?'south':'north'});
+ }
+ const doorCells=new Set(doors.map(d=>key(d.inside))),doorSeen=new Set();let segments=0;
+ for(const start of doorCells){
+  if(doorSeen.has(start))continue;segments++;doorSeen.add(start);
+  const queue=[start];for(let i=0;i<queue.length;i++){
+   const [x,y]=queue[i].split(',').map(Number);
+   for(const [dx,dy] of DIRS){const next=`${x+dx},${y+dy}`;if(doorCells.has(next)&&!doorSeen.has(next)){doorSeen.add(next);queue.push(next);}}
+  }
+ }
+ assert.equal(segments,1,`seed ${seed} floor 3: door cells form one 4-connected entrance segment`);
+ assert.ok(doorCells.size>=2,`seed ${seed} floor 3: the entrance is at least two cells wide`);
+ assert.ok(g.enemies.filter(e=>!e.boss).every(e=>!contains(r,e.pos)),`seed ${seed} floor 3: ordinary enemies stay out of the boss room`);
+ assert.equal(g.points.filter(p=>p.kind==='item').length,1,`seed ${seed} floor 3: the target item remains present`);
+ for(const p of [...g.points,...g.pickups,...g.services,...(g.rest?[g.rest]:[])])assert.ok(!contains(r,p.pos),`seed ${seed} floor 3: no point is in the boss room`);
+ const route=distances(g.floor,boss[0].pos);
+ const farthest=g.rooms.map((room,i)=>({i,d:route.get(key(center(room)))})).filter(x=>x.i!==g.bossRoom).sort((a,b)=>b.d-a.d||a.i-b.i)[0];
+ assert.equal(roomIndexAt(g.rooms,g.arrival),farthest.i,`seed ${seed} floor 3: arrival room is farthest from the boss room`);
+}
+function assertEnemyPlacement(g,seed,level,arrivalRoom){
+ const normal=g.enemies.filter(e=>!e.boss),expectedIds='abcdef'.split('').map(c=>`w${level}${c}`);
+ assert.equal(normal.length,6,`seed ${seed} floor ${level}: six ordinary enemies`);
+ assert.deepEqual(normal.map(e=>e.id),expectedIds,`seed ${seed} floor ${level}: ordinary enemy IDs are stable`);
+ assert.equal(g.enemies.length,level===3?7:6,`seed ${seed} floor ${level}: boss is additional on floor 3`);
+ assert.equal(new Set(g.enemies.map(e=>key(e.pos))).size,g.enemies.length,`seed ${seed} floor ${level}: no enemy overlap`);
+ const fixed=normal.filter(e=>e.post),wanderers=normal.filter(e=>!e.post);
+ assert.equal(fixed.length,2,`seed ${seed} floor ${level}: two enemies have a fixed post`);
+ assert.equal(wanderers.length,4,`seed ${seed} floor ${level}: four enemies roam`);
+ const postRooms=new Set();
+ for(const e of fixed){
+  assert.deepEqual(e.pos,e.post,`seed ${seed} floor ${level}: fixed enemy starts at its post`);
+  const room=roomIndexAt(g.rooms,e.post);
+  assert.notEqual(room,-1,`seed ${seed} floor ${level}: fixed post is inside a room`);
+  assert.notEqual(room,arrivalRoom,`seed ${seed} floor ${level}: fixed enemy is outside the arrival room`);
+  assert.notEqual(room,level===3?g.bossRoom:-1,`seed ${seed} floor ${level}: fixed enemy is outside the boss room`);
+  postRooms.add(room);
+ }
+ assert.equal(postRooms.size,2,`seed ${seed} floor ${level}: fixed enemies use different rooms`);
+ const stairRoom=level<3?roomIndexAt(g.rooms,g.down):-1;
+ assert.ok(!postRooms.has(stairRoom),`seed ${seed} floor ${level}: fixed enemies avoid the stair room`);
+ for(const e of g.enemies)assert.notEqual(roomIndexAt(g.rooms,e.pos),arrivalRoom,`seed ${seed} floor ${level}: no enemy is in the arrival room`);
+ return arrivalRoom;
+}
+
+test('8.2 T1-T5, T7 and T10: 200 fixed seeds cover all three independently checked floors',()=>{
+ for(let seed=1;seed<=200;seed++)for(let level=1;level<=3;level++){
+  const g=generateFloor(seed,level);
+  assert.equal(g.width,36,`seed ${seed} floor ${level}: width`);
+  assert.equal(g.height,24,`seed ${seed} floor ${level}: height`);
+  assertRoomLayout(g,seed,level);
+  assertTwoWideAndConnected(g,seed,level);
+  const arrivalRoom=assertArrivalAndStairs(g,seed,level);
+  assertEnemyPlacement(g,seed,level,arrivalRoom);
+  if(level===3)assertBossRoom(g,seed);
+  const downRoom=level<3?roomIndexAt(g.rooms,g.down):-1;
+  assert.ok(g.rooms.some((r,i)=>i!==arrivalRoom&&i!==downRoom&&i!==g.bossRoom&&r.w>=6&&r.h>=5),`seed ${seed} floor ${level}: a large room remains for 8.3`);
+ }
+});
+
+test('8.2 T6: five pinned seeds each produce one specified boss-room position',()=>{
+ const cases=[
+  {seed:1,spot:'center'},
+  {seed:4,spot:'east'},
+  {seed:6,spot:'south'},
+  {seed:16,spot:'west'},
+  {seed:7,spot:'north'},
+ ];
+ assert.equal(cases.length,5,'five fixed seeds cover the centre and four map edges');
+ for(const {seed,spot} of cases){
+  const g=generateFloor(seed,3);
+  assert.equal(fixedBossSpot(g),spot,`seed ${seed} produces the ${spot} boss room`);
+  assertRoomLayout(g,seed,3);assertTwoWideAndConnected(g,seed,3);assertArrivalAndStairs(g,seed,3);assertBossRoom(g,seed);
+ }
+});
+
+test('8.2 T9: the same seed and floor stay byte-for-byte stable and independent of access order',()=>{
+ for(let seed=1;seed<=200;seed++){
+  const expected=new Map([1,2,3].map(level=>[level,JSON.stringify(generateFloor(seed,level))]));
+  for(const level of [3,2,1])assert.equal(JSON.stringify(generateFloor(seed,level)),expected.get(level),`seed ${seed} floor ${level}`);
+ }
+});
+
+test('8.2 engine entry defaults to the 36x24 map and six ordinary enemies',()=>{
+ const s=createExpedition('map-82-default',101);
+ assert.deepEqual([s.dungeon.width,s.dungeon.height],[36,24]);
+ assert.deepEqual(s.enemies,['w1a','w1b','w1c','w1d','w1e','w1f']);
+ assert.equal(s.points.some(p=>p.kind==='exit'||p.kind==='up'),false);
+});
+
+function sightWorld({floor,at,rooms=[],width,height}){
+ const units={A:friend('A',at.x,at.y)};
+ const s=world(units,{floor,leader:'A',queue:['A'],enemies:[]});
+ s.rooms=rooms;s.seen=[];s.dungeon={seed:1,width,height,floors:3,level:1,stored:{}};
+ return s;
+}
+test('8.2 Q6: corridor sight reveals each forward and side ground cell through distance four',()=>{
+ const floor=[];
+ for(let x=5;x<=9;x++)for(const y of [4,5,6])if(!(x===9&&y===5))floor.push({x,y});
+ const s=sightWorld({floor,at:{x:5,y:5},width:14,height:11});reveal(s);
+ for(const x of [6,7,8]){
+  assert.ok(s.seen.includes(`${x},5`),`forward ground ${x},5 is shown`);
+ }
+ for(const x of [6,7,8,9]){
+  assert.ok(s.seen.includes(`${x},4`),`upper side ground ${x},4 is shown`);
+  assert.ok(s.seen.includes(`${x},6`),`lower side ground ${x},6 is shown`);
+ }
+ assert.ok(s.seenWalls.includes('9,5'),'the wall at distance four is shown separately');
+ assert.ok(!s.seenWalls.includes('10,5')&&!s.seenWalls.includes('10,4')&&!s.seenWalls.includes('10,6'),'cells beyond the wall are hidden');
+
+ // T11: a two-cell corridor is revealed from one side, including the side of a nearer blocking wall.
+ const wide=[];for(let x=2;x<=9;x++)for(const y of [3,4])if(!(x===6&&y===3))wide.push({x,y});
+ const side=sightWorld({floor:wide,at:{x:3,y:3},width:12,height:8});reveal(side);
+ for(const x of [4,5,6])assert.ok(side.seen.includes(`${x},4`),'the other corridor lane is revealed');
+ assert.ok(side.seenWalls.includes('6,3'),'the wall three cells ahead is revealed');
+ assert.ok(!side.seen.includes('7,3')&&!side.seen.includes('7,4'),'both lanes beyond that wall remain hidden');
+
+ // A historical one-cell corridor keeps exactly the same ground, adding only wall memory.
+ const narrow=sightWorld({floor:Array.from({length:6},(_,i)=>({x:i+2,y:3})),at:{x:4,y:3},width:12,height:8});reveal(narrow);
+ assert.deepEqual(narrow.seen,['2,3','3,3','4,3','5,3','6,3','7,3']);
+ for(const wall of ['1,3','8,3','6,2','6,4'])assert.ok(narrow.seenWalls.includes(wall),'corridor ends and side walls are revealed');
+});
+
+test('8.2 Q6: a revealed wall and its two side cells stop the ray behind them',()=>{
+ const floor=[];
+ for(let x=5;x<=8;x++)floor.push({x,y:5});
+ for(let x=6;x<=8;x++)for(const y of [4,6])floor.push({x,y});
+ floor.push({x:9,y:4},{x:9,y:6});
+ const s=sightWorld({floor,at:{x:5,y:5},width:14,height:11});reveal(s);
+ assert.ok(s.seen.includes('8,5'),'ground immediately before the wall is shown');
+ assert.ok(s.seenWalls.includes('9,5'),'the blocking wall is shown');
+ assert.ok(s.seen.includes('9,4')&&s.seen.includes('9,6'),'ground beside the blocking wall is shown');
+ assert.ok(!s.seenWalls.includes('10,5')&&!s.seen.includes('10,5'),'nothing behind the wall is shown');
+});
+
+test('8.2 Q6: room reveal and currentlyVisible keep their prior rules',()=>{
+ const floor=[];
+ for(let y=2;y<=4;y++)for(let x=2;x<=5;x++)floor.push({x,y});
+ for(let x=6;x<=10;x++)floor.push({x,y:3});
+ const s=sightWorld({floor,at:{x:3,y:3},rooms:[{x:2,y:2,w:4,h:3}],width:14,height:11});reveal(s);
+ for(let y=2;y<=4;y++)for(let x=2;x<=5;x++)assert.ok(s.seen.includes(`${x},${y}`),`room cell ${x},${y} is shown`);
+ assert.ok(s.seen.includes('7,3'),'the existing four-cell room ray remains');
+ assert.ok(!s.seen.includes('8,3')&&!s.seen.includes('7,2')&&!s.seen.includes('7,4'),'room sight gains no corridor side fan');
+ assert.equal(currentlyVisible(s,{x:3,y:3},{x:5,y:4}),true,'all cells in the same room are currently visible');
+ assert.equal(currentlyVisible(s,{x:3,y:3},{x:6,y:3}),true,'the room mouth is currently visible');
+ assert.equal(currentlyVisible(s,{x:3,y:3},{x:7,y:3}),false,'current sight does not extend past the mouth');
+ assert.equal(currentlyVisible(s,{x:8,y:3},{x:10,y:3}),true,'a corridor still shows two walkable steps');
+ assert.equal(currentlyVisible(s,{x:8,y:3},{x:11,y:3}),false,'a corridor still hides cells beyond two steps');
+});
+
+function postWorld({friendAt,enemyAt,post,rooms=[]}){
+ const floor=Array.from({length:13},(_,x)=>({x,y:1}));
+ const a=friend('A',friendAt.x,friendAt.y);a.tactic='wait';
+ const e=enemy('E',enemyAt.x,enemyAt.y,40,'melee',4);e.learned=[];e.pp={};e.maxPp={};e.post={...post};e.targetMemory=null;e.lostSightTurns=0;
+ const s=world({A:a,E:e},{floor,leader:'A',queue:['A'],enemies:['E']});s.rooms=rooms;s.enemyAiRng=0x12345678;
+ return s;
+}
+function nextRound(s){
+ const result=applyCommand(s,{type:'round',action:{type:'wait'}});
+ assert.equal(result.ok,true,result.error);return result.state;
+}
+
+test('8.2 T8: a posted enemy without a target or memory waits at its post',()=>{
+ const s=postWorld({friendAt:{x:11,y:1},enemyAt:{x:4,y:1},post:{x:4,y:1}});
+ s.units.E.direction={x:1,y:0};
+ const after=nextRound(s);
+ assert.deepEqual(after.units.E.pos,{x:4,y:1});
+ assert.deepEqual(after.units.E.post,{x:4,y:1});
+ assert.equal(after.units.E.targetMemory,null);
+});
+
+test('8.2 T8: a posted enemy chases a visible opponent and remembers its cell',()=>{
+ const s=postWorld({friendAt:{x:9,y:1},enemyAt:{x:4,y:1},post:{x:4,y:1},rooms:[{x:1,y:1,w:10,h:1}]});
+ const after=nextRound(s);
+ assert.deepEqual(after.units.E.pos,{x:5,y:1});
+ assert.deepEqual(after.units.E.targetMemory,{x:9,y:1});
+ assert.deepEqual(after.units.E.post,{x:4,y:1});
+});
+
+test('8.2 T8: after four unseen turns the enemy forgets the target and returns along the shortest path',()=>{
+ let s=postWorld({friendAt:{x:9,y:1},enemyAt:{x:4,y:1},post:{x:4,y:1},rooms:[{x:1,y:1,w:10,h:1}]});
+ s=nextRound(s);assert.deepEqual(s.units.E.pos,{x:5,y:1});assert.deepEqual(s.units.E.targetMemory,{x:9,y:1});
+ s.units.A.pos={x:12,y:1};
+ for(let i=0;i<4;i++)s=nextRound(s);
+ assert.equal(s.units.E.targetMemory,null);assert.equal(s.units.E.lostSightTurns,0);
+ assert.deepEqual(s.units.E.pos,{x:7,y:1},'on the forgetting turn it steps one cell toward post 4,1');
+ for(const x of [6,5,4]){
+  const before=Math.abs(s.units.E.pos.x-s.units.E.post.x);s=nextRound(s);
+  assert.deepEqual(s.units.E.pos,{x,y:1});
+  assert.ok(Math.abs(s.units.E.pos.x-s.units.E.post.x)<before,'each return step shortens the path');
+ }
+});

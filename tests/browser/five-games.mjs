@@ -1,4 +1,4 @@
-// Planning sees only revealed walkable cells, revealed points, revealed enemies, and our own team.
+// Planning sees only revealed floor, drawn walls, revealed points and enemies, and our own team.
 // Hidden cells, enemy data outside revealed cells, and unknown points are not supplied to the planner.
 // Game actions still go through keyboard input, canvas clicks, or visible buttons.
 import assert from 'node:assert/strict';
@@ -41,6 +41,16 @@ async function cell(pos){
 // is copied only when its position is in seen; the planner never receives the raw state.
 function visibleView(s){
  const seen=new Set(s.seen);
+ const seenWalls=new Set(s.seenWalls??[]);
+ // Match the renderer: draw non-floor cells in the 8-cell neighborhood of visible ground.
+ // The raw floor set is used only to exclude hidden floor from this wall projection.
+ const terrain=new Set(s.floor.map(posKey));
+ for(const value of seen){
+  const p=fromKey(value);
+  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
+   const wall=posKey({x:p.x+dx,y:p.y+dy});if(!terrain.has(wall))seenWalls.add(wall);
+  }
+ }
  const team=s.queue.map(id=>{
   const u=s.units[id];
   return {id,hp:u?.hp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null};
@@ -53,7 +63,7 @@ function visibleView(s){
  const points=s.points.filter(p=>seen.has(p.pos.x+','+p.pos.y))
   .map(p=>({kind:p.kind,pos:{x:p.pos.x,y:p.pos.y},used:!!p.used}));
  const leader=team.find(u=>u.id===s.leader);
- return {level:s.dungeon?.level??1,seen:[...seen],team,leaderId:s.leader,leaderPos:leader?.pos??null,enemies,points};
+ return {level:s.dungeon?.level??1,seen:[...seen],seenWalls:[...seenWalls],team,leaderId:s.leader,leaderPos:leader?.pos??null,enemies,points};
 }
 
 // Replays actual UI input. State reads here only translate a chosen visible
@@ -118,7 +128,7 @@ const manhattan=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const fromKey=k=>{const [x,y]=k.split(',').map(Number);return {x,y};};
 const add=(p,d)=>({x:p.x+d.dx,y:p.y+d.dy});
 function refreshScoutMemory(view,memory){
- const now=new Set(view.seen);
+ const now=new Set([...view.seen,...(view.seenWalls??[])]);
  for(const k of now)if(!memory.known.has(k)){
   const p=fromKey(k);
   for(const d of directions)memory.tried.delete(posKey(add(p,d)));
@@ -158,11 +168,11 @@ function nextStep(view,target){
 function nearestRevealedEdge(view,memory){
  const start=view.leaderPos;
  if(!start)return null;
- const floor=new Set(view.seen),distances=visibleDistances(view,start),edges=[];
+ const floor=new Set(view.seen),known=new Set([...floor,...(view.seenWalls??[])]),distances=visibleDistances(view,start),edges=[];
  for(const k of view.seen){
   if(memory.tried.has(k)||!distances.has(k))continue;
   const p=fromKey(k);
-  if(!directions.some(d=>!floor.has(posKey(add(p,d)))))continue;
+  if(!directions.some(d=>!known.has(posKey(add(p,d)))))continue;
   edges.push({pos:p,key:k,distance:distances.get(k)});
  }
  edges.sort((a,b)=>a.distance-b.distance||a.pos.y-b.pos.y||a.pos.x-b.pos.x);
@@ -214,7 +224,7 @@ async function playRun(index,route){
  acceptedInRun=0;
  const memory={known:new Set(),tried:new Set()};
  let shopBought=false,roundActions=0,invitationActions=0;
- const maxActions=450;let floorLevel=0;
+ const maxActions=1200;let floorLevel=0;
  while(roundActions<maxActions){
   const s=await state();
   if(s.phase==='ended')return acceptedInRun;
@@ -241,13 +251,13 @@ async function playRun(index,route){
    if(currentKey===plan.edge.key){memory.tried.add(plan.edge.key);continue;}
    const step=nextStep(view,plan.edge.pos);
    if(!step)throw Error('最近已揭示边缘无法到达；可见状态：'+JSON.stringify(view));
-   const before=new Set(view.seen);
+   const before=new Set([...view.seen,...(view.seenWalls??[])]);
    await command({type:'round',action:step.action,beforeRound:s.round});
    roundActions++;
    const after=visibleView(await state());
    refreshScoutMemory(after,memory);
-   const newCell=after.seen.some(k=>!before.has(k));
-   if(after.leaderPos&&posKey(after.leaderPos)===plan.edge.key&&!newCell)memory.tried.add(plan.edge.key);
+   const newTerrain=[...after.seen,...(after.seenWalls??[])].some(k=>!before.has(k));
+   if(after.leaderPos&&posKey(after.leaderPos)===plan.edge.key&&!newTerrain)memory.tried.add(plan.edge.key);
    continue;
   }
   await command({type:'round',action:plan.action,beforeRound:s.round});
@@ -258,6 +268,21 @@ async function playRun(index,route){
 }
 
 try{
+ const projectionState=extraFloor=>({seen:['0,0'],seenWalls:[],floor:[{x:0,y:0},{x:1,y:0},{x:10,y:10},...extraFloor],queue:['A'],units:{A:{id:'A',hp:10,pos:{x:0,y:0}}},leader:'A',enemies:[],points:[],dungeon:{level:1}});
+ const nearProjection=visibleView(projectionState([])),farProjection=visibleView(projectionState([{x:11,y:10},{x:10,y:11}]));
+ assert.deepEqual(farProjection,nearProjection,'far hidden floor changes do not enter the visible planner projection');
+ const projectionEdge=view=>nearestRevealedEdge(view,{known:new Set([...view.seen,...view.seenWalls]),tried:new Set()});
+ assert.deepEqual(projectionEdge(farProjection),projectionEdge(nearProjection),'far hidden floor changes do not change the selected exploration edge');
+ report.hiddenTerrainProjectionRegression=true;
+ const wallView={level:1,seen:['0,0'],seenWalls:['1,0','0,1','-1,0','0,-1'],leaderId:'A',leaderPos:{x:0,y:0},team:[{id:'A',hp:10,pos:{x:0,y:0}}],enemies:[],points:[]};
+ const wallMemory={known:new Set(['0,0']),tried:new Set()};
+ assert.equal(nearestRevealedEdge(wallView,wallMemory),null,'drawn walls are known terrain, not unexplored edges');
+ wallView.seenWalls.pop();
+ assert.deepEqual(nearestRevealedEdge(wallView,wallMemory)?.pos,{x:0,y:0},'a genuinely unknown neighbor remains an exploration edge');
+ const wallRevealMemory={known:new Set(['0,0']),tried:new Set(['0,0'])};
+ refreshScoutMemory({seen:['0,0'],seenWalls:['1,0']},wallRevealMemory);
+ assert.ok(!wallRevealMemory.tried.has('0,0'),'newly drawn wall terrain refreshes adjacent frontier memory');
+ report.wallKnowledgeRegression=true;
  // Regression: the known corridor to a goal/shop is blocked by a distant sleeper.
  // Exhausted edges must lead toward that visible blocker, then attack when adjacent.
  for(const kind of ['goal','down']){

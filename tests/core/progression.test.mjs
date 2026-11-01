@@ -3,12 +3,13 @@
    https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E6%8B%9B%E5%8B%9F%E7%AD%89%E7%BA%A7%E4%B8%8E%E6%81%A2%E5%A4%8D%E5%93%81.md; fixtures are built by hand, not by the production factories. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createExpedition,createMain,applyCommand,reveal,rngStep,levelFor,PROG} from '../../src/core/engine.ts';
+import {createExpedition,createMain,applyCommand,reveal,rngStep,levelFor,PROG,speciesUnit} from '../../src/core/engine.ts';
 import {generateFloor,mulberry32} from '../../src/core/dungeon.ts';
 import {TrialStore,BUILD_ID} from '../../src/core/save.ts';
 import roster from '../../src/data/roster.json' with {type:'json'};
 import {initialProfile} from '../../src/core/base.ts';
 import {enemy,world,pos,row,doCmd,reject,round,interact,basic,skill,wait,accept,refuse} from '../acceptance/fixtures.mjs';
+import legacySeed3 from './fixtures/map122-legacy-seed3.json' with {type:'json'};
 
 /* Roster kits (src/data/roster.json): charmander 19 HP strong3 line2; squirtle 20 HP strong3 line2; bulbasaur 21 HP strong3 line1. */
 const mon=(id,species,x,hp,maxHp,pp,maxPp,level=5)=>({id,side:'friend',level,tactic:'together',stages:{atk:0,def:0},protect:0,counter:0,reflect:0,lightscreen:0,lastMove:null,hp,maxHp,pos:hp>0?pos(x):null,pp:{...pp},maxPp:{...maxPp},learned:Object.keys(maxPp),species});
@@ -33,7 +34,7 @@ const opened=async s=>{const p=port();const a=new TrialStore(p,'x');assert.equal
 const legacyActive=current=>JSON.stringify({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:1,current,recent:null,profile:initialProfile()});
 
 /* ---------- the real species team ---------- */
-test('P1 a new expedition starts three roster starters at run level 5 with roster HP and kit PP, facing three floor-1 wild enemies',()=>{
+test('P1 a new expedition starts three roster starters at run level 5 with roster HP and kit PP, facing six floor-1 wild enemies',()=>{
  const s=createExpedition('start',777);
  assert.deepEqual(s.queue,['A','B','C']);assert.equal(s.leader,'C');
  const brief=id=>{const u=s.units[id];return [u.species,u.hp,u.maxHp,u.learned,u.pp,u.maxPp];};
@@ -44,7 +45,7 @@ test('P1 a new expedition starts three roster starters at run level 5 with roste
  // spec 14.2: floor-1 theme = first type normal/grass/bug/rock/ground/flying, evolution level <= 6, no legendary; a no-boss run uses floor-1 species at Lv5 on every floor
  const theme=new Set(['Normal','Grass','Bug','Rock','Ground','Flying']);
  const pool=new Set(roster.species.filter(sp=>theme.has(sp.types[0])&&sp.evoLevel<=6&&!sp.legendary&&!sp.availability).map(sp=>sp.id));
- assert.equal(s.enemies.length,3);
+ assert.equal(s.enemies.length,6);
  assert.ok(s.enemies.every(id=>pool.has(s.units[id].species)),'wild enemies come from the floor-1 theme pool');
  assert.ok(s.enemies.every(id=>s.units[id].level===5&&s.units[id].tactic==='gofoes'));
  assert.ok(s.enemies.every(id=>{const u=s.units[id];return u.maxHp===Math.round(roster.species.find(x=>x.id===u.species).maxHp*0.4)&&u.hp===u.maxHp;}),'Lv5 enemy HP is the roster HP times the user-confirmed difficulty multiplier 0.4');
@@ -206,22 +207,41 @@ test('P8d items work only in a run that has a backpack: the fixed map refuses th
  const r=reject(createMain('m',false),{type:'round',action:{type:'use',item:'berry',target:'A'}});
  assert.match(r.error,/没有可用的背包物品/);
 });
+function historicFloor(level){
+ const sample=structuredClone(legacySeed3.floors[level]),units={};
+ for(const e of sample.enemies){
+  const u=speciesUnit(e.id,e.species,e.level,e.pos);u.side='enemy';u.maxHp=e.hp;u.hp=0;u.pos=null;u.tactic='gofoes';units[u.id]=u;
+ }
+ return {sample,units,enemies:sample.enemies.map(e=>e.id),floor:sample.floor,seen:sample.floor.map(p=>`${p.x},${p.y}`),
+  points:[...sample.points,...sample.pickups],rooms:sample.rooms,enemyAiRng:sample.enemyAiRng};
+}
 test('P8e a berry picked up on one floor is still taken, and not given again, after leaving and coming back',()=>{
- const s0=createExpedition('floors',3);
-  delete s0.dungeon.roguelike; // This test covers the historical two-way expedition saved before the v0.1 rule marker.
- const down=s0.points.find(p=>p.kind==='down').pos,berry=s0.points.find(p=>p.kind==='berry').pos;
- let s=structuredClone(s0);for(const id of ['A','B']){s.units[id].hp=0;s.units[id].pos=null;}
+ assert.equal(legacySeed3.source.revision,'7f1b14147d0cebdf7fb66fb863371bdb08a85c5d');
+ assert.deepEqual(legacySeed3.source.params,{width:20,height:14,floors:2});
+ assert.deepEqual([legacySeed3.floors[1].floor.length,legacySeed3.floors[1].rooms.length],[124,6]);
+ assert.deepEqual(legacySeed3.floors[1].points.map(p=>[p.kind,p.pos.x,p.pos.y]),[['exit',9,8],['down',6,2],['goal',3,6]]);
+ assert.deepEqual([legacySeed3.floors[2].floor.length,legacySeed3.floors[2].rooms.length],[86,4]);
+ assert.deepEqual(legacySeed3.floors[2].points.map(p=>[p.kind,p.pos.x,p.pos.y]),[['up',14,10],['item',12,5]]);
+ const f1=historicFloor(1),f2=historicFloor(2),berry=f1.points.find(p=>p.kind==='berry').pos,down=f1.points.find(p=>p.kind==='down').pos;
+ let s=run({enemies:[],points:f1.points});
+ for(const id of ['A','B']){s.units[id].hp=0;s.units[id].pos=null;}
+ Object.assign(s,{floor:f1.floor,seen:f1.seen,points:f1.points,rooms:f1.rooms,enemies:f1.enemies,enemyAiRng:f1.enemyAiRng});
+ Object.assign(s.units,f1.units);s.dungeon={seed:3,width:20,height:14,floors:2,level:1,stored:{}};
+ s.dungeon.stored['2']={floor:f2.floor,seen:[],enemies:f2.enemies,units:f2.units,points:f2.points,rooms:f2.rooms,enemyAiRng:f2.enemyAiRng};
+ s.units.C.pos=berry;
+ assert.deepEqual(s.points.map(p=>p.kind).sort(),['berry','down','exit','goal']);
  s.units.C.pos=berry;s=round(s,interact(false));
  assert.deepEqual(s.prog.items,{berry:1,tonic:0});
  s.units.C.pos=down;s=doCmd(round(s,interact(true)),{type:'finishTransit'});
  assert.equal(s.dungeon.level,2);
- const g2=generateFloor(3,2);
  assert.deepEqual(s.points.map(p=>p.kind).sort(),['berry','item','tonic','up']);
- assert.deepEqual(s.rooms,g2.rooms);
+ assert.deepEqual(s.rooms,legacySeed3.floors[2].rooms);
  const up=s.points.find(p=>p.kind==='up').pos;s.units.C.pos=up;
  s=doCmd(round(s,interact(true)),{type:'finishTransit'});
  assert.equal(s.dungeon.level,1);assert.deepEqual(s.prog.items,{berry:1,tonic:0});
  assert.equal(s.points.find(p=>p.kind==='berry').used,true);
+ assert.ok(s.points.some(p=>p.kind==='exit'),'the fixed historical exit remains on floor 1');
+ assert.deepEqual([s.dungeon.width,s.dungeon.height],[20,14]);
 });
 test('P8f floor 2 pickups: berry and tonic exist exactly once each, floor 1 holds one berry',()=>{
  for(let seed=0;seed<300;seed++){
@@ -237,7 +257,7 @@ test('P8f floor 2 pickups: berry and tonic exist exactly once each, floor 1 hold
 });
 
 /* ---------- room reveal ---------- */
-test('P9 standing in a room shows the whole room; a corridor keeps the straight 4-cell rule',()=>{
+test('P9 standing in a room shows the whole room; a corridor keeps its 4-cell rays and adds Q6 side sight',()=>{
  const room=[];for(let y=1;y<=3;y++)for(let x=2;x<=5;x++)room.push(pos(x,y));
  const corridor=[];for(let x=6;x<=14;x++)corridor.push(pos(x,2));
  const build=(rooms,at)=>{const s=run({enemies:[],floor:[...room,...corridor]});s.units.A.pos=pos(at.x+1,at.y);s.units.B.pos=pos(at.x,at.y+1);s.units.C.pos=at;
@@ -245,14 +265,14 @@ test('P9 standing in a room shows the whole room; a corridor keeps the straight 
  const withRooms=build(true,pos(3,2)),plain=build(false,pos(3,2));
  const roomKeys=room.map(p=>p.x+','+p.y);
  assert.ok(roomKeys.every(k=>withRooms.seen.includes(k)),'the whole room is shown');
- assert.ok(!plain.seen.includes('2,1'),'without room data the corner cells are not shown (straight lines only)');
+ assert.ok(plain.seen.includes('2,1'),'corridor side sight now reveals a ground cell beside the straight ray');
  assert.ok(withRooms.seen.includes('7,2'));assert.ok(!withRooms.seen.includes('9,2'),'the corridor beyond 4 cells stays hidden');
  const inCorridor=build(true,pos(10,2));
  assert.ok(!roomKeys.some(k=>inCorridor.seen.includes(k)&&!['6,2'].includes(k)),'a corridor position does not reveal the room');
 });
-test('P9b a new expedition shows the start room entirely; seed 3 room 0 is x7..11,y6..9',()=>{
- const s=createExpedition('r',3);const r=s.rooms[0];assert.deepEqual(r,{x:7,y:6,w:5,h:4});
- for(let y=6;y<10;y++)for(let x=7;x<12;x++)assert.ok(s.seen.includes(x+','+y),`cell ${x},${y} shown`);
+test('P9b a new expedition shows the start room entirely; seed 3 room 0 is x9..16,y17..22',()=>{
+ const s=createExpedition('r',3);const r=s.rooms[0];assert.deepEqual(r,{x:9,y:17,w:8,h:6});
+ for(let y=17;y<23;y++)for(let x=9;x<17;x++)assert.ok(s.seen.includes(x+','+y),`cell ${x},${y} shown`);
 });
 
 /* ---------- worlds without the 6.4 data keep the 6.3 behaviour ---------- */

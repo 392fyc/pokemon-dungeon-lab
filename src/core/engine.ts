@@ -1,5 +1,5 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
-import {generateFloor,serviceRoll,ENEMY_DIFFICULTY,DIFFICULTY,isDifficulty,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,type Difficulty,type GeneratedFloor} from './dungeon.ts';
+import {generateFloor,generateChallengeEncounter,serviceRoll,ENEMY_DIFFICULTY,DIFFICULTY,isDifficulty,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,type Difficulty,type GeneratedFloor,type AdventureRoom} from './dungeon.ts';
 import {ECON} from './economy.ts';
 import {SPECIES,speciesOf,tmPool,learnableMove,speciesMaxHp,type KitMove} from './roster.ts';
 import {TACTICS,isTactic,type Tactic} from './tactics.ts';
@@ -40,16 +40,16 @@ export type ExitRequest = {actor:string;pos:Pos;locked:boolean;to?:number};
 export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest'|'shop'|'exchange';
 export type ShopItem='berry'|'tonic'|'tm';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
-export type Item='berry'|'tonic';
+export type Item='berry'|'tonic'|'bigBerry'|'teamTonic';
 export const SKILL_CN:Record<Skill,string>=(names as unknown as {moves:Record<string,string>}).moves;
-export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂'};
+export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员PP补剂'};
 export type Rect={x:number;y:number;w:number;h:number};
 /**
  * 6.4 shared run level and counters (expedition only; absent in the fixed map and in expeditions saved before 6.4).
  * `rng` is the recruit-draw state (a 32-bit integer, separate from `dungeon.seed`); `kills` holds defeated enemies of the current round
  * until the round-end settlement and is empty at every checkpoint; `made` counts recruits created so far (ids N1, N2...).
  */
-export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:Record<Item,number>};
+export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number}};
 /** Cumulative experience thresholds: reaching Lv L costs the sum of levels 5 through L-1. */
 const expThreshold=(level:number)=>level<=INITIAL_LEVEL?0:level*(level-1)/2-((INITIAL_LEVEL-1)*INITIAL_LEVEL)/2;
 export const PROG={recruitChance:0.3,thresholds:Array.from({length:101},(_,level)=>expThreshold(level)),initialLevel:INITIAL_LEVEL,maxLevel:100,hpPerLevel:1,damagePerLevel:1,damageEveryLevels:4,expMultiplier:2,goalExp:0,bossExp:0,berryHeal:8,tonicPp:1,restPp:2};
@@ -57,7 +57,7 @@ export const levelFor=(exp:number)=>Math.max(INITIAL_LEVEL,PROG.thresholds.reduc
 export const levelDamageBonus=(level:number)=>Math.floor(Math.max(0,level-INITIAL_LEVEL)/PROG.damageEveryLevels);
 export type Point={pos:Pos;kind:PointKind;used:boolean};
 /** A floor that is not the current one: its terrain, revealed cells, real enemies (with their HP and positions) and points. */
-export type StoredFloor={floor:Pos[];seen:string[];seenWalls?:string[];enemies:string[];units:Record<string,Unit>;points:Point[];rooms?:Rect[];bossRoom?:number;enemyAiRng?:number};
+export type StoredFloor={floor:Pos[];seen:string[];seenWalls?:string[];enemies:string[];units:Record<string,Unit>;points:Point[];rooms?:Rect[];bossRoom?:number;enemyAiRng?:number;adventureRooms?:AdventureRoom[]};
 /** Expedition-only data. `stored` holds every visited floor except the current one; unvisited floors are generated from `seed` on first entry. */
 /** `base` (6.5): true for a run started from the base; only those runs get the floor-2 rest point (older generated runs keep their exact floors). */
 /** `services` (7.2): true for a run that may hold a shop and an exchanger (decided by `serviceRoll` from the seed). Older runs never get them. */
@@ -81,6 +81,8 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:
   queue:string[];enemies:string[];camp:string[];leader:string;points:Point[];
   goal:boolean;bag:number;phase:'playing'|'evolution'|'invitation'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
   request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;difficulty?:Difficulty;prog?:Progress;rooms?:Rect[];bossRoom?:number;
+  /** 8.3 room state stays in the in-memory expedition (current World or StoredFloor) and is never saved. */
+  adventureRooms?:AdventureRoom[];pendingAdventureStart?:{room:number;actor:string;pos:Pos};
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
   pendingEvolutions?:{actor:string;choices:string[]}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
@@ -252,6 +254,7 @@ function moveRangeProblem(s:World,actor:Unit,target:Unit,spec:MoveSpec):string {
 const sideIds=(s:World,side:Unit['side'])=>side==='friend'?s.queue:s.enemies;
 const opponentIds=(s:World,side:Unit['side'])=>side==='friend'?s.enemies:s.queue;
 function roomAt(s:World,p:Pos):Rect|undefined{return (s.rooms??[]).find(r=>inRect(p,r));}
+function adventureAt(s:World,p:Pos):AdventureRoom|undefined{return s.adventureRooms?.find(r=>same(r.interaction,p));}
 /** Current sight is recomputed from the unit's position; `seen` remains only the player's remembered map. */
 export function currentlyVisible(s:World,from:Pos,to:Pos):boolean {
   const room=roomAt(s,from);
@@ -496,6 +499,22 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
     return null;
   }
   if(a.type==='interact'){
+    const room=adventureAt(s,u.pos);
+    if(room){
+      if(id!==s.leader)return '只有主控能操作探险房间点位';
+      if(a.exit)return '这里不是出口，不能请求撤离';
+      if(room.type==='challenge'){
+        if(room.state==='sealed')return '挑战正在进行，石碑无法再次启动';
+        if(room.state==='cleared')return '这座石碑的挑战已经完成，不能再次挑战';
+        return room.state==='idle'?null:'这座石碑当前无法启动';
+      }
+      if(room.type==='item'){
+        if(room.state==='done')return '道具房的道具已经取走';
+        if(!room.item)return '道具房没有可领取的道具';
+        return s.prog?null:'这里没有可领取本局道具的背包';
+      }
+      return '这个房间点位尚未开放';
+    }
     const point=s.points.find(p=>same(p.pos,u.pos));
     if(id!==s.leader||!point)return '主控必须站在交互点';
     if(point.kind==='down'||point.kind==='up'){
@@ -517,13 +536,23 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   }
   if(a.type==='use'){
     if(!s.prog)return '这里没有可用的背包物品';
-    if(s.prog.items[a.item]<1)return `背包里没有${ITEM_NAMES[a.item]}`;
+    if((s.prog.items[a.item]??0)<1)return `背包里没有${ITEM_NAMES[a.item]}`;
+    if(a.item==='teamTonic'&&a.target!==id)return '全员PP补剂由使用者发动，目标必须是使用者自己';
+    if(a.item==='teamTonic'&&!s.queue.some(member=>alive(s.units[member])&&s.units[member].learned.some(k=>(s.units[member].pp[k]??0)<(s.units[member].maxPp[k]??0))))return `在场成员的所有招式PP已满，${ITEM_NAMES.teamTonic}不会有效果`;
+    if(a.item==='bigBerry'||a.item==='berry'){
+      const w=s.units[a.target];
+      if(!w||w.side!=='friend'||!s.queue.includes(w.id))return '物品只能对同行伙伴使用';
+      if(!alive(w))return `${w.id}已倒下，物品不能救起倒下的伙伴`;
+      if(w.id!==id&&distance(u.pos,w.pos)!==1)return `${w.id}不在相邻格，物品只能对自己或相邻同行使用`;
+      if(w.hp>=w.maxHp)return `${w.id}的HP已满，${ITEM_NAMES[a.item]}不会有效果`;
+      return null;
+    }
+    if(a.item==='teamTonic')return null;
     const w=s.units[a.target];
     if(!w||w.side!=='friend'||!s.queue.includes(w.id))return '物品只能对同行伙伴使用';
     if(!alive(w))return `${w.id}已倒下，物品不能救起倒下的伙伴`;
     if(w.id!==id&&distance(u.pos,w.pos)!==1)return `${w.id}不在相邻格，物品只能对自己或相邻同行使用`;
-    if(a.item==='berry'&&w.hp>=w.maxHp)return `${w.id}的HP已满，${ITEM_NAMES.berry}不会有效果`;
-    if(a.item==='tonic'&&!w.learned.some(k=>(w.pp[k]??0)<(w.maxPp[k]??0)))return `${w.id}的所有招式PP已满，${ITEM_NAMES.tonic}不会有效果`;
+    if(!w.learned.some(k=>(w.pp[k]??0)<(w.maxPp[k]??0)))return `${w.id}的所有招式PP已满，${ITEM_NAMES[a.item]}不会有效果`;
     return null;
   }
   const t=s.units[a.target];if(!alive(t)||(!s.queue.includes(t.id)&&!s.enemies.includes(t.id)))return '目标不存在或已倒下';
@@ -697,12 +726,35 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
   if(a.type==='move'){u.pos=clone(a.to);reveal(s);note(s,`${id}移动到${key(a.to)}`);}
   else if(a.type==='basic')resolveDamage(s,id,a.target,6+bonus,basicCategory(u),blockingGuard);
   else if(a.type==='use'){
-    const t=s.units[a.target];s.prog!.items[a.item]--;
-    if(a.item==='berry'){const before=t.hp;t.hp=Math.min(t.maxHp,t.hp+PROG.berryHeal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);}
-    else{for(const k of t.learned)t.pp[k]=Math.min(t.maxPp[k]??0,(t.pp[k]??0)+PROG.tonicPp);note(s,`${id}对${t.id}使用${ITEM_NAMES.tonic}，每招PP+${PROG.tonicPp}（不超上限）`);}
+    const t=s.units[a.target];s.prog!.items[a.item]=(s.prog!.items[a.item]??0)-1;
+    if(a.item==='bigBerry'){
+      const before=t.hp;t.hp=t.maxHp;note(s,`${id}对${t.id}使用${ITEM_NAMES.bigBerry}，HP ${before}→${t.hp}`);
+    }else if(a.item==='berry'){
+      const before=t.hp;t.hp=Math.min(t.maxHp,t.hp+PROG.berryHeal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
+    }else if(a.item==='teamTonic'){
+      const restored:string[]=[];
+      for(const member of s.queue){const ally=s.units[member];if(!alive(ally))continue;
+        for(const skill of ally.learned){const before=ally.pp[skill]??0,max=ally.maxPp[skill]??0;if(before>=max)continue;
+          ally.pp[skill]=Math.min(max,before+1);restored.push(`${member}的${SKILL_CN[skill]??skill}PP ${before}→${ally.pp[skill]}`);}}
+      note(s,`${id}使用${ITEM_NAMES.teamTonic}，在场存活同行每招恢复1PP（${restored.join('，')}）`);
+    }else{
+      for(const k of t.learned)t.pp[k]=Math.min(t.maxPp[k]??0,(t.pp[k]??0)+PROG.tonicPp);note(s,`${id}对${t.id}使用${ITEM_NAMES.tonic}，每招PP+${PROG.tonicPp}（不超上限）`);
+    }
   }
   else if(a.type==='skill')executeSkill(s,id,a,blockingGuard,createdGuard);
   else if(a.type==='interact'){
+    const room=adventureAt(s,u.pos!);
+    if(room){
+      if(room.type==='challenge'){
+        s.pendingAdventureStart={room:room.room,actor:id,pos:clone(u.pos!)};
+        note(s,'挑战石碑已启动，轮末检查主控是否仍在石碑上');
+      }else if(room.type==='item'&&room.item){
+        const item=room.item,amount=(s.prog!.items[item]??0)+1;
+        s.prog!.items[item]=amount;room.state='done';
+        note(s,`道具房：取得${ITEM_NAMES[item]}，背包共${amount}`);
+      }
+      return;
+    }
     const p=s.points.find(p=>same(p.pos,u.pos))!;const stairs=p.kind==='down'||p.kind==='up';
     if(p.kind==='rest'){
       const parts:string[]=[];
@@ -716,6 +768,92 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     else if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
     if(p.kind!=='berry'&&p.kind!=='tonic')note(s,stairs?`${id}请求${p.kind==='down'?'下':'上'}楼梯跨层`:`${id}交互${a.exit?'并请求撤离':''}`);
   }else note(s,`${id}等待`);
+}
+type MovePlan={id:string;pos:Pos};
+function roomCells(r:Rect):Pos[]{const out:Pos[]=[];for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)out.push({x,y});return out;}
+function roomBfs(s:World,r:Rect,start:Pos):Pos[]{
+  if(!inRect(start,r)||!walk(s,start))return [];
+  const out=[start],visited=new Set([key(start)]);
+  for(let i=0;i<out.length;i++)for(const d of DIRS){const p=plus(out[i],d),k=key(p);if(inRect(p,r)&&walk(s,p)&&!visited.has(k)){visited.add(k);out.push(p);}}
+  return out;
+}
+function challengeStartPlan(s:World,room:AdventureRoom,enemies:{id:string;species:string;level:number;hp:number;asleep:false}[]):{sealed:Pos[];enemyMoves:MovePlan[];friendMoves:MovePlan[];spawns:MovePlan[]}|null{
+  const rect=s.rooms?.[room.room];if(!rect)return null;
+  const sealed=[...new Map(room.doors.flatMap(door=>DIRS.map(d=>plus(door,d)).filter(p=>!inRect(p,rect)&&walk(s,p)).map(p=>[key(p),p] as const))).values()]
+    .sort((a,b)=>a.y-b.y||a.x-b.x);
+  const sealedKeys=new Set(sealed.map(key));
+  const movingEnemies=s.enemies.filter(id=>{const u=s.units[id];return alive(u)&&sealedKeys.has(key(u.pos));});
+  const outsideFriends=s.queue.filter(id=>{const u=s.units[id];return alive(u)&&!inRect(u.pos,rect);});
+  const moving=new Set(movingEnemies);
+  const occupied=new Set(active(s).filter(u=>!moving.has(u.id)).map(u=>key(u.pos!)));
+  const enemyMoves:MovePlan[]=[];
+  for(const id of movingEnemies){
+    const u=s.units[id];if(!alive(u))continue;
+    const target=s.floor.filter(p=>!sealedKeys.has(key(p))&&!inRect(p,rect)&&!occupied.has(key(p)))
+      .sort((a,b)=>distance(u.pos,a)-distance(u.pos,b)||a.y-b.y||a.x-b.x)[0];
+    if(!target)return null;
+    occupied.add(key(target));enemyMoves.push({id,pos:clone(target)});
+  }
+  for(const id of outsideFriends){const u=s.units[id];if(alive(u))occupied.delete(key(u.pos));}
+  const entry=s.units[s.leader]?.pos;if(!entry||!inRect(entry,rect))return null;
+  const entryOrder=roomBfs(s,rect,entry);
+  const friendMoves:MovePlan[]=[];
+  for(const id of outsideFriends){
+    const u=s.units[id];if(!alive(u))continue;
+    const target=entryOrder.find(p=>!occupied.has(key(p)));
+    if(!target)return null;
+    occupied.add(key(target));friendMoves.push({id,pos:clone(target)});
+  }
+  const interaction=key(room.interaction),unavailablePoints=new Set(s.points.map(p=>key(p.pos)));
+  const team=s.queue.map(id=>s.units[id]).filter(alive).map(u=>friendMoves.find(m=>m.id===u.id)?.pos??u.pos);
+  const spawns:MovePlan[]=[];
+  for(const enemy of enemies){
+    const available=roomCells(rect).filter(p=>walk(s,p)&&key(p)!==interaction&&!unavailablePoints.has(key(p))&&!occupied.has(key(p)));
+    if(!available.length)return null;
+    const separated=available.filter(p=>team.every(ally=>distance(ally,p)>1));
+    const pool=separated.length?separated:available;
+    const ordered=pool.sort((a,b)=>Math.min(...team.map(t=>distance(t,a)))-Math.min(...team.map(t=>distance(t,b)))||b.y-a.y||b.x-a.x);
+    const target=ordered[ordered.length-1];
+    if(!target)return null;
+    occupied.add(key(target));spawns.push({id:enemy.id,pos:clone(target)});
+  }
+  return {sealed,enemyMoves,friendMoves,spawns};
+}
+function startAdventureChallenge(s:World,room:AdventureRoom):boolean{
+  const d=s.dungeon;if(!d?.roguelike||!s.prog)return false;
+  const encounter=generateChallengeEncounter(d.seed,d.level,s.difficulty??'normal',!!d.boss,d.tmPool);
+  const plan=challengeStartPlan(s,room,encounter.enemies);
+  if(!plan)return false;
+  for(const move of plan.enemyMoves){const u=s.units[move.id];u.pos=clone(move.pos);u.targetMemory=null;u.roamTarget=null;note(s,`${move.id}被封门推到通道外${key(move.pos)}，不计入挑战`);}
+  for(const id of s.queue){const u=s.units[id];if(alive(u)&&!inRect(u.pos,s.rooms![room.room]))s.units[id].pos=null;}
+  for(const move of plan.friendMoves){s.units[move.id].pos=clone(move.pos);note(s,`${move.id}随队入房到${key(move.pos)}`);}
+  room.sealedCells=plan.sealed.map(clone);room.reward=encounter.reward;room.rewardCurrency=encounter.reward==='currency'||encounter.reward==='blessing'?encounter.currencyAmount:null;
+  room.rewardItem=encounter.rewardItem;room.rewardMove=encounter.rewardMove;room.state='sealed';
+  const battleEnemies=s.enemies.filter(id=>{const u=s.units[id];return alive(u)&&inRect(u.pos!,s.rooms![room.room]);});
+  for(const move of plan.spawns){
+    const spec=encounter.enemies.find(enemy=>enemy.id===move.id)!;
+    const unit=speciesUnit(spec.id,spec.species,spec.level,move.pos);unit.side='enemy';unit.hp=spec.hp;unit.maxHp=spec.hp;unit.tactic='gofoes';
+    unit.asleep=false;unit.wakeSkip=false;unit.targetMemory=null;unit.lostSightTurns=0;unit.roamTarget=null;unit.direction=null;
+    s.units[unit.id]=unit;s.enemies.push(unit.id);battleEnemies.push(unit.id);
+  }
+  room.enemyIds=battleEnemies;
+  const sealedKeys=new Set(plan.sealed.map(key));
+  s.floor=s.floor.filter(p=>!sealedKeys.has(key(p)));
+  const seen=new Set(s.seen),walls=new Set(s.seenWalls??[]);
+  for(const p of plan.sealed){const k=key(p);if(seen.delete(k))walls.add(k);}
+  s.seen=[...seen].sort();s.seenWalls=[...walls].sort();
+  reveal(s);
+  note(s,`挑战开始：${encounter.enemies.length}只敌人进入房间，出入口封闭`);
+  return true;
+}
+function resolveAdventureStart(s:World):void{
+  const pending=s.pendingAdventureStart;if(!pending)return;
+  s.pendingAdventureStart=undefined;
+  const room=s.adventureRooms?.find(r=>r.room===pending.room),actor=s.units[pending.actor];
+  if(!room||room.type!=='challenge'||room.state!=='idle'||!alive(actor)||!same(actor.pos,pending.pos)){
+    note(s,'挑战未成立：轮末主控已倒下或不在石碑上，行动不返还');return;
+  }
+  if(!startAdventureChallenge(s,room))note(s,'挑战未成立：房间没有足够的空格安排入房队友或敌人，行动不返还');
 }
 /** One member's turn in a round, as the rules would run it (stage 7.1 preview). `explicit` is false for the default behaviour; `failed` means the action no longer applied and the member waited. */
 export type TraceStep={id:string;action:Action;explicit:boolean;failed:boolean;swapWith?:string};
@@ -870,6 +1008,45 @@ function drawRecruitmentAndBossTm(s:World):void {
   }
   s.pendingSettlement=undefined;
 }
+function openAdventureRoom(s:World,room:AdventureRoom):void{
+  const keys=new Set((room.sealedCells??[]).map(key)),floor=new Set(s.floor.map(key));
+  for(const p of room.sealedCells??[])if(!floor.has(key(p))){s.floor.push(clone(p));floor.add(key(p));}
+  const seen=new Set(s.seen),walls=new Set(s.seenWalls??[]);
+  for(const k of keys){walls.delete(k);seen.add(k);}
+  s.seen=[...seen].sort();if(walls.size)s.seenWalls=[...walls].sort();else delete s.seenWalls;
+  room.sealedCells=[];room.state='cleared';reveal(s);
+}
+function awardAdventureChallenge(s:World,room:AdventureRoom):void{
+  const amount=room.rewardCurrency??40;
+  if(room.reward==='currency'||room.reward==='blessing'){
+    s.purse=(s.purse??0)+amount;note(s,`挑战奖励：钱袋+${amount}（当前零钱${s.purse}）`);
+  }else if(room.reward==='item'&&room.rewardItem&&s.prog){
+    const item=room.rewardItem,count=(s.prog.items[item]??0)+1;s.prog.items[item]=count;
+    note(s,`挑战奖励：道具${ITEM_NAMES[item]}入包（共${count}件）`);
+  }else if(room.reward==='tm'&&room.rewardMove){
+    (s.tms??=[]).push({move:room.rewardMove,source:'target',fate:'held'});
+    note(s,`挑战奖励：招式机${room.rewardMove}入包`);
+  }
+}
+/** Returns true only when a challenge reward invitation has just been issued and must be answered first. */
+function completeAdventureIfReady(s:World):boolean{
+  const rooms=s.adventureRooms??[];
+  const room=rooms.find(r=>r.type==='challenge'&&r.state==='sealed'&&r.enemyIds.length>0&&r.enemyIds.every(id=>(s.units[id]?.hp??0)<=0));
+  if(!room)return false;
+  if(room.reward==='invite'){
+    const p=s.prog,species=s.units[`c${s.dungeon?.level??1}a`]?.species;
+    if(p&&species){
+      do p.made++;while(s.units[`N${p.made}`]||s.invitations.some(i=>i.unit.id===`N${p.made}`));
+      const unit=recruitUnit(`N${p.made}`,species,p.level);
+      s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});
+      openAdventureRoom(s,room);s.anchor=clone(s.units[s.leader].pos!);s.phase='invitation';
+      note(s,`挑战奖励：邀请${species}/${unit.id}已送入现有邀请流程`);return true;
+    }
+    note(s,'挑战奖励：无法取得首只挑战敌人的物种，奖励邀请未能发出');
+  }else awardAdventureChallenge(s,room);
+  openAdventureRoom(s,room);
+  return false;
+}
 function finishRoundSettlement(s:World):void {
   drawRecruitmentAndBossTm(s);
   const living=s.queue.find(i=>alive(s.units[i]));
@@ -880,10 +1057,12 @@ function finishRoundSettlement(s:World):void {
   if(!alive(s.units[s.leader]))s.leader=living;
   if(s.request){const u=s.units[s.request.actor];if(alive(u)&&same(u.pos,s.request.pos))s.request.locked=true;else s.request=null;}
   if(s.invitations.some(i=>i.status==='pending')){s.anchor=clone(s.units[s.leader].pos);s.phase='invitation';}
+  else if(completeAdventureIfReady(s))return;
   else if(s.dungeon?.roguelike&&bossDefeated(s))end(s,'won');
   else s.phase=settled(s);
 }
 function afterRound(s:World):void {
+  resolveAdventureStart(s);
   const bossWin=!!s.dungeon?.roguelike&&bossDefeated(s);
   if(!s.queue.some(i=>alive(s.units[i]))&&!bossWin){s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});if(s.prog)s.prog.kills=[];end(s,'wipe');return;}
   const p=s.prog,kills=p?[...p.kills]:[];if(p){p.kills=[];}
@@ -983,6 +1162,7 @@ export function applyCommand(original:World,cmd:Command):Result {
     note(s,`${unit.id}加入，${cmd.outgoing??'空名额'}回营；下轮才行动`);
   }else{invite.status='rejected';note(s,`拒绝${invite.unit.id}`);}
   if(!s.invitations.some(i=>i.status==='pending')){
+    if(completeAdventureIfReady(s))return {ok:true,state:s};
     s.anchor=null;
     if(s.dungeon?.roguelike&&bossDefeated(s))end(s,'won');else s.phase=settled(s);
   }
@@ -1000,16 +1180,18 @@ function floorUnits(g:GeneratedFloor):{units:Record<string,Unit>;enemies:string[
   return {units,enemies:g.enemies.map(e=>e.id)};
 }
 /** Active expeditions use the current generator; legacy save validation never regenerates their historical maps. */
-function freshFloor(d:Dungeon,level:number,run:boolean,difficulty:Difficulty='normal'):StoredFloor&{arrival:Pos} {
+function freshFloor(d:Dungeon,level:number,run:boolean,difficulty:Difficulty='normal'):StoredFloor&{arrival:Pos;adventureRooms?:AdventureRoom[]} {
   const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors,...(d.boss?{boss:true}:{}),...(d.roguelike?{roguelike:true}:{}),difficulty});
-  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),enemyAiRng:g.enemyAiRng,...(run?{rooms:g.rooms.map(r=>({...r}))}:{}),...(g.bossRoom!==undefined?{bossRoom:g.bossRoom}:{}),arrival:g.arrival};
+  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),enemyAiRng:g.enemyAiRng,...(run?{rooms:g.rooms.map(r=>({...r}))}:{}),...(run&&g.adventureRooms?{adventureRooms:clone(g.adventureRooms)}:{}),...(g.bossRoom!==undefined?{bossRoom:g.bossRoom}:{}),arrival:g.arrival};
 }
 function stashFloor(s:World):StoredFloor {
   const units:Record<string,Unit>={};for(const id of s.enemies)units[id]=s.units[id];
-  return clone({floor:s.floor,seen:s.seen,...(s.seenWalls?{seenWalls:s.seenWalls}:{}),enemies:s.enemies,units,points:s.points,...(s.rooms?{rooms:s.rooms}:{}),...(s.bossRoom!==undefined?{bossRoom:s.bossRoom}:{}),...(s.enemyAiRng!==undefined?{enemyAiRng:s.enemyAiRng}:{})});
+  return clone({floor:s.floor,seen:s.seen,...(s.seenWalls?{seenWalls:s.seenWalls}:{}),enemies:s.enemies,units,points:s.points,...(s.rooms?{rooms:s.rooms}:{}),...(s.bossRoom!==undefined?{bossRoom:s.bossRoom}:{}),...(s.enemyAiRng!==undefined?{enemyAiRng:s.enemyAiRng}:{}),...(s.adventureRooms?{adventureRooms:s.adventureRooms}:{})});
 }
 function loadFloor(s:World,f:StoredFloor):void {
   for(const id of s.enemies)delete s.units[id];
+  delete s.pendingAdventureStart;
+  if(f.adventureRooms)s.adventureRooms=clone(f.adventureRooms);else delete s.adventureRooms;
   if(f.seenWalls)s.seenWalls=f.seenWalls;else delete s.seenWalls;
   s.floor=f.floor;s.seen=f.seen;s.enemies=f.enemies;s.points=f.points;Object.assign(s.units,f.units);
   if(f.rooms)s.rooms=f.rooms;else delete s.rooms;
@@ -1079,7 +1261,7 @@ export function createExpedition(runId:string,seed:number,floors=2,squad?:{membe
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,seen:[],
     units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m)])):{A:speciesUnit('A','charmander',INITIAL_LEVEL),B:speciesUnit('B','squirtle',INITIAL_LEVEL),C:speciesUnit('C','bulbasaur',INITIAL_LEVEL)}),...f.units},
     queue:squad?squad.members.map((_,i)=>'ABC'[i]):['A','B','C'],enemies:f.enemies,camp:[],leader:squad?'ABC'[squad.leader]:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d,
-    rooms:f.rooms,...(f.bossRoom!==undefined?{bossRoom:f.bossRoom}:{}),enemyAiRng:f.enemyAiRng,difficulty:selectedDifficulty,prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}},purse:0,tms:[]};
+    rooms:f.rooms,...(f.adventureRooms?{adventureRooms:clone(f.adventureRooms)}:{}),...(f.bossRoom!==undefined?{bossRoom:f.bossRoom}:{}),enemyAiRng:f.enemyAiRng,difficulty:selectedDifficulty,prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}},purse:0,tms:[]};
   if(squad){
     const roll=serviceRoll(d.seed,floors);
     if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};

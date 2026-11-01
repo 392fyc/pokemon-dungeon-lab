@@ -16,6 +16,17 @@ function storage(initial=null){
 }
 function profile(){const made=newGameProfile('charmander','squirtle');assert.equal(made.ok,true);return made.profile;}
 function oldFixture(name){return JSON.parse(readFileSync(new URL(`./fixtures77-regression/${name}`,import.meta.url),'utf8'));}
+const cellKey=p=>`${p.x},${p.y}`;
+function manualExchangeFixture(source,level){
+ const world=structuredClone(source);
+ world.exchange={level,used:false,sent:null};
+ const occupied=new Set([...world.points.map(p=>cellKey(p.pos)),...Object.values(world.units).filter(u=>u.pos).map(u=>cellKey(u.pos)),...(world.adventureRooms??[]).map(r=>cellKey(r.interaction))]);
+ const pos=world.floor.find(p=>!occupied.has(cellKey(p)));
+ assert.ok(pos,'legacy exchange fixture needs one free floor cell');
+ world.points.push({pos:structuredClone(pos),kind:'exchange',used:false});
+ world.units[world.leader].pos=structuredClone(pos);
+ return world;
+}
 async function makeSavedBase(port=storage(),camp=profile()){
  const store=new TrialStore(port,'camp-test');
  assert.equal(await store.beginNewGame(camp,true),true,store.error);
@@ -89,15 +100,16 @@ test('format 2 stores only camp data; zero-purse departure, purchases, and excha
 
  const p=profile(),roll=serviceRoll(103,3);assert.equal(roll.shop.level,1);assert.equal(roll.exchange.level,1);
  const baseRun=createExpedition('service-memory',103,3,squadOf(p),200,undefined,3);
- const shopPoint=baseRun.points.find(q=>q.kind==='shop'),exchangePoint=baseRun.points.find(q=>q.kind==='exchange');
- assert.ok(shopPoint&&exchangePoint,'seed 103 puts both services on the first floor');
+ const shopPoint=baseRun.points.find(q=>q.kind==='shop');
+ assert.ok(shopPoint,'seed 103 still puts the shop on the first floor');
+ assert.ok(!baseRun.points.some(q=>q.kind==='exchange'),'v0.1 rolls exchange service data but places no exchanger cell');
  const shopWorld=structuredClone(baseRun);shopWorld.enemies=[];shopWorld.units[shopWorld.leader].pos=structuredClone(shopPoint.pos);
  const shopPort=storage(),shopStore=new TrialStore(shopPort,'shop-memory');
  assert.equal(await shopStore.start(shopWorld,p),true);assert.equal(shopPort.writes(),0);
  assert.equal((await shopStore.dispatch({type:'buy',item:'berry'})).ok,false,'v0.1 starts with no money in the expedition purse');
  assert.equal(shopStore.state.shop.trades.length,0);assert.equal(shopPort.writes(),0);assert.equal(shopPort.raw(),null);
 
- const exchangeWorld=structuredClone(baseRun);exchangeWorld.enemies=[];exchangeWorld.units[exchangeWorld.leader].pos=structuredClone(exchangePoint.pos);
+ const exchangeWorld=manualExchangeFixture(baseRun,roll.exchange.level);exchangeWorld.enemies=[];
  const exchangePort=storage(),exchangeStore=new TrialStore(exchangePort,'exchange-memory');
  assert.equal(await exchangeStore.start(exchangeWorld,p),true);assert.equal(exchangePort.writes(),0);
  const partner=exchangeStore.state.queue.find(id=>id!==exchangeStore.state.leader);

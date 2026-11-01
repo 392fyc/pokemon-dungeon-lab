@@ -1,8 +1,8 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
-import {SKILL_CN,key,estimateAttackDamage,type Action,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
+import {SKILL_CN,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
 import {SPECIES} from './roster.ts';
 import {MOVE_DEFS,moveOf,type MoveRange} from './moves.ts';
-import {speciesZh,moveZh,typeZh,itemZh} from './names.ts';
+import {adventureRoomMark,adventureRoomStateZh,adventureRoomTypeZh,speciesZh,moveZh,typeZh,itemZh,type AdventureRoomType} from './names.ts';
 import {TACTIC_LABELS,isTactic,type Tactic} from './tactics.ts';
 
 /** Chinese species name, or the unit id when the unit has no species (fixed-map fixtures). */
@@ -38,6 +38,22 @@ export function moveEffectLabel(id:string,context?:DamageSummaryContext):string{
 }
 export const moveSummary=(id:string,context?:DamageSummaryContext):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id,context)}`;
 
+export type AdventureRoomMarker={room:number;at:Pos;kind:'door'|'interaction';roomType:AdventureRoomType;state:'idle'|'sealed'|'cleared'|'done';label:string;typeLabel:string;stateLabel:string;dimmed:boolean;itemLabel?:string};
+/** Visible map labels for the room's known doors and interaction cell. Hidden doors produce no marker. */
+export function adventureRoomMarkers(s:World):AdventureRoomMarker[] {
+  const seen=new Set(s.seen),markers:AdventureRoomMarker[]=[];
+  for(const room of s.adventureRooms??[]){
+    const dimmed=room.state==='cleared'||room.state==='done';
+    const typeLabel=adventureRoomTypeZh(room.type),stateLabel=adventureRoomStateZh(room.type,room.state);
+    for(const at of room.doors)if(seen.has(key(at)))markers.push({room:room.room,at:{...at},kind:'door',roomType:room.type,state:room.state,
+      label:room.state==='sealed'?'封闭':typeLabel,typeLabel,stateLabel,dimmed});
+    if(seen.has(key(room.interaction)))markers.push({room:room.room,at:{...room.interaction},kind:'interaction',roomType:room.type,state:room.state,
+      label:room.type==='challenge'&&room.state==='sealed'?'战':adventureRoomMark(room.type,room.item),typeLabel,stateLabel,dimmed,
+      ...(room.item?{itemLabel:itemZh(room.item)}:{})});
+  }
+  return markers;
+}
+
 /** Short plain text for one action. `s` is the state before the round, so ids can be turned into species names. */
 export function actionText(s:World,actor:string,a:Action):string {
   const who=(id:string)=>unitLabel(s.units[id],id);
@@ -46,7 +62,7 @@ export function actionText(s:World,actor:string,a:Action):string {
     case 'basic':return `普攻 ${who(a.target)}`;
     case 'skill':return `${skillLabel(s.units[actor],a.skill)} → ${a.target===actor?'自身':who(a.target)}`;
     case 'swap':return `与${who(a.target)}换位`;
-    case 'use':return `使用${itemZh(a.item)} → ${who(a.target)}`;
+    case 'use':return a.item==='teamTonic'?`使用${itemZh(a.item)}恢复在场同行的PP`:`使用${itemZh(a.item)} → ${who(a.target)}`;
     case 'interact':return a.exit?'交互并请求跨层':'取得并继续';
     case 'exchange':return `启动交换机，把${who(a.target)}送回基地，运走${a.cargo.length}份招式机`;
     default:return '等待';

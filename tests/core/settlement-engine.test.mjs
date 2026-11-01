@@ -99,7 +99,7 @@ test('enemy damage estimation and the enemy action use the selected difficulty',
   assert.deepEqual(results,[2,3,4]);
 });
 
-test('a new run starts with zero money, generates only downward stairs, and cannot use G, T or an up stair as an exit',()=>{
+test('a new run starts with zero money, hides G, and cannot use T or an up stair as an exit',()=>{
   const world=makeRun('one-way',21,'normal',200);
   assert.equal(world.dungeon.roguelike,true);
   assert.equal(world.difficulty,'normal');
@@ -109,12 +109,15 @@ test('a new run starts with zero money, generates only downward stairs, and cann
     assert.equal(floor.points.some(point=>point.kind==='exit'||point.kind==='up'),false,`floor ${level} has no exit or upward stair`);
   }
   assert.equal(world.points.some(point=>point.kind==='exit'||point.kind==='up'),false);
-  const goal=world.points.find(point=>point.kind==='goal');
-  assert.ok(goal);
-  world.units[world.leader].pos={...goal.pos};world.seen.push(key(goal.pos));
-  let result=applyCommand(world,{type:'round',action:{type:'interact',exit:true}});
-  assert.equal(result.ok,false);assert.match(result.error,/目标G不是撤离点/);
-  assert.equal(result.state.goal,false);
+  const goalAnchor=generateFloor(21,1,{width:36,height:24,floors:3,boss:true,roguelike:true}).goalAnchor;
+  assert.ok(goalAnchor,'the hidden G cell remains reserved as an anchor');
+  assert.ok(!world.points.some(point=>point.kind==='goal'));
+  assert.ok(!world.points.some(point=>key(point.pos)===key(goalAnchor)),'the anchor is not exposed as another point');
+  const atAnchor=structuredClone(world);atAnchor.units[atAnchor.leader].pos={...goalAnchor};
+  const beforeRound=atAnchor.round;
+  let result=applyCommand(atAnchor,{type:'round',action:{type:'interact',exit:true}});
+  assert.equal(result.ok,false);assert.match(result.error,/交互点/);
+  assert.equal(result.state.goal,false);assert.equal(result.state.round,beforeRound,'an absent G point cannot advance the run');
 
   let floor3=jumpToFloor(world,3);
   assert.equal(floor3.points.some(point=>point.kind==='exit'||point.kind==='up'),false);

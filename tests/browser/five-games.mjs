@@ -30,11 +30,19 @@ const click=async id=>{await page.locator('#'+id).click();await ready();};
 async function cell(pos){
  await page.locator('canvas').scrollIntoViewIfNeeded();
  await page.waitForTimeout(400);   // let the camera finish following before converting a cell to pixels
- const camera=await page.evaluate(()=>window.trial.camera()),box=await page.locator('canvas').boundingBox();
- const x=(pos.x*40+20-camera.x)*box.width/680,y=(pos.y*40+20-camera.y)*box.height/350;
- assert.ok(x>=0&&x<box.width&&y>=0&&y<box.height,'target must be visible on canvas');
- await page.mouse.move(box.x+x,box.y+y);await page.waitForTimeout(150);   // Phaser maps the pointer to world coordinates once per frame
- await page.mouse.click(box.x+x,box.y+y);await ready();
+ // Hover details can change document height and scroll anchoring. Re-read the
+ // canvas after hover instead of clicking the pixel measured before that shift.
+ for(let attempt=0;attempt<4;attempt++){
+  const camera=await page.evaluate(()=>window.trial.camera()),box=await page.locator('canvas').boundingBox();
+  const x=(pos.x*40+20-camera.x)*box.width/680,y=(pos.y*40+20-camera.y)*box.height/350;
+  assert.ok(x>=0&&x<box.width&&y>=0&&y<box.height,'target must be visible on canvas');
+  await page.mouse.move(box.x+x,box.y+y);await page.waitForTimeout(150);
+  const after=await page.locator('canvas').boundingBox(),afterCamera=await page.evaluate(()=>window.trial.camera());
+  if(['x','y','width','height'].every(k=>Math.abs(after[k]-box[k])<0.5)&&afterCamera.x===camera.x&&afterCamera.y===camera.y){
+   await page.mouse.click(box.x+x,box.y+y);await ready();return;
+  }
+ }
+ assert.fail('canvas position must settle after hovering before the real click');
 }
 
 // This projection is the only input accepted by the route planner. A point or enemy

@@ -119,20 +119,28 @@ test('X14 while a transit is pending no ordinary round or switch is accepted',()
  const p=requested(expedition());
  reject(p,{type:'round',action:wait});reject(p,{type:'switch',actor:'A'});
 });
-test('X15 generated expedition: start on the exit, floors created lazily from the seed, both directions work',()=>{
+test('X15 a generated roguelike starts at arrival, descends to the next floor and refuses an upward exit',()=>{
  const s0=createExpedition('gen',777);
- assert.equal(s0.scenario,'expedition');assert.equal(s0.dungeon.level,1);assert.equal(s0.phase,'playing');
- const g1=generateFloor(777,1),g2=generateFloor(777,2);
- const exit=g1.points.find(p=>p.kind==='exit').pos,down=g1.points.find(p=>p.kind==='down').pos;
- assert.deepEqual(s0.units.C.pos,exit);
- assert.equal(new Set(coords(s0).map(p=>p.x+','+p.y)).size,3);
- assert.ok(s0.enemies.every(id=>!(s0.units[id].pos.x===exit.x&&s0.units[id].pos.y===exit.y)));
- assert.deepEqual(s0.enemies,['w1a','w1b','w1c']);   // 7.8 (difficulty tuning): three ordinary enemies on every floor
+  assert.equal(s0.scenario,'expedition');assert.equal(s0.dungeon.level,1);assert.equal(s0.phase,'playing');
+  assert.equal(s0.dungeon.roguelike,true);assert.equal(s0.points.some(p=>p.kind==='exit'||p.kind==='up'),false);
+  const options={width:20,height:14,floors:2,roguelike:true},g1=generateFloor(777,1,options),g2=generateFloor(777,2,options);
+  for(const g of [g1,g2])assert.equal(g.points.some(p=>p.kind==='exit'||p.kind==='up'),false);
+  const down=g1.points.find(p=>p.kind==='down').pos;
+  assert.deepEqual(s0.units.C.pos,g1.arrival);
+  assert.ok(s0.points.some(p=>p.kind==='goal'),'G remains a target, not an exit');
+  assert.equal(new Set(coords(s0).map(p=>p.x+','+p.y)).size,3);
+  assert.deepEqual(s0.enemies,['w1a','w1b','w1c']);
  const s=structuredClone(s0);s.units.A.hp=0;s.units.A.pos=null;s.units.B.hp=0;s.units.B.pos=null;s.units.C.pos=down;
+  for(const id of s.enemies)s.units[id].waitOnly=true;
  const leaving=requested(s),down2=cross(leaving);
- assert.equal(down2.dungeon.level,2);assert.deepEqual(down2.units.C.pos,g2.points.find(p=>p.kind==='up').pos);
+ assert.equal(down2.dungeon.level,2);assert.deepEqual(down2.units.C.pos,g2.arrival);
  assert.deepEqual(down2.enemies,['w2a','w2b','w2c']);assert.deepEqual(down2.floor,g2.floor);
- const up=cross(round(down2,stairs));
- assert.equal(up.dungeon.level,1);assert.deepEqual(up.units.C.pos,down);assert.deepEqual(up.floor,g1.floor);
- assert.deepEqual(up.enemies.map(id=>[up.units[id].hp,up.units[id].pos]),leaving.enemies.map(id=>[leaving.units[id].hp,leaving.units[id].pos]));
+  assert.equal(down2.points.some(p=>p.kind==='exit'||p.kind==='up'),false);
+  assert.ok(down2.points.some(p=>p.kind==='item'),'T remains an item target');
+  const upPos=down2.floor.find(pos=>!down2.points.some(p=>`${p.pos.x},${p.pos.y}`===`${pos.x},${pos.y}`));
+  assert.ok(upPos);down2.points.push({pos:upPos,kind:'up',used:false});
+  down2.units.C.pos={...upPos};
+  const up=applyCommand(down2,{type:'round',action:stairs});
+  assert.equal(up.ok,false);assert.match(up.error,/只能向下/);
+  assert.equal(up.state.dungeon.level,2);assert.equal(up.state.phase,'playing');
 });

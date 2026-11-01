@@ -79,3 +79,15 @@ export function K5(){
  const s=world({A:friend('A',0,1,12,{tackle:2}),B:friend('B',1,1,12,{protect:1}),C:friend('C',2,1,2,{tackle:0,quickattack:1}),R:enemy('R',5,1,6,'ranged')},{floor:row(5),leader:'C',enemies:['R']});
  invite(s,['Q']);s.invitations[0].unit=friend('Q',0,1,10,{tackle:1});return s;
 }
+
+/** v0.1 literal arena: inputs independent of production generation and scenario helpers. */
+export function roguelikeArena({bossHp=1,heroHp=20}={}){
+ const a=friend('A',1,1,heroHp),boss=enemy('boss',2,1,bossHp,'melee');
+ boss.boss=true;boss.waitOnly=true;
+ const s=world({A:a,boss},{floor:row(3),queue:['A'],enemies:['boss'],points:[{pos:pos(1),kind:'goal',used:false}]});
+ s.dungeon={seed:1,width:4,height:2,floors:3,level:3,stored:{},boss:true,roguelike:true};
+ s.difficulty='normal';s.purse=40;
+ s.prog={level:5,exp:0,rng:1,made:0,kills:[],items:{berry:0,tonic:0}};
+ s.tms=[{move:'protect',source:'target',fate:'sent'}];
+ return s;
+}

@@ -27,7 +27,7 @@ function blocked(raw){
 }
 
 test('7.7b keeps both historical draw lists and enables the ten-move list only with a boss tmPool:3 mark',()=>{
-  assert.equal(RULE_VERSION,'trial-rules-4');assert.equal(CONTENT_VERSION,'trial-content-4');
+  assert.equal(RULE_VERSION,'trial-rules-5');assert.equal(CONTENT_VERSION,'trial-content-5');
   assert.deepEqual([...LEGACY_TM_MOVES],['protect','whirlwind','roar']);
   assert.deepEqual([...TM_MOVES],['protect','whirlwind','roar','dragontail','helpinghand','mudslap','terablast']);
   assert.deepEqual([...TM_MOVES_V3],[...TM_MOVES,'quickguard','reflect','lightscreen']);
@@ -52,7 +52,7 @@ test('fixed old no-tmPool draws keep their pre-7.7b literal results at the targe
   boss.units.boss.hp=1;boss.prog.rng=4;
   const drop=applyCommand(boss,{type:'round',action:{type:'basic',target:'boss'}});
   assert.equal(drop.ok,true,drop.error);
-  assert.deepEqual(drop.state.tms,[{move:'terablast',source:'boss',fate:'held'}]);
+  assert.deepEqual(drop.state.tms,[{move:'terablast',source:'boss',fate:'brought'}],'the old draw list is unchanged; the v0.1 terminal win brings the boss drop immediately');
 });
 
 test('a new base departure creates tmPool:3 in memory and leaves the saved camp unchanged',async()=>{

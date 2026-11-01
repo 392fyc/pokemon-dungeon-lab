@@ -59,12 +59,10 @@ try{
  await p.locator('#title-continue').click();await ready();assert.equal(await p.evaluate(()=>window.trial.getState()),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),camp);
  await capture('07-continue-camp');
  await p.locator('#depart').click();await ready();assert.equal(await raw(),before,'a new departure again leaves the camp record unchanged');
- // The first-floor entrance is an ordinary exit. This is a real one-round expedition,
- // not an effective expedition or a three-floor clear; the fixed-map full route below is separate.
- await p.locator('#take-exit').click();await p.locator('#exit-confirm').click();
- await p.waitForFunction(()=>window.trial.getState()?.phase==='ended');
- assert.equal(await p.evaluate(()=>window.trial.getState().end.outcome),'normal');
- await p.locator('#to-base').click();await ready();
+ // New expeditions have no early exit. Refresh discards the in-memory run; camp export/import follows.
+ assert.equal(await p.locator('#take-exit').count(),0);
+ assert.equal(await p.evaluate(()=>window.trial.getState().points.some(p=>p.kind==='exit'||p.kind==='up')),false);
+ await p.reload();await p.locator('#title-continue').click();await ready();
  const original=JSON.parse(await raw());assert.equal(original.format,2);assert.deepEqual(Object.keys(original).sort(),['build','content','format','profile','rules','sequence']);assert.equal(await p.evaluate(()=>window.trial.getState()),null);
  await p.locator('#open-settings').click();const backup=await exported();assert.deepEqual(JSON.parse(backup),original);
  for(const k of ['format','rules','content','build'])assert.ok(Object.hasOwn(original,k));
@@ -83,7 +81,7 @@ try{
  await upload(backup);assert.match(await p.locator('#transfer-message').innerText(),/已导入并保存/);assert.deepEqual(JSON.parse(await raw()),original);
  await p.locator('#settings-close').click();await p.reload();await p.locator('#title-continue').click();await ready();assert.deepEqual(JSON.parse(await raw()),original);
  await capture('08-reload-continue');
- result.checks.push('玩家新游戏→基地→出发→中途刷新回基地→再次出发→入口撤离并自动结算；导出导入及重载完全一致；非法营地数据拒绝；取消导入不写入；设置内方向键不推进回合');
+ result.checks.push('玩家新游戏→基地→出发→中途刷新回基地→再次出发→验证无出口→刷新回营地；导出导入及重载完全一致；非法营地数据拒绝；取消导入不写入；设置内方向键不推进回合');
  // An incompatible save is injected only to exercise the recovery UI.
  const incompatible=JSON.stringify({...original,format:999},null,2);
  await p.evaluate(text=>localStorage.setItem('dungeon-trial.player.v1',text),incompatible);await p.reload();

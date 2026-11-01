@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMain} from '../../src/core/engine.ts';
-import {pos,row,friend,enemy,world,doCmd,reject as rejectRaw,move,wait,basic,skill,interact,round,switchTo,refuse,accept,finish,coords,hp,pp,preview,V,K,K5} from './fixtures.mjs';
+import {roguelikeArena,pos,row,friend,enemy,world,doCmd,reject as rejectRaw,move,wait,basic,skill,interact,round,switchTo,refuse,accept,finish,coords,hp,pp,preview,V,K,K5} from './fixtures.mjs';
 // 拒绝必须明确说明没有执行整轮；底层helper已比较完整世界不变。
 function reject(s,command){const r=rejectRaw(s,command);assert.match(r.error,/本轮未执行/);return r;}
 const U=[{tackle:2},{protect:2},{tackle:2,quickattack:2}];
@@ -118,3 +118,23 @@ test('K5 refusing keeps quickattack PP but cannot reach a target three cells awa
 test('K5 replacing C cannot protect the newcomer with another member',()=>{let s=switchTo(accept(K5(),'C'),'Q');reject(s,{type:'round',action:move(3),override:{actor:'B',action:skill('protect','Q')}});// R is a roster pidgey: it walks up (no damage on its move turn), then tackles for round(9*0.4)=4 under ENEMY_DIFFICULTY 0.4 (base 6+ceil(6/2)=9).
  s=round(s,move(3));assert.equal(s.units.Q.hp,10);s=round(s,wait);assert.equal(s.units.Q.hp,6);s=round(s,wait);assert.equal(s.units.Q.hp,2);s=round(s,wait);assert.equal(s.units.Q.hp,0);assert.equal(s.round,4);assert.equal(s.units.B.pp.protect,1);assert.equal(s.units.C.hp,2);assert.equal(s.units.C.pp.quickattack,1);});
 for(const outgoing of ['A','B'])test('K5 keep C and replace '+outgoing,()=>{let s=accept(K5(),outgoing);assert.deepEqual(s.units.Q.pos,pos(3));assert.equal(s.units[outgoing].hp,12);assert.equal(s.units[outgoing].maxHp,20);s=switchTo(s,'Q');s=round(s,move(4));assert.equal(s.units.Q.hp,6);assert.deepEqual(s.units.C.pos,pos(2));s=round(s,basic('R'));assert.equal(s.round,2);assert.equal(s.units.R.hp,0);assert.deepEqual(s.units.C.pos,pos(3));assert.equal(s.units.C.hp,2);assert.equal(s.units.C.pp.quickattack,1);assert.equal(s.units.B.pp.protect,1);assert.equal(s.units.A.hp,12);assert.equal(s.units.B.hp,12);assert.equal(s.units.Q.hp,6);});
+
+// 8.1 current rules; historical fixed maps above continue to cover old input sequences.
+test('8.1 the boss defeat ends automatically after rewards, with every machine brought and money cleared',()=>{
+ let s=round(roguelikeArena(),basic('boss'));
+ if(s.phase==='invitation'){assert.equal(s.end,null,'recruitment finishes before the result');s=refuse(s);}
+ assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'won');
+ assert.equal(s.end.boss,true);assert.equal(s.end.reward,0);assert.equal(s.end.refund,0);
+ assert.equal(s.purse,0);assert.deepEqual(s.end.lost,[]);
+ assert.equal(s.end.tms.length,2);assert.ok(s.end.tms.every(t=>t.fate==='brought'));
+});
+test('8.1 target interaction cannot request an early exit and leaves the world unchanged',()=>{
+ reject(roguelikeArena({bossHp:20}),{type:'round',action:interact(true)});
+});
+test('8.1 full wipe loses even transported machines and does not create missing partners',()=>{
+ const s=roguelikeArena({bossHp:20,heroHp:1});delete s.units.boss.waitOnly;
+ const after=round(s,wait);
+ assert.equal(after.phase,'ended');assert.equal(after.end.outcome,'wipe');
+ assert.deepEqual(after.end.lost,[]);assert.deepEqual(after.end.tms,[{move:'protect',source:'target',fate:'lost'}]);
+ assert.equal(after.purse,0);assert.equal(after.end.reward,0);assert.equal(after.end.refund,0);
+});

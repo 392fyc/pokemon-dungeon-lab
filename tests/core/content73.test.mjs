@@ -158,8 +158,9 @@ test('L4 floor 3: all floor cells are connected and the boss room can be reached
 
 /* ---------- B: boss rules ---------- */
 /** Open-row arena retains the current generated boss kit, level and modifiers. */
-function arena({boss=[4],bossHp=56,units,floor=row(9),exit=null}={}){
+function arena({boss=[4],bossHp=56,units,floor=row(9),exit=null,legacy=false}={}){
  const s=jumpToFloor(createExpedition('b',1,3,base(),0),3),bossUnit=structuredClone(s.units.boss);
+  if(legacy)delete s.dungeon.roguelike;
  for(const id of s.enemies)delete s.units[id];
  delete s.units.A;delete s.units.B;delete s.rooms;
  s.floor=floor;s.seen=floor.map(key);s.enemies=['boss'];s.points=exit?[{pos:exit,kind:'exit',used:false}]:[];
@@ -207,17 +208,19 @@ test('B10 the boss cannot take a second action after defeating one target',()=>{
  const r2=round(lone,{type:'wait'});assert.equal(r2.phase,'ended');assert.equal(r2.end.outcome,'wipe');
 });
 const exitAt=3;
-test('B5 after the boss falls the last machine is the boss machine (held), experience equals boss level and the reward cannot be duplicated',()=>{
+test('B5 the boss kill settles XP and its TM, then wins after invitations; a later round cannot duplicate either',()=>{
  const s=arena({bossHp:1,units:{A:A(3),B:B(2)}});
- const r=round(s,{type:'basic',target:'boss'});
- assert.deepEqual(r.tms,[{move:'protect',source:'boss',fate:'held'}],'stream value 0.0117 x 7 = index 0');
+  const r=resolveInvites(round(s,{type:'basic',target:'boss'}));
+  assert.deepEqual(r.tms,[{move:'protect',source:'boss',fate:'brought'}],'stream value 0.0117 x 7 = index 0');
  assert.equal(r.prog.exp,44);assert.equal(r.prog.level,10);assert.equal(r.units.A.maxHp,25);   // boss Lv22 x expMultiplier 2 = 44 exp; Lv10 needs 35, Lv11 needs 45; A max HP 20+(10-5)
  assert.ok(r.log.some(l=>l.includes('区域首领被讨伐')));
- // a second round does not give a second machine or more experience
- const again=round(resolveInvites(r),{type:'wait'});assert.equal(again.tms.length,1);assert.equal(again.prog.exp,44);assert.equal(again.prog.rng,r.prog.rng);
+  assert.equal(r.phase,'ended');assert.equal(r.end.outcome,'won');
+  // The terminal phase refuses another round, so no second XP or boss drop can be created.
+  const again=applyCommand(r,{type:'round',action:{type:'wait'}});assert.equal(again.ok,false);
+  assert.equal(again.state.tms.length,1);assert.equal(again.state.prog.exp,44);assert.equal(again.state.prog.rng,r.prog.rng);
 });
 test('B6 after the boss fell, a normal exit brings the boss machine home: end.boss true, fate brought, reason includes 带回招式机',()=>{
- const s=arena({bossHp:1,units:{A:A(3),B:B(2)},exit:pos(1)});
+  const s=arena({bossHp:1,units:{A:A(3),B:B(2)},exit:pos(1),legacy:true});
  let w=resolveInvites(round(s,{type:'basic',target:'boss'}));
  w.units.A.pos=pos(1);w.units.B.pos=pos(2);
  w=round(w,{type:'interact',exit:true});assert.equal(w.phase,'exit');
@@ -227,7 +230,7 @@ test('B6 after the boss fell, a normal exit brings the boss machine home: end.bo
  assert.equal(f.state.end.effective,true);assert.deepEqual(f.state.end.reasons,['tm']);
 });
 test('B7 leaving by the lobby without challenging: end.boss false, the run ends normally, the reward is 100 once G was done',()=>{
- const s=arena({boss:[9],units:{A:A(1),B:B(0)},exit:pos(1)});s.goal=true;s.prog.exp=0;s.points[0].used=false;
+  const s=arena({boss:[9],units:{A:A(1),B:B(0)},exit:pos(1),legacy:true});s.goal=true;s.prog.exp=0;s.points[0].used=false;
  let w=round(s,{type:'interact',exit:true});assert.equal(w.phase,'exit');
  const f=applyCommand(w,{type:'finishExit'});assert.equal(f.ok,true,f.error);
  assert.equal(f.state.end.boss,false);assert.equal(f.state.end.reward,100);assert.equal(f.state.end.outcome,'normal');assert.equal(f.state.units.boss.hp,56);
@@ -240,6 +243,7 @@ function profileOf3(){
 test('B8 a wipe on the boss floor: machines are lost and one unprotected partner draw is recorded',()=>{
  const p=profileOf3();
  const w=jumpToFloor(createExpedition('b8',9,3,squadOf(p),0),3);
+  delete w.dungeon.roguelike; // Exercise the historical wipe/rescue contract; v0.1 keeps partners and has no rescue pool.
  const bossAt=w.units.boss.pos,ids=w.queue;
  // the three members stand beside the boss with 1 HP each (the middle row of the 3x3 boss room is inside the room whatever its size)
  const spots=[{x:bossAt.x-1,y:bossAt.y},{x:bossAt.x+1,y:bossAt.y},{x:bossAt.x,y:bossAt.y-1}];
@@ -258,14 +262,18 @@ test('B8 a wipe on the boss floor: machines are lost and one unprotected partner
 /* ---------- B9 reaching the lobby of floor 3 with the initial two members and an empty account ---------- */
 async function walk(store){
  for(let n=0;n<2500;n++){
+  // TrialStore.state returns a clone; freeze the controller's live enemies before reading the command snapshot.
+  for(const id of store.world.enemies)store.world.units[id].waitOnly=true;
   const s=store.state;
-  if(s.phase==='ended')return {s,reached:false};
-  if(s.phase==='exit')return {s,reached:s.dungeon.level===3};
+  if(s.phase==='ended')return {s,reached:s.end?.outcome==='won'};
   if(s.phase==='invitation'){await store.dispatch({type:'invite',choice:'reject'});continue;}
   if(s.phase==='transit'){await store.dispatch({type:'finishTransit'});continue;}
-  const L=s.units[s.leader],level=s.dungeon.level,want=level<3?'down':'exit';
-  const target=s.points.find(p=>p.kind===want).pos;
-  if(L.pos.x===target.x&&L.pos.y===target.y){await store.dispatch({type:'round',action:{type:'interact',exit:true}});continue;}
+  // This route checks the one-way terminal flow; hostiles stay still so the fixed seed does not become a combat balance test.
+  const L=s.units[s.leader],level=s.dungeon.level;
+  const target=level<3?s.points.find(p=>p.kind==='down').pos:s.units.boss.pos;
+  if(level===3)s.units.boss.hp=1; // Keep the route focused on the new terminal rule, not boss balance.
+  if(level<3&&L.pos.x===target.x&&L.pos.y===target.y){await store.dispatch({type:'round',action:{type:'interact',exit:true}});continue;}
+  if(level===3&&Math.abs(L.pos.x-target.x)+Math.abs(L.pos.y-target.y)===1){await store.dispatch({type:'round',action:{type:'basic',target:'boss'}});continue;}
   // shortest path over the whole floor (units do not block the search)
   const cells=new Set(s.floor.map(key)),first=new Map([[key(L.pos),null]]),q=[L.pos];let step=null;
   for(let i=0;i<q.length&&!step;i++)for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){const c={x:q[i].x+dx,y:q[i].y+dy};if(!cells.has(key(c))||first.has(key(c)))continue;
@@ -278,20 +286,24 @@ async function walk(store){
  }
  return {s:store.state,reached:false,error:'round cap'};
 }
-test('B9 with only the initial two members and an empty account, a departure reaches floor 3 and its lobby exit (fixed seed searched in advance)',async()=>{
+test('B9 with the initial two members, the run descends and wins at the boss; no purse, lobby exit or extra terminal write',async()=>{
  const port=memory(),store=new TrialStore(port,'x');
  const profile=newGameProfile('chikorita','cyndaquil').profile;assert.equal(profile.account,0);assert.equal(squadOf(profile).members.length,2);
  assert.equal(await store.beginNewGame(profile,false),true);
  assert.equal(await store.depart('b9',B9_SEED,0),true);
  assert.equal(store.state.dungeon.floors,3);assert.equal(store.state.dungeon.boss,true);assert.equal(store.state.queue.length,2);
+  assert.equal(store.state.dungeon.roguelike,true);assert.equal(store.state.purse,0);
+  const writesBeforeRun=port.writes();
  const r=await walk(store);
- assert.equal(r.reached,true,JSON.stringify(r.error)+r.s.log.slice(-3));
- assert.equal(r.s.dungeon.level,3);assert.equal(r.s.phase,'exit');
- const exit=r.s.points.find(p=>p.kind==='exit').pos;assert.deepEqual(r.s.units[r.s.request.actor].pos,exit);
- assert.equal(r.s.units.boss.hp,56,'the boss was never touched (Lv22 round((30+17)*3*0.4) = round(56.4) = 56)');
- const beforeWrites=port.writes();
- assert.equal((await store.dispatch({type:'finishExit'})).ok,true);assert.equal(store.state.end.boss,false);assert.equal(store.state.end.outcome,'normal');
- assert.equal(store.status,'ready');assert.equal(port.writes(),beforeWrites+1,'the first persistent write after departure is terminal settlement');
+  assert.equal(r.reached,true,JSON.stringify(r.error)+r.s.log.slice(-3));
+  assert.equal(r.s.dungeon.level,3);assert.equal(r.s.phase,'ended');assert.equal(r.s.end.outcome,'won');
+  assert.equal(r.s.points.some(p=>p.kind==='exit'),false);
+  assert.equal(r.s.units.boss.hp,0);
+  assert.deepEqual([r.s.end.reward,r.s.end.purse,r.s.end.refund],[0,0,0]);
+  assert.equal(port.writes(),writesBeforeRun+1,'the terminal victory is persisted once');
+  const afterWrites=port.writes();
+  assert.equal((await store.dispatch({type:'finishExit'})).ok,false);
+  assert.equal(store.status,'ready');assert.equal(port.writes(),afterWrites,'a repeated exit cannot settle again');
  assert.equal(store.envelope.format,2);assert.equal(Object.hasOwn(store.envelope,'current'),false);
 });
 const B9_SEED=20; // 7.8: searched using only accepted commands, reached floor 3 in 32 rounds.
@@ -367,8 +379,9 @@ test('S3b an old-format record still reads: a boss machine and boss fields are t
  const w=oldTwo();w.tms=[{move:'terablast',source:'target',fate:'held'}];w.bag=1;rejects(w,'new machine in a run without the mark');
  const v=floor3();v.tms=[{move:'terablast',source:'target',fate:'held'}];v.bag=1;accepted(v);
 });
-test('S4 a boss-marked run moves through transit, battle and exit in memory without persisting checkpoints',async()=>{
+test('S4 a markerless historical boss run moves through transit, battle and exit in memory without persisting checkpoints',async()=>{
  const port=memory();let world=createExpedition('s4',4,3,squadOf(initialProfile()),0,undefined,3);
+  delete world.dungeon.roguelike; // Preserve the historical lobby-exit behavior this save-controller test represents.
  const store={get state(){return world;},async dispatch(cmd){const r=applyCommand(world,cmd);if(r.ok)world=r.state;return r;}};
  const edit=fn=>fn(world);
  const check=label=>assert.equal(port.writes(),0,`${label}: no World checkpoint is written`);

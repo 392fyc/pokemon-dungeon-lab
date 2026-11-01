@@ -47,7 +47,7 @@ export function actionText(s:World,actor:string,a:Action):string {
     case 'skill':return `${skillLabel(s.units[actor],a.skill)} → ${a.target===actor?'自身':who(a.target)}`;
     case 'swap':return `与${who(a.target)}换位`;
     case 'use':return `使用${itemZh(a.item)} → ${who(a.target)}`;
-    case 'interact':return a.exit?'交互并请求撤离／跨层':'取得并继续';
+    case 'interact':return a.exit?'交互并请求跨层':'取得并继续';
     case 'exchange':return `启动交换机，把${who(a.target)}送回基地，运走${a.cargo.length}份招式机`;
     default:return '等待';
   }

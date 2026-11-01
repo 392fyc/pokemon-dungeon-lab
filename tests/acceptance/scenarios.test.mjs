@@ -1,3 +1,4 @@
+import {applyCommand} from '../../src/core/engine.ts';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createScenario} from '../../src/core/scenarios.ts';
@@ -6,7 +7,7 @@ import {V,K,K5} from './fixtures.mjs';
 function unitView(u){const v=structuredClone(u);if(v.recruit)delete v.recruit.pos;return v;}
 
 // Production scenarios are only the observed subject here, never an expectation generator.
-for(const id of [3,4,5,6,7,8,9,10,11,12,13])test('shipped V'+id+' matches independent fixture inputs',()=>{
+for(const id of [4,5,6,8,9,10,11,12,13])test('shipped V'+id+' matches independent fixture inputs',()=>{
  const expected=V(id),actual=createScenario('V'+id,'acceptance');
  for(const field of ['floor','queue','camp','leader','points','goal','bag','phase','anchor'])assert.deepEqual(actual[field],expected[field],field);
  // Dead enemy registry entries and internal blocker names are not specification differences.
@@ -18,4 +19,17 @@ for(const id of ['K1','K2','K5'])test('shipped '+id+' matches independent fixtur
  const expected=id==='K5'?K5():K(id==='K2'),actual=createScenario(id,'acceptance');
  for(const field of ['floor','queue','enemies','camp','leader','points','goal','bag','phase','anchor'])assert.deepEqual(actual[field],expected[field],field);
  for(const [name,u] of Object.entries(expected.units))assert.deepEqual(actual.units[name],u,name);
+});
+
+// V3/V7 pure-exit inputs remain historical rule fixtures, not shipped developer scenes.
+for(const [id,outcome] of [['BOSSWIN','won'],['BOSSWIPE','wipe']])test(id+' reaches the advertised result through a real action',()=>{
+ let s=createScenario(id,'acceptance');assert.equal(s.dungeon.level,3);
+ assert.equal(s.points.some(p=>p.kind==='exit'||p.kind==='up'),false);
+ const action=id==='BOSSWIN'?{type:'basic',target:'boss'}:{type:'wait'};
+ let result=applyCommand(s,{type:'round',action});assert.equal(result.ok,true,result.error);s=result.state;
+ for(let n=0;n<5&&s.phase==='invitation';n++){
+  assert.equal(s.end,null);result=applyCommand(s,{type:'invite',choice:'reject'});assert.equal(result.ok,true,result.error);s=result.state;
+ }
+ assert.equal(s.phase,'ended');assert.equal(s.end.outcome,outcome);assert.deepEqual(s.end.lost,[]);
+ assert.ok(s.end.tms.length>0);assert.ok(s.end.tms.every(t=>t.fate===(outcome==='won'?'brought':'lost')));
 });

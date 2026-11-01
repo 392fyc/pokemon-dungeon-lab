@@ -5,8 +5,8 @@
  * All numbers below are WORKING CANDIDATES (map size, room counts, enemy counts, enemy stats), not final balance.
  */
 export type Cell={x:number;y:number};
-/** `boss` (7.3): the run carries the boss mark: themed floors, the new enemy pools, a lobby exit and the regional boss on the last floor. Absent = developer expedition using the first theme at level 5. */
-export type FloorParams={width:number;height:number;floors:number;boss?:boolean};
+/** `boss` (7.3): themed floors, the new enemy pools and a regional boss on the last floor. */
+export type FloorParams={width:number;height:number;floors:number;boss?:boolean;roguelike?:true;difficulty?:Difficulty};
 export const DEFAULT_PARAMS:FloorParams={width:20,height:14,floors:2};
 import {ECON} from './economy.ts';
 import {SPECIES,BOSS_CONFIG,speciesMaxHp} from './roster.ts';
@@ -16,7 +16,7 @@ export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
 export type EnemySpec={id:string;species:string;level:number;hp:number;pos:Cell;boss?:true;asleep?:boolean};
 export type Room={x:number;y:number;w:number;h:number};
 export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[];rooms:Room[];
-  /** Where the team first arrives from outside (level 1: the ordinary exit) or from above (the up stairs). */
+  /** Where the team first arrives from outside or from the floor above. */
   arrival:Cell;up:Cell|null;down:Cell|null;points:PointSpec[];enemies:EnemySpec[];enemyAiRng:number;
   /** 6.4 recovery pickups (berry on every floor, tonic on floor 2). Kept apart from `points` and drawn from their own random stream, so the layout above is unchanged. */
   pickups:PointSpec[];
@@ -28,8 +28,10 @@ export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[]
   theme?:ThemeId;bossRoom?:number};
 export type ThemeId='moss'|'wet'|'ash';
 export const INITIAL_LEVEL=5;
-/** Difficulty multiplier on every generated enemy's max HP and on every damage dealt by an enemy (only `normal` exists for now; easy/hard and a picker come later). */
-export const DIFFICULTY:{normal:number}={normal:0.4};
+/** Difficulty multiplier on generated enemy HP and damage dealt by enemies. */
+export type Difficulty='easy'|'normal'|'hard';
+export const DIFFICULTY:Readonly<Record<Difficulty,number>>=Object.freeze({easy:0.28,normal:0.4,hard:0.56});
+export const isDifficulty=(value:unknown):value is Difficulty=>typeof value==='string'&&Object.hasOwn(DIFFICULTY,value);
 export const ENEMY_DIFFICULTY=DIFFICULTY.normal;
 /** First-type partitions and level bands from the 7.8 working specification. */
 export const THEME_FLOORS:{theme:ThemeId;name:string;types:string[];levels:[number,number];count:number;floorTile:string;wallTile:string}[]=[
@@ -83,7 +85,8 @@ export function serviceRoll(seed:number,floors:number):ServiceRoll {
   return {shop:shopOn?{level:shopLevel,tmDraw}:null,exchange:exOn?{level:exLevel}:null};
 }
 export function generateFloor(seed:number,level:number,params:FloorParams=DEFAULT_PARAMS):GeneratedFloor {
-  const {width:W,height:H,floors}=params;const boss=!!params.boss,bossFloor=boss&&level===floors;
+  const {width:W,height:H,floors}=params;const boss=!!params.boss,bossFloor=boss&&level===floors,roguelike=params.roguelike===true;
+  const difficulty=DIFFICULTY[params.difficulty??'normal'];
   const rng=mulberry32((Math.imul(seed>>>0,0x9E3779B1)^Math.imul(level,0x85EBCA6B)^0x5BD1E995)>>>0);
   const int=(lo:number,hi:number)=>lo+Math.floor(rng()*(hi-lo+1));
   const pick=<T>(xs:T[]):T=>xs[int(0,xs.length-1)];
@@ -119,13 +122,14 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
   const used=new Set<string>();const points:PointSpec[]=[];
   const place=(kind:PointKind,pos:Cell)=>{used.add(k(pos));points.push({pos:{x:pos.x,y:pos.y},kind,used:false});};
   let up:Cell|null=null,down:Cell|null=null;
-  if(level===1)place('exit',start);else{up={x:start.x,y:start.y};place('up',up);}
+  if(level===1){if(roguelike)used.add(k(start));else place('exit',start);}
+  else{up={x:start.x,y:start.y};if(roguelike)used.add(k(up));else place('up',up);}
   if(downRoom>=0){down=center(rooms[downRoom]);place('down',down);}
-  // 7.3 anchors of the last floor, fixed before anything else is placed: the lobby exit (free cell of the arrival room nearest the up stairs; ties top row, then left) and the boss (centre of the boss room).
+  // 7.3 anchors of the last floor: legacy runs have a lobby exit; every boss-marked run has the boss at the centre of the boss room.
   let bossPos:Cell|null=null;
   if(bossFloor){
-    const lobby=roomCells(rooms[0]).filter(c=>!used.has(k(c))).sort((a,b)=>dist(a,start)-dist(b,start)||a.y-b.y||a.x-b.x)[0];
-    place('exit',lobby);bossPos=center(rooms[bossRoom]);used.add(k(bossPos));
+    if(!roguelike){const lobby=roomCells(rooms[0]).filter(c=>!used.has(k(c))).sort((a,b)=>dist(a,start)-dist(b,start)||a.y-b.y||a.x-b.x)[0];place('exit',lobby);}
+    bossPos=center(rooms[bossRoom]);used.add(k(bossPos));
   }
   // Fallback for a spot the room choice cannot give: the first free floor cell (row, then column) outside the boss room and the arrival room.
   const fallback=()=>{const arrival=new Set(roomCells(rooms[0]).map(k));return floor.find(c=>!used.has(k(c))&&!inBoss(c)&&!arrival.has(k(c)))!;};
@@ -152,11 +156,11 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const lower=Math.max(themed.levels[0],SPECIES[species].evoLevel),upper=themed.levels[1];
     const enemyLevel=boss?lower+Math.floor(levelRng()*(upper-lower+1)):INITIAL_LEVEL;
     const asleep=sleepRng()<0.25;enemyAiRng=(enemyAiRng+0x6D2B79F5)>>>0;
-    enemies.push({id:`w${level}${'abcd'[n]}`,species,level:enemyLevel,hp:speciesMaxHp(species,enemyLevel,ENEMY_DIFFICULTY),pos,asleep});
+    enemies.push({id:`w${level}${'abcd'[n]}`,species,level:enemyLevel,hp:speciesMaxHp(species,enemyLevel,difficulty),pos,asleep});
   }
   if(bossPos){
     const traits=BOSS_CONFIG[BOSS.species],enemyLevel=Math.max(themed.levels[1]+traits.levelBonus,SPECIES[BOSS.species].evoLevel);
-    enemies.push({id:BOSS.id,species:BOSS.species,level:enemyLevel,hp:speciesMaxHp(BOSS.species,enemyLevel,traits.hpMultiplier*ENEMY_DIFFICULTY),pos:bossPos,boss:true,asleep:false});
+    enemies.push({id:BOSS.id,species:BOSS.species,level:enemyLevel,hp:speciesMaxHp(BOSS.species,enemyLevel,traits.hpMultiplier*difficulty),pos:bossPos,boss:true,asleep:false});
   }
   // 6. Pickups (6.4 working candidate): one berry per floor, plus one tonic on floor 2. Own random stream; never on a point or an enemy; outside the arrival room when possible.
   const prng=mulberry32((Math.imul(seed>>>0,0x7FEB352D)^Math.imul(level,0x846CA68B)^0x1B873593)>>>0);

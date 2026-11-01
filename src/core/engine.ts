@@ -1,5 +1,5 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
-import {generateFloor,serviceRoll,ENEMY_DIFFICULTY,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,type GeneratedFloor} from './dungeon.ts';
+import {generateFloor,serviceRoll,ENEMY_DIFFICULTY,DIFFICULTY,isDifficulty,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,type Difficulty,type GeneratedFloor} from './dungeon.ts';
 import {ECON} from './economy.ts';
 import {SPECIES,speciesOf,tmPool,learnableMove,speciesMaxHp,type KitMove} from './roster.ts';
 import {TACTICS,isTactic,type Tactic} from './tactics.ts';
@@ -60,9 +60,9 @@ export type StoredFloor={floor:Pos[];seen:string[];enemies:string[];units:Record
 /** Expedition-only data. `stored` holds every visited floor except the current one; unvisited floors are generated from `seed` on first entry. */
 /** `base` (6.5): true for a run started from the base; only those runs get the floor-2 rest point (older generated runs keep their exact floors). */
 /** `services` (7.2): true for a run that may hold a shop and an exchanger (decided by `serviceRoll` from the seed). Older runs never get them. */
-/** `boss` (7.3): the run is 3 floors with themes, a lobby exit and the regional boss on floor 3 (needs `base` and `services`). Runs without it generate exactly as before. */
-export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true;tmPool?:3};
-/** 7.2 a technique machine obtained in this run (from T or the shop) and where it ended up: held while the run goes on, then brought home (normal exit), sent home safely (exchanger) or lost (wipe, not sent). */
+/** `boss` (7.3): themed floors and a regional boss on the last floor. `roguelike` marks the new one-way rules; absent means a legacy run. */
+export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true;tmPool?:3;roguelike?:true};
+/** A technique machine obtained in this run; `sent` remains a possible in-run fate, while final rogue fate is decided by win or wipe. */
 export type TmItem={move:string;source:'target'|'shop'|'boss';fate:'held'|'brought'|'sent'|'lost'};
 /** 7.2 the shop of this run: fixed stock decided at the start, and every sale so far. `tm` is null once sold. */
 export type Shop={level:number;stock:{berry:number;tonic:number;tm:string|null};trades:{item:ShopItem;price:number}[]};
@@ -71,22 +71,22 @@ export type Exchange={level:number;used:boolean;sent:string|null};
 /**
  * The finished run. Fields after `brought` exist only for expedition runs with `prog` (7.2) and are fixed at the end, saved together with it:
  * `tms` final fate of every technique machine, `lost` who went missing in the wipe draw, `effective`/`reasons` the effective-expedition judgement
- * (reasons: 'goal' | 'recruit' | 'tm'), `reward` the base reward owed, `purse` the purse balance at the end and `refund` how much of it returns to the account.
+ * (reasons: 'goal' | 'recruit' | 'tm'), `reward` the base reward owed, `purse` the purse balance at the end and `refund` how much of it returns to the account. Rogue outcomes are `won` or `wipe`; `normal` is retained for legacy runs.
  */
-export type End = {id:string;outcome:'normal'|'wipe';team:string[];camp:string[];goal:boolean;acquired:number;brought:number;
+export type End = {id:string;outcome:'normal'|'won'|'wipe';team:string[];camp:string[];goal:boolean;acquired:number;brought:number;
   /** 7.3 (boss-marked runs only): whether the boss was defeated (its HP is 0 in the final state). */
   boss?:boolean;tms?:TmItem[];lost?:string[];effective?:boolean;reasons?:string[];reward?:number;purse?:number;refund?:number};
 export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:string[];units:Record<string,Unit>;
   queue:string[];enemies:string[];camp:string[];leader:string;points:Point[];
   goal:boolean;bag:number;phase:'playing'|'evolution'|'invitation'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
-  request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;prog?:Progress;rooms?:Rect[];
+  request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;difficulty?:Difficulty;prog?:Progress;rooms?:Rect[];
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
   pendingEvolutions?:{actor:string;choices:string[]}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
   purse?:number;tms?:TmItem[];shop?:Shop;exchange?:Exchange};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
-export const RULE_VERSION='trial-rules-4';
-export const CONTENT_VERSION='trial-content-4';
+export const RULE_VERSION='trial-rules-5';
+export const CONTENT_VERSION='trial-content-5';
 export const SPEC_SOURCE='5f3547889b30e59f6cdfebc5af8c91e46cba4ee4';
 export const key=(p:Pos)=>`${p.x},${p.y}`;
 export const same=(a:Pos|null,b:Pos|null)=>!!a&&!!b&&a.x===b.x&&a.y===b.y;
@@ -481,7 +481,15 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(a.type==='interact'){
     const point=s.points.find(p=>same(p.pos,u.pos));
     if(id!==s.leader||!point)return '主控必须站在交互点';
-    if(point.kind==='down'||point.kind==='up')return a.exit?null:'楼梯只能请求跨层，不能取得';
+    if(point.kind==='down'||point.kind==='up'){
+      if(a.exit&&s.dungeon?.roguelike&&point.kind==='up')return '本局只能向下跨层';
+      return a.exit?null:'楼梯只能请求跨层，不能取得';
+    }
+    if(s.dungeon?.roguelike&&a.exit){
+      if(point.kind==='goal')return '目标G不是撤离点';
+      if(point.kind==='item')return '目标T不是撤离点';
+      return '本局没有撤离点，击败首领后结束';
+    }
     if(point.kind==='berry'||point.kind==='tonic'){if(a.exit)return '这里不是出口，不能请求撤离';return point.used?`${ITEM_NAMES[point.kind]}已拾取`:null;}
     if(point.kind==='rest'){if(a.exit)return '这里不是出口，不能请求撤离';if(point.used)return '休整点已使用，每局只能用一次';
       return restTargets(s).length?null:'在场成员的所有招式PP都已满，没有可整理的补给；休整机会没有消耗';}
@@ -530,7 +538,8 @@ function restTargets(s:World):{id:string;skill:Skill}[] {
 function hit(s:World,id:string,n:number):void {
   const u=s.units[id],before=u.hp;u.hp=Math.max(0,u.hp-n);note(s,`${id}受到${n}伤害，HP ${u.hp}`);
   if(u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
-  if(u.hp===0){u.pos=null;note(s,`${id}倒下退图`);if(u.side==='enemy'&&s.prog){
+  if(before>0&&u.hp===0){u.pos=null;note(s,`${id}倒下退图`);if(u.side==='enemy'&&s.prog){
+      if(s.dungeon?.roguelike){const coins=Math.min(15,Math.max(5,u.level??INITIAL_LEVEL));s.purse=(s.purse??0)+coins;note(s,`${id}被击败，钱袋增加${coins}`);}
       if(!u.recruit&&u.species)s.prog.kills.push(u.species);
       s.prog.exp+=Math.round((u.level??INITIAL_LEVEL)*PROG.expMultiplier);
     }
@@ -546,7 +555,7 @@ function basicCategory(u:Unit):'Physical'|'Special' {
 }
 export const STAT_DAMAGE_RATIO=Object.freeze({min:0.8,max:1.25} as const);
 /** Shared, side-effect-free damage calculation. An absent target represents an ordinary ratio-1 target. */
-function damageAmount(source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>):number {
+function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>):number {
   const attackStats=source.species?speciesOf(source.species)?.baseStats:undefined;
   const defenceStats=target?.species?speciesOf(target.species)?.baseStats:undefined;
   const ratio=attackStats&&defenceStats&&category!=='Status'
@@ -554,7 +563,7 @@ function damageAmount(source:Unit,target:Unit|undefined,baseDamage:number,catego
   const scaled=Math.max(1,Math.round(baseDamage*ratio));
   const opposing=!!target&&source.side!==target.side;
   const attackDistance=source.pos&&target?.pos?distance(source.pos,target.pos):0;
-  const base=source.side==='enemy'?Math.max(1,Math.round(scaled*ENEMY_DIFFICULTY)):scaled;
+  const base=source.side==='enemy'?Math.max(1,Math.round(scaled*DIFFICULTY[s.difficulty??'normal'])):scaled;
   const raw=base+(source.stages?.atk??0);
   let amount=raw<=0?0:Math.max(0,raw-(target?.stages?.def??0));
   if(opposing&&amount>0){
@@ -576,13 +585,13 @@ export function estimateAttackDamage(s:World,sourceId:string,targetId:string|und
   const base=6+(spec?Math.ceil(spec.power!/2):0)+levelDamageBonus(level);
   const category=skill===undefined?basicCategory(source):moveCategory(skill);
   if(!category)throw new Error(`缺少招式类别：${skill}`);
-  const amount=damageAmount(source,target,base,category,quickguard);
+  const amount=damageAmount(s,source,target,base,category,quickguard);
   return target?Math.min(target.hp,amount):amount;
 }
 /** Apply the shared damage amount; return actual HP lost for drain and counter. */
 function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set()):number {
   const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
-  const amount=damageAmount(source,target,baseDamage,category,quickguard);
+  const amount=damageAmount(s,source,target,baseDamage,category,quickguard);
   const hpBefore=target.hp;
   hit(s,targetId,amount);
   const actual=hpBefore-target.hp;
@@ -769,22 +778,26 @@ export function reasonsOf(s:World):string[] {
 }
 /** Builds the end record and applies its side effects on the world (machine fates, the wipe draw's random state), without changing the phase. `draw` false skips the wipe draw (an old, already settled history record: nobody is marked as missing). */
 export function closeOut(s:World,outcome:End['outcome'],draw=true):End {
-  const wipe=outcome==='wipe';
+  const wipe=outcome==='wipe',roguelike=s.dungeon?.roguelike===true;
   const e:End={id:`${s.runId}:end`,outcome,team:[...s.queue],camp:[...s.camp],goal:s.goal,acquired:s.bag,brought:wipe?0:s.bag};
+  if(roguelike)s.purse=0;
   if(s.prog){
-    const tms=s.tms??(s.tms=[]);for(const t of tms)if(t.fate==='held')t.fate=wipe?'lost':'brought';
+    const tms=s.tms??(s.tms=[]);
+    if(roguelike){
+      if(outcome==='won'||wipe)for(const t of tms)t.fate=wipe?'lost':'brought';
+    }else for(const t of tms)if(t.fate==='held')t.fate=wipe?'lost':'brought';
     const lost:string[]=[];
-    if(wipe&&draw)for(const id of s.queue){if(isProtected(s,id))continue;const r=rngStep(s.prog.rng);s.prog.rng=r.state;if(r.value<ECON.loseChance)lost.push(id);}
+    if(wipe&&draw&&!roguelike)for(const id of s.queue){if(isProtected(s,id))continue;const r=rngStep(s.prog.rng);s.prog.rng=r.state;if(r.value<ECON.loseChance)lost.push(id);}
     const reasons=reasonsOf(s);
-    const purse=s.purse??0;
-    Object.assign(e,{...(s.dungeon?.boss?{boss:bossDefeated(s)}:{}),tms:clone(tms),lost,effective:reasons.length>0,reasons,reward:s.goal?ECON.reward:0,purse,refund:wipe?0:purse});
+    const purse=roguelike?0:s.purse??0;
+    Object.assign(e,{...(s.dungeon?.boss?{boss:bossDefeated(s)}:{}),tms:clone(tms),lost,effective:reasons.length>0,reasons,reward:roguelike?0:s.goal?ECON.reward:0,purse,refund:roguelike||wipe?0:purse});
   }
   return e;
 }
 function end(s:World,outcome:End['outcome']):void {
   clearCombatState(s);
   s.end=closeOut(s,outcome);
-  s.phase='ended';s.request=null;s.anchor=null;note(s,outcome==='normal'?'正常撤离':'全队倒下，本局结束');
+  s.phase='ended';s.request=null;s.anchor=null;note(s,outcome==='won'?'首领被击败，本局胜利':outcome==='normal'?'正常撤离':'全队倒下，本局结束');
 }
 function clearUnitCombatState(u:Unit):void {
   u.stages={atk:0,def:0};u.protect=0;u.counter=0;u.lastMove=null;
@@ -842,13 +855,20 @@ function drawRecruitmentAndBossTm(s:World):void {
 }
 function finishRoundSettlement(s:World):void {
   drawRecruitmentAndBossTm(s);
-  if(!alive(s.units[s.leader]))s.leader=s.queue.find(i=>alive(s.units[i]))!;
+  const living=s.queue.find(i=>alive(s.units[i]));
+  if(!living){
+    s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});
+    end(s,s.dungeon?.roguelike&&bossDefeated(s)?'won':'wipe');return;
+  }
+  if(!alive(s.units[s.leader]))s.leader=living;
   if(s.request){const u=s.units[s.request.actor];if(alive(u)&&same(u.pos,s.request.pos))s.request.locked=true;else s.request=null;}
   if(s.invitations.some(i=>i.status==='pending')){s.anchor=clone(s.units[s.leader].pos);s.phase='invitation';}
+  else if(s.dungeon?.roguelike&&bossDefeated(s))end(s,'won');
   else s.phase=settled(s);
 }
 function afterRound(s:World):void {
-  if(!s.queue.some(i=>alive(s.units[i]))){s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});if(s.prog)s.prog.kills=[];end(s,'wipe');return;}
+  const bossWin=!!s.dungeon?.roguelike&&bossDefeated(s);
+  if(!s.queue.some(i=>alive(s.units[i]))&&!bossWin){s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});if(s.prog)s.prog.kills=[];end(s,'wipe');return;}
   const p=s.prog,kills=p?[...p.kills]:[];if(p){p.kills=[];}
   const bossDrop=!!s.dungeon?.boss&&bossDefeated(s)&&!(s.tms??[]).some(t=>t.source==='boss');
   if(p){while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level+1]){
@@ -932,6 +952,7 @@ export function applyCommand(original:World,cmd:Command):Result {
     return {ok:true,state:transit(original)};
   }
   if(cmd.type==='finishExit'){
+    if(original.dungeon?.roguelike)return fail('本局不能撤离，击败首领后结束');
     if(original.phase!=='exit'||!original.request?.locked)return fail('没有已成立且完成邀请处理的撤离请求');
     const s=clone(original);end(s,'normal');return {ok:true,state:s};
   }
@@ -944,7 +965,10 @@ export function applyCommand(original:World,cmd:Command):Result {
     const unit=clone(invite.unit);unit.pos=preview.pos;s.units[unit.id]=unit;s.queue=preview.queue;s.leader=preview.leader;invite.status='accepted';reveal(s);
     note(s,`${unit.id}加入，${cmd.outgoing??'空名额'}回营；下轮才行动`);
   }else{invite.status='rejected';note(s,`拒绝${invite.unit.id}`);}
-  if(!s.invitations.some(i=>i.status==='pending')){s.anchor=null;s.phase=settled(s);}
+  if(!s.invitations.some(i=>i.status==='pending')){
+    s.anchor=null;
+    if(s.dungeon?.roguelike&&bossDefeated(s))end(s,'won');else s.phase=settled(s);
+  }
   return {ok:true,state:s};
 }
 
@@ -959,9 +983,9 @@ function floorUnits(g:GeneratedFloor):{units:Record<string,Unit>;enemies:string[
   return {units,enemies:g.enemies.map(e=>e.id)};
 }
 /** `run` is true for 6.4 expeditions (with `prog`): they also get pickups and room rectangles; older expeditions generate the 6.3 floor. */
-function freshFloor(d:Dungeon,level:number,run:boolean):StoredFloor {
-  const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors,...(d.boss?{boss:true}:{})});
-  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),enemyAiRng:g.enemyAiRng,...(run?{rooms:g.rooms.map(r=>({...r}))}:{})};
+function freshFloor(d:Dungeon,level:number,run:boolean,difficulty:Difficulty='normal'):StoredFloor&{arrival:Pos} {
+  const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors,...(d.boss?{boss:true}:{}),...(d.roguelike?{roguelike:true}:{}),difficulty});
+  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),enemyAiRng:g.enemyAiRng,...(run?{rooms:g.rooms.map(r=>({...r}))}:{}),arrival:g.arrival};
 }
 function stashFloor(s:World):StoredFloor {
   const units:Record<string,Unit>={};for(const id of s.enemies)units[id]=s.units[id];
@@ -996,11 +1020,16 @@ function placeTeam(s:World,entry:Pos):boolean {
 function transit(original:World):World {
   const s=clone(original),d=s.dungeon!,to=s.request!.to!,from=d.level;
   const cancelled=(why:string)=>{const c=clone(original);c.request=null;c.phase='playing';note(c,`跨层取消：${why}；动作已用，留在原层`);return c;};
+  if(d.roguelike&&to<=from)return cancelled('本局只能向下');
   const cur=stashFloor(s);
-  loadFloor(s,clone(d.stored[to]??freshFloor(d,to,!!s.prog)));
+  const next=d.stored[to]??freshFloor(d,to,!!s.prog,original.difficulty??'normal');
+  loadFloor(s,clone(next));
   const stair=s.points.find(p=>p.kind===(to>from?'up':'down'));
-  if(!stair)return cancelled('目标层没有对应楼梯');
-  if(!placeTeam(s,stair.pos))return cancelled('目标层入口附近没有合法位置');
+  const entry:Pos|undefined=d.roguelike
+    ?('arrival' in next?(next as StoredFloor&{arrival:Pos}).arrival:undefined)
+    :stair?.pos;
+  if(!entry)return cancelled('目标层没有对应楼梯');
+  if(!placeTeam(s,entry))return cancelled('目标层入口附近没有合法位置');
   delete d.stored[to];d.stored[String(from)]=cur;clearCombatState(s);d.level=to;s.request=null;s.phase='playing';
   note(s,`同行抵达第${to}层`);return s;
 }
@@ -1014,7 +1043,7 @@ export function jumpToFloor(original:World,to:number):World {
 }
 /**
  * The expedition: `floors` (2) seeded floors. 6.4 team (WORKING CANDIDATE): A charmander, B squirtle, C bulbasaur, three roster starters at run level 1;
- * C leads, as before (so entry placement and the drawn skins are unchanged). The start cell is the ordinary exit of floor 1.
+ * C leads, as before (so entry placement and the drawn skins are unchanged). Roguelike runs begin at the floor's arrival cell.
  */
 export type SquadMember={inst:string;species:string;carry:KitMove[];protected?:boolean;tactic?:Tactic};
 /** A roster instance enters at the dungeon start level, carrying its saved tactic and selected moves at full PP. */
@@ -1023,20 +1052,21 @@ export function carriedUnit(id:string,m:SquadMember):Unit {
   return {id,side:'friend',hp:maxHp,maxHp,pos:null,pp:Object.fromEntries(m.carry.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(m.carry.map(k=>[k.move,k.pp])),
     learned:m.carry.map(k=>k.move),species:m.species,entrySpecies:m.species,level:INITIAL_LEVEL,tactic:m.tactic??'together',inst:m.inst,moves:m.carry.map(k=>k.move),...freshCombatState(),reflect:0,lightscreen:0,...(m.protected?{protected:true as const}:{})};
 }
-/** `boss` (7.3) defaults to true for a base run of 3 floors (what departures use); a run with another floor count or no base never has it. */
-export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3):World {
-  const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{},...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...(tmPoolVersion===3&&squad&&boss?{tmPool:3 as const}:{})};
-  const f=freshFloor(d,1,true);
+/** `boss` defaults to true for a base run of 3 floors. New expeditions start as one-way roguelike runs. */
+export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3,difficulty:Difficulty='normal'):World {
+  const selectedDifficulty=isDifficulty(difficulty)?difficulty:'normal';
+  const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{},roguelike:true,...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...(tmPoolVersion===3&&squad&&boss?{tmPool:3 as const}:{})};
+  const f=freshFloor(d,1,true,selectedDifficulty);
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,seen:[],
     units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m)])):{A:speciesUnit('A','charmander',INITIAL_LEVEL),B:speciesUnit('B','squirtle',INITIAL_LEVEL),C:speciesUnit('C','bulbasaur',INITIAL_LEVEL)}),...f.units},
     queue:squad?squad.members.map((_,i)=>'ABC'[i]):['A','B','C'],enemies:f.enemies,camp:[],leader:squad?'ABC'[squad.leader]:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d,
-    rooms:f.rooms,enemyAiRng:f.enemyAiRng,prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}},purse:squad?purse:0,tms:[]};
+    rooms:f.rooms,enemyAiRng:f.enemyAiRng,difficulty:selectedDifficulty,prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}},purse:0,tms:[]};
   if(squad){
     const roll=serviceRoll(d.seed,floors);
     if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};
     if(roll.exchange)s.exchange={level:roll.exchange.level,used:false,sent:null};
   }
   for(const id of s.queue)s.units[id].pos=null;
-  if(!placeTeam(s,f.points.find(p=>p.kind==='exit')!.pos))throw Error('expedition start has no legal cells');
+  if(!placeTeam(s,f.arrival))throw Error('expedition start has no legal cells');
   return s;
 }

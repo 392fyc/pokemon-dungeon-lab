@@ -13,20 +13,23 @@ const oldV3=(profile=initialProfile())=>{
   const old=copy(profile);
   for(const instance of old.roster)delete instance.tactic;
   for(const entry of old.rescue)delete entry.inst.tactic;
+  // A trial-rules-3 camp predates both tactics and the four trial-rules-5 profile fields.
+  for(const field of ['difficulty','shards','rankExp','talents'])delete old[field];
   return {format:2,rules:'trial-rules-3',content:'trial-content-3',build:BUILD_ID,sequence:7,profile:old};
 };
 const currentEnvelope=profile=>({format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,profile});
 
-test('rules/content 3 camp records add only the default tactic and persist as version 4',async()=>{
+test('rules/content 3 camp records migrate tactics and v0.1 defaults, then persist as version 5',async()=>{
   const old=oldV3(),profileBefore=copy(old.profile),raw=JSON.stringify(old),port=memory(raw),store=new TrialStore(port);
   assert.equal(await store.whenReady,true,store.error);
   assert.equal(store.status,'ready');assert.equal(store.state,null);assert.equal(port.writes(),1);
   const expected=copy(profileBefore);
   for(const instance of expected.roster)instance.tactic='together';
   for(const entry of expected.rescue)entry.inst.tactic='together';
+  expected.difficulty='normal';expected.shards={};expected.rankExp=0;expected.talents={};
   assert.deepEqual(store.profile,expected,'all profile fields remain, with one default added per instance');
   assert.deepEqual(Object.keys(store.envelope).sort(),['build','content','format','profile','rules','sequence']);
-  assert.equal(store.envelope.rules,'trial-rules-4');assert.equal(store.envelope.content,'trial-content-4');
+  assert.equal(store.envelope.rules,'trial-rules-5');assert.equal(store.envelope.content,'trial-content-5');
   assert.deepEqual(decode(port.raw()).profile,expected);
   assert.equal(store.envelope.sequence,8);
 });
@@ -75,6 +78,7 @@ test('settlement writes the temporary tactic back and restores evolved units to 
   world.units.N1=recruitUnit('N1','charizard',1);
   world.units.N1.entrySpecies='charmeleon';world.units.N1.species='charizard';world.units.N1.tactic='wait';
   world.units.N1.pos=null;world.camp.push('N1');
+  delete world.dungeon.roguelike; // This assertion covers the historical rescue and roster settlement path.
   assert.equal(profileFitsWorld(profile,world),true,'the instance is matched to its entry species while its run shape has evolved');
   world.phase='ended';world.request=null;world.anchor=null;world.end=closeOut(world,'normal');
   const settled=settleRun(profile,world);

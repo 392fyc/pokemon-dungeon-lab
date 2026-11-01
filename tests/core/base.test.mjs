@@ -11,8 +11,10 @@ import {TrialStore,decode,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 const memory=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);},map:m};};
 const withVault=(vault)=>({...initialProfile(),vault});
 /** A finished expedition made from the initial squad: hand-set end fields, as the engine would leave them. */
-function ended({outcome='normal',tm='protect',camp=[],wipe=outcome==='wipe',legacy=false}={}){
+function ended({outcome,tm='protect',camp=[],wipe=outcome==='wipe',legacy=false}={}){
+ outcome??=legacy?'normal':'won';wipe=outcome==='wipe';
  const s=legacy?createExpedition('run-a',7):createExpedition('run-a',7,2,squadOf(initialProfile()));
+ if(legacy&&s.dungeon)delete s.dungeon.roguelike;
  s.goal=true;s.prog.exp=2;s.bag=1;if(tm)s.tms=[{move:tm,source:'target',fate:'held'}];
  for(const [id,sp] of camp){s.units[id]=recruitUnit(id,sp,1);s.units[id].pos=null;s.camp.push(id);}
  if(wipe)for(const id of s.queue){s.units[id].hp=0;s.units[id].pos=null;}
@@ -28,6 +30,7 @@ test('B1 the initial profile: three starters, their kits learned and carried, em
  assert.deepEqual(p.roster.map(i=>[i.id,i.species,i.carry]),[['P1','charmander',['scratch','ember']],['P2','squirtle',['tackle','watergun']],['P3','bulbasaur',['tackle','seedbomb']]]);
  assert.deepEqual(p.roster[0].learned,[{move:'scratch',pp:3},{move:'ember',pp:2}]);
  assert.deepEqual(p.vault,{});assert.equal(p.expeditions,0);assert.deepEqual(p.team,['P1','P2','P3']);assert.equal(p.leader,'P3');
+ assert.equal(p.difficulty,'normal');assert.deepEqual(p.shards,{});assert.equal(p.rankExp,0);assert.deepEqual(p.talents,{});
  assert.equal(profileProblem(p),null);
 });
 
@@ -55,7 +58,7 @@ test('暂不出场的图鉴物种不能通过手改存档进入名册或救援�
  assert.doesNotThrow(()=>decode(JSON.stringify(envelope())));
 });
 
-test('B2 normal exit: the new recruit joins the roster, the brought machine enters the vault, old members keep what they had',()=>{
+test('B2 victory: the new recruit joins the roster, the brought machine enters the vault, old members keep what they had',()=>{
  const p=settleRun(initialProfile(),ended({camp:[['N1','pidgey']]}));
  assert.deepEqual(p.roster.map(i=>[i.id,i.species]),[['P1','charmander'],['P2','squirtle'],['P3','bulbasaur'],['P4','pidgey']]);
  assert.deepEqual(p.roster[3].learned,[{move:'tackle',pp:3},{move:'gust',pp:3}]);
@@ -64,7 +67,7 @@ test('B2 normal exit: the new recruit joins the roster, the brought machine ente
  assert.deepEqual(p.roster[0],initialProfile().roster[0]);
 });
 
-test('B3 wipe: everyone is still on the roster (none lost), the machine is not brought',()=>{
+test('B3 wipe: every partner returns to the roster and the machine is not brought',()=>{
  const p=settleRun(initialProfile(),ended({outcome:'wipe',camp:[['N1','zubat']]}));
  assert.deepEqual(p.roster.map(i=>i.species),['charmander','squirtle','bulbasaur','zubat']);
  assert.deepEqual(p.vault,{});assert.equal(p.expeditions,1);
@@ -201,7 +204,7 @@ test('B13 rest point with two living members: each picks its own lowest ratio; t
 
 test('B14 rest point cannot be used as an exit',()=>{
  const s=atFloor2(3);s.units.C.pos={x:14,y:9};s.units.C.pp={tackle:0,seedbomb:0};
- const r=applyCommand(s,{type:'round',action:{type:'interact',exit:true}});assert.equal(r.ok,false);assert.match(r.error,/不是出口/);
+ const r=applyCommand(s,{type:'round',action:{type:'interact',exit:true}});assert.equal(r.ok,false);assert.match(r.error,/没有撤离点|不是出口/);
 });
 
 /* ---------- save: camp profile ---------- */

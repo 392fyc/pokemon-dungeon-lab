@@ -8,6 +8,7 @@ import {isTactic,type Tactic} from './tactics.ts';
 import {legacySpeciesMove} from './legacy-moves.ts';
 import {speciesZh,moveZh} from './names.ts';
 import {ECON} from './economy.ts';
+import {isDifficulty,type Difficulty} from './dungeon.ts';
 /**
  * One roster member. `learned` is everything it has permanently learned; `carry` names the (at most two) moves it brings into a run.
  * `protected` (7.2) marks a founding member (the initial two, or the three starters of an old profile): it never goes missing in a wipe.
@@ -21,8 +22,8 @@ export type LostRecord={id:string;species:string;expedition:number};
  * `account` (7.2) is the base money; `rescue` and `lost` are the pool and the record of lost partners; `origin` is the founding main character's
  * instance id, used to refill an empty squad.
  */
-export type Profile={expeditions:number;next:number;roster:Instance[];vault:Record<string,number>;team:string[];leader:string;account:number;rescue:RescueEntry[];lost:LostRecord[];origin:string};
-export type BaseAction={type:'learn';inst:string;move:string}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string}|{type:'tactic';inst:string;tactic:Tactic};
+export type Profile={expeditions:number;next:number;roster:Instance[];vault:Record<string,number>;team:string[];leader:string;account:number;rescue:RescueEntry[];lost:LostRecord[];origin:string;difficulty:Difficulty;shards:Record<string,number>;rankExp:number;talents:Record<string,number>};
+export type BaseAction={type:'learn';inst:string;move:string}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string}|{type:'tactic';inst:string;tactic:Tactic}|{type:'difficulty';difficulty:Difficulty};
 export type BaseResult={ok:true;profile:Profile}|{ok:false;error:string};
 export const MAX_CARRY=2,MAX_TEAM=3;
 const kitOf=(species:string):KitMove[]=>SPECIES[species].kit.map(k=>({move:k.move,pp:k.pp}));
@@ -32,7 +33,7 @@ const fail=(error:string):BaseResult=>({ok:false,error});
 
 /** The first profile: the three starters with their roster kit learned and carried, an empty vault, charmander-squirtle-bulbasaur with bulbasaur leading (as in the 6.4 team). */
 export function initialProfile():Profile {
-  return {expeditions:0,next:4,roster:[newInstance('P1','charmander',true),newInstance('P2','squirtle',true),newInstance('P3','bulbasaur',true)],vault:{},team:['P1','P2','P3'],leader:'P3',account:0,rescue:[],lost:[],origin:'P3'};
+  return {expeditions:0,next:4,roster:[newInstance('P1','charmander',true),newInstance('P2','squirtle',true),newInstance('P3','bulbasaur',true)],vault:{},team:['P1','P2','P3'],leader:'P3',account:0,rescue:[],lost:[],origin:'P3',difficulty:'normal',shards:{},rankExp:0,talents:{}};
 }
 /**
  * Stage 7.1 new game (WORKING CANDIDATE, https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E6%96%B0%E6%B8%B8%E6%88%8F%E6%B5%81%E7%A8%8B%E4%B8%8E%E7%95%8C%E9%9D%A2.md): the player picks a main character from the nine starters and one
@@ -42,7 +43,7 @@ export function newGameProfile(mainSpecies:string,deputySpecies:string):BaseResu
   if(!STARTER_IDS.includes(mainSpecies))return fail(`${mainSpecies}不是可选的主控`);
   if(!STARTER_IDS.includes(deputySpecies))return fail(`${deputySpecies}不是可选的副手`);
   if(mainSpecies===deputySpecies)return fail('副手须与主控不同');
-  return {ok:true,profile:{expeditions:0,next:3,roster:[newInstance('P1',mainSpecies,true),newInstance('P2',deputySpecies,true)],vault:{},team:['P1','P2'],leader:'P1',account:0,rescue:[],lost:[],origin:'P1'}};
+  return {ok:true,profile:{expeditions:0,next:3,roster:[newInstance('P1',mainSpecies,true),newInstance('P2',deputySpecies,true)],vault:{},team:['P1','P2'],leader:'P1',account:0,rescue:[],lost:[],origin:'P1',difficulty:'normal',shards:{},rankExp:0,talents:{}}};
 }
 export const instanceOf=(p:Profile,id:string)=>p.roster.find(i=>i.id===id);
 
@@ -80,6 +81,11 @@ export function setTactic(original:Profile,instId:string,tactic:unknown):BaseRes
   const inst=instanceOf(original,instId);if(!inst)return fail('没有这只伙伴');
   const p=clone(original);instanceOf(p,instId)!.tactic=tactic;return {ok:true,profile:p};
 }
+/** A difficulty is a camp choice: saving it here means a refresh keeps the next run's setting. */
+export function setDifficulty(original:Profile,difficulty:unknown):BaseResult {
+  if(!isDifficulty(difficulty))return fail('难度档位不合法');
+  const p=clone(original);p.difficulty=difficulty;return {ok:true,profile:p};
+}
 /** 7.2 rescue payment at the base: C from the account; the partner becomes "paid, waiting X". Refused (nothing changes) when the account falls short. */
 export function payRescue(original:Profile,instId:string):BaseResult {
   const entry=original.rescue.find(r=>r.inst.id===instId);
@@ -98,7 +104,7 @@ export function purseProblem(p:Profile,purse:number):string|null {
   return null;
 }
 export function applyBase(p:Profile,a:BaseAction):BaseResult {
-  return a.type==='learn'?learnTm(p,a.inst,a.move):a.type==='carry'?setCarry(p,a.inst,a.moves):a.type==='rescue'?payRescue(p,a.inst):a.type==='tactic'?setTactic(p,a.inst,a.tactic):setTeam(p,a.team,a.leader);
+  return a.type==='learn'?learnTm(p,a.inst,a.move):a.type==='carry'?setCarry(p,a.inst,a.moves):a.type==='rescue'?payRescue(p,a.inst):a.type==='tactic'?setTactic(p,a.inst,a.tactic):a.type==='difficulty'?setDifficulty(p,a.difficulty):setTeam(p,a.team,a.leader);
 }
 /** The squad for a new run, in queue order. Carried moves come from the instance's learned list (max PP included). */
 export function squadOf(p:Profile):{members:SquadMember[];leader:number} {
@@ -119,6 +125,7 @@ export function squadOf(p:Profile):{members:SquadMember[];leader:number} {
  * Nothing of the run's HP, PP or level comes back. Returns null when the world is not a finished expedition with an end record from 7.2.
  */
 export function settleRun(profile:Profile|null,w:World):Profile|null {
+  if(w.dungeon?.roguelike===true)return settleRoguelike(profile,w)?.profile??null;
   if(w.phase!=='ended'||w.scenario!=='expedition'||!w.prog||!w.end||w.end.effective===undefined||!w.end.tms||!w.end.lost)return null;
   const e=w.end,fresh=profile===null,p=profile?clone(profile):initialProfile();
   const legacy:Record<string,string>={A:'P1',B:'P2',C:'P3'};
@@ -161,15 +168,58 @@ export function settleRun(profile:Profile|null,w:World):Profile|null {
   return p;
 }
 /** What a settlement would change in the rescue pool, for the result screen (computed by the same function that settles; nothing is written). */
-export type SettleSummary={account:{before:number;after:number};returned:{id:string;species:string}[];gone:{id:string;species:string}[];missing:{id:string;species:string}[];advanced:{id:string;species:string;paid:boolean;from:number;to:number}[]};
+export type SettleSummary={account:{before:number;after:number};returned:{id:string;species:string}[];gone:{id:string;species:string}[];missing:{id:string;species:string}[];advanced:{id:string;species:string;paid:boolean;from:number;to:number}[];brought:{id:string;species:string}[];shards:{species:string;count:number}[]};
 export function settleSummary(profile:Profile|null,w:World):SettleSummary|null {
   const before=profile??initialProfile(),after=settleRun(profile,w);if(!after)return null;
+  if(w.dungeon?.roguelike===true){
+    const settled=settleRoguelike(profile,w);if(!settled)return null;
+    return {account:{before:before.account,after:after.account},returned:[],gone:[],missing:[],advanced:[],brought:settled.brought,shards:settled.shards};
+  }
   const inPool=(p:Profile,id:string)=>p.rescue.find(r=>r.inst.id===id);
   const returned=before.rescue.filter(r=>r.paid&&after.roster.some(i=>i.id===r.inst.id)).map(r=>({id:r.inst.id,species:r.inst.species}));
   const gone=after.lost.filter(l=>!before.lost.some(o=>o.id===l.id)).map(l=>({id:l.id,species:l.species}));
   const missing=after.rescue.filter(r=>!inPool(before,r.inst.id)).map(r=>({id:r.inst.id,species:r.inst.species}));
   const advanced=before.rescue.flatMap(r=>{const now=inPool(after,r.inst.id);return now&&now.left!==r.left?[{id:r.inst.id,species:r.inst.species,paid:r.paid,from:r.left,to:now.left}]:[];});
-  return {account:{before:before.account,after:after.account},returned,gone,missing,advanced};
+  return {account:{before:before.account,after:after.account},returned,gone,missing,advanced,brought:[],shards:[]};
+}
+
+type RoguelikeSettlement={profile:Profile;brought:{id:string;species:string}[];shards:{species:string;count:number}[]};
+/** v0.1 brings every member back after a win or wipe; only a duplicate newly recruited species becomes a shard. */
+function settleRoguelike(profile:Profile|null,w:World):RoguelikeSettlement|null {
+  if(w.phase!=='ended'||w.scenario!=='expedition'||!w.prog||!w.end||!Array.isArray(w.end.tms)||!['won','wipe'].includes(w.end.outcome))return null;
+  const p=profile?clone(profile):initialProfile();
+  const members=[...w.end.team,...w.end.camp,...(w.exchange?.sent?[w.exchange.sent]:[])];
+  if(new Set(members).size!==members.length)return null;
+  const brought:{id:string;species:string}[]=[],shardCounts=new Map<string,number>();
+  const legacy:Record<string,string>={A:'P1',B:'P2',C:'P3'};
+  for(const id of members){
+    if(!Object.hasOwn(w.units,id))return null;
+    const u=w.units[id];if(!u||u.side!=='friend')return null;
+    const species=u.entrySpecies??u.species;
+    if(typeof species!=='string'||!speciesOf(species)||speciesOf(species)?.availability==='暂不出场')return null;
+    if(u.inst!==undefined){
+      const inst=instanceOf(p,u.inst);
+      if(!inst||inst.species!==species)return null;
+      inst.tactic=u.tactic??inst.tactic??'together';
+      brought.push({id:inst.id,species:inst.species});
+      continue;
+    }
+    const old=profile===null&&Object.hasOwn(legacy,id)?instanceOf(p,legacy[id]):undefined;
+    if(old){if(old.species!==species)return null;brought.push({id:old.id,species:old.species});continue;}
+    if(!/^N\d+$/.test(id))return null;
+    if(p.roster.some(inst=>inst.species===species)){
+      shardCounts.set(species,(shardCounts.get(species)??0)+1);
+      continue;
+    }
+    const inst=newInstance(`P${p.next}`,species,false,u.tactic??'together');p.next++;p.roster.push(inst);
+    brought.push({id:inst.id,species:inst.species});
+  }
+  p.expeditions++;
+  if(w.end.outcome==='won'){
+    for(const t of w.end.tms)if(t.fate==='brought')p.vault[t.move]=(p.vault[t.move]??0)+1;
+  }
+  for(const [species,count] of shardCounts){p.shards[species]=(p.shards[species]??0)+count;}
+  return {profile:p,brought,shards:[...shardCounts].map(([species,count])=>({species,count}))};
 }
 
 /**
@@ -242,6 +292,15 @@ function instProblem(i:unknown,ids:Set<string>,wantProtected:boolean|null):strin
 /** Structure checks listed in the spec "存档与兼容" and "失败回归与服务点", plus the team and counters. Returns an error text, or null when the profile is sound. */
 export function profileProblem(v:unknown):string|null {
   if(!obj(v))return '档案不是对象';
+  if(!isDifficulty(v.difficulty))return '档案难度字段不合法';
+  if(!obj(v.shards)||!nat(v.rankExp)||!obj(v.talents))return '档案碎片、探险队经验或天赋字段类型错误';
+  const unsafeKey=(key:string)=>key==='__proto__'||key==='prototype'||key==='constructor';
+  if(Object.keys(v.shards).some(unsafeKey)||Object.keys(v.talents).some(unsafeKey))return '档案包含危险字段名';
+  for(const [species,count] of Object.entries(v.shards)){
+    if(!speciesOf(species)||speciesOf(species)?.availability==='暂不出场')return `碎片物种${species}不在可用名册中`;
+    if(!nat(count))return `物种${species}的碎片数必须是非负整数`;
+  }
+  for(const [name,rank] of Object.entries(v.talents))if(!name||!nat(rank))return `天赋字段${name}结构错误`;
   if(!nat(v.expeditions)||!nat(v.next)||!Array.isArray(v.roster)||!obj(v.vault)||!Array.isArray(v.team)||typeof v.leader!=='string')return '档案字段缺失或类型错误';
   if(!nat(v.account)||!Array.isArray(v.rescue)||!Array.isArray(v.lost)||typeof v.origin!=='string')return '档案缺少账户、救援池、失去记录或初始主控字段';
   const roster=v.roster as unknown[],ids=new Set<string>(),rosterIds=new Set<string>();

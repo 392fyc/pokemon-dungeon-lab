@@ -1,8 +1,8 @@
 import {createMain,createExpedition,jumpToFloor,friend,enemy,newcomer,reveal,clone,key,applyCommand,type World,type Pos} from './engine.ts';
 import {newGameProfile,learnTm,setCarry,squadOf,type Profile} from './base.ts';
-export const SCENARIOS=['main-invite','main-none','V1','V3','V4','V5','V6','V7','V8','V9','V10','V11','V12','V13','K1','K2','K3','K4','K5','BOSS','BOSSX'] as const;
+export const SCENARIOS=['main-invite','main-none','V1','V4','V5','V6','V8','V9','V10','V11','V12','V13','K1','K2','K3','K4','K5','BOSS','BOSSWIN','BOSSWIPE'] as const;
 /** Developer menu names for the scenarios that have one (the others show their id). */
-export const SCENARIO_LABEL:Partial<Record<string,string>>={BOSS:'首领层（紧邻首领）',BOSSX:'首领层·前庭撤离'};
+export const SCENARIO_LABEL:Partial<Record<string,string>>={BOSS:'首领层（紧邻首领）',BOSSWIN:'首领击败结算',BOSSWIPE:'全队倒下结算'};
 /** Scenarios that stand in for a base run need the profile their units come from. */
 /** The boss scenes' profile: cyndaquil (leader, carries tackle and roar, so boss blowaway rejection can be tried) and mudkip. */
 function bossProfile():Profile {
@@ -11,7 +11,7 @@ function bossProfile():Profile {
   const carried=setCarry(learned.profile,'P1',['tackle','roar']);if(!carried.ok)throw Error(carried.error);
   return carried.profile;
 }
-export const scenarioProfile=(id:ScenarioId):Profile|undefined=>id==='BOSS'||id==='BOSSX'?bossProfile():undefined;
+export const scenarioProfile=(id:ScenarioId):Profile|undefined=>id==='BOSS'||id==='BOSSWIN'||id==='BOSSWIPE'?bossProfile():undefined;
 export type ScenarioId=typeof SCENARIOS[number];
 const row=(a:number,b:number):Pos[]=>Array.from({length:b-a+1},(_,i)=>({x:a+i,y:1}));
 const rect=(n:number):Pos[]=>Array.from({length:n*n},(_,i)=>({x:i%n+1,y:Math.floor(i/n)+1}));
@@ -30,26 +30,24 @@ export function createScenario(id:ScenarioId,runId:string):World {
     for(const action of [{type:'move',to:{x:3,y:1}},{type:'basic',target:'E'},{type:'basic',target:'E'},{type:'basic',target:'E'},{type:'move',to:{x:4,y:1}},{type:'interact',exit:false},{type:'move',to:{x:5,y:1}}] as const){const r=applyCommand(s,{type:'round',action});if(!r.ok)throw Error(r.error);s=r.state;}
     for(const id of s.enemies)delete s.units[id].waitOnly;s.scenario=id;return s;
   }
-  if(id==='BOSS'||id==='BOSSX'){
-    // 7.3 developer scene: the last floor of a boss-marked 3 floor run. BOSS: the whole floor revealed, the team beside the boss. BOSSX: the team standing on the lobby exit.
-    let w=jumpToFloor(createExpedition(runId,7,3,squadOf(bossProfile()),0),3);w.scenario='expedition';
+  if(id==='BOSS'||id==='BOSSWIN'||id==='BOSSWIPE'){
+    // Actual final-floor combat fixtures, one attack away from a terminal transition.
+    const w=jumpToFloor(createExpedition(runId,7,3,squadOf(bossProfile()),0),3);
     const ids=w.queue,boss=w.units.boss;
-    if(id==='BOSS'){
-      const spots=[{x:boss.pos!.x-1,y:boss.pos!.y},{x:boss.pos!.x+1,y:boss.pos!.y},{x:boss.pos!.x,y:boss.pos!.y-1}];
-      ids.forEach((u,i)=>{w.units[u].pos=spots[i];});w.leader=ids[0];w.seen=w.floor.map(key);
-    }else{
-      const exit=w.points.find(p=>p.kind==='exit')!.pos;w.units[w.leader].pos=clone(exit);
-      const near=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}].map(d=>({x:exit.x+d.x,y:exit.y+d.y})).find(c=>w.floor.some(f=>f.x===c.x&&f.y===c.y)&&!ids.some(u=>w.units[u].pos&&w.units[u].pos!.x===c.x&&w.units[u].pos!.y===c.y));
-      ids.filter(u=>u!==w.leader).forEach(u=>{w.units[u].pos=near??null;});reveal(w);
+    const spots=[{x:boss.pos!.x-1,y:boss.pos!.y},{x:boss.pos!.x+1,y:boss.pos!.y},{x:boss.pos!.x,y:boss.pos!.y-1}];
+    ids.forEach((u,i)=>{w.units[u].pos=spots[i];});w.leader=ids[0];w.seen=w.floor.map(key);
+    if(id==='BOSSWIN'){boss.hp=1;w.prog!.rng=1;}
+    if(id==='BOSSWIPE'){
+      for(const id of ids){w.units[id].hp=1;w.units[id].tactic='wait';}
+      w.units[ids[1]].hp=0;w.units[ids[1]].pos=null;
+      w.tms=[{move:'reflect',source:'target',fate:'held'}];
     }
     return w;
   }
   const open=['V8','V9','V10','K1','K2','K3'].includes(id);
   const s=fixture(runId,id,open?rect(id==='V8'?5:4):row(0,id.startsWith('K')?5:9));
-  if(id==='V3') {s.floor=row(0,4);s.units={A:friend('A',3,1,10),B:friend('B',2,1,10),C:friend('C',1,1,10)};s.leader='C';s.points=[{pos:{x:0,y:1},kind:'exit',used:false}];}
   if(id==='V4'){s.floor=[...row(0,3),{x:2,y:2},{x:3,y:2}];s.units={A:friend('A',3,1,10),B:friend('B',1,1,10),C:friend('C',2,1,10)};}
   if(id==='V5'||id==='V6'){s.floor=row(0,4);s.units={A:friend('A',2,1,0),B:friend('B',1,1,id==='V6'?3:8),C:friend('C',0,1,8),E:foe('E',3,1,6,'chase',3)};s.enemies=['E'];s.leader='B';}
-  if(id==='V7'){s.floor=row(0,4);s.units={A:friend('A',2,1,0),B:friend('B',0,1,8),C:friend('C',1,1,8)};s.leader='B';s.points=[{pos:{x:0,y:1},kind:'exit',used:false}];}
   if(id==='V8'||id==='V9'||id==='V10'){
     s.units={A:friend('A',2,2,id==='V10'?10:20,{tackle:2}),B:friend('B',id==='V8'?1:2,id==='V8'?2:3,id==='V10'?10:20,{protect:2}),C:friend('C',4,2,id==='V10'?10:0,{tackle:2,quickattack:2})};
     if(id==='V8'){for(const [i,p] of [{x:3,y:2},{x:2,y:3},{x:2,y:1}].entries()){const e=foe('block'+i,p.x,p.y,20,'melee',0);s.units[e.id]=e;s.enemies.push(e.id);}}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import {createExpedition,createMain,PROG,bossDefeated,applyCommand,skillTargets,estimateAttackDamage} from '../../src/core/engine.ts';
-import {initialProfile,newGameProfile,profileProblem,settleRun} from '../../src/core/base.ts';
+import {createMain,PROG,bossDefeated,applyCommand,skillTargets,estimateAttackDamage} from '../../src/core/engine.ts';
+import {newGameProfile,profileProblem} from '../../src/core/base.ts';
 import {TrialStore} from '../../src/core/save.ts';
 import {ECON} from '../../src/core/economy.ts';
 import {moveOf} from '../../src/core/moves.ts';
@@ -88,7 +88,7 @@ function injectMemoryWorld(store,world,where){
 }
 
 /* ---------- the bot ---------- */
-export const stats=()=>({reachedBoss:0,bossDefeated:0,bossWipes:0,lobbyExits:0,wipes:0,lostPartners:0,paid:0,returned:0,goneForGood:0,bought:0,exchanged:0,doomedWipes:0,invites:0,accepted:0,rejected:0,swapped:0,levelUps:0,evolutions:0,tmGot:0,tmBrought:0,spent:0,income:0,refund:0,waitSum:0,waitN:0,purseZeroByRescue:0,transits:0,cancelledTransits:0,berries:0,tonics:0,rests:0,guards:0,lines:0,switches:0,declined:0,rejections:0,probes:0,learned:0});
+export const stats=()=>({reachedBoss:0,bossDefeated:0,bossContacts:0,bossWipes:0,wipes:0,doomedWipes:0,invites:0,accepted:0,rejected:0,swapped:0,partnersBrought:0,shards:0,tmGot:0,tmBrought:0,bought:0,exchanged:0,levelUps:0,evolutions:0,transits:0,cancelledTransits:0,berries:0,tonics:0,rests:0,guards:0,lines:0,switches:0,declined:0,rejections:0,probes:0,learned:0});
 const adjacentEnemies=s=>s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&dist(u.pos,s.units[s.leader].pos)===1);
 /** The 'cautious' policy (a careful, low-kill player) is off on the forced-wipe seeds, like the tactical one. */
 const cautiousOn=memo=>memo.policy==='cautious'&&!memo.doomed;
@@ -107,34 +107,21 @@ function route(s,from,wanted){
 const affordable=s=>s.shop&&s.dungeon.level===s.shop.level?['berry','tonic','tm'].filter(i=>(i==='tm'?s.shop.stock.tm!==null:s.shop.stock[i]>0)&&s.purse>=ECON.price[i]):[];
 /** Where the bot wants to go: the plan is goal G on floor 1, then T on floor 2, then back up and out; cheap pickups on the way. */
 function objective(s,memo){
- const L=s.units[s.leader],level=s.dungeon.level,seen=new Set(s.seen),cau=cautiousOn(memo);
- // 'cautious' policy: decide an early exit once and keep it (sticky, otherwise a berry would flip the plan back and forth).
- // Floor 1 after G: team HP < 50% or any member down -> leave by this floor's exit instead of going down. Floors 2-3: team HP < 40% -> climb back up to floor 1's exit.
- if(cau&&!memo.earlyOut){const ratio=hpSum(s)/maxSum(s);
-  if(level===1?s.goal&&(ratio<0.5||s.queue.some(i=>s.units[i].hp<=0)):ratio<0.4)memo.earlyOut=true;}
+ const L=s.units[s.leader],level=s.dungeon.level,seen=new Set(s.seen);
  const pts=s.points.filter(p=>seen.has(key(p.pos)));
- const near=(kinds,max)=>{let best=null;for(const p of pts){if(!kinds.includes(p.kind)||p.used||memo.declined.has(`${level}:${key(p.pos)}`))continue;
+ const near=(kinds,max)=>{let best=null;for(const p of pts){if(!kinds.includes(p.kind)||p.used||memo.declined.has(level+':'+key(p.pos)))continue;
    const r=route(s,L.pos,c=>same(c,p.pos));const d=same(L.pos,p.pos)?0:r?.len;if(d===undefined||d>max)continue;if(!best||d<best.d)best={p,d};}return best?.p;};
  const members=s.queue.map(i=>s.units[i]).filter(aliveU);
  const pickups=()=>near(["berry","tonic",...(affordable(s).length?['shop']:[]),...(s.exchange&&!s.exchange.used&&memo.useExchange?['exchange']:[])],8);
- const resting=()=>members.some(m=>ppDeficit(m))||members.some(m=>m.hp<m.maxHp)?near(["rest"],cau?40:6):undefined;
- const pick=cau?resting()??pickups():pickups()??resting(); // cautious: any revealed rest point first, then pickups
+ const resting=()=>members.some(m=>ppDeficit(m))||members.some(m=>m.hp<m.maxHp)?near(["rest"],6):undefined;
+ const pick=pickups()??resting();
  if(pick)return pick;
- let want;
  const floors=s.dungeon.floors;
- if(cau&&memo.earlyOut&&level===1)want='exit';
- else if(cau&&memo.earlyOut&&level>1&&!(floors>2&&level===floors&&s.bag>0))want='up'; // the last floor of a boss run with T in the bag keeps its lobby exit
- else if(floors===2){if(level===1)want=!s.goal?'goal':s.bag>0?'exit':'down';else want=s.bag===0?'item':'up';}
- else if(level===1)want=!s.goal?'goal':'down';
- else if(level<floors)want='down';
- else{ // last floor of a boss run: T first; then either the lobby exit or (by the run's seed) the boss, then the lobby exit
-  if(s.bag>0&&memo.fightBoss){
-   const boss=s.enemies.map(i=>s.units[i]).find(u=>u.boss&&aliveU(u));
-   if(boss)return seen.has(key(boss.pos))?{kind:'boss',pos:boss.pos,used:false}:null; // not seen yet: keep exploring
-  }
-  want=s.bag===0?'item':'exit';
- }
- return pts.find(p=>p.kind===want&&(want!=='goal'&&want!=='item'||!p.used))||null;
+ if(level<floors)return pts.find(p=>p.kind==='down'&&!p.used)||null;
+ // On the final floor every policy keeps searching for the boss. Its position is used only after it is revealed.
+ const boss=s.enemies.map(i=>s.units[i]).find(u=>u.boss&&aliveU(u)&&seen.has(key(u.pos)));
+ if(boss)return {kind:'boss',pos:boss.pos,used:false};
+ return null; // candidates() explores revealed cells until another room is revealed
 }
 function stepToward(s,memo,target){
  const L=s.units[s.leader];
@@ -151,18 +138,16 @@ function stepToward(s,memo,target){
 /* ---------- tactical policy (options.policy === 'tactical') ----------
  * Same information as the naive bot (revealed cells, units, points, backpack) and the same driver; only the command lists differ.
  * Intent of the whole policy: the naive bot charges everything and arrives at the boss with no PP, no berries and hurt members.
- * The tactical bot (1) keeps strong/line moves for the boss on every floor, (2) tops itself up on the boss floor after taking T,
- * (3) fights the boss from range with the straight line first and in melee second, (4) gives up and walks out of the lobby exit when the fight is lost.
+ * Tactical preserves strong moves for the boss, prepares before contact, and uses line attacks when the map shows a clear shot.
  * It is a test bot: the numbers are plausible, not optimal. It never changes any rule.
  */
-const dmgBonus=s=>s.prog?Math.floor(Math.max(0,s.prog.level-5)/4):0;
 const ratioOf=u=>u.hp/u.maxHp;
 /** Intent: the boss is a threat worth saving PP for only while it still stands somewhere in this run (floors 1-2: not generated yet; floor 3: alive). */
 const bossLive=s=>!!s.dungeon?.boss&&!bossDefeated(s);
 /** Intent (rule "floors 1-2 use strong/line only when the lead is at <=50% HP or the move kills this round"): would a skill finish enemy `e` this round
  *  while a basic attack plus the neighbours' basic attacks would not? Neighbours that stand next to `e` also strike in the same round. */
 function skillKills(s,L,e){
- const b=dmgBonus(s),helpers=s.queue.map(i=>s.units[i]).filter(m=>aliveU(m)&&m.id!==L.id&&dist(m.pos,e.pos)===1).length*(6+b);
+ const helpers=s.queue.map(i=>s.units[i]).filter(m=>aliveU(m)&&m.id!==L.id&&dist(m.pos,e.pos)===1).reduce((n,m)=>n+basicDamage(s,m,e),0);
  const best=Math.max(0,...hitMoves(s,L,e).map(k=>estDamage(s,L,e,k)));
  return e.hp<=best+helpers&&e.hp>basicDamage(s,L,e)+helpers;
 }
@@ -188,7 +173,7 @@ function foeReaches(s,e,L){
 }
 /** A blow from L pushes `e` straight away from L: safe when the path ends at a wall or an enemy (they take collision damage) and not at one of our own. */
 function blowSafe(s,L,e){
- const dx=Math.sign(e.pos.x-L.pos.x),dy=Math.sign(e.pos.y-L.pos.y),floor=new Set(s.floor.map(key));
+ const dx=Math.sign(e.pos.x-L.pos.x),dy=Math.sign(e.pos.y-L.pos.y),floor=new Set(s.seen);
  const occ=new Map([...s.queue,...s.enemies].map(i=>s.units[i]).filter(aliveU).map(u=>[key(u.pos),u]));
  let at=e.pos;
  for(let i=0;i<10;i++){const n={x:at.x+dx,y:at.y+dy};if(!floor.has(key(n)))return true;const b=occ.get(key(n));if(b)return b.side==='enemy';at=n;}
@@ -197,15 +182,16 @@ function blowSafe(s,L,e){
 /** True when a ray of length 1..3 from `from` to `to` crosses only floor cells nobody stands on (the leader itself is ignored: it is the one moving). */
 function rayClear(s,from,to,leaderId){
  if(from.x!==to.x&&from.y!==to.y)return false;const d=dist(from,to);if(d<1||d>3)return false;
- const floor=new Set(s.floor.map(key)),occ=new Set([...s.queue,...s.enemies].filter(i=>i!==leaderId).map(i=>s.units[i]).filter(aliveU).map(u=>key(u.pos)));
+ const seen=new Set(s.seen),occ=new Set([...s.queue,...s.enemies].filter(i=>i!==leaderId).map(i=>s.units[i]).filter(aliveU).map(u=>key(u.pos)));
  const dx=Math.sign(to.x-from.x),dy=Math.sign(to.y-from.y);let p={x:from.x+dx,y:from.y+dy};
- while(!same(p,to)){if(!floor.has(key(p))||occ.has(key(p)))return false;p={x:p.x+dx,y:p.y+dy};}
- return true;
+ while(!same(p,to)){if(!seen.has(key(p))||occ.has(key(p)))return false;p={x:p.x+dx,y:p.y+dy};}
+ return seen.has(key(to));
 }
-/** Revealed floor cells in the boss's row or column at distance `d` with a clear ray to it and no enemy on them (an ally on the cell is fine: the bot swaps). */
+/** Revealed floor cells in the boss's row or column at distance d with a clear ray to it and no enemy on them (an ally on the cell is fine: the bot swaps). */
 function lineSpots(s,B,d,leaderId){
- const seen=new Set(s.seen),foes=new Set(s.enemies.map(i=>s.units[i]).filter(aliveU).map(u=>key(u.pos)));
- return new Set(s.floor.filter(c=>seen.has(key(c))&&(c.x===B.pos.x||c.y===B.pos.y)&&dist(c,B.pos)===d&&!foes.has(key(c))&&rayClear(s,c,B.pos,leaderId)).map(key));
+ const foes=new Set(s.enemies.map(i=>s.units[i]).filter(aliveU).map(u=>key(u.pos)));
+ return s.seen.map(value=>{const [x,y]=value.split(',').map(Number);return {x,y};})
+  .filter(c=>(c.x===B.pos.x||c.y===B.pos.y)&&dist(c,B.pos)===d&&!foes.has(key(c))&&rayClear(s,c,B.pos,leaderId)).reduce((set,c)=>set.add(key(c)),new Set());
 }
 /** The command that takes one step along a route result: move, swap with an ally in the way, or hit an enemy in the way. */
 function stepCommand(s,r){
@@ -240,27 +226,14 @@ function bossPrep(s,memo,B){
  return out;
 }
 /**
- * The boss fight proper (fight started or retreat decided). Returns the full ordered command list.
+ * The boss fight proper. Returns the full ordered command list.
  * Boss facts used (read from engine.ts): it never moves; each enemy phase it attacks BOSS.attacks times, each time at the first living member
  * ADJACENT to it in queue order, otherwise at the nearest member on a clear straight line within range 3. It cannot be pushed.
  * Companions act by default behaviour only (attack an adjacent enemy, else follow the leader), so the leader's choices are the plan.
  */
 function bossTurn(s,memo,B){
  const L=s.units[s.leader],out=[],act=a=>out.push({type:'round',action:a});
- const members=s.queue.map(i=>s.units[i]).filter(aliveU),b=dmgBonus(s);
- const pts=s.points.filter(p=>s.seen.includes(key(p.pos)));
- // Retreat rule: lost fight = boss HP above what we can deal in the next 3 rounds AND someone has already fallen. Sticky once decided.
- const attacks=damageMoves(L),sk=Math.min(3,attacks.reduce((n,k)=>n+L.pp[k],0)),power=Math.max(0,...attacks.map(k=>Math.ceil(moveOf(k).power/2))),leader3=sk*(6+power+b)+(3-sk)*(6+b),team3=leader3+(members.length-1)*3*(6+b);
- const fallen=s.queue.some(i=>s.units[i].hp<=0);
- if(!memo.retreat&&!memo.noRetreat&&fallen&&B.hp>team3){memo.retreat=true;memo.retreatRound=s.round;} // policy 'tactical-stand' never retreats (measures the fight itself); the round is kept so the statistics can tell whether the boss had been contacted by then
- if(memo.retreat){
-  const exit=pts.find(p=>p.kind==='exit');
-  if(exit){
-   if(same(exit.pos,L.pos))act({type:'interact',exit:true});
-   else{const r=route(s,L.pos,c=>same(c,exit.pos));if(r)act(stepCommand(s,r));}
-   if(out.length){act({type:'wait'});return out;}
-  }
- }
+ const members=s.queue.map(i=>s.units[i]).filter(aliveU);
  const d=dist(L.pos,B.pos),canHitNow=d===1||hitMoves(s,L,B).length>0;
  // Lead switch: the lead is at <=40% HP and a clearly healthier member exists (cooldown 2 rounds).
  // The boss picks its victim by queue order and position, not by who leads, so a switch does not save the old lead; it only costs the lead's own attack.
@@ -304,12 +277,12 @@ function bossTurn(s,memo,B){
  * > counter (not on floors 1-2 while the boss is still to come: its PP is kept for the boss) > the strongest usable damage move > the basic attack.
  */
 function tacticalFight(s,L,members,adj,visible,saveSkills,mayUse){
- const out=[],act=a=>out.push({type:'round',action:a}),b=dmgBonus(s);
+ const out=[],act=a=>out.push({type:'round',action:a});
  const guard=movesWith(L,isProtect)[0];
  if(guard&&ratioOf(L)<=0.4&&!(L.protect>0)&&L.lastMove!==guard&&visible.some(e=>foeReaches(s,e,L)&&rangedMoves(e).length>0))act({type:'skill',skill:guard,target:L.id});
  const hurtMates=members.filter(m=>m.id!==L.id&&ratioOf(m)<0.6);
  for(const k of pureBlow(L))for(const e of adj)
-  if(!e.boss&&e.hp>6+b&&hurtMates.some(m=>dist(m.pos,e.pos)===1)&&blowSafe(s,L,e))act({type:'skill',skill:k,target:e.id});
+  if(!e.boss&&e.hp>basicDamage(s,L,e)&&hurtMates.some(m=>dist(m.pos,e.pos)===1)&&blowSafe(s,L,e))act({type:'skill',skill:k,target:e.id});
  for(const e of adj){
   const hits=bestMoves(s,L,e),drain=hits.find(k=>moveOf(k).effects.includes('drain'));
   if(drain&&ratioOf(L)<0.7)act({type:'skill',skill:drain,target:e.id});
@@ -328,12 +301,11 @@ function candidates(s,memo){
  const L=s.units[s.leader],out=[];(memo.visited[s.dungeon.level]??=new Set()).add(key(L.pos));
  const members=s.queue.map(i=>s.units[i]).filter(aliveU);
  const low=u=>u.hp/u.maxHp;
- const tac=memo.policy==='tactical'&&!memo.doomed,cau=cautiousOn(memo);
- if(tac&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors&&s.bag>0){ // boss floor, T taken
-  const B=s.enemies.map(i=>s.units[i]).find(u=>u.boss&&aliveU(u));
+ const tac=(memo.policy==='tactical'||memo.policy==='tactical-stand')&&!memo.doomed,cau=cautiousOn(memo);
+ if(tac&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors){
+  const B=s.enemies.map(i=>s.units[i]).find(u=>u.boss&&aliveU(u)&&s.seen.includes(key(u.pos)));
   if(B){
-   const near=s.seen.includes(key(B.pos))&&dist(B.pos,L.pos)<=5;
-   if(near)memo.engaged=true;
+   if(dist(B.pos,L.pos)<=5)memo.engaged=true;
    if(memo.engaged)return bossTurn(s,memo,B);
    out.push(...bossPrep(s,memo,B));
   }
@@ -379,6 +351,7 @@ function candidates(s,memo){
  if(!adj.length&&!cau)for(const e of visible)if(mayUse(e))for(const skill of hitMoves(s,L,e))act({type:'skill',skill,target:e.id}); // cautious never shoots at a distant enemy
  }
  const target=objective(s,memo);
+ assert.ok(!target||!['exit','up'].includes(target.kind),`roguelike strategy attempted an exit or upward floor: ${target?.kind}`);
  if(target&&same(target.pos,L.pos)){
   const k=target.kind;act({type:'interact',exit:k==='exit'||k==='down'||k==='up'});
  }
@@ -453,53 +426,60 @@ async function probe(port,store,st,where){
  for(const cmd of bad){const r=await send(port,store,cmd,st,where+' probe');assert.equal(r.ok,false,`${where}: ${JSON.stringify(cmd)} was accepted in phase ${s.phase}`);}
 }
 
-async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchange=false,fightBoss=false,policy='naive',x={},noRetreat=false,use={}){
+async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchange=false,policy='naive',x={},use={}){
  let store=ref.store;
- const memo={visited:{},declined:new Set(),lastSwitch:-99,fullInvites:0,reckless,doomed,useExchange,suicidal:false,fightBoss,policy,noRetreat,engaged:false,retreat:false,prepWait:0,gatherWait:0,earlyOut:false};
+ const memo={visited:{},declined:new Set(),lastSwitch:-99,fullInvites:0,reckless,doomed,useExchange,suicidal:false,policy,engaged:false,prepWait:0,gatherWait:0};
  let rounds=0,commands=0,evolutions=0;const forms=new Map();const where=`${gameId}`;
  for(;;){
   const s=store.state;
   for(const [id,u] of Object.entries(s.units))if(u.side==='friend'&&u.species){if(forms.has(id)&&forms.get(id)!==u.species){evolutions++;st.evolutions++;}forms.set(id,u.species);}
   if(s.phase==='ended'){
+   assert.ok(s.end.outcome==='won'||s.end.outcome==='wipe',where+': roguelike ended as '+s.end.outcome);
    st.levelUps+=s.prog.level-5;
-   for(const t of s.end.tms){st.tmGot++;if(t.fate==='brought'||t.fate==='sent')st.tmBrought++;}
-   if(s.end.outcome==='wipe')st.wipes++;
-   if(s.end.outcome==='wipe'&&doomed)st.doomedWipes++;
-   if(s.dungeon.boss){ // 7.3 statistics for 7.4: reached the boss floor, defeated the boss, wiped on the boss floor, left by the lobby exit
-    if(s.dungeon.level===3||'3' in s.dungeon.stored)st.reachedBoss++;
-    if(s.end.boss)st.bossDefeated++;
-    if(s.end.outcome==='wipe'&&s.dungeon.level===3)st.bossWipes++;
-    if(s.end.outcome==='normal'&&s.dungeon.level===3)st.lobbyExits++;
-    // retreatBeforeContact: a contact observed only after the retreat decision does not count ('decided before any contact').
-    Object.assign(x,{bossRun:true,reached:s.dungeon.level===3||'3' in s.dungeon.stored,defeated:!!s.end.boss,bossWipe:s.end.outcome==='wipe'&&s.dungeon.level===3,
-     lobbyExit:s.end.outcome==='normal'&&s.dungeon.level===3,retreat:memo.retreat,retreatBeforeContact:!!memo.retreat&&(!x.contact||x.contact.round>memo.retreatRound),survivors:s.end.boss?s.queue.filter(id=>aliveU(s.units[id])).length:null,
+   const tms=s.end.tms??[];
+   st.tmGot+=tms.length;
+   st.tmBrought+=tms.filter(t=>t.fate==='brought'||t.fate==='sent').length;
+   if(s.end.outcome==='wipe'){st.wipes++;if(doomed)st.doomedWipes++;}
+   if(s.dungeon.boss){
+    const reached=s.dungeon.level===s.dungeon.floors||String(s.dungeon.floors) in s.dungeon.stored;
+    const defeated=bossDefeated(s),bossWipe=s.end.outcome==='wipe'&&s.dungeon.level===s.dungeon.floors;
+    if(reached)st.reachedBoss++;
+    if(defeated)st.bossDefeated++;
+    if(x.contact)st.bossContacts++;
+    if(bossWipe)st.bossWipes++;
+    Object.assign(x,{bossRun:true,reached,defeated,bossWipe,contacted:!!x.contact,survivors:defeated?s.queue.filter(id=>aliveU(s.units[id])).length:null,
      bossHpLeft:(Object.values(s.units).find(u=>u.boss)??Object.values(s.dungeon.stored).flatMap(f=>Object.values(f.units)).find(u=>u.boss))?.hp??null});
-    assert.equal(s.end.boss,s.units.boss?.hp===0||Object.values(s.dungeon.stored).some(f=>f.units.boss?.hp===0),`${where}: end.boss disagrees with the boss unit`);
+    assert.equal(s.end.boss,defeated,where+': end.boss disagrees with the boss unit');
    }
+   const summary=store.settlementSummary;
+   assert.ok(summary,where+': missing settlement summary');
+   assert.ok(Array.isArray(summary.brought)&&Array.isArray(summary.shards),where+': summary lacks brought partners or shards');
+   x.summary=structuredClone(summary);
+   st.partnersBrought+=summary.brought.length;
+   st.shards+=summary.shards.reduce((n,row)=>n+row.count,0);
+   x.kills=killsOf(s);
    await probe(port,store,st,where+' ended');
-   if(store.envelope?.profile){const before=store.envelope; // with a saved camp, a finished expedition must return there before another trial
+   if(store.envelope?.profile){const before=store.envelope;
     assert.equal(await store.newTrial(createMain('soak-direct')),false,where+': newTrial accepted over a based expedition');assert.deepEqual(store.envelope,before);}
-   x.wipeFloor=s.end.outcome==='wipe'?s.dungeon.level:null;x.kills=killsOf(s);
+   assert.equal(s.purse,0,where+': end purse must be zero');
    return {outcome:s.end.outcome,rounds,commands,goal:s.goal,level:s.prog.level,evolutions,floor:s.dungeon.level,kills:x.kills};
   }
   if(rounds>=ROUND_CAP||commands>=COMMAND_CAP){
-   const L=s.units[s.leader],seen=new Set(s.seen),visited=memo.visited[s.dungeon.level]??new Set();
-   const unseenFloor=s.floor.filter(c=>!seen.has(key(c))).length;
-   const obj=objective(s,memo);
+   const L=s.units[s.leader],visited=memo.visited[s.dungeon.level]??new Set(),obj=objective(s,memo);
    if(process.env.SOAK_DEBUG)console.log(where,memo.trail.slice(-30).join(' '),s.log.slice(-6));
    x.kills=killsOf(s);
    return {outcome:'timeout',rounds,commands,goal:s.goal,level:s.prog.level,evolutions,floor:s.dungeon.level,kills:x.kills,
-    reason:`phase=${s.phase} floor=${s.dungeon.level} goal=${s.goal} bag=${s.bag} leader@${key(L.pos)} objective=${obj?obj.kind+'@'+key(obj.pos):'none'} visited=${visited.size}/${s.seen.length} seenCells unseenFloor=${unseenFloor} enemiesAlive=${s.enemies.filter(i=>aliveU(s.units[i])).length} cancelledTransits=${st.cancelledTransits}`};
+    reason:'phase='+s.phase+' floor='+s.dungeon.level+' leader@'+key(L.pos)+' objective='+(obj?obj.kind+'@'+key(obj.pos):'none')+' visited='+visited.size+'/'+s.seen.length};
   }
-  // Forced-wipe variant: once G is done (or after round 60) every living member is brought to 1 HP in memory, and the bot stops defending.
-  if(doomed&&!memo.suicidal&&s.phase==='playing'&&(s.goal||s.round>=60)){
+  // Forced-wipe variant: after 20 rounds, lower every surviving member to 1 HP and keep advancing until the rules end the run.
+  if(doomed&&!memo.suicidal&&s.phase==='playing'&&s.round>=20){
    const low=structuredClone(s);for(const id of low.queue){const u=low.units[id];if(u.hp>0)u.hp=1;}
    injectMemoryWorld(store,low,where+' forced-wipe input');
    for(const id of low.queue)if(low.units[id].hp>0)assert.equal(store.state.units[id].hp,1,`${where}: forced-wipe timing for ${id}`);
    memoryRun(port,store,where+' forced-wipe input');memo.suicidal=true;continue;
   }
   commands++;(memo.trail??=[]).push(`${s.round}:${key(s.units[s.leader].pos)}:${s.phase}`);
-  if(s.phase==='playing'&&s.dungeon.boss&&s.dungeon.level===3)observeBossFloor(s,x);
+  if(s.phase==='playing'&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors)observeBossFloor(s,x);
   if(commands%9===0)await probe(port,store,st,where);
   if(s.phase==='evolution'){const r=await send(port,store,{type:'evolve',species:s.pendingEvolutions[0].choices[0]},st,where+' evolution');assert.ok(r.ok,r.error);continue;}
   if(s.phase==='invitation'){
@@ -507,14 +487,14 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    for(const cmd of out){const r=await send(port,store,cmd,st,where+' invite');if(r.ok){done=true;cmd.choice==='accept'?st.accepted++:st.rejected++;if(cmd.outgoing)st.swapped++;break;}}
    assert.ok(done,`${where}: no invitation answer accepted`);continue;
   }
-  if(s.phase==='exit'){const r=await send(port,store,{type:'finishExit'},st,where);assert.ok(r.ok,`${where}: finishExit refused: ${r.error}`);continue;}
+  if(s.phase==='exit')assert.fail(where+': roguelike bot reached an evacuation phase');
   if(s.phase==='transit'){
    const r=await send(port,store,{type:'finishTransit'},st,where);assert.ok(r.ok,`${where}: finishTransit refused: ${r.error}`);
    store.state.dungeon.level!==s.dungeon.level?st.transits++:st.cancelledTransits++;continue;
   }
   let moved=false;
   for(const cmd of candidates(s,memo)){
-   const od=cmd.type==='round'&&s.phase==='playing'&&s.dungeon.boss&&s.dungeon.level===3?otherDamage(s,cmd):null;
+   const od=cmd.type==='round'&&s.phase==='playing'&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors?otherDamage(s,cmd):null;
    const r=await send(port,store,cmd,st,where+' '+cmd.type);
    if(r.ok&&od!==null){x.f3dmg=(x.f3dmg??0)+od;x.f3rounds=(x.f3rounds??0)+1;}
    if(!r.ok){if(cmd.type==='round'&&cmd.action.type==='interact'){const p=s.points.find(p=>same(p.pos,s.units[s.leader].pos));if(p)memo.declined.add(`${s.dungeon.level}:${key(p.pos)}`);st.declined++;}continue;}
@@ -522,7 +502,7 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    if(cmd.type==='buy'){st.bought++;moved=true;break;}
    rounds++;moved=true;
    const a=cmd.action;
-   if(process.env.SOAK_TRACE&&s.dungeon.boss&&s.dungeon.level===3){const bb=s.enemies.map(i=>s.units[i]).find(u=>u.boss);console.error(`${gameId} r${s.round} ${s.queue.map(i=>`${i}:${s.units[i].hp}@${s.units[i].pos?key(s.units[i].pos):'x'}`).join(' ')} boss:${bb?.hp}@${bb?key(bb.pos):''} ${JSON.stringify(a)}`);} // debug only (env SOAK_TRACE)
+   if(process.env.SOAK_TRACE&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors){const bb=s.enemies.map(i=>s.units[i]).find(u=>u.boss);console.error(`${gameId} r${s.round} ${s.queue.map(i=>`${i}:${s.units[i].hp}@${s.units[i].pos?key(s.units[i].pos):'x'}`).join(' ')} boss:${bb?.hp}@${bb?key(bb.pos):''} ${JSON.stringify(a)}`);} // debug only (env SOAK_TRACE)
    if(a.type==='exchange')st.exchanged++;
    if(a.type==='use')a.item==='berry'?st.berries++:st.tonics++;
    if(a.type==='skill')use[a.skill]=(use[a.skill]??0)+1;else if(a.type==='basic')use.basic=(use.basic??0)+1; // observation only: the leader's explicit attacks (mates act by default and are not counted)
@@ -535,27 +515,23 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
  }
 }
 
-/** Base routine: every refusal is checked to change nothing; then learn the first compatible machine, set carry and team, depart. */
-async function baseTurn(port,store,seed,game,st,where,pay=false){
+/** Base routine: difficulty, learning, team selection and departure all use real TrialStore actions. */
+async function baseTurn(port,store,seed,game,st,where,difficulty='normal'){
  const check=async(a,expectOk)=>{
   const before=store.envelope,raw=port.getItem(store.key);
   const r=await store.baseAction(a);
-  if(r.ok){assert.equal(r.saved,true,`${where}: base write not saved`);roundTrip(port,store,where+' '+a.type);}
-  else{st.rejections++;assert.deepEqual(store.envelope,before,`${where}: refused ${a.type} changed the record`);assert.equal(port.getItem(store.key),raw,`${where}: refused ${a.type} wrote storage`);}
-  if(expectOk!==undefined)assert.equal(r.ok,expectOk,`${where}: ${JSON.stringify(a)} -> ${r.ok?'ok':r.error}`);
+  if(r.ok){assert.equal(r.saved,true,where+': base write not saved');roundTrip(port,store,where+' '+a.type);}
+  else{st.rejections++;assert.deepEqual(store.envelope,before,where+': refused '+a.type+' changed the record');assert.equal(port.getItem(store.key),raw,where+': refused '+a.type+' wrote storage');}
+  if(expectOk!==undefined)assert.equal(r.ok,expectOk,where+': '+JSON.stringify(a)+' -> '+(r.ok?'ok':r.error));
   return r;
  };
- st.probes+=4;
- // 7.4 part 2 (tactical policies only, switchable): pay every unpaid rescue the account allows, in the order the partners went missing.
- let paidNow=0;const account0=store.profile.account;
- if(pay)for(const r of [...store.profile.rescue])if(!r.paid&&store.profile.account>=ECON.rescueCost){
-  const before=store.profile.account;await check({type:'rescue',inst:r.inst.id},true);
-  assert.equal(store.profile.account,before-ECON.rescueCost,`${where}: rescue price`);st.paid++;st.spent+=ECON.rescueCost;paidNow++;
- }
+ st.probes+=5;
  await check({type:'carry',inst:'P1',moves:['scratch','ember','scratch']},false);
  await check({type:'team',team:[],leader:'P1'},false);
  await check({type:'team',team:['P1','P2','P3','P1'],leader:'P1'},false);
  await check({type:'learn',inst:'P1',move:'notamove'},false);
+ await check({type:'difficulty',difficulty:'expert'},false);
+ if(store.profile.difficulty!==difficulty)await check({type:'difficulty',difficulty},true);
  for(const move of Object.keys(store.profile.vault)){
   let learnedOne=true;
   while(learnedOne&&(store.profile.vault[move]??0)>0){
@@ -565,111 +541,114 @@ async function baseTurn(port,store,seed,game,st,where,pay=false){
     if(!r.ok)continue;
     const learned=store.profile.roster.find(i=>i.id===inst).learned,m=learned.find(l=>l.move===move);
     const keep=store.profile.roster.find(i=>i.id===inst).carry.map(n=>learned.find(l=>l.move===n)).find(l=>l&&l.move!==m.move);
-    const r2=await check({type:'carry',inst,moves:keep?[move,keep.move]:[move]});assert.ok(r2.ok,`${where}: carry after learn refused: ${r2.error}`);
+    const r2=await check({type:'carry',inst,moves:keep?[move,keep.move]:[move]});assert.ok(r2.ok,where+': carry after learn refused: '+r2.error);
     st.learned++;learnedOne=true;break;
    }
   }
  }
- const roster=store.profile.roster;
- if(game%2===1&&roster.length>3){const newest=roster.at(-1).id;await check({type:'team',team:[newest,'P2','P3'],leader:'P3'},true);}
- else if(game>0)await check({type:'team',team:['P1','P2','P3'],leader:'P3'},true);
+ const rosterIds=store.profile.roster.map(i=>i.id);
+ const team=game%2===1?rosterIds.slice(-3):rosterIds.slice(0,3);
+ const leader=team.includes(store.profile.leader)?store.profile.leader:team[0];
+ const teamResult=await check({type:'team',team,leader},true);
+ assert.ok(teamResult.ok,where+': valid team was refused');
  const gseed=(seed*2654435761+game*40503)>>>0;
- const purse=game%2===0?Math.min(40,Math.floor(store.profile.account/ECON.purseStep)*ECON.purseStep):0;
+ const campProfile=structuredClone(store.envelope.profile);
  const campRaw=port.getItem(store.key),campWrites=port.writes();
- assert.equal(await store.depart(`soak-${seed}-${game}`,gseed,purse),true,`${where}: depart refused`);
- if(purse)assert.equal(store.state.purse,purse);
- if(paidNow>0&&purse===0&&(game%2===0?Math.min(40,Math.floor(account0/ECON.purseStep)*ECON.purseStep):0)>0)st.purseZeroByRescue++; // observation: paying emptied this run's purse
+ assert.equal(await store.depart('soak-'+seed+'-'+game,gseed,0),true,where+': depart refused');
+ assert.equal(store.state.purse,0,where+': new purse must start at zero');
+ assert.equal(store.state.difficulty,difficulty,where+': selected difficulty did not reach the World');
+ assert.equal(store.state.dungeon.roguelike,true,where+': departure did not create a roguelike expedition');
+ assert.deepEqual(store.envelope.profile,campProfile,where+': departure changed the saved profile');
+ assert.equal(store.profile.account,campProfile.account,where+': departure changed the account');
+ assert.deepEqual(store.profile.rescue,campProfile.rescue,where+': departure changed rescue state');
+ assert.deepEqual(store.profile.lost,campProfile.lost,where+': departure changed lost records');
  memoryRun(port,store,where+' depart',campRaw,campWrites);
 }
 
-/** Forced-wipe variant: a profile with two ordinary partners (P3 pidgey, P4 zubat) next to the protected founder P1, and some money for rescues. */
+/** Forced-wipe profile: two non-protected partners let the soak exercise a real full-party wipe. */
 const kit=(id,species,learned)=>({id,species,learned,carry:learned.map(l=>l.move),protected:false,tactic:'together'});
+function makeProfile(main='charmander',deputy='squirtle'){
+ const result=newGameProfile(main,deputy);assert.ok(result.ok,'valid new-game profile was refused');return result.profile;
+}
 function doomedProfile(){
- const p=newGameProfile('chikorita','cyndaquil').profile;
+ const p=makeProfile('chikorita','cyndaquil');
  p.roster.push(kit('P3','pidgey',[{move:'tackle',pp:3},{move:'gust',pp:3}]),kit('P4','zubat',[{move:'absorb',pp:2},{move:'poisonfang',pp:1}]));
- p.next=5;p.team=['P1','P3','P4'];p.leader='P1';p.account=100;return p;
+ p.next=5;p.team=['P1','P3','P4'];p.leader='P1';return p;
 }
-/** Base routine of the forced-wipe seeds: pay every rescue the account allows, put the first three roster members on the squad, set a purse, depart. */
-async function doomedBase(port,store,seed,game,st,where){
- for(const r of [...store.profile.rescue])if(!r.paid&&store.profile.account>=ECON.rescueCost){
-  const before=store.profile.account,res=await store.baseAction({type:'rescue',inst:r.inst.id});
-  assert.ok(res.ok&&res.saved,`${where}: paying ${r.inst.id}: ${res.error}`);assert.equal(store.profile.account,before-ECON.rescueCost);st.paid++;st.spent+=ECON.rescueCost;roundTrip(port,store,where+' pay');
+
+/** Independently checks v0.1 settlement against the participants and loot in the ended World. */
+function checkSettlement(before,after,world,summary,where){
+ assert.equal(after.expeditions,before.expeditions+1,where+': expedition counter');
+ assert.equal(after.account,before.account,where+': v0.1 changed the account');
+ assert.deepEqual(after.rescue,before.rescue,where+': v0.1 changed rescue state');
+ assert.deepEqual(after.lost,before.lost,where+': v0.1 changed lost records');
+ for(const old of before.roster){
+  const returned=after.roster.find(i=>i.id===old.id);
+  assert.ok(returned,where+': existing partner '+old.id+' did not return');
+  assert.equal(returned.species,old.species,where+': existing partner species changed at settlement');
  }
- const poor=store.profile.rescue.find(r=>!r.paid);
- if(poor&&store.profile.account<ECON.rescueCost){ // refused with the missing amount, nothing written
-  const raw=port.getItem(store.key),res=await store.baseAction({type:'rescue',inst:poor.inst.id});
-  assert.equal(res.ok,false);assert.match(res.error,/还差\d+/);assert.equal(port.getItem(store.key),raw);st.rejections++;st.probes++;
+ const memberIds=[...new Set([...(world.end.team??[]),...(world.end.camp??[]),...(world.exchange?.sent?[world.exchange.sent]:[])])];
+ const members=memberIds.map(id=>world.units[id]).filter(Boolean);
+ const seenSpecies=new Set(before.roster.map(i=>i.species)),expectedNew=[],expectedShards={};
+ for(const u of members){
+  if(u.inst!==undefined){assert.ok(after.roster.some(i=>i.id===u.inst),where+': squad partner '+u.inst+' did not return');continue;}
+  const species=u.entrySpecies??u.species;if(!species)continue;
+  if(seenSpecies.has(species))expectedShards[species]=(expectedShards[species]??0)+1;
+  else{seenSpecies.add(species);expectedNew.push(species);}
  }
- const ids=store.profile.roster.map(i=>i.id).slice(0,3),origin=store.profile.origin;
- const res=await store.baseAction({type:'team',team:ids,leader:ids.includes(origin)?origin:ids[0]});assert.ok(res.ok&&res.saved,`${where}: team: ${res.error}`);roundTrip(port,store,where+' team');
- const purse=Math.min(40,Math.floor(store.profile.account/ECON.purseStep)*ECON.purseStep);
- const campRaw=port.getItem(store.key),campWrites=port.writes();
- assert.equal(await store.depart(`soak-${seed}-${game}`,(seed*2654435761+game*40503)>>>0,purse),true,`${where}: depart refused`);memoryRun(port,store,where+' depart',campRaw,campWrites);
+ const priorIds=new Set(before.roster.map(i=>i.id)),newRoster=after.roster.filter(i=>!priorIds.has(i.id));
+ const speciesCounts=rows=>rows.reduce((m,row)=>{m[row.species]=(m[row.species]??0)+(row.count??1);return m;},{});
+ assert.deepEqual(speciesCounts(newRoster),expectedNew.reduce((m,s)=>{m[s]=(m[s]??0)+1;return m;},{}),where+': returned recruits do not match unique species');
+ const shardDelta={};
+ for(const species of new Set([...Object.keys(before.shards??{}),...Object.keys(after.shards??{})])){
+  const delta=(after.shards?.[species]??0)-(before.shards?.[species]??0);if(delta)shardDelta[species]=delta;
+ }
+ assert.deepEqual(shardDelta,expectedShards,where+': duplicate recruits did not become the expected shards');
+ assert.deepEqual(speciesCounts(summary.shards),expectedShards,where+': summary shard counts disagree with the profile');
+ for(const brought of summary.brought)assert.ok(after.roster.some(i=>i.id===brought.id&&i.species===brought.species),where+': summary lists a partner absent from the roster');
+ for(const fresh of newRoster)assert.ok(summary.brought.some(i=>i.id===fresh.id&&i.species===fresh.species),where+': summary omitted a recruited partner');
+ const tms=world.end.tms??[],won=world.end.outcome==='won';
+ assert.ok(tms.every(t=>won?(t.fate==='brought'||t.fate==='sent'):t.fate==='lost'),where+': TM fate does not match the run outcome');
+ const expectedVault={};for(const t of tms.filter(t=>t.fate==='brought'||t.fate==='sent'))expectedVault[t.move]=(expectedVault[t.move]??0)+1;
+ const vaultDelta={};
+ for(const move of new Set([...Object.keys(before.vault),...Object.keys(after.vault)])){
+  const delta=(after.vault[move]??0)-(before.vault[move]??0);if(delta)vaultDelta[move]=delta;
+ }
+ assert.deepEqual(vaultDelta,expectedVault,where+': returned TM count differs from the vault change');
+ assert.ok(after.team.length>=1&&after.team.every(id=>after.roster.some(i=>i.id===id)),where+': squad not departable');
 }
-/** The settlement rules written again independently of settleRun: what must hold between the profile before a run and the one after it. */
-function checkSettlement(before,after,end,st,where,trk){
- if(end.effective)trk.eff++;
- st.income+=end.reward;st.refund+=end.refund;
- assert.equal(after.account,before.account+end.reward+end.refund,`${where}: account`);assert.ok(after.account>=0,`${where}: negative account`);
- const pool=new Map(before.rescue.map(r=>[r.inst.id,r]));
- for(const [id,r] of pool){
-  const now=after.rescue.find(x=>x.inst.id===id),back=after.roster.some(i=>i.id===id),gone=after.lost.some(l=>l.id===id);
-  if(!end.effective||r.left>1){
-   const want=end.effective?r.left-1:r.left;
-   assert.ok(now&&now.left===want&&now.paid===r.paid&&!back&&!gone,`${where}: ${id} should wait with ${want}`);
-  }else if(r.paid){assert.ok(back&&!now&&!gone,`${where}: paid ${id} should return`);st.returned++;st.waitSum+=trk.eff-(trk.lostAt.get(id)??trk.eff);st.waitN++;}
-  else{assert.ok(gone&&!now&&!back,`${where}: unpaid ${id} should be lost for good`);st.goneForGood++;}
- }
- const fresh=after.rescue.filter(x=>!pool.has(x.inst.id));
- assert.equal(fresh.length,end.lost.length,`${where}: pool newcomers vs the draw`);
- for(const x of fresh){assert.equal(x.left,ECON.window);assert.equal(x.paid,false);}
- st.lostPartners+=fresh.length;for(const x of fresh)trk.lostAt.set(x.inst.id,trk.eff);
- assert.ok(after.rescue.every(x=>!x.inst.protected)&&after.lost.length>=before.lost.length,`${where}: protected member in the pool or lost record shrank`);
- for(const i of before.roster.filter(i=>i.protected))assert.ok(after.roster.some(j=>j.id===i.id),`${where}: protected ${i.id} left the roster`);
- assert.ok(after.team.length>=1&&after.team.every(id=>after.roster.some(i=>i.id===id)),`${where}: squad not departable`);
-}
+
 export const seedOf=i=>1000+i*7919;
 export async function playSeed(i,options={}){
- const policy=options.policy??'naive',tactical=policy==='tactical'||policy==='tactical-stand',cautious=policy==='cautious';
- assert.ok(['naive','tactical','tactical-stand','cautious'].includes(policy),`unknown policy ${policy}`);
- const payRescue=(tactical||cautious)&&options.payRescue!==false; // cautious pays rescues like tactical
- const seed=seedOf(i),port=memory(),st=stats(),games=[],doomed=i%4===3,extra=[],trk={eff:0,lostAt:new Map()},accTrail=[],rosterTrail=[];
- let store;const ref={};const moveUse={};
- if(i%2===0){ // Keep the legacy two-floor, no-profile fixture; it runs in memory, then seeds a camp at its ending.
-  store=new TrialStore(port);const gseed=(seed*2654435761)>>>0;
-  assert.equal(await store.start(createExpedition(`soak-${seed}-0`,gseed)),true);memoryRun(port,store,`seed ${seed} first legacy expedition`);
- }else{ // a player at the base with the initial profile
-  store=new TrialStore(port);assert.equal(await store.beginNewGame(doomed?doomedProfile():initialProfile(),false),true,`seed ${seed}: initial camp save`);
-  roundTrip(port,store,`seed ${seed} initial camp`);
-  await (doomed?doomedBase:baseTurn)(port,store,seed,0,st,`seed ${seed} g0 base`,payRescue);
- }
+ const policy=options.policy??'naive',difficulty=options.difficulty??'normal';
+ assert.ok(['naive','tactical','tactical-stand','cautious'].includes(policy),'unknown policy '+policy);
+ assert.ok(['easy','normal','hard'].includes(difficulty),'unknown difficulty '+difficulty);
+ const tactical=policy==='tactical'||policy==='tactical-stand',cautious=policy==='cautious';
+ const seed=seedOf(i),port=memory(),st=stats(),games=[],doomed=i%4===3,extra=[];
+ const moveUse={},ref={};let store=new TrialStore(port);
+ assert.equal(await store.beginNewGame(doomed?doomedProfile():makeProfile(),false),true,'seed '+seed+': initial camp save');
+ roundTrip(port,store,'seed '+seed+' initial camp');
+ await baseTurn(port,store,seed,0,st,'seed '+seed+' g0 base',difficulty);
  for(let g=0;g<GAMES;g++){
-  const id=`seed ${seed} game ${g}`;
-  const before=store.profile;
-  ref.store=store;const x={};const r=await playRun(port,ref,id,st,!tactical&&!cautious&&i%3===2&&!doomed,doomed,g%2===0,!cautious&&(tactical||(i*5+g*3)%4<2),tactical?'tactical':cautious?'cautious':'naive',x,policy==='tactical-stand',moveUse);store=ref.store;extra.push({outcome:r.outcome,doomed,...x});games.push({seed,game:g,reckless:i%3===2,legacy:i%2===0&&g===0,doomed,...r});
+  const id='seed '+seed+' game '+g,before=store.profile,x={};
+  ref.store=store;
+  const r=await playRun(port,ref,id,st,!tactical&&!cautious&&i%3===2&&!doomed,doomed,g%2===0,policy,x,moveUse);
+  store=ref.store;extra.push({outcome:r.outcome,doomed,...x});games.push({seed,game:g,reckless:i%3===2,doomed,...r});
   if(r.outcome==='timeout')break;
-  const ended=structuredClone(store.state),endRecord=structuredClone(ended.end),terminalRaw=port.getItem(store.key),terminalWrites=port.writes();
-  if(before){
-   assert.equal(store.envelope.profile.expeditions,before.expeditions+1,`${id}: terminal camp was not settled`);
-   assert.equal(Object.hasOwn(store.envelope,'current'),false,`${id}: terminal camp embeds World`);
-   assert.equal(Object.hasOwn(store.envelope,'recent'),false,`${id}: terminal camp keeps recent World`);
-   assert.equal(await store.returnToBase(),true,`${id}: returnToBase refused`);
-   assert.equal(port.getItem(store.key),terminalRaw,`${id}: returning to camp changed saved bytes`);
-   assert.equal(port.writes(),terminalWrites,`${id}: returning to camp wrote storage`);
-   roundTrip(port,store,`${id} return`);
-  }else{
-   // The original first expedition has no camp profile; settlement creates its first camp after the result.
-   const settled=settleRun(null,ended);assert.ok(settled,`${id}: legacy first run could not seed the camp`);
-   assert.equal(await store.beginNewGame(settled,false),true,`${id}: legacy first-run camp save failed`);
-   assert.equal(port.writes(),terminalWrites+1,`${id}: first camp should be written once after the run`);
-   roundTrip(port,store,`${id} first camp`);
-  }
-  assert.equal(store.atBase,true);assert.ok(store.profile.expeditions>=1);
-  if(before)assert.equal(store.profile.expeditions,before.expeditions+1);
-  assert.equal(Object.hasOwn(store.envelope,'recent'),false,`${id}: camp envelope contains recent`);
-  checkSettlement(before??initialProfile(),store.profile,endRecord,st,id,trk);accTrail.push(store.profile.account);rosterTrail.push(store.profile.roster.length);
-  if(g===GAMES-1)break;
-  await (doomed?doomedBase:baseTurn)(port,store,seed,g+1,st,`${id} base`,payRescue);
+  const ended=structuredClone(store.state),summary=structuredClone(store.settlementSummary);
+  const terminalRaw=port.getItem(store.key),terminalWrites=port.writes();
+  assert.equal(store.envelope.profile.expeditions,before.expeditions+1,id+': terminal camp was not settled');
+  assert.equal(Object.hasOwn(store.envelope,'current'),false,id+': terminal camp embeds World');
+  assert.equal(Object.hasOwn(store.envelope,'recent'),false,id+': terminal camp keeps recent World');
+  assert.equal(await store.returnToBase(),true,id+': returnToBase refused');
+  assert.equal(port.getItem(store.key),terminalRaw,id+': returning to camp changed saved bytes');
+  assert.equal(port.writes(),terminalWrites,id+': returning to camp wrote storage');
+  roundTrip(port,store,id+' return');
+  assert.equal(store.atBase,true,id+': did not return to base');
+  assert.equal(Object.hasOwn(store.envelope,'recent'),false,id+': camp envelope contains recent');
+  checkSettlement(before,store.profile,ended,summary,id);
+  if(g<GAMES-1)await baseTurn(port,store,seed,g+1,st,id+' base',difficulty);
  }
- return {seed,games,st,moveUse,roster:store.profile?.roster.length??0,vault:store.profile?.vault??{},extra,account:store.profile?.account??null,doomed,policy,payRescue,accTrail,rosterTrail};
+ return {seed,games,st,moveUse,roster:store.profile?.roster.length??0,vault:store.profile?.vault??{},extra,
+  shards:store.profile?.shards??{},doomed,policy,difficulty};
 }

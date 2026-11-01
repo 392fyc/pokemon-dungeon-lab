@@ -62,7 +62,7 @@ test('N5 a two-member squad runs in memory; the stored record contains only the 
  assert.equal(Object.hasOwn(store.envelope,'current'),false);assert.equal(Object.hasOwn(store.envelope,'recent'),false);
  assert.equal(await store.depart('r1-live',11),true);assert.deepEqual(store.state.queue,['A','B']);
  assert.deepEqual(new TrialStore(port).state,null,'reopening returns to the saved camp');
- const done=structuredClone(w);done.phase='ended';done.end=closeOut(done,'normal');
+ const done=structuredClone(w);for(const id of done.queue){done.units[id].hp=0;done.units[id].pos=null;}done.phase='ended';done.end=closeOut(done,'wipe');
  const after=settleRun(p,done);assert.deepEqual(after.roster.map(i=>i.species),['chikorita','cyndaquil']);assert.equal(after.expeditions,1);
 });
 

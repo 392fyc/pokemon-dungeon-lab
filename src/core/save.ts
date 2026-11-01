@@ -354,7 +354,9 @@ function defaultWorldTeamGuardState(v:unknown):void {
 const LEGACY_RULES_1='trial-rules-1',LEGACY_CONTENT_1='trial-content-1';
 const LEGACY_RULES_2='trial-rules-2',LEGACY_CONTENT_2='trial-content-2';
 const LEGACY_RULES_3='trial-rules-3',LEGACY_CONTENT_3='trial-content-3';
-const PROFILE_KEYS=['expeditions','next','roster','vault','team','leader','account','rescue','lost','origin'];
+const LEGACY_RULES_4='trial-rules-4',LEGACY_CONTENT_4='trial-content-4';
+const PROFILE_KEYS_V4=['expeditions','next','roster','vault','team','leader','account','rescue','lost','origin'];
+const PROFILE_KEYS=[...PROFILE_KEYS_V4,'difficulty','shards','rankExp','talents'];
 function defaultProfileTactics(v:unknown):void {
   if(!object(v))return;
   if(Array.isArray(v.roster))for(const instance of v.roster)if(object(instance)&&instance.tactic===undefined)instance.tactic='together';
@@ -369,12 +371,36 @@ function migrateV3Camp(raw:string):Envelope {
     throw Error('旧存档结构损坏；原记录已保留');
   const profile=structuredClone(e.profile) as unknown;
   defaultProfileTactics(profile);
-  if(!strictProfileShape(profile))throw Error('旧存档的营地档案损坏；原记录已保留');
-  return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:e.build,sequence:Math.min(Number(e.sequence)+1,Number.MAX_SAFE_INTEGER),profile};
+  const upgraded=upgradeV4Profile(profile);
+  if(!upgraded)throw Error('旧存档的营地档案损坏；原记录已保留');
+  return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:e.build,sequence:Math.min(Number(e.sequence)+1,Number.MAX_SAFE_INTEGER),profile:upgraded};
 }
 function strictProfileShape(v:unknown):v is Profile {
   return object(v)&&exactKeys(v,PROFILE_KEYS)&&Array.isArray(v.rescue)&&v.rescue.every(r=>object(r)&&exactKeys(r,['inst','paid','left']))&&
     Array.isArray(v.lost)&&v.lost.every(l=>object(l)&&exactKeys(l,['id','species','expedition']))&&profileProblem(v)===null;
+}
+/** Validate the exact trial-rules-4 shape first; only then add the four confirmed trial-rules-5 fields. */
+function upgradeV4Profile(v:unknown):Profile|null {
+  if(!object(v)||!exactKeys(v,PROFILE_KEYS_V4)||!Array.isArray(v.rescue)||!v.rescue.every(r=>object(r)&&exactKeys(r,['inst','paid','left']))||
+    !Array.isArray(v.lost)||!v.lost.every(l=>object(l)&&exactKeys(l,['id','species','expedition'])))return null;
+  const profile=structuredClone(v) as Record<string,unknown>;
+  profile.difficulty='normal';profile.shards={};profile.rankExp=0;profile.talents={};
+  return strictProfileShape(profile)?profile as unknown as Profile:null;
+}
+function upgradeLegacyProfile(v:unknown):Profile|null {
+  if(strictProfileShape(v))return structuredClone(v);
+  return upgradeV4Profile(v);
+}
+function migrateV4Camp(raw:string):Envelope {
+  const parsed=parseJson(raw);
+  if(!object(parsed)||parsed.format!==2||parsed.rules!==LEGACY_RULES_4||parsed.content!==LEGACY_CONTENT_4)
+    throw Error('存档版本不兼容；原记录已保留');
+  const e=parsed;
+  if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isSafeInteger(e.sequence)||Number(e.sequence)<1)
+    throw Error('旧存档结构损坏；原记录已保留');
+  const profile=upgradeV4Profile(e.profile);
+  if(!profile)throw Error('旧存档的营地档案损坏；原记录已保留');
+  return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:e.build,sequence:Math.min(Number(e.sequence)+1,Number.MAX_SAFE_INTEGER),profile};
 }
 function parseJson(raw:string):unknown {
   try{return JSON.parse(raw) as unknown;}
@@ -409,7 +435,9 @@ function decodeLegacyRecord(e:Record<string,unknown>,validateWorld:boolean):Lega
     e.rules=LEGACY_RULES_2;e.content=LEGACY_CONTENT_2;
   }
   defaultProfileTactics(e.profile);
-  if(!strictProfileShape(e.profile))throw Error('旧存档的营地档案损坏；原记录已保留');
+  const upgraded=upgradeLegacyProfile(e.profile);
+  if(!upgraded)throw Error('旧存档的营地档案损坏；原记录已保留');
+  e.profile=upgraded;
   if(validateWorld){
     defaultWorldTeamGuardState(e.current);defaultWorldTeamGuardState(e.recent);
     if((e.current!==null&&!validWorld(e.current))||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('旧存档结构损坏；原记录已保留');
@@ -436,6 +464,7 @@ export function decode(raw:string):Envelope {
 function campFromLegacy(raw:string):Envelope {
   const parsed=parseJson(raw);
   if(object(parsed)&&parsed.format===2){
+    if(parsed.rules===LEGACY_RULES_4&&parsed.content===LEGACY_CONTENT_4)return migrateV4Camp(raw);
     if(parsed.rules===LEGACY_RULES_3&&parsed.content===LEGACY_CONTENT_3)return migrateV3Camp(raw);
     throw Error('存档版本不兼容；原记录已保留');
   }
@@ -552,10 +581,10 @@ export class TrialStore {
   }
   /** Departure only creates memory state. The stored profile and wallet remain at their pre-departure values. */
   async depart(runId:string,seed:number,purse=0):Promise<boolean> {
-    if(this.status!=='ready'||!this.atBase||!this.record)return false;
+    if(this.status!=='ready'||!this.atBase||!this.record||purse!==0)return false;
     if(purseProblem(this.record.profile,purse)!==null)return false;
-    const profile=clone(this.record.profile);profile.account-=purse;
-    try{this.world=createExpedition(runId,seed,3,squadOf(profile),purse,undefined,3);}
+    const profile=clone(this.record.profile);
+    try{this.world=createExpedition(runId,seed,3,squadOf(profile),0,undefined,3,profile.difficulty);}
     catch{this.world=null;return false;}
     this.activeProfile=profile;this.activeKind='expedition';this.savedSettlement=null;return true;
   }

@@ -66,7 +66,7 @@ async function finishByWipe(store){
  assert.fail('deterministic expedition did not wipe within the bounded turn limit');
 }
 
-test('format 2 stores only camp data; departure, purchases, and exchange actions do not write',async()=>{
+test('format 2 stores only camp data; zero-purse departure, purchases, and exchange actions do not write',async()=>{
  const baseProfile=profile();baseProfile.account=40;
  const port=storage(),{store}=await makeSavedBase(port,baseProfile);
  const before=port.raw(),writes=port.writes(),campEnvelope=store.envelope;
@@ -74,11 +74,13 @@ test('format 2 stores only camp data; departure, purchases, and exchange actions
  assert.equal(Object.hasOwn(campEnvelope,'current'),false);assert.equal(Object.hasOwn(campEnvelope,'recent'),false);
  assert.deepEqual(decode(JSON.stringify(campEnvelope)),campEnvelope);
 
- assert.equal(await store.depart('memory-run',103,20),true);
+ assert.equal(await store.depart('memory-run',103,20),false,'v0.1 does not allow loading a purse');
+ assert.equal(await store.depart('memory-run',103,0),true);
  assert.equal(port.writes(),writes,'departure stays in memory');assert.equal(port.raw(),before);
  assert.deepEqual(store.envelope,campEnvelope,'the exported record remains the pre-departure camp');
  assert.equal(store.state.dungeon.tmPool,3);
- assert.equal(store.profile.account,20,'wallet money is deducted from the run profile only');
+ assert.equal(store.state.purse,0);
+ assert.equal(store.profile.account,40,'v0.1 does not spend or deduct base money');
  const reopened=new TrialStore(port,'camp-test');assert.equal(await reopened.whenReady,true);
  assert.equal(reopened.profile.account,40,'reopening during the run restores the pre-departure account');
  assert.equal(reopened.state,null);assert.equal(port.raw(),before);
@@ -92,8 +94,8 @@ test('format 2 stores only camp data; departure, purchases, and exchange actions
  const shopWorld=structuredClone(baseRun);shopWorld.enemies=[];shopWorld.units[shopWorld.leader].pos=structuredClone(shopPoint.pos);
  const shopPort=storage(),shopStore=new TrialStore(shopPort,'shop-memory');
  assert.equal(await shopStore.start(shopWorld,p),true);assert.equal(shopPort.writes(),0);
- assert.equal((await shopStore.dispatch({type:'buy',item:'berry'})).ok,true);
- assert.equal(shopStore.state.shop.trades.length,1);assert.equal(shopPort.writes(),0);assert.equal(shopPort.raw(),null);
+ assert.equal((await shopStore.dispatch({type:'buy',item:'berry'})).ok,false,'v0.1 starts with no money in the expedition purse');
+ assert.equal(shopStore.state.shop.trades.length,0);assert.equal(shopPort.writes(),0);assert.equal(shopPort.raw(),null);
 
  const exchangeWorld=structuredClone(baseRun);exchangeWorld.enemies=[];exchangeWorld.units[exchangeWorld.leader].pos=structuredClone(exchangePoint.pos);
  const exchangePort=storage(),exchangeStore=new TrialStore(exchangePort,'exchange-memory');
@@ -105,11 +107,12 @@ test('format 2 stores only camp data; departure, purchases, and exchange actions
 });
 
 test('finishing an expedition settles once; a failed terminal write retries the same camp record',async()=>{
- const port=storage(),{store}=await makeSavedBase(port);
- assert.equal(await store.depart('terminal-retry',103,0),true);
+ const one=profile();one.team=['P1'];one.leader='P1';
+ const port=storage(),{store}=await makeSavedBase(port,one);
+ assert.equal(await store.depart('terminal-retry',2,0),true);
  const startWrites=port.writes();port.failNext();
- const ended=await finishFromFirstExit(store);
- assert.equal(ended.phase,'ended');assert.equal(ended.end.outcome,'normal');assert.equal(store.status,'failed');
+ const ended=await finishByWipe(store);
+ assert.equal(ended.phase,'ended');assert.equal(ended.end.outcome,'wipe');assert.equal(store.status,'failed');
  assert.ok(store.settlementSummary);assert.equal(port.writes(),startWrites);
  assert.equal(store.envelope.profile.expeditions,1,'the pending candidate is already settled in memory');
  assert.equal(JSON.parse(port.raw()).profile.expeditions,0,'disk remains at the pre-run camp until retry succeeds');
@@ -206,8 +209,9 @@ test('an imported maximum save counter stays readable after camp edits and termi
  assert.equal(await store.importRecord(JSON.stringify(incoming),true),true);
  assert.equal((await store.baseAction({type:'team',team:incoming.profile.team,leader:incoming.profile.leader})).ok,true);
  assert.equal(decode(port.raw()).sequence,Number.MAX_SAFE_INTEGER);
- assert.equal(await store.depart('maximum-counter',103,0),true);
- await finishFromFirstExit(store);
+ assert.equal((await store.baseAction({type:'team',team:['P1'],leader:'P1'})).ok,true);
+ assert.equal(await store.depart('maximum-counter',2,0),true);
+ await finishByWipe(store);
  assert.equal(store.status,'ready');
  const reopened=new TrialStore(port,'camp-test');
  assert.equal(await reopened.whenReady,true,reopened.error);

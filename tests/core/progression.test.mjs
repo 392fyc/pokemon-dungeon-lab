@@ -208,6 +208,7 @@ test('P8d items work only in a run that has a backpack: the fixed map refuses th
 });
 test('P8e a berry picked up on one floor is still taken, and not given again, after leaving and coming back',()=>{
  const s0=createExpedition('floors',3);
+  delete s0.dungeon.roguelike; // This test covers the historical two-way expedition saved before the v0.1 rule marker.
  const down=s0.points.find(p=>p.kind==='down').pos,berry=s0.points.find(p=>p.kind==='berry').pos;
  let s=structuredClone(s0);for(const id of ['A','B']){s.units[id].hp=0;s.units[id].pos=null;}
  s.units.C.pos=berry;s=round(s,interact(false));

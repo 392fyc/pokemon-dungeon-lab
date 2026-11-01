@@ -1,3 +1,5 @@
+// Historical exit fixtures are test-only; the developer menu now exposes boss/wipe results.
+import {V as legacyV} from '../acceptance/fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMain,applyCommand,previewInvitation,clone} from '../../src/core/engine.ts';
@@ -35,12 +37,12 @@ test('M4 B already on exit; no extra return damage',()=>{
  let s=createScenario('V1','m4');s=round(s,move(6));s=command(s,{type:'switch',actor:'B'});s=finish(round(s,interact(true)));assert.deepEqual(positions(s),[3,4,5]);assert.equal(s.units.C.hp,20);assert.equal(s.round,9);
 });
 test('V3/V4 follow and V5/V6/V7 down membership',()=>{
- let s=createScenario('V3','v3');s=round(s,move(0));assert.deepEqual(positions(s),[3,2,0]);assert.equal(finish(round(s,interact(true))).phase,'ended');
+ let s=legacyV(3);s=round(s,move(0));assert.deepEqual(positions(s),[3,2,0]);assert.equal(finish(round(s,interact(true))).phase,'ended');
  s=createScenario('V4','v4');s=round(s,wait,{actor:'C',action:{type:'move',to:{x:2,y:2}}});s=round(s,wait);assert.deepEqual(s.units.B.pos,{x:2,y:1});assert.deepEqual(s.units.C.pos,{x:3,y:2});
  s=createScenario('V5','v5');s=round(s,move(2));assert.equal(s.units.B.hp,4);   // E is a real growlithe; ember base 10 x 0.4 rounds to 4 against a species-less fixture, so 8-4=4.
  assert.equal(s.units.C.pos.x,1);s=round(s,basic('E'));assert.equal(s.units.C.pos.x,1);assert.equal(s.queue.length,3);
  s=round(createScenario('V6','v6'),move(2));assert.equal(s.leader,'C');assert.equal(s.units.B.pos,null);
- s=finish(round(createScenario('V7','v7'),interact(true)));assert.equal(s.units.A.hp,0);assert.equal(s.end.outcome,'normal');
+ s=finish(round(legacyV(7),interact(true)));assert.equal(s.units.A.hp,0);assert.equal(s.end.outcome,'normal');
 });
 test('V8/V9/V10 admission preview and batch anchor',()=>{
  let s=createScenario('V8','v8');assert.equal(previewInvitation(s,'C').ok,false);assert.deepEqual(previewInvitation(s,'B').pos,{x:1,y:2});assert.equal(applyCommand(s,{type:'invite',choice:'accept',outgoing:'C'}).ok,false);

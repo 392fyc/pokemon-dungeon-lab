@@ -26,7 +26,9 @@ function profile4(over={}){
 const entry=(inst,paid,left)=>({inst,paid,left});
 /** A finished expedition: the squad of `p`, hand-set outcome fields, closed with the engine's own end-of-run processing. */
 function finished(p,{outcome='normal',seed=5,purse=0,goal=false,tms=[],rng,camp=[],items,bag}={}){
- const s=createExpedition('run-r',seed,2,squadOf(p),purse);
+ const s=createExpedition('run-r',seed,2,squadOf(p),0);
+ // Historical terminal settlement still supports rewards, purse refunds and rescue timers.
+ delete s.dungeon.roguelike;s.purse=purse;
  if(rng!==undefined)s.prog.rng=rng;
  if(goal){s.goal=true;s.prog.exp=2;}
  s.tms=tms.map(([move,source,fate='held'])=>({move,source,fate}));s.bag=bag??s.tms.filter(t=>t.source==='target').length;
@@ -162,14 +164,15 @@ test('R13 purse: returned after a normal exit, lost in a wipe; refused when the 
  assert.equal(settleRun(p,wipe).account,150+100);
  const port=memory(),store=new TrialStore(port);await store.beginNewGame(p,false);
  const raw=port.getItem(store.key);assert.equal(await store.depart('d1',5,160),false);assert.equal(port.getItem(store.key),raw);assert.equal(await store.depart('d1',5,30),false);
- assert.equal(await store.depart('d1',5,100),true);
- assert.equal(store.profile.account,50);assert.equal(store.state.purse,100);
+ assert.equal(await store.depart('d1',5,100),false,'new runs cannot take camp money');
+ assert.equal(await store.depart('d1',5,0),true);
+ assert.equal(store.profile.account,150);assert.equal(store.state.purse,0);
  assert.equal(new TrialStore(port).profile.account,150,'the camp record keeps the pre-departure account');
 });
 
 /* ---------- shop ---------- */
 function shopRun(){
- const p=profile4();const s=createExpedition('shop-run',2,2,squadOf(p),100);
+ const p=profile4();const s=createExpedition('shop-run',2,2,squadOf(p),0);s.purse=100; // already earned during this run
  s.units.A.pos={...s.points.find(p=>p.kind==='shop').pos};return s;
 }
 const buy=(s,item)=>applyCommand(s,{type:'buy',item});
@@ -226,17 +229,17 @@ test('R16 exchanger: one use; the leader cannot be sent; the companion leaves fo
  assert.equal(t.units.B.hp>0,true);assert.equal(t.units.A.hp,s.units.A.hp,'the exchanger does not heal');
  assert.match(applyCommand(t,ex('B',[])).error,/只能用一次/);
 });
-test('R17 a companion sent home is never lost; a sent machine survives a wipe; a normal exit stores each machine once',()=>{
+test('R17 exchanged companions return on wipe; every machine needs a boss victory and is stored once',()=>{
  const wiped=applyCommand(exchangeRun(),ex('C',[0])).state;
  for(const id of wiped.queue){wiped.units[id].hp=0;wiped.units[id].pos=null;}
  wiped.phase='ended';wiped.end=closeOut(wiped,'wipe');
- assert.deepEqual(wiped.end.tms.map(m=>m.fate),['sent','lost','lost']);assert.equal(wiped.end.effective,true);assert.deepEqual(wiped.end.reasons,['tm']);
+ assert.deepEqual(wiped.end.tms.map(m=>m.fate),['lost','lost','lost']);assert.equal(wiped.end.reward,0);assert.deepEqual(wiped.end.lost,[]);
  const p=profile4({team:['P1','P2','P3'],leader:'P1'});
- const after=settleRun(p,wiped);assert.deepEqual(after.vault,{protect:1});assert.deepEqual(roster(after),['P1','P2','P3','P4']);
- // normal exit: sent protect + brought roar + brought whirlwind -> one each
+ const after=settleRun(p,wiped);assert.deepEqual(after.vault,{});assert.deepEqual(roster(after),['P1','P2','P3','P4']);
+ // Boss victory brings every machine, including cargo, exactly once.
  const s=applyCommand(exchangeRun(),ex('C',[0])).state;
- s.phase='ended';s.end=closeOut(s,'normal');
- assert.deepEqual(s.end.tms.map(m=>m.fate),['sent','brought','brought']);
+ s.phase='ended';s.end=closeOut(s,'won');
+ assert.deepEqual(s.end.tms.map(m=>m.fate),['brought','brought','brought']);
  assert.deepEqual(settleRun(p,s).vault,{protect:1,roar:1,whirlwind:1});
  assert.deepEqual(roster(settleRun(p,s)),['P1','P2','P3','P4'],'the one sent home returns as a roster member');
 });
@@ -313,7 +316,7 @@ test('R24 an old ended World settles the purse, rescue pool, squad and machines 
  for(const id of s.queue){s.units[id].hp=0;s.units[id].pos=null;}
  s.phase='ended';s.request=null;s.anchor=null;s.end=closeOut(s,'wipe');
  const raw=JSON.stringify({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:9,current:s,recent:null,profile:p});
- const expected=settleRun(p,s),port=memory();port.setItem('dungeon-trial.player.v1',raw);const beforeWrites=port.writes(),live=new TrialStore(port);
+ const expected={...settleRun(p,s),difficulty:'normal',shards:{},rankExp:0,talents:{}},port=memory();port.setItem('dungeon-trial.player.v1',raw);const beforeWrites=port.writes(),live=new TrialStore(port);
  assert.equal(await live.whenReady,true,live.error);assert.equal(live.status,'ready',live.error);assert.equal(port.writes(),beforeWrites+1);
  const q=live.profile;
  // The frozen rules-2 World has a terminal goal and wipe: reward is paid, purse and held machine are lost, the paid rescue returns, the unpaid one is lost,

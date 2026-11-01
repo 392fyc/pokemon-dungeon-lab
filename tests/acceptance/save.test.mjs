@@ -13,19 +13,31 @@ function port(raw=null){
 const legacy=name=>JSON.parse(readFileSync(new URL(`../core/fixtures77-regression/${name}`,import.meta.url),'utf8'));
 const gameProfile=()=>{const made=newGameProfile('charmander','squirtle');assert.equal(made.ok,true);return made.profile;};
 
+// End through real movement and combat, rather than the removed entrance exit.
 async function finishExpedition(store){
- for(let n=0;n<20;n++){
+ for(let n=0;n<80;n++){
   const s=store.state;assert.ok(s,`World disappeared before terminal at step ${n}`);
-  if(s.phase==='ended')return s;
+  if(s.phase==='ended'){assert.equal(s.end.outcome,'wipe');return s;}
   if(s.phase==='invitation'){assert.equal((await store.dispatch({type:'invite',choice:'reject'})).ok,true);continue;}
-  if(s.phase==='exit'){assert.equal((await store.dispatch({type:'finishExit'})).ok,true);continue;}
-  if(s.phase==='transit'){assert.equal((await store.dispatch({type:'finishTransit'})).ok,true);continue;}
   assert.equal(s.phase,'playing');
-  const leader=s.units[s.leader],exit=s.points.find(p=>p.kind==='exit'&&leader.pos&&p.pos.x===leader.pos.x&&p.pos.y===leader.pos.y);
-  if(exit)assert.equal((await store.dispatch({type:'round',action:{type:'interact',exit:true}})).ok,true);
-  else assert.equal((await store.dispatch({type:'round',action:{type:'wait'}})).ok,true);
+  const lead=s.units[s.leader],key=p=>`${p.x},${p.y}`,floor=new Set(s.floor.map(key));
+  const enemies=s.enemies.map(id=>s.units[id]).filter(u=>u.hp>0&&u.pos),blocked=new Set(enemies.map(u=>key(u.pos)));
+  const queue=[lead.pos],previous=new Map([[key(lead.pos),null]]);let goal=null,target=null;
+  for(let i=0;i<queue.length&&!goal;i++){
+   const p=queue[i],enemy=enemies.find(u=>Math.abs(u.pos.x-p.x)+Math.abs(u.pos.y-p.y)===1);
+   if(enemy){goal=p;target=enemy.id;break;}
+   for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
+    const next={x:p.x+dx,y:p.y+dy},k=key(next);
+    if(floor.has(k)&&!blocked.has(k)&&!previous.has(k)){previous.set(k,key(p));queue.push(next);}
+   }
+  }
+  assert.ok(goal,'the fixed seed has a reachable enemy');
+  const path=[];for(let k=key(goal);k;k=previous.get(k))path.unshift(k);
+  const [x,y]=(path[1]??path[0]).split(',').map(Number);
+  const action=path.length===1?{type:'basic',target}:{type:'move',to:{x,y}};
+  const result=await store.dispatch({type:'round',action});assert.equal(result.ok,true,result.error);
  }
- assert.fail('deterministic expedition did not reach its exit');
+ assert.fail('deterministic expedition did not wipe within 80 real actions');
 }
 
 test('A1 new records contain only the camp profile; in-run Worlds stay in memory',async()=>{
@@ -47,9 +59,10 @@ test('A1 new records contain only the camp profile; in-run Worlds stay in memory
 
 test('A2 expedition settlement writes once at the terminal; returning to camp is only a view change',async()=>{
  const storage=port(),store=new TrialStore(storage,'acceptance');
- assert.equal(await store.beginNewGame(gameProfile(),false),true);
+ const initial=gameProfile();initial.team=['P1'];initial.leader='P1';
+ assert.equal(await store.beginNewGame(initial,false),true);
  const startWrites=storage.writes(),before=store.envelope.profile.expeditions;
- assert.equal(await store.depart('acceptance-terminal',103,0),true);
+ assert.equal(await store.depart('acceptance-terminal',2,0),true);
  assert.equal(storage.writes(),startWrites);
  const ended=await finishExpedition(store);
  assert.equal(ended.phase,'ended');assert.equal(store.status,'ready');assert.equal(storage.writes(),startWrites+1);
@@ -64,9 +77,10 @@ test('A2 expedition settlement writes once at the terminal; returning to camp is
 
 test('A3 terminal write failure retries the already settled result exactly once',async()=>{
  const storage=port(),store=new TrialStore(storage,'acceptance');
- assert.equal(await store.beginNewGame(gameProfile(),false),true);
+ const initial=gameProfile();initial.team=['P1'];initial.leader='P1';
+ assert.equal(await store.beginNewGame(initial,false),true);
  const startWrites=storage.writes(),before=store.profile.expeditions;
- assert.equal(await store.depart('acceptance-retry',103,0),true);
+ assert.equal(await store.depart('acceptance-retry',2,0),true);
  storage.failNext();const ended=await finishExpedition(store);
  assert.equal(ended.phase,'ended');assert.equal(store.status,'failed');assert.equal(store.envelope.profile.expeditions,before+1);
  assert.equal(storage.writes(),startWrites);assert.equal(JSON.parse(storage.raw()).profile.expeditions,before);

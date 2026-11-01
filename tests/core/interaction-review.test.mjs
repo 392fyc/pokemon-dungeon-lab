@@ -1,3 +1,5 @@
+// Historical exit fixtures are test-only; the developer menu now exposes boss/wipe results.
+import {V as legacyV} from '../acceptance/fixtures.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMain,applyCommand,clone,key} from '../../src/core/engine.ts';
@@ -17,7 +19,7 @@ test('used T refuses extra collection without another lethal enemy phase',()=>{
  denied(s,collect,/T已取得，仅可请求撤离/);assert.equal(s.units.B.hp,1);assert.equal(s.bag,1);   // V11: B has 1 HP and H (60 HP) stands beside it
 });
 for(const id of ['V3','V7'])test(id+' pure exit refuses collection even when unused',()=>{
- let s=createScenario(id,'pure-'+id);if(id==='V3')s=valid(s,round({type:'move',to:{x:0,y:1}}));
+ let s=legacyV(Number(id.slice(1)));if(id==='V3')s=valid(s,round({type:'move',to:{x:0,y:1}}));
  assert.equal(s.points[0].used,false);denied(s,collect,/此处是纯出口，仅可请求撤离/);assert.equal(valid(s,leave).phase,'exit');
 });
 test('unused G still collects exactly once and then refuses another collection',()=>{

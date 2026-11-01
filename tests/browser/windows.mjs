@@ -113,7 +113,7 @@ await test('V10、S3、I1：连续邀请不跨面板、固定集结格，开发�
  const {context,page:p,errors}=await setup('V10');try{await start(p);await click(p,'out-0');await click(p,'accept');const first=await state(p);assert.deepEqual(first.queue,['B','C','N1']);await p.keyboard.press('Enter');assert.deepEqual(await state(p),first);assert.equal(await raw(p),null);await click(p,'out-1');await click(p,'accept');const s=await state(p);assert.deepEqual(s.queue,['B','N1','N2']);assert.deepEqual(s.units.N2.pos,{x:3,y:2});assert.deepEqual(s.camp,['A','C']);assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {anchorStable:true,noCarriedConfirmation:true,memoryOnly:true};}finally{await context.close();}
 });
 await test('V12、S5：开发场景全灭优先、此前回营与未带出物品',async()=>{
- const {context,page:p,errors}=await setup('V12');try{await start(p);await exit(p);const s=await state(p);assert.equal(s.end.outcome,'wipe');assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.deepEqual(s.end.camp,['C']);assert.equal(s.units.C.hp,8);assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {outcome:'wipe',acquired:1,brought:0,campC:8,memoryOnly:true};}finally{await context.close();}
+ const {context,page:p,errors}=await setup('V12');try{await start(p);await exit(p);const s=await state(p);assert.equal(s.end.outcome,'wipe');assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.deepEqual(s.end.camp,['C']);assert.match(await p.locator('.result').innerText(),/目标(?:已完成|未完成) · 已取得 1 · 正常带出 0/);await p.screenshot({path:artifact+'windows-settlement-legacy-v12.png',fullPage:true});assert.equal(s.units.C.hp,8);assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {outcome:'wipe',acquired:1,brought:0,campC:8,memoryOnly:true};}finally{await context.close();}
 });
 await test('S6/S7：开发场景启动与行动不写存档，也不受磁盘写失败影响',async()=>{
  const {context,page:p,errors}=await setup(undefined,'fail');try{await start(p);const before=await state(p);assert.equal(await raw(p),null);assert.equal(await p.evaluate(()=>window.trial.store.status),'ready');await key(p,'ArrowRight');assert.equal((await state(p)).round,before.round+1);assert.equal(await raw(p),null);assert.deepEqual(await p.evaluate(()=>window.__fault.writes),[]);assert.deepEqual(errors,[]);return {startMemoryOnly:true,roundMemoryOnly:true,noStorageWrites:true};}finally{await context.close();}
@@ -135,11 +135,30 @@ await test('营地存档：终局写入失败可重试，回营不再写入或�
  const {newGameProfile}=await import('../../src/core/base.ts');
  const {context,page:p,errors}=await setup(undefined,'pass');
  try{
-  const profile=newGameProfile('treecko','mudkip').profile;
+  const profile=newGameProfile('charmander','squirtle').profile;profile.team=['P1'];profile.leader='P1';
   assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),profile),true);
-  await p.reload();await ready(p);const campRaw=await raw(p),camp=JSON.parse(campRaw);assert.equal(camp.format,2);assert.equal(camp.profile.expeditions,0);
+  await p.goto(base+'?dev=1&seed=2');await ready(p);const campRaw=await raw(p),camp=JSON.parse(campRaw);assert.equal(camp.format,2);assert.equal(camp.profile.expeditions,0);
   await click(p,'depart');const run=await state(p);assert.equal(run.phase,'playing');assert.equal(await raw(p),campRaw,'departure keeps the complete pre-run camp bytes');
-  await p.evaluate(()=>window.__fault.mode='fail');await click(p,'take-exit');await p.locator('#exit-confirm').click();await p.waitForFunction(()=>window.trial.store.status==='failed');
+  await p.evaluate(()=>window.__fault.mode='fail');
+  for(let n=0;n<200&&(await state(p)).phase!=='ended';n++){
+   const phase=(await state(p)).phase;
+   if(phase==='invitation'){await p.locator('#reject').click();await p.locator('#reject-confirm').click();}
+   else if(phase==='evolution')await p.locator('#evolution-close').click();
+   else {
+    const s=await state(p),lead=s.units[s.leader].pos,k=q=>q.x+','+q.y;
+    const foes=s.enemies.map(id=>s.units[id]).filter(u=>u.hp>0&&u.pos),blocked=new Set(foes.map(u=>k(u.pos))),floor=new Set(s.floor.map(k));
+    const queue=[lead],prev=new Map([[k(lead),null]]);let goal=null;
+    for(let i=0;i<queue.length&&!goal;i++){
+     const q=queue[i];if(foes.some(u=>Math.abs(u.pos.x-q.x)+Math.abs(u.pos.y-q.y)===1)){goal=q;break;}
+     for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){const next={x:q.x+dx,y:q.y+dy},tag=k(next);if(floor.has(tag)&&!blocked.has(tag)&&!prev.has(tag)){prev.set(tag,k(q));queue.push(next);}}
+    }
+    const path=[];for(let tag=goal&&k(goal);tag;tag=prev.get(tag))path.unshift(tag);
+    if(path.length<2)await p.locator('#wait').click();
+    else {const [x,y]=path[1].split(',').map(Number);await p.keyboard.press(x>lead.x?'ArrowRight':x<lead.x?'ArrowLeft':y>lead.y?'ArrowDown':'ArrowUp');}
+   }
+   await p.waitForFunction(()=>['ready','failed'].includes(window.trial.store.status));
+  }
+  await p.waitForFunction(()=>window.trial.store.status==='failed');
   const ended=await state(p),summary=await p.evaluate(()=>window.trial.store.settlementSummary),candidate=await p.evaluate(()=>window.trial.store.envelope);
   assert.equal(ended.phase,'ended');assert.equal(candidate.format,2);assert.equal(candidate.profile.expeditions,1);assert.equal(await raw(p),campRaw,'failed terminal write leaves the old camp bytes intact');
   assert.equal(await p.locator('#to-base').isDisabled(),true,'cannot return before a successful terminal save');assert.equal(await p.evaluate(()=>window.trial.store.status),'failed');
@@ -180,9 +199,9 @@ await test('旧档迁移：旧终局只结算一次，刷新后不会重复记�
 
 /* PR5 targeted regression. Only button/keyboard interaction changes the world.
    getState/localStorage reads below are observations, not command injection. */
-await test('PR5 已使用G/T和V3/V7出口仅提供撤离',async()=>{
+await test('PR5 历史单层G/T重复交互不重复领取',async()=>{
  const observations=[];
- for(const kind of ['G','T','V3','V7']){
+ for(const kind of ['G','T']){
   const {context,page:p,errors}=await setup(kind.startsWith('V')?kind:undefined);
   try{
    if(!kind.startsWith('V'))await p.locator('#config').selectOption('main-none');
@@ -193,7 +212,7 @@ await test('PR5 已使用G/T和V3/V7出口仅提供撤离',async()=>{
        await cell(p,5,1);await cell(p,5,1); // R stands next to the goal cell and blocks the corridor: two basic attacks kill it (it hits C once)
        await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await click(p,'take');
     }
-   }else if(kind==='V3')await key(p,'ArrowLeft');
+   }
    const before=await state(p),bytes=await raw(p);
    assert.equal(await p.locator('#take').count(),0,'used/pure exit must not offer collect');
    assert.equal(await p.locator('#take-exit').isEnabled(),true);
@@ -302,7 +321,7 @@ async function walkTo(p,target,{mouseFirst=false}={}){
  throw Error('route not finished');
 }
 async function viaStairs(p){await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='playing');}
-await test('远征：随机楼层真实键鼠，下楼并返回旧层；进度只在内存',async()=>{
+await test('远征：随机楼层真实键鼠，只能下楼，无上楼或撤离；进度只在内存',async()=>{
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
   await p.goto(base+'?dev=1&seed='+EXPEDITION_SEED);await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
@@ -314,14 +333,13 @@ await test('远征：随机楼层真实键鼠，下楼并返回旧层；进度�
   s=await state(p);const roundBeforeStairs=s.round;
   await viaStairs(p);s=await state(p);const stored1=s.dungeon.stored['1'],floor1Enemies=stored1.enemies.map(id=>[id,stored1.units[id].hp,stored1.units[id].pos]); // floor 1 as it was left
   assert.equal(s.dungeon.level,2);assert.equal(s.round,roundBeforeStairs+1);
-  const up=s.points.find(q=>q.kind==='up').pos;assert.deepEqual(s.units[s.leader].pos,up);
+  assert.equal(s.points.some(q=>q.kind==='up'||q.kind==='exit'),false);
   assert.ok(s.queue.every(id=>s.units[id].hp<=0||s.units[id].pos));
   await p.screenshot({path:artifact+'windows-expedition-floor2.png',fullPage:true});
   assert.equal(await raw(p),null);assert.match(await p.locator('#save').innerText(),/开发者远征只在内存中/);
-  await viaStairs(p);s=await state(p);
-  assert.equal(s.dungeon.level,1);assert.deepEqual(s.units[s.leader].pos,down);
-  assert.deepEqual(s.enemies.map(id=>[id,s.units[id].hp,s.units[id].pos]),floor1Enemies);
-  assert.deepEqual(errors,[]);return {seed:EXPEDITION_SEED,steps,cameraAtStairs:cam,crossed:'1->2->1'};
+  assert.equal(await p.locator('#take-exit').count(),0,'arrival has no return stair or exit');
+  assert.deepEqual(s.dungeon.stored['1'].enemies.map(id=>[id,s.dungeon.stored['1'].units[id].hp,s.dungeon.stored['1'].units[id].pos]),floor1Enemies);
+  assert.deepEqual(errors,[]);return {seed:EXPEDITION_SEED,steps,cameraAtStairs:cam,crossed:'1->2',downwardOnly:true};
  }finally{await context.close();}
 });
 /* Stage 6.4: real keys and clicks on a fixed seed. The route reads the state only to choose the next key; invitations are refused by button. */
@@ -472,68 +490,28 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
  }finally{await context.close();}
 });
 /* Stage 7.2: create a wipe fixture in memory through TrialStore.start; only its settled camp profile is installed for the real base UI. */
-await test('失败与救援7.2：完成G→全灭→伙伴走失→基地付费→下一局有效探险后回归',async()=>{
- const {createExpedition,reveal}=await import('../../src/core/engine.ts');
- const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
- const profile=newGameProfile('chikorita','cyndaquil').profile;
- profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
- profile.next=4;profile.team=['P1','P2','P3'];profile.leader='P1';
- const w=createExpedition('rescue-run',4242,2,squadOf(profile),0);
- const g=w.points.find(q=>q.kind==='goal').pos;const k=q=>q.x+','+q.y;const floor=new Set(w.floor.map(k));
- const near=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1},{x:1,y:1},{x:-1,y:-1},{x:1,y:-1},{x:-1,y:1},{x:2,y:0},{x:-2,y:0}].map(d=>({x:g.x+d.x,y:g.y+d.y})).filter(q=>floor.has(k(q)));
- assert.ok(near.length>=4,'enough free cells around G');
- w.units.A.pos={...g};w.units.B.pos=near[1];w.units.C.pos=near[2];
- for(const id of w.queue)w.units[id].hp=1;
- const foe=w.units[w.enemies[0]];foe.pos=near[0];foe.hp=200;foe.maxHp=200;foe.ai='chase';foe.damage=4;foe.range=1;
- w.prog.rng=7;reveal(w);
- const context=await browser.newContext({viewport:{width:1440,height:1100}});
- await context.addInitScript(()=>{window.__trialNoAnim=true;});
- const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
+await test('结算8.1：全灭仍带回伙伴，招式机丢失，三组结算与无救援营地',async()=>{
+ const {context,page:p,errors}=await setup('BOSSWIPE');
  try{
-  await p.goto(base+'?dev=1&seed=4300');await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,w,profile);await p.locator('#take').waitFor();
-  await click(p,'take');assert.equal((await state(p)).goal,true);
-  for(let i=0;i<30&&(await state(p)).phase!=='ended';i++)await click(p,'wait');
-  let s=await state(p);assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');
-  assert.deepEqual(s.end.lost,['C']);assert.equal(s.end.reward,100);assert.equal(s.end.effective,true);
-  await p.locator('#settle').waitFor();
-  assert.match(await p.locator('#eff-line').innerText(),/算有效探险.*完成了基础目标 G/);
-  assert.match(await p.locator('#reward-line').innerText(),/基础报酬：100/);
-  assert.match(await p.locator('#lost-line').innerText(),/C 波波/);
-  assert.match(await p.locator('#pool-change').innerText(),/P3 波波/);
-  assert.match(await p.locator('#pool-change').innerText(),/进入救援池/);
-  await p.screenshot({path:artifact+'windows-rescue-1-result.png',fullPage:true});
-  let pr=await p.evaluate(()=>window.trial.profile());
-  assert.equal(pr.account,100);assert.deepEqual(pr.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P3',false,4]]);assert.deepEqual(pr.team,['P1','P2']);
-  assert.equal(await raw(p),null,'the developer world and settlement remain in memory until a camp-only fixture is made');
-  assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),pr),true);
-  await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),pr);
-  assert.match(await p.locator('#account').innerText(),/100/);assert.match(await p.locator('#rescue-P3').innerText(),/未付费.*4/);
-  await p.screenshot({path:artifact+'windows-rescue-2-base.png',fullPage:true});
-   const unpaidBase=structuredClone(pr);await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),unpaidBase);
-  await click(p,'rescue-pay-P3');
-  pr=await p.evaluate(()=>window.trial.profile());assert.equal(pr.account,40);assert.deepEqual(pr.rescue.map(r=>[r.inst.id,r.paid,r.left]),[['P3',true,1]]);
-  assert.match(await p.locator('#rescue-P3').innerText(),/已付费/);assert.equal(await p.locator('#rescue-pay-P3').count(),0);
-   const paidBase=structuredClone(pr);await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),paidBase);
-   assert.equal(await p.locator('#depart').isEnabled(),true,'the base remains able to start an expedition after rescue payment');
-  await click(p,'purse-up');await click(p,'purse-up');assert.equal(await p.locator('#purse-value').innerText(),'40');assert.equal(await p.locator('#purse-up').isDisabled(),true,'no more than the account holds');
-  const paidCampRaw=await raw(p);await click(p,'depart');await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
-  s=await state(p);assert.equal(s.purse,40);assert.deepEqual(s.queue,['A','B']);
-  assert.equal((await p.evaluate(()=>window.trial.profile())).account,0);assert.equal(await raw(p),paidCampRaw,'departure preserves the paid camp wallet');
-   const goal=s.points.find(q=>q.kind==='goal').pos;assert.deepEqual(s.units.A.pos,{x:16,y:6});assert.deepEqual(goal,{x:8,y:5});
-   // Real enemies now walk up to the leader on the way (floor 1 has three): the route keeps stepping toward G, fights nothing on purpose, and refuses any invitation a defeated enemy leaves.
-   for(let i=0;i<40;i++){let t=await state(p);if(t.phase==='invitation'){await reject(p);continue;}const a=t.units.A.pos;if(a.x===goal.x&&a.y===goal.y)break;await key(p,a.x>goal.x?'ArrowLeft':'ArrowUp');}
-   assert.deepEqual((await state(p)).units.A.pos,goal,'real movement reaches G');await click(p,'take');assert.equal((await state(p)).goal,true);
-   await exit(p);
-  s=await state(p);assert.equal(s.end.outcome,'normal');assert.equal(s.end.effective,true);assert.equal(s.end.refund,40);
-  assert.match(await p.locator('#pool-change').innerText(),/P3 波波/);
-   const secondEnd=structuredClone(s),settledRaw=await raw(p);assert.equal(JSON.parse(settledRaw).profile.expeditions,2,'the completed effective run is settled before returning to base');
-  await click(p,'to-base');
-  pr=await p.evaluate(()=>window.trial.profile());
-  assert.equal(pr.account,140);assert.deepEqual(pr.rescue,[]);assert.deepEqual(pr.roster.map(i=>i.id),['P1','P2','P3']);assert.deepEqual(pr.roster[2].carry,['tackle','gust']);
-  assert.equal(await p.locator('#rescue-empty').count(),1);
-  await p.screenshot({path:artifact+'windows-rescue-3-returned.png',fullPage:true});
-   assert.equal(await raw(p),settledRaw,'returnToBase does not write the already settled camp record');await p.reload();await ready(p);assert.equal(await state(p),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),pr);assert.equal(await p.locator('#depart').isEnabled(),true,'the base can start another expedition after P3 returns');
-  assert.deepEqual(errors,[]);return {wipe:true,lost:['C'],paid:60,returnedAfterEffectiveRun:true,account:pr.account};
+  await start(p);const before=await p.evaluate(()=>window.trial.profile());
+  await click(p,'wait');const ended=await state(p);assert.equal(ended.end.outcome,'wipe');
+  assert.equal(ended.dungeon.roguelike,true);
+  const resultText=await p.locator('.result').innerText();assert.match(resultText,/讨伐首领：未击败/);
+  assert.doesNotMatch(resultText,/讨伐首领：未挑战|目标未完成|已取得 0 · 正常带出 0/);
+  assert.deepEqual(ended.end.lost,[]);assert.equal(ended.end.reward,0);assert.equal(ended.purse,0);
+  assert.ok(ended.end.tms.every(t=>t.fate==='lost'));
+  for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
+  assert.match(await p.locator('#depth-rewards').innerText(),/本局无此项奖励/);
+  assert.match(await p.locator('#camp-task-rewards').innerText(),/本局无此项奖励/);
+  assert.match(await p.locator('#harvest-rewards').innerText(),/伙伴.*招式机/s);
+  const after=await p.evaluate(()=>window.trial.profile());assert.equal(after.expeditions,before.expeditions+1);
+  assert.deepEqual(after.roster,before.roster.map(i=>({...i,tactic:'wait'})),'both partners return and keep the in-run tactic');assert.deepEqual(after.rescue,before.rescue);assert.equal(after.account,before.account);
+  assert.deepEqual(after.vault,before.vault);assert.equal(await raw(p),null,'developer fixture remains in memory');
+  await p.screenshot({path:artifact+'windows-settlement-wipe.png',fullPage:true});
+  assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),after),true);
+  await p.reload();await ready(p);assert.equal(await p.locator('#account').count(),0);assert.equal(await p.locator('#rescue-pool').count(),0);
+  assert.equal(await p.locator('#purse-up').count(),0);assert.equal(await p.locator('#difficulty-picker').count(),1);assert.equal(await p.locator('#depart').isEnabled(),true);
+  assert.deepEqual(errors,[]);return {wipe:true,allPartnersReturned:true,machinesLost:true,threeRewardGroups:true};
  }finally{await context.close();}
 });
 /* Stage 7.2: shop and exchanger panels use separate memory fixtures on seed 103, with real clicks for every service action. */
@@ -543,7 +521,8 @@ await test('服务点7.2：商店购买不占回合；交换机送回伙伴与�
  const profile=newGameProfile('chikorita','cyndaquil').profile;
  profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
  profile.next=4;profile.team=['P1','P2','P3'];profile.leader='P1';
- const makeWorld=(kind,items)=>{const w=createExpedition('svc-run',103,2,squadOf(profile),100);w.units.A.pos={...w.points.find(q=>q.kind===kind).pos};   // 7.8 changed the generated floor, so the service cells are read, not hard-coded
+ const makeWorld=(kind,items)=>{const w=createExpedition('svc-run',103,2,squadOf(profile),0);w.purse=100; // service fixture: money already earned during the run
+w.units.A.pos={...w.points.find(q=>q.kind===kind).pos};   // 7.8 changed the generated floor, so the service cells are read, not hard-coded
   w.tms=items;w.bag=1;reveal(w);return w;};
  const shopWorld=makeWorld('shop',[{move:'protect',source:'target',fate:'held'}]);
  const exchangeWorld=makeWorld('exchange',[{move:'protect',source:'target',fate:'held'},{move:'roar',source:'shop',fate:'held'}]);
@@ -730,7 +709,7 @@ async function hoverCell(p,x,y){
  const s=await state(p),b=await p.locator('canvas').boundingBox(),cam=await p.evaluate(()=>window.trial.camera());
  await p.mouse.move(b.x+(x*40+20-cam.x)*b.width/680,b.y+(y*40+20-cam.y)*b.height/350);
 }
-await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放大与名牌、首领信息、吹飞被拒的中文原因、从前庭撤离见结算',async()=>{
+await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放大与名牌、首领信息、吹飞被拒的中文原因',async()=>{
  const {context,page:p,errors}=await setup('BOSS');
  try{
   const options=await p.locator('#fixture option').allTextContents();assert.ok(options.includes('首领层（紧邻首领）'),'the developer menu offers the boss scene: '+options);
@@ -751,16 +730,37 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
   assert.deepEqual(errors,[]);return {tiles:v.tiles,bossScale:v.boss.scale,message:'首领不能被吹飞；本轮未执行'};
  }finally{await context.close();}
 });
-await test('7.3 首领层：不挑战首领，从前庭普通出口撤离，看到结算画面（未挑战）',async()=>{
- const {context,page:p,errors}=await setup('BOSSX');
+await test('结算8.1：首领倒下后自动胜利，三组奖励与招式机带回',async()=>{
+ const {context,page:p,errors}=await setup('BOSSWIN');
  try{
-  await start(p);
-  const s=await state(p),exitPos=s.points.find(q=>q.kind==='exit').pos;assert.deepEqual(s.units[s.leader].pos,exitPos);assert.equal(s.units.boss.maxHp,56);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
-  await exit(p);
-  const end=await state(p);assert.equal(end.phase,'ended');assert.equal(end.end.outcome,'normal');assert.equal(end.end.boss,false);
-  const text=await p.locator('.result').innerText();assert.match(text,/讨伐首领：未挑战/);assert.match(text,/结算/);
-  await p.screenshot({path:artifact+'windows-boss-2-result.png',fullPage:true});
-  assert.deepEqual(errors,[]);return {settlement:true,boss:'未挑战'};
+  await start(p);const s=await state(p);assert.equal(s.points.some(q=>q.kind==='exit'||q.kind==='up'),false);
+  await cell(p,s.units.boss.pos.x,s.units.boss.pos.y);
+  for(let n=0;n<8&&(await state(p)).phase!=='ended';n++){
+   const phase=(await state(p)).phase;
+   if(phase==='invitation')await reject(p);else if(phase==='evolution')await click(p,'evolution-close');else throw Error('boss defeat must settle automatically');
+  }
+  const ended=await state(p);assert.equal(ended.phase,'ended');assert.equal(ended.end.outcome,'won');assert.equal(ended.end.boss,true);
+  assert.ok(ended.end.tms.some(t=>t.source==='boss'&&t.fate==='brought'));
+  assert.equal(ended.dungeon.roguelike,true);
+  const resultText=await p.locator('.result').innerText();assert.match(resultText,/讨伐首领：成功/);
+  assert.doesNotMatch(resultText,/目标(?:已完成|未完成)|正常带出/);
+  assert.match(await p.locator('.result').innerText(),/击败首领/);
+  for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
+  await p.screenshot({path:artifact+'windows-settlement-won.png',fullPage:true});
+  assert.deepEqual(errors,[]);return {automaticWin:true,threeRewardGroups:true,bossMachineBrought:true};
+ }finally{await context.close();}
+});
+await test('难度8.1：困难选择保存，刷新保留，出发固定零钱袋且局内不可更改',async()=>{
+ const {context,page:p,errors}=await plainContext();
+ try{
+  await p.goto(base);await p.locator('#title-new').click();await newGameClicks(p,'treecko','mudkip');
+  await click(p,'difficulty-hard');const camp=JSON.parse(await raw(p));assert.equal(camp.profile.difficulty,'hard');
+  await p.reload();await p.locator('#title-continue').click();await ready(p);assert.equal(await p.locator('#difficulty-hard').getAttribute('aria-pressed'),'true');
+  await click(p,'depart');const s=await state(p);assert.equal(s.difficulty,'hard');assert.equal(s.purse,0);assert.equal(await p.locator('#difficulty-picker').count(),0);
+  const {generateFloor}=await import('../../src/core/dungeon.ts');
+  const normal=generateFloor(s.dungeon.seed,1,{...s.dungeon,difficulty:'normal'});
+  assert.ok(s.enemies.every(id=>s.units[id].maxHp>normal.enemies.find(e=>e.id===id).hp));
+  assert.deepEqual(errors,[]);return {hardSaved:true,enemyHpGreaterThanNormal:true,zeroPurse:true};
  }finally{await context.close();}
 });
 await test('7.3 新游戏→出发→第1层：苔石主题（原石地与岩壁），三层带首领的远征',async()=>{

@@ -610,7 +610,7 @@ await test('结算8.1：全灭仍带回伙伴，招式机丢失，三组结算�
   assert.deepEqual(errors,[]);return {wipe:true,allPartnersReturned:true,machinesLost:true,threeRewardGroups:true};
  }finally{await context.close();}
 });
-/* Stage 7.2: shop and exchanger panels use separate memory fixtures on seed 103, with real clicks for every service action. */
+/* Stage 7.2 compatibility: shop uses seed 103; the retired exchanger is placed explicitly in a memory fixture. Every service action uses real clicks. */
 await test('服务点7.2：商店购买不占回合；交换机送回伙伴与招式机',async()=>{
  const {createExpedition,reveal}=await import('../../src/core/engine.ts');
  const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
@@ -618,7 +618,14 @@ await test('服务点7.2：商店购买不占回合；交换机送回伙伴与�
  profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
  profile.next=4;profile.team=['P1','P2','P3'];profile.leader='P1';
  const makeWorld=(kind,items)=>{const w=createExpedition('svc-run',103,2,squadOf(profile),0);w.purse=100; // service fixture: money already earned during the run
-w.units.A.pos={...w.points.find(q=>q.kind===kind).pos};   // 7.8 changed the generated floor, so the service cells are read, not hard-coded
+  if(kind==='exchange'){
+   assert.equal(w.points.some(q=>q.kind==='exchange'),false,'8.3 generates no exchanger');
+   const cell=w.floor.find(p=>!w.points.some(q=>q.pos.x===p.x&&q.pos.y===p.y)&&!Object.values(w.units).some(u=>u.pos?.x===p.x&&u.pos?.y===p.y)&&!w.adventureRooms?.some(r=>r.interaction.x===p.x&&r.interaction.y===p.y));
+   assert.ok(cell,'historical exchange fixture needs a free floor cell');
+   w.points.push({pos:{...cell},kind:'exchange',used:false});
+   w.exchange={level:1,used:false,sent:null};
+  }
+  w.units.A.pos={...w.points.find(q=>q.kind===kind).pos};
   w.tms=items;w.bag=1;reveal(w);return w;};
  const shopWorld=makeWorld('shop',[{move:'protect',source:'target',fate:'held'}]);
  const exchangeWorld=makeWorld('exchange',[{move:'protect',source:'target',fate:'held'},{move:'roar',source:'shop',fate:'held'}]);
@@ -936,6 +943,66 @@ await test('7.7b 状态：实际施放团队保护、倒计时与快速防守；
   for(const u of Object.values(quick.units))assert.equal(Object.hasOwn(u,'quickguard'),false);
   assert.match(await p.locator('#history').textContent(),/快速防守/);
   assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {fixtureMoves:true,realCasts:true,reflect:8,lightscreen:9,quickGuardTransient:true,memoryOnly:true};
+ }finally{await context.close();}
+});
+await test('8.3 挑战房：真实按钮开始、封门战斗、清场开门与奖励截图',async()=>{
+ const {context,page:p,errors}=await setup();try{
+  await emptyReady(p);
+  const {createExpedition}=await import('../../src/core/engine.ts');
+  const fixture=createExpedition('browser-rooms83-challenge',4,3,{members:[
+   {inst:'P1',species:'mudkip',carry:[{move:'blizzard',pp:20}],tactic:'wait'},
+   {inst:'P2',species:'chikorita',carry:[{move:'tackle',pp:20}],tactic:'wait'}],leader:0},0,true,3);
+  const room=fixture.adventureRooms.find(r=>r.type==='challenge');assert.ok(room);
+  fixture.units.A.pos={...room.interaction};fixture.units.A.hp=fixture.units.A.maxHp=200;
+  for(const id of fixture.enemies)fixture.units[id].waitOnly=true;
+  fixture.seen=fixture.floor.map(q=>q.x+','+q.y);
+  await startMemory(p,fixture);
+  assert.equal(await p.locator('#legend-goal').isVisible(),false);assert.doesNotMatch(await p.locator('.legend').innerText(),/交换机/);
+  assert.equal(await p.locator('#adventure-room-panel').getAttribute('data-room-state'),'idle');
+  await p.screenshot({path:artifact+'windows-rooms83-challenge-idle.png',fullPage:true});
+  await click(p,'start-challenge');let s=await state(p),ar=s.adventureRooms.find(r=>r.room===room.room);
+  assert.equal(ar.state,'sealed');assert.equal(s.round,1);assert.ok(ar.enemyIds.some(id=>id.startsWith('c1')));
+  assert.ok(ar.sealedCells.every(q=>!s.floor.some(c=>c.x===q.x&&c.y===q.y)));
+  await p.screenshot({path:artifact+'windows-rooms83-challenge-sealed.png',fullPage:true});
+  let rounds=0,prompts=0;
+  while((s=await state(p)).adventureRooms.find(r=>r.room===room.room).state!=='cleared'){
+   if(s.phase==='invitation'){assert.ok(++prompts<20);await reject(p);continue;}
+   if(s.phase==='evolution'){assert.ok(++prompts<20);await click(p,'evolution-close');continue;}
+   assert.equal(s.phase,'playing');assert.ok(++rounds<=12,'challenge fixture battle must finish');
+   await click(p,'skill-blizzard');await cell(p,s.units[s.leader].pos.x,s.units[s.leader].pos.y);
+  }
+  assert.equal(s.adventureRooms.find(r=>r.room===room.room).reward,'currency');assert.ok(s.purse>=40);
+  for(const q of ar.sealedCells)assert.ok(s.floor.some(c=>c.x===q.x&&c.y===q.y));
+  assert.match(await p.locator('#challenge-reward-result').innerText(),/40/);
+  assert.equal(await p.locator('#start-challenge').count(),0);
+  await p.screenshot({path:artifact+'windows-rooms83-challenge-cleared.png',fullPage:true});
+  assert.deepEqual(errors,[]);return {seed:4,room:room.room,battleRounds:rounds,sealedThenCleared:true,reward:s.purse,
+   fixtureBoundary:'生成地图的开发者内存夹具：初始小队放到石碑，主控200HP并携带暴风雪，原普通敌人等待；开始后只用真实按钮和画布输入。不代表自然探索通关或挑战难度。'};
+ }finally{await context.close();}
+});
+await test('8.3 道具房：实际拾取大树果与全员PP补剂，背包使用与完成标记',async()=>{
+ const {context,page:p,errors}=await setup();try{
+  const {createExpedition}=await import('../../src/core/engine.ts');const checks=[];
+  for(const [seed,item] of [[7,'bigBerry'],[15,'teamTonic']]){
+   await p.reload();await emptyReady(p);
+   const fixture=createExpedition('browser-rooms83-item-'+seed,seed,3,{members:[
+    {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'},
+    {inst:'P2',species:'chikorita',carry:[{move:'tackle',pp:20}],tactic:'wait'}],leader:0},0,true,3);
+   const room=fixture.adventureRooms.find(r=>r.type==='item');assert.equal(room.item,item);
+   fixture.units.A.pos={...room.interaction};fixture.units.A.hp=1;
+   fixture.units.A.pp.tackle=1;fixture.units.B.pp.tackle=2;
+   for(const id of fixture.enemies)fixture.units[id].waitOnly=true;
+   fixture.seen=fixture.floor.map(q=>q.x+','+q.y);await startMemory(p,fixture);
+   await click(p,'take-adventure-item');let s=await state(p);
+   assert.equal(s.prog.items[item],1);assert.equal(s.adventureRooms.find(r=>r.room===room.room).state,'done');
+   assert.equal(await p.locator('#adventure-room-panel').getAttribute('data-room-state'),'done');
+   await click(p,'use-'+item);if(item==='bigBerry')await click(p,'item-target-bigBerry-A');
+   s=await state(p);assert.equal(s.prog.items[item],0);
+   if(item==='bigBerry')assert.equal(s.units.A.hp,s.units.A.maxHp);
+   else{assert.equal(s.units.A.pp.tackle,2);assert.equal(s.units.B.pp.tackle,3);}
+   await p.screenshot({path:artifact+'windows-rooms83-'+item+'.png',fullPage:true});checks.push({seed,item,pickedAndUsed:true});
+  }
+  assert.deepEqual(errors,[]);return {checks,fixtureBoundary:'地图生成后初始主控摆在道具格，预设受伤及PP不足；拾取和使用均为实际UI输入，不代表自然探索路线。'};
  }finally{await context.close();}
 });
 await browser.close();

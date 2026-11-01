@@ -1,0 +1,37 @@
+{
+  "roomTypeWeights": {
+    "challenge": 35,
+    "commission": 30,
+    "blessing": 20,
+    "item": 15
+  },
+  "challengeRewardWeights": {
+    "currency": 30,
+    "item": 25,
+    "invite": 15,
+    "tm": 15,
+    "blessing": 15
+  },
+  "itemWeights": {
+    "bigBerry": 50,
+    "teamTonic": 50
+  },
+  "challengeCurrencyAmount": 40,
+  "items": {
+    "bigBerry": {
+      "name": "大树果",
+      "effect": {
+        "type": "fullHeal",
+        "target": "selfOrAdjacent"
+      }
+    },
+    "teamTonic": {
+      "name": "全员 PP 补剂",
+      "effect": {
+        "type": "restorePp",
+        "target": "allLivingCompanions",
+        "perMove": 1
+      }
+    }
+  }
+}

@@ -31,6 +31,8 @@ function placeAdjacent(world,actorId,targetId) {
 
 function bossFight({id='boss-settlement',seed=4,actorId='A',allDown=false,difficulty='normal'}={}) {
   const world=jumpToFloor(makeRun(id,seed,difficulty),3);
+  const expectedBossRoom=generateFloor(seed,3,{width:36,height:24,floors:3,boss:true,roguelike:true,difficulty}).bossRoom;
+  assert.equal(world.bossRoom,expectedBossRoom,'the active floor records the generated boss-room index');
   const boss=world.units.boss;
   assert.ok(boss?.boss,'the generated third floor has its regional boss');
   world.enemies=['boss'];
@@ -63,17 +65,18 @@ test('three difficulty multipliers scale the generated boss HP to 39, 56 and 79'
   assert.ok(isDifficulty('easy')&&isDifficulty('normal')&&isDifficulty('hard'));
   assert.equal(isDifficulty('extreme'),false);
   const actual=['easy','normal','hard'].map(difficulty=>{
-    const floor=generateFloor(39,3,{width:20,height:14,floors:3,boss:true,roguelike:true,difficulty});
+    const floor=generateFloor(39,3,{width:36,height:24,floors:3,boss:true,roguelike:true,difficulty});
     return floor.enemies.find(enemy=>enemy.boss).hp;
   });
   assert.deepEqual(actual,[39,56,79]);
 });
 
-test('legacy floor generation without the roguelike marker still places exits and uses normal HP',()=>{
-  const first=generateFloor(39,1,{width:20,height:14,floors:3,boss:true});
-  const last=generateFloor(39,3,{width:20,height:14,floors:3,boss:true});
-  assert.ok(first.points.some(point=>point.kind==='exit'));
-  assert.ok(last.points.some(point=>point.kind==='exit'));
+test('the 8.2 generator has no exits even without the optional roguelike marker and uses normal HP',()=>{
+  const params={width:36,height:24,floors:3,boss:true};
+  const first=generateFloor(39,1,params);
+  const last=generateFloor(39,3,params);
+  assert.equal(first.points.some(point=>point.kind==='exit'||point.kind==='up'),false);
+  assert.equal(last.points.some(point=>point.kind==='exit'||point.kind==='up'||point.kind==='down'),false);
   assert.equal(last.enemies.find(enemy=>enemy.boss).hp,56);
   assert.equal(ENEMY_DIFFICULTY,0.4);
 });
@@ -102,7 +105,7 @@ test('a new run starts with zero money, generates only downward stairs, and cann
   assert.equal(world.difficulty,'normal');
   assert.equal(world.purse,0);
   for(let level=1;level<=3;level++){
-    const floor=generateFloor(21,level,{width:20,height:14,floors:3,boss:true,roguelike:true});
+    const floor=generateFloor(21,level,{width:36,height:24,floors:3,boss:true,roguelike:true});
     assert.equal(floor.points.some(point=>point.kind==='exit'||point.kind==='up'),false,`floor ${level} has no exit or upward stair`);
   }
   assert.equal(world.points.some(point=>point.kind==='exit'||point.kind==='up'),false);
@@ -140,9 +143,11 @@ test('a new run starts with zero money, generates only downward stairs, and cann
 
 test('boss victory waits for experience, evolution, boss TM and recruitment settlement',()=>{
   const world=bossFight({seed:13});world.prog.rng=rngThatInvitesAfterBossDrop();
+  const bossRoom=world.bossRoom;
   const result=applyCommand(world,{type:'round',action:{type:'basic',target:'boss'}});
   assert.equal(result.ok,true);
   const pending=result.state;
+  assert.equal(pending.bossRoom,bossRoom,'the room marker remains attached while the win is waiting for invite settlement');
   assert.equal(pending.phase,'invitation','victory waits until the generated invitation is accepted or rejected');
   assert.equal(pending.end,null);
   assert.equal(pending.prog.exp,PROG.thresholds[15]+44,'the boss XP is included first');
@@ -154,6 +159,7 @@ test('boss victory waits for experience, evolution, boss TM and recruitment sett
   assert.equal(settled.ok,true);assert.equal(settled.state.phase,'ended');
   assert.equal(settled.state.end.outcome,'won');
   assert.equal(settled.state.end.boss,true);
+  assert.equal(settled.state.bossRoom,bossRoom,'boss defeat keeps the room available for rendering the result scene');
   assert.deepEqual(settled.state.end.tms.map(tm=>tm.fate),['brought','brought','brought'],'even exchanged TMs are carried on a win');
   assert.deepEqual(settled.state.end.lost,[]);
   assert.deepEqual([settled.state.end.reward,settled.state.end.purse,settled.state.end.refund],[0,0,0]);
@@ -162,6 +168,7 @@ test('boss victory waits for experience, evolution, boss TM and recruitment sett
 
 test('if the boss and last living partner fall in one round, the settled result is still a win',()=>{
   const world=bossFight({id:'boss-wipe',seed:34,actorId:'C',allDown:true});world.prog.rng=rngThatInvitesAfterBossDrop();
+  const bossRoom=world.bossRoom;
   const boss=world.units.boss,actor=world.units.C;
   const foe={id:'last-foe',side:'enemy',hp:100,maxHp:100,pos:null,pp:{},maxPp:{},learned:[],stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,level:5,species:'rattata',tactic:'gofoes'};
   world.units[foe.id]=foe;world.enemies.push(foe.id);placeAdjacent(world,'last-foe','C');
@@ -172,6 +179,7 @@ test('if the boss and last living partner fall in one round, the settled result 
   assert.equal(result.ok,true);assert.equal(result.state.phase,'ended');
   assert.equal(result.state.end.outcome,'won');
   assert.equal(result.state.end.boss,true);
+  assert.equal(result.state.bossRoom,bossRoom,'simultaneous defeat keeps the boss-room marker');
   assert.ok(result.state.invitations.every(invite=>invite.status!=='pending'),'any invite drawn for a defeated party is cancelled because nobody can decide');
   assert.deepEqual(result.state.end.lost,[]);
   assert.deepEqual(result.state.end.tms.map(tm=>tm.fate),['brought','brought','brought']);

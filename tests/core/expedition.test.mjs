@@ -35,10 +35,15 @@ test('X3 no enemy phase on arrival: an enemy beside the entry does not strike, a
 });
 test('X4 return keeps the old floor exactly: enemy HP, taken marks, revealed cells',()=>{
  // E and w2a are wait-only here: the test locks that the stored floor is kept byte-for-byte, so no enemy may wander on either floor
- const start=expedition({enemies:[enemy('E',9,1,5,'melee',{waitOnly:true})]});start.dungeon.stored['2'].units.w2a.waitOnly=true;
+ const start=expedition({enemies:[enemy('E',9,1,5,'melee',{waitOnly:true})]});start.dungeon.stored['2'].units.w2a.waitOnly=true;start.seenWalls=['9,7'];
  const away=cross(requested(start));
+ assert.deepEqual(away.dungeon.stored['1'].seenWalls,['0,0','0,2','1,0','1,2','2,0','2,2','3,0','3,2','4,0','4,2','5,0','5,2','6,0','6,2','7,0','7,2','8,0','8,2','9,0','9,2','9,7'],'floor 1 keeps its revealed walls in its own saved state');
+ assert.ok(!away.seenWalls?.includes('9,7'),'the old floor wall is not carried into floor 2');
+ away.seenWalls=[...(away.seenWalls??[]),'8,7'];
  const back=cross(round(away,stairs));
  assert.equal(back.dungeon.level,1);assert.equal(back.round,2);
+ assert.ok(back.seenWalls?.includes('9,7'),'return restores floor 1 wall memory');
+ assert.ok(!back.seenWalls?.includes('8,7'),'floor 2 wall memory does not leak back into floor 1');
  assert.deepEqual(coords(back),[pos(6),pos(4),pos(5)]);
  assert.deepEqual([back.units.E.hp,back.units.E.pos],[5,pos(9)]);
  assert.deepEqual(back.points,[{pos:pos(8),kind:'goal',used:true},{pos:pos(5),kind:'down',used:false}]);
@@ -122,19 +127,20 @@ test('X14 while a transit is pending no ordinary round or switch is accepted',()
 test('X15 a generated roguelike starts at arrival, descends to the next floor and refuses an upward exit',()=>{
  const s0=createExpedition('gen',777);
   assert.equal(s0.scenario,'expedition');assert.equal(s0.dungeon.level,1);assert.equal(s0.phase,'playing');
+  assert.deepEqual([s0.dungeon.width,s0.dungeon.height],[36,24]);
   assert.equal(s0.dungeon.roguelike,true);assert.equal(s0.points.some(p=>p.kind==='exit'||p.kind==='up'),false);
-  const options={width:20,height:14,floors:2,roguelike:true},g1=generateFloor(777,1,options),g2=generateFloor(777,2,options);
+  const options={width:36,height:24,floors:2,roguelike:true},g1=generateFloor(777,1,options),g2=generateFloor(777,2,options);
   for(const g of [g1,g2])assert.equal(g.points.some(p=>p.kind==='exit'||p.kind==='up'),false);
   const down=g1.points.find(p=>p.kind==='down').pos;
   assert.deepEqual(s0.units.C.pos,g1.arrival);
   assert.ok(s0.points.some(p=>p.kind==='goal'),'G remains a target, not an exit');
   assert.equal(new Set(coords(s0).map(p=>p.x+','+p.y)).size,3);
-  assert.deepEqual(s0.enemies,['w1a','w1b','w1c']);
+  assert.deepEqual(s0.enemies,['w1a','w1b','w1c','w1d','w1e','w1f']);
  const s=structuredClone(s0);s.units.A.hp=0;s.units.A.pos=null;s.units.B.hp=0;s.units.B.pos=null;s.units.C.pos=down;
   for(const id of s.enemies)s.units[id].waitOnly=true;
  const leaving=requested(s),down2=cross(leaving);
  assert.equal(down2.dungeon.level,2);assert.deepEqual(down2.units.C.pos,g2.arrival);
- assert.deepEqual(down2.enemies,['w2a','w2b','w2c']);assert.deepEqual(down2.floor,g2.floor);
+ assert.deepEqual(down2.enemies,['w2a','w2b','w2c','w2d','w2e','w2f']);assert.deepEqual(down2.floor,g2.floor);
   assert.equal(down2.points.some(p=>p.kind==='exit'||p.kind==='up'),false);
   assert.ok(down2.points.some(p=>p.kind==='item'),'T remains an item target');
   const upPos=down2.floor.find(pos=>!down2.points.some(p=>`${p.pos.x},${p.pos.y}`===`${pos.x},${pos.y}`));

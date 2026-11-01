@@ -7,13 +7,16 @@
 // 3 第二地形（河流＋小湖）只占“非地面格”时，画面里能看到多少，会不会改变地面（不改变连通性）；
 // 另外输出 8 邻位掩码归并后的 47 种形状及其帧号（规格第 4 节的映射表）。
 //
-// 运行（Node 24）：node --experimental-strip-types tools/verify/terrain-85b.mjs [--seeds 300] [--json 路径]
-import {writeFileSync} from 'node:fs';
+// 运行（Node 24）：node --experimental-strip-types tools/verify/terrain-85b.mjs [--seeds 300] [--json 路径] [--maps 目录]
+// --maps：每个主题取种子 1—3，按建议的生成（间隔 3、曲折通道）加第二地形，各写一张俯视 PNG（每格 4 像素）和同名字符画 .txt。
+//   放进被忽略的目录（例如 .artifacts/terrain-maps），不入库。字符：# 墙  . 通道  : 房间地面  ~ 水  ^ 岩浆
+import {writeFileSync,mkdirSync} from 'node:fs';
+import {deflateSync,crc32} from 'node:zlib';
 import {generateFloor,mulberry32,center,roomCells} from '../../src/core/dungeon.ts';
 
 const args=process.argv.slice(2);
 const opt=(n,d)=>{const i=args.indexOf(n);return i>=0?args[i+1]:d;};
-const SEEDS=Number(opt('--seeds',300)),JSON_OUT=opt('--json',null);
+const SEEDS=Number(opt('--seeds',300)),JSON_OUT=opt('--json',null),MAPS=opt('--maps',null);
 const W=36,H=24;
 const k=p=>`${p.x},${p.y}`;
 const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
@@ -171,7 +174,31 @@ function secondTerrain(floor,rooms,seed,level,theme){
   const ringOf=r=>{const s=new Set();for(const c of floor)for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){const p={x:c.x+dx,y:c.y+dy};if(!cells.has(k(p)))s.add(k(p));}return s;};
   const ring=ringOf(1),ring2=ringOf(2);
   const visible=[...t].filter(p=>ring.has(p)).length,visible2=[...t].filter(p=>ring2.has(p)).length;
-  return {terrain:t.size,visible,visible2,ring:ring.size,riverCells,riverInterrupted};
+  return {cells:t,terrain:t.size,visible,visible2,ring:ring.size,riverCells,riverInterrupted};
+}
+
+
+// ---------- 俯视小图（--maps）：不依赖第三方库的最小 PNG 编码 ----------
+function png(w,h,rgb){const row=w*3+1,raw=Buffer.alloc(row*h);
+  for(let y=0;y<h;y++){raw[y*row]=0;rgb.copy(raw,y*row+1,y*w*3,(y+1)*w*3);}
+  const chunk=(type,data)=>{const len=Buffer.alloc(4);len.writeUInt32BE(data.length);const td=Buffer.concat([Buffer.from(type),data]);const c=Buffer.alloc(4);c.writeUInt32BE(crc32(td)>>>0);return Buffer.concat([len,td,c]);};
+  const ihdr=Buffer.alloc(13);ihdr.writeUInt32BE(w,0);ihdr.writeUInt32BE(h,4);ihdr[8]=8;ihdr[9]=2;
+  return Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]),chunk('IHDR',ihdr),chunk('IDAT',deflateSync(raw)),chunk('IEND',Buffer.alloc(0))]);}
+export function overviewMap(seed,level,theme){
+  const g=referenceLayout(seed,level,{gap:3});if(!g)return null;
+  const x=secondTerrain(g.floor,g.rooms,seed,level,theme),cells=new Set(g.floor.map(k));
+  const liquid=theme==='ash'?'^':'~',lines=[];
+  for(let y=0;y<H;y++){let l='';for(let xx=0;xx<W;xx++){const p={x:xx,y};
+    l+=cells.has(k(p))?(g.rooms.some(r=>inRect(p,r))?':':'.'):x.cells.has(k(p))?liquid:'#';}lines.push(l);}
+  return {lines,stats:x};
+}
+function writeMaps(dir){mkdirSync(dir,{recursive:true});
+  const C={'#':[40,36,44],'.':[200,190,160],':':[150,170,110],'~':[60,120,220],'^':[235,110,30]},S=4;
+  for(const [theme,level] of [['moss',1],['wet',2],['ash',3]])for(let seed=1;seed<=3;seed++){
+    const m=overviewMap(seed,level,theme);if(!m)continue;const rgb=Buffer.alloc(W*S*H*S*3);
+    m.lines.forEach((l,y)=>[...l].forEach((ch,x)=>{for(let dy=0;dy<S;dy++)for(let dx=0;dx<S;dx++){const o=((y*S+dy)*W*S+x*S+dx)*3;rgb[o]=C[ch][0];rgb[o+1]=C[ch][1];rgb[o+2]=C[ch][2];}}));
+    const name=`${dir}/${theme}-L${level}-s${seed}`;writeFileSync(name+'.png',png(W*S,H*S,rgb));writeFileSync(name+'.txt',m.lines.join('\n')+'\n');
+    console.log(`\n${theme} 第 ${level} 层 种子 ${seed}（第二地形 ${m.stats.terrain} 格；河道落在房间里 ${m.stats.riverInterrupted}／${m.stats.riverCells}）\n${m.lines.join('\n')}`);}
 }
 
 // ---------- 运行 ----------
@@ -203,4 +230,5 @@ if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
     R['terrain_'+theme]={floors,terrainPerFloor:+(t/floors).toFixed(1),visiblePerFloor:+(v/floors).toFixed(1),visibleWithin2PerFloor:+(v2/floors).toFixed(1),visibleShareOfWallRing:pct(v,ring),riverCellsInsideRooms:rc?pct(ri,rc):0};
     console.log(`第二地形 ${theme}（第 ${level} 层）：每层 ${R['terrain_'+theme].terrainPerFloor} 格，其中贴着地面、画面可见 ${R['terrain_'+theme].visiblePerFloor} 格、2 格内 ${R['terrain_'+theme].visibleWithin2PerFloor} 格（1 格的占墙圈 ${R['terrain_'+theme].visibleShareOfWallRing}％）；河道落在房间里被打断 ${R['terrain_'+theme].riverCellsInsideRooms}％`);}
   if(JSON_OUT)writeFileSync(JSON_OUT,JSON.stringify(R,null,1));
+  if(MAPS)writeMaps(MAPS);
 }

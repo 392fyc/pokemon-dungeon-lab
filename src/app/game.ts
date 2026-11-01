@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import {applyCommand,traceRound,previewInvitation,createMain,createExpedition,key,same,plus,clone,skillTargets,ITEM_NAMES,PROG,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point} from '../core/engine.ts';
+import {applyCommand,traceRound,previewInvitation,createMain,createExpedition,key,same,plus,clone,skillTargets,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
@@ -28,7 +28,7 @@ const experienceProgress=(s:World)=>{
  return `本局等级 Lv${level} · 升级经验 ${progress}/${required}（升到下一级需当前等级经验；击倒敌人获得其等级×${PROG.expMultiplier}的经验）`;
 };
 const FATE:Record<TmItem['fate'],string>={held:'持有中',brought:'已带回',sent:'已由伙伴运送',lost:'已取得、未带出'};
-const SRC:Record<TmItem['source'],string>={target:'成果 T',shop:'商店',boss:'区域首领'};
+const SRC:Record<TmItem['source'],string>={target:'成果 T',shop:'商店',boss:'区域首领',challenge:'挑战奖励'};
 const REASON:Record<string,string>={goal:'完成了基础目标 G',recruit:'保留了本局新招募的伙伴',tm:'带回或安全送回了招式机'};
 const tmLine=(t:TmItem)=>`${tmName(t.move)}（${SRC[t.source]}）：${FATE[t.fate]}`;
 const params=new URLSearchParams(location.search);
@@ -40,6 +40,7 @@ const fixture=params.get('fixture') as ScenarioId|null;
 const checkMode=fixture!==null&&SCENARIOS.includes(fixture);
 const legend=document.querySelector<HTMLElement>('.legend')!;
 legend.innerHTML='<span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span id="legend-goal">G 基础目标</span><span>T 成果</span><span>下 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span id="legend-items-roguelike" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋）</span><span id="legend-adventures" hidden>房间：挑挑战 · 委委托 · 祝祝福 · 道道具（暗色已完成，封闭为挑战中）</span><span>暗格尚未揭示</span>'+(dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':'');
+const activityStatusRoot=document.createElement('section');activityStatusRoot.id='activity-status';activityStatusRoot.setAttribute('aria-live','polite');document.getElementById('save')!.after(activityStatusRoot);
 /** `?seed=<integer>` fixes the expedition seed (browser checks); otherwise every expedition draws a fresh one. */
 const seedParam=params.get('seed');
 const newSeed=()=>dev&&seedParam!==null&&/^\d+$/.test(seedParam)?Number(seedParam)>>>0:Math.floor(Math.random()*4294967296);
@@ -136,15 +137,28 @@ function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'
  }
  if(target&&s.enemies.includes(target))act({type:'basic',target});else act({type:'move',to:p});
 }
-function actionLabel(a:Action|null,actor?:string){if(!a)return '尚未选择';if(a.type==='move')return `移动到(${a.to.x},${a.to.y})`;if(a.type==='skill')return `${moveZh(a.skill)} → ${actor&&a.target===actor?'自身':a.target}`;if(a.type==='basic')return `普攻 → ${a.target}`;if(a.type==='swap')return `与${a.target}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${ITEM_NAMES[a.item]}（全队）`:`使用${ITEM_NAMES[a.item]} → ${a.target}`;if(a.type==='interact')return a.exit?'交互并请求跨层':'取得并继续';return '等待';}
+const itemName=(id:Item)=>id==='teamTonic'?itemZh(id):ITEM_NAMES[id];
+function actionLabel(a:Action|null,actor?:string){if(!a)return '尚未选择';if(a.type==='move')return `移动到(${a.to.x},${a.to.y})`;if(a.type==='skill')return `${moveZh(a.skill)} → ${actor&&a.target===actor?'自身':a.target}`;if(a.type==='basic')return `普攻 → ${a.target}`;if(a.type==='swap')return `与${a.target}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${a.target}`;if(a.type==='interact')return a.exit?'交互并请求跨层':'取得并继续';return '等待';}
 type AdventureRoom=NonNullable<World['adventureRooms']>[number];
 const challengeRewardPool=()=>[
  `${challengeRewardZh('currency')}（30%）`,
- `${challengeRewardZh('item')}（25%，${ITEM_NAMES.bigBerry}与${ITEM_NAMES.teamTonic}各50%）`,
+ `${challengeRewardZh('item')}（25%，${ITEM_NAMES.bigBerry}与${itemZh('teamTonic')}各50%）`,
  `${challengeRewardZh('invite')}（15%）`,
  `${challengeRewardZh('tm')}（15%）`,
- `${challengeRewardZh('blessing')}（15%；尚未开放时改发钱袋 +40）`,
+ `${challengeRewardZh('blessing')}（15%；清场后从可用选项中选一项）`,
 ].join('、');
+function commissionPenaltyText(penalty:typeof COMMISSIONS[CommissionId]['penalty']):string{
+ return penalty==='defenseMinusOne'?'全队防御阶段 −1（委托生效期间）':penalty==='berryHealHalf'?'树果回复减半（委托生效期间）':'无';
+}
+function activityStatus(s:World):string{
+ if(!s.dungeon?.roguelike||s.phase==='ended')return '';
+ const commissions=(s.commissions??[]).map(c=>{
+  const spec=COMMISSIONS[c.id],progress=c.speedLimit===null?`${c.progress}/${c.progressTarget}`:`已用 ${c.progress}/${c.speedLimit} 轮`;
+  return `<li><strong>${esc(spec.name)}</strong> · 第${c.floor}层接下 · 需本层完成 · 进度 ${progress}<p>${esc(spec.description)}</p><p class="muted">负面效果：${commissionPenaltyText(spec.penalty)}</p></li>`;
+ }).join('');
+ const blessings=(s.blessings??[]).map(id=>{const blessing=BLESSINGS[id];return `<li><strong>${esc(blessing.name)}</strong>：${esc(blessing.description)}</li>`;}).join('');
+ return `<section class="unit" id="commission-status"><h2>进行中的委托（${(s.commissions??[]).length}/3）</h2>${commissions?`<ul>${commissions}</ul>`:'<p>暂无进行中的委托。</p>'}</section><section class="unit" id="blessing-status"><h2>已获得的祝福</h2>${blessings?`<ul>${blessings}</ul>`:'<p>尚未获得祝福。</p>'}</section>`;
+}
 function adventureRoomPanel(s:World,room:AdventureRoom,editor:string,ready:boolean,draftActive:boolean):string{
  const typeName=adventureRoomTypeZh(room.type),stateName=adventureRoomStateZh(room.type,room.state),canAct=ready&&editor===s.leader&&!draft?.swap;
  const heading=`${typeName}房 · ${stateName}`;
@@ -155,15 +169,16 @@ function adventureRoomPanel(s:World,room:AdventureRoom,editor:string,ready:boole
   return `<section class="service" id="adventure-room-panel" data-room-type="challenge" data-room-state="cleared"><h2>${heading}</h2><p id="challenge-reward-result">${reward?`实际奖励：${esc(localizeLog(s,reward.replace(/^挑战奖励：/,'')))}`:'奖励已发放；具体内容见最近事件与本轮记录。'}</p></section>`;
  }
  if(room.type==='item'){
-  const item=room.item?ITEM_NAMES[room.item]:'道具';
+  const item=room.item?itemName(room.item):'道具';
   return room.state==='done'?`<section class="service" id="adventure-room-panel" data-room-type="item" data-room-state="done"><h2>${heading}</h2><p>${esc(item)}已拾取，门口标记已变暗。</p></section>`:
    `<section class="service" id="adventure-room-panel" data-room-type="item" data-room-state="idle"><h2>${heading}</h2><p>交互格上有${esc(item)}，拾取后会放入本局背包。</p>${button('take-adventure-item',`拾取${esc(item)}`,!canAct,'data-action="take-adventure-item" class="primary"')}</section>`;
  }
- if(room.type==='commission')return `<section class="service" id="adventure-room-panel" data-room-type="commission" data-room-state="${room.state}"><h2>${heading}</h2><p>委托内容尚未开放；现在交互会显示“尚未开放”，不消耗行动。</p>${room.state==='idle'?button('interact-commission','交互委托点',!canAct,'data-action="interact-commission"'):''}</section>`;
- return `<section class="service" id="adventure-room-panel" data-room-type="blessing" data-room-state="${room.state}"><h2>${heading}</h2><p>祝福内容尚未开放；现在交互会显示“尚未开放”，不消耗行动。</p>${room.state==='idle'?button('interact-blessing','交互祝福点',!canAct,'data-action="interact-blessing"'):''}</section>`;
+ if(room.type==='commission')return `<section class="service" id="adventure-room-panel" data-room-type="commission" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以查看本层试炼，选择接下或拒绝；拒绝会完成此房间。':'此房间已处理；进行中的委托进度与效果显示在右侧。'}</p>${room.state==='idle'?button('interact-commission','查看本层委托',!canAct,'data-action="interact-commission"'):''}</section>`;
+ return `<section class="service" id="adventure-room-panel" data-room-type="blessing" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以选择一项祝福，也可以放弃。':`此房间已处理；已获得的祝福显示在右侧。`}</p>${room.state==='idle'?button('interact-blessing','查看祝福选项',!canAct,'data-action="interact-blessing"'):''}</section>`;
 }
 function render(){renderOverlay();renderMain();renderExtras();refreshTransfer();if(screen==='play')void ensureBoard();}
-function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend-items').hidden=!s?.prog||roguelike;$('legend-items-roguelike').hidden=!s?.prog||!roguelike;$('legend-goal').hidden=roguelike;$('legend-adventures').hidden=!roguelike||!s?.adventureRooms?.length;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 轮 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'尚未出发');const runSummary=s?`${roguelike?'':`目标 ${s.goal?'已完成':'未完成'} · `}背包 ${s.bag}${s.prog?` · ${experienceProgress(s)} · 橙橙果×${s.prog.items.berry} PP多项小补剂×${s.prog.items.tonic}${roguelike?` · ${ITEM_NAMES.bigBerry}×${s.prog.items.bigBerry??0} ${ITEM_NAMES.teamTonic}×${s.prog.items.teamTonic??0}`:''}${s.dungeon?.base?` · 钱袋 ${s.purse??0}`:''}`:''}`:'';$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:runSummary;
+function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend-items').hidden=!s?.prog||roguelike;$('legend-items-roguelike').hidden=!s?.prog||!roguelike;$('legend-goal').hidden=roguelike;$('legend-adventures').hidden=!roguelike||!s?.adventureRooms?.length;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 轮 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'尚未出发');const runSummary=s?`${roguelike?'':`目标 ${s.goal?'已完成':'未完成'} · `}背包 ${s.bag}${s.prog?` · ${experienceProgress(s)} · 橙橙果×${s.prog.items.berry} PP多项小补剂×${s.prog.items.tonic}${roguelike?` · ${ITEM_NAMES.bigBerry}×${s.prog.items.bigBerry??0} · ${itemName('teamTonic')}×${s.prog.items.teamTonic??0}`:''}${s.dungeon?.base?` · 钱袋 ${s.purse??0}`:''}`:''}`:'';$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:runSummary;
+ const activityMarkup=s?activityStatus(s):'',activityRoot=$('activity-status');activityRoot.innerHTML=activityMarkup;activityRoot.hidden=!activityMarkup;
  $('message').textContent=notice;
  const expeditionMemory=s?.scenario==='expedition'&&s.phase!=='ended';
  const saveText=store.status==='failed'&&s?.phase==='ended'?'终局已结算，但未保存；重试成功后才能回营地':store.status==='failed'?'基地改动未保存；可以重试':store.status==='ready'&&expeditionMemory?(store.envelope?'基地档案已保存；本次远征仅在内存中':'开发者远征只在内存中；未创建营地档案'):store.status==='ready'&&s?.phase==='ended'?(store.envelope?'终局结算已保存':'开发者场景只在内存中'): {empty:'尚无可恢复记录',ready:'基地档案已保存',saving:'正在保存基地档案',failed:'基地改动未保存；可以重试',blocked:'记录无法载入，原字节已保留'}[store.status];
@@ -187,6 +202,26 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   $('flow').innerHTML=`<div class="result"><small>本局结果</small><h2>${end.outcome==='won'?'击败首领':end.outcome==='normal'?'正常撤离':'全队倒下'}${s.difficulty&&s.difficulty!=='normal'?`（${DIFFICULTY_LABEL[s.difficulty]}）`:''}</h2>${resultSummary}<p>${end.team.map(id=>`${esc(resources(s,id))}，${s.dungeon?.roguelike?'伙伴归营':end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。远征中已学的永久招式保留，回营后可以整备再出发。</p>${resultDetails(s)}${persistentRun?button('to-base','回到基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}<p class="muted">${persistentRun?(ready?'终局已结算并自动保存。':'终局已结算，保存失败；重试成功前不能回营地。'):'这是内存开发场景；结算不会写入营地存档。'} 终局ID ${esc(end.id)}</p></div>`;
   bind('to-base',()=>{if(anim.active)return;clear();notice='';void transition(store.returnToBase());});
   bind('new',()=>{const next=checkMode?createScenario(fixture!,newId()):begin(s.scenario==='main-invite'||s.scenario==='expedition'?s.scenario:'main-none');void transition(store.newTrial(next));});return;
+ }
+ if(s.phase==='commission'){
+  $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
+  if(!pending||pending.type!=='commission'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的委托选择。</p></div>';return;}
+  const spec=COMMISSIONS[pending.commission],full=(s.commissions?.length??0)>=3;
+  $('flow').innerHTML=`<div class="result" id="commission-choice" role="dialog" aria-labelledby="commission-heading"><small>本层委托</small><h2 id="commission-heading">${esc(spec.name)}</h2><p>${esc(spec.description)}</p><p>完成后经验折合 ${spec.equivalentEnemies} 只敌人。</p><p>接下后立即生效的负面效果：${commissionPenaltyText(spec.penalty)}。</p><p>委托须在本层完成；未完成时成功下楼会使委托失败并移除，不发奖励、不另加惩罚。</p>${full?'<p class="error">同时进行的委托已达 3 条，无法接下；拒绝本条后此房间完成。</p>':'<p>选择接下后，本层完成即可领取奖励；也可以拒绝并完成此房间。</p>'}<div class="button-row">${button('commission-accept','接下委托',!ready||full,'class="primary"')}${button('commission-reject','拒绝并完成房间',!ready)}</div></div>`;
+  bind('commission-accept',()=>void send({type:'commissionChoice',choice:'accept'}));bind('commission-reject',()=>void send({type:'commissionChoice',choice:'reject'}));return;
+ }
+ if(s.phase==='blessing'){
+  $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
+  if(!pending||pending.type!=='blessing'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的祝福选择。</p></div>';return;}
+  const source=pending.source==='challenge'?'挑战奖励':'祝福房';
+  $('flow').innerHTML=`<div class="result" id="blessing-choice" role="dialog" aria-labelledby="blessing-heading"><small>${source} · 可选 ${pending.options.length} 项</small><h2 id="blessing-heading">选择一项祝福</h2><div>${pending.options.map(id=>{const blessing=BLESSINGS[id];return button(`blessing-${id}`,`${esc(blessing.name)}<small style="display:block;color:#405038">${esc(blessing.description)}</small>`,!ready,'class="primary"');}).join('')}</div><div class="button-row">${button('blessing-skip','放弃祝福',!ready)}</div></div>`;
+  for(const id of pending.options)bind(`blessing-${id}`,()=>void send({type:'blessingChoice',blessing:id}));bind('blessing-skip',()=>void send({type:'blessingChoice',blessing:null}));return;
+ }
+ if(s.phase==='tmChoice'){
+  $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
+  if(!pending||pending.type!=='tmChoice'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的招式机选择。</p></div>';return;}
+  $('flow').innerHTML=`<div class="result" id="tm-choice" role="dialog" aria-labelledby="tm-choice-heading"><small>${SRC[pending.source]} · 下一张招式机</small><h2 id="tm-choice-heading">选择一张招式机</h2><p>选择后即可继续本轮。</p><div>${pending.options.map(move=>button(`tm-choice-${move}`,`${esc(tmZh(move))}招式机`,!ready,'class="primary"')).join('')}</div></div>`;
+  for(const move of pending.options)bind(`tm-choice-${move}`,()=>void send({type:'tmChoice',move}));return;
  }
   if(s.phase==='evolution'){
    $('controls').innerHTML='';const pending=s.pendingEvolutions?.[0],unit=pending?s.units[pending.actor]:undefined;
@@ -213,8 +248,8 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  if(choosingItem==='bigBerry')document.querySelectorAll<HTMLElement>('#controls [id^="item-target-"]').forEach(el=>{const id=el.id.slice('item-target-'.length);el.id=`item-target-bigBerry-${id}`;el.dataset.action=`item-target-bigBerry-${id}`;});
  const backpack=$('controls').querySelector<HTMLElement>('.items');
  if(backpack&&s.prog&&s.dungeon?.roguelike){
-  const summary=backpack.querySelector('p');if(summary)summary.textContent=`背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）· ${ITEM_NAMES.bigBerry}×${s.prog.items.bigBerry??0}（回满HP，对自己或相邻同行使用）· ${ITEM_NAMES.teamTonic}×${s.prog.items.teamTonic??0}（在场存活同行每招+1PP，不超过上限）`;
-  backpack.insertAdjacentHTML('beforeend',button('use-bigBerry',`使用${ITEM_NAMES.bigBerry}`,!editable||(!ready&&!draft)||!!draft?.swap,`data-action="use-bigBerry" ${choosingItem==='bigBerry'?'class="selected"':''}`)+button('use-teamTonic',`使用${ITEM_NAMES.teamTonic}`,!editable||(!ready&&!draft)||!!draft?.swap,`data-action="use-teamTonic"`));
+  const summary=backpack.querySelector('p');if(summary)summary.textContent=`背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）· ${ITEM_NAMES.bigBerry}×${s.prog.items.bigBerry??0}（回满HP，对自己或相邻同行使用）· ${itemName('teamTonic')}×${s.prog.items.teamTonic??0}（在场存活同行每招+1PP，不超过上限）`;
+  backpack.insertAdjacentHTML('beforeend',button('use-bigBerry',`使用${ITEM_NAMES.bigBerry}`,!editable||(!ready&&!draft)||!!draft?.swap,`data-action="use-bigBerry" ${choosingItem==='bigBerry'?'class="selected"':''}`)+button('use-teamTonic',`使用${itemName('teamTonic')}`,!editable||(!ready&&!draft)||!!draft?.swap,`data-action="use-teamTonic"`));
  }
  const leaderPos=s.units[s.leader]?.pos??null,activeAdventure=(s.adventureRooms??[]).find(room=>same(room.interaction,leaderPos));
  if(activeAdventure){$('controls').insertAdjacentHTML('beforeend',adventureRoomPanel(s,activeAdventure,editor,ready,!!draft));
@@ -226,7 +261,7 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  u.learned.forEach(k=>bind('skill-'+k,()=>{selectedSkill=k;choosingItem=null;render();}));
  for(const k of (s.dungeon?.roguelike?['berry','tonic','bigBerry']:['berry','tonic']) as Item[]){bind('use-'+k,()=>{if((s.prog?.items[k]??0)<1){notice=`背包里没有${ITEM_NAMES[k]}；本轮未执行`;choosingItem=null;render();return;}choosingItem=choosingItem===k?null:k;selectedSkill=null;choosingPartner=false;choosingSwap=false;render();});
   for(const id of s.queue)bind(k==='bigBerry'?`item-target-bigBerry-${id}`:'item-target-'+id,()=>{if(choosingItem===k)act({type:'use',item:k,target:id});});}bind('take',()=>act({type:'interact',exit:false}));bind('rest',()=>act({type:'interact',exit:false}));bind('take-exit',()=>act({type:'interact',exit:true}));bind('edit-main',()=>{if(draft){draft.editor=s.leader;selectedSkill=null;render();}});bind('edit-partner',()=>{if(draft){draft.editor=draft.partner;selectedSkill=null;render();}});bind('cancel-draft',()=>{clear();render();});
- if(s.dungeon?.roguelike)bind('use-teamTonic',()=>{if((s.prog?.items.teamTonic??0)<1){notice=`背包里没有${ITEM_NAMES.teamTonic}；本轮未执行`;render();return;}act({type:'use',item:'teamTonic',target:editor});});
+ if(s.dungeon?.roguelike)bind('use-teamTonic',()=>{if((s.prog?.items.teamTonic??0)<1){notice=`背包里没有${itemName('teamTonic')}；本轮未执行`;render();return;}act({type:'use',item:'teamTonic',target:editor});});
  bind('submit',()=>{if(draft?.main){const cmd={type:'round' as const,action:draft.main,...(!draft.swap?{override:{actor:draft.partner,action:draft.action!}}:{})};void send(cmd);}});
 }
 /** 6.5 base screen: roster, technique machines, carried moves, squad and departure. Every edit is one saved write; the next edit waits for it. */

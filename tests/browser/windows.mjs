@@ -40,10 +40,22 @@ async function start(p){await p.locator('#start').click();await ready(p);}
 async function key(p,k){await p.keyboard.press(k);await ready(p);}
 async function click(p,id){await p.locator('#'+id).click();await ready(p);}
 async function cell(p,x,y){
- const s=await state(p),b=await p.locator('canvas').boundingBox();
+ const canvas=p.locator('canvas');await canvas.scrollIntoViewIfNeeded();
+ const s=await state(p),b=await canvas.boundingBox();
  if(s.dungeon){ // expedition: fixed 40 px cells, camera follows the leader
-  const cam=await p.evaluate(()=>window.trial.camera());
-  await p.mouse.click(b.x+(x*40+20-cam.x)*b.width/680,b.y+(y*40+20-cam.y)*b.height/350);await ready(p);return;
+  // The new status cards can scroll the canvas when a lower skill button is clicked.
+  // As in five-games.mjs, measure again after hover details and camera movement settle.
+  for(let attempt=0;attempt<4;attempt++){
+   const cam=await p.evaluate(()=>window.trial.camera()),box=await canvas.boundingBox();
+   const dx=(x*40+20-cam.x)*box.width/680,dy=(y*40+20-cam.y)*box.height/350;
+   assert.ok(dx>=0&&dx<box.width&&dy>=0&&dy<box.height,'target must be visible on canvas');
+   await p.mouse.move(box.x+dx,box.y+dy);await p.waitForTimeout(150);
+   const after=await canvas.boundingBox(),afterCam=await p.evaluate(()=>window.trial.camera());
+   if(['x','y','width','height'].every(k=>Math.abs(after[k]-box[k])<0.5)&&afterCam.x===cam.x&&afterCam.y===cam.y){
+    await p.mouse.click(box.x+dx,box.y+dy);await ready(p);return;
+   }
+  }
+  assert.fail('canvas position must settle before the real click');
  }
  const xs=s.floor.map(q=>q.x),ys=s.floor.map(q=>q.y),minX=Math.min(...xs),minY=Math.min(...ys);
  const w=Math.max(...xs)-minX+1,h=Math.max(...ys)-minY+1,c=Math.min(66,600/w,270/h);
@@ -1003,6 +1015,67 @@ await test('8.3 道具房：实际拾取大树果与全员PP补剂，背包使�
    await p.screenshot({path:artifact+'windows-rooms83-'+item+'.png',fullPage:true});checks.push({seed,item,pickedAndUsed:true});
   }
   assert.deepEqual(errors,[]);return {checks,fixtureBoundary:'地图生成后初始主控摆在道具格，预设受伤及PP不足；拾取和使用均为实际UI输入，不代表自然探索路线。'};
+ }finally{await context.close();}
+});
+await test('8.4 委托与祝福：实际接下、拒绝、三选一、放弃及本局状态截图',async()=>{
+ const {context,page:p,errors}=await setup();try{
+  const {createExpedition}=await import('../../src/core/engine.ts');
+  const checks=[];
+  for(const [type,choice] of [['commission','accept'],['commission','reject'],['blessing','take'],['blessing','skip']]){
+   await p.reload();await emptyReady(p);
+   const fixture=createExpedition('browser-84-'+type+'-'+choice,1,3,{members:[
+    {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'}],leader:0},0,true,3);
+   const room=fixture.adventureRooms.find(r=>r.type===type);assert.ok(room);
+   fixture.units.A.pos={...room.interaction};fixture.seen=fixture.floor.map(q=>q.x+','+q.y);
+   for(const id of fixture.enemies)fixture.units[id].waitOnly=true;
+   await startMemory(p,fixture);await click(p,'interact-'+type);
+   const offered=await state(p);assert.equal(offered.phase,type);
+   await p.screenshot({path:artifact+'windows-84-'+type+'-'+choice+'-offer.png',fullPage:true});
+   if(type==='commission'){
+    await click(p,'commission-'+choice);
+    const s=await state(p);assert.equal(s.phase,'playing');assert.equal(s.round,offered.round);
+    assert.equal(s.commissions?.length??0,choice==='accept'?1:0);
+    assert.equal(s.adventureRooms.find(r=>r.room===room.room).state,'done');
+    assert.equal(await p.locator('#commission-abandon').count(),0);
+    if(choice==='accept')assert.match(await p.locator('#commission-status').innerText(),/当层|本层/);
+   }else{
+    const options=offered.pendingChoices[0].options;assert.equal(options.length,3);assert.equal(new Set(options).size,3);
+    await click(p,choice==='take'?'blessing-'+options[0]:'blessing-skip');
+    const s=await state(p);assert.equal(s.phase,'playing');assert.equal(s.round,offered.round);
+    assert.deepEqual(s.blessings??[],choice==='take'?[options[0]]:[]);
+    assert.equal(s.adventureRooms.find(r=>r.room===room.room).state,'done');
+   }
+   assert.equal(await raw(p),null,'the developer run and its choices stay in memory');
+   await p.screenshot({path:artifact+'windows-84-'+type+'-'+choice+'-result.png',fullPage:true});
+   checks.push({type,choice,round:offered.round});
+  }
+  assert.deepEqual(errors,[]);return {checks,fixtureBoundary:'seed1生成地图，初始主控放到交互格且普通敌人等待；之后通过真实按钮作选择，不代表自然探索通关。'};
+ }finally{await context.close();}
+});
+await test('8.4 选机：真实三选一按钮、一次消费与挑战奖励来源文字',async()=>{
+ const {context,page:p,errors}=await setup();try{
+  await emptyReady(p);const {createExpedition}=await import('../../src/core/engine.ts');
+  const fixture=createExpedition('browser-84-tm',1,3,{members:[
+   {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'}],leader:0},0,true,3);
+  const at={...fixture.units.A.pos};fixture.points=[{kind:'item',pos:at,used:false}];
+  fixture.adventureRooms=[];fixture.blessings=['tmChoice'];fixture.tmChoiceReady=true;
+  fixture.tms=[{move:'protect',source:'challenge',fate:'held'}];
+  for(const id of fixture.enemies)fixture.units[id].waitOnly=true;
+  await startMemory(p,fixture);
+  await click(p,'take');const offered=await state(p);assert.equal(offered.phase,'tmChoice');
+  const options=offered.pendingChoices[0].options;assert.equal(options.length,3);assert.equal(new Set(options).size,3);
+  await p.screenshot({path:artifact+'windows-84-tm-choice.png',fullPage:true});
+  await click(p,'tm-choice-'+options[1]);const s=await state(p);
+  assert.equal(s.phase,'playing');assert.equal(s.round,offered.round);assert.equal(!!s.tmChoiceReady,false);
+  assert.equal(s.tms.length,2);assert.deepEqual(s.tms[1],{move:options[1],source:'target',fate:'held'});
+  assert.equal(await raw(p),null);
+  const {closeOut}=await import('../../src/core/engine.ts');
+  s.phase='ended';s.end=closeOut(s,'won');
+  await p.reload();await emptyReady(p);await startMemory(p,s);
+  assert.match(await p.locator('#tm-list').innerText(),/挑战奖励/);
+  await p.screenshot({path:artifact+'windows-84-challenge-tm-source.png',fullPage:true});
+  assert.deepEqual(errors,[]);
+  return {options,selected:options[1],source:'target',priorSource:'challenge',fixtureBoundary:'初始放置T并设置已拥有选机的内存夹具；取得和选择通过实际按钮。'};
  }finally{await context.close();}
 });
 await browser.close();

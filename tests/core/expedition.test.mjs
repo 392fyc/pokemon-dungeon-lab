@@ -133,7 +133,14 @@ test('X15 a generated roguelike starts at arrival, descends to the next floor an
   for(const g of [g1,g2])assert.equal(g.points.some(p=>p.kind==='exit'||p.kind==='up'),false);
   const down=g1.points.find(p=>p.kind==='down').pos;
   assert.deepEqual(s0.units.C.pos,g1.arrival);
-  assert.ok(s0.points.some(p=>p.kind==='goal'),'G remains a target, not an exit');
+  assert.ok(g1.goalAnchor,'the hidden G cell remains reserved as an anchor');
+  assert.ok(!s0.points.some(p=>p.kind==='goal'),'v0.1 does not place a G point');
+  assert.ok(!s0.points.some(p=>p.pos.x===g1.goalAnchor.x&&p.pos.y===g1.goalAnchor.y),'the anchor cannot also be another point');
+  const atAnchor=structuredClone(s0);atAnchor.units[atAnchor.leader].pos=structuredClone(g1.goalAnchor);
+  const hiddenG=applyCommand(atAnchor,{type:'round',action:interact(false)});
+  assert.equal(hiddenG.ok,false);assert.match(hiddenG.error,/交互点/);
+  assert.equal(hiddenG.state.round,atAnchor.round,'an absent G point cannot spend an action');
+  assert.equal(hiddenG.state.goal,false);
   assert.equal(new Set(coords(s0).map(p=>p.x+','+p.y)).size,3);
   assert.deepEqual(s0.enemies,['w1a','w1b','w1c','w1d','w1e','w1f']);
  const s=structuredClone(s0);s.units.A.hp=0;s.units.A.pos=null;s.units.B.hp=0;s.units.B.pos=null;s.units.C.pos=down;

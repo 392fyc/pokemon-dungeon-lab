@@ -23,7 +23,8 @@ test('D2 same seed and level give identical floors, whatever was generated befor
 test('D3 pinned regression values for seed 12345 (observed once, then frozen)',()=>{
  const g=generateFloor(12345,1);
  assert.equal(g.floor.length,366);assert.equal(g.rooms.length,9);
- assert.deepEqual(g.points,[{pos:{x:27,y:16},kind:'down',used:false},{pos:{x:16,y:6},kind:'goal',used:false}]);
+ assert.deepEqual(g.points,[{pos:{x:27,y:16},kind:'down',used:false}]);
+ assert.deepEqual(g.goalAnchor,{x:16,y:6});
  assert.deepEqual(g.enemies.map(e=>[e.id,e.species,e.pos.x,e.pos.y,e.post?`${e.post.x},${e.post.y}`:null]),[
   ['w1a','tauros',28,7,'28,7'],['w1b','omanyte',18,12,'18,12'],['w1c','bellsprout',16,13,null],
   ['w1d','meowth',33,2,null],['w1e','farfetchd',7,19,null],['w1f','pinsir',26,6,null]
@@ -49,7 +50,7 @@ test('D6 one-way stairs, points and six enemies sit on legal, distinct cells',()
  for(let seed=0;seed<300;seed++)for(const level of [1,2,3]){
   const g=generateFloor(seed,level),cells=new Set(g.floor.map(k));
   const kinds=g.points.map(p=>p.kind).sort();
-  assert.deepEqual(kinds,level===1?['down','goal']:level===2?['down']:['item']);
+  assert.deepEqual(kinds,level<3?['down']:['item']);
   assert.equal(g.up,null);assert.equal(g.down!==null,level<3);
   const spots=[...g.points.map(p=>k(p.pos)),...g.pickups.map(p=>k(p.pos)),...g.enemies.map(e=>k(e.pos))];
   assert.equal(new Set(spots).size,spots.length,'overlap');
@@ -59,7 +60,7 @@ test('D6 one-way stairs, points and six enemies sit on legal, distinct cells',()
   const normal=g.enemies.filter(e=>!e.boss);
   for(const e of normal){
    assert.notDeepEqual(e.pos,arrival);
-   if(!e.post)for(const p of g.points)assert.ok(Math.abs(p.pos.x-e.pos.x)+Math.abs(p.pos.y-e.pos.y)>=2,'wandering enemy beside a point');
+   if(!e.post)for(const p of [...g.points,...(g.goalAnchor?[{pos:g.goalAnchor}]:[])])assert.ok(Math.abs(p.pos.x-e.pos.x)+Math.abs(p.pos.y-e.pos.y)>=2,'wandering enemy beside a point or hidden goal anchor');
   }
   const arrivalRoom=g.rooms[g.arrivalRoom];
   assert.ok(normal.every(e=>!(e.pos.x>=arrivalRoom.x&&e.pos.x<arrivalRoom.x+arrivalRoom.w&&e.pos.y>=arrivalRoom.y&&e.pos.y<arrivalRoom.y+arrivalRoom.h)),'ordinary enemy in the arrival room');

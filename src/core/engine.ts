@@ -13,6 +13,7 @@ export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; p
   stages:{atk:number;def:number}; protect:number; counter:number; lastMove:string|null;
   reflect?:number; lightscreen?:number;
   tactic?:Tactic; level?:number; entrySpecies?:string;
+  post?:Pos;
   asleep?:boolean; wakeSkip?:boolean; targetMemory?:Pos|null; lostSightTurns?:number; roamTarget?:Pos|null; direction?:Pos|null;
   waitOnly?:true; recruit?:Unit; species?:string;
   deferredEvolutionLevel?:number;
@@ -56,7 +57,7 @@ export const levelFor=(exp:number)=>Math.max(INITIAL_LEVEL,PROG.thresholds.reduc
 export const levelDamageBonus=(level:number)=>Math.floor(Math.max(0,level-INITIAL_LEVEL)/PROG.damageEveryLevels);
 export type Point={pos:Pos;kind:PointKind;used:boolean};
 /** A floor that is not the current one: its terrain, revealed cells, real enemies (with their HP and positions) and points. */
-export type StoredFloor={floor:Pos[];seen:string[];enemies:string[];units:Record<string,Unit>;points:Point[];rooms?:Rect[];enemyAiRng?:number};
+export type StoredFloor={floor:Pos[];seen:string[];seenWalls?:string[];enemies:string[];units:Record<string,Unit>;points:Point[];rooms?:Rect[];bossRoom?:number;enemyAiRng?:number};
 /** Expedition-only data. `stored` holds every visited floor except the current one; unvisited floors are generated from `seed` on first entry. */
 /** `base` (6.5): true for a run started from the base; only those runs get the floor-2 rest point (older generated runs keep their exact floors). */
 /** `services` (7.2): true for a run that may hold a shop and an exchanger (decided by `serviceRoll` from the seed). Older runs never get them. */
@@ -76,10 +77,10 @@ export type Exchange={level:number;used:boolean;sent:string|null};
 export type End = {id:string;outcome:'normal'|'won'|'wipe';team:string[];camp:string[];goal:boolean;acquired:number;brought:number;
   /** 7.3 (boss-marked runs only): whether the boss was defeated (its HP is 0 in the final state). */
   boss?:boolean;tms?:TmItem[];lost?:string[];effective?:boolean;reasons?:string[];reward?:number;purse?:number;refund?:number};
-export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:string[];units:Record<string,Unit>;
+export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:string[];seenWalls?:string[];units:Record<string,Unit>;
   queue:string[];enemies:string[];camp:string[];leader:string;points:Point[];
   goal:boolean;bag:number;phase:'playing'|'evolution'|'invitation'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
-  request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;difficulty?:Difficulty;prog?:Progress;rooms?:Rect[];
+  request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;difficulty?:Difficulty;prog?:Progress;rooms?:Rect[];bossRoom?:number;
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
   pendingEvolutions?:{actor:string;choices:string[]}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
@@ -141,14 +142,22 @@ const active=(s:World)=>[...s.queue,...s.enemies].map(id=>s.units[id]).filter(u=
 const occupied=(s:World,p:Pos)=>active(s).some(u=>same(u.pos,p));
 const alive=(u:Unit|undefined):u is Unit&{pos:Pos}=>!!u&&u.hp>0&&u.pos!==null;
 const note=(s:World,t:string)=>{s.log.push(t);s.log=s.log.slice(-80);};
+/** Revealed ground and walls are kept separately: movement and legacy saves use ground-only `seen`. */
 export function reveal(s:World):void {
-  const seen=new Set(s.seen);
+  const seen=new Set(s.seen),walls=new Set(s.seenWalls??[]),floor=new Set(s.floor.map(key));
+  const inside=(p:Pos)=>!s.dungeon||(p.x>=0&&p.y>=0&&p.x<s.dungeon.width&&p.y<s.dungeon.height);
+  const mark=(p:Pos)=>{if(inside(p))(floor.has(key(p))?seen:walls).add(key(p));};
   for(const id of s.queue){const u=s.units[id];if(!alive(u))continue;seen.add(key(u.pos));
-    for(const d of DIRS){let p=u.pos;for(let n=0;n<4;n++){p=plus(p,d);if(!walk(s,p))break;seen.add(key(p));}}
-    // 6.4 working candidate: standing inside a generated room shows the whole room (corridors keep the 4-cell straight rule).
-    for(const r of s.rooms??[])if(u.pos.x>=r.x&&u.pos.x<r.x+r.w&&u.pos.y>=r.y&&u.pos.y<r.y+r.h)
-      for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)if(walk(s,{x,y}))seen.add(`${x},${y}`);}
-  s.seen=[...seen].sort();
+    const room=(s.rooms??[]).find(r=>inRect(u.pos,r));
+    for(const d of DIRS){let p=u.pos;for(let n=0;n<4;n++){
+      p=plus(p,d);
+      if(room){if(!floor.has(key(p)))break;seen.add(key(p));}
+      else {mark(p);mark({x:p.x-d.y,y:p.y+d.x});mark({x:p.x+d.y,y:p.y-d.x});if(!floor.has(key(p)))break;}
+    }}
+    // Room sight stays unchanged, including its existing straight rays through doors.
+    if(room)for(let y=room.y;y<room.y+room.h;y++)for(let x=room.x;x<room.x+room.w;x++)if(floor.has(`${x},${y}`))seen.add(`${x},${y}`);
+  }
+  s.seen=[...seen].sort();if(walls.size)s.seenWalls=[...walls].sort();
 }
 /** BFS insertion order is also the right/down/left/up final tie break. */
 function paths(s:World,start:Pos,blocked:boolean):Map<string,{p:Pos;len:number;first:Pos}> {
@@ -419,6 +428,10 @@ function chooseEnemyAction(s:World,id:string,blockingGuard:ReadonlySet<string>,c
     actor.lostSightTurns=(actor.lostSightTurns??0)+1;
     if(actor.lostSightTurns>=4||same(actor.pos,actor.targetMemory)){actor.targetMemory=null;actor.lostSightTurns=0;actor.roamTarget=null;}
     else {const step=firstStepTo(s,actorPos,actor.targetMemory,false);return step?{type:'move',to:step}:{type:'wait'};}
+  }
+  if(actor.post){
+    const step=firstStepTo(s,actorPos,actor.post,false);
+    return step?{type:'move',to:step}:{type:'wait'};
   }
   return roamAction(s,actor);
 }
@@ -978,23 +991,25 @@ function floorUnits(g:GeneratedFloor):{units:Record<string,Unit>;enemies:string[
   for(const e of g.enemies){
     const u=speciesUnit(e.id,e.species,e.level,{x:e.pos.x,y:e.pos.y});u.side='enemy';u.hp=e.hp;u.maxHp=e.hp;u.tactic='gofoes';
     u.asleep=!!e.asleep;u.wakeSkip=false;u.targetMemory=null;u.lostSightTurns=0;u.roamTarget=null;u.direction=null;
-    if(e.boss)u.boss=true;units[e.id]=u;
+    if(e.boss)u.boss=true;if(e.post)u.post=clone(e.post);units[e.id]=u;
   }
   return {units,enemies:g.enemies.map(e=>e.id)};
 }
-/** `run` is true for 6.4 expeditions (with `prog`): they also get pickups and room rectangles; older expeditions generate the 6.3 floor. */
+/** Active expeditions use the current generator; legacy save validation never regenerates their historical maps. */
 function freshFloor(d:Dungeon,level:number,run:boolean,difficulty:Difficulty='normal'):StoredFloor&{arrival:Pos} {
   const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors,...(d.boss?{boss:true}:{}),...(d.roguelike?{roguelike:true}:{}),difficulty});
-  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),enemyAiRng:g.enemyAiRng,...(run?{rooms:g.rooms.map(r=>({...r}))}:{}),arrival:g.arrival};
+  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),enemyAiRng:g.enemyAiRng,...(run?{rooms:g.rooms.map(r=>({...r}))}:{}),...(g.bossRoom!==undefined?{bossRoom:g.bossRoom}:{}),arrival:g.arrival};
 }
 function stashFloor(s:World):StoredFloor {
   const units:Record<string,Unit>={};for(const id of s.enemies)units[id]=s.units[id];
-  return clone({floor:s.floor,seen:s.seen,enemies:s.enemies,units,points:s.points,...(s.rooms?{rooms:s.rooms}:{}),...(s.enemyAiRng!==undefined?{enemyAiRng:s.enemyAiRng}:{})});
+  return clone({floor:s.floor,seen:s.seen,...(s.seenWalls?{seenWalls:s.seenWalls}:{}),enemies:s.enemies,units,points:s.points,...(s.rooms?{rooms:s.rooms}:{}),...(s.bossRoom!==undefined?{bossRoom:s.bossRoom}:{}),...(s.enemyAiRng!==undefined?{enemyAiRng:s.enemyAiRng}:{})});
 }
 function loadFloor(s:World,f:StoredFloor):void {
   for(const id of s.enemies)delete s.units[id];
+  if(f.seenWalls)s.seenWalls=f.seenWalls;else delete s.seenWalls;
   s.floor=f.floor;s.seen=f.seen;s.enemies=f.enemies;s.points=f.points;Object.assign(s.units,f.units);
   if(f.rooms)s.rooms=f.rooms;else delete s.rooms;
+  if(f.bossRoom!==undefined)s.bossRoom=f.bossRoom;else delete s.bossRoom;
   if(f.enemyAiRng!==undefined)s.enemyAiRng=f.enemyAiRng;else delete s.enemyAiRng;
 }
 /**
@@ -1055,12 +1070,12 @@ export function carriedUnit(id:string,m:SquadMember):Unit {
 /** `boss` defaults to true for a base run of 3 floors. New expeditions start as one-way roguelike runs. */
 export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3,difficulty:Difficulty='normal'):World {
   const selectedDifficulty=isDifficulty(difficulty)?difficulty:'normal';
-  const d:Dungeon={seed:seed>>>0,width:20,height:14,floors,level:1,stored:{},roguelike:true,...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...(tmPoolVersion===3&&squad&&boss?{tmPool:3 as const}:{})};
+  const d:Dungeon={seed:seed>>>0,width:36,height:24,floors,level:1,stored:{},roguelike:true,...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...(tmPoolVersion===3&&squad&&boss?{tmPool:3 as const}:{})};
   const f=freshFloor(d,1,true,selectedDifficulty);
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,seen:[],
     units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m)])):{A:speciesUnit('A','charmander',INITIAL_LEVEL),B:speciesUnit('B','squirtle',INITIAL_LEVEL),C:speciesUnit('C','bulbasaur',INITIAL_LEVEL)}),...f.units},
     queue:squad?squad.members.map((_,i)=>'ABC'[i]):['A','B','C'],enemies:f.enemies,camp:[],leader:squad?'ABC'[squad.leader]:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d,
-    rooms:f.rooms,enemyAiRng:f.enemyAiRng,difficulty:selectedDifficulty,prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}},purse:0,tms:[]};
+    rooms:f.rooms,...(f.bossRoom!==undefined?{bossRoom:f.bossRoom}:{}),enemyAiRng:f.enemyAiRng,difficulty:selectedDifficulty,prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:0,tonic:0}},purse:0,tms:[]};
   if(squad){
     const roll=serviceRoll(d.seed,floors);
     if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};

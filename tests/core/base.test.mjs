@@ -167,7 +167,7 @@ test('B9 T gives one machine drawn from the saved random state; reload and later
 /* ---------- rest point ---------- */
 test('B11 rest point: floor 2 of a base run only, next to the arrival stairs; none in older generated runs',()=>{
  const s=atFloor2(3);
- assert.deepEqual(s.points.filter(p=>p.kind==='rest'),[{pos:{x:14,y:9},kind:'rest',used:false}]);
+ assert.deepEqual(s.points.filter(p=>p.kind==='rest'),[{pos:{x:13,y:12},kind:'rest',used:false}]);
  const old=createExpedition('old',3);old.units.C.pos=old.points.find(p=>p.kind==='down').pos;
  let o=applyCommand(old,{type:'round',action:{type:'interact',exit:true}}).state;o=applyCommand(o,{type:'finishTransit'}).state;
  assert.equal(o.points.some(p=>p.kind==='rest'),false);
@@ -177,7 +177,7 @@ test('B11 rest point: floor 2 of a base run only, next to the arrival stairs; no
 test('B12 rest point: lowest-ratio move of each living member gets +2 PP once; full PP is refused without using the chance',()=>{
  const s=atFloor2(3);
  for(const id of ['A','B']){s.units[id].hp=0;s.units[id].pos=null;}
- s.units.C.pos={x:14,y:9};
+ s.units.C.pos={x:13,y:12};
  const full=applyCommand(s,{type:'round',action:{type:'interact',exit:false}});
  assert.equal(full.ok,false);assert.match(full.error,/PP都已满/);assert.match(full.error,/没有消耗/);
  assert.deepEqual(full.state,s);assert.equal(s.points.find(p=>p.kind==='rest').used,false);
@@ -192,7 +192,7 @@ test('B12 rest point: lowest-ratio move of each living member gets +2 PP once; f
 test('B13 rest point with two living members: each picks its own lowest ratio; ties go to the first move; fallen members are skipped',()=>{
  const s=atFloor2(3);
  s.units.B.hp=0;s.units.B.pos=null;
- s.units.A.pos={x:14,y:11};s.units.C.pos={x:14,y:9};
+ s.units.A.pos={x:14,y:11};s.units.C.pos={x:13,y:12};
  s.units.A.pp={scratch:2,ember:1};   // 2/3 and 1/2: line is lower
  s.units.B.pp={tackle:0,watergun:0};   // fallen: untouched
  s.units.C.pp={tackle:1,seedbomb:1};   // 1/3 and 1/1: strong is lower
@@ -203,7 +203,7 @@ test('B13 rest point with two living members: each picks its own lowest ratio; t
 });
 
 test('B14 rest point cannot be used as an exit',()=>{
- const s=atFloor2(3);s.units.C.pos={x:14,y:9};s.units.C.pp={tackle:0,seedbomb:0};
+ const s=atFloor2(3);s.units.C.pos={x:13,y:12};s.units.C.pp={tackle:0,seedbomb:0};
  const r=applyCommand(s,{type:'round',action:{type:'interact',exit:true}});assert.equal(r.ok,false);assert.match(r.error,/没有撤离点|不是出口/);
 });
 

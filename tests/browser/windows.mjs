@@ -113,7 +113,7 @@ await test('V10、S3、I1：连续邀请不跨面板、固定集结格，开发�
  const {context,page:p,errors}=await setup('V10');try{await start(p);await click(p,'out-0');await click(p,'accept');const first=await state(p);assert.deepEqual(first.queue,['B','C','N1']);await p.keyboard.press('Enter');assert.deepEqual(await state(p),first);assert.equal(await raw(p),null);await click(p,'out-1');await click(p,'accept');const s=await state(p);assert.deepEqual(s.queue,['B','N1','N2']);assert.deepEqual(s.units.N2.pos,{x:3,y:2});assert.deepEqual(s.camp,['A','C']);assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {anchorStable:true,noCarriedConfirmation:true,memoryOnly:true};}finally{await context.close();}
 });
 await test('V12、S5：开发场景全灭优先、此前回营与未带出物品',async()=>{
- const {context,page:p,errors}=await setup('V12');try{await start(p);await exit(p);const s=await state(p);assert.equal(s.end.outcome,'wipe');assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.deepEqual(s.end.camp,['C']);assert.equal(s.units.C.hp,8);assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {outcome:'wipe',acquired:1,brought:0,campC:8,memoryOnly:true};}finally{await context.close();}
+ const {context,page:p,errors}=await setup('V12');try{await start(p);await exit(p);const s=await state(p);assert.equal(s.end.outcome,'wipe');assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.deepEqual(s.end.camp,['C']);assert.match(await p.locator('.result').innerText(),/目标(?:已完成|未完成) · 已取得 1 · 正常带出 0/);await p.screenshot({path:artifact+'windows-settlement-legacy-v12.png',fullPage:true});assert.equal(s.units.C.hp,8);assert.equal(await raw(p),null);assert.deepEqual(errors,[]);return {outcome:'wipe',acquired:1,brought:0,campC:8,memoryOnly:true};}finally{await context.close();}
 });
 await test('S6/S7：开发场景启动与行动不写存档，也不受磁盘写失败影响',async()=>{
  const {context,page:p,errors}=await setup(undefined,'fail');try{await start(p);const before=await state(p);assert.equal(await raw(p),null);assert.equal(await p.evaluate(()=>window.trial.store.status),'ready');await key(p,'ArrowRight');assert.equal((await state(p)).round,before.round+1);assert.equal(await raw(p),null);assert.deepEqual(await p.evaluate(()=>window.__fault.writes),[]);assert.deepEqual(errors,[]);return {startMemoryOnly:true,roundMemoryOnly:true,noStorageWrites:true};}finally{await context.close();}
@@ -495,6 +495,9 @@ await test('结算8.1：全灭仍带回伙伴，招式机丢失，三组结算�
  try{
   await start(p);const before=await p.evaluate(()=>window.trial.profile());
   await click(p,'wait');const ended=await state(p);assert.equal(ended.end.outcome,'wipe');
+  assert.equal(ended.dungeon.roguelike,true);
+  const resultText=await p.locator('.result').innerText();assert.match(resultText,/讨伐首领：未击败/);
+  assert.doesNotMatch(resultText,/讨伐首领：未挑战|目标未完成|已取得 0 · 正常带出 0/);
   assert.deepEqual(ended.end.lost,[]);assert.equal(ended.end.reward,0);assert.equal(ended.purse,0);
   assert.ok(ended.end.tms.every(t=>t.fate==='lost'));
   for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
@@ -738,6 +741,9 @@ await test('结算8.1：首领倒下后自动胜利，三组奖励与招式机�
   }
   const ended=await state(p);assert.equal(ended.phase,'ended');assert.equal(ended.end.outcome,'won');assert.equal(ended.end.boss,true);
   assert.ok(ended.end.tms.some(t=>t.source==='boss'&&t.fate==='brought'));
+  assert.equal(ended.dungeon.roguelike,true);
+  const resultText=await p.locator('.result').innerText();assert.match(resultText,/讨伐首领：成功/);
+  assert.doesNotMatch(resultText,/目标(?:已完成|未完成)|正常带出/);
   assert.match(await p.locator('.result').innerText(),/击败首领/);
   for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
   await p.screenshot({path:artifact+'windows-settlement-won.png',fullPage:true});

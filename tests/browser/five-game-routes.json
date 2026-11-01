@@ -2,11 +2,11 @@
   "main": "mudkip",
   "deputy": "chikorita",
   "games": [
-    {"seed": 16763, "purse": 0},
-    {"seed": 16763, "purse": 80},
-    {"seed": 16763, "purse": 0},
-    {"seed": 16763, "purse": 0},
-    {"seed": 16763, "purse": 0}
+    {"seed": 64352, "purse": 0},
+    {"seed": 8919, "purse": 80},
+    {"seed": 16838, "purse": 0},
+    {"seed": 80190, "purse": 0},
+    {"seed": 159380, "purse": 0}
   ],
   "training": {"afterGame": 2, "inst": "P2", "move": "reflect", "removeMove": "magicalleaf"}
 }

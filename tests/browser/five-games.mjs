@@ -61,7 +61,7 @@ function visibleView(s){
  }
  const team=s.queue.map(id=>{
   const u=s.units[id];
-  return {id,hp:u?.hp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null};
+  return {id,hp:u?.hp??0,maxHp:u?.maxHp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null};
  });
  const enemies=s.enemies.map(id=>{
   const u=s.units[id];
@@ -227,9 +227,17 @@ function planVisibleAction(view,route,memory,shopBought){
  return recoverBlockedRoute(view,memory);
 
 }
-let acceptedInRun=0;
+// Invitations can replace a fallen or badly hurt non-leader through the existing UI.
+// These are our own displayed HP values; no hidden enemies or future outcomes enter the decision.
+function planInvitation(view){
+ if(view.team.length<3)return {choice:'accept'};
+ const outgoing=view.team.filter(u=>u.id!==view.leaderId)
+  .sort((a,b)=>a.hp/a.maxHp-b.hp/b.maxHp)[0];
+ return outgoing&&outgoing.hp/outgoing.maxHp<0.5?{choice:'accept',outgoing:outgoing.id}:{choice:'reject'};
+}
+let acceptedInRun=0,replacementsInRun=0;
 async function playRun(index,route){
- acceptedInRun=0;
+ acceptedInRun=0;replacementsInRun=0;
  const memory={known:new Set(),tried:new Set()};
  let shopBought=false,roundActions=0,invitationActions=0;
  const maxActions=1200;let floorLevel=0;
@@ -239,9 +247,10 @@ async function playRun(index,route){
   if(s.phase==='invitation'){
    assert.ok(++invitationActions<=maxActions,'single-run invitation handling exceeded its limit');
    const view=visibleView(s);
-   const choice=view.team.length<3?'accept':'reject';
-   await command({type:'invite',choice});
-   if(choice==='accept')acceptedInRun++;
+   const decision=planInvitation(view);
+   await command({type:'invite',...decision});
+   if(decision.choice==='accept')acceptedInRun++;
+   if(decision.outgoing)replacementsInRun++;
    continue;
   }
   if(s.phase==='evolution'){await click('evolution-close');continue;}
@@ -310,6 +319,7 @@ try{
  assert.equal((await envelope()).profile.expeditions,0);
  const runIds=new Set();let accepted=0,learned=false,carriedIntoRun=false,trainedMove=null;
  assert.equal(routes.games.length,5);
+ assert.equal(new Set(routes.games.map(g=>g.seed)).size,5,'five games must use five distinct seeds');
  for(const [index,route] of routes.games.entries()){
   // The developer URL fixes only generation seed and preserves the freshly-created save.
   const before=await envelope();await page.goto(base+'?dev=1&seed='+route.seed);await ready();
@@ -321,6 +331,7 @@ try{
   try{accepted+=await playRun(index,route);}
   catch(error){throw new Error('第 '+(index+1)+' 局：'+(error instanceof Error?error.message:String(error)),{cause:error});}
   s=await state();assert.equal(s.phase,'ended');assert.ok(['won','wipe'].includes(s.end.outcome));
+  if(s.end.outcome==='won')assert.equal(s.end.boss,true,'victory must actually defeat the boss');
   await roundTrip('game '+(index+1)+' terminal');
   assert.equal(await state(),null);assert.equal((await envelope()).profile.expeditions,index+1);
   if(routes.training.afterGame===index+1){
@@ -339,9 +350,11 @@ try{
   }
   await roundTrip('game '+(index+1)+' base');
   assert.equal(await state(),null);assert.equal(await page.locator('#depart').isEnabled(),true);
-  report.games.push({game:index+1,seed:route.seed,runId:s.runId,rounds:s.round,outcome:s.end.outcome,effective:s.end.effective,terminalAndBaseRoundTrip:true,readyToDepart:true});
+  report.games.push({game:index+1,seed:route.seed,runId:s.runId,rounds:s.round,outcome:s.end.outcome,bossDefeated:s.end.boss===true,replacements:replacementsInRun,effective:s.end.effective,terminalAndBaseRoundTrip:true,readyToDepart:true});
   console.log('PASS fresh-save game',index+1,JSON.stringify(report.games.at(-1)));
  }
+ assert.ok(report.games.some(g=>g.outcome==='won'&&g.bossDefeated),'the five real-input games must include a boss victory');
+ assert.ok(report.games.some(g=>g.replacements>0),'the UI must exercise full-party replacement');
  assert.ok(accepted>=1);if(learned)assert.ok(carriedIntoRun);assert.equal(runIds.size,5);assert.deepEqual(errors,[]);
  await page.screenshot({path:artifactDir+'/five-games-base.png',fullPage:true});
  Object.assign(report,{accepted,learned,carriedIntoRun,pageErrors:errors,status:'PASS'});

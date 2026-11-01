@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {generateFloor,mulberry32,WILD_SPECIES} from '../../src/core/dungeon.ts';
 const roster=JSON.parse(readFileSync(new URL('../../src/data/roster.json',import.meta.url),'utf8'));
+const speciesById=new Map(roster.species.map(s=>[s.id,s]));
+const ordinaryEnemyLevels=[[5,6],[8,11],[12,20]];
 const k=p=>p.x+','+p.y;
 // Independent flood fill: every floor cell must be reachable from the first one.
 function connected(cells){
@@ -65,7 +67,14 @@ test('D6 one-way stairs, points and six enemies sit on legal, distinct cells',()
   const arrivalRoom=g.rooms[g.arrivalRoom];
   assert.ok(normal.every(e=>!(e.pos.x>=arrivalRoom.x&&e.pos.x<arrivalRoom.x+arrivalRoom.w&&e.pos.y>=arrivalRoom.y&&e.pos.y<arrivalRoom.y+arrivalRoom.h)),'ordinary enemy in the arrival room');
   assert.equal(normal.length,6);assert.equal(g.enemies.length,level===3?7:6);
-  assert.ok(normal.every(e=>e.level>=5));
+  const [floorMin,floorMax]=ordinaryEnemyLevels[level-1];
+  for(const e of normal){
+   const species=speciesById.get(e.species);
+   assert.ok(species,`seed ${seed} floor ${level}: ${e.id} has a roster species`);
+   const min=Math.max(floorMin,species.evoLevel);
+   assert.ok(Number.isInteger(e.level)&&e.level>=min&&e.level<=floorMax,
+    `seed ${seed} floor ${level}: ${e.species} is Lv${e.level}, expected integer ${min}–${floorMax} from the floor band and evolution level`);
+  }
  }
 });
 test('D7 enemy HP comes from the shared roster and developer floors use Lv5',()=>{

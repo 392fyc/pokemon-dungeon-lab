@@ -16,22 +16,5 @@
     "bigBerry": 50,
     "teamTonic": 50
   },
-  "challengeCurrencyAmount": 40,
-  "items": {
-    "bigBerry": {
-      "name": "大树果",
-      "effect": {
-        "type": "fullHeal",
-        "target": "selfOrAdjacent"
-      }
-    },
-    "teamTonic": {
-      "name": "全员 PP 补剂",
-      "effect": {
-        "type": "restorePp",
-        "target": "allLivingCompanions",
-        "perMove": 1
-      }
-    }
-  }
+  "challengeCurrencyAmount": 40
 }

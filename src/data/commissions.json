@@ -1,0 +1,44 @@
+{
+  "hunter": {
+    "name": "猎手",
+    "description": "接下后在本层击倒3只敌人；全队防御阶段降低1级。",
+    "progressTarget": 3,
+    "equivalentEnemies": 3,
+    "penalty": "defenseMinusOne",
+    "floors": [1, 2, 3]
+  },
+  "collector": {
+    "name": "收集",
+    "description": "接下后在本层取得1件道具；商店购买不计入。",
+    "progressTarget": 1,
+    "equivalentEnemies": 1,
+    "penalty": null,
+    "floors": [1, 2, 3]
+  },
+  "scout": {
+    "name": "探路",
+    "description": "接下后先进入祝福房或道具房，再在本层下楼。",
+    "progressTarget": 1,
+    "equivalentEnemies": 3,
+    "penalty": null,
+    "floors": [1, 2],
+    "requiresRoomTypes": ["blessing", "item"]
+  },
+  "guardian": {
+    "name": "守护",
+    "description": "下楼时全队存活；树果回复量减半。",
+    "progressTarget": 1,
+    "equivalentEnemies": 3,
+    "penalty": "berryHealHalf",
+    "floors": [1, 2]
+  },
+  "speedrun": {
+    "name": "速通",
+    "description": "在规定轮数内下楼。",
+    "progressTarget": null,
+    "equivalentEnemies": 3,
+    "penalty": null,
+    "floors": [1, 2],
+    "speedMultiplier": 2.5
+  }
+}

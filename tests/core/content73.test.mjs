@@ -5,11 +5,12 @@ import {createHash} from 'node:crypto';
 import {createExpedition,applyCommand,jumpToFloor,rngStep,closeOut,key,PROG,speciesUnit} from '../../src/core/engine.ts';
 import {initialProfile,newGameProfile,squadOf,settleRun} from '../../src/core/base.ts';
 import {TrialStore,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
-import {generateFloor,farthestRoom,roomCells,center,THEME_FLOORS,themeOfLevel,eligibleSpecies,WILD_SPECIES,BOSS,serviceRoll} from '../../src/core/dungeon.ts';
+import {generateFloor,THEME_FLOORS,themeOfLevel,eligibleSpecies,WILD_SPECIES,BOSS,serviceRoll} from '../../src/core/dungeon.ts';
 import {LEGACY_TM_MOVES,TM_MOVES,tmPool,BOSS_SPECIES,SPECIES,learnableMove} from '../../src/core/roster.ts';
 import {NAME_TABLE,speciesZh,moveZh,tmZh} from '../../src/core/names.ts';
 import {enemyInfo,localizeLog} from '../../src/core/describe.ts';
 import {friend,enemy,pos,row} from '../acceptance/fixtures.mjs';
+import legacyBossSeed4 from './fixtures/map122-legacy-boss-seed4.json' with {type:'json'};
 
 /*
  * Stage 7.3 tests: https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E5%86%85%E5%AE%B9%E6%89%A9%E5%85%85%E4%B8%8E%E9%A6%96%E9%A2%86.md, section "验收" (groups D, T, L, B, S). Expected values are literals: either the spec's numbers, or values
@@ -20,7 +21,7 @@ const by=Object.fromEntries(roster.species.map(s=>[s.id,s]));
 const memory=()=>{const m=new Map();let writes=0;return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);writes++;},map:m,writes:()=>writes};};
 const NEW8=['sandshrew','growlithe','magnemite','onix','dratini','wooper','houndour','makuhita'];
 const ESTABLISHED23=['bulbasaur','charmander','squirtle','pidgey','rattata','spearow','pikachu','zubat','geodude','chikorita','cyndaquil','totodile','treecko','torchic','mudkip',...NEW8];
-const FLOORS3={width:20,height:14,floors:3,boss:true};
+const FLOORS3={width:36,height:24,floors:3,boss:true,roguelike:true};
 const kitOf=id=>by[id].kit.map(k=>[k.move,k.pp]);
 const frozenSpecies=s=>({id:s.id,starter:s.starter,maxHp:s.maxHp,kit:s.kit});
 
@@ -105,54 +106,46 @@ test('T4 with the boss mark, T and the shop reach the four new machines (fixed s
 /* ---------- L: floors and themes ---------- */
 test('L1 two-floor developer runs remain deterministic and have no regional boss',()=>{
  for(let seed=1;seed<=50;seed++)for(const level of [1,2]){
-  const options={width:20,height:14,floors:2},g=generateFloor(seed,level,options);
+  const options={width:36,height:24,floors:2},g=generateFloor(seed,level,options);
   assert.deepEqual(g,generateFloor(seed,level,options));assert.equal(g.theme,undefined);assert.equal(g.bossRoom,undefined);
-  assert.equal(g.enemies.length,3);assert.ok(g.enemies.every(e=>!e.boss&&e.level===5&&eligibleSpecies(level,false).includes(e.species)));
+  assert.equal(g.enemies.length,6);assert.ok(g.enemies.every(e=>!e.boss&&e.level===5&&eligibleSpecies(level,false).includes(e.species)));
  }
 });
-test('L1b the old generator path and the departure with 2 floors never carry the boss mark',()=>{
+test('L1b a two-floor developer run omits the boss mark',()=>{
  assert.equal(createExpedition('l1b',5,2,base(),0).dungeon.boss,undefined);
  assert.equal(createExpedition('l1b',5,3,base(),0).dungeon.boss,true);
  assert.equal(createExpedition('l1b',5,3).dungeon.boss,undefined,'no base, no boss');
  assert.equal(createExpedition('l1b',5,3,base(),0,false).dungeon.boss,undefined);
 });
-test('L2 themed floors choose three normal encounters from their eligible first-type pools',()=>{
+test('L2 themed floors choose six normal encounters from their eligible first-type pools',()=>{
  assert.deepEqual(THEME_FLOORS.map(t=>t.name),['苔石洞','潮湿水窟','灰烬裂谷']);
  assert.deepEqual([1,2,3].map(l=>themeOfLevel(true,l)),['moss','wet','ash']);
  for(let seed=1;seed<=200;seed++)for(let level=1;level<=3;level++){
   const g=generateFloor(seed,level,FLOORS3),normal=g.enemies.filter(e=>!e.boss);
-  assert.equal(g.theme,['moss','wet','ash'][level-1]);assert.equal(normal.length,3);
+  assert.equal(g.theme,['moss','wet','ash'][level-1]);assert.equal(normal.length,6);
   for(const e of normal)assert.ok(eligibleSpecies(level).includes(e.species));
   assert.equal(g.enemies.filter(e=>e.boss).length,level===3?1:0);
  }
 });
 const bossOf=g=>g.enemies.filter(e=>e.boss);
-test('L3 floor 3: exactly one exit in the lobby, no down stairs, one boss at the centre of the farthest room, nothing else in the boss room, T outside it (seeds 1-200)',()=>{
+test('L3 floor 3: no exit or stairs; one boss and one target item stay outside the arrival room (seeds 1-200)',()=>{
  for(let seed=1;seed<=200;seed++){
-  const g=generateFloor(seed,3,FLOORS3),D=[[1,0],[0,1],[-1,0],[0,-1]];
-  // farthest room worked out again here: breadth-first path length from the first room's centre, ties to the lower index
-  const cells=new Set(g.floor.map(key)),dist=new Map([[key(center(g.rooms[0])),0]]),q=[center(g.rooms[0])];
-  for(let i=0;i<q.length;i++)for(const [dx,dy] of D){const c={x:q[i].x+dx,y:q[i].y+dy};if(cells.has(key(c))&&!dist.has(key(c))){dist.set(key(c),dist.get(key(q[i]))+1);q.push(c);}}
-  let far=-1;g.rooms.forEach((r,n)=>{if(n>0&&(far<0||dist.get(key(center(r)))>dist.get(key(center(g.rooms[far])))))far=n;});
-  const R=g.rooms[far];assert.equal(g.bossRoom,far,`seed ${seed}`);
-  const exits=g.points.filter(p=>p.kind==='exit');assert.equal(exits.length,1,`seed ${seed}`);assert.equal(g.down,null);assert.ok(!g.points.some(p=>p.kind==='down'));
-  // lobby: the free cell of the arrival room nearest the up stairs, ties top row then left
-  const a=g.rooms[0],inA=c=>c.x>=a.x&&c.x<a.x+a.w&&c.y>=a.y&&c.y<a.y+a.h;assert.ok(inA(exits[0].pos),`seed ${seed}: exit in the arrival room`);
-  const near=roomCells(a).filter(c=>!(c.x===g.up.x&&c.y===g.up.y)).sort((p,r)=>Math.abs(p.x-g.up.x)+Math.abs(p.y-g.up.y)-Math.abs(r.x-g.up.x)-Math.abs(r.y-g.up.y)||p.y-r.y||p.x-r.x)[0];
-  assert.deepEqual(exits[0].pos,near,`seed ${seed}`);
-  const b=bossOf(g);assert.equal(b.length,1);assert.deepEqual(b[0].pos,{x:R.x+Math.floor(R.w/2),y:R.y+Math.floor(R.h/2)});assert.equal(g.enemies.at(-1).boss,true);
-  const inR=c=>c.x>=R.x&&c.x<R.x+R.w&&c.y>=R.y&&c.y<R.y+R.h;
-  const others=[...g.enemies.filter(e=>!e.boss).map(e=>e.pos),...g.points.map(p=>p.pos),...g.pickups.map(p=>p.pos),...g.services.map(p=>p.pos),...(g.rest?[g.rest.pos]:[])];
-  assert.ok(!others.some(inR),`seed ${seed}: something stands in the boss room`);
+  const g=generateFloor(seed,3,FLOORS3),b=bossOf(g),arrival=g.rooms.find(r=>r.x<=g.arrival.x&&g.arrival.x<r.x+r.w&&r.y<=g.arrival.y&&g.arrival.y<r.y+r.h);
+  assert.equal(g.points.some(p=>p.kind==='exit'||p.kind==='up'||p.kind==='down'),false,`seed ${seed}: no exit or stairs`);
+  assert.equal(b.length,1);assert.equal(g.enemies.at(-1).boss,true);
   assert.equal(g.points.filter(p=>p.kind==='item').length,1);
+  assert.ok(arrival,'seed '+seed+': arrival remains inside a room');
+  const bossRoom=g.rooms[g.bossRoom];
+  assert.notEqual(g.bossRoom,g.rooms.indexOf(arrival),'seed '+seed+': boss room differs from arrival room');
+  assert.ok(![...g.points,...g.pickups,...g.services,...(g.rest?[g.rest]:[])].some(p=>p.pos.x>=bossRoom.x&&p.pos.x<bossRoom.x+bossRoom.w&&p.pos.y>=bossRoom.y&&p.pos.y<bossRoom.y+bossRoom.h),`seed ${seed}: no point stands in the boss room`);
  }
 });
-test('L4 floor 3: all floor cells are connected and the boss room can be reached from the lobby exit (seeds 1-200)',()=>{
+test('L4 floor 3: all floor cells are connected and the boss room can be reached from arrival (seeds 1-200)',()=>{
  for(let seed=1;seed<=200;seed++){
-  const g=generateFloor(seed,3,FLOORS3),cells=new Set(g.floor.map(key)),exit=g.points.find(p=>p.kind==='exit').pos,boss=bossOf(g)[0].pos;
-  const seen=new Set([key(exit)]),q=[exit];
+  const g=generateFloor(seed,3,FLOORS3),cells=new Set(g.floor.map(key)),arrival=g.arrival,boss=bossOf(g)[0].pos;
+  const seen=new Set([key(arrival)]),q=[arrival];
   for(let i=0;i<q.length;i++)for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){const c={x:q[i].x+dx,y:q[i].y+dy};if(cells.has(key(c))&&!seen.has(key(c))){seen.add(key(c));q.push(c);}}
-  assert.equal(seen.size,cells.size,`seed ${seed}: not connected`);assert.ok(seen.has(key(boss)),`seed ${seed}: boss unreachable`);
+  assert.equal(seen.size,cells.size,`seed ${seed}: not connected`);assert.ok(seen.has(key(boss)),`seed ${seed}: boss unreachable from arrival`);
  }
 });
 
@@ -379,9 +372,41 @@ test('S3b an old-format record still reads: a boss machine and boss fields are t
  const w=oldTwo();w.tms=[{move:'terablast',source:'target',fate:'held'}];w.bag=1;rejects(w,'new machine in a run without the mark');
  const v=floor3();v.tms=[{move:'terablast',source:'target',fate:'held'}];v.bag=1;accepted(v);
 });
+function historicalBossFloor(level){
+ const sample=structuredClone(legacyBossSeed4.floors[level]),units={};
+ for(const e of sample.enemies){
+  const u=speciesUnit(e.id,e.species,e.level,e.pos);u.side='enemy';u.maxHp=e.hp;
+  const keep=e.boss===true;u.hp=keep?e.hp:0;u.pos=keep?{...e.pos}:null;u.tactic='gofoes';
+  if(keep)u.boss=true;units[u.id]=u;
+ }
+ const points=[...sample.points,...sample.pickups,...sample.services];
+ const stored={floor:sample.floor,seen:[],enemies:sample.enemies.map(e=>e.id),units,points,rooms:sample.rooms,enemyAiRng:sample.enemyAiRng,
+  ...(sample.bossRoom===undefined?{}:{bossRoom:sample.bossRoom})};
+ return {sample,stored,units,points,enemies:sample.enemies.map(e=>e.id)};
+}
+function installHistoricalBossMap(world){
+ const f1=historicalBossFloor(1),f2=historicalBossFloor(2),f3=historicalBossFloor(3);
+ world.floor=f1.sample.floor;world.seen=f1.sample.floor.map(key);delete world.seenWalls;
+ world.rooms=f1.sample.rooms;delete world.bossRoom;world.points=f1.points;world.enemies=f1.enemies;world.enemyAiRng=f1.sample.enemyAiRng;
+ world.units={A:world.units.A,B:world.units.B,C:world.units.C,...f1.units};
+ const arrival=f1.sample.arrival;
+ for(const [i,id] of world.queue.entries())world.units[id].pos=[{x:arrival.x,y:arrival.y},{x:arrival.x+1,y:arrival.y},{x:arrival.x,y:arrival.y+1}][i];
+ world.dungeon.width=20;world.dungeon.height=14;world.dungeon.level=1;delete world.dungeon.roguelike;
+ world.dungeon.stored={'2':f2.stored,'3':f3.stored};
+ return {f1,f2,f3};
+}
 test('S4 a markerless historical boss run moves through transit, battle and exit in memory without persisting checkpoints',async()=>{
+ assert.equal(legacyBossSeed4.source.revision,'7f1b14147d0cebdf7fb66fb863371bdb08a85c5d');
+ assert.deepEqual(legacyBossSeed4.source.params,{width:20,height:14,floors:3,boss:true});
  const port=memory();let world=createExpedition('s4',4,3,squadOf(initialProfile()),0,undefined,3);
-  delete world.dungeon.roguelike; // Preserve the historical lobby-exit behavior this save-controller test represents.
+ const {f1,f2,f3}=installHistoricalBossMap(world);
+ assert.deepEqual([f1.sample.floor.length,f1.sample.rooms.length],[117,5]);
+ assert.deepEqual(f1.sample.points.map(p=>[p.kind,p.pos.x,p.pos.y]),[['exit',3,10],['down',16,2],['goal',10,3]]);
+ assert.deepEqual([f2.sample.floor.length,f2.sample.rooms.length],[114,5]);
+ assert.deepEqual(f2.sample.points.map(p=>[p.kind,p.pos.x,p.pos.y]),[['up',15,8],['down',15,3]]);
+ assert.deepEqual([f3.sample.floor.length,f3.sample.rooms.length],[121,5]);
+ assert.deepEqual(f3.sample.points.map(p=>[p.kind,p.pos.x,p.pos.y]),[['up',16,3],['exit',16,2],['item',9,11]]);
+ assert.deepEqual([f3.sample.enemies.find(e=>e.boss).species,f3.sample.enemies.find(e=>e.boss).pos,f3.sample.enemies.find(e=>e.boss).hp],['arcanine',{x:16,y:10},56]);
  const store={get state(){return world;},async dispatch(cmd){const r=applyCommand(world,cmd);if(r.ok)world=r.state;return r;}};
  const edit=fn=>fn(world);
  const check=label=>assert.equal(port.writes(),0,`${label}: no World checkpoint is written`);

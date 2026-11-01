@@ -1,8 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {playSeed} from './soak-bot.mjs';
+import {playSeed,explorationRoute} from './soak-bot.mjs';
 
 const POLICIES=['naive','tactical','tactical-stand','cautious'];
+
+function scoutWorld(){
+ const floor=[],seen=[];
+ for(let x=0;x<=15;x++)for(let y=0;y<=15;y++)floor.push({x,y});
+ for(let x=0;x<=8;x++)for(let y=0;y<=12;y++)seen.push(`${x},${y}`);
+ return {floor,seen,seenWalls:[],leader:'C',units:{C:{pos:{x:5,y:6}}}};
+}
+
+test('S82 scouting heads to the closest revealed edge and respects a wall already shown',()=>{
+ const s=scoutWorld(),route=explorationRoute(s);
+ assert.deepEqual(route,{to:{x:8,y:6},step:{x:6,y:6},len:3});
+ assert.ok(route.len<s.seen.length,'the bot walks to a nearby edge instead of traversing all known ground');
+ const blocked=structuredClone(s);blocked.floor=blocked.floor.filter(p=>p.x!==9||p.y!==6);blocked.seenWalls=['9,6'];
+ assert.deepEqual(explorationRoute(blocked),{to:{x:8,y:7},step:{x:6,y:6},len:4},'the directly blocked edge is skipped for the next open edge');
+});
+
+test('S82 remote unseen terrain changes do not redirect scouting',()=>{
+ const original=scoutWorld(),changed=structuredClone(original);
+ changed.floor=changed.floor.filter(p=>!(p.x>=14&&p.y>=14));
+ for(let x=40;x<=42;x++)for(let y=40;y<=42;y++)changed.floor.push({x,y});
+ assert.deepEqual(explorationRoute(changed),explorationRoute(original));
+});
 
 test('S81 all four policies finish only by boss victory or wipe, with settlement summaries',async()=>{
  for(const policy of POLICIES){

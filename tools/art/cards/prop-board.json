@@ -1,0 +1,8 @@
+{
+ "id": "prop-board",
+ "model": "gpt-image-2.5-flare",
+ "quality": "high",
+ "size": "1024x1024",
+ "prompt": "A single small wooden notice board on two short posts, light tan wood with a pinned parchment scroll and a bright red wax seal, centred on a plain transparent background, readable at small size, seen from a slight top-down angle. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, bold simple silhouette with a thick dark outline, few colours, light values that stand out strongly against a dark mossy grey stone floor, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
+ "background": "transparent"
+}

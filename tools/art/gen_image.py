@@ -1,9 +1,9 @@
 """Generate one image from a prompt card with gpt-image, under a hard spending ledger.
 
-Usage: python tools/art/gen_image.py cards/<card>.json --batch <tag> --stage <stage6|stage7> [--quality low] [--model gpt-image-2.5-flare]
+Usage: python tools/art/gen_image.py cards/<card>.json --batch <tag> --stage <stage6|stage7|v01> [--quality low] [--model gpt-image-2.5-flare]
 
-The project's OpenAI credit is 50 USD in total (user, 2026-10-30). Stage 6 may spend at most 15 USD, stage 7 at most
-20 USD and one batch at most 2 USD. --stage is required and must be a registered stage. Each call is estimated before it is sent and refused if a cap would be exceeded; the
+The project's OpenAI credit was 50 USD (user, 2026-10-30); on 2026-11-01 the account showed 52.83 USD, expiring 2026-11-14.
+Stage 6 may spend at most 15 USD, stage 7 at most 20 USD, v0.1 at most 30 USD (user, 2026-11-01), and one batch at most 2 USD. --stage is required and must be a registered stage. Each call is estimated before it is sent and refused if a cap would be exceeded; the
 actual usage returned by the API is then appended to usage-ledger.json. Raw output goes to the ignored
 .artifacts/art-gen/<card>/ directory; it becomes a game asset only through pixelize.py.
 """
@@ -15,7 +15,7 @@ from common import RAW, openai_key
 HERE = Path(__file__).resolve().parent
 LEDGER = HERE / 'usage-ledger.json'
 PRICE = {'image_out': 30e-6, 'image_in': 8e-6, 'text_in': 5e-6}  # USD per token, official model pages 2026-10-30
-CAPS = {'project': 50.0, 'batch': 2.0, 'stages': {'stage6': 15.0, 'stage7': 20.0}}
+CAPS = {'project': 52.83, 'batch': 2.0, 'stages': {'stage6': 15.0, 'stage7': 20.0, 'v01': 30.0}}
 # Conservative output-token guesses per call, used only for the pre-call check.
 GUESS = {'low': 400, 'medium': 2000, 'high': 7000, 'xhigh': 12000, 'max': 20000, 'auto': 7000}
 
@@ -24,6 +24,22 @@ def cost(usage: dict) -> float:
     det = usage.get('input_tokens_details', {})
     return (usage.get('output_tokens', 0) * PRICE['image_out'] + det.get('image_tokens', 0) * PRICE['image_in']
             + det.get('text_tokens', 0) * PRICE['text_in'])
+
+
+def transparent_ok(png: bytes) -> bool:
+    """True when a transparent-background card really came back transparent: the four corners and the mean of the
+    outer one-pixel border are (almost) fully transparent. 2026-11-01: 2 of the 7 transparent-background candidates
+    in batch 2 came back with an opaque backdrop, which pixelize.py --trim cannot remove."""
+    from io import BytesIO
+    from PIL import Image
+    a = Image.open(BytesIO(png)).convert('RGBA').getchannel('A')
+    w, h = a.size
+    border = ([a.getpixel((x, 0)) for x in range(w)]
+              + [a.getpixel((x, h - 1)) for x in range(w)]
+              + [a.getpixel((0, y)) for y in range(h)]
+              + [a.getpixel((w - 1, y)) for y in range(h)])
+    corners = [a.getpixel(p) for p in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1))]
+    return max(corners) <= 16 and sum(border) / len(border) <= 16
 
 
 def check_caps(entries: list, stage: str, batch: str, guess: float) -> str | None:
@@ -92,9 +108,14 @@ def main() -> None:
     out = RAW / card['id']
     out.mkdir(parents=True, exist_ok=True)
     png = out / f'{stamp}-{model}-{quality}.png'
-    png.write_bytes(base64.b64decode(d['data'][0]['b64_json']))
+    data = base64.b64decode(d['data'][0]['b64_json'])
+    png.write_bytes(data)
     entry['raw'] = png.name
+    if card.get('background') == 'transparent':
+        entry['transparent_ok'] = transparent_ok(data)
     save()
+    if entry.get('transparent_ok') is False:
+        print('WARNING: transparent background requested but the image came back opaque; do not use this candidate')
     print(f'{png.relative_to(RAW.parent.parent).as_posix()}  {entry["usd"]:.4f} USD  (project total {spent + entry["usd"]:.3f})')
 
 

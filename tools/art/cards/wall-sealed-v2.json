@@ -1,0 +1,7 @@
+{
+ "id": "wall-sealed-v2",
+ "model": "gpt-image-2.5-flare",
+ "quality": "high",
+ "size": "1024x1024",
+ "prompt": "A seamless square tile of a magical barrier wall: medium-grey stone bricks with a bright glowing orange-gold diagonal rune lattice across the whole tile, high contrast, filling the entire square edge to edge, tileable. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, bold simple silhouette with a thick dark outline, few colours, light values that stand out strongly against a dark mossy grey stone floor, soft ambient light from the top-left. No text, no letters, no characters, no creatures."
+}

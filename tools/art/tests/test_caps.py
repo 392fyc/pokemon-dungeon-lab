@@ -18,7 +18,7 @@ def e(usd, stage='stage7', batch='other'):
 
 class CheckCaps(unittest.TestCase):
     def test_caps_values(self):
-        self.assertEqual(gen.CAPS, {'project': 50.0, 'batch': 2.0, 'stages': {'stage6': 15.0, 'stage7': 20.0}})
+        self.assertEqual(gen.CAPS, {'project': 52.83, 'batch': 2.0, 'stages': {'stage6': 15.0, 'stage7': 20.0, 'v01': 30.0}})
 
     def test_g3_stage7_uses_its_own_cap(self):
         self.assertIsNone(gen.check_caps([e(15.5)], 'stage7', 'b', GUESS))
@@ -32,15 +32,38 @@ class CheckCaps(unittest.TestCase):
         self.assertIn('batch', gen.check_caps([e(1.995, batch='b')], 'stage7', 'b', GUESS))
 
     def test_g6_project_over_cap(self):
-        msg = gen.check_caps([e(49.99, stage='legacy')], 'stage7', 'b', GUESS)
+        msg = gen.check_caps([e(52.82, stage='legacy')], 'stage7', 'b', GUESS)
         self.assertIn('project', msg)
 
     def test_g8_stage6_over_cap(self):
         msg = gen.check_caps([e(14.99, stage='stage6')], 'stage6', 'b', GUESS)
         self.assertIn('stage6', msg)
 
+    def test_g9_v01_uses_its_own_cap(self):
+        self.assertIsNone(gen.check_caps([e(19.0), e(29.9, stage='v01', batch='x')], 'v01', 'b', 0.05))
+        msg = gen.check_caps([e(29.99, stage='v01', batch='x')], 'v01', 'b', GUESS)
+        self.assertIn('v01', msg)
+        self.assertIn('30', msg)
+
     def test_g2_unknown_stage_refused(self):
         self.assertIn('unknown stage', gen.check_caps([], 'stage9', 'b', GUESS))
+
+
+class TransparentCheck(unittest.TestCase):
+    def png(self, backdrop):
+        from io import BytesIO
+        from PIL import Image
+        im = Image.new('RGBA', (64, 64), backdrop)
+        for x in range(20, 44):
+            for y in range(20, 44):
+                im.putpixel((x, y), (200, 40, 40, 255))
+        buf = BytesIO(); im.save(buf, 'PNG'); return buf.getvalue()
+
+    def test_t1_clear_backdrop_ok(self):
+        self.assertTrue(gen.transparent_ok(self.png((0, 0, 0, 0))))
+
+    def test_t2_opaque_backdrop_rejected(self):
+        self.assertFalse(gen.transparent_ok(self.png((30, 30, 30, 255))))
 
 
 class MainPath(unittest.TestCase):

@@ -1,15 +1,23 @@
 import {
+  accuracyMultiplier,
   BLESSINGS,
   COMMISSIONS,
+  hitChance,
   ITEM_NAMES,
   PROG,
+  stageOf,
+  STATUS_NAMES,
+  STAGE_NAMES,
   type BlessingId,
   type Item,
   type Skill,
+  type StageKey,
+  type StatusId,
+  type StatusState,
   type Unit,
   type World,
 } from "../core/engine.ts";
-import { moveCategory, moveOf, type MoveRange } from "../core/moves.ts";
+import { moveCategory, moveEffects, moveOf, type MoveRange } from "../core/moves.ts";
 import { itemZh, moveZh, speciesZh, tmZh, typeZh } from "../core/names.ts";
 import { damageEstimateText, moveRangeLabel } from "../core/describe.ts";
 import { sheet, skinFor } from "./sprites.ts";
@@ -25,6 +33,10 @@ const ITEM_CATEGORIES: Record<Item, string> = {
   bigBerry: "berry",
   tonic: "drink",
   teamTonic: "drink",
+  pechaBerry: "berry",
+  rawstBerry: "berry",
+  cheriBerry: "berry",
+  healSeed: "other",
 };
 const CATEGORY_TABS = [
   ["all", "全部"],
@@ -80,10 +92,15 @@ function stageBadge(label: string, stage: number): string {
 }
 
 function statusMarkup(unit: Unit): string {
-  const badges = [
-    stageBadge("攻击", unit.stages.atk),
-    stageBadge("防御", unit.stages.def),
-  ];
+  const stageKeys: StageKey[] = ["atk", "def", "spa", "spd", "acc", "eva"];
+  const badges = stageKeys.map((key) => stageBadge(STAGE_NAMES[key], stageOf(unit, key)));
+  for (const kind of Object.keys(STATUS_NAMES) as StatusId[]) {
+    const state: StatusState | undefined = unit.status?.[kind];
+    if (!state) continue;
+    const remaining = state.left ?? state.tick;
+    badges.push('<span class="hud-status-badge is-down">' +
+      esc(STATUS_NAMES[kind] + (remaining === undefined ? "" : remaining)) + "</span>");
+  }
   if (unit.asleep) badges.push('<span class="hud-status-badge is-down">睡眠</span>');
   if (unit.protect > 0) badges.push('<span class="hud-status-badge is-up">守住' + unit.protect + '</span>');
   if (unit.reflect && unit.reflect > 0) badges.push('<span class="hud-status-badge is-up">反射' + unit.reflect + '</span>');
@@ -469,6 +486,25 @@ export function hudBag(
     '<div class="hud-bag-item-grid" aria-label="背包物品">' + itemMarkup + "</div></section>";
 }
 
+function formatAccuracy(chance: number): string {
+  return String(Number(chance.toFixed(1))) + "%";
+}
+
+export function hudMoveAccuracy(s: World, sourceId: string, skill: Skill, targetId?: string): string {
+  const source = s.units[sourceId];
+  const spec = moveOf(skill);
+  if (!source || !spec) return "—";
+  const rollsHit = spec.target === "enemy" || spec.target === "all";
+  if (!rollsHit) return "不检定";
+  if (targetId && s.units[targetId]) {
+    return formatAccuracy(hitChance(s, sourceId, targetId, skill));
+  }
+  const base = moveEffects(skill)?.acc;
+  if (base === null || base === undefined) return "基础 100%";
+  const chance = Math.min(100, base * accuracyMultiplier(stageOf(source, "acc")));
+  return "基础 " + formatAccuracy(chance);
+}
+
 export function hudMoveTip(s: World, skill: Skill): string {
   const spec = moveOf(skill);
   const leader = s.units[s.leader];
@@ -482,8 +518,7 @@ export function hudMoveTip(s: World, skill: Skill): string {
   const fullRange = spec ? moveRangeLabel(skill) : "未知射程";
   const cells = scopeGrid(spec?.range);
   const typeId = type ? esc(type) : "";
-  // 当前招式结算不进行命中判定，因此这里显示现行规则的 100%。
-  const accuracy = "100%";
+  const accuracy = hudMoveAccuracy(s, s.leader, skill);
   const description = MOVE_DESCRIPTIONS[skill]?.desc ?? "";
   return '<section class="hud-move-tip" aria-label="' + esc(moveZh(skill)) + "招式信息" +
     '" data-move-type="' + typeId + '">' +
@@ -494,7 +529,8 @@ export function hudMoveTip(s: World, skill: Skill): string {
     '<span class="hud-tip-category">' + esc(category) + "</span></header>" +
     '<div class="hud-tip-fields">' +
     '<div class="hud-tip-field"><span>威力</span><strong>' + power + "</strong></div>" +
-    '<div class="hud-tip-field"><span>命中</span><strong>' + accuracy + "</strong></div>" +
+    '<div class="hud-tip-field"><span>命中</span><strong data-move-accuracy="' +
+    esc(skill) + '">' + esc(accuracy) + "</strong></div>" +
     '<div class="hud-tip-field"><span>PP</span><strong>' + current + "/" + maximum + "</strong></div>" +
     '<div class="hud-tip-field" data-move-range="' + esc(spec?.range ?? "") + '"><span>射程</span><strong aria-label="' + esc(fullRange) + '">' + esc(range) + "</strong></div>" +
     '<div class="hud-tip-field"><span>范围</span><strong>' + esc(target) + "</strong></div></div>" +

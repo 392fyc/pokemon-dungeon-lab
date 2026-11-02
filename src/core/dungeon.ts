@@ -13,7 +13,9 @@ import {SPECIES,BOSS_CONFIG,speciesMaxHp,tmPool} from './roster.ts';
 import rooms83 from '../data/rooms-83.json' with {type:'json'};
 import terrainThemesJson from '../data/terrain-themes.json' with {type:'json'};
 export {BOSS_CONFIG} from './roster.ts';
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest'|'shop'|'exchange';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'healSeed'|'rest'|'shop'|'exchange';
+/** 8.8 (#165, G3.x): what a floor item point holds, with its weight in percent (WORKING CANDIDATE). */
+export const FLOOR_ITEM_WEIGHTS:readonly (readonly [PointKind,number])[]=[['berry',40],['pechaBerry',15],['rawstBerry',15],['cheriBerry',15],['healSeed',15]];
 export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
 export type EnemySpec={id:string;species:string;level:number;hp:number;pos:Cell;post?:Cell;boss?:true;asleep?:boolean};
 export type Room={x:number;y:number;w:number;h:number};
@@ -784,6 +786,22 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     outputServices=services.filter(p=>p.kind!=='exchange');
     adventureRooms=makeAdventureRooms(seed,level,{rooms,arrivalRoom,downRoom,bossRoom:bossFloor?bossRoom:undefined,
       enemies,floor,occupied:used});
+    // 8.8 (#165): 2-4 item points per floor. The first is the existing berry point (same cell, its kind is redrawn); the rest are placed last, from their
+    // own stream, so every earlier placement (rest point, services, adventure rooms) is unchanged.
+    const itemRandom=mulberry32((Math.imul(seed>>>0,0x4F1BBCDD)^Math.imul(level,0x2C1B3C6D)^0x5851F42D)>>>0);
+    const total=FLOOR_ITEM_WEIGHTS.reduce((a,[,w])=>a+w,0);
+    const drawKind=():PointKind=>{let r=itemRandom()*total;for(const [kind,weight] of FLOOR_ITEM_WEIGHTS){if(r<weight)return kind;r-=weight;}return 'berry';};
+    const count=2+Math.floor(itemRandom()*3);
+    const first=pickups.find(q=>q.kind==='berry');
+    if(first)first.kind=drawKind();
+    const interactions=new Set(adventureRooms.map(r=>k(r.interaction)));
+    for(let n=first?1:0;n<count;n++){
+      const outside=rooms.filter((_,i)=>i!==arrivalRoom&&i!==bossRoom).flatMap(roomCells).filter(c=>!used.has(k(c))&&!interactions.has(k(c))&&!inBoss(c));
+      const pool=outside.length?outside:floor.filter(c=>!used.has(k(c))&&!interactions.has(k(c))&&!inBoss(c));
+      if(!pool.length)break;
+      const kind=drawKind(),pos=pickFrom(pool,itemRandom);
+      used.add(k(pos));pickups.push({pos:{x:pos.x,y:pos.y},kind,used:false});
+    }
   }
   const liquid=generateLiquid(seed,level,params,floor,rooms);
   return {level,width:W,height:H,floor,rooms,corridors,generationStats,liquid,arrivalRoom,arrival,up:null,down,points:outputPoints,enemies,enemyAiRng,

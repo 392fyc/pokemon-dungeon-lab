@@ -68,6 +68,8 @@ LEGACY_MOVE_IDS = (
     "protect", "pursuit", "quickattack", "roar", "scratch", "seedbomb", "slam",
     "tackle", "terablast", "thundershock", "watergun", "whirlwind",
 )
+# 8.8（#165）：本作没有太晶化，太晶爆发不再是招式机或可学招式；pmd-moves.json 保留它的数据行以便读取旧档。
+REMOVED_MOVE_IDS = ("terablast",)
 TEAM_PROTECTION_MOVE_IDS = ("quickguard", "reflect", "lightscreen")
 TEAM_PROTECTION_NOTES = {
     "quickguard": "固定取无限迷宫（GTI）同房间全队版；官方持续1回合，本作仅持续至本回合敌方阶段结束。",
@@ -267,6 +269,13 @@ def exact_move_snippets(raw: bytes) -> dict[str, bytes]:
     return {move_id: item["raw"].encode("utf-8") for move_id, item in moves.items()}
 
 
+def frozen_view(value):
+    """8.8（#165）：PP 改为官方值、太晶爆发被去除，冻结比较只看招式 id（PP 与去除项不参与）。"""
+    if isinstance(value, list) and value and isinstance(value[0], dict) and "move" in value[0]:
+        return [m["move"] for m in value if m["move"] not in REMOVED_MOVE_IDS]
+    return value
+
+
 def build_baselines(snapshot_root: Path, checked: dict):
     names_path = LEGACY_NAMES_PATH
     if not names_path.is_file():
@@ -281,10 +290,11 @@ def build_baselines(snapshot_root: Path, checked: dict):
     showdown = import_fixed_builder("pokedex_import_showdown_base", REPO / "tools" / "data" / "import_showdown.py")
     pmd_builder = import_fixed_builder("pokedex_import_pmd_base", REPO / "tools" / "data" / "import_pmd.py")
     showdown_data = showdown.load(snapshot_root / "showdown")
-    old_species, _ = showdown.build(showdown_data)
     if pmd_builder.SNAPSHOT_NAME != OLD_PMD_BASE_NAME or pmd_builder.EXPECTED_SHA256 != OLD_PMD_BASE_SHA:
         fail("固定 import_pmd 基线的文件名或 SHA-256 常量已变化")
     old_pmd = pmd_builder.build(pmd_builder.load(snapshot_root / "pmd" / OLD_PMD_BASE_NAME))
+    # 8.8（#165）：旧23种的 PP 也取官方 basePp；叶影在旧快照没有官方数据，取 Showdown 的 40。
+    old_species, _ = showdown.build(showdown_data, showdown.pp_from_specs(old_pmd["moves"], showdown_data["moves"]))
 
     old_ids = [sp["id"] for sp in old_species]
     if tuple(old_ids) != LEGACY_SPECIES_IDS:
@@ -310,7 +320,7 @@ def build_baselines(snapshot_root: Path, checked: dict):
             fail("当前 roster.json 中原23种的相对顺序与固定导入基线不同")
         for old in old_species:
             cur = by_id.get(old["id"])
-            if cur is None or any(cur.get(k) != old.get(k) for k in ("kit", "maxHp", "starter")):
+            if cur is None or any(frozen_view(cur.get(k)) != frozen_view(old.get(k)) for k in ("kit", "maxHp", "starter")):
                 fail(f"当前 roster.json 的冻结字段与固定导入基线不同：{old['id']}")
     baseline_raw = exact_move_snippets((json.dumps(old_pmd, ensure_ascii=False, indent=1) + "\n").encode("utf-8"))
     if current_moves_path.is_file():
@@ -566,14 +576,17 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
     return specs, result, dict(sorted(admission_counts.items())), dict(sorted(exclusions.items())), dict(sorted(unavailable_power.items()))
 
 
-def pp_for(move_id: str, showdown_moves: dict, legacy_pp: dict) -> int:
-    if move_id in legacy_pp:
-        return legacy_pp[move_id]
+def pp_for(move_id: str, move_specs: dict, showdown_moves: dict) -> int:
+    """8.8（#165）：最大 PP＝探险队官方 basePp；没有官方数据的叶影取 Showdown 的基础 PP。"""
+    official = (move_specs.get(move_id) or {}).get("official")
+    base = official.get("basePp") if isinstance(official, dict) else None
+    if isinstance(base, str) and base.isdigit() and int(base) > 0:
+        return int(base)
     move = showdown_moves.get(move_id)
     pp = move.get("pp") if isinstance(move, dict) else None
-    if not isinstance(pp, (int, float)) or pp <= 0:
-        fail(f"新招式 {move_id} 的 Showdown PP 无效：{pp!r}")
-    return max(1, min(4, math.floor(pp / 10)))
+    if not isinstance(pp, int) or pp <= 0:
+        fail(f"招式 {move_id} 既没有官方 basePp，也没有有效的 Showdown PP：{pp!r}")
+    return pp
 
 
 def showdown_name_to_id(pokedex: dict) -> dict[str, str]:
@@ -708,13 +721,7 @@ def generate_roster(data: dict, all_species: list[dict], learnsets: dict, union:
                     admission: dict, move_specs: dict, legacy_species: list[dict], showdown_moves: dict):
     legacy_by_id = {sp["id"]: sp for sp in legacy_species}
     species_evolution = evolution_fields(data, all_species)
-    legacy_pp = {}
-    for sp in legacy_species:
-        for move in [*sp["kit"], *sp["learnable"]]:
-            previous = legacy_pp.setdefault(move["move"], move["pp"])
-            if previous != move["pp"]:
-                fail(f"旧招式 PP 在原名单中不一致：{move['move']} {previous}/{move['pp']}")
-    permitted = {mid for mid, row in admission.items() if row["admitted"]}
+    permitted = {mid for mid, row in admission.items() if row["admitted"]} - set(REMOVED_MOVE_IDS)
     output = []
     unavailable = []
     for entry in all_species:
@@ -725,7 +732,7 @@ def generate_roster(data: dict, all_species: list[dict], learnsets: dict, union:
         old = legacy_by_id.get(sid)
         if old:
             learned.update(m["move"] for m in old["learnable"])
-            kit = [dict(m) for m in old["kit"]]
+            kit = [{"move": m["move"], "pp": pp_for(m["move"], move_specs, showdown_moves)} for m in old["kit"]]
             starter = old["starter"]
             max_hp = old["maxHp"]
         else:
@@ -751,11 +758,11 @@ def generate_roster(data: dict, all_species: list[dict], learnsets: dict, union:
                 damage = [mid for _, mid in levelups if "damage" in (move_specs.get(mid, {}).get("effects") or [])]
                 if damage:
                     chosen[1] = damage[0]
-            kit = [{"move": mid, "pp": pp_for(mid, showdown_moves, legacy_pp)} for mid in chosen]
+            kit = [{"move": mid, "pp": pp_for(mid, move_specs, showdown_moves)} for mid in chosen]
             if len(kit) != 2 or not any("damage" in (move_specs.get(m["move"], {}).get("effects") or []) for m in kit):
                 unavailable.append({"id": sid, "dex": f"{entry['num']:04d}", "kit": kit, "learnsetGen": era})
 
-        learnable = [{"move": mid, "pp": pp_for(mid, showdown_moves, legacy_pp)} for mid in sorted(learned)]
+        learnable = [{"move": mid, "pp": pp_for(mid, move_specs, showdown_moves)} for mid in sorted(learned)]
         available_for_play = len(kit) == 2 and any("damage" in (move_specs.get(m["move"], {}).get("effects") or []) for m in kit)
         output.append({
             "id": sid, "dex": f"{entry['num']:04d}", "name": entry["name"], "starter": starter,
@@ -820,8 +827,9 @@ def validate_existing_species(current_species: list[dict] | None, generated_spec
         generated = generated_by_id.get(species_id)
         if generated is None:
             fail(f"当前 roster.json 含固定名单以外物种：{species_id}")
-        old_fields = {key: value for key, value in current.items() if key not in EVOLUTION_FIELDS}
-        generated_old_fields = {key: value for key, value in generated.items() if key not in EVOLUTION_FIELDS}
+        # 8.8（#165）：PP 与太晶爆发的去除是有意的改动，kit/learnable 只比较招式 id。
+        old_fields = {key: frozen_view(value) for key, value in current.items() if key not in EVOLUTION_FIELDS}
+        generated_old_fields = {key: frozen_view(value) for key, value in generated.items() if key not in EVOLUTION_FIELDS}
         if old_fields != generated_old_fields:
             changed = sorted(set(old_fields) | set(generated_old_fields))
             changed = [key for key in changed if old_fields.get(key) != generated_old_fields.get(key)]

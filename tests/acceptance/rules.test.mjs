@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMain} from '../../src/core/engine.ts';
-import {roguelikeArena,pos,row,friend,enemy,world,doCmd,reject as rejectRaw,move,wait,basic,skill,interact,round,switchTo,refuse,accept,finish,coords,hp,pp,preview,V,K,K5} from './fixtures.mjs';
+import {sureHit} from '../core/sure-hit.mjs';   // 8.8 (#165): these journeys count exact HP, so the accuracy roll is taken out
+import {roguelikeArena,pos,row,friend,enemy,world,doCmd,reject as rejectRaw,move,wait,basic,skill,interact,round,switchTo,refuse,accept,finish,coords,hp,pp,preview,V,K as KFixture,K5 as K5Fixture} from './fixtures.mjs';
+// 8.8 (#165): the K journeys count exact HP, so the accuracy roll is taken out of them here (the shipped-scenario comparison keeps the literal fixtures).
+const K=d=>sureHit(KFixture(d)),K5=()=>sureHit(K5Fixture());
 // 拒绝必须明确说明没有执行整轮；底层helper已比较完整世界不变。
 function reject(s,command){const r=rejectRaw(s,command);assert.match(r.error,/本轮未执行/);return r;}
 const U=[{tackle:2},{protect:2},{tackle:2,quickattack:2}];
@@ -12,7 +15,7 @@ const U=[{tackle:2},{protect:2},{tackle:2,quickattack:2}];
 function main(inv){
  const s=createMain('acceptance',inv);
  for(const [id,h] of [['E',16],['R',6]]){const u=s.units[id];u.hp=h;u.maxHp=h;}
- return s;
+ return sureHit(s);
 }
 /** Two rounds in which the leader stands still: R steps from 5 to 4 (no damage on its move turn), then the leader's basic attack (6) kills it first. */
 function clearR(s){

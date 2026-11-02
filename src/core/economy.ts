@@ -16,7 +16,9 @@ export const ECON={
   /** The purse (money taken into a run) is set in steps from 0 up to min(purseMax, account). */
   purseMax:200,purseStep:20,
   /** Shop: chance that a run has one (floor 1 or 2), fixed stock, prices in purse money. */
-  shopChance:0.35,price:{berry:20,tonic:30,tm:80} as Record<'berry'|'tonic'|'tm',number>,stock:{berry:2,tonic:1,tm:1},
+  shopChance:0.35,
+  /** 8.8 (#165, G9.4): the stock also holds one Pecha Berry and one Heal Seed (WORKING CANDIDATE prices 20 / 40). */
+  price:{berry:20,tonic:30,tm:80,pechaBerry:20,healSeed:40} as Record<'berry'|'tonic'|'tm'|'pechaBerry'|'healSeed',number>,stock:{berry:2,tonic:1,tm:1,pechaBerry:1,healSeed:1},
   /** Exchanger: chance that a run has one, and the most technique machines one use may carry home. */
   exchangeChance:0.25,exchangeCargo:2,
 } as const;

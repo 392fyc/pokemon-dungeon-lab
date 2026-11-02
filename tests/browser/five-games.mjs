@@ -4,7 +4,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
-import {inferEvents} from '../../src/render/animation.ts';
+import {inferEvents,newLines} from '../../src/render/animation.ts';
+import {applyCommand,createExpedition,rngStep} from '../../src/core/engine.ts';
 import {moveOf} from '../../src/core/moves.ts';
 import {floorIndex,adjacentReachable,rayReachable} from '../../src/render/reach.ts';
 
@@ -72,8 +73,9 @@ function visibleView(s){
   }
  }
  const team=s.queue.map(id=>{
-  const u=s.units[id];
-  return {id,hp:u?.hp??0,maxHp:u?.maxHp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null,learned:[...(u?.learned??[])],pp:{...(u?.pp??{})},maxPp:{...(u?.maxPp??{})}};
+  const u=s.units[id],status={};
+  for(const key of ['frz','confusion'])if(u?.status?.[key]!==undefined)status[key]={...u.status[key]};
+  return {id,hp:u?.hp??0,maxHp:u?.maxHp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null,learned:[...(u?.learned??[])],pp:{...(u?.pp??{})},maxPp:{...(u?.maxPp??{})},...(Object.keys(status).length?{status}:{})};
  });
  const enemies=s.enemies.map(id=>{
   const u=s.units[id];
@@ -123,13 +125,45 @@ async function command(c){
  assert.ok(after.round>c.beforeRound,'UI action must advance a complete round; action: '+JSON.stringify(a)+'; notice: '+await page.locator('#message').innerText()+'; visible state: '+JSON.stringify(visibleView(after)));
  if(a.type==='move'){
   const id=movementBefore.leader,pos=movementBefore.units[id].pos,to={x:pos.x+a.dx,y:pos.y+a.dy};
-  assert.equal(after.round,c.beforeRound+1,'one cardinal key or two-key chord must produce exactly one round');
-  // Enemy actions may knock the member out or displace it later in the same round.
-  // Verify its actual movement event instead of assuming its final position survives.
-  const events=inferEvents(movementBefore,after,{type:'round',action:{type:'move',to}});
-  const arrived=events.some(ev=>ev.k==='move'&&ev.id===id&&ev.to.x===to.x&&ev.to.y===to.y||ev.k==='swap'&&((ev.a===id&&ev.pb.x===to.x&&ev.pb.y===to.y)||(ev.b===id&&ev.pa.x===to.x&&ev.pa.y===to.y)));
-  assert.ok(arrived,'the actual keyboard input executes the planned single-cell move before later round effects');
+  assertMovementOutcome(movementBefore,after,to);
  }
+}
+function movementEventsFor(events,id){
+ return events.flatMap(ev=>{
+  if(ev.k==='move'&&ev.by===id&&ev.id===id)return [{to:ev.to,kind:'move'}];
+  if(ev.k==='swap'&&ev.by===id){
+   if(ev.a===id)return [{to:ev.pb,kind:'swap'}];
+   if(ev.b===id)return [{to:ev.pa,kind:'swap'}];
+  }
+  return [];
+ });
+}
+function samePos(a,b){return a.x===b.x&&a.y===b.y;}
+function assertMovementOutcome(before,after,requested){
+ const id=before.leader,pos=before.units[id].pos;
+ assert.equal(after.round,before.round+1,'one cardinal key or two-key chord must produce exactly one round');
+ const lines=newLines(before.log,after.log),events=inferEvents(before,after,{type:'round',action:{type:'move',to:requested}});
+ const ownMoves=movementEventsFor(events,id),status=visibleView(before).team.find(u=>u.id===id)?.status;
+ if(status?.frz){
+  assert.equal(ownMoves.length,0,'a frozen leader cannot produce a movement event');
+  assert.ok(lines.includes(id+'冰冻中，无法行动，本次行动落空，未扣PP'),'a frozen no-move result requires an exact lost-action log from this round');
+  return 'frozen-action-lost';
+ }
+ const confusedLines=status?.confusion?lines.filter(line=>line.startsWith(id+'因混乱朝')):[];
+ if(status?.confusion)assert.equal(confusedLines.length,1,"an active confusion status must be proven by this round's leader log");
+ if(ownMoves.length===1&&samePos(ownMoves[0].to,requested))return 'arrived';
+ if(status?.confusion&&confusedLines.length===1&&confusedLines[0].endsWith('，被挡住，原地不动')){
+  assert.equal(ownMoves.length,0,'a blocked confused move has no leader move/swap event');
+  return 'confused-step-blocked';
+ }
+ if(status?.confusion&&confusedLines.length===1&&confusedLines[0].endsWith('乱走')){
+  assert.equal(ownMoves.length,1,'a redirected confused move must have one real leader move/swap event');
+  const actual=ownMoves[0].to;
+  assert.equal(Math.max(Math.abs(actual.x-pos.x),Math.abs(actual.y-pos.y)),1,'a redirected move still travels exactly one neighboring cell');
+  assert.notDeepEqual(actual,requested,'this exception only accepts a logged confusion redirection away from the planned destination');
+  return 'confused-direction-replaced';
+ }
+ assert.fail('keyboard move lacks a matching movement event or specific status proof; leader='+id+'; status='+JSON.stringify(status)+'; round log='+JSON.stringify(lines)+'; movement events='+JSON.stringify(ownMoves));
 }
 async function roundTrip(label){
  const before=await envelope();
@@ -357,9 +391,40 @@ try{
  const projectionState=extraFloor=>({seen:['0,0'],seenWalls:[],floor:[{x:0,y:0},{x:1,y:0},{x:10,y:10},...extraFloor],queue:['A'],units:{A:{id:'A',hp:10,pos:{x:0,y:0}}},leader:'A',enemies:[],points:[],dungeon:{level:1}});
  const nearProjection=visibleView(projectionState([])),farProjection=visibleView(projectionState([{x:11,y:10},{x:10,y:11}]));
  assert.deepEqual(farProjection,nearProjection,'far hidden floor changes do not enter the visible planner projection');
+ const statusProjection=visibleView({...projectionState([]),units:{A:{id:'A',hp:10,pos:{x:0,y:0},status:{frz:{left:2},confusion:{left:4},brn:{tick:3}}}}});
+ assert.deepEqual(statusProjection.team[0].status,{frz:{left:2},confusion:{left:4}},'movement reasoning receives only the leader-relevant visible freeze and confusion fields');
+ report.movementStatusProjectionRegression=true;
  const projectionEdge=view=>nearestRevealedEdge(view,{known:new Set([...view.seen,...view.seenWalls]),tried:new Set()});
  assert.deepEqual(projectionEdge(farProjection),projectionEdge(nearProjection),'far hidden floor changes do not change the selected exploration edge');
  report.hiddenTerrainProjectionRegression=true;
+ const moveFixture=status=>{
+  const w=createExpedition('five-games-status-smoke',24681357,1),id=w.leader;
+  w.queue=[id];w.enemies=[];w.points=[];w.floor=[];
+  for(let y=0;y<3;y++)for(let x=0;x<3;x++)w.floor.push({x,y});
+  w.seen=w.floor.map(posKey);w.units[id].pos={x:1,y:1};w.units[id].status=structuredClone(status);w.round=0;
+  return w;
+ };
+ const requested={x:2,y:1};
+ const paralysedBefore=moveFixture({par:{left:2}}),paralysedResult=applyCommand(paralysedBefore,{type:'round',action:{type:'move',to:requested}});
+ assert.equal(assertMovementOutcome(paralysedBefore,paralysedResult.state,requested),'arrived','paralysis blocks moves and basic attacks, not walking');
+ const frozenBefore=moveFixture({frz:{left:2}}),frozenResult=applyCommand(frozenBefore,{type:'round',action:{type:'move',to:requested}});
+ assert.equal(frozenResult.ok,true,'the engine accepts a geometrically valid move even while frozen');
+ assert.equal(assertMovementOutcome(frozenBefore,frozenResult.state,requested),'frozen-action-lost','only the exact same-round freeze log permits a no-move result');
+ const confusedBefore=moveFixture({confusion:{left:2}});
+ let confusionRng=0,confusionDirection=Math.floor(rngStep(confusionRng).value*8);
+ while(confusionDirection===0){confusionRng++;confusionDirection=Math.floor(rngStep(confusionRng).value*8);}
+ confusedBefore.battleRng=confusionRng;
+ const confusedResult=applyCommand(confusedBefore,{type:'round',action:{type:'move',to:requested}});
+ assert.equal(confusedResult.ok,true);
+ const confusedPos=confusedResult.state.units[confusedBefore.leader].pos;
+ assert.notDeepEqual(confusedPos,requested,'the deterministic fixture chooses a different direction, without changing the fresh-run random stream');
+ assert.equal(assertMovementOutcome(confusedBefore,confusedResult.state,requested),'confused-direction-replaced','the actual confusion log and actual move event prove the changed destination');
+ const blockedBefore=moveFixture({confusion:{left:2}});
+ blockedBefore.floor=blockedBefore.floor.filter(p=>p.x!==0||p.y!==1);blockedBefore.seen=blockedBefore.floor.map(posKey);blockedBefore.battleRng=confusionRng;
+ const blockedResult=applyCommand(blockedBefore,{type:'round',action:{type:'move',to:requested}});
+ assert.equal(blockedResult.ok,true);
+ assert.equal(assertMovementOutcome(blockedBefore,blockedResult.state,requested),'confused-step-blocked','the no-move exception needs the engine log that the drawn direction was blocked');
+ report.statusMovementCoreRegression=true;
  const wallView={level:1,seen:['0,0'],seenWalls:['1,0','0,1','-1,0','0,-1','1,1','-1,1','-1,-1','1,-1'],leaderId:'A',leaderPos:{x:0,y:0},team:[{id:'A',hp:10,pos:{x:0,y:0}}],enemies:[],points:[]};
  const wallMemory={known:new Set(['0,0']),tried:new Set()};
  assert.equal(nearestRevealedEdge(wallView,wallMemory),null,'drawn walls are known terrain, not unexplored edges');

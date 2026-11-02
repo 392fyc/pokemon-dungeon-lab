@@ -28,7 +28,7 @@ const legacyEnvelope=(current,profile=initialProfile())=>({format:1,rules:'trial
 test('B1 the initial profile: three starters, their kits learned and carried, empty vault',()=>{
  const p=initialProfile();
  assert.deepEqual(p.roster.map(i=>[i.id,i.species,i.carry]),[['P1','charmander',['scratch','ember']],['P2','squirtle',['tackle','watergun']],['P3','bulbasaur',['tackle','seedbomb']]]);
- assert.deepEqual(p.roster[0].learned,[{move:'scratch',pp:3},{move:'ember',pp:2}]);
+ assert.deepEqual(p.roster[0].learned,[{move:'scratch',pp:28},{move:'ember',pp:15}]);// 8.8 (#165): max PP is the official value, scratch 28 and ember 15
  assert.deepEqual(p.vault,{});assert.equal(p.expeditions,0);assert.deepEqual(p.team,['P1','P2','P3']);assert.equal(p.leader,'P3');
  assert.equal(p.difficulty,'normal');assert.deepEqual(p.shards,{});assert.equal(p.rankExp,0);assert.deepEqual(p.talents,{});
  assert.equal(profileProblem(p),null);
@@ -61,7 +61,7 @@ test('暂不出场的图鉴物种不能通过手改存档进入名册或救援�
 test('B2 victory: the new recruit joins the roster, the brought machine enters the vault, old members keep what they had',()=>{
  const p=settleRun(initialProfile(),ended({camp:[['N1','pidgey']]}));
  assert.deepEqual(p.roster.map(i=>[i.id,i.species]),[['P1','charmander'],['P2','squirtle'],['P3','bulbasaur'],['P4','pidgey']]);
- assert.deepEqual(p.roster[3].learned,[{move:'tackle',pp:3},{move:'gust',pp:3}]);
+ assert.deepEqual(p.roster[3].learned,[{move:'tackle',pp:30},{move:'gust',pp:19}]);// 8.8: official PP
  assert.deepEqual(p.roster[3].carry,['tackle','gust']);
  assert.deepEqual(p.vault,{protect:1});assert.equal(p.expeditions,1);assert.equal(p.next,5);
  assert.deepEqual(p.roster[0],initialProfile().roster[0]);
@@ -83,7 +83,7 @@ test('B3b a run saved before the base existed: its A/B/C are the starters, not t
 test('B4 learning: a compatible machine teaches and is used up; incompatible or known ones are refused and not used up',()=>{
  const p=withVault({protect:1,roar:1,whirlwind:1});
  const ok=learnTm(p,'P1','protect');assert.equal(ok.ok,true);
- assert.deepEqual(ok.profile.roster[0].learned.at(-1),{move:'protect',pp:1});
+ assert.deepEqual(ok.profile.roster[0].learned.at(-1),{move:'protect',pp:10});// 8.8: official PP
  assert.deepEqual(ok.profile.vault,{roar:1,whirlwind:1});
  assert.deepEqual(p.vault,{protect:1,roar:1,whirlwind:1},'input untouched');
  for(const [inst,move] of [['P2','roar'],['P1','whirlwind'],['P3','roar']]){
@@ -128,8 +128,8 @@ test('B7 departure: the squad in selection order, full HP and PP, carried moves 
  assert.deepEqual([s.units.A.species,s.units.B.species],['bulbasaur','charmander']);
  assert.deepEqual([s.units.A.inst,s.units.B.inst],['P3','P1']);
  assert.deepEqual([s.units.B.hp,s.units.B.maxHp,s.units.B.learned,s.units.B.moves],[19,19,['scratch','protect'],['scratch','protect']]);
- assert.deepEqual([s.units.B.pp,s.units.B.maxPp],[{scratch:3,protect:1},{scratch:3,protect:1}]);
- assert.deepEqual([s.units.A.hp,s.units.A.pp],[21,{tackle:3,seedbomb:1}]);
+ assert.deepEqual([s.units.B.pp,s.units.B.maxPp],[{scratch:28,protect:10},{scratch:28,protect:10}]);// 8.8: official PP
+ assert.deepEqual([s.units.A.hp,s.units.A.pp],[21,{tackle:30,seedbomb:11}]);// 8.8: official PP
  assert.equal(s.prog.level,5);assert.equal(s.prog.exp,0);assert.equal(s.dungeon.base,true);
 });
 
@@ -174,7 +174,7 @@ test('B11 rest point: floor 2 of a base run only, next to the arrival stairs; no
  assert.equal(createExpedition('f1',3,2,squadOf(initialProfile())).points.some(p=>p.kind==='rest'),false,'not on floor 1');
 });
 
-test('B12 rest point: lowest-ratio move of each living member gets +2 PP once; full PP is refused without using the chance',()=>{
+test('B12 rest point (8.8): every move of each living member gets +5 PP once; full PP is refused without using the chance',()=>{
  const s=atFloor2(3);
  for(const id of ['A','B']){s.units[id].hp=0;s.units[id].pos=null;}
  s.units.C.pos={x:13,y:12};
@@ -183,23 +183,23 @@ test('B12 rest point: lowest-ratio move of each living member gets +2 PP once; f
  assert.deepEqual(full.state,s);assert.equal(s.points.find(p=>p.kind==='rest').used,false);
  s.units.C.pp={tackle:1,seedbomb:0};
  const r=applyCommand(s,{type:'round',action:{type:'interact',exit:false}});assert.equal(r.ok,true);
- assert.deepEqual(r.state.units.C.pp,{tackle:1,seedbomb:1});// line 0/1 is lowest; +2 stops at the maximum 1
+ assert.deepEqual(r.state.units.C.pp,{tackle:6,seedbomb:5});// 8.8 (G9.2): all moves recover 5, tackle 1 to 6 and seedbomb 0 to 5 (maxima 30 and 11)
  assert.equal(r.state.points.find(p=>p.kind==='rest').used,true);assert.equal(r.state.round,s.round+1);
  const again=applyCommand(r.state,{type:'round',action:{type:'interact',exit:false}});
  assert.equal(again.ok,false);assert.match(again.error,/已使用/);
 });
 
-test('B13 rest point with two living members: each picks its own lowest ratio; ties go to the first move; fallen members are skipped',()=>{
+test('B13 rest point with two living members (8.8): each of their moves recovers 5; fallen members are skipped',()=>{
  const s=atFloor2(3);
  s.units.B.hp=0;s.units.B.pos=null;
  s.units.A.pos={x:14,y:11};s.units.C.pos={x:13,y:12};
- s.units.A.pp={scratch:2,ember:1};   // 2/3 and 1/2: line is lower
+ s.units.A.pp={scratch:2,ember:1};
  s.units.B.pp={tackle:0,watergun:0};   // fallen: untouched
- s.units.C.pp={tackle:1,seedbomb:1};   // 1/3 and 1/1: strong is lower
+ s.units.C.pp={tackle:1,seedbomb:1};
  const r=applyCommand(s,{type:'round',action:{type:'interact',exit:false}});assert.equal(r.ok,true);
- assert.deepEqual(r.state.units.A.pp,{scratch:2,ember:2});
+ assert.deepEqual(r.state.units.A.pp,{scratch:7,ember:6});// 8.8 (G9.2): +5 on every move
  assert.deepEqual(r.state.units.B.pp,{tackle:0,watergun:0});
- assert.deepEqual(r.state.units.C.pp,{tackle:3,seedbomb:1});
+ assert.deepEqual(r.state.units.C.pp,{tackle:6,seedbomb:6});
 });
 
 test('B14 rest point cannot be used as an exit',()=>{

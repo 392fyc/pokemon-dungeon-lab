@@ -133,11 +133,11 @@ test('8.3 R9: new room items use an action only when useful',()=>{
  s.units.A.hp=1;s=act(s,{type:'use',item:'bigBerry',target:'A'});assert.equal(s.units.A.hp,s.units.A.maxHp);assert.equal(s.prog.items.bigBerry,0);
  s.prog.items.bigBerry=1;s.units.B.pos={x:5,y:3};s.units.B.hp=2;
  s=act(s,{type:'use',item:'bigBerry',target:'B'});assert.equal(s.units.B.hp,s.units.B.maxHp);
- s.prog.items.teamTonic=1;s.units.A.learned=['tackle'];s.units.A.maxPp={tackle:3};s.units.A.pp={tackle:1};
+ s.prog.items.teamTonic=1;s.units.A.learned=['tackle'];s.units.A.maxPp={tackle:10};s.units.A.pp={tackle:1};   // 8.8 (G9.1): the team tonic restores 5 per move, so the cap is raised to show it
  s.units.B.learned=['tackle'];s.units.B.maxPp={tackle:3};s.units.B.pp={tackle:3};
  s.units.C.hp=0;s.units.C.pos=null;s.units.C.learned=['tackle'];s.units.C.maxPp={tackle:3};s.units.C.pp={tackle:0};
- s=act(s,{type:'use',item:'teamTonic',target:'A'});assert.equal(s.units.A.pp.tackle,2);assert.equal(s.units.B.pp.tackle,3);assert.equal(s.units.C.pp.tackle,0);
- assert.equal(s.prog.items.teamTonic,0);s.prog.items.teamTonic=1;s.units.A.pp.tackle=3;
+ s=act(s,{type:'use',item:'teamTonic',target:'A'});assert.equal(s.units.A.pp.tackle,6);assert.equal(s.units.B.pp.tackle,3);assert.equal(s.units.C.pp.tackle,0);
+ assert.equal(s.prog.items.teamTonic,0);s.prog.items.teamTonic=1;s.units.A.pp.tackle=10;
  const reject=applyCommand(s,{type:'round',action:{type:'use',item:'teamTonic',target:'A'}});assert.equal(reject.ok,false);assert.equal(reject.state,s);
 });
 
@@ -198,13 +198,13 @@ test('8.3 R7: a preselected item reward goes directly to the backpack exactly on
  }
 });
 
-test('8.3 R19: reward invitation uses c1a species and existing half-HP/PP full-party replacement',()=>{
+test('8.3 R19: reward invitation uses c1a species and half-HP/full-PP full-party replacement (8.8)',()=>{
  let s=startChallenge(challengeWorld());s.adventureRooms[0].reward='invite';
  const expected=s.units.c1a.species,target=finalEnemyFixture(s);s.prog.rng=1;
  s=act(s,{type:'basic',target});assert.equal(s.phase,'invitation');assert.equal(s.adventureRooms[0].state,'cleared');
  const invitation=s.invitations.find(i=>i.status==='pending');assert.ok(invitation);assert.equal(invitation.unit.species,expected);
  const u=invitation.unit;assert.equal(u.hp,Math.max(1,Math.floor(u.maxHp/2)));
- for(const move of u.learned)assert.equal(u.pp[move],Math.max(1,Math.floor(u.maxPp[move]/2)));
+ for(const move of u.learned)assert.equal(u.pp[move],u.maxPp[move]);   // 8.8 (G8.2): HP is halved, PP is full
  const noReplacement=applyCommand(s,{type:'invite',choice:'accept'});assert.equal(noReplacement.ok,false);
  s=command(s,{type:'invite',choice:'accept',outgoing:'B'});assert.equal(s.queue.length,3);assert.ok(!s.queue.includes('B'));assert.ok(s.queue.includes(u.id));assert.ok(s.camp.includes('B'));
 });
@@ -225,7 +225,9 @@ test('8.3 R1/R2/R13/R14/R16: 600 floors retain the fixed 8.2 content and indepen
  for(const b of baseline.samples){
   const {seed,level}=b,g=generateFloor(seed,level),label=`seed ${seed} floor ${level}`;
   assert.equal(JSON.stringify(g),JSON.stringify(generateFloor(seed,level)),`${label}: deterministic whole floor`);
-  for(const [field,expected] of Object.entries(b.hashes))assert.equal(hash(g[field]),expected,`${label}: unchanged original ${field}`);
+  // 8.8 (#165): item points were extended (2-4 per floor, kinds redrawn); the original cells and their order are kept, so the old pickups are the first one (berry) and the floor-2 tonic.
+  const originalPickups=g.pickups.slice(0,level===2?2:1).map((p,i)=>({...p,kind:i===0?'berry':p.kind}));
+  for(const [field,expected] of Object.entries(b.hashes))assert.equal(hash(field==='pickups'?originalPickups:g[field]),expected,`${label}: unchanged original ${field}`);
   assert.deepEqual(g.points,b.points,`${label}: only goal removed from original points`);
   assert.deepEqual(g.services,b.services,`${label}: only exchanger removed from original services`);
   assert.ok(!g.points.some(p=>p.kind==='goal')&&!g.services.some(p=>p.kind==='exchange'));

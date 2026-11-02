@@ -83,7 +83,7 @@ test('won and wiped roguelike runs retain partners, restore their entry forms, c
  const p=initialProfile();p.account=90;p.next=6;
  p.rescue=[{inst:archivedPartner('P4','pidgey'),paid:false,left:2}];
  p.lost=[{id:'P5',species:'zubat',expedition:1}];
- p.roster[0].learned.push({move:'protect',pp:1});p.roster[0].carry=['scratch','protect'];
+ p.roster[0].learned.push({move:'protect',pp:10});p.roster[0].carry=['scratch','protect'];
  const original=structuredClone(p);
  const won=duplicateWorld(await run(p,'won'));
  const lead=won.units[won.queue[0]];lead.species='charizard';lead.tactic='avoid'; // entry form stays charmander; the in-run tactic change is saved

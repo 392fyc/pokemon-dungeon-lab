@@ -1,5 +1,6 @@
-import {distance,key,plus,same,type Command,type Item,type Pos,type World} from '../core/engine.ts';
+import {key,plus,same,type Command,type Item,type Pos,type World} from '../core/engine.ts';
 import {moveOf} from '../core/moves.ts';
+import {adjacentReachable, floorIndex, rayReachable} from './reach.ts';
 /**
  * Stage 6.4 presentation: works out what happened in one round from the two saved states and the new log lines.
  * Pure data in, pure data out. It never touches rule code and never changes either state.
@@ -56,7 +57,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     return range==='front2'||range==='line10'?'line':'strong';
   };
   const chebyshev=(x:Pos,y:Pos)=>Math.max(Math.abs(x.x-y.x),Math.abs(x.y-y.y));
-  const floorCells=new Set(b.floor.map(key));
+  const floorCells=floorIndex(b.floor);
   const inRoom=(p:Pos,r:{x:number;y:number;w:number;h:number})=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
   const canSkillHit=(actorId:string,targetId:string,move:string):boolean=>{
     const actor=b.units[actorId],target=b.units[targetId],actorAt=pos[actorId],targetAt=pos[targetId],spec=moveOf(move);
@@ -70,22 +71,18 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     if(!category)return false;
     switch(spec.range){
       case 'user':return targetId===actorId;
-      case 'front':return distance(actorAt,targetAt)===1;
-      case 'around':return targetId!==actorId&&chebyshev(actorAt,targetAt)===1;
+      case 'front':return adjacentReachable(floorCells,actorAt,targetAt);
+      case 'around':return targetId!==actorId&&adjacentReachable(floorCells,actorAt,targetAt);
       case 'room':{
         const room=b.rooms?.find(r=>inRoom(actorAt,r));
         return room?inRoom(targetAt,room):chebyshev(actorAt,targetAt)<=2;
       }
       case 'front2':case 'line10':{
         const range=spec.range==='front2'?2:10;
-        if(actorAt.x!==targetAt.x&&actorAt.y!==targetAt.y)return false;
-        const d=distance(actorAt,targetAt);if(d<1||d>range)return false;
-        const step={x:Math.sign(targetAt.x-actorAt.x),y:Math.sign(targetAt.y-actorAt.y)};let p=plus(actorAt,step);
-        while(!same(p,targetAt)){
-          if(!floorCells.has(key(p))||[...b.queue,...b.enemies].some(id=>id!==actorId&&id!==targetId&&hp[id]>0&&same(pos[id],p)))return false;
-          p=plus(p,step);
-        }
-        return true;
+        const occupied=new Set([...b.queue,...b.enemies]
+          .filter(id=>id!==actorId&&id!==targetId&&hp[id]>0&&pos[id])
+          .map(id=>key(pos[id]!)));
+        return rayReachable(floorCells,occupied,actorAt,targetAt,range);
       }
     }
   };
@@ -125,7 +122,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       if(used.has(id))continue;
       if (e) {
         if (e.type === 'basic' && e.target === target)return {id,fx:'strong'};
-      } else if (pos[target] && distance(pos[id]!, pos[target]!) === 1) return {id, fx:'strong'};
+      } else if (pos[target] && adjacentReachable(floorCells,pos[id]!,pos[target]!)) return {id, fx:'strong'};
     }
     return null;
   };
@@ -142,7 +139,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       if (!p || hp[id] <= 0) continue;
       const move=spentMove(id),spec=move?moveOf(move):undefined;
       if(move&&spec?.effects.includes('damage')&&canSkillHit(id,target,move)){enemyCursor=i;return {id,move};}
-      if(!move&&distance(p,t)===1){enemyCursor=i;return {id,move:null};}
+      if(!move&&adjacentReachable(floorCells,p,t)){enemyCursor=i;return {id,move:null};}
     }
     return null;
   };

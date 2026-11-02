@@ -30,7 +30,9 @@ test('M5/M6 B damage belongs to B, both plans 13 rounds',()=>{
   for(const a of [move(4),interact(false),move(5),move(6),move(7),interact(true)])s=round(s,a);s=finish(s);assert.equal(s.round,13);assert.deepEqual(positions(s),[5,7,6]);assert.equal(s.units.B.hp,16);assert.equal(s.units[p].hp,accept?10:8);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(s.camp,accept?['C']:[]);}
 });
 test('V1/V2 refusal is immutable and explicit waiting fixes known conflict',()=>{
- const s=createScenario('V1','v1'),before=JSON.stringify(s);const r=applyCommand(s,{type:'round',action:move(4)});assert.equal(r.ok,false);assert.strictEqual(r.state,s);assert.equal(JSON.stringify(s),before);
+ const s=createScenario('V1','v1'),before=JSON.stringify(s);const r=applyCommand(s,{type:'round',action:move(7)});assert.equal(r.ok,false);assert.strictEqual(r.state,s);assert.equal(JSON.stringify(s),before);
+ // 8.8 (4.2): C walking into B's future cell is no longer a conflict; they swap places. Explicit waiting still keeps B in place.
+ assert.deepEqual(positions(round(s,move(4))),[2,5,4]);
  const fixed=round(s,move(4),{actor:'B',action:wait});assert.deepEqual(positions(fixed),[2,3,4]);
 });
 test('M4 B already on exit; no extra return damage',()=>{
@@ -38,7 +40,7 @@ test('M4 B already on exit; no extra return damage',()=>{
 });
 test('V3/V4 follow and V5/V6/V7 down membership',()=>{
  let s=legacyV(3);s=round(s,move(0));assert.deepEqual(positions(s),[3,2,0]);assert.equal(finish(round(s,interact(true))).phase,'ended');
- s=createScenario('V4','v4');s=round(s,wait,{actor:'C',action:{type:'move',to:{x:2,y:2}}});s=round(s,wait);assert.deepEqual(s.units.B.pos,{x:2,y:1});assert.deepEqual(s.units.C.pos,{x:3,y:2});
+ s=createScenario('V4','v4');s=round(s,wait,{actor:'C',action:{type:'move',to:{x:2,y:2}}});s=round(s,wait);assert.deepEqual(s.units.B.pos,{x:2,y:1});assert.deepEqual(s.units.C.pos,{x:2,y:2});   // 8.8: C at (2,2) is already diagonally next to the leader at (3,1), so it stays
  s=createScenario('V5','v5');s=round(s,move(2));assert.equal(s.units.B.hp,4);   // E is a real growlithe; ember base 10 x 0.4 rounds to 4 against a species-less fixture, so 8-4=4.
  assert.equal(s.units.C.pos.x,1);s=round(s,basic('E'));assert.equal(s.units.C.pos.x,1);assert.equal(s.queue.length,3);
  s=round(createScenario('V6','v6'),move(2));assert.equal(s.leader,'C');assert.equal(s.units.B.pos,null);

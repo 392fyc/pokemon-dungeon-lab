@@ -34,11 +34,16 @@ test('wall, unseen floor and current occupancy give distinct deterministic reaso
  denied(s,round({type:'move',to:{x:2,y:0}}),/目标格\(2,0\)是墙，不能进入/);
  const unseen=clone(s);unseen.seen=unseen.seen.filter(k=>k!==key({x:3,y:1}));
  denied(unseen,round({type:'move',to:{x:3,y:1}}),/目标格\(3,1\)尚未揭示，不能进入/);
- denied(s,round({type:'move',to:{x:1,y:1}}),/目标格\(1,1\)被B占据，不能进入/);
+ const crowded=clone(s);crowded.units.E.pos={x:3,y:1};
+ denied(crowded,round({type:'move',to:{x:3,y:1}}),/目标格\(3,1\)被E占据，不能进入/);
+ // 8.8 (4.2): a companion's cell is no longer an occupancy refusal, the two swap places.
+ const swapped=valid(s,round({type:'move',to:{x:1,y:1}}));assert.deepEqual([swapped.units.B.pos,swapped.units.C.pos],[{x:2,y:1},{x:1,y:1}]);
 });
 test('V1 names B as the preceding mover, including in a planned combination',()=>{
  const s=createScenario('V1','preceding');
- denied(s,round({type:'move',to:{x:4,y:1}}),/B会先进入\(4,1\)，挡住C；请选择另一动作或切换主控/);
+ // 8.8 (4.2): B enters (4,1) first, then C walks into B's cell and the two swap places instead of C being refused.
+ const swapped=valid(s,round({type:'move',to:{x:4,y:1}}));
+ assert.deepEqual(swapped.queue.map(id=>swapped.units[id].pos.x),[2,5,4]);assert.ok(swapped.log.includes('C与B换位'));
  const r=valid(s,{type:'round',action:{type:'move',to:{x:4,y:1}},override:{actor:'B',action:{type:'wait'}}});
  assert.deepEqual(r.queue.map(id=>r.units[id].pos.x),[2,3,4]);
 });

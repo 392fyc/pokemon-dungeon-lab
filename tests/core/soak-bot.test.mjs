@@ -16,7 +16,7 @@ test('S82 scouting heads to the closest revealed edge and respects a wall alread
  assert.deepEqual(route,{to:{x:8,y:6},step:{x:6,y:6},len:3});
  assert.ok(route.len<s.seen.length,'the bot walks to a nearby edge instead of traversing all known ground');
  const blocked=structuredClone(s);blocked.floor=blocked.floor.filter(p=>p.x!==9||p.y!==6);blocked.seenWalls=['9,6'];
- assert.deepEqual(explorationRoute(blocked),{to:{x:8,y:7},step:{x:6,y:6},len:4},'the directly blocked edge is skipped for the next open edge');
+ assert.deepEqual(explorationRoute(blocked),{to:{x:8,y:7},step:{x:6,y:6},len:3},'8.8: one diagonal step shortens the detour; the directly blocked edge is skipped for the next open edge');
 });
 
 test('S82 remote unseen terrain changes do not redirect scouting',()=>{

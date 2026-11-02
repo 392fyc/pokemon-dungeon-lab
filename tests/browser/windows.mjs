@@ -47,6 +47,13 @@ const raw=p=>p.evaluate(()=>localStorage.getItem(window.trial.store.key));
 async function startMemory(p,world,profile=null){await p.evaluate(({world,profile})=>window.trial.store.start(world,profile),{world,profile});await p.evaluate(()=>window.dispatchEvent(new Event('blur')));await ready(p);}
 async function start(p){await p.locator('#start').click();await ready(p);}
 async function key(p,k){await p.keyboard.press(k);await ready(p);}
+async function chord(p,first,second){
+ await p.evaluate(()=>{const trace=[];window.__trialChordTrace=trace;const record=e=>{trace.push({key:e.key,at:e.timeStamp});if(trace.length===2)document.removeEventListener('keydown',record,true);};document.addEventListener('keydown',record,true);});
+ await p.keyboard.press(first+'+'+second);
+ const trace=await p.evaluate(()=>{const result=window.__trialChordTrace;delete window.__trialChordTrace;return result;});
+ assert.deepEqual(trace.map(e=>e.key),[first,second],'the real key chord delivered both keydown events');
+ return trace[1].at-trace[0].at;
+}
 async function click(p,id,settle=true){
  if(id.startsWith('use-')){const slot={berry:0,tonic:1,bigBerry:2,teamTonic:3}[id.slice(4)];await p.locator(`[data-hud-quick="${slot}"]`).click();if(settle)await ready(p);return;}
  const target=p.locator('#'+id),actions=p.locator('#hud-actions'),actionsOpen=p.locator('#actions-open');
@@ -107,7 +114,7 @@ await test('M2、S1：开发场景探看与关闭后回到空的内存状态',as
 });
 await test('M3：电光一闪两格射程、合法目标提示与T撤离',async()=>{
  const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
-  await click(p,'skill-quickattack');const card=p.locator('#skill-quickattack'),tip=p.locator('#hud-tooltip');await hoverCell(p,4,1);await card.hover();await tip.waitFor({state:'visible'});let label=await tip.innerText();assert.match(label,/电光一闪/);for(const field of ['威力','命中','PP','射程','范围'])assert.ok(label.includes(field),`hover card exposes the independent ${field} field`);const rangeField=tip.locator('.hud-tip-field').filter({hasText:'射程'}),rangeValue=rangeField.locator('strong');assert.equal(await rangeValue.innerText(),'2格','Quick Attack retains its two-cell reach');assert.match(await rangeValue.getAttribute('aria-label'),/同排[／/]列/,'Quick Attack remains limited to the same row or column');assert.match(label,/约8点/,'the live hover estimate preserves Quick Attack damage against the real nearby target');assert.doesNotMatch(await card.innerText(),/同排／列|造成约/,'details belong in the hover card, not the compact move card');
+  await click(p,'skill-quickattack');const card=p.locator('#skill-quickattack'),tip=p.locator('#hud-tooltip');await hoverCell(p,4,1);await card.hover();await tip.waitFor({state:'visible'});let label=await tip.innerText();assert.match(label,/电光一闪/);for(const field of ['威力','命中','PP','射程','范围'])assert.ok(label.includes(field),`hover card exposes the independent ${field} field`);const rangeField=tip.locator('.hud-tip-field').filter({hasText:'射程'}),rangeValue=rangeField.locator('strong');assert.equal(await rangeValue.innerText(),'2格','Quick Attack retains its two-cell reach');assert.equal(await rangeValue.getAttribute('aria-label'),'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角','Quick Attack exposes its actual eight-direction ray and corner restrictions');assert.match(label,/约8点/,'the live hover estimate preserves Quick Attack damage against the real nearby target');assert.doesNotMatch(await card.innerText(),/同排|同列|斜线|造成约/,'details belong in the hover card, not the compact move card');
   await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.pp.quickattack,1); // E's 8 HP are defeated by an 8-point Quick Attack from two cells away
   await key(p,'ArrowRight');s=await state(p);assert.equal(s.units.C.pos.x,3); // kill E before the remaining Quick Attack PP is used on R
   for(let i=0;i<4;i++)await key(p,'.');s=await state(p);assert.equal(s.round,6);assert.equal(s.units.R.hp,8);assert.deepEqual(s.units.R.pos,{x:4,y:1});assert.equal(s.units.C.hp,16); // R walks from 9 to 4, then deals one 4-point Tackle
@@ -132,7 +139,7 @@ await test('M6：邀请替换、双方换位、承伤撤离',async()=>{
   await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,13);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,16,10]);assert.equal(s.units.C.hp,12);assert.deepEqual(s.camp,['C']);assert.deepEqual(s.camp.map(i=>s.units[i].hp),[12]);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(errors,[]);return {rounds:13,team:['A20','B16','N10'],camp:'C12'};}finally{await context.close();}
 });
 await test('V1/V2、I1：直接预检、草稿取消、切换操控者清空、长按和详情',async()=>{
- const {context,page:p,errors}=await setup('V1');try{await start(p);const original=await state(p);await key(p,'ArrowLeft');assert.deepEqual(await state(p),original);const reason=await p.locator('#message').innerText();assert.match(reason,/B/);assert.match(reason,/4/);assert.match(reason,/先|前序/);assert.match(reason,/本轮未执行/);assert.doesNotMatch(reason,/可能/);
+ const {context,page:p,errors}=await setup('V1');try{await start(p);const original=await state(p);await key(p,'ArrowUp');assert.deepEqual(await state(p),original);const reason=await p.locator('#message').innerText();assert.match(reason,/墙/);assert.match(reason,/本轮未执行/);   assert.doesNotMatch(reason,/可能/);   // 8.8 (G5.12): walking into B's cell now swaps, so the refused direct move is the wall above C
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');assert.equal((await state(p)).round,7);assert.equal(await p.locator('#submit').isEnabled(),true);await click(p,'detail-1');await click(p,'detail-1');assert.ok(await p.locator('#submit').count());await click(p,'cancel-draft');assert.deepEqual(await state(p),original);
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await key(p,'Tab');await key(p,'Tab');assert.equal(await p.locator('#submit').count(),0);assert.equal((await state(p)).round,7);await key(p,'Tab');
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await click(p,'submit');let s=await state(p);assert.equal(s.round,8);assert.deepEqual(s.queue.map(i=>s.units[i].pos.x),[2,3,4]);
@@ -263,11 +270,10 @@ await test('PR5 非法移动点名真实原因且说明本轮未执行',async()=
   const {context,page:p,errors}=await setup(fixture);
   try{
    await start(p);const before=await state(p),bytes=await raw(p);
-   await key(p,fixture==='V1'?'ArrowLeft':'ArrowUp');
+   await key(p,'ArrowUp');
    const text=await p.locator('#message').innerText();
    assert.match(text,/本轮未执行/);assert.doesNotMatch(text,/可能/);
-   if(fixture==='V1'){assert.match(text,/B/);assert.match(text,/4/);assert.match(text,/先|前序/);}
-   else assert.match(text,/墙|不可行走|非地面|不是可行走/);
+   assert.match(text,/墙|不可行走|非地面|不是可行走/);   // 8.8: both fixtures use the wall above the leader; the V1 teammate-block reason no longer exists
    assert.deepEqual(await state(p),before);assert.equal(await raw(p),bytes);assert.deepEqual(errors,[]);
    observations.push({fixture:fixture??'main-invite',text});
   }finally{await context.close();}
@@ -574,7 +580,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
    await p.goto(base+'?dev=1&seed=4243');await p.locator('#start').waitFor();
    assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),profile),true);await p.reload();await ready(p);
    let s=await state(p);assert.equal(s,null);
-  const baseMoves=await p.locator('#party').innerText();assert.match(baseMoves,/上下左右相邻/);assert.match(baseMoves,/基础伤害/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
+  const baseMoves=await p.locator('#party').innerText();assert.match(baseMoves,/相邻1格（含斜向/);assert.match(baseMoves,/基础伤害/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
   const prof=()=>p.evaluate(()=>window.trial.profile());
   let pr=await prof();assert.deepEqual(pr.vault,{protect:1});assert.equal(pr.expeditions,1);assert.deepEqual(pr.roster.map(i=>i.species),['charmander','squirtle','bulbasaur']);
   await p.screenshot({path:artifact+'windows-base-1.png',fullPage:true});
@@ -813,7 +819,7 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   const moveDescription=JSON.parse(fs.readFileSync(new URL('../../src/data/move-desc-zh.json',import.meta.url),'utf8')).moves[skill].desc;
   assert.equal(await tip.locator('[data-move-description]').textContent(),moveDescription,'the hover tooltip matches the local Chinese description for the selected move');
   assert.ok((await tip.locator(`[data-move-preview="${skill}"]`).textContent())?.trim(),'the hover card carries the live move estimate');
-  assert.doesNotMatch(await move.innerText(),/同排／列|造成约/,'compact move cards do not carry the old detailed explanation');
+  assert.doesNotMatch(await move.innerText(),/同排|同列|斜线|造成约/,'compact move cards do not carry the old detailed explanation');
   assert.ok(!(await move.innerText()).includes(moveDescription),'full move prose appears in the hover tooltip only');
   await p.screenshot({path:artifact+'windows-hud-main-hover.png',fullPage:false});
   const learned=s.units.A.learned;
@@ -838,22 +844,27 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   return {realPlayerSave:true,moves:4,quickSlots:6,firstMoveKey:true,tooltipFields:['威力','命中','PP','射程','范围'],bagCategories:['all','berry','drink','tm','other'],emptyInventory:true,tabCycle:true,guideAbsent:true,noPageOverflow:true,screenshots:['windows-hud-main-default.png','windows-hud-main-hover.png','windows-hud-main-bag.png','windows-hud-main-switch.png']};
  }finally{await context.close();}
 });
-await test('162 WASD 同时按键在输入窗口内拒绝斜向：不分拆成单步移动',async()=>{
+await test('162 WASD 双键只推进一轮，斜向遵守墙角，其他动作取消待执行方向',async()=>{
  const {context,page:p,errors}=await setup();
  try{
-  await p.locator('#config').selectOption('main-none');await start(p);const before=await state(p),leader=before.units[before.leader];
+  const {createMain}=await import('../../src/core/engine.ts');
+  const cornerWorld=createMain('hud-input-corner',false),cornerFrom=cornerWorld.units[cornerWorld.leader].pos,diagonal={x:cornerFrom.x+1,y:cornerFrom.y-1},side={x:cornerFrom.x,y:cornerFrom.y-1};
+  assert.ok(!cornerWorld.floor.some(q=>q.x===side.x&&q.y===side.y),'the corner fixture has one wall beside the diagonal');
+  if(!cornerWorld.floor.some(q=>q.x===diagonal.x&&q.y===diagonal.y))cornerWorld.floor.push(diagonal);
+  cornerWorld.seen=[...new Set([...cornerWorld.seen,diagonal.x+','+diagonal.y])];cornerWorld.seenWalls=(cornerWorld.seenWalls??[]).filter(k=>k!==diagonal.x+','+diagonal.y);
+  await startMemory(p,cornerWorld);const before=await state(p),leader=before.units[before.leader];assert.deepEqual(before,cornerWorld,'the empty developer store actually loaded the corner fixture');
   const right={x:leader.pos.x+1,y:leader.pos.y};assert.ok(before.floor.some(q=>q.x===right.x&&q.y===right.y),'the leader’s right-hand cell is walkable for a single-key comparison');
-  const started=Date.now();await p.keyboard.down('w');await p.keyboard.down('d');await p.keyboard.up('d');await p.keyboard.up('w');const inputMs=Date.now()-started;
-  assert.ok(inputMs<40,`the real WASD chord completed inside the 40 ms collection window (observed ${inputMs} ms)`);await ready(p);
+  const inputMs=await chord(p,'w','d');
+  assert.ok(inputMs<40,`the real WASD keydown events arrived inside the 40 ms collection window (observed ${inputMs} ms)`);await ready(p);
   assert.deepEqual(await state(p),before,'the rejected diagonal does not become an earlier vertical step or a diagonal action');
-  assert.match(await p.locator('#message').innerText(),/相邻|斜向/,'the player receives the existing adjacent-cell movement rejection');
-  const oneStarted=Date.now();await p.keyboard.down('w');await p.keyboard.press('1');await p.keyboard.up('w');const oneMs=Date.now()-oneStarted;
+  assert.match(await p.locator('#message').innerText(),/墙角/,'the visible floor target is rejected because a side cell is wall');
+  const oneMs=await chord(p,'w','1');
   assert.ok(oneMs<40,`W then 1 completes inside the 40 ms collection window (observed ${oneMs} ms)`);await ready(p);
   assert.deepEqual(await state(p),before,'1 selects a move and cancels the pending W without moving or spending a round');
   const selected=p.locator('#hud-bottom [data-hud-skill][aria-pressed="true"]');assert.equal(await selected.count(),1,'1 visibly selects exactly one move slot');
   const selectedMove=await selected.getAttribute('data-hud-skill');await p.waitForTimeout(60);
   assert.deepEqual(await state(p),before,'the cancelled W does not move the leader later');
-  const tabStarted=Date.now();await p.keyboard.down('w');await p.keyboard.press('Tab');await p.keyboard.up('w');const tabMs=Date.now()-tabStarted;
+  const tabMs=await chord(p,'w','Tab');
   assert.ok(tabMs<40,`W then Tab completes inside the 40 ms collection window (observed ${tabMs} ms)`);await ready(p);
   const afterTab=await state(p),expectedAfterTab=structuredClone(before);expectedAfterTab.leader=before.queue.find(id=>id!==before.leader&&before.units[id].hp>0);
   assert.deepEqual(afterTab,expectedAfterTab,'Tab switches the living leader only and cancels the pending W without spending a round');
@@ -862,14 +873,19 @@ await test('162 WASD 同时按键在输入窗口内拒绝斜向：不分拆成�
   await click(p,'arrange');await click(p,'partner-'+partner);await click(p,'edit-main');await click(p,'wait');
   const draftBefore=await state(p),draftAction=p.locator('#controls .draft #edit-main'),draftContent=p.locator('#controls .draft');
   const actionBefore=(await draftAction.innerText()).trim();assert.equal(actionBefore,`${expectedAfterTab.leader}：等待`);
-  const draftStarted=Date.now();await p.keyboard.down('w');await p.keyboard.press('.');await p.keyboard.up('w');const draftMs=Date.now()-draftStarted;
+  const draftMs=await chord(p,'w','.');
   assert.ok(draftMs<40,`W then period completes inside the 40 ms collection window (observed ${draftMs} ms)`);await ready(p);
   assert.deepEqual(await state(p),draftBefore,'the wait remains a draft and does not execute a round');
   assert.equal((await draftAction.innerText()).trim(),actionBefore,'the later W input does not replace the draft wait with a move');
   assert.ok((await draftContent.locator(':scope > strong').innerText()).includes(`正在编辑 ${expectedAfterTab.leader}`));
   await p.waitForTimeout(60);assert.deepEqual(await state(p),draftBefore,'the cancelled W does not execute after the draft wait');
   assert.equal((await draftAction.innerText()).trim(),actionBefore);
-  assert.deepEqual(errors,[]);return {mainNoneMemoryScene:true,rightCellWalkable:true,diagonalSequence:['keydown W','keydown D','keyup D','keyup W'],diagonalMs:inputMs,moveSequence:['keydown W','keydown 1','keyup W'],moveMs:oneMs,selectedMove,switchSequence:['keydown W','keydown Tab','keyup W'],switchMs:tabMs,draftSequence:['open draft','keydown W','keydown period','keyup W'],draftMs,draftWaitPreserved:true,worldUnchanged:true,rejectionMessage:true,moveInputCancelsW:true,tabSwitchCancelsW:true};
+  await click(p,'cancel-draft');const openWorld=structuredClone(before);openWorld.floor.push(side);openWorld.seen=[...new Set([...openWorld.seen,side.x+','+side.y])];openWorld.seenWalls=(openWorld.seenWalls??[]).filter(k=>k!==side.x+','+side.y);
+  await p.reload();await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,openWorld);const openBefore=await state(p);assert.deepEqual(openBefore,openWorld,'the fresh developer store actually loaded the open diagonal fixture');const openMs=await chord(p,'w','d');
+  assert.ok(openMs<40,'the legal diagonal keydown events stay inside the 40 ms collection window; observed '+openMs+' ms');await ready(p);const openAfter=await state(p);
+  assert.equal(openAfter.round,openBefore.round+1,'one two-key chord advances exactly one complete round');assert.deepEqual(openAfter.units[openBefore.leader].pos,diagonal,'two keys produce one diagonal step to the requested cell');
+  await p.waitForTimeout(60);assert.deepEqual(await state(p),openAfter,'releasing the chord does not enqueue an extra orthogonal step');
+  assert.deepEqual(errors,[]);return {cornerRejected:true,legalDiagonalMovesOnce:true,legalDiagonalMs:openMs,mainNoneMemoryScene:true,rightCellWalkable:true,diagonalSequence:['keydown W','keydown D','keyup D','keyup W'],diagonalMs:inputMs,moveSequence:['keydown W','keydown 1','keyup W'],moveMs:oneMs,selectedMove,switchSequence:['keydown W','keydown Tab','keyup W'],switchMs:tabMs,draftSequence:['open draft','keydown W','keydown period','keyup W'],draftMs,draftWaitPreserved:true,worldUnchanged:true,rejectionMessage:true,moveInputCancelsW:true,tabSwitchCancelsW:true};
  }finally{await context.close();}
 });
 await test('7.1(b) 已有存档：新游戏需要确认，取消后原存档不变，可导出原记录',async()=>{

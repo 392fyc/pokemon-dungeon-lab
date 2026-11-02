@@ -26,15 +26,24 @@ const ready=()=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&w
 const state=()=>page.evaluate(()=>window.trial.getState());
 const envelope=()=>page.evaluate(()=>window.trial.store.envelope);
 const raw=()=>page.evaluate(()=>localStorage.getItem(window.trial.store.key));
-const click=async id=>{await page.locator('#'+id).click();await ready();};
+const click=async id=>{
+ if(id==='open-settings'&&await page.locator('#hud-settings').isVisible())id='hud-settings';
+ if(id.startsWith('use-')){const slot={berry:0,tonic:1,bigBerry:2,teamTonic:3}[id.slice(4)];await page.locator(`[data-hud-quick="${slot}"]`).click();await ready();return;}
+ const target=page.locator('#'+id),actions=page.locator('#hud-actions'),actionsOpen=page.locator('#actions-open');
+ if(await target.count()&&await actions.count()&&await actions.isHidden()&&await actionsOpen.isVisible()&&await target.evaluate(el=>!!(el.closest('#controls,#hud-actions')||(el.closest('#save')&&!el.closest('#flow'))))){await actionsOpen.click();await ready();}
+ await target.click();await ready();
+};
 async function cell(pos){
- await page.locator('canvas').scrollIntoViewIfNeeded();
  await page.waitForTimeout(400);   // let the camera finish following before converting a cell to pixels
- // Hover details can change document height and scroll anchoring. Re-read the
- // canvas after hover instead of clicking the pixel measured before that shift.
+ // Read the live map geometry and camera viewport so the click follows the
+ // responsive HUD canvas at its current size and position.
+ const actions=page.locator('#hud-actions');if(await actions.count()&&await actions.isVisible()&&await page.locator('#actions-open').isVisible()){await page.locator('#actions-open').click();await ready();}
+ const bag=page.locator('#hud-bag');if(await bag.count()&&await bag.isVisible()){await page.locator('#bag-close').click();await ready();}
  for(let attempt=0;attempt<4;attempt++){
+  const view=await page.evaluate(()=>window.trial.view()),g=view.geometry,v=view.cameraView;
   const camera=await page.evaluate(()=>window.trial.camera()),box=await page.locator('canvas').boundingBox();
-  const x=(pos.x*40+20-camera.x)*box.width/680,y=(pos.y*40+20-camera.y)*box.height/350;
+  const x=(g.ox+(pos.x-g.minX+.5)*g.cell-camera.x)*box.width/v.width;
+  const y=(g.oy+(pos.y-g.minY+.5)*g.cell-camera.y)*box.height/v.height;
   assert.ok(x>=0&&x<box.width&&y>=0&&y<box.height,'target must be visible on canvas');
   await page.mouse.move(box.x+x,box.y+y);await page.waitForTimeout(150);
   const after=await page.locator('canvas').boundingBox(),afterCamera=await page.evaluate(()=>window.trial.camera());

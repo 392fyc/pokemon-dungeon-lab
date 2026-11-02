@@ -17,6 +17,7 @@ const results=[];
 const base=process.env.TRIAL_URL;
 if(!base) throw Error('Set TRIAL_URL to the local running trial.');
 const artifact='.artifacts/trial/';
+fs.mkdirSync(artifact,{recursive:true});
 const map122Artifact='.artifacts/map122/';
 fs.mkdirSync(map122Artifact,{recursive:true});
 async function setup(fixture,mode='pass',animate=false){
@@ -46,28 +47,34 @@ const raw=p=>p.evaluate(()=>localStorage.getItem(window.trial.store.key));
 async function startMemory(p,world,profile=null){await p.evaluate(({world,profile})=>window.trial.store.start(world,profile),{world,profile});await p.evaluate(()=>window.dispatchEvent(new Event('blur')));await ready(p);}
 async function start(p){await p.locator('#start').click();await ready(p);}
 async function key(p,k){await p.keyboard.press(k);await ready(p);}
-async function click(p,id){await p.locator('#'+id).click();await ready(p);}
+async function click(p,id,settle=true){
+ if(id.startsWith('use-')){const slot={berry:0,tonic:1,bigBerry:2,teamTonic:3}[id.slice(4)];await p.locator(`[data-hud-quick="${slot}"]`).click();if(settle)await ready(p);return;}
+ const target=p.locator('#'+id),actions=p.locator('#hud-actions'),actionsOpen=p.locator('#actions-open');
+ if(await target.count()&&await actions.count()&&await actions.isHidden()&&await actionsOpen.isVisible()&&await target.evaluate(el=>!!(el.closest('#controls,#hud-actions')||(el.closest('#save')&&!el.closest('#flow'))))){await actionsOpen.click();if(settle)await ready(p);}
+ await target.click();if(settle)await ready(p);
+}
+function expectedCamera(view,pos){
+ const g=view.geometry,v=view.cameraView,cx=g.ox+(pos.x-g.minX+.5)*g.cell,cy=g.oy+(pos.y-g.minY+.5)*g.cell;
+ const fit=(at,viewport,size)=>size<=viewport?(size-viewport)/2:Math.min(Math.max(at-viewport/2,0),size-viewport);
+ return {x:fit(cx,v.width,g.w),y:fit(cy,v.height,g.h)};
+}
 async function cell(p,x,y){
- const canvas=p.locator('canvas');await canvas.scrollIntoViewIfNeeded();
- const s=await state(p),b=await canvas.boundingBox();
- if(s.dungeon){ // expedition: fixed 40 px cells, camera follows the leader
-  // The new status cards can scroll the canvas when a lower skill button is clicked.
-  // As in five-games.mjs, measure again after hover details and camera movement settle.
-  for(let attempt=0;attempt<4;attempt++){
-   const cam=await p.evaluate(()=>window.trial.camera()),box=await canvas.boundingBox();
-   const dx=(x*40+20-cam.x)*box.width/680,dy=(y*40+20-cam.y)*box.height/350;
-   assert.ok(dx>=0&&dx<box.width&&dy>=0&&dy<box.height,'target must be visible on canvas');
-   await p.mouse.move(box.x+dx,box.y+dy);await p.waitForTimeout(150);
-   const after=await canvas.boundingBox(),afterCam=await p.evaluate(()=>window.trial.camera());
-   if(['x','y','width','height'].every(k=>Math.abs(after[k]-box[k])<0.5)&&afterCam.x===cam.x&&afterCam.y===cam.y){
-    await p.mouse.click(box.x+dx,box.y+dy);await ready(p);return;
-   }
+ const canvas=p.locator('canvas'),s=await state(p);assert.ok(s,'a live world is required for a map click');
+ const actionPanel=p.locator('#hud-actions');if(await actionPanel.count()&&await actionPanel.isVisible()&&await p.locator('#actions-open').isVisible()){await p.locator('#actions-open').click();await ready(p);}
+ const bagPanel=p.locator('#hud-bag');if(await bagPanel.count()&&await bagPanel.isVisible()){await p.locator('#bag-close').click();await ready(p);}
+ for(let attempt=0;attempt<4;attempt++){
+  const view=await p.evaluate(()=>window.trial.view()),g=view.geometry,v=view.cameraView;
+  const cam=await p.evaluate(()=>window.trial.camera()),box=await canvas.boundingBox();
+  const worldX=g.ox+(x-g.minX+.5)*g.cell,worldY=g.oy+(y-g.minY+.5)*g.cell;
+  const dx=(worldX-cam.x)*box.width/v.width,dy=(worldY-cam.y)*box.height/v.height;
+  assert.ok(dx>=0&&dx<box.width&&dy>=0&&dy<box.height,'target must be visible on canvas');
+  await p.mouse.move(box.x+dx,box.y+dy);await p.waitForTimeout(150);
+  const after=await canvas.boundingBox(),afterCam=await p.evaluate(()=>window.trial.camera());
+  if(['x','y','width','height'].every(k=>Math.abs(after[k]-box[k])<0.5)&&afterCam.x===cam.x&&afterCam.y===cam.y){
+   await p.mouse.click(box.x+dx,box.y+dy);await ready(p);return;
   }
-  assert.fail('canvas position must settle before the real click');
  }
- const xs=s.floor.map(q=>q.x),ys=s.floor.map(q=>q.y),minX=Math.min(...xs),minY=Math.min(...ys);
- const w=Math.max(...xs)-minX+1,h=Math.max(...ys)-minY+1,c=Math.min(66,600/w,270/h);
- await p.mouse.click(b.x+(340-w*c/2+(x-minX+.5)*c)*b.width/680,b.y+(175-h*c/2+(y-minY+.5)*c)*b.height/350);await ready(p);
+ assert.fail('canvas position must settle before the real click');
 }
 // 7.8: the main map's real Geodude E and Pidgey R each have 8 HP after the 0.4 enemy multiplier; their Tackle deals 4.
 // E survives the first 6-point basic hit and attacks twice before the second hit defeats it, so the round-3 invitation opens with C at 12 HP and R at x=6.
@@ -100,7 +107,7 @@ await test('M2、S1：开发场景探看与关闭后回到空的内存状态',as
 });
 await test('M3：电光一闪两格射程、合法目标提示与T撤离',async()=>{
  const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
-  await click(p,'skill-quickattack');let label=await p.locator('#skill-quickattack').innerText();assert.match(label,/电光一闪/);assert.match(label,/同排／列1–2格/);assert.match(label,/造成约8点/);
+  await click(p,'skill-quickattack');const card=p.locator('#skill-quickattack'),tip=p.locator('#hud-tooltip');await hoverCell(p,4,1);await card.hover();await tip.waitFor({state:'visible'});let label=await tip.innerText();assert.match(label,/电光一闪/);for(const field of ['威力','命中','PP','射程','范围'])assert.ok(label.includes(field),`hover card exposes the independent ${field} field`);const rangeField=tip.locator('.hud-tip-field').filter({hasText:'射程'}),rangeValue=rangeField.locator('strong');assert.equal(await rangeValue.innerText(),'2格','Quick Attack retains its two-cell reach');assert.match(await rangeValue.getAttribute('aria-label'),/同排[／/]列/,'Quick Attack remains limited to the same row or column');assert.match(label,/约8点/,'the live hover estimate preserves Quick Attack damage against the real nearby target');assert.doesNotMatch(await card.innerText(),/同排／列|造成约/,'details belong in the hover card, not the compact move card');
   await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.pp.quickattack,1); // E's 8 HP are defeated by an 8-point Quick Attack from two cells away
   await key(p,'ArrowRight');s=await state(p);assert.equal(s.units.C.pos.x,3); // kill E before the remaining Quick Attack PP is used on R
   for(let i=0;i<4;i++)await key(p,'.');s=await state(p);assert.equal(s.round,6);assert.equal(s.units.R.hp,8);assert.deepEqual(s.units.R.pos,{x:4,y:1});assert.equal(s.units.C.hp,16); // R walks from 9 to 4, then deals one 4-point Tackle
@@ -119,15 +126,15 @@ await test('M3：三格直线目标拒绝且不耗PP或回合',async()=>{
  }finally{await context.close();}
 });
 await test('M6：邀请替换、双方换位、承伤撤离',async()=>{
- const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await key(p,'2');await click(p,'swap');await click(p,'partner-N');assert.ok((await p.locator('#controls').innerText()).includes('双方行动'));await click(p,'submit');
+ const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await click(p,'leader-1');await click(p,'swap');await click(p,'partner-N');assert.ok((await p.locator('#controls').innerText()).includes('双方行动'));await click(p,'submit');
   // B now leads at x=3 and R is at 5. B waits (R steps adjacent), then trades basic attacks: R tackles B once (4), B's second hit (6+6>=8) kills it.
   await key(p,'.');await cell(p,4,1);await cell(p,4,1);assert.equal((await state(p)).units.R.hp,0);
   await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,13);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,16,10]);assert.equal(s.units.C.hp,12);assert.deepEqual(s.camp,['C']);assert.deepEqual(s.camp.map(i=>s.units[i].hp),[12]);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(errors,[]);return {rounds:13,team:['A20','B16','N10'],camp:'C12'};}finally{await context.close();}
 });
-await test('V1/V2、I1：直接预检、草稿取消、切主控清空、长按和详情',async()=>{
+await test('V1/V2、I1：直接预检、草稿取消、切换操控者清空、长按和详情',async()=>{
  const {context,page:p,errors}=await setup('V1');try{await start(p);const original=await state(p);await key(p,'ArrowLeft');assert.deepEqual(await state(p),original);const reason=await p.locator('#message').innerText();assert.match(reason,/B/);assert.match(reason,/4/);assert.match(reason,/先|前序/);assert.match(reason,/本轮未执行/);assert.doesNotMatch(reason,/可能/);
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');assert.equal((await state(p)).round,7);assert.equal(await p.locator('#submit').isEnabled(),true);await click(p,'detail-1');await click(p,'detail-1');assert.ok(await p.locator('#submit').count());await click(p,'cancel-draft');assert.deepEqual(await state(p),original);
- await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await key(p,'2');assert.equal(await p.locator('#submit').count(),0);assert.equal((await state(p)).round,7);await key(p,'3');
+ await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await key(p,'Tab');await key(p,'Tab');assert.equal(await p.locator('#submit').count(),0);assert.equal((await state(p)).round,7);await key(p,'Tab');
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await click(p,'submit');let s=await state(p);assert.equal(s.round,8);assert.deepEqual(s.queue.map(i=>s.units[i].pos.x),[2,3,4]);
  await p.keyboard.down('.');await ready(p);const once=await state(p);await p.keyboard.down('.');await p.keyboard.down('.');await p.keyboard.up('.');assert.deepEqual(await state(p),once);assert.deepEqual(errors,[]);return {directRejected:true,combinedRound:8,repeatedKeyIgnored:true};}finally{await context.close();}
 });
@@ -148,10 +155,10 @@ await test('S6、I1：开发场景行动不等待写入，草稿取消后不自�
 await test('S9：损坏记录保留、导出后明确重置',async()=>{
  const {context,page:p,errors}=await setup();try{const bad='{broken save bytes';await p.evaluate(v=>localStorage.setItem('dungeon-trial.player.v1',v),bad);await p.reload();await p.waitForFunction(()=>window.trial.store.status==='blocked');assert.equal(await raw(p),bad);const downloaded=p.waitForEvent('download');await p.locator('#export').click();const file=await downloaded;const filePath=await file.path();assert.equal(fs.readFileSync(filePath,'utf8'),bad);p.once('dialog',d=>d.accept());await p.locator('#reset').click();await ready(p);assert.equal((await state(p)).round,0);assert.deepEqual(errors,[]);return {rawExportExact:true,explicitReset:true};}finally{await context.close();}
 });
-await test('补充 I1：浏览器失焦事件后选招提示同步',async()=>{
- const {context,page:p,errors}=await setup('K1');try{await start(p);await click(p,'skill-tackle');assert.match(await p.locator('#controls').innerText(),/已选撞击/);const before=await state(p);
+await test('补充 I1：浏览器失焦事件后选招高亮同步',async()=>{
+ const {context,page:p,errors}=await setup('K1');try{await start(p);await key(p,'1');const card=p.locator('#hud-bottom [data-hud-skill="tackle"]');assert.equal(await card.getAttribute('aria-pressed'),'true');const before=await state(p);
  await p.evaluate(()=>window.dispatchEvent(new Event('blur')));
- assert.equal(await p.locator('#skill-tackle').evaluate(el=>el.classList.contains('selected')),false);assert.doesNotMatch(await p.locator('#controls').innerText(),/已选撞击/);assert.deepEqual(await state(p),before);assert.deepEqual(errors,[]);return {browserBlurEventInjected:true,selectionAndPromptAgree:true};}finally{await context.close();}
+ assert.equal(await card.getAttribute('aria-pressed'),'false');assert.deepEqual(await state(p),before);assert.deepEqual(errors,[]);return {browserBlurEventInjected:true,selectionCleared:true};}finally{await context.close();}
 });
 await test('营地存档：终局写入失败可重试，回营不再写入或重复结算',async()=>{
  const {newGameProfile}=await import('../../src/core/base.ts');
@@ -164,8 +171,8 @@ await test('营地存档：终局写入失败可重试，回营不再写入或�
   await p.evaluate(()=>window.__fault.mode='fail');
   for(let n=0;n<200&&(await state(p)).phase!=='ended';n++){
    const phase=(await state(p)).phase;
-   if(phase==='invitation'){await p.locator('#reject').click();await p.locator('#reject-confirm').click();}
-   else if(phase==='evolution')await p.locator('#evolution-close').click();
+   if(phase==='invitation'){await click(p,'reject');await click(p,'reject-confirm');}
+   else if(phase==='evolution')await click(p,'evolution-close');
    else {
     const s=await state(p),lead=s.units[s.leader].pos,k=q=>q.x+','+q.y;
     const foes=s.enemies.map(id=>s.units[id]).filter(u=>u.hp>0&&u.pos),blocked=new Set(foes.map(u=>k(u.pos))),floor=new Set(s.floor.map(k));
@@ -175,7 +182,7 @@ await test('营地存档：终局写入失败可重试，回营不再写入或�
      for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){const next={x:q.x+dx,y:q.y+dy},tag=k(next);if(floor.has(tag)&&!blocked.has(tag)&&!prev.has(tag)){prev.set(tag,k(q));queue.push(next);}}
     }
     const path=[];for(let tag=goal&&k(goal);tag;tag=prev.get(tag))path.unshift(tag);
-    if(path.length<2)await p.locator('#wait').click();
+    if(path.length<2)await click(p,'wait',false);
     else {const [x,y]=path[1].split(',').map(Number);await p.keyboard.press(x>lead.x?'ArrowRight':x<lead.x?'ArrowLeft':y>lead.y?'ArrowDown':'ArrowUp');}
    }
    await p.waitForFunction(()=>['ready','failed'].includes(window.trial.store.status));
@@ -283,24 +290,34 @@ await test('PR5 V10拒绝确认按Esc回比较且不处理邀请',async()=>{
   assert.deepEqual(errors,[]);return {returnedToComparison:true,invitationUnchanged:true};
  }finally{await context.close();}
 });
-await test('PR5 伙伴草稿切主控提示取消，无草稿不误报',async()=>{
+await test('PR5 伙伴草稿切换操控者提示取消，无草稿不误报',async()=>{
  const observations=[];
- for(const method of ['button','number']){
+ for(const method of ['card','tab']){
   const {context,page:p,errors}=await setup('V1');
   try{
-   await start(p);const before=await state(p);
+   await start(p);const before=await state(p);assert.equal(before.leader,'C','V1 starts with C as the操控者');
    await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');
    await click(p,'edit-main');await key(p,'ArrowLeft');
    assert.equal(await p.locator('#submit').count(),1);
-   if(method==='button')await click(p,'leader-1');else await key(p,'2');
-   assert.equal(await p.locator('#submit').count(),0);
-   assert.match(await p.locator('#message').innerText(),/(?:组合|草稿).*取消/);
-   assert.deepEqual(await state(p),{...before,leader:'B'});
-   // A second, real switch has no draft to cancel.
-   if(method==='button')await click(p,'leader-2');else await key(p,'3');
-   assert.doesNotMatch(await p.locator('#message').innerText(),/(?:组合|草稿).*取消/);
-   assert.deepEqual(await state(p),before);assert.deepEqual(errors,[]);
-   observations.push({method,draftCancelledWithNotice:true,noRoundConsumed:true,noFalseNotice:true});
+   if(method==='card'){
+    await click(p,'leader-1');
+    assert.equal(await p.locator('#submit').count(),0);
+    assert.match(await p.locator('#message').innerText(),/(?:组合|草稿).*取消/);
+    assert.deepEqual(await state(p),{...before,leader:'B'},'C→B cancels the draft and changes only the leader');
+    await click(p,'leader-2');
+    assert.doesNotMatch(await p.locator('#message').innerText(),/(?:组合|草稿).*取消/);
+    assert.deepEqual(await state(p),before,'B→C without a draft changes only the leader back');
+   }else{
+    await key(p,'Tab');
+    assert.equal(await p.locator('#submit').count(),0);
+    assert.match(await p.locator('#message').innerText(),/(?:组合|草稿).*取消/);
+    assert.deepEqual(await state(p),{...before,leader:'A'},'C→A cancels the draft and changes only the leader');
+    await key(p,'Tab');
+    assert.doesNotMatch(await p.locator('#message').innerText(),/(?:组合|草稿).*取消/);
+    assert.deepEqual(await state(p),{...before,leader:'B'},'A→B without a draft changes only the leader');
+   }
+   assert.deepEqual(errors,[]);
+   observations.push({method,firstSwitchCancelsDraft:true,firstSwitchOnlyChangesLeader:true,secondSwitchNoFalseNotice:true,roundUnchanged:true});
   }finally{await context.close();}
  }
  return observations;
@@ -312,13 +329,20 @@ await test('PR5 伙伴草稿切主控提示取消，无草稿不误报',async()=
 await test('阶段5 换位草稿不被方向键、句点或点地图改写',async()=>{
  const {context,page:p,errors}=await setup('V1');
  try{
-  await start(p);await key(p,'2');const before=await state(p);assert.equal(before.leader,'B');
+  await start(p);await key(p,'Tab');await key(p,'Tab');const before=await state(p);assert.equal(before.leader,'B');
   await click(p,'swap');await click(p,'partner-A');
-  const plan=await p.locator('#controls .draft').innerText();assert.match(plan,/与A换位/);
+  const draftContent=async()=>{const draft=p.locator('#controls .draft');return {
+   heading:(await draft.locator(':scope > strong').innerText()).trim(),
+   main:(await draft.locator('#edit-main').innerText()).trim(),
+   partner:(await draft.locator('#edit-partner').innerText()).trim(),
+   order:(await draft.locator('#draft-order').innerText()).replace(/\s+/g,' ').trim(),
+   steps:(await draft.locator('#draft-steps li').allTextContents()).map(text=>text.trim())
+  };};
+  const plan=await draftContent();assert.match(plan.partner,/与A换位|换位（双方行动）/);
   await key(p,'ArrowRight');await key(p,'.');await cell(p,4,1);
-  assert.equal(await p.locator('#controls .draft').innerText(),plan,'swap draft must not change');
+  assert.deepEqual(await draftContent(),plan,'the visible draft actions and order stay unchanged');
   assert.match(await p.locator('#message').innerText(),/先取消组合/);
-  assert.deepEqual(await state(p),before);
+  assert.deepEqual(await state(p),before,'keyboard and map input do not execute a draft action');
   await click(p,'submit');const s=await state(p);
   assert.equal(s.round,before.round+1);assert.deepEqual(s.units.A.pos,{x:3,y:1});assert.deepEqual(s.units.B.pos,{x:2,y:1});
   assert.ok(s.log.some(t=>t==='B与A换位'));assert.deepEqual(errors,[]);
@@ -361,7 +385,7 @@ await test('远征：随机楼层真实键鼠，只能下楼，无上楼或撤�
   assert.equal(s.points.some(q=>q.kind==='up'||q.kind==='exit'),false);
   assert.ok(s.queue.every(id=>s.units[id].hp<=0||s.units[id].pos));
   await p.screenshot({path:artifact+'windows-expedition-floor2.png',fullPage:true});
-  assert.equal(await raw(p),null);assert.match(await p.locator('#save').innerText(),/开发者远征只在内存中/);
+  assert.equal(await raw(p),null);
   assert.equal(await p.locator('#take-exit').count(),0,'arrival has no return stair or exit');
   assert.deepEqual(s.dungeon.stored['1'].enemies.map(id=>[id,s.dungeon.stored['1'].units[id].hp,s.dungeon.stored['1'].units[id].pos]),floor1Enemies);
   assert.deepEqual(errors,[]);return {seed:EXPEDITION_SEED,steps,cameraAtStairs:cam,crossed:'1->2',downwardOnly:true};
@@ -373,7 +397,7 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
  const {initialProfile,squadOf}=await import('../../src/core/base.ts');
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});
  const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
- const report={browser:await browser.version(),viewport:{width:1440,height:1100},canvas:{width:680,height:350,cell:40},screenshots:[],actualInputs:[],fixtureBoundary:'生成截图使用固定种子生成的地图，并通过开发者内存状态装入；楼层截图从各层到达点显示，boss截图会把小队直接摆进首领房。它们不表示自然走完楼层或完整通关。相机点击检查在该夹具上通过真实方向键和画布鼠标点击。',status:'FAIL'};
+ const report={browser:await browser.version(),viewport:{width:1440,height:1100},canvas:null,screenshots:[],actualInputs:[],fixtureBoundary:'生成截图使用固定种子生成的地图，并通过开发者内存状态装入；楼层截图从各层到达点显示，boss截图会把小队直接摆进首领房。它们不表示自然走完楼层或完整通关。相机点击检查在该夹具上通过真实方向键和画布鼠标点击。',status:'FAIL'};
  const makeWorld=(seed,level)=>{let w=createExpedition(`map122-${seed}`,seed,3,squadOf(initialProfile()),0,true,3);if(level>1)w=jumpToFloor(w,level);return w;};
  const openEmpty=async()=>{await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await emptyReady(p);};
  const resetEmpty=async()=>{await p.reload();await p.locator('#start').waitFor();await emptyReady(p);};
@@ -397,6 +421,7 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
    else assert.equal(s.points.some(q=>q.kind==='down'),false,'boss floor has no down stair');
    if(expected.level===3){assert.ok(Number.isInteger(s.bossRoom));assert.ok(s.units.boss?.pos);}
    const camera=await p.evaluate(()=>window.trial.camera()),view=await p.evaluate(()=>window.trial.view());
+   if(!report.canvas){const box=await p.locator('canvas').boundingBox();report.canvas={bitmap:await p.locator('canvas').evaluate(el=>({width:el.width,height:el.height})),bounds:{width:box.width,height:box.height},geometry:view.geometry,cameraView:view.cameraView};}
    assert.ok(view.tiles.length>0,'the generated floor draws terrain');assert.deepEqual(errors,[]);
    const filename=`floor-${expected.level}-arrival.png`;await p.screenshot({path:map122Artifact+filename,fullPage:true});
    report.screenshots.push({file:filename,seed:3,level:expected.level,ground:s.floor.length,rooms:s.rooms.length,arrival:s.units[s.leader].pos,camera});
@@ -427,8 +452,8 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
   report.screenshots.push({file:q6file,seed:3,level:1,corridorStart,corridor,seenGround:seenState.seen.length,seenWalls:seenState.seenWalls.length});
 
   const bossCases=[
-   {spot:'center',seed:1,boss:{x:17,y:11},leader:{x:20,y:11},friends:{A:{x:15,y:12},B:{x:15,y:13}},camera:{x:480,y:285}},
-   {spot:'east',seed:4,boss:{x:31,y:11},leader:{x:34,y:11},friends:{A:{x:29,y:9},B:{x:29,y:13}},camera:{x:760,y:285}}
+   {spot:'center',seed:1,boss:{x:17,y:11},leader:{x:20,y:11},friends:{A:{x:15,y:12},B:{x:15,y:13}}},
+   {spot:'east',seed:4,boss:{x:31,y:11},leader:{x:34,y:11},friends:{A:{x:29,y:9},B:{x:29,y:13}}}
   ];
   for(const [index,c] of bossCases.entries()){
    await resetEmpty();const w=makeWorld(c.seed,3),r=w.rooms[w.bossRoom],boss=w.units.boss;
@@ -438,18 +463,18 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
    w.seen=[];delete w.seenWalls;reveal(w);
    assert.ok(w.seen.includes(`${boss.pos.x},${boss.pos.y}`),'boss is in the revealed room');
    const start=await load(w);assert.equal(start.dungeon.level,3);assert.deepEqual(start.units[start.leader].pos,c.leader);
-   const cam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(cam,c.camera,`${c.spot}: camera follows the exact placed leader cell`);
-   const v=await p.evaluate(()=>window.trial.view());assert.ok(v.boss?.labels.includes('首领'));assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01);
+   const v=await p.evaluate(()=>window.trial.view()),cam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(cam,expectedCamera(v,c.leader),`${c.spot}: camera follows the exact placed leader cell at the live viewport size`);
+   assert.ok(v.boss?.labels.includes('首领'));assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01);
    const filename=`boss-${c.spot}.png`;await p.screenshot({path:map122Artifact+filename,fullPage:true});
    report.screenshots.push({file:filename,seed:c.seed,level:3,bossRoom:w.bossRoom,boss:c.boss,leader:c.leader,camera:cam,placement:'fixture'});
    if(index===0){
-    await key(p,'ArrowDown');let s=await state(p);assert.equal(s.round,1);assert.deepEqual(s.units[s.leader].pos,{x:20,y:12},'ArrowDown moves the leader one generated floor cell');
-    let movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,{x:480,y:325},'camera follows keyboard movement');
+    await key(p,'s');let s=await state(p);assert.equal(s.round,1);assert.deepEqual(s.units[s.leader].pos,{x:20,y:12},'WASD S moves the leader one generated floor cell');
+    let movedView=await p.evaluate(()=>window.trial.view()),movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,expectedCamera(movedView,s.units[s.leader].pos),'camera follows keyboard movement at the live viewport size');
     await cell(p,19,12);s=await state(p);assert.equal(s.round,2);assert.deepEqual(s.units[s.leader].pos,{x:19,y:12},'canvas click maps to the intended world cell after camera scroll');
-    movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,{x:440,y:325},'camera follows the canvas click destination');
+    movedView=await p.evaluate(()=>window.trial.view());movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,expectedCamera(movedView,s.units[s.leader].pos),'camera follows the canvas click destination');
     const clickfile='camera-keyboard-canvas-click.png';await p.screenshot({path:map122Artifact+clickfile,fullPage:true});
-    report.screenshots.push({file:clickfile,seed:c.seed,level:3,afterKeyboard:{leader:{x:20,y:12},camera:{x:480,y:325}},afterCanvasClick:{leader:{x:19,y:12},camera:movedCam},inputChain:'real ArrowDown key then real canvas mouse click'});
-    report.actualInputs.push({input:'ArrowDown',round:s.round-1,leaderAfterKey:{x:20,y:12},cameraAfterKey:{x:480,y:325}});
+    report.screenshots.push({file:clickfile,seed:c.seed,level:3,afterKeyboard:{leader:{x:20,y:12},cameraAfterKey:expectedCamera(v,{x:20,y:12})},afterCanvasClick:{leader:{x:19,y:12},camera:movedCam},inputChain:'real WASD S key then real canvas mouse click'});
+    report.actualInputs.push({input:'s',round:s.round-1,leaderAfterKey:{x:20,y:12},cameraAfterKey:expectedCamera(v,{x:20,y:12})});
     report.actualInputs.push({input:'canvas click cell 19,12',round:s.round,leaderAfterClick:{x:19,y:12},cameraAfterClick:movedCam});
    }
   }
@@ -462,9 +487,17 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
    await p.goto(base+'?dev=1&seed=3');await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
-   for(const id of ['A','B'])await p.locator('#tactic-run-'+id).selectOption('wait');await p.waitForFunction(()=>['A','B'].every(id=>window.trial.getState().units[id].tactic==='wait'));
+   const setupState=await state(p);
+   for(const [index,id] of ['A','B'].entries()){
+    await click(p,'detail-'+index);await p.locator('#hud-tactic').selectOption('wait');
+    await p.waitForFunction(unit=>window.trial.getState().units[unit].tactic==='wait',id);
+   }
+   const tacticsSet=await state(p);assert.equal(tacticsSet.round,setupState.round,'setting member tactics does not advance a round');
+   assert.deepEqual(['A','B'].map(id=>tacticsSet.units[id].tactic),['wait','wait']);
   let s=await state(p);assert.equal(s.prog.level,5);assert.deepEqual(s.queue.map(i=>s.units[i].species),['charmander','squirtle','bulbasaur']);
-  assert.match(await p.locator('#party').innerText(),/小火龙.*Lv5/s);assert.match(await p.locator('#goal-label').innerText(),/橙橙果×0/);
+  const partyText=await p.locator('#party').innerText();for(const species of ['小火龙','杰尼龟','妙蛙种子'])assert.ok(partyText.includes(species),`the HUD shows ${species}`);
+  await p.locator('#unit-card-A').hover();await p.waitForSelector('#unit-info');assert.match(await p.locator('#unit-info').innerText(),/本局等级 Lv5/,'the member details preserve the visible expedition level');
+  assert.match(await p.locator('#goal-label').innerText(),/橙橙果×0/);
   const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
   const settlePrompt=async()=>{for(let i=0;i<20;i++){const phase=(await state(p)).phase;if(phase==='invitation')await reject(p);else if(phase==='evolution')await click(p,'evolution-close');else return;}throw Error('too many pending invitation/evolution prompts');};
   async function go(target){
@@ -495,11 +528,11 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   const lead=s.units[s.leader].pos,near=hurt.find(id=>Math.abs(s.units[id].pos.x-lead.x)+Math.abs(s.units[id].pos.y-lead.y)<=1);
   assert.ok(near,'hurt member within reach of the leader: '+JSON.stringify({hurt,lead}));
   const before=s.units[near].hp,max=s.units[near].maxHp,rounds=s.round;
-  await click(p,'use-berry');assert.match(await p.locator('#controls').innerText(),/对谁使用橙橙果/);await p.locator('#item-target-'+near).click();await ready(p);
+  await click(p,'use-berry');await p.locator('#hud-item-targets').waitFor({state:'visible'});assert.ok(await p.locator('#item-target-'+near).isVisible());await p.locator('#item-target-'+near).click();await ready(p);
   const after=await state(p);assert.equal(after.prog.items.berry,0);assert.equal(after.round,rounds+1);
   assert.ok(after.log.some(t=>t.includes('使用橙橙果')&&t.includes(`HP ${before}→${Math.min(max,before+8)}`)),'berry restores 8 HP up to the maximum (an enemy hit in the same round is separate)');
   await p.screenshot({path:artifact+'windows-expedition-items.png',fullPage:true});
-   assert.equal(await raw(p),null);assert.match(await p.locator('#save').innerText(),/开发者远征只在内存中/);assert.deepEqual(errors,[]);
+   assert.equal(await raw(p),null);assert.deepEqual(errors,[]);
   return {seed:3,pickedUp:true,refusedWhenFull:full,healed:[near,before,after.units[near].hp,max]};
  }finally{await context.close();}
 });
@@ -509,10 +542,11 @@ await test('6.4 动画：演出期间世界不推进、输入不积压，结束�
   const s0=await state(p);await p.keyboard.press('.'); // wait: the melee enemy H hits back, so a hit step is played
   assert.equal(await p.evaluate(()=>window.trial.animating()),true,'animation is playing right after the round');
   const s1=await state(p);assert.equal(s1.round,s0.round+1);
-  const during=await p.evaluate(()=>{const r=[],ev=k=>document.dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true}));
-   for(const k of ['.','ArrowRight','ArrowLeft','1','2','3'])ev(k);
-   for(const id of ['wait','arrange','swap','leader-1']){const b=document.getElementById(id);if(!b)throw Error('missing control '+id);b.click();}
-   return {animating:window.trial.animating(),round:window.trial.getState().round};});
+  for(const k of ['.','ArrowRight','ArrowLeft','1','2','3','4','Tab','b'])await p.keyboard.press(k);
+  assert.equal(await p.evaluate(()=>window.trial.animating()),true,'real keyboard inputs are sent during the animation');
+  for(const id of ['wait','arrange','swap','leader-1'])assert.equal(await p.locator('#'+id).isDisabled(),true,id+' is unavailable during animation');
+  assert.equal(await p.locator('#hud-bottom [data-hud-skill]').first().isDisabled(),true,'the visible HUD move controls are unavailable during animation');
+  const during=await p.evaluate(()=>({animating:window.trial.animating(),round:window.trial.getState().round}));
   assert.equal(during.animating,true);assert.equal(during.round,s1.round,'inputs during the animation do not advance the world');
   if(await p.evaluate(()=>window.trial.animating())){const box=await p.locator('canvas').boundingBox();await p.mouse.click(box.x+box.width/2,box.y+box.height/2);assert.equal((await state(p)).round,s1.round,'a board click during the animation does not advance the world');}
   await p.waitForFunction(()=>!window.trial.animating());await p.waitForTimeout(500);
@@ -555,7 +589,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
   // team: remove and re-add P1 so the order becomes P2, P3, P1; P3 stays the leader; "设为主控" is disabled for the current leader
   await click(p,'team-P1');await click(p,'team-P1');pr=await prof();
   assert.deepEqual(pr.team,['P2','P3','P1']);assert.equal(pr.leader,'P3');assert.equal(await p.locator('#lead-P3').isDisabled(),true);await click(p,'lead-P1');assert.equal((await prof()).leader,'P1');await click(p,'lead-P3');
-  assert.match(await p.locator('#squad').innerText(),/1\. P2.*2\. P3.*主控.*3\. P1/);
+  assert.match(await p.locator('#squad').innerText(),/1\. P2.*2\. P3.*操控者.*3\. P1/);
   // a failed write freezes the base until the same write is retried
   await p.evaluate(()=>{window.__failWrites=true;});await click(p,'team-P1').catch(()=>{});
   await p.waitForFunction(()=>window.trial.store.status==='failed');
@@ -575,7 +609,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
   const ally=['A','C'].find(id=>Math.abs(s.units[id].pos.x-s.units.B.pos.x)+Math.abs(s.units[id].pos.y-s.units.B.pos.y)===1);assert.ok(ally,'an ally stands next to the leader');
   await click(p,'skill-protect');await cell(p,s.units.B.pos.x,s.units.B.pos.y);
   s=await state(p);assert.equal(s.round,1);assert.equal(s.units.B.pp.protect,0);assert.ok(s.units.B.protect>0,'守住保护使用者本人');assert.equal(s.units[ally].protect,0,'相邻队友没有获得守住状态');assert.ok(s.log.includes('B进入守住状态'));
-  assert.match(await p.locator('[data-unit-status="B"]').innerText(),/守住：剩余2个敌方阶段/);
+  assert.ok((await p.locator('[data-unit-status="B"] .hud-status-badge').allTextContents()).includes(`守住${s.units.B.protect}`),'the short status badge retains the actual remaining protect count');
    assert.equal(await raw(p),campBeforeDeparture,'turn actions remain in memory until terminal settlement');
   assert.deepEqual(errors,[]);return {learned:'protect',carried:['tackle','protect'],selfProtected:'B',adjacentAllyUnaffected:ally,squad:['P2','P3','P1'],usedInRun:true,writeFailureFrozeAndRetried:true};
  }finally{await context.close();}
@@ -597,7 +631,7 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
  try{
   await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,full,profile);await p.locator('#rest').waitFor();
   const s0=await state(p);assert.equal(s0.points.find(q=>q.kind==='rest').used,false);
-  await p.locator('#rest').click();await ready(p);          // PP are full: refused with the reason, nothing changes
+  await click(p,'rest');          // PP are full: refused with the reason, nothing changes
   assert.deepEqual(await state(p),s0);assert.match(await p.locator('#message').innerText(),/PP都已满.*没有消耗/);
   // Reload discards the first developer world; create a second in-memory fixture with one PP spent.
   await p.reload();await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,spent,profile);
@@ -658,14 +692,25 @@ await test('服务点7.2：商店购买不占回合；交换机送回伙伴与�
  const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
   await p.goto(base+'?dev=1&seed=4300');await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,shopWorld,profile);await p.locator('#shop-panel').waitFor();
+  let s=await state(p);const initialStock=structuredClone(s.shop.stock);assert.equal(initialStock.berry,2);assert.ok(initialStock.tm,'the shop starts with its generated TM stock');
   assert.match(await p.locator('#shop-panel').innerText(),/橙橙果.*价格 20.*库存 2/s);
   assert.equal(await p.locator('#take').count(),0,'no pickup button on a shop cell');
   await click(p,'buy-berry');
-  let s=await state(p);assert.equal(s.purse,80);assert.equal(s.prog.items.berry,1);assert.equal(s.round,0);assert.deepEqual(s.shop.trades,[{item:'berry',price:20}]);
+  s=await state(p);assert.equal(s.purse,80);assert.equal(s.prog.items.berry,1);assert.equal(s.round,0);assert.deepEqual(s.shop.trades,[{item:'berry',price:20}]);
+  assert.deepEqual(s.shop.stock,{...initialStock,berry:initialStock.berry-1},'buying one berry changes only berry inventory');
   await click(p,'buy-tm');s=await state(p);assert.equal(s.purse,0);assert.deepEqual(s.tms.map(t=>[t.move,t.source,t.fate]),[['protect','target','held'],['roar','shop','held']]);
+  assert.deepEqual(s.shop.stock,{...initialStock,berry:initialStock.berry-1,tm:null},'buying the TM removes only the TM stock after the berry purchase');
   assert.equal(await p.locator('#buy-tonic').isDisabled(),true);assert.match(await p.locator('#shop-panel').innerText(),/钱袋不足，还差30/);
   await p.screenshot({path:artifact+'windows-service-1-shop.png',fullPage:true});
-  assert.equal(await raw(p),null);assert.match(await p.locator('#shop-panel').innerText(),/本次远征期间库存固定/);
+  assert.equal(await raw(p),null);const purchasedStock=structuredClone(s.shop.stock);
+  await click(p,'wait');s=await state(p);assert.equal(s.round,1,'waiting at the shop consumes one round');
+  if(s.phase==='invitation'){await click(p,'reject');await click(p,'reject-confirm');s=await state(p);}
+  else if(s.phase==='evolution'){await click(p,'evolution-close');s=await state(p);}
+  assert.equal(s.round,1);assert.deepEqual(s.shop.stock,purchasedStock,'a later round does not refresh the shop inventory');
+  const rows=await p.locator('#shop-panel li').allInnerTexts();assert.equal(rows.length,3);
+  assert.match(rows[0],/橙橙果.*价格 20.*库存 1/s,'the shop shows the one remaining berry after the wait');
+  assert.match(rows[2],/招式机.*库存 0/s,'the purchased TM remains out of stock after the wait');
+  assert.equal(await raw(p),null,'the shop and wait remain expedition-only state');
   await p.reload();await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,exchangeWorld,profile);await p.locator('#exchange-panel').waitFor();
   assert.equal(await p.locator('#ex-target-A').count(),0,'the leader cannot be chosen');assert.equal(await p.locator('#ex-confirm').isDisabled(),true);
   await click(p,'ex-target-C');await click(p,'ex-cargo-1');await p.screenshot({path:artifact+'windows-service-2-exchange.png',fullPage:true});
@@ -714,11 +759,13 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
     let s=await state(p);assert.equal(s.scenario,'expedition');assert.deepEqual(s.queue,['A','B']);assert.equal(s.units.A.species,'treecko');assert.equal(s.leader,'A');assert.equal(s.units.A.tactic,'followme');assert.equal(s.units.B.tactic,'avoid');
     assert.match(await p.locator('#goal-label').innerText(),/本局等级 Lv5 · 升级经验 0\/5/);assert.match(await p.locator('#goal-label').innerText(),/升到下一级需当前等级经验/);
    assert.equal(await raw(p),campBeforeRun,'departure leaves the selected camp tactics in the saved profile');
-   const beforeMenu=structuredClone(s);await p.locator('#tactic-run-B').selectOption('wait');await p.waitForFunction(()=>window.trial.getState().units.B.tactic==='wait');
+   const beforeMenu=structuredClone(s);await click(p,'detail-1');await p.locator('#hud-tactic').selectOption('wait');await p.waitForFunction(()=>window.trial.getState().units.B.tactic==='wait');
    beforeMenu.units.B.tactic='wait';assert.deepEqual(await state(p),beforeMenu,'changing a maze tactic changes only that unit and does not advance a round');assert.equal(await raw(p),campBeforeRun);
-  assert.equal(await p.locator('#guide-card').count(),1);assert.equal(await p.locator('#enemy-hint').count(),1);
-  await p.locator('#guide-close').click();assert.equal(await p.locator('#guide-card').count(),0);
-   // the first-run guide (an aside) covers the unit cards, so the tactic hover happens after it is closed
+  assert.equal(await p.locator('#guide-card').count(),0,'maze view does not show the old explanatory guide');
+  assert.equal(await p.locator('#guide-close').count(),0,'the in-canvas HUD replaces the first-run guide controls');
+  const overflow=await p.evaluate(()=>({scrollY:window.scrollY,scrollX:window.scrollX,scrollHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,clientHeight:document.documentElement.clientHeight,clientWidth:document.documentElement.clientWidth}));
+  assert.equal(overflow.scrollY,0);assert.equal(overflow.scrollX,0);assert.ok(overflow.scrollHeight<=overflow.clientHeight&&overflow.scrollWidth<=overflow.clientWidth,'the full-screen maze HUD does not require page scrolling');
+   // Team tactic details stay available from the in-frame member card.
    await p.locator('#unit-card-B').hover();await p.waitForSelector('#unit-info');assert.match(await p.locator('#unit-info').innerText(),/原地待命/);
   for(const k of ['ArrowRight','ArrowDown','ArrowLeft','ArrowUp']){await p.keyboard.press(k);await ready(p);if((await state(p)).round>0)break;}
    assert.ok((await state(p)).round>0,'a real key press advanced the run');assert.equal(await raw(p),campBeforeRun,'run actions do not change the camp record');
@@ -728,6 +775,99 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
     await p.locator('#title-continue').click();await ready(p);assert.equal(await state(p),null);assert.equal(await p.locator('#depart').isEnabled(),true);assert.equal(await p.locator('#guide-card').count(),0,'the guide stays closed');
     assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(i=>i.tactic),['followme','avoid'],'unsettled maze tactic edits are discarded by refresh');
     assert.deepEqual(errors,[]);return {roster:pr.roster.map(i=>i.species),baseTactics:['followme','avoid'],mazeEditNoTurn:true,tacticHover:true,refreshReturnsToCamp:true};
+ }finally{await context.close();}
+});
+await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包分类、切换与无溢出',async()=>{
+ const {context,page:p,errors}=await plainContext();
+ try{
+  await p.setViewportSize({width:1280,height:720});await p.goto(base);await p.locator('#title-new').waitFor();await p.locator('#title-new').click();
+  await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
+  await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();await p.locator('#depart').waitFor();await ready(p);await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
+  let s=await state(p);assert.equal(s.round,0);assert.equal(s.phase,'playing');
+  assert.equal(await p.locator('#dungeon-layout').isVisible(),true,'the real player run uses the full-screen maze layout');
+  assert.equal(await p.locator('#shortcut-card').isVisible(),true,'shortcut help is inside the maze view');
+  assert.equal(await p.locator('#hud-bottom [data-move-slot]').count(),4,'all four move slots, including empty slots, stay visible');
+  assert.equal(await p.locator('#hud-bottom [data-hud-quick]').count(),6,'all six quick-item slots stay visible');
+  const controlBounds=await p.evaluate(()=>{
+   const rects=selector=>[...document.querySelectorAll(selector)].map(el=>{const r=el.getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,width:r.width,height:r.height};});
+   return {viewport:{width:innerWidth,height:innerHeight},moves:rects('#hud-bottom [data-move-slot]'),quick:rects('#hud-bottom [data-hud-quick]')};
+  });
+  assert.deepEqual(controlBounds.viewport,{width:1280,height:720},'the boundary check uses the 1280×720 reference viewport');
+  for(const [label,rects,count] of [['move cards',controlBounds.moves,4],['quick slots',controlBounds.quick,6]]){
+   assert.equal(rects.length,count,`${label} expose every visible control rectangle`);
+   assert.ok(rects.every(r=>r.left>=0&&r.top>=0&&r.right<=controlBounds.viewport.width&&r.bottom<=controlBounds.viewport.height),`${label} rectangles stay fully inside the 1280×720 viewport: ${JSON.stringify(rects)}`);
+   assert.ok(rects.every(r=>Math.abs(r.width-rects[0].width)<0.5&&Math.abs(r.height-rects[0].height)<0.5),`${label} have consistent widths and heights`);
+  }
+  for(const keyLabel of ['1—4','5—0','Tab','B'])assert.ok((await p.locator('#shortcut-card').innerText()).includes(keyLabel),`in-frame shortcut card includes ${keyLabel}`);
+  assert.equal(await p.locator('#party [id^="unit-card-"]').count(),2);
+  assert.equal(await p.locator('#guide-card').count(),0,'the old explanatory guide is absent from the maze');
+  let overflow=await p.evaluate(()=>({scrollY:window.scrollY,scrollX:window.scrollX,scrollHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,clientHeight:document.documentElement.clientHeight,clientWidth:document.documentElement.clientWidth}));
+  assert.equal(overflow.scrollY,0);assert.equal(overflow.scrollX,0);assert.ok(overflow.scrollHeight<=overflow.clientHeight&&overflow.scrollWidth<=overflow.clientWidth,'the full-screen HUD fits the viewport without page scrolling');
+  await p.screenshot({path:artifact+'windows-hud-main-default.png',fullPage:false});
+  const move=p.locator('#hud-bottom [data-hud-skill]').first(),skill=await move.getAttribute('data-hud-skill');assert.ok(skill,'the live starter has at least one move card');
+  await key(p,'1');s=await state(p);assert.equal(s.round,0);assert.equal(s.leader,'A');assert.equal(await p.locator(`#hud-bottom [data-hud-skill="${skill}"]`).getAttribute('aria-pressed'),'true','1 selects the first live move card without spending an action');
+  const units=await p.evaluate(()=>{const s=window.trial.getState(),v=window.trial.view(),g=v.geometry,c=v.cameraView,cam=window.trial.camera();return s.enemies.map(id=>s.units[id]).filter(u=>u?.hp>0&&u.pos).find(u=>{const x=g.ox+(u.pos.x-g.minX+.5)*g.cell-cam.x,y=g.oy+(u.pos.y-g.minY+.5)*g.cell-cam.y;return x>=0&&x<c.width&&y>=0&&y<c.height;})?.pos??null;});
+  if(units)await hoverCell(p,units.x,units.y);
+  await move.hover();const tip=p.locator('#hud-tooltip');await tip.waitFor({state:'visible'});let detail=await tip.innerText();
+  for(const field of ['威力','命中','PP','射程','范围'])assert.ok(detail.includes(field),`the move tooltip exposes ${field}`);
+  assert.equal(await tip.locator('[data-move-description]').textContent(),'','full move prose remains absent until the later description pass');
+  assert.ok((await tip.locator(`[data-move-preview="${skill}"]`).textContent())?.trim(),'the hover card carries the live move estimate');
+  assert.doesNotMatch(await move.innerText(),/同排／列|造成约/,'compact move cards do not carry the old detailed explanation');
+  await p.screenshot({path:artifact+'windows-hud-main-hover.png',fullPage:false});
+  const learned=s.units.A.learned;
+  for(let index=1;index<4;index++){
+   await key(p,String(index+1));s=await state(p);assert.equal(s.leader,'A',`key ${index+1} selects a move slot rather than changing the leader`);assert.equal(s.round,0);
+   if(learned[index])assert.equal(await p.locator(`#hud-bottom [data-hud-skill="${learned[index]}"]`).getAttribute('aria-pressed'),'true',`key ${index+1} selects its learned move`);
+  }
+  const beforeBag=await state(p);await key(p,'b');assert.equal(await p.locator('#hud-bag').isVisible(),true);
+  for(const category of ['all','berry','drink','tm','other'])assert.equal(await p.locator(`[data-bag-category="${category}"]`).count(),1,`bag category ${category} is visible`);
+  assert.equal(await p.locator('[data-bag-slot]').count(),6,'the backpack exposes six assignable quick slots');
+  assert.equal(await p.locator('.hud-bag-empty').isVisible(),true,'a new expedition starts with no consumable inventory');
+  await p.screenshot({path:artifact+'windows-hud-main-bag.png',fullPage:false});
+  overflow=await p.evaluate(()=>({scrollY:window.scrollY,scrollX:window.scrollX,scrollHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,clientHeight:document.documentElement.clientHeight,clientWidth:document.documentElement.clientWidth}));
+  assert.equal(overflow.scrollY,0);assert.equal(overflow.scrollX,0);assert.ok(overflow.scrollHeight<=overflow.clientHeight&&overflow.scrollWidth<=overflow.clientWidth,'the open backpack stays inside the viewport');
+  await key(p,'b');assert.equal(await p.locator('#hud-bag').isHidden(),true);assert.deepEqual(await state(p),beforeBag,'opening and closing the empty backpack does not advance the run');
+  await key(p,'Tab');s=await state(p);assert.equal(s.round,0);assert.equal(s.leader,'B','Tab selects the next living teammate without spending a turn');
+  await p.screenshot({path:artifact+'windows-hud-main-switch.png',fullPage:false});
+  await key(p,'Tab');s=await state(p);assert.equal(s.round,0);assert.equal(s.leader,'A','Tab cycles back through the living teammates');
+  overflow=await p.evaluate(()=>({scrollY:window.scrollY,scrollX:window.scrollX,scrollHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,clientHeight:document.documentElement.clientHeight,clientWidth:document.documentElement.clientWidth}));
+  assert.equal(overflow.scrollY,0);assert.equal(overflow.scrollX,0);assert.ok(overflow.scrollHeight<=overflow.clientHeight&&overflow.scrollWidth<=overflow.clientWidth);
+  assert.deepEqual(errors,[]);
+  return {realPlayerSave:true,moves:4,quickSlots:6,firstMoveKey:true,tooltipFields:['威力','命中','PP','射程','范围'],bagCategories:['all','berry','drink','tm','other'],emptyInventory:true,tabCycle:true,guideAbsent:true,noPageOverflow:true,screenshots:['windows-hud-main-default.png','windows-hud-main-hover.png','windows-hud-main-bag.png','windows-hud-main-switch.png']};
+ }finally{await context.close();}
+});
+await test('162 WASD 同时按键在输入窗口内拒绝斜向：不分拆成单步移动',async()=>{
+ const {context,page:p,errors}=await setup();
+ try{
+  await p.locator('#config').selectOption('main-none');await start(p);const before=await state(p),leader=before.units[before.leader];
+  const right={x:leader.pos.x+1,y:leader.pos.y};assert.ok(before.floor.some(q=>q.x===right.x&&q.y===right.y),'the leader’s right-hand cell is walkable for a single-key comparison');
+  const started=Date.now();await p.keyboard.down('w');await p.keyboard.down('d');await p.keyboard.up('d');await p.keyboard.up('w');const inputMs=Date.now()-started;
+  assert.ok(inputMs<40,`the real WASD chord completed inside the 40 ms collection window (observed ${inputMs} ms)`);await ready(p);
+  assert.deepEqual(await state(p),before,'the rejected diagonal does not become an earlier vertical step or a diagonal action');
+  assert.match(await p.locator('#message').innerText(),/相邻|斜向/,'the player receives the existing adjacent-cell movement rejection');
+  const oneStarted=Date.now();await p.keyboard.down('w');await p.keyboard.press('1');await p.keyboard.up('w');const oneMs=Date.now()-oneStarted;
+  assert.ok(oneMs<40,`W then 1 completes inside the 40 ms collection window (observed ${oneMs} ms)`);await ready(p);
+  assert.deepEqual(await state(p),before,'1 selects a move and cancels the pending W without moving or spending a round');
+  const selected=p.locator('#hud-bottom [data-hud-skill][aria-pressed="true"]');assert.equal(await selected.count(),1,'1 visibly selects exactly one move slot');
+  const selectedMove=await selected.getAttribute('data-hud-skill');await p.waitForTimeout(60);
+  assert.deepEqual(await state(p),before,'the cancelled W does not move the leader later');
+  const tabStarted=Date.now();await p.keyboard.down('w');await p.keyboard.press('Tab');await p.keyboard.up('w');const tabMs=Date.now()-tabStarted;
+  assert.ok(tabMs<40,`W then Tab completes inside the 40 ms collection window (observed ${tabMs} ms)`);await ready(p);
+  const afterTab=await state(p),expectedAfterTab=structuredClone(before);expectedAfterTab.leader=before.queue.find(id=>id!==before.leader&&before.units[id].hp>0);
+  assert.deepEqual(afterTab,expectedAfterTab,'Tab switches the living leader only and cancels the pending W without spending a round');
+  await p.waitForTimeout(60);assert.deepEqual(await state(p),expectedAfterTab,'the cancelled W does not move the new leader later');
+  const partner=expectedAfterTab.queue.find(id=>id!==expectedAfterTab.leader&&expectedAfterTab.units[id].hp>0);assert.ok(partner,'the draft has another living teammate');
+  await click(p,'arrange');await click(p,'partner-'+partner);await click(p,'edit-main');await click(p,'wait');
+  const draftBefore=await state(p),draftAction=p.locator('#controls .draft #edit-main'),draftContent=p.locator('#controls .draft');
+  const actionBefore=(await draftAction.innerText()).trim();assert.equal(actionBefore,`${expectedAfterTab.leader}：等待`);
+  const draftStarted=Date.now();await p.keyboard.down('w');await p.keyboard.press('.');await p.keyboard.up('w');const draftMs=Date.now()-draftStarted;
+  assert.ok(draftMs<40,`W then period completes inside the 40 ms collection window (observed ${draftMs} ms)`);await ready(p);
+  assert.deepEqual(await state(p),draftBefore,'the wait remains a draft and does not execute a round');
+  assert.equal((await draftAction.innerText()).trim(),actionBefore,'the later W input does not replace the draft wait with a move');
+  assert.ok((await draftContent.locator(':scope > strong').innerText()).includes(`正在编辑 ${expectedAfterTab.leader}`));
+  await p.waitForTimeout(60);assert.deepEqual(await state(p),draftBefore,'the cancelled W does not execute after the draft wait');
+  assert.equal((await draftAction.innerText()).trim(),actionBefore);
+  assert.deepEqual(errors,[]);return {mainNoneMemoryScene:true,rightCellWalkable:true,diagonalSequence:['keydown W','keydown D','keyup D','keyup W'],diagonalMs:inputMs,moveSequence:['keydown W','keydown 1','keyup W'],moveMs:oneMs,selectedMove,switchSequence:['keydown W','keydown Tab','keyup W'],switchMs:tabMs,draftSequence:['open draft','keydown W','keydown period','keyup W'],draftMs,draftWaitPreserved:true,worldUnchanged:true,rejectionMessage:true,moveInputCancelsW:true,tabSwitchCancelsW:true};
  }finally{await context.close();}
 });
 await test('7.1(b) 已有存档：新游戏需要确认，取消后原存档不变，可导出原记录',async()=>{
@@ -755,9 +895,7 @@ await test('7.1/7.8 可读性：悬停敌人看等级与招式、组合草稿显
  const {context,page:p,errors}=await setup('K1');
  try{
   await start(p);const s=await state(p);const h=s.units.H;
-  const b=await p.locator('canvas').boundingBox();
-  const xs=s.floor.map(q=>q.x),ys=s.floor.map(q=>q.y),minX=Math.min(...xs),minY=Math.min(...ys),w=Math.max(...xs)-minX+1,hh=Math.max(...ys)-minY+1,c=Math.min(66,600/w,270/hh);
-  await p.mouse.move(b.x+(340-w*c/2+(h.pos.x-minX+.5)*c)*b.width/680,b.y+(175-hh*c/2+(h.pos.y-minY+.5)*c)*b.height/350);
+  await hoverCell(p,h.pos.x,h.pos.y);
   await p.waitForSelector('#enemy-info');const info=await p.locator('#enemy-info').innerText();
   const {moveZh}=await import('../../src/core/names.ts');assert.match(info,/H/);assert.match(info,new RegExp(`等级 Lv${h.level}`));assert.ok(info.includes(`${h.hp}/${h.maxHp}`));assert.match(info,/作战方针：主动出击/);assert.match(info,/招式：/);
   assert.ok(h.learned.length>0);for(const move of h.learned)assert.ok(info.includes(moveZh(move)),`enemy info shows ${move}`);
@@ -776,23 +914,25 @@ await test('#112 能力值：悬停目标与草稿成员即时改变招式估算
   fixture.units.B.learned=['tackle'];fixture.units.B.pp={tackle:3};fixture.units.B.maxPp={tackle:3};
   fixture.units.H.species='pidgey';fixture.units.H.hp=200;fixture.units.H.maxHp=200;fixture.units.H.waitOnly=true;
   await startMemory(p,fixture);const before=await state(p);
-  assert.match(await p.locator('#skill-tackle').innerText(),/约9点（对普通目标）/);
-  await click(p,'skill-tackle');
-  const b=await p.locator('canvas').boundingBox();
-  const xs=before.floor.map(q=>q.x),ys=before.floor.map(q=>q.y),minX=Math.min(...xs),minY=Math.min(...ys),w=Math.max(...xs)-minX+1,h=Math.max(...ys)-minY+1,c=Math.min(66,600/w,270/h);
-  const hover=async pos=>{await p.mouse.move(b.x+(340-w*c/2+(pos.x-minX+.5)*c)*b.width/680,b.y+(175-h*c/2+(pos.y-minY+.5)*c)*b.height/350);};
-  await hover(before.units.H.pos);
-  await p.waitForFunction(()=>document.querySelector('#selected-move-preview')?.textContent.includes('约11点'));
-  assert.match(await p.locator('#skill-tackle').innerText(),/约11点/,'Mudkip atk70 / Pidgey def40 is clamped to 1.25, so round(9*1.25)=11');
+  const card=p.locator('#skill-tackle'),preview=p.locator('#hud-tooltip [data-move-preview="tackle"]');
+  await click(p,'skill-tackle');await card.hover();await preview.waitFor();
+  assert.match(await preview.innerText(),/约9点（对普通目标）/);
+  await hoverCell(p,fixture.units.H.pos.x,fixture.units.H.pos.y);await card.hover();
+  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('约11点'));
+  assert.match(await preview.innerText(),/约11点/,'Mudkip atk70 / Pidgey def40 is clamped to 1.25, so round(9*1.25)=11');
   await p.screenshot({path:artifact+'windows-stat-damage-hover.png',fullPage:true});
-  await hover(before.units.A.pos);
-  await p.waitForFunction(()=>document.querySelector('#selected-move-preview')?.textContent.includes('对普通目标'));
+  await hoverCell(p,before.units.A.pos.x,before.units.A.pos.y);await card.hover();
+  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('对普通目标'));
   await click(p,'arrange');await click(p,'partner-B');await click(p,'edit-partner');
-  await hover(before.units.H.pos);
-  await p.waitForFunction(()=>document.querySelector('#skill-tackle')?.textContent.includes('约10点'));
-  assert.match(await p.locator('#skill-tackle').innerText(),/约10点/,'Treecko atk45 / Pidgey def40 => round(9*1.125)=10');
+  const partnerDraftText=await p.locator('#controls .draft').innerText();assert.match(partnerDraftText,/正在编辑 B/,'the visible draft identifies B as the actor being edited');
+  await click(p,'actions-open');await hoverCell(p,before.units.H.pos.x,before.units.H.pos.y);await card.hover();
+  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('约11点'));
+  assert.match(await preview.innerText(),/约11点/,'the bottom HUD still estimates for leader A while B is being edited');
+  await click(p,'actions-open');const partnerCard=p.locator('#draft-skill-tackle');await partnerCard.hover();
+  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('约10点'));
+  const displayedPartnerEstimate=await preview.innerText();assert.match(displayedPartnerEstimate,/约10点/,'Treecko atk45 / Pidgey def40 => round(9*1.125)=10 for the draft actor');
   assert.deepEqual(await state(p),before);assert.deepEqual(errors,[]);
-  return {uiFixture:true,hoverDamage:11,draftPartnerDamage:10,ordinaryTargetFallback:true,previewDoesNotAct:true};
+  return {uiFixture:true,hoverDamage:11,draftPartnerDamage:10,ordinaryTargetFallback:true,previewDoesNotAct:true,leaderBefore:before.leader,partnerDraftText,displayedPartnerEstimate};
  }finally{await context.close();}
 });
 /* UI-only fixture: this starts directly at the legal evolution prompt so the browser check
@@ -831,10 +971,11 @@ await test('7.8 UI夹具：伊布进化选择与暂缓按钮实际可点击',asy
  }finally{await second.context.close();}
 });
 /* Stage 7.3: the boss floor, through the developer menu scenes (isolated storage). BOSS: whole floor shown, the team beside the boss. BOSSX: the team on the lobby exit.
-   The mouse is moved over canvas cells with the same fixed 40 px cell geometry the other dungeon checks use. */
+   Mouse coordinates use the live map geometry and camera viewport from the running scene. */
 async function hoverCell(p,x,y){
- const s=await state(p),b=await p.locator('canvas').boundingBox(),cam=await p.evaluate(()=>window.trial.camera());
- await p.mouse.move(b.x+(x*40+20-cam.x)*b.width/680,b.y+(y*40+20-cam.y)*b.height/350);
+ const view=await p.evaluate(()=>window.trial.view()),g=view.geometry,v=view.cameraView;
+ const b=await p.locator('canvas').boundingBox(),cam=await p.evaluate(()=>window.trial.camera());
+ await p.mouse.move(b.x+(g.ox+(x-g.minX+.5)*g.cell-cam.x)*b.width/v.width,b.y+(g.oy+(y-g.minY+.5)*g.cell-cam.y)*b.height/v.height);
 }
 await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放大与名牌、首领信息、吹飞被拒的中文原因',async()=>{
  const {context,page:p,errors}=await setup('BOSS');
@@ -907,16 +1048,17 @@ await test('7.7a 状态卡片：守住与反击递减、攻防阶段显示；开
  const {context,page:p,errors}=await setup('K1');
  try{
   const {createScenario}=await import('../../src/core/scenarios.ts');const fixture=createScenario('K1','status-card');fixture.units.B.protect=2;fixture.units.B.counter=1;fixture.units.B.stages={atk:1,def:-2};
-  await startMemory(p,fixture);await key(p,'2');const before=await state(p);
+  await startMemory(p,fixture);await key(p,'Tab');const before=await state(p);
   await click(p,'skill-protect');await cell(p,before.units.A.pos.x,before.units.A.pos.y);
   assert.deepEqual(await state(p),before);
   assert.equal(await p.locator('#message').innerText(),'这种招式的目标必须填使用者自己；本轮未执行');
   const status=p.locator('[data-unit-status="B"]');
-  assert.equal(await status.innerText(),'守住：剩余2个敌方阶段 · 反击：剩余1个敌方阶段 · 攻击+1 · 防御-2');
+  const badges=()=>status.locator('.hud-status-badge').allTextContents();
+  assert.deepEqual(await badges(),['攻击↑1','防御↓2','守住2','反击1']);
   assert.equal(await p.locator('[data-unit-status="C"]').innerText(),'');
   await p.screenshot({path:artifact+'windows-move-status.png',fullPage:true});
-  await click(p,'wait');assert.equal(await status.innerText(),'守住：剩余1个敌方阶段 · 攻击+1 · 防御-2');
-  await click(p,'wait');assert.equal(await status.innerText(),'攻击+1 · 防御-2');
+  await click(p,'wait');assert.deepEqual(await badges(),['攻击↑1','防御↓2','守住1']);
+  await click(p,'wait');assert.deepEqual(await badges(),['攻击↑1','防御↓2']);
   assert.equal(await raw(p),null);assert.deepEqual(errors,[]);
   return {countdowns:true,zeroStatusesHidden:true,stages:true,memoryOnly:true};
  }finally{await context.close();}
@@ -955,12 +1097,12 @@ await test('7.7b 状态：实际施放团队保护、倒计时与快速防守；
   const {createScenario}=await import('../../src/core/scenarios.ts');const fixture=createScenario('K1','team-guard-status'),unit=fixture.units.B;
   for(const move of ['reflect','lightscreen','quickguard']){unit.learned.push(move);unit.pp[move]=3;unit.maxPp[move]=3;}
   for(const id of fixture.enemies)fixture.units[id].damage=0;
-  await startMemory(p,fixture);await key(p,'2');
+  await startMemory(p,fixture);await key(p,'Tab');
   for(const move of ['reflect','lightscreen']){const s=await state(p);await click(p,'skill-'+move);await cell(p,s.units.B.pos.x,s.units.B.pos.y);}
   const guarded=await state(p);
   assert.equal(guarded.units.B.reflect,8);assert.equal(guarded.units.B.lightscreen,9);
   const status=p.locator('[data-unit-status="B"]');
-  assert.match(await status.innerText(),/反射壁：剩余8个敌方阶段/);assert.match(await status.innerText(),/光墙：剩余9个敌方阶段/);
+  assert.deepEqual(await status.locator('.hud-status-badge').allTextContents(),['反射8','光墙9']);
   await p.screenshot({path:artifact+'windows-team-guard-status.png',fullPage:true});
   await click(p,'skill-quickguard');await cell(p,guarded.units.B.pos.x,guarded.units.B.pos.y);
   const quick=await state(p);assert.equal(quick.units.B.lastMove,'quickguard');
@@ -981,7 +1123,9 @@ await test('8.3 挑战房：真实按钮开始、封门战斗、清场开门与�
   for(const id of fixture.enemies)fixture.units[id].waitOnly=true;
   fixture.seen=fixture.floor.map(q=>q.x+','+q.y);
   await startMemory(p,fixture);
-  assert.equal(await p.locator('#legend-goal').isVisible(),false);assert.doesNotMatch(await p.locator('.legend').innerText(),/交换机/);
+  assert.equal(await p.locator('#legend-goal').isVisible(),false);
+  assert.equal(await p.locator('.legend').isVisible(),false,'the old page legend is hidden in the maze view');
+  assert.doesNotMatch(await p.locator('body').innerText(),/交换机/,'the player-visible page text does not mention an unavailable exchanger');
   assert.equal(await p.locator('#adventure-room-panel').getAttribute('data-room-state'),'idle');
   await p.screenshot({path:artifact+'windows-rooms83-challenge-idle.png',fullPage:true});
   await click(p,'start-challenge');let s=await state(p),ar=s.adventureRooms.find(r=>r.room===room.room);
@@ -1020,11 +1164,21 @@ await test('8.3 道具房：实际拾取大树果与全员PP补剂，背包使�
    await click(p,'take-adventure-item');let s=await state(p);
    assert.equal(s.prog.items[item],1);assert.equal(s.adventureRooms.find(r=>r.room===room.room).state,'done');
    assert.equal(await p.locator('#adventure-room-panel').getAttribute('data-room-state'),'done');
-   await click(p,'use-'+item);if(item==='bigBerry')await click(p,'item-target-bigBerry-A');
+   if(item==='bigBerry'){
+    const beforeAssign=await state(p);await click(p,'bag-open');
+    for(const category of ['all','berry','drink','tm','other'])assert.equal(await p.locator(`[data-bag-category="${category}"]`).count(),1,`bag category ${category} is present`);
+    await p.locator('[data-bag-slot="4"]').click();await p.locator('[data-bag-category="berry"]').click();
+    const assign=p.locator('[data-bag-item="bigBerry"]');assert.equal(await assign.count(),1,'the actually collected big berry can be assigned from the berry category');await assign.click();await ready(p);
+    assert.match(await p.locator('[data-hud-quick="4"]').innerText(),/大树果/,'the collected item is assigned to quick slot 5');
+    assert.equal((await p.locator('[data-hud-quick="2"]').getAttribute('aria-label')),'空快捷格','duplicate item assignment clears its original quick slot');
+    assert.match(await p.locator('[data-bag-slot="2"]').getAttribute('aria-label'),/空快捷格/,'the backpack also shows the duplicate slot as empty');
+    assert.deepEqual(await state(p),beforeAssign,'assigning a collected item does not advance or mutate the run');
+    await click(p,'bag-close');await p.locator('[data-hud-quick="4"]').click();await ready(p);await click(p,'item-target-bigBerry-A');
+   }else await click(p,'use-'+item);
    s=await state(p);assert.equal(s.prog.items[item],0);
    if(item==='bigBerry')assert.equal(s.units.A.hp,s.units.A.maxHp);
    else{assert.equal(s.units.A.pp.tackle,2);assert.equal(s.units.B.pp.tackle,3);}
-   await p.screenshot({path:artifact+'windows-rooms83-'+item+'.png',fullPage:true});checks.push({seed,item,pickedAndUsed:true});
+   await p.screenshot({path:artifact+'windows-rooms83-'+item+'.png',fullPage:true});checks.push({seed,item,pickedAndUsed:true,...(item==='bigBerry'?{assignedToQuickSlot:4,duplicateSlotCleared:true,assignedSlotUsed:true}:{})});
   }
   assert.deepEqual(errors,[]);return {checks,fixtureBoundary:'地图生成后初始主控摆在道具格，预设受伤及PP不足；拾取和使用均为实际UI输入，不代表自然探索路线。'};
  }finally{await context.close();}
@@ -1175,10 +1329,10 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
    const shown=structuredClone(fixture);shown.dungeon.level=index+1;
    if(index){await p.reload();await p.locator('#start').waitFor();}
    await startMemory(p,shown);
-   await p.getByText('开发者菜单：检查入口（隔离存储）',{exact:true}).click();
-   await p.waitForFunction(theme=>{
-    const v=window.trial.view(),c=v?.cameraView;
-    return c?.width>0&&v.decorations?.some(d=>d.texture===`deco-${theme}`&&d.x+20>c.x&&d.x-20<c.x+c.width&&d.y>c.y&&d.y-40<c.y+c.height);
+   await click(p,'actions-open');await p.locator('#developer-tools summary').click();
+  await p.waitForFunction(theme=>{
+    const v=window.trial.view(),c=v?.cameraView,cell=v?.geometry?.cell;
+    return c?.width>0&&cell>0&&v.decorations?.some(d=>d.texture===`deco-${theme}`&&d.x+cell/2>c.x&&d.x-cell/2<c.x+c.width&&d.y>c.y&&d.y-cell<c.y+c.height);
    },theme,{timeout:10000}).catch(async error=>{
     fs.writeFileSync(output+`decor-visibility-failure-${theme}.json`,JSON.stringify(await p.evaluate(()=>({view:window.trial.view(),camera:window.trial.camera()})),null,2));
     throw error;
@@ -1186,16 +1340,16 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
    const view=await p.evaluate(()=>window.trial.view());
    for(const layer of ['floor','edge','liquid','wall'])assert.ok(view.tiles.includes(`terrain-${theme}-${layer}`),`${theme}: ${layer} layer actually drawn`);
    assert.ok(!view.tiles.some(t=>/^(floor|wall)(-|$)/.test(t)),'roguelike uses runtime terrain throughout');
-   const drawn=view.decorations.filter(d=>d.texture===`deco-${theme}`),camera=view.cameraView;
-   const visible=drawn.filter(d=>d.x+20>camera.x&&d.x-20<camera.x+camera.width&&d.y>camera.y&&d.y-40<camera.y+camera.height);
+   const drawn=view.decorations.filter(d=>d.texture===`deco-${theme}`),camera=view.cameraView,cell=view.geometry.cell;
+   const visible=drawn.filter(d=>d.x+cell/2>camera.x&&d.x-cell/2<camera.x+camera.width&&d.y>camera.y&&d.y-cell<camera.y+camera.height);
    assert.ok(visible.length>0,`${theme}: the screenshot viewport actually contains decorations`);
    const ground=new Set(shown.floor.map(c=>`${c.x},${c.y}`));
    const atlasFrames=JSON.parse(fs.readFileSync(`public/assets/tiles/deco/deco-${theme}.json`,'utf8')).frames;
    for(const deco of drawn){
-    const x=Math.floor(deco.x/40),y=Math.round(deco.y/40)-1;
+    const x=Math.floor(deco.x/cell),y=Math.round(deco.y/cell)-1;
     assert.ok(Object.hasOwn(atlasFrames,deco.frame),'drawn frame exists in the real atlas');
     assert.ok(String(deco.frame).startsWith(ground.has(`${x},${y}`)?'floor-':'wall-'),'drawn frame matches the terrain kind');
-    assert.equal(deco.y,(y+1)*40,'the frame bottom is aligned with the cell bottom; baked 2px padding is not repeated');
+    assert.equal(deco.y,(y+1)*cell,'the frame bottom is aligned with the cell bottom; baked 2px padding is not repeated');
     assert.equal(deco.depth,1.5,'decorations stay between terrain and units');
    }
    decorationViews.push({theme,drawn:drawn.length,visible:visible.length,visibleFrames:[...new Set(visible.map(d=>d.frame))].sort()});
@@ -1203,7 +1357,7 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
    await p.locator('#terrain-theme').selectOption(theme);
    for(const layer of ['floor','edge','liquid','wall']){
     await p.locator('#terrain-layer').selectOption(layer);
-    const pending=p.waitForEvent('download');await p.locator('#export-terrain').click();const download=await pending;
+    const pending=p.waitForEvent('download');await click(p,'export-terrain');const download=await pending;
     assert.equal(download.suggestedFilename(),`terrain-${theme}-${layer}.png`);
     const filename=download.suggestedFilename();await download.saveAs(output+filename);
     const png=fs.readFileSync(output+filename);assert.equal(png.toString('hex',0,8),'89504e470d0a1a0a');
@@ -1216,9 +1370,9 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
   const knownFloor=new Set(boundary.seen),known=new Set(boundary.seenWalls);
   for(const c of boundary.floor)if(knownFloor.has(`${c.x},${c.y}`))for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)known.add(`${c.x+dx},${c.y+dy}`);
   const boundaryView=await p.evaluate(()=>window.trial.view());
-  const rendered=boundaryView.terrain;
-  for(const t of rendered)assert.ok(known.has(`${Math.floor(t.x/40)},${Math.floor(t.y/40)}`),'no terrain outside the known map is drawn');
-  for(const d of boundaryView.decorations)assert.ok(known.has(`${Math.floor(d.x/40)},${Math.round(d.y/40)-1}`),'unknown cells do not display decorations');
+  const rendered=boundaryView.terrain,cell=boundaryView.geometry.cell;
+  for(const t of rendered)assert.ok(known.has(`${Math.floor(t.x/cell)},${Math.floor(t.y/cell)}`),'no terrain outside the known map is drawn');
+  for(const d of boundaryView.decorations)assert.ok(known.has(`${Math.floor(d.x/cell)},${Math.round(d.y/cell)-1}`),'unknown cells do not display decorations');
   const file='windows-85b-unknown-boundary.png';await p.screenshot({path:output+file,fullPage:true});screenshots.push(file);
   assert.deepEqual(errors,[]);
   const report={fixtureBoundary:'真实 seed73 第2层地图与第二地形，固定相机与房间，分别套用三个主题；独立边界图重新运行reveal。截图不代表完整游玩。',screenshots,exports,decorationViews,knownBoundaryOnly:true};

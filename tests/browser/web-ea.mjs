@@ -15,7 +15,29 @@ p.on('response',r=>{if(r.status()>=400)failed.push(r.url());});
 p.on('requestfailed',r=>failed.push(r.url()));
 p.setDefaultTimeout(15000);
 const raw=()=>p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1'));
-const ready=()=>p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+const readyOn=page=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+const ready=()=>readyOn(p);
+async function clickUI(page,id){
+ if(id==='open-settings'&&await page.locator('#hud-settings').isVisible())id='hud-settings';
+ const target=page.locator('#'+id),actions=page.locator('#hud-actions'),actionsOpen=page.locator('#actions-open');
+ if(await target.count()&&await actions.count()&&await actions.isHidden()&&await actionsOpen.isVisible()&&await target.evaluate(el=>!!(el.closest('#controls,#hud-actions')||(el.closest('#save')&&!el.closest('#flow'))))){await actionsOpen.click();await readyOn(page);}
+ await target.click();await readyOn(page);
+}
+async function clickCell(page,pos){
+ const actions=page.locator('#hud-actions');if(await actions.count()&&await actions.isVisible()&&await page.locator('#actions-open').isVisible()){await page.locator('#actions-open').click();await readyOn(page);}
+ const bag=page.locator('#hud-bag');if(await bag.count()&&await bag.isVisible()){await page.locator('#bag-close').click();await readyOn(page);}
+ for(let attempt=0;attempt<4;attempt++){
+  const view=await page.evaluate(()=>window.trial.view()),g=view.geometry,v=view.cameraView;
+  const camera=await page.evaluate(()=>window.trial.camera()),canvas=page.locator('canvas'),box=await canvas.boundingBox();
+  const x=(g.ox+(pos.x-g.minX+.5)*g.cell-camera.x)*box.width/v.width;
+  const y=(g.oy+(pos.y-g.minY+.5)*g.cell-camera.y)*box.height/v.height;
+  assert.ok(x>=0&&x<box.width&&y>=0&&y<box.height,'the selected map target must be inside the current viewport');
+  await page.mouse.move(box.x+x,box.y+y);await page.waitForTimeout(150);
+  const after=await canvas.boundingBox(),afterCamera=await page.evaluate(()=>window.trial.camera());
+  if(['x','y','width','height'].every(k=>Math.abs(after[k]-box[k])<0.5)&&afterCamera.x===camera.x&&afterCamera.y===camera.y){await page.mouse.click(box.x+x,box.y+y);await readyOn(page);return;}
+ }
+ assert.fail('the live canvas camera did not settle before the real click');
+}
 const capture=name=>p.screenshot({path:'.artifacts/trial/title-load-'+name+'.png',fullPage:true});
 async function upload(text,accept=true){
  p.once('dialog',async d=>{assert.match(d.message(),/覆盖当前存档/);await (accept?d.accept():d.dismiss());});
@@ -48,7 +70,7 @@ try{
  await p.locator('#depart').click();await ready();
  await capture('04-departure');
  const before=await raw();
- await p.locator('#open-settings').click();await p.keyboard.press('ArrowRight');assert.equal(await raw(),before,'settings keys must not advance the world');
+ await clickUI(p,'open-settings');await p.keyboard.press('ArrowRight');assert.equal(await raw(),before,'settings keys must not advance the world');
  await p.screenshot({path:'.artifacts/trial/web-ea-settings.png',fullPage:true});
  await p.locator('#settings-close').click();
  const camp=await p.evaluate(()=>window.trial.profile());await p.keyboard.press('.');await ready();
@@ -64,7 +86,7 @@ try{
  assert.equal(await p.evaluate(()=>window.trial.getState().points.some(p=>p.kind==='exit'||p.kind==='up')),false);
  await p.reload();await p.locator('#title-continue').click();await ready();
  const original=JSON.parse(await raw());assert.equal(original.format,2);assert.deepEqual(Object.keys(original).sort(),['build','content','format','profile','rules','sequence']);assert.equal(await p.evaluate(()=>window.trial.getState()),null);
- await p.locator('#open-settings').click();const backup=await exported();assert.deepEqual(JSON.parse(backup),original);
+ await clickUI(p,'open-settings');const backup=await exported();assert.deepEqual(JSON.parse(backup),original);
  for(const k of ['format','rules','content','build'])assert.ok(Object.hasOwn(original,k));
  const bad=JSON.parse(backup);bad.profile.account=-1;
  await upload(JSON.stringify(bad));assert.match(await p.locator('#transfer-message').innerText(),/损坏/);assert.deepEqual(JSON.parse(await raw()),original);
@@ -100,12 +122,12 @@ try{
  try{
   await runContext.addInitScript(()=>{window.__trialNoAnim=true;});const q=await runContext.newPage();
   q.on('pageerror',e=>errors.push(e.message));q.on('response',r=>{if(r.status()>=400)failed.push(r.url());});
-  await q.goto(base+'?dev=1');await q.locator('#start').click();await q.waitForFunction(()=>window.trial?.view());
-  await q.keyboard.press('ArrowRight');
-  const b=await q.locator('canvas').boundingBox();
-  for(let i=0;i<2;i++)await q.mouse.click(b.x+310*b.width/680,b.y+175*b.height/350);
-  await q.locator('#reject').click();await q.locator('#reject-confirm').click();await q.keyboard.press('ArrowRight');
-  await q.locator('#take-exit').click();await q.locator('#exit-confirm').click();
+  await q.goto(base+'?dev=1');await q.locator('#start').click();await readyOn(q);
+  await q.keyboard.press('ArrowRight');await readyOn(q);
+  const enemy=await q.evaluate(()=>{const s=window.trial.getState();return s.units.E.pos;});
+  for(let i=0;i<2;i++)await clickCell(q,enemy);
+  await clickUI(q,'reject');await clickUI(q,'reject-confirm');await q.keyboard.press('ArrowRight');await readyOn(q);
+  await clickUI(q,'take-exit');await clickUI(q,'exit-confirm');
   await q.waitForFunction(()=>window.trial.getState()?.phase==='ended');
   const end=await q.evaluate(()=>window.trial.getState());assert.equal(end.round,5);assert.equal(end.goal,true);assert.equal(end.end.outcome,'normal');
   await q.screenshot({path:'.artifacts/trial/web-ea-completed-run.png',fullPage:true});

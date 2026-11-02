@@ -74,7 +74,7 @@ function metrics(floor,rooms){
 }
 
 // ---------- 参考生成器：房间放置与 8.2 相同（gap 可调），通道改为曲折 ----------
-function referenceLayout(seed,level,{gap=2,meander=true,seg=[3,5],pTurn=0.35,pJog=0.25}={}){
+function referenceLayout(seed,level,{gap=2,meander=true,seg=[3,5],pTurn=0.5,pJog=0.35,maxJogs=3}={}){
   const bossFloor=level===3;
   const rng=mulberry32((Math.imul(seed>>>0,0x9E3779B1)^Math.imul(level,0x85EBCA6B)^0x2F1C3A5B)>>>0);
   const int=(lo,hi)=>lo+Math.floor(rng()*(hi-lo+1));
@@ -116,7 +116,7 @@ function referenceLayout(seed,level,{gap=2,meander=true,seg=[3,5],pTurn=0.35,pJo
       const toward=[];if(dx)toward.push({x:dx,y:0});if(dy)toward.push({x:0,y:dy});
       let d,len;
       const cont=dir&&toward.some(t=>t.x===dir.x&&t.y===dir.y);
-      if(toward.length===1&&jogs<2&&crng()<pJog){const t=toward[0];d=crng()<.5?{x:t.y,y:t.x}:{x:-t.y,y:-t.x};len=cint(1,2);jogs++;}
+      if(toward.length===1&&jogs<maxJogs&&crng()<pJog){const t=toward[0];d=crng()<.5?{x:t.y,y:t.x}:{x:-t.y,y:-t.x};len=cint(1,2);jogs++;}
       else if(cont&&crng()>=pTurn)d=dir;
       else{
         // 不立即反向（刚横移完不能马上折回，否则留下 2 格死角）：两个方向都可走时排除与上一段相反的那个
@@ -146,7 +146,8 @@ function referenceLayout(seed,level,{gap=2,meander=true,seg=[3,5],pTurn=0.35,pJo
 }
 
 // ---------- 第二地形：只占非地面格（不改变地面，所以连通性不变） ----------
-export const THEME_TERRAIN={moss:{rivers:[0,0],lakes:[0,1],width:[2,2]},wet:{rivers:[1,2],lakes:[1,2],width:[2,2]},ash:{rivers:[1,1],lakes:[1,1],width:[1,2]}};
+// drift：每行横向漂移的取值与权重。岩浆加大漂移（±2，且偏离 0 的概率更高），避免贴边笔直。
+export const THEME_TERRAIN={moss:{rivers:[0,0],lakes:[0,1],width:[2,2],drift:[[-1,.25],[0,.5],[1,.25]]},wet:{rivers:[1,2],lakes:[1,2],width:[2,2],drift:[[-1,.25],[0,.5],[1,.25]]},ash:{rivers:[1,1],lakes:[1,1],width:[1,2],drift:[[-2,.15],[-1,.25],[0,.2],[1,.25],[2,.15]]}};
 function secondTerrain(floor,rooms,seed,level,theme){
   const cfg=THEME_TERRAIN[theme],cells=new Set(floor.map(k)),t=new Set();
   const rng=mulberry32((Math.imul(seed>>>0,0x68E31DA4)^Math.imul(level,0xB5297A4D)^0x1B56C4E9)>>>0);
@@ -154,12 +155,12 @@ function secondTerrain(floor,rooms,seed,level,theme){
   const put=p=>{if(p.x>=0&&p.y>=0&&p.x<W&&p.y<H&&!cells.has(k(p)))t.add(k(p));};
   const blockedByRoom=(x,w,y)=>rooms.some(r=>{for(let i=0;i<w;i++)if(inRect({x:x+i,y},{x:r.x-1,y:r.y-1,w:r.w+2,h:r.h+2}))return true;return false;});
   let riverCells=0,riverInterrupted=0;const nr=int(...cfg.rivers);
-  for(let r=0;r<nr;r++){const w=int(...cfg.width),down=rng()<.5;let x=int(3,W-3-w);
+  for(let r=0;r<nr;r++){const w=int(...cfg.width),down=rng()<.5;let x=int(6,W-7-w);
     for(let s=0;s<H;s++){const y=down?s:H-1-s;
       // 前方一行会撞进房间（含外扩 1 格）时，优先横移避开
       const opts=[0,-1,1,-2,2,-3,3].map(d=>x+d).filter(v=>v>=1&&v<=W-1-w);
       const free=opts.filter(v=>!blockedByRoom(v,w,y));
-      const r0=rng();let nx=r0<.5?x:r0<.75?x-1:x+1;nx=Math.min(Math.max(nx,1),W-1-w);
+      let r0=rng(),dv=0;for(const [v,w] of cfg.drift){if(r0<w){dv=v;break;}r0-=w;}let nx=x+dv;nx=Math.min(Math.max(nx,1),W-1-w);
       if(blockedByRoom(nx,w,y)&&free.length)nx=free[int(0,free.length-1)];
       x=nx;
       for(let i=0;i<w;i++){const p={x:x+i,y};riverCells++;if(cells.has(k(p))){if(rooms.some(rr=>inRect(p,rr)))riverInterrupted++;}else put(p);}
@@ -223,6 +224,7 @@ if(process.argv[1]&&import.meta.url===new URL('file://'+process.argv[1]).href){
   console.log(`47 种形状（帧号:掩码）：${SHAPES.map((m,i)=>i+':'+m).join(' ')}`);
   sum('现行 8.2 生成器',(s,l)=>{const g=generateFloor(s,l);return {rooms:g.rooms,floor:g.floor,failed:0};});
   for(const gap of [2,3,4])sum(`参考：曲折通道 gap=${gap}`,(s,l)=>referenceLayout(s,l,{gap}));
+  sum('参考：曲折通道 gap=3，上一版参数（转弯 35％、横移 25％、最多 2 次）',(s,l)=>referenceLayout(s,l,{gap:3,pTurn:.35,pJog:.25,maxJogs:2}));
   sum('参考：曲折通道 gap=3，不横移',(s,l)=>referenceLayout(s,l,{gap:3,pJog:0}));
   // 第二地形（放在现行地图上：只占非地面格，所以与通道算法无关）
   for(const [theme,level] of [['moss',1],['wet',2],['ash',3]]){let t=0,v=0,v2=0,ring=0,rc=0,ri=0,floors=0;

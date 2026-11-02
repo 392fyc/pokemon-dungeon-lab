@@ -24,11 +24,12 @@ test('chasing preserves right-before-down ties, occupied detours, and seen-only 
   b.tactic='gofoes';c.tactic='wait';e.side='enemy';e.waitOnly=true;
   const s=world({A:a,B:b,C:c,E:e},{floor:open(4),enemies:['E']});
   s.rooms=[{x:1,y:1,w:4,h:4}];
-  assert.deepEqual(actionOf(s,'B'),{type:'move',to:pos(2,1)});
-  c.pos=pos(2,1);
-  assert.deepEqual(actionOf(s,'B'),{type:'move',to:pos(1,2)});
+  // 8.8: the shortest route from (1,1) to E at (3,3) is the diagonal through (2,2).
+  assert.deepEqual(actionOf(s,'B'),{type:'move',to:pos(2,2)});
+  c.pos=pos(2,2);
+  assert.deepEqual(actionOf(s,'B'),{type:'move',to:pos(2,1)},'occupied diagonal: the detour keeps right before down');
   c.hp=0;c.pos=null;
-  assert.deepEqual(actionOf(s,'B'),{type:'move',to:pos(2,1)},'fallen units do not block');
+  assert.deepEqual(actionOf(s,'B'),{type:'move',to:pos(2,2)},'fallen units do not block');
   s.seen.splice(0,s.seen.length,'1,1','3,3','4,4');
   assert.deepEqual(actionOf(s,'B'),{type:'wait'});
 });

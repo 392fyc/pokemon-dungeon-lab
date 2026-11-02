@@ -263,15 +263,15 @@ test('11.6 nomoves: only basic attacks (no PP spent), only on adjacent opponents
 });
 test('11.6 avoid: never attacks; uses self/ally moves; steps away from an adjacent opponent; follows the leader but not next to opponents; waits when it cannot',()=>{
  const grid=(leader,extra={})=>W({A:mate('A',leader.x,leader.y),X:mate('X',3,3,{moves:{tackle:5},tactic:'avoid'}),F:dummy('F',3,2),...extra},{floor:open(5),rooms:[{x:1,y:1,w:5,h:5}]});
- // all free neighbours are 2 cells from F (1 cell now); (3,4) is held by a friend. Leader (3,5): right and left tie on leader distance 3, so DIRS order (right first) decides
- assert.deepEqual(actionOf(grid({x:3,y:5},{Y:mate('Y',3,4,{tactic:'wait'})}),'X'),{type:'move',to:{x:4,y:3}});
- // leader (1,5): the left cell is closer to the leader (3 against 5), which beats the DIRS order
- assert.deepEqual(actionOf(grid({x:1,y:5},{Y:mate('Y',3,4,{tactic:'wait'})}),'X'),{type:'move',to:{x:2,y:3}});
+ // 8.8: with eight directions the cells strictly farther from F (3,2) are the lower diagonals (2,4) and (4,4); (3,4) is held by a friend. Leader (3,5): both are one step from it, so DIRS8 order (down-right before down-left) decides
+ assert.deepEqual(actionOf(grid({x:3,y:5},{Y:mate('Y',3,4,{tactic:'wait'})}),'X'),{type:'move',to:{x:4,y:4}});
+ // leader (1,5): (2,4) is closer to the leader than (4,4), which beats the DIRS8 order
+ assert.deepEqual(actionOf(grid({x:1,y:5},{Y:mate('Y',3,4,{tactic:'wait'})}),'X'),{type:'move',to:{x:2,y:4}});
  // no cell strictly farther from F: a dead end, so X stays put and does not attack either
  const dead=W({A:mate('A',9,1),X:mate('X',1,1,{moves:{tackle:5},tactic:'avoid'}),F:dummy('F',2,1)},{floor:row(12).filter(p=>p.x>=1),rooms:[{x:1,y:1,w:12,h:1}]});
  assert.equal(actionOf(dead,'X').type,'wait');
- // not close: follow the leader but never into a cell adjacent to a visible opponent. Leader (1,1), X (3,1), F (2,2): the only closer cell (2,1) touches F
- const forbidden=W({A:mate('A',1,1),X:mate('X',3,1,{moves:{tackle:5},tactic:'avoid'}),F:dummy('F',2,2)},{floor:open(5),rooms:[{x:1,y:1,w:5,h:5}]});
+ // not close: follow the leader but never into a cell adjacent to a visible opponent. Leader (1,1), X (3,1), F (1,2) (8.8: F must not be diagonal-adjacent to X, or X would retreat instead): the closer cells (2,1) and (2,2) both touch F
+ const forbidden=W({A:mate('A',1,1),X:mate('X',3,1,{moves:{tackle:5},tactic:'avoid'}),F:dummy('F',1,2)},{floor:open(5),rooms:[{x:1,y:1,w:5,h:5}]});
  assert.equal(actionOf(forbidden,'X').type,'wait');
  // an unreachable leader: X waits
  const split=W({A:mate('A',0,1),X:mate('X',5,1,{moves:{tackle:5},tactic:'avoid'}),F:dummy('F',20,1)},{floor:[...row(2),...row(12).filter(p=>p.x>=5)]});

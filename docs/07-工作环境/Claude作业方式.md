@@ -17,7 +17,6 @@ updated: 2026-11-03
 | 本机 Windows | Node 24.22.1、npm 11.16.0、Edge 156、Playwright（npx 缓存中的 1.59.1）、`gh`、git-safe 均可用；Claude 对 PR #5 的两轮审核就用这套环境跑通（实现方的 Windows 检查另用 Playwright 1.62.1，见验收记录） | 能 |
 | 本机原生子代理 | 项目已装 `mercury-dev`（Sonnet）、`mercury-reviewer` 与 `mercury-acceptance`（Opus）；后两者是只读角色，有防写守卫 | 能 |
 | Codex Cloud：`pokemon-dungeon-lab` 与 REA 环境 | 属于 ChatGPT 账号，见 [REA 与 Codex Cloud](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/07-%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83/REA%E4%B8%8ECodexCloud.md) 和仓库的 `cloud/README.md` | 不能；只有用户能手动开任务 |
-| Claude 云会话 | 见下文“Claude 云环境” | 能，用跨会话消息派任务 |
 
 ## 原角色怎样对应
 
@@ -33,7 +32,7 @@ updated: 2026-11-03
 这里有两个限制，需要如实说明：
 
 - **独立性比两个云环境弱。** 子代理和主会话在同一台机器、同一账号下运行，能防止验收者照抄实现思路，却挡不住共用环境的问题。因此关键结论仍由主会话亲自复跑，并在报告中分开写明"亲自运行""复用"和"子代理自述"。
-- **Linux 交叉检查由 Claude 云会话做**（见下文“Claude 云环境”）。
+- **Linux 交叉检查由 `dev` lane 的 Codex 按其流程做**（D-20261103-14；Claude 云会话已停用）。
 
 ## 交付方式
 
@@ -44,20 +43,6 @@ updated: 2026-11-03
 ## Codex 云的定位
 
 两个 Codex 云环境保留不动，作为用户手动派发的可选通道，例如需要 Linux 交叉检查，或需要 REA 工具时。2026-10-30 本机 Codex 重新上线后，`dev` lane 的本机 Codex 也可以为自己认领的 issue 派发云任务，方针见[多 lane 并行协作](多lane并行协作.md)第 11 节；Claude 仍不能派发。它们交回的结果按其他代理的结论处理：先在本机核对固定提交和实际运行结果，再决定是否采用。
-
-## Claude 云环境
-
-Claude 云会话是 `main` 的云端工作者（D-20261101-18）：负责视觉审核、路线规划（里程碑规格草案）、代码核验、玩法与算法验证；没有生图模型，不生成图片。v0.1 各环节的分工见 [v0.1 计划](../02-进度/计划/v0.1纯肉鸽计划.md)第 7 节（D-20261101-22）。
-
-| 项目 | 现状 |
-| --- | --- |
-| 身份 | 任务说明以 `[CLOUD-OF=main]` 开头；不是 lane 会话，不认领 issue、不用 lane bus |
-| 派活 | 本机 Claude 主会话用 `SendMessage` 派任务，收件人是目标云会话的会话名，用 `ListAgents` 查找并确认它在线。云会话权限模式不同时，消息要用户在云会话里批准后才送达。任务说明首行是 `[CLOUD-OF=main]`，并写明：任务和对应的 Issue 或 PR、要读的 KB 全文（K3）、限时、交付形式 |
-| 回报 | 云会话不能回发消息，结论写成 PR 评论或草稿 PR；主会话用 `gh pr view <号> --comments` 读对话评论，逐行审查评论用 `gh api repos/392fyc/pokemon-dungeon-lab/pulls/<号>/comments` 读 |
-| KB 查询 | 按 [KB 维护规则](../01-现行规则/KB维护规则.md) K3 读，回答规则问题或给结论前读完游戏规则全文；每条结论按 K8 查证并附依据，查不到的列为“待查” |
-| KB 写入 | 只在自己的任务分支、经 PR 写，按 K4 同步更新对应文档并写 `KB:` 行；决策登记只登记能在 Issue、PR 或现行文档里逐字找到的用户原话，云会话自己的判断不写成用户决定（K6）；PR 由 `main` 按 K9 审查后合并 |
-| KB 维护 | 里程碑收尾整理（K10）由 `main` 做；云会话发现过时或冲突的文字，在 PR 评论里列出位置和依据，由 `main` 处理 |
-| 限制 | 云端环境不放密钥；Linux 上的检查结果不代替 Windows；看不到本机 lane bus、`.tmp/`、`.artifacts/`；不推送 `main`、不强推、不改他人分支；`main` 在线时不合并（`main` 下线时按 D-20261101-18 代行） |
 
 ## 共同规则
 

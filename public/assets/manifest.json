@@ -23940,6 +23940,654 @@
         "quantize": "mediancut"
       },
       "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/dtef/TinyWoods/tileset_0.png": {
+      "bytes": 42382,
+      "sha256": "72725ae6d9a42d5c8155846ad31b94d88553a07f40970e7830b0a3ad0ae26f6e",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_0.9.png": {
+      "bytes": 42456,
+      "sha256": "f6bf75b8f2592b91e08f0415cf5d8a2babb167a44007705719300608c3d0c4e3",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_1.9.png": {
+      "bytes": 42456,
+      "sha256": "f6bf75b8f2592b91e08f0415cf5d8a2babb167a44007705719300608c3d0c4e3",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_10.9.png": {
+      "bytes": 42356,
+      "sha256": "96d68df4823db3c1ddd52be33553c105d8c6e18186b3cce2efc258780d7c2d30",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_11.9.png": {
+      "bytes": 42404,
+      "sha256": "2f14d24f8d850f431527b46def302c795760b7cfcb0c655a48b32e99b7d34770",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_12.9.png": {
+      "bytes": 42372,
+      "sha256": "c057ecbfb938ac0632dc1819e22fb3602949c93798d26816e8a1fe7f366cdd49",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_13.9.png": {
+      "bytes": 42355,
+      "sha256": "d633e1d3dec6316ba0299b326aca22ab0817bdbe2141ab5ac4f8bff3881ecac0",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_14.9.png": {
+      "bytes": 42214,
+      "sha256": "cbf0e6712b56f3100f3530d71a739aea19aec3899fead4160fa509509bdd0776",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_15.9.png": {
+      "bytes": 42146,
+      "sha256": "48c569bb143d3379e04a6278811c2ea740120dd2de256a8a6c3551d438636990",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_2.9.png": {
+      "bytes": 42214,
+      "sha256": "cbf0e6712b56f3100f3530d71a739aea19aec3899fead4160fa509509bdd0776",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_3.9.png": {
+      "bytes": 42355,
+      "sha256": "d633e1d3dec6316ba0299b326aca22ab0817bdbe2141ab5ac4f8bff3881ecac0",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_4.9.png": {
+      "bytes": 42372,
+      "sha256": "c057ecbfb938ac0632dc1819e22fb3602949c93798d26816e8a1fe7f366cdd49",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_5.9.png": {
+      "bytes": 42404,
+      "sha256": "2f14d24f8d850f431527b46def302c795760b7cfcb0c655a48b32e99b7d34770",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_6.9.png": {
+      "bytes": 42356,
+      "sha256": "96d68df4823db3c1ddd52be33553c105d8c6e18186b3cce2efc258780d7c2d30",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_7.9.png": {
+      "bytes": 42343,
+      "sha256": "28caf3ec47a8f5149636811fdab900bb4541f3221066bd9e5059fc5ff88a9d12",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_8.9.png": {
+      "bytes": 42179,
+      "sha256": "8455570b667552028b22c9612e0594635e9698d0ff0261e4ef6d0c24a21d43ee",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_0_frame0_9.9.png": {
+      "bytes": 42343,
+      "sha256": "28caf3ec47a8f5149636811fdab900bb4541f3221066bd9e5059fc5ff88a9d12",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_1.png": {
+      "bytes": 22305,
+      "sha256": "e6df6eacf87be7704f5a481ef3f17582de1182717c3d7057ff42cedb69fa754c",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_2.png": {
+      "bytes": 14181,
+      "sha256": "dae96cbe3e463aa49107b29761b2f81faad9f93c1c12c84de1e29ca4924e0050",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/TinyWoods/tileset_more.png": {
+      "bytes": 120,
+      "sha256": "1358b747d8562b7e2420ec989cea64f7b3a912cb3f9f6a65e2b91347743ae5f0",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/TinyWoods",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/TinyWoods",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0.png": {
+      "bytes": 41820,
+      "sha256": "40b6d5f5415284d32b7c99411b2232d0f00b527c2636355e1399db94e1f837ff",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_0.14.png": {
+      "bytes": 42384,
+      "sha256": "6cbcfd65dc4465906f7eea070a92d19eaf79a76338e431e70cfde2662b83d8db",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_1.14.png": {
+      "bytes": 42581,
+      "sha256": "8046bcd2229e9e99476050253f723942885417f575eaa5b7e333e665a034cb76",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_10.14.png": {
+      "bytes": 42581,
+      "sha256": "8046bcd2229e9e99476050253f723942885417f575eaa5b7e333e665a034cb76",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_11.14.png": {
+      "bytes": 42384,
+      "sha256": "6cbcfd65dc4465906f7eea070a92d19eaf79a76338e431e70cfde2662b83d8db",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_2.14.png": {
+      "bytes": 42544,
+      "sha256": "4ef82b82e7526a593a54e0678023a2113ac92c51dd0d94b675d4dc269a8e0621",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_3.14.png": {
+      "bytes": 42643,
+      "sha256": "6fa1c5a12becda7de8af1b4c940cd4412e2ceb9d8313a6dc0b4f6b9279adcdcc",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_4.14.png": {
+      "bytes": 42407,
+      "sha256": "e859799459e9407c43269517857366b31a7cd43fb1c2d8611df20a371751764a",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_5.14.png": {
+      "bytes": 42737,
+      "sha256": "8b72eedbe8c7e29a1755536a609177233b3eaee63f0e25c551e68ac7ca7a2ed3",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_6.14.png": {
+      "bytes": 42737,
+      "sha256": "8b72eedbe8c7e29a1755536a609177233b3eaee63f0e25c551e68ac7ca7a2ed3",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_7.14.png": {
+      "bytes": 42407,
+      "sha256": "e859799459e9407c43269517857366b31a7cd43fb1c2d8611df20a371751764a",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_8.14.png": {
+      "bytes": 42643,
+      "sha256": "6fa1c5a12becda7de8af1b4c940cd4412e2ceb9d8313a6dc0b4f6b9279adcdcc",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame0_9.14.png": {
+      "bytes": 42544,
+      "sha256": "4ef82b82e7526a593a54e0678023a2113ac92c51dd0d94b675d4dc269a8e0621",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_0.9.png": {
+      "bytes": 42228,
+      "sha256": "00c75303bc31ee5f8500103341fdea705650d815b8d3b5b97cefa6ee4b4e0d2b",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_1.9.png": {
+      "bytes": 42094,
+      "sha256": "417245f2097c72267788e8ab978b0212c967956d04ef33fc5e5f792118682fc8",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_10.9.png": {
+      "bytes": 42168,
+      "sha256": "79fb0f243371280c9d046819e69ebe1976a2810cb154710c41b16936f24f935d",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_11.9.png": {
+      "bytes": 42206,
+      "sha256": "bb3424bbb8f4a828ebb18b3fc04f17b82a87a2bb6b02dc0d6f321ce6040ef1f1",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_2.9.png": {
+      "bytes": 41977,
+      "sha256": "0535d3e87eec8601ce56ab460a97461462fcdf6a33d1dd841aeb16c9fd28b133",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_3.9.png": {
+      "bytes": 41826,
+      "sha256": "86c50811203b64a9620384333bf18ef13cd92bd7f77b39b39aec1f1ff4582cd0",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_4.9.png": {
+      "bytes": 41977,
+      "sha256": "0535d3e87eec8601ce56ab460a97461462fcdf6a33d1dd841aeb16c9fd28b133",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_5.9.png": {
+      "bytes": 42094,
+      "sha256": "417245f2097c72267788e8ab978b0212c967956d04ef33fc5e5f792118682fc8",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_6.9.png": {
+      "bytes": 42228,
+      "sha256": "00c75303bc31ee5f8500103341fdea705650d815b8d3b5b97cefa6ee4b4e0d2b",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_7.9.png": {
+      "bytes": 42112,
+      "sha256": "0fe67c2e04b168a1e4a639d81891d7c7fab8a0743a7db43c43a7dbe3771e1746",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_8.9.png": {
+      "bytes": 41977,
+      "sha256": "0535d3e87eec8601ce56ab460a97461462fcdf6a33d1dd841aeb16c9fd28b133",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_0_frame1_9.9.png": {
+      "bytes": 41737,
+      "sha256": "b4ad6e743ed7e4d962c23d3fc5bb83691f8861d301d071e2708124b6f56e129a",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_1.png": {
+      "bytes": 4678,
+      "sha256": "c9ee44529376bc94bb010752fce289b951d0576acefa1965e4704acdcd73cc72",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_2.png": {
+      "bytes": 4134,
+      "sha256": "ec05faa088de9eb2a633cac8c560df71167cd73d1a7404649609136d5ad99997",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/WaterfallCave/tileset_more.png": {
+      "bytes": 884,
+      "sha256": "ada70563ec1cb6bf4c0594d0c4a72d680244bcb00b3fa43600918a1b9a98870f",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/WaterfallCave",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/WaterfallCave",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0.png": {
+      "bytes": 47511,
+      "sha256": "cc19109ce861d0fda968c11e046f4f8e1cf5d320fd618ab3b62571c2e7b79a4e",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame0_0.14.png": {
+      "bytes": 47585,
+      "sha256": "09d20a5d61914fe4368e654da90c1a6b7bee0ce5e78c9179e43406af1263a0ab",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame0_1.14.png": {
+      "bytes": 47542,
+      "sha256": "c2c1bdce38338e4b7eb8dba5a4422dd819d2755b9385be0f8d9635525a8e27c7",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame0_2.14.png": {
+      "bytes": 47343,
+      "sha256": "5c0542ac552a86e62fa2f90247c252c1db0188d4623a73a42407420d2b337c42",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame0_3.14.png": {
+      "bytes": 47491,
+      "sha256": "241eb801664034ffb981ef04f0a858eedfe8c74e578049b9010673333e757037",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame0_4.14.png": {
+      "bytes": 47500,
+      "sha256": "cdd57cc1728b03bed02610d298945784e0cca74dec8fff23fb1487fc1f9768e3",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame0_5.14.png": {
+      "bytes": 47627,
+      "sha256": "dcbe1a7dad8bd077b877fd634c0512ec975029ad9b753f183b5b999fb08ba0ac",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame0_6.14.png": {
+      "bytes": 47627,
+      "sha256": "1872f9fa49d36420211145b8948ffce1db2f1c95f561c5bc2d16f6a67655464f",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame0_7.14.png": {
+      "bytes": 47800,
+      "sha256": "46921b6d22ad90b0ead88e3dbc9d1efe75f90aa0f71067bc84adc97c2327e78e",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame1_0.14.png": {
+      "bytes": 47717,
+      "sha256": "0a0febc2b50eebcf22093458a5167abb899a070a0156ef310911ba136cff6692",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame1_1.14.png": {
+      "bytes": 47521,
+      "sha256": "bd47a0161f7d41259d5c229b76fa7ced21eadd174c8d1e86ca959c4fd3f1bf31",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame1_2.14.png": {
+      "bytes": 47468,
+      "sha256": "2ef64b9058159c40be98d8bab06305d45c2580eaa73adfc63478c68e93af1c61",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_0_frame1_3.14.png": {
+      "bytes": 47607,
+      "sha256": "6bd177c925d16d38d15fc458542ee8ac8fe3cf79fefda1c036c1a55339406340",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_1.png": {
+      "bytes": 5091,
+      "sha256": "a0e16804c8ae9f6dbc3dfeccd61b7412f158ffbe59271dbf73f05df4c477c1f1",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_1_frame0_0.14.png": {
+      "bytes": 5090,
+      "sha256": "bbb0b0395ff9dbffb73b224e0a8b0a1cfd13879d8fcf8da8493522a5976f9aec",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_1_frame0_1.14.png": {
+      "bytes": 5060,
+      "sha256": "845b0383c6c86dd51d43fac4838aece0c19cc648bb3d685af4d23f363b1006f9",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_1_frame0_2.14.png": {
+      "bytes": 5062,
+      "sha256": "f8b33220fcf51da99f2a005f978fef7ab639b99701a6bfb42ff42c63acc72e72",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_1_frame0_3.14.png": {
+      "bytes": 5096,
+      "sha256": "a10582c2de5c3138cef8301e659bf6de0a6ec2e039a92373cbcbfd7a17561d45",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_2.png": {
+      "bytes": 7329,
+      "sha256": "71310f5c52d5f064890a3ae2d9fc59b1f6ee1740e5dc3922c3fe61477ad8f426",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_2_frame0_0.14.png": {
+      "bytes": 7343,
+      "sha256": "1d5a7f8c5f53ad4cdeb3bfd208c3a8f937a935250a14fb2dbf63b70711d46658",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_2_frame0_1.14.png": {
+      "bytes": 7324,
+      "sha256": "d8a62c860dc2776816cd6ca5f97f1f033bf802be5f499fa1f81a32d9646fe1eb",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_2_frame0_2.14.png": {
+      "bytes": 7399,
+      "sha256": "8b85de7b5099b94872bfef05e00e52bee1fce8644f02e77b1b4cbe2c83f6c17f",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_2_frame0_3.14.png": {
+      "bytes": 7360,
+      "sha256": "ab6aa6917e12fc8dc0f8fd9000f65d14f1ebc22f3cb47642f31f46b649a5ef39",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
+    },
+    "tiles/dtef/MagmaCavern2/tileset_more.png": {
+      "bytes": 181,
+      "sha256": "cf7084f305ba98f62002900d57906180dbf4da880473abc92a002e060c2476c8",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "TileDtef/MagmaCavern2",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/tree/03c80dad937911572f8fb19903771a47956fc696/TileDtef/MagmaCavern2",
+      "licence": "Original game tileset extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Private build only; replace before any public release (D-20261103-12)."
     }
   }
 }

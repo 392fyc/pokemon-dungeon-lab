@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import index from './characters.json';
 import {WILD_SPECIES} from '../core/dungeon.ts';
 import {SPECIES,BOSS_SPECIES} from '../core/roster.ts';
+import {preloadDtef} from './dtef-scene.ts';
 import {buildAtlas,buildFloorTexture,type TerrainThemeKey,type TerrainLayer,type PixelTexture} from './terrain.ts';
 /** Character sheets come from SpriteCollab and tiles from tools/art; provenance is in public/assets/manifest.json. */
 type AnimMeta = {file:string;w:number;h:number;durations:number[]};
@@ -27,6 +28,7 @@ export function preloadArt(scene:Phaser.Scene):void {
   scene.load.image('wall', base + 'tiles/wall-rock.png');
   for (const theme of ['moss', 'wet', 'ash'])
     scene.load.atlas(`deco-${theme}`, base + `tiles/deco/deco-${theme}.png`, base + `tiles/deco/deco-${theme}.json`);
+  preloadDtef(scene, base);
   scene.load.image('exit', base + 'tiles/marker-exit.png');
   scene.load.image('goal', base + 'props/marker-goal.png');
   scene.load.image('item', base + 'props/marker-item.png');

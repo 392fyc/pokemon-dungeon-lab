@@ -19,10 +19,11 @@ if(!base) throw Error('Set TRIAL_URL to the local running trial.');
 const artifact='.artifacts/trial/';
 const map122Artifact='.artifacts/map122/';
 fs.mkdirSync(map122Artifact,{recursive:true});
-async function setup(fixture,mode='pass',animate=false){
+async function setup(fixture,mode='pass',animate=false,source='painter'){
  const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
  // Stage 6.4: the 22 existing checks run with animations off; only the animation check turns them on.
- await context.addInitScript(({animate})=>{if(!animate)window.__trialNoAnim=true;},{animate});
+ await context.addInitScript(({animate,source})=>{if(!animate)window.__trialNoAnim=true;window.__terrainSource=source;},{animate,source});
+ // #178: the game now draws original DTEF sheets by default; the 8.5b painter checks below pin the painter source, the DTEF checks pass source='dtef'.
  await context.addInitScript(({mode})=>{
   const original=Storage.prototype.setItem;
   window.__fault={mode,pending:[],writes:[]};
@@ -903,7 +904,7 @@ await test('8.5b 新游戏→出发→第1层：苔石运行时纹理，三层�
   await newGameClicks(p,'treecko','mudkip');
   await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   const s=await state(p);assert.equal(s.dungeon.floors,3);assert.equal(s.dungeon.boss,true);assert.equal(s.dungeon.level,1);assert.equal(s.dungeon.base,true);
-  const v=await p.evaluate(()=>window.trial.view());assert.deepEqual(v.tiles.filter(t=>/^terrain-.*-(floor|edge|wall)$/.test(t)),['terrain-moss-edge','terrain-moss-floor','terrain-moss-wall'],'floor 1 shows runtime moss textures');
+  const v=await p.evaluate(()=>window.trial.view());assert.ok(v.tiles.includes('dtef-TinyWoods-tileset_0')&&!v.tiles.some(t=>t.startsWith('terrain-')),'floor 1 shows the original TinyWoods DTEF sheet by default (#178)');
   assert.match(await p.locator('#world-label').innerText(),/第1层/);
   await p.screenshot({path:artifact+'windows-boss-3-floor1.png',fullPage:true});
   assert.deepEqual(errors,[]);return {tiles:v.tiles,floors:s.dungeon.floors};
@@ -1230,6 +1231,45 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
   assert.deepEqual(errors,[]);
   const report={fixtureBoundary:'真实 seed73 第2层地图与第二地形，固定相机与房间，分别套用三个主题；独立边界图重新运行reveal。截图不代表完整游玩。',screenshots,exports,decorationViews,knownBoundaryOnly:true};
   fs.writeFileSync(output+'browser-terrain.json',JSON.stringify(report,null,2));return report;
+ }finally{await context.close();}
+});
+
+await test('8.8 #178：默认地形读原版DTEF图集，三个主题的墙、第二地形与地面都用图集绘制',async()=>{
+ const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef');
+ const {createExpedition,jumpToFloor,reveal}=await import('../../src/core/engine.ts');
+ const {initialProfile,squadOf}=await import('../../src/core/base.ts');
+ try{
+  const sets={1:'TinyWoods',2:'WaterfallCave',3:'MagmaCavern2'},seen=[];
+  for(const level of [1,2,3]){
+   const world=jumpToFloor(createExpedition('dtef-visual',178,3,squadOf(initialProfile()),0,true,3),level);
+   world.seen=world.floor.map(c=>`${c.x},${c.y}`);world.seenWalls=[];
+   if(level>1){await p.reload();await p.locator('#start').waitFor();}
+   await startMemory(p,world);
+   const v=await p.evaluate(()=>window.trial.view());
+   const dtef=v.tiles.filter(t=>t.startsWith('dtef-'));
+   assert.ok(dtef.includes(`dtef-${sets[level]}-tileset_0`),`floor ${level}: base sheet drawn: ${dtef}`);
+   assert.ok(!v.tiles.some(t=>t.startsWith('terrain-')),'no painter texture on the default source');
+   seen.push(dtef);
+  }
+  assert.deepEqual(errors,[]);return {seen};
+ }finally{await context.close();}
+});
+
+await test('8.8 #178：动画开启时离开DTEF地形层（回基地或标题的重绘），动画覆盖图不再被碰，画面循环不停',async()=>{
+ const {context,page:p,errors}=await setup(undefined,'pass',true,'dtef');
+ const {createExpedition,jumpToFloor}=await import('../../src/core/engine.ts');
+ const {initialProfile,squadOf}=await import('../../src/core/base.ts');
+ try{
+  const world=jumpToFloor(createExpedition('dtef-loop',178,3,squadOf(initialProfile()),0,true,3),2);
+  world.seen=world.floor.map(c=>`${c.x},${c.y}`);world.seenWalls=[];
+  await startMemory(p,world);
+  await p.getByText('开发者菜单：检查入口（隔离存储）',{exact:true}).click();
+  await p.evaluate(()=>{window.scrollTo(0,0);window.__raf=0;const o=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>o(t=>{window.__raf++;cb(t);});});
+  await p.waitForFunction(()=>window.trial.view()?.tiles.some(t=>/^dtef-WaterfallCave-tileset_0_frame/.test(t)),null,{timeout:10000});
+  await p.evaluate(()=>window.trial.repaint(null));
+  const a=await p.evaluate(()=>window.__raf);await p.waitForTimeout(1200);const b=await p.evaluate(()=>window.__raf);
+  assert.ok(b>a+20,`render loop keeps running after the repaint: ${a} -> ${b}`);
+  assert.deepEqual(errors,[]);return {frames:[a,b]};
  }finally{await context.close();}
 });
 

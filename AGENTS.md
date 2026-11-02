@@ -45,7 +45,7 @@ These rules bind the main agent and every subagent in both Codex and Claude Code
 
 ## Controlled Git entry
 
-- Perform Git writes in this project through `powershell -ExecutionPolicy Bypass -File .mercury/packs/git-safe/scripts/git-safe.ps1 <action>`: `add <files>` (explicit files only), `commit -Message "<message>"`, `push <args>`, `sync` (merge `origin/<integration branch>` into the task branch without committing; resolve, stage with `add`, review, conclude with `commit`) and `abort-sync` (abandon that merge). Raw `git push`, `git merge` and similar writes are not the project's route even where a host would allow them.
+- Perform Git writes in this project through `powershell -ExecutionPolicy Bypass -File .mercury/packs/git-safe/scripts/git-safe.ps1 <action>`: `add <files>` (explicit files only), `commit -Message "<message>"`, `push <args>`, `sync` (merge `origin/<integration branch>` into the task branch without committing; resolve, stage with `add`, review, conclude with `commit`) and `abort-sync` (abandon that merge). `fast-forward` brings the main checkout, which agents do not work in, up to `origin/<integration branch>`: only on that branch, only a fast-forward, never overwriting local changes. Raw `git push`, `git merge` and similar writes are not the project's route even where a host would allow them.
 - Before `commit`, stage the intended files, inspect the staged diff, complete the required checks and review, then run `guard.ps1 mark-review` from the same directory. Changed staged content needs a fresh mark; the mark is a snapshot, not review evidence.
 - The scripts act on the Git work tree that holds them, never on the caller's current directory: call the copy inside the task worktree you are working in, and give `add` paths relative to that work tree's root. Task branches are named `<type>/<purpose>[-<lane>]-<agent>` (for example `feature/TASK-7-claude`); `develop`, `main`, `master` and the integration branch are protected. The integration branch for `sync` and `guard.ps1 pre-merge` is `params.integration_branch` in `.mercury/config.json`.
 
@@ -58,6 +58,13 @@ These rules bind the main agent and every subagent in both Codex and Claude Code
 <!-- lane-receiver-rule:end -->
 
 The full lane contract is `.mercury/packs/lanes/docs/mercury-lane-contract.md`; the project's lane document follows `.mercury/packs/lanes/docs/mercury-lane-project-template.md`.
+
+## Lane seat on handoff
+
+A session that holds its lane's lane-bus seat (`bash .mercury/packs/lanes/scripts/lane-bus.sh status --harness <claude|codex> --lane <lane>` names the holder) passes the seat on whenever it hands off, with any handoff skill or none (Mercury #744):
+
+- The starting prompt tells the receiving session to claim the same lane's seat for its harness with its own session id, as soon as it has read the handoff and before it reads or sends lane-bus messages or starts the work: `bash .mercury/packs/lanes/scripts/lane-bus.sh claim --harness <harness> --lane <lane> --session <its own session id>` (or the `lane_bus_claim` tool).
+- Once the handoff is delivered, the old session runs `lane-bus.sh release --harness <harness> --lane <lane> --session <its own session id>` (or `lane_bus_release`) and stops reading or sending on the bus; messages that arrive meanwhile wait in the seat for the new session. Release is final: a released session can never take the seat back. So release when the work moves to the new session (always when a new session was launched; for a prompt the user will paste, unless the user says this session goes on working), and say so to the user. If `release` reports that the seat is already held by the new session, the handoff is complete; do nothing more.
 
 ## Knowledge base
 

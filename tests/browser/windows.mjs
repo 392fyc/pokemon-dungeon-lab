@@ -810,9 +810,11 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   if(units)await hoverCell(p,units.x,units.y);
   await move.hover();const tip=p.locator('#hud-tooltip');await tip.waitFor({state:'visible'});let detail=await tip.innerText();
   for(const field of ['威力','命中','PP','射程','范围'])assert.ok(detail.includes(field),`the move tooltip exposes ${field}`);
-  assert.equal(await tip.locator('[data-move-description]').textContent(),'','full move prose remains absent until the later description pass');
+  const moveDescription=JSON.parse(fs.readFileSync(new URL('../../src/data/move-desc-zh.json',import.meta.url),'utf8')).moves[skill].desc;
+  assert.equal(await tip.locator('[data-move-description]').textContent(),moveDescription,'the hover tooltip matches the local Chinese description for the selected move');
   assert.ok((await tip.locator(`[data-move-preview="${skill}"]`).textContent())?.trim(),'the hover card carries the live move estimate');
   assert.doesNotMatch(await move.innerText(),/同排／列|造成约/,'compact move cards do not carry the old detailed explanation');
+  assert.ok(!(await move.innerText()).includes(moveDescription),'full move prose appears in the hover tooltip only');
   await p.screenshot({path:artifact+'windows-hud-main-hover.png',fullPage:false});
   const learned=s.units.A.learned;
   for(let index=1;index<4;index++){

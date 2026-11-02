@@ -14,8 +14,12 @@ import { itemZh, moveZh, speciesZh, tmZh, typeZh } from "../core/names.ts";
 import { damageEstimateText, moveRangeLabel } from "../core/describe.ts";
 import { sheet, skinFor } from "./sprites.ts";
 import moveTypeSnapshot from "./move-types.json" with { type: "json" };
+import moveDescriptionSnapshot from "../data/move-desc-zh.json" with { type: "json" };
 
 const MOVE_TYPES = (moveTypeSnapshot as unknown as { types: Record<string, string> }).types;
+const MOVE_DESCRIPTIONS = (moveDescriptionSnapshot as unknown as {
+  moves: Record<string, { desc: string }>;
+}).moves;
 const ITEM_CATEGORIES: Record<Item, string> = {
   berry: "berry",
   bigBerry: "berry",
@@ -480,6 +484,7 @@ export function hudMoveTip(s: World, skill: Skill): string {
   const typeId = type ? esc(type) : "";
   // 当前招式结算不进行命中判定，因此这里显示现行规则的 100%。
   const accuracy = "100%";
+  const description = MOVE_DESCRIPTIONS[skill]?.desc ?? "";
   return '<section class="hud-move-tip" aria-label="' + esc(moveZh(skill)) + "招式信息" +
     '" data-move-type="' + typeId + '">' +
     '<div class="hud-move-tip-main">' + cells +
@@ -495,5 +500,5 @@ export function hudMoveTip(s: World, skill: Skill): string {
     '<div class="hud-tip-field"><span>范围</span><strong>' + esc(target) + "</strong></div></div>" +
     '<div class="hud-tip-preview"><span>预计伤害</span><strong data-move-preview="' +
     esc(skill) + '">' + esc(damageEstimateText(s, s.leader, undefined, skill)) + '</strong></div>' +
-    '<p class="hud-tip-description" data-move-description></p></div></div></section>';
+    '<p class="hud-tip-description" data-move-description>' + esc(description) + '</p></div></div></section>';
 }

@@ -28,12 +28,12 @@ test('decodeLegacy migrates v1 profile and active World for old-record validatio
   assert.equal(migrated.rules,'trial-rules-2');
   assert.equal(migrated.content,'trial-content-2');
   const p=migrated.profile.roster[0];
-  assert.deepEqual(p.learned,[{move:'scratch',pp:3},{move:'ember',pp:2}]);
+  assert.deepEqual(p.learned,[{move:'scratch',pp:28},{move:'ember',pp:15}]);   // 8.8 (#165): the profile is migrated to the official PP
   assert.equal(p.learned.some(x=>'behavior' in x),false);
   const a=migrated.current.units.A;
   assert.deepEqual(a.learned,['scratch','ember']);
-  assert.deepEqual(a.pp,{scratch:3,ember:2});
-  assert.deepEqual(a.maxPp,{scratch:3,ember:2});
+  assert.deepEqual(a.pp,{scratch:3,ember:2});   // current PP of a unit in a saved run is kept
+  assert.deepEqual(a.maxPp,{scratch:28,ember:15});   // 8.8: its maximum becomes the official value
   assert.deepEqual(a.moves,['scratch','ember']);
   assert.deepEqual(a.stages,{atk:0,def:0});
   assert.equal(a.protect,0);assert.equal(a.counter,0);assert.equal(a.lastMove,null);
@@ -48,7 +48,7 @@ test('the legacy validation helper preserves rescued-instance move identities du
   const e=base(),fragment=parts().profileRescueEntry;
   e.profile.next=5;e.profile.rescue=[clone(fragment)];
   const migrated=decodeLegacy(JSON.stringify(e));
-  assert.deepEqual(migrated.profile.rescue[0].inst.learned,[{move:'scratch',pp:3},{move:'ember',pp:2}]);
+  assert.deepEqual(migrated.profile.rescue[0].inst.learned,[{move:'scratch',pp:28},{move:'ember',pp:15}]);   // 8.8: official PP
   assert.equal(migrated.profile.rescue[0].inst.protected,false);
   assert.deepEqual(decodeLegacy(JSON.stringify(migrated)),migrated);
 });
@@ -59,7 +59,7 @@ test('the legacy validation helper maps a species-only invitation from the froze
   const migrated=decodeLegacy(JSON.stringify(e));
   const invite=migrated.current.invitations[0].unit;
   assert.deepEqual(invite.learned,['scratch','ember']);
-  assert.deepEqual(invite.pp,{scratch:1,ember:1});
+  assert.deepEqual(invite.pp,{scratch:28,ember:15});   // 8.8 (G8.2): a pending partner is migrated to full PP
   assert.equal(invite.moves,undefined);
   assert.deepEqual(invite.stages,{atk:0,def:0});
   assert.deepEqual(decodeLegacy(JSON.stringify(migrated)),migrated);
@@ -153,5 +153,5 @@ test('actual loading drops a malformed old in-progress World while retaining its
   assert.equal(await store.whenReady,true,store.error);
   assert.equal(store.status,'ready');assert.equal(store.state,null);
   assert.equal(store.envelope.format,2);assert.equal(Object.hasOwn(store.envelope,'current'),false);
-  assert.deepEqual(store.profile.roster[0].learned,[{move:'scratch',pp:3},{move:'ember',pp:2}]);
+  assert.deepEqual(store.profile.roster[0].learned,[{move:'scratch',pp:28},{move:'ember',pp:15}]);   // 8.8: official PP
 });

@@ -10,6 +10,7 @@ import {speciesUnit,applyCommand,traceRound,currentlyVisible} from '../../src/co
 import {generateFloor} from '../../src/core/dungeon.ts';
 import {world,row,open,pos} from '../acceptance/fixtures.mjs';
 import {foeOf,bossOf} from './foe-fixture.mjs';
+import {sureHit} from './sure-hit.mjs';
 
 const wait={type:'wait'};
 /** A friendly roster unit with an explicit HP and kit ({move:pp}); `tactic` is its battle policy. */
@@ -24,7 +25,7 @@ const dummy=(id,x,y,hp=40,species='geodude')=>{const e=foeOf(id,species,x,y,hp);
 function W(units,{floor=row(12),leader='A',rooms,aiRng=12345}={}){
  const list=Object.values(units);
  const s=world(units,{floor,leader,queue:list.filter(u=>u.side==='friend').map(u=>u.id),enemies:list.filter(u=>u.side==='enemy').map(u=>u.id)});
- if(rooms)s.rooms=rooms;s.enemyAiRng=aiRng;return s;
+ if(rooms)s.rooms=rooms;s.enemyAiRng=aiRng;return sureHit(s);   // 8.8 (#165): these tests check who does what damage, not the accuracy roll
 }
 const bigRoom=[{x:0,y:1,w:13,h:1}];
 const round=(s,action=wait,override)=>{

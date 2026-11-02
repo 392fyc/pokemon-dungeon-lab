@@ -639,7 +639,7 @@ await test('服务点7.2：商店购买不占回合；交换机送回伙伴与�
  const {createExpedition,reveal}=await import('../../src/core/engine.ts');
  const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
  const profile=newGameProfile('chikorita','cyndaquil').profile;
- profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
+ profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:30},{move:'gust',pp:19}],carry:['tackle','gust'],protected:false});
  profile.next=4;profile.team=['P1','P2','P3'];profile.leader='P1';
  const makeWorld=(kind,items)=>{const w=createExpedition('svc-run',103,2,squadOf(profile),0);w.purse=100; // service fixture: money already earned during the run
   if(kind==='exchange'){

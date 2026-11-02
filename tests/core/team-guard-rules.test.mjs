@@ -6,6 +6,7 @@ import {
 } from '../../src/core/engine.ts';
 import {moveOf} from '../../src/core/moves.ts';
 import {enemy,foeOf,bossOf} from './foe-fixture.mjs';
+import {sureHit} from './sure-hit.mjs';   // 8.8 (#165): guard tests fix damage numbers, so the accuracy roll is taken out
 
 function withGuardMoves(run){for(const id of ['quickguard','reflect','lightscreen'])assert.ok(moveOf(id),`正式数据必须包含${id}`);return run();}
 // Enemies attack only with roster moves. Against species-less friends, level-5 damage after the confirmed 0.4 enemy multiplier is: tackle 9 -> 4; quickattack 8 -> 3; bubblebeam 9 -> 4; bite 10 -> 4. Defence stages and screens apply after this rounded enemy hit.
@@ -20,7 +21,7 @@ function world({floor=row(0,12),friends=[friend('A',0,1,20)],enemies=[],rooms,se
   s.queue=friends.map(u=>u.id);s.enemies=enemies.map(u=>u.id);s.leader=s.queue[0];s.camp=[];s.points=[];s.log=[];
   if(rooms)s.rooms=rooms;else delete s.rooms;
   delete s.dungeon;delete s.prog;delete s.tms;delete s.shop;delete s.exchange;s.purse=0;
-  return s;
+  return sureHit(s);
 }
 function play(s,action,override){const r=applyCommand(s,{type:'round',action,...(override?{override}:{})});assert.equal(r.ok,true,r.ok?'':r.error);return r.state;}
 function use(s,skill,target,override){return play(s,{type:'skill',skill,target},override);}
@@ -83,12 +84,12 @@ test('反射壁护住同房间伙伴；物理伤害先减防御再向下减半�
 }));
 
 test('光墙只减特殊攻击；首领的物理与特殊招式分别按招式类别结算',()=>withGuardMoves(()=>{
-  const a=friend('A',0,1,20),b=friend('B',2,1,20);a.stages.def=1;equip(a,'lightscreen',2);
+  const a=friend('A',0,1,20),b=friend('B',2,1,20);a.stages.spd=1;equip(a,'lightscreen',2);   // 8.8 (G5.3 step 4): bubblebeam is special, so the special defence stage is the one that counts
   const r=shooter('R',0,3,100,'bubblebeam');
   let s=world({floor:rect(0,5,0,5),friends:[a,b],enemies:[r],rooms:[{x:0,y:0,w:4,h:3}]});
   s=use(s,'lightscreen','A');assert.equal(s.units.A.hp,19);assert.equal(s.units.A.lightscreen,9);assert.equal(s.units.B.lightscreen,9); // bubblebeam round(9 x 0.4)=4，防御阶段后3，光墙向下减半为1
 
-  const target=friend('T',3,1,20);target.stages.def=1;target.lightscreen=10;target.counter=3;
+  const target=friend('T',3,1,20);target.stages.spd=1;target.lightscreen=10;target.counter=3;
   const boss=bossOf('Boss',1,1,100,{bubblebeam:3}); // 两格远：不在房间里的敌人只看得到路径距离 2 以内
   s=world({floor:rect(0,5,0,3),friends:[target],enemies:[boss]});s=play(s,{type:'wait'});
   assert.equal(s.units.T.hp,19);assert.equal(s.units.Boss.hp,100); // 特殊招式 round(9 x 0.4)=4，防御阶段后3，光墙向下减半为1；两格外不触发反击

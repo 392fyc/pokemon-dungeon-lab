@@ -23,7 +23,7 @@ test('N1 the roster has nine starters: the original three plus six generation 2-
 
 test('N2 the original nine species retain their frozen starter, HP and kit fields while learnable may expand',()=>{
  // Checked against the pre-expansion roster. New learnset entries are deliberately outside this frozen projection.
- assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,9).map(frozenSpecies))).digest('hex'),'a9cf1abed815470319a4698c247cf7dd141f0602eca6489bba85ff300fa17899');
+ assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,9).map(frozenSpecies))).digest('hex'),'0f2e531384fa2086a18bcd8621d2ffa60cadd475922b5c8b72eb4c72c69bad3a');   // 8.8 (#165): kit PP is now the official basePp (the other frozen fields are unchanged)
 });
 
 test('N3 every species, type, kit move, learnable move and technique-machine move has a Chinese name',()=>{
@@ -94,12 +94,12 @@ test('N7 beginNewGame over an unreadable record needs the original bytes exporte
 
 test('N8 enemyInfo shows only what the player has seen: species, HP, level, tactic and moves; nothing for hidden or fallen enemies',()=>{
  const s=createScenario('K1','x');
- // H is a growlithe at Lv5 with the scenario's own 24 HP; ember and bite have power 7, so 6+ceil(7/2)=10 damage each, PP 2/2 (roster kit)
+ // H is a growlithe at Lv5 with the scenario's own 24 HP; ember and bite have power 7, so 6+ceil(7/2)=10 damage each, PP 15/15 and 19/19 (roster kit, 8.8 official PP)
  const info=enemyInfo(s,'H');assert.equal(info.hp,24);assert.equal(info.maxHp,24);assert.equal(info.level,5);assert.equal(info.tactic,'主动出击');
- assert.equal(info.moves.length,2);assert.match(info.moves[0],/^火花.*造成10点基础伤害.*PP 2\/2$/);assert.match(info.moves[1],/^咬住.*造成10点基础伤害.*PP 2\/2$/);
+ assert.equal(info.moves.length,2);assert.match(info.moves[0],/^火花.*造成10点基础伤害.*PP 15\/15$/);assert.match(info.moves[1],/^咬住.*造成10点基础伤害.*PP 19\/19$/);
  // R is a pidgey: tackle power 6 gives 9, gust power 4 gives 8, PP 3/3
  const r=createScenario('K4','x');const ri=enemyInfo(r,'R');assert.equal(ri.tactic,'主动出击');
- assert.match(ri.moves[0],/^撞击.*造成9点基础伤害.*PP 3\/3$/);assert.match(ri.moves[1],/^起风.*造成8点基础伤害.*PP 3\/3$/);
+ assert.match(ri.moves[0],/^撞击.*造成9点基础伤害.*PP 30\/30$/);assert.match(ri.moves[1],/^起风.*造成8点基础伤害.*PP 19\/19$/);
  s.seen=s.seen.filter(k=>k!==`${s.units.H.pos.x},${s.units.H.pos.y}`);assert.equal(enemyInfo(s,'H'),null,'an unrevealed cell hides the enemy');
  const f=createScenario('K1','x');f.units.H.hp=0;f.units.H.pos=null;assert.equal(enemyInfo(f,'H'),null);
  assert.equal(enemyInfo(f,'A'),null,'friends are not enemies');

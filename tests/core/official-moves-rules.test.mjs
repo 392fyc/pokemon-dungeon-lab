@@ -6,6 +6,7 @@ import {
 } from '../../src/core/engine.ts';
 import {enemy,foeOf,bossOf} from './foe-fixture.mjs';
 import {MOVE_DEFS,moveOf} from '../../src/core/moves.ts';
+import {sureHit} from './sure-hit.mjs';   // 8.8 (#165): these tests check damage and effects, not the accuracy roll
 
 const row=(from,to,y=1)=>Array.from({length:to-from+1},(_,i)=>({x:from+i,y}));
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));
@@ -17,7 +18,7 @@ function world({floor=row(0,12),friends=[friend('A',0,1,20)],enemies=[],rooms,le
   if(rooms)s.rooms=rooms;else delete s.rooms;
   if(level>1)s.prog={level,exp:0,rng:1,made:0,kills:[],items:{berry:0,tonic:0}};
   else delete s.prog;
-  return s;
+  return sureHit(s);
 }
 function equip(u,id,pp=3){if(!u.learned.includes(id))u.learned.push(id);u.pp[id]=pp;u.maxPp[id]=pp;}
 function play(s,action){const r=applyCommand(s,{type:'round',action});assert.equal(r.ok,true,r.ok?'':r.error);return r.state;}
@@ -71,7 +72,7 @@ test('伤害按威力、攻击阶段、本局等级和防御阶段结算；普�
 });
 
 test('吸取按实际伤害恢复一半并受最大 HP 限制',()=>{
-  const a=friend('A',0,1,5,{absorb:2}),e=enemy('E',1,1,30,'melee',0);e.stages.def=3;
+  const a=friend('A',0,1,5,{absorb:2}),e=enemy('E',1,1,30,'melee',0);e.stages.spd=3;   // 8.8 (G5.3 step 4): absorb is a special move, so the target's special defence stage applies, not defence
   let s=world({floor:row(0,3),friends:[a],enemies:[e]});
   s=use(s,'absorb','E');assert.equal(s.units.E.hp,26);assert.equal(s.units.A.hp,7); // 实际伤害 4，回复 floor(4/2)
   s.units.A.hp=19;s=use(s,'absorb','E');assert.equal(s.units.A.hp,20);

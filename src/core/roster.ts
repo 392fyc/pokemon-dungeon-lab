@@ -9,16 +9,16 @@ export const STARTER_IDS:string[]=(data.species as Species[]).filter(s=>s.starte
 export const speciesOf=(id:string):Species|undefined=>Object.prototype.hasOwnProperty.call(SPECIES,id)?SPECIES[id]:undefined;
 /**
  * 6.5 technique machines (workable candidates): the three moves that fill the "pin" and "reposition" gaps found in 6.2. A machine teaches one move to a compatible species.
- * 7.3 adds four more (dragontail, helpinghand, mudslap, terablast). `LEGACY_TM_MOVES` is what runs without the boss mark still draw from; `TM_MOVES` is the
- * seven-entry boss pool introduced in 7.3. Draws are `floor(r * length)`, so lengthening either old list would change what an old save's seed means.
+ * 7.3 adds four more (dragontail, helpinghand, mudslap, terablast); 8.8 (#165) removes terablast again (the game has no terastallization), leaving three. `LEGACY_TM_MOVES` is what runs without the boss mark still draw from; `TM_MOVES` is the
+ * six-entry boss pool. Draws are `floor(r * length)`, so lengthening either old list would change what an old save's seed means.
  */
 export const LEGACY_TM_MOVES=['protect','whirlwind','roar'] as const;
-export const TM_MOVES=['protect','whirlwind','roar','dragontail','helpinghand','mudslap','terablast'] as const;
-/** The 7.7b boss pool; only a new departure marked with tmPool:3 draws from these ten moves. */
+export const TM_MOVES=['protect','whirlwind','roar','dragontail','helpinghand','mudslap'] as const;
+/** The 7.7b boss pool; only a new departure marked with tmPool:3 draws from these nine moves (8.8: Tera Blast removed). */
 export const TM_MOVES_V3=[...TM_MOVES,'quickguard','reflect','lightscreen'] as const;
 /** All moves which can appear in the warehouse and pass legality checks. */
 export const ALL_TM_MOVES=TM_MOVES_V3;
-/** Missing tmPool preserves old saves: ordinary runs use three, old boss runs seven, new marked boss runs ten. */
+/** Missing tmPool preserves old saves: ordinary runs use three, old boss runs six, new marked boss runs nine. */
 export const tmPool=(d?:{boss?:boolean;tmPool?:3}|null):readonly string[]=>d?.boss?(d.tmPool===3?TM_MOVES_V3:TM_MOVES):LEGACY_TM_MOVES;
 export type BossTraits={levelBonus:number;hpMultiplier:number;canMove:boolean;canBeBlownAway:boolean};
 export const BOSS_CONFIG:Record<string,BossTraits>=bosses.bosses;

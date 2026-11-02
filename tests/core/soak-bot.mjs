@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import {createMain,PROG,bossDefeated,applyCommand,skillTargets,estimateAttackDamage} from '../../src/core/engine.ts';
-import {newGameProfile,profileProblem} from '../../src/core/base.ts';
+import {createMain,PROG,bossDefeated,applyCommand,skillTargets,estimateAttackDamage,COMMISSIONS,BLESSINGS} from '../../src/core/engine.ts';
+import {newGameProfile,profileProblem,rankLevel} from '../../src/core/base.ts';
 import {TrialStore} from '../../src/core/save.ts';
 import {ECON} from '../../src/core/economy.ts';
 import {moveOf} from '../../src/core/moves.ts';
@@ -19,9 +19,13 @@ const rangedMoves=u=>damageMoves(u).filter(k=>['front2','line10'].includes(moveO
 export const GAMES=5,ROUND_CAP=1200,COMMAND_CAP=4500;
 const key=p=>`${p.x},${p.y}`;
 const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
+// Keep this in sync with src/render/terrain.ts prepareTerrainMap: the renderer
+// paints wall cells in all eight neighboring directions around revealed floor.
+const WALL_NEIGHBORS=[{x:0,y:-1},{x:1,y:-1},{x:1,y:0},{x:1,y:1},{x:0,y:1},{x:-1,y:1},{x:-1,y:0},{x:-1,y:-1}];
 const dist=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const same=(a,b)=>!!a&&!!b&&a.x===b.x&&a.y===b.y;
 const aliveU=u=>!!u&&u.hp>0&&u.pos!==null;
+const policyAlive=u=>!!u&&u.hp>0&&(u.pos!==null||u.side==='friend');
 const memory=()=>{const m=new Map();let writes=0;return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);writes++;},map:m,writes:()=>writes};};
 
 /* ---------- invariants ---------- */
@@ -112,7 +116,7 @@ function objective(s,memo){
  const near=(kinds,max)=>{let best=null;for(const p of pts){if(!kinds.includes(p.kind)||p.used||memo.declined.has(level+':'+key(p.pos)))continue;
    const r=route(s,L.pos,c=>same(c,p.pos));const d=same(L.pos,p.pos)?0:r?.len;if(d===undefined||d>max)continue;if(!best||d<best.d)best={p,d};}return best?.p;};
  const members=s.queue.map(i=>s.units[i]).filter(aliveU);
- const pickups=()=>near(["berry","tonic",...(affordable(s).length?['shop']:[]),...(s.exchange&&!s.exchange.used&&memo.useExchange?['exchange']:[])],8);
+ const pickups=()=>near(["berry","tonic",...(level===3&&!(s.tms??[]).some(t=>t.source==='target')?['item']:[]),...(affordable(s).length?['shop']:[]),...(s.exchange&&!s.exchange.used&&memo.useExchange?['exchange']:[])],8);
  const resting=()=>members.some(m=>ppDeficit(m))||members.some(m=>m.hp<m.maxHp)?near(["rest"],6):undefined;
  const pick=pickups()??resting();
  if(pick)return pick;
@@ -127,15 +131,235 @@ function objective(s,memo){
  * The renderer paints walls beside revealed ground (including room walls); unseen ground never enters the route map.
  */
 export function explorationRoute(s){
- const seen=new Set(s.seen),walls=new Set(s.seenWalls??[]),terrain=new Set(s.floor.map(key));
- for(const value of seen){const [x,y]=value.split(',').map(Number);
-  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
-   const cell=`${x+dx},${y+dy}`;if(!terrain.has(cell))walls.add(cell);
-  }
- }
+ const seen=new Set(s.seen),walls=new Set(s.seenWalls??[]);
  return route(s,s.units[s.leader].pos,c=>DIRS.some(d=>{
   const next=key({x:c.x+d.x,y:c.y+d.y});return !seen.has(next)&&!walls.has(next);
  }));
+}
+
+const ROOM_TYPES=['challenge','item','commission','blessing'];
+const COMMISSION_IDS=Object.keys(COMMISSIONS);
+const BLESSING_IDS=Object.keys(BLESSINGS);
+const clampRatio=n=>Math.max(0,Math.min(1,n));
+const inRect=(p,r)=>!!p&&!!r&&p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
+const rectCellsKnown=(r,seen)=>{for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)if(!seen.has(`${x},${y}`))return false;return true;};
+
+/** Make a player-view copy. This is the only input used by policy decisions. */
+export function visibleView(source){
+ const s={...source},known=new Set(source.seen??[]),allFloor=new Set((source.floor??[]).map(key));
+ s.floor=(source.floor??[]).filter(p=>known.has(key(p)));
+ s.seen=(source.seen??[]).filter(k=>allFloor.has(k));
+ const knownCells=new Set(s.seen),wallCells=new Set(source.seenWalls??[]);
+ // The renderer exposes a wall when it is within eight neighboring cells of
+ // a revealed floor tile. Recreate only that visible border before discarding
+ // hidden floor; do not turn every unknown cell into a wall.
+ const width=source.dungeon?.width,height=source.dungeon?.height;
+ if(Number.isInteger(width)&&Number.isInteger(height))for(const k of known){
+  const match=/^(-?\d+),(-?\d+)$/.exec(k);if(!match)continue;
+  const x=Number(match[1]),y=Number(match[2]);
+  for(const d of WALL_NEIGHBORS){const nx=x+d.x,ny=y+d.y;if(nx<0||ny<0||nx>=width||ny>=height)continue;
+   const neighbor=`${nx},${ny}`;if(!allFloor.has(neighbor))wallCells.add(neighbor);}
+ }
+ for(const k of known)if(!allFloor.has(k))wallCells.add(k);
+ s.seenWalls=[...wallCells].sort();
+ const units={};
+ for(const [id,u] of Object.entries(source.units??{})){
+  if(u.side==='friend')units[id]={...u,pos:u.pos&&knownCells.has(key(u.pos))?u.pos:null};
+  else if(u.pos&&knownCells.has(key(u.pos))){
+   const {targetMemory,lostSightTurns,roamTarget,direction,wakeSkip,...seenUnit}=u;
+   units[id]=seenUnit;
+  }
+ }
+ s.units=units;
+ s.queue=(source.queue??[]).filter(id=>units[id]?.side==='friend');
+ s.enemies=(source.enemies??[]).filter(id=>units[id]?.side==='enemy');
+ s.camp=(source.camp??[]).filter(id=>units[id]?.side==='friend');
+ s.points=(source.points??[]).filter(p=>knownCells.has(key(p.pos))).map(p=>({...p}));
+ const knownRects=new Set();
+ s.rooms=(source.rooms??[]).flatMap((r,i)=>{if(!rectCellsKnown(r,knownCells))return [];knownRects.add(i);return [{...r}];});
+ s.adventureRooms=(source.adventureRooms??[]).flatMap(r=>{
+  if(!r.doors?.some(p=>knownCells.has(key(p))))return [];
+  const room={room:r.room,type:r.type,state:r.state,doors:r.doors.filter(p=>knownCells.has(key(p))).map(p=>({...p}))};
+  if(knownRects.has(r.room))room.rect={...source.rooms[r.room]};
+  if(r.interaction&&knownCells.has(key(r.interaction)))room.interaction={...r.interaction};
+  if(r.type==='item'&&room.interaction)room.item=r.item;
+  return [room];
+ });
+ if(!knownRects.has(source.bossRoom))delete s.bossRoom;
+ s.dungeon=source.dungeon?{width:source.dungeon.width,height:source.dungeon.height,floors:source.dungeon.floors,level:source.dungeon.level,
+  ...(source.dungeon.boss?{boss:true}:{}),...(source.dungeon.roguelike?{roguelike:true}:{}),...(source.dungeon.base?{base:true}:{}),...(source.dungeon.services?{services:true}:{}),
+  ...(source.dungeon.tmPool?{tmPool:source.dungeon.tmPool}:{}),stored:{}}:undefined;
+ if(source.prog){s.prog={level:source.prog.level,exp:source.prog.exp,items:{...source.prog.items}};}
+ const shopPos=(source.points??[]).find(p=>p.kind==='shop'&&knownCells.has(key(p.pos)));
+ s.shop=source.shop&&shopPos&&same(shopPos.pos,source.units?.[source.leader]?.pos)?{...source.shop,stock:{...source.shop.stock},trades:source.shop.trades.map(t=>({...t}))}:undefined;
+ delete s.pendingAdventureStart;delete s.pendingSettlement;delete s.enemyAiRng;delete s.log;delete s.runId;
+ return s;
+}
+
+const routeLength=(s,start,target)=>same(start,target)?0:route(s,start,p=>same(p,target))?.len??null;
+function policyRoomLimit(memo){
+ if(typeof memo.detourLimit==='number')return Math.max(0,memo.detourLimit);
+ return memo.policy==='tactical'?20:memo.policy==='cautious'?12:memo.policy==='naive'?Infinity:0;
+}
+function targetForDetour(s,memo){
+ const main=objective(s,memo);
+ if(main)return {pos:main.pos,len:routeLength(s,s.units[s.leader].pos,main.pos)};
+ const edge=explorationRoute(s);return edge?{pos:edge.to,len:edge.len}:null;
+}
+function detourTo(s,memo,pos){
+ const L=s.units[s.leader];if(!L?.pos)return null;
+ const there=routeLength(s,L.pos,pos);if(there===null)return null;
+ const target=targetForDetour(s,memo);if(!target)return there;
+ const fromThere=routeLength(s,pos,target.pos);if(fromThere===null)return null;
+ return Math.max(0,there+fromThere-target.len);
+}
+function roomWilling(s,memo,room){
+ if(!room||room.state!=='idle'||memo.policy==='tactical-stand')return false;
+ if(room.type==='challenge')return challengeDecisionKnown(s,memo);
+ if(room.type==='commission'&&(s.commissions?.length??0)>=3)return false;
+ if(room.type==='blessing'){
+  const owned=new Set(s.blessings??[]),level=s.dungeon?.level??1;
+  if(!Object.entries(BLESSINGS).some(([id,def])=>def.floors.includes(level)&&!owned.has(id)))return false;
+ }
+ return ROOM_TYPES.includes(room.type);
+}
+function visibleRooms(s){return (s.adventureRooms??[]).filter(r=>r.interaction&&r.type&&ROOM_TYPES.includes(r.type));}
+function visibleSealedChallenge(s){
+ const room=visibleRooms(s).find(r=>r.type==='challenge'&&r.state==='sealed');if(!room)return null;
+ const rect=room.rect;
+ return {room,rect,inside:!!rect&&inRect(s.units[s.leader]?.pos,rect)};
+}
+function visibleChallengeEnemyTarget(s,memo){
+ if(memo.doomed||!['naive','tactical'].includes(memo.policy))return null;
+ const active=visibleSealedChallenge(s);if(!active?.inside)return null;
+ const L=s.units[s.leader],options=[];
+ for(const id of s.enemies??[]){const enemy=s.units[id];
+  if(!aliveU(enemy)||!enemy.pos||!s.seen.includes(key(enemy.pos))||!inRect(enemy.pos,active.rect))continue;
+  const r=route(s,L.pos,p=>same(p,enemy.pos));if(r)options.push({pos:enemy.pos,len:r.len,id});
+ }
+ options.sort((a,b)=>a.len-b.len||a.id.localeCompare(b.id));
+ return options[0]?{kind:'challengeEnemy',pos:options[0].pos}:null;
+}
+export function createBotMemo(policy='naive',overrides={}){
+ assert.ok(['naive','tactical','tactical-stand','cautious'].includes(policy),'unknown policy '+policy);
+ return {visited:{},declined:new Set(),lastSwitch:-99,fullInvites:0,reckless:false,doomed:false,useExchange:false,suicidal:false,policy,engaged:false,
+  prepWait:0,gatherWait:0,detourLimit:undefined,naiveDetourAllowance:2,challengeAverageHpThreshold:0.7,challengeLeaderHpThreshold:0.6,
+  activity:{seen:new Set(),entered:new Set(),handled:new Set(),started:new Set(),cleared:new Set(),rewards:new Set(),wiped:new Set()},...overrides};
+}
+export function challengeShouldStart(s,memo){
+ s=visibleView(s);
+ return challengeDecisionKnown(s,memo);
+}
+function challengeDecisionKnown(s,memo){
+ if(memo.policy==='naive')return true;
+ if(memo.policy!=='tactical')return false;
+ if(s.dungeon?.level===s.dungeon?.floors&&bossDefeated(s))return false;
+ const members=(s.queue??[]).map(id=>s.units[id]).filter(u=>u?.side==='friend');
+ if(!members.length)return false;
+ const average=members.reduce((n,u)=>n+(u.maxHp?u.hp/u.maxHp:0),0)/members.length;
+ const leader=s.units[s.leader];
+ return average>=(memo.challengeAverageHpThreshold??0.7)&&!!leader&&leader.hp/leader.maxHp>=(memo.challengeLeaderHpThreshold??0.6);
+}
+function visibleEnemyCountForHunt(s){
+ let n=(s.enemies??[]).map(id=>s.units[id]).filter(u=>u?.side==='enemy'&&u.hp>0).length;
+ for(const room of visibleRooms(s))if(room.type==='challenge'&&room.state==='idle')n+=3;
+ return n;
+}
+function seenUncollectedItems(s){
+ return (s.points??[]).filter(p=>['berry','tonic'].includes(p.kind)&&!p.used).length+
+  visibleRooms(s).filter(r=>r.type==='item'&&r.state==='idle').length;
+}
+function visibleDown(s){return (s.points??[]).find(p=>p.kind==='down'&&!p.used);}
+export function commissionDecision(s,memo,id){
+ s=visibleView(s);
+ return commissionDecisionKnown(s,memo,id);
+}
+function commissionDecisionKnown(s,memo,id){
+ if(!COMMISSION_IDS.includes(id)||(s.commissions?.length??0)>=3)return false;
+ if(memo.policy==='tactical-stand')return false;
+ if(memo.policy==='naive')return true;
+ const def=COMMISSIONS[id],L=s.units[s.leader],members=(s.queue??[]).map(v=>s.units[v]).filter(u=>u?.side==='friend');
+ if(memo.policy==='cautious'&&def.penalty)return false;
+ if(id==='guardian'){
+  const average=members.length?members.reduce((n,u)=>n+(u.maxHp?u.hp/u.maxHp:0),0)/members.length:0;
+  return average>=(memo.challengeAverageHpThreshold??0.7);
+ }
+ if(id==='speedrun'){
+  const down=visibleDown(s),room=(s.adventureRooms??[]).find(r=>r.type==='commission'&&r.interaction&&same(r.interaction,L?.pos));
+  if(!down||!room)return false;
+  const len=routeLength(s,room.interaction,down.pos);if(len===null)return false;
+  return memo.policy==='cautious'?len<=20:true;
+ }
+ if(id==='collector')return seenUncollectedItems(s)>=(def.progressTarget??1);
+ if(id==='hunter')return visibleEnemyCountForHunt(s)>=(def.progressTarget??1);
+ if(id==='scout')return true; // the offer itself proves a target room exists on this floor
+ return false;
+}
+const BLESSING_ORDER={
+ tactical:{early:['rally','tmChoice','battleSpirit','berryBoost','floorHeal','lullaby'],late:['battleSpirit','rally','tmChoice','berryBoost']},
+ cautious:{early:['floorHeal','berryBoost','lullaby','rally','tmChoice','battleSpirit'],late:['berryBoost','rally','tmChoice','battleSpirit']}
+};
+export function blessingChoice(s,memo){
+ s=visibleView(s);
+ return blessingChoiceKnown(s,memo);
+}
+function blessingChoiceKnown(s,memo){
+ const pending=s.pendingChoices?.[0];if(pending?.type!=='blessing')return null;
+ if(memo.policy==='naive')return pending.options[0]??null;
+ if(memo.policy==='tactical-stand')return null;
+ const orders=BLESSING_ORDER[memo.policy];if(!orders)return null;
+ const priority=s.dungeon?.level===3?orders.late:orders.early;
+ return priority.find(id=>pending.options.includes(id))??pending.options[0]??null;
+}
+function tmChoice(s,memo){
+ const options=s.pendingChoices?.[0]?.options??[];
+ if(!options.length)return null;
+ if(memo.policy==='naive')return options[0];
+ const preferred=memo.policy==='cautious'?['protect']:['protect','quickguard','reflect','lightscreen'];
+ return preferred.find(move=>options.includes(move))??options[0];
+}
+function nearestRoomTarget(s,memo){
+ if(memo.policy==='tactical-stand')return null;
+ const L=s.units[s.leader];if(!L?.pos)return null;
+ const main=targetForDetour(s,memo);
+ const rows=[];
+ for(const room of visibleRooms(s)){
+  if(!roomWilling(s,memo,room))continue;
+  const r=same(L.pos,room.interaction)?{to:room.interaction,step:null,len:0}:route(s,L.pos,p=>same(p,room.interaction));if(!r)continue;
+  const allowance=memo.policy==='naive'?(memo.naiveDetourAllowance??2):policyRoomLimit(memo);
+  const extra=memo.policy==='naive'&&main?detourTo(s,memo,room.interaction):r.len;
+  if(extra===null||extra>allowance)continue;
+  rows.push({room,route:r,extra});
+ }
+ rows.sort((a,b)=>a.route.len-b.route.len||a.room.room-b.room.room);
+ return rows[0]??null;
+}
+function visibleCommissionTarget(s,memo){
+ const active=s.commissions??[];if(!active.length)return null;
+ const L=s.units[s.leader];if(!L?.pos)return null;
+ const main=memo.policy==='naive'?targetForDetour(s,memo):null,limit=memo.policy==='naive'?(memo.naiveDetourAllowance??2):policyRoomLimit(memo);
+ const options=[];
+ if(active.some(c=>c.id==='collector'))for(const p of s.points??[]){
+  if(!['berry','tonic'].includes(p.kind)||p.used)continue;
+  const r=route(s,L.pos,c=>same(c,p.pos));if(!r)continue;const extra=main?detourTo(s,memo,p.pos):r.len;
+  if(extra<=limit)options.push({pos:p.pos,route:r,kind:'collector'});
+ }
+ if(active.some(c=>c.id==='scout'&&c.progress===0)){
+  const targetTypes=COMMISSIONS.scout.requiresRoomTypes??['blessing','item'];
+  for(const room of visibleRooms(s)){
+   if(room.state!=='done'||!targetTypes.includes(room.type))continue;
+   const r=same(L.pos,room.interaction)?{to:room.interaction,step:null,len:0}:route(s,L.pos,c=>same(c,room.interaction));if(!r)continue;
+   const extra=main?detourTo(s,memo,room.interaction):r.len;
+   if(extra!==null&&extra<=limit)options.push({pos:room.interaction,route:r,kind:'scout'});
+  }
+ }
+ if(active.some(c=>c.id==='hunter'))for(const id of s.enemies??[]){
+  const e=s.units[id];if(!e||e.hp<=0||!e.pos)continue;
+  const r=route(s,L.pos,c=>same(c,e.pos));if(!r)continue;const extra=main?detourTo(s,memo,e.pos):r.len;
+  if(extra<=limit)options.push({pos:e.pos,route:r,kind:'hunter'});
+ }
+ options.sort((a,b)=>a.route.len-b.route.len);
+ return options[0]??null;
 }
 function stepToward(s,memo,target){
  const L=s.units[s.leader];
@@ -177,7 +401,7 @@ const pureBlow=u=>u.learned.filter(k=>(u.pp[k]??0)>0&&moveOf(k)?.effects.include
 /** Mirrors the engine's room reach (its `inRoomReach`): inside the actor's room, or within 2 cells (Chebyshev) when the actor is not in a known room. */
 function roomMates(s,L){
  const inR=(p,r)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h,room=(s.rooms??[]).find(r=>inR(L.pos,r));
- return s.queue.map(i=>s.units[i]).filter(m=>aliveU(m)&&m.id!==L.id&&(room?inR(m.pos,room):Math.max(Math.abs(m.pos.x-L.pos.x),Math.abs(m.pos.y-L.pos.y))<=2));
+ return s.queue.map(i=>s.units[i]).filter(m=>aliveU(m)&&m.pos&&m.id!==L.id&&(room?inR(m.pos,room):Math.max(Math.abs(m.pos.x-L.pos.x),Math.abs(m.pos.y-L.pos.y))<=2));
 }
 /** Can the enemy `e` hit member `L` this round: adjacent, or a ranged enemy with a clear straight line within its range (what the player sees on the board). */
 function foeReaches(s,e,L){
@@ -218,9 +442,9 @@ function stepCommand(s,r){
  * Returns commands to try before the naive ones (the driver keeps the first the rules accept).
  */
 function bossPrep(s,memo,B){
- const L=s.units[s.leader],members=s.queue.map(i=>s.units[i]).filter(aliveU),out=[];
+ const L=s.units[s.leader],members=s.queue.map(i=>s.units[i]).filter(policyAlive),out=[];
  if(adjacentEnemies(s).length)return out; // fight first
- const reach=members.filter(m=>m.id===L.id||dist(m.pos,L.pos)===1),act=a=>out.push({type:'round',action:a});
+ const reach=members.filter(m=>m.id===L.id||(m.pos&&dist(m.pos,L.pos)===1)),act=a=>out.push({type:'round',action:a});
  const hurtAny=members.some(m=>ratioOf(m)<0.7);
  if(hurtAny&&s.prog.items.berry>0){
   const t=reach.filter(m=>ratioOf(m)<0.7).sort((a,b)=>ratioOf(a)-ratioOf(b))[0];
@@ -235,7 +459,24 @@ function bossPrep(s,memo,B){
  const mates=roomMates(s,L),helper=movesWith(L,isAtkUp)[0];
  if(helper&&mates.length>=2&&mates.some(m=>(m.stages?.atk??0)<2))act({type:'skill',skill:helper,target:L.id});
  // all members present: when the boss is in sight but still far, wait for stragglers (at most 6 rounds in total)
- if(s.seen.includes(key(B.pos))&&dist(B.pos,L.pos)>5&&members.some(m=>dist(m.pos,L.pos)>2)&&memo.gatherWait<6){memo.gatherWait++;act({type:'wait'});}
+ if(s.seen.includes(key(B.pos))&&dist(B.pos,L.pos)>5&&members.some(m=>!m.pos||dist(m.pos,L.pos)>2)&&memo.gatherWait<6){memo.gatherWait++;act({type:'wait'});}
+ return out;
+}
+function backpackCommands(s,memo){
+ const L=s.units[s.leader],out=[],act=a=>out.push({type:'round',action:a});
+ const members=s.queue.map(i=>s.units[i]).filter(policyAlive),cau=cautiousOn(memo);
+ const low=u=>u.hp/u.maxHp;
+ const reachable=members.filter(m=>m.id===L.id||(m.pos&&dist(m.pos,L.pos)===1));
+ const lowReach=reachable.filter(m=>low(m)<=(cau?0.6:0.5)).sort((a,b)=>low(a)-low(b))[0];
+ if(!memo.reckless&&lowReach&&s.prog.items.bigBerry>0)act({type:'use',item:'bigBerry',target:lowReach.id});
+ const hurt=reachable.filter(m=>low(m)<=(cau?0.6:0.5)).sort((a,b)=>low(a)-low(b))[0];
+ if(!memo.reckless&&hurt&&s.prog.items.berry>0)act({type:'use',item:'berry',target:hurt.id});
+ const dry=cau?reachable.find(ppDeficit):reachable.find(m=>m.learned.some(k=>(m.pp[k]??0)===0));
+ if(!memo.reckless&&dry&&s.prog.items.tonic>0)act({type:'use',item:'tonic',target:dry.id});
+ const ppTotal=members.reduce((n,m)=>n+m.learned.reduce((v,k)=>v+(m.pp[k]??0),0),0);
+ const ppCapacity=members.reduce((n,m)=>n+m.learned.reduce((v,k)=>v+(m.maxPp[k]??0),0),0);
+ const hasEmptyMove=members.some(m=>m.learned.some(k=>(m.pp[k]??0)===0));
+ if(!memo.reckless&&hasEmptyMove&&ppCapacity>0&&ppTotal<ppCapacity/2&&(s.prog.items.teamTonic??0)>0)act({type:'use',item:'teamTonic',target:L.id});
  return out;
 }
 /**
@@ -246,17 +487,15 @@ function bossPrep(s,memo,B){
  */
 function bossTurn(s,memo,B){
  const L=s.units[s.leader],out=[],act=a=>out.push({type:'round',action:a});
- const members=s.queue.map(i=>s.units[i]).filter(aliveU);
+ const members=s.queue.map(i=>s.units[i]).filter(u=>aliveU(u)&&u.pos);
  const d=dist(L.pos,B.pos),canHitNow=d===1||hitMoves(s,L,B).length>0;
  // Lead switch: the lead is at <=40% HP and a clearly healthier member exists (cooldown 2 rounds).
  // The boss picks its victim by queue order and position, not by who leads, so a switch does not save the old lead; it only costs the lead's own attack.
  // So it is skipped while the lead can hit the boss this round, and used when the lead cannot (the healthier member then does the walking and shooting).
  const healthiest=members.filter(m=>m.id!==L.id).sort((a,c)=>ratioOf(c)-ratioOf(a))[0];
  if(!canHitNow&&healthiest&&ratioOf(L)<=0.4&&ratioOf(healthiest)-ratioOf(L)>=0.2&&s.round-memo.lastSwitch>=2)out.push({type:'switch',actor:healthiest.id});
- const reach=members.filter(m=>m.id===L.id||dist(m.pos,L.pos)===1);
- // Berry: to the lowest-HP member the lead can reach, when that member is at <=40%.
- const weak=[...reach].sort((a,c)=>ratioOf(a)-ratioOf(c))[0];
- if(weak&&ratioOf(weak)<=0.4&&s.prog.items.berry>0)act({type:'use',item:'berry',target:weak.id});
+ // Boss-engaged early return still applies the normal reachable-item rules.
+ out.push(...backpackCommands(s,memo));
  // 7.7 protect shields only the acting member for 3 enemy phases: use it when the boss will pick the lead (first adjacent member in queue order, else nearest on a line) and the lead is at <=40% HP.
  const adjB=members.filter(m=>dist(m.pos,B.pos)===1);
  const victim=adjB[0]??members.filter(m=>(m.pos.x===B.pos.x||m.pos.y===B.pos.y)&&dist(m.pos,B.pos)<=3).sort((a,c)=>dist(a.pos,B.pos)-dist(c.pos,B.pos))[0];
@@ -293,7 +532,7 @@ function tacticalFight(s,L,members,adj,visible,saveSkills,mayUse){
  const out=[],act=a=>out.push({type:'round',action:a});
  const guard=movesWith(L,isProtect)[0];
  if(guard&&ratioOf(L)<=0.4&&!(L.protect>0)&&L.lastMove!==guard&&visible.some(e=>foeReaches(s,e,L)&&rangedMoves(e).length>0))act({type:'skill',skill:guard,target:L.id});
- const hurtMates=members.filter(m=>m.id!==L.id&&ratioOf(m)<0.6);
+ const hurtMates=members.filter(m=>m.pos&&m.id!==L.id&&ratioOf(m)<0.6);
  for(const k of pureBlow(L))for(const e of adj)
   if(!e.boss&&e.hp>basicDamage(s,L,e)&&hurtMates.some(m=>dist(m.pos,e.pos)===1)&&blowSafe(s,L,e))act({type:'skill',skill:k,target:e.id});
  for(const e of adj){
@@ -312,10 +551,11 @@ function tacticalFight(s,L,members,adj,visible,saveSkills,mayUse){
 /** Ordered list of commands; the driver sends them in order and keeps the first one the rules accept. */
 function candidates(s,memo){
  const L=s.units[s.leader],out=[];(memo.visited[s.dungeon.level]??=new Set()).add(key(L.pos));
- const members=s.queue.map(i=>s.units[i]).filter(aliveU);
+ const members=s.queue.map(i=>s.units[i]).filter(policyAlive);
  const low=u=>u.hp/u.maxHp;
  const tac=(memo.policy==='tactical'||memo.policy==='tactical-stand')&&!memo.doomed,cau=cautiousOn(memo);
- if(tac&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors){
+ const sealedChallenge=visibleSealedChallenge(s);
+ if(tac&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors&&!sealedChallenge){
   const B=s.enemies.map(i=>s.units[i]).find(u=>u.boss&&aliveU(u)&&s.seen.includes(key(u.pos)));
   if(B){
    if(dist(B.pos,L.pos)<=5)memo.engaged=true;
@@ -348,29 +588,45 @@ function candidates(s,memo){
    if(r){const occ=[...s.queue,...s.enemies].map(i=>s.units[i]).find(u=>aliveU(u)&&same(u.pos,r.step));
     if(!occ)act({type:'move',to:r.step});else if(occ.side==='friend')act({type:'swap',target:occ.id});else act({type:'wait'});}}
  }
- // backpack: berry on the weakest of self/adjacent, tonic on whoever lost most PP
- const reachable=members.filter(m=>m.id===L.id||dist(m.pos,L.pos)===1);
- const hurt=reachable.filter(m=>low(m)<=(cau?0.6:0.5)).sort((a,b)=>low(a)-low(b))[0]; // cautious: berry from 60% HP
- if(!memo.reckless&&hurt&&s.prog.items.berry>0)act({type:'use',item:'berry',target:hurt.id});
- const dry=cau?reachable.find(ppDeficit):reachable.find(m=>m.learned.some(k=>(m.pp[k]??0)===0)); // cautious: tonic on any PP gap
- if(!memo.reckless&&dry&&s.prog.items.tonic>0)act({type:'use',item:'tonic',target:dry.id});
+ // Backpack rules are shared with the boss-engaged command path above.
+ out.push(...backpackCommands(s,memo));
  // fight: protect the hurt acting member when an enemy is near, then strike
- const adj=adjacentEnemies(s).sort((a,b)=>a.hp-b.hp);
- const visible=s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&s.seen.includes(key(u.pos)));
+ const inCurrentChallenge=u=>!sealedChallenge?true:sealedChallenge.inside?inRect(u.pos,sealedChallenge.rect):!u.boss;
+ const adj=adjacentEnemies(s).filter(inCurrentChallenge).sort((a,b)=>a.hp-b.hp);
+ const visible=s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&s.seen.includes(key(u.pos))&&inCurrentChallenge(u));
  if(tac)out.push(...tacticalFight(s,L,members,adj,visible,saveSkills,mayUse));
  else{
  if(low(L)<=0.5&&(L.pp.protect??0)>0&&visible.some(e=>dist(e.pos,L.pos)<=4))act({type:'skill',skill:'protect',target:L.id});
  for(const e of adj){if(mayUse(e))for(const skill of hitMoves(s,L,e))act({type:'skill',skill,target:e.id});act({type:'basic',target:e.id});}
  if(!adj.length&&!cau)for(const e of visible)if(mayUse(e))for(const skill of hitMoves(s,L,e))act({type:'skill',skill,target:e.id}); // cautious never shoots at a distant enemy
  }
- const target=objective(s,memo);
+ const roomTarget=nearestRoomTarget(s,memo);
+ if(roomTarget){
+  if(same(roomTarget.room.interaction,L.pos))act({type:'interact',exit:false});
+  else {const step=stepToward(s,memo,{kind:roomTarget.room.type,pos:roomTarget.room.interaction});if(step)act(step);}
+ }
+ const contractTarget=visibleChallengeEnemyTarget(s,memo)??visibleCommissionTarget(s,memo);
+ const target=contractTarget?{kind:contractTarget.kind,pos:contractTarget.pos}:roomTarget?{kind:roomTarget.room.type,pos:roomTarget.room.interaction}:objective(s,memo);
  assert.ok(!target||!['exit','up'].includes(target.kind),`roguelike strategy attempted an exit or upward floor: ${target?.kind}`);
- if(target&&same(target.pos,L.pos)){
+ if(target&&target.kind!=='scout'&&same(target.pos,L.pos)){
   const k=target.kind;act({type:'interact',exit:k==='exit'||k==='down'||k==='up'});
  }
  const step=stepToward(s,memo,target);if(step)act(step);
  act({type:'wait'});
  return out;
+}
+/** One policy entry point for both live play and focused fixtures. */
+export function botCommands(source,memo){
+ const s=visibleView(source);
+ if(s.phase==='commission'){
+  const pending=s.pendingChoices?.[0];
+  return pending?.type==='commission'?[{type:'commissionChoice',choice:commissionDecisionKnown(s,memo,pending.commission)?'accept':'reject'}]:[];
+ }
+ if(s.phase==='blessing')return [{type:'blessingChoice',blessing:blessingChoiceKnown(s,memo)}];
+ if(s.phase==='tmChoice'){
+  const move=tmChoice(s,memo);return move?[{type:'tmChoice',move}]:[];
+ }
+ return s.phase==='playing'?candidates(s,memo):[];
 }
 function chooseInvite(s,memo){
  const inv=s.invitations.find(i=>i.status==='pending'),out=[];
@@ -386,6 +642,127 @@ function chooseInvite(s,memo){
 
 /* ---------- observation only (7.4 statistics): none of this changes a command, a state or the order of anything ---------- */
 const hpSum=s=>s.queue.reduce((a,i)=>a+s.units[i].hp,0),maxSum=s=>s.queue.reduce((a,i)=>a+s.units[i].maxHp,0);
+const tally=(into,key,amount=1)=>{into[key]=(into[key]??0)+amount;};
+function commissionCounters(){return Object.fromEntries(COMMISSION_IDS.map(id=>[id,{offered:0,accepted:0,rejected:0,completed:0,failed:0,failures:{},rewardExp:0}]));}
+function activityRecord(){
+ return {rooms:Object.fromEntries(ROOM_TYPES.map(type=>[type,{seen:0,entered:0,handled:0}])),
+  challenge:{started:0,cleared:0,wiped:0,rewards:{}},items:{bigBerry:0,teamTonic:0},usedItems:{bigBerry:0,teamTonic:0},roomItems:{bigBerry:0,teamTonic:0},
+  commissions:{byType:commissionCounters(),byFloor:{1:commissionCounters(),2:commissionCounters(),3:commissionCounters()},concurrentTotal:0,concurrentSamples:0,concurrentMean:null,rewardExp:0,totalTeamExp:0,expShare:null,speedRemaining:[],guardianFailures:0},
+  blessings:{offered:Object.fromEntries(BLESSING_IDS.map(id=>[id,0])),selected:Object.fromEntries(BLESSING_IDS.map(id=>[id,0])),declined:0},
+  rank:null,bossRoom:null,winHpRatio:null};
+}
+function commissionBucket(a,id,floor){
+ a.commissions.byFloor[floor]??=commissionCounters();
+ return a.commissions.byFloor[floor][id];
+}
+function logAdditions(previous,current){
+ const old=previous??[],next=current??[];let overlap=Math.min(old.length,next.length);
+ while(overlap>0){let sameTail=true;for(let i=0;i<overlap;i++)if(old[old.length-overlap+i]!==next[i]){sameTail=false;break;}if(sameTail)break;overlap--;}
+ return next.slice(overlap);
+}
+function locateAdventureRoom(s,roomId){return (s.adventureRooms??[]).find(room=>room.room===roomId);}
+export function observeActivity(before,after,cmd,x,memo){
+ const a=x.activity??(x.activity=activityRecord()),state=memo.activity,beforeLevel=before.dungeon?.level??after.dungeon?.level??1,afterLevel=after.dungeon?.level??beforeLevel;
+ const logs=logAdditions(memo.lastLog??before.log,after.log);memo.lastLog=after.log??[];
+ const processedCommissions=new Set();
+ if(before.phase!=='commission'&&after.phase==='commission'){
+  const pending=after.pendingChoices?.[0];if(pending?.type==='commission'){
+   const floor=beforeLevel;
+   tally(a.commissions.byType[pending.commission],'offered');tally(commissionBucket(a,pending.commission,floor),'offered');
+   state.offered??=new Set();state.offered.add(`${floor}:${pending.room}`);
+  }
+ }
+ if(before.phase==='commission'&&cmd.type==='commissionChoice'){
+   const pending=before.pendingChoices?.[0];if(pending?.type==='commission'){
+   const kind=cmd.choice==='accept'?'accepted':'rejected';tally(a.commissions.byType[pending.commission],kind);tally(commissionBucket(a,pending.commission,beforeLevel),kind);
+   const room=locateAdventureRoom(before,pending.room);if(room){const k=`${beforeLevel}:${room.room}`;if(!state.handled.has(k)){state.handled.add(k);a.rooms.commission.handled++;}}
+  }
+ }
+ if(before.phase!=='blessing'&&after.phase==='blessing'){
+  const pending=after.pendingChoices?.[0];if(pending?.type==='blessing')for(const id of pending.options){tally(a.blessings.offered,id);}
+ }
+ if(before.phase==='blessing'&&cmd.type==='blessingChoice'){
+  if(cmd.blessing===null)a.blessings.declined++;
+  else if(Object.hasOwn(a.blessings.selected,cmd.blessing))tally(a.blessings.selected,cmd.blessing);
+  const pending=before.pendingChoices?.[0];if(pending?.type==='blessing'&&pending.source==='room'){
+   const k=`${beforeLevel}:${pending.room}`;if(!state.handled.has(k)){state.handled.add(k);a.rooms.blessing.handled++;}
+  }
+ }
+ for(const line of logs){
+  for(const [id,def] of Object.entries(COMMISSIONS)){
+   if(!line.includes(`${def.name}委托`))continue;
+   const active=before.commissions?.find(c=>c.id===id&&!processedCommissions.has([c.id,c.floor,c.acceptedRound,c.speedLimit??''].join(':'))),floor=active?.floor??beforeLevel;
+   const commissionKey=active?`${active.id}:${active.floor}:${active.acceptedRound}:${active.speedLimit??''}`:null;
+   if(line.includes('委托完成')){
+    if(commissionKey)processedCommissions.add(commissionKey);
+    tally(a.commissions.byType[id],'completed');tally(commissionBucket(a,id,floor),'completed');
+    const exp=Number(line.match(/队伍经验\+(\d+)/)?.[1]??0);
+    a.commissions.byType[id].rewardExp+=exp;commissionBucket(a,id,floor).rewardExp+=exp;a.commissions.rewardExp+=exp;
+    if(id==='speedrun'&&active&&active.speedLimit!==null){const elapsed=Math.max(1,after.round-active.acceptedRound+1);a.commissions.speedRemaining.push(active.speedLimit-elapsed);}
+   }else if(line.includes('委托失败')){
+    if(commissionKey)processedCommissions.add(commissionKey);
+    const reason=line.match(/失败（([^）]+)）/)?.[1]??'未知';
+    tally(a.commissions.byType[id],'failed');tally(a.commissions.byType[id].failures,reason);
+    tally(commissionBucket(a,id,floor),'failed');tally(commissionBucket(a,id,floor).failures,reason);
+    if(id==='guardian'&&reason==='同行倒下')a.commissions.guardianFailures++;
+   }
+  }
+ }
+ if(cmd.type==='round'){
+  a.commissions.concurrentTotal+=(after.commissions?.length??0);a.commissions.concurrentSamples++;
+  if(cmd.action?.type==='use'&&['bigBerry','teamTonic'].includes(cmd.action.item))tally(a.usedItems,cmd.action.item);
+ }
+ if(after.phase==='ended')for(const c of before.commissions??[]){
+  const commissionKey=`${c.id}:${c.floor}:${c.acceptedRound}:${c.speedLimit??''}`;
+  if(processedCommissions.has(commissionKey))continue;
+  tally(a.commissions.byType[c.id],'failed');tally(a.commissions.byType[c.id].failures,'本局结束作废');
+  tally(commissionBucket(a,c.id,c.floor),'failed');tally(commissionBucket(a,c.id,c.floor).failures,'本局结束作废');
+ }
+ for(const room of after.adventureRooms??[]){
+  const roomKey=`${afterLevel}:${room.room}`,doors=room.doors??[];
+  if(doors.some(door=>(after.seen??[]).includes(key(door)))&&!state.seen.has(roomKey)){
+   state.seen.add(roomKey);if(a.rooms[room.type])a.rooms[room.type].seen++;
+  }
+  const rect=after.rooms?.[room.room];
+  const inside=(after.queue??[]).some(id=>{const u=after.units[id];return u?.pos&&inRect(u.pos,rect);});
+  if(inside&&!state.entered.has(roomKey)){state.entered.add(roomKey);if(a.rooms[room.type])a.rooms[room.type].entered++;}
+  const old=beforeLevel===afterLevel?locateAdventureRoom(before,room.room):undefined;
+  if(room.type==='challenge'){
+   if(old?.state==='idle'&&room.state==='sealed'){
+    tally(a.challenge,'started');state.started.add(roomKey);if(!state.handled.has(roomKey)){state.handled.add(roomKey);a.rooms.challenge.handled++;}
+    if(process.env.SOAK_DEBUG==='trace')console.log('SOAK_CHALLENGE_START_JSON='+JSON.stringify({runId:after.runId,round:after.round,room:room.room,challengeDiagnostic:challengeDiagnostic(after)}));
+   }
+   if(old?.state==='sealed'&&room.state==='cleared'&&!state.cleared.has(roomKey)){
+    tally(a.challenge,'cleared');state.cleared.add(roomKey);state.rewards.add(roomKey);
+    if(room.reward)tally(a.challenge.rewards,room.reward);
+   }
+   if(after.phase==='ended'&&after.end?.outcome==='wipe'&&room.state==='sealed'&&state.started.has(roomKey)&&!state.wiped.has(roomKey)){
+    tally(a.challenge,'wiped');state.wiped.add(roomKey);
+   }
+  }else if(old?.state==='idle'&&room.state==='done'&&!state.handled.has(roomKey)){
+   state.handled.add(roomKey);if(a.rooms[room.type])a.rooms[room.type].handled++;
+  }
+  if(room.type==='item'&&old?.state==='idle'&&room.state==='done'){
+   const item=room.item;if(item==='bigBerry'||item==='teamTonic')tally(a.roomItems,item);
+  }
+ }
+ for(const item of ['bigBerry','teamTonic']){
+  const delta=(after.prog?.items?.[item]??0)-(before.prog?.items?.[item]??0);
+  if(delta>0)a.items[item]+=delta;
+ }
+ const bossRect=after.bossRoom!==undefined?after.rooms?.[after.bossRoom]:undefined;
+ const hadBossRoom=beforeLevel===afterLevel&&(before.queue??[]).some(id=>inRect(before.units[id]?.pos,before.bossRoom!==undefined?before.rooms?.[before.bossRoom]:undefined));
+ const hasBossRoom=(after.queue??[]).some(id=>inRect(after.units[id]?.pos,bossRect));
+ if(!a.bossRoom&&!hadBossRoom&&hasBossRoom){
+  const items=after.prog?.items??{};
+  a.bossRoom={hpRatio:maxSum(after)?Number((hpSum(after)/maxSum(after)).toFixed(3)):0,
+   items:Object.values(items).reduce((n,v)=>n+v,0),blessings:[...(after.blessings??[])]};
+ }
+ if(after.phase==='ended'&&after.end?.outcome==='won')a.winHpRatio=maxSum(after)?Number((hpSum(after)/maxSum(after)).toFixed(3)):0;
+ if(after.phase==='ended')a.commissions.totalTeamExp=after.prog?.exp??0;
+ a.commissions.concurrentMean=a.commissions.concurrentSamples?Number((a.commissions.concurrentTotal/a.commissions.concurrentSamples).toFixed(3)):null;
+ if(after.phase==='ended')a.commissions.expShare=a.commissions.totalTeamExp?Number((a.commissions.rewardExp/a.commissions.totalTeamExp).toFixed(3)):null;
+}
 /** Damage that ordinary enemies would deal in this round: the same round is replayed on a copy whose boss is set to wait only (berry healing is added back). Null when not measurable. */
 function otherDamage(s,cmd){
  if(cmd.action.type==='exchange')return null; // the companion leaves the queue; its HP is not damage
@@ -400,6 +777,35 @@ function observeBossFloor(s,x){
  const B=s.enemies.map(i=>s.units[i]).find(u=>u.boss&&aliveU(u));
  if(B&&!x.contact&&s.queue.some(i=>{const m=s.units[i];return aliveU(m)&&(dist(m.pos,B.pos)===1||rayClear(s,m.pos,B.pos,null));}))
   x.contact={alive:s.queue.filter(i=>aliveU(s.units[i])).length,hp:hpSum(s),max:maxSum(s),round:s.round};
+}
+/** Timeout-only diagnostics; hidden state is read for evidence and never reaches the bot policy. */
+function challengeDiagnostic(s){
+ const floor=new Set((s.floor??[]).map(key)),seen=new Set(s.seen??[]),visibleFloor=new Set([...seen].filter(k=>floor.has(k))),start=s.units[s.leader]?.pos;
+ const reachable=new Set();
+ if(start&&floor.has(key(start))){const queue=[start];reachable.add(key(start));
+  for(let i=0;i<queue.length;i++)for(const d of DIRS){const p={x:queue[i].x+d.x,y:queue[i].y+d.y},k=key(p);if(floor.has(k)&&!reachable.has(k)){reachable.add(k);queue.push(p);}}}
+ const pathFor=(goal,allowed)=>{if(!start||!goal||!allowed.has(key(start))||!allowed.has(key(goal)))return null;
+  const from=key(start),to=key(goal),previous=new Map([[from,null]]),queue=[start];
+  for(let i=0;i<queue.length&&!previous.has(to);i++)for(const d of DIRS){const p={x:queue[i].x+d.x,y:queue[i].y+d.y},k=key(p);
+   if(allowed.has(k)&&!previous.has(k)){previous.set(k,key(queue[i]));queue.push(p);}}
+  if(!previous.has(to))return null;const path=[];for(let at=to;at!==null;at=previous.get(at))path.push(at);return path.reverse();};
+ const visible=visibleView(s),rooms=(s.adventureRooms??[]).filter(r=>r.type==='challenge'&&r.state==='sealed').map(r=>{
+  const rect=s.rooms?.[r.room],cells=new Set();
+  if(rect)for(let y=rect.y;y<rect.y+rect.h;y++)for(let x=rect.x;x<rect.x+rect.w;x++)cells.add(`${x},${y}`);
+  const insideReachable=new Set();
+  if(start&&cells.has(key(start))&&floor.has(key(start))){const queue=[start];insideReachable.add(key(start));
+   for(let i=0;i<queue.length;i++)for(const d of DIRS){const p={x:queue[i].x+d.x,y:queue[i].y+d.y},k=key(p);if(cells.has(k)&&floor.has(k)&&!insideReachable.has(k)){insideReachable.add(k);queue.push(p);}}}
+  const roomEnemies=(r.enemyIds??[]).map(id=>{const u=s.units[id],pos=u?.pos?key(u.pos):null;
+   return {id,hp:u?.hp??null,pos,asleep:u?.asleep??null,visible:!!pos&&seen.has(pos),roomReachable:!!pos&&insideReachable.has(pos),floorPath:u?.pos?pathFor(u.pos,floor):null,visiblePath:u?.pos?pathFor(u.pos,visibleFloor):null};});
+  return {room:r.room,rect:rect?{...rect}:null,interaction:r.interaction?key(r.interaction):null,doors:(r.doors??[]).map(key),sealedCells:(r.sealedCells??[]).map(key),enemyIds:[...(r.enemyIds??[])],reachableRoomCells:insideReachable.size,enemies:roomEnemies};
+ });
+ const enemies=(s.enemies??[]).map(id=>{const u=s.units[id],pos=u?.pos?key(u.pos):null,room=rooms.find(r=>r.enemyIds.includes(id));
+  return {id,hp:u?.hp??null,pos,asleep:u?.asleep??null,visible:!!pos&&seen.has(pos),floorReachable:!!pos&&reachable.has(pos),floorPath:u?.pos?pathFor(u.pos,floor):null,visiblePath:u?.pos?pathFor(u.pos,visibleFloor):null,
+   inChallengeRoom:!!room&&!!s.rooms?.[room.room]&&inRect(u?.pos,s.rooms[room.room]),
+   roomReachable:!!pos&&!!room&&!!s.rooms?.[room.room]&&inRect(u?.pos,s.rooms[room.room])&&room.enemies.find(e=>e.id===id)?.roomReachable};
+ });
+ return {floor:[...floor].sort(),seen:[...seen].sort(),seenWalls:[...(s.seenWalls??[])].sort(),rooms,enemies,
+  visibleEnemies:(visible.enemies??[]).map(id=>{const u=visible.units[id];return {id,pos:u?.pos?key(u.pos):null,hp:u?.hp??null};}),floorReachable:reachable.size};
 }
 
 /* ---------- driver ---------- */
@@ -441,8 +847,10 @@ async function probe(port,store,st,where){
 
 async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchange=false,policy='naive',x={},use={}){
  let store=ref.store;
- const memo={visited:{},declined:new Set(),lastSwitch:-99,fullInvites:0,reckless,doomed,useExchange,suicidal:false,policy,engaged:false,prepWait:0,gatherWait:0};
+ const memo=createBotMemo(policy,{reckless,doomed,useExchange,activity:{seen:new Set(),entered:new Set(),handled:new Set(),started:new Set(),cleared:new Set(),rewards:new Set(),wiped:new Set()},commandTrace:[]});
  let rounds=0,commands=0,evolutions=0;const forms=new Map();const where=`${gameId}`;
+ x.activity=activityRecord();memo.lastLog=store.state?.log??[];
+ if(store.state)observeActivity(store.state,store.state,{type:'observe'},x,memo);
  for(;;){
   const s=store.state;
   for(const [id,u] of Object.entries(s.units))if(u.side==='friend'&&u.species){if(forms.has(id)&&forms.get(id)!==u.species){evolutions++;st.evolutions++;}forms.set(id,u.species);}
@@ -468,6 +876,11 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    assert.ok(summary,where+': missing settlement summary');
    assert.ok(Array.isArray(summary.brought)&&Array.isArray(summary.shards),where+': summary lacks brought partners or shards');
    x.summary=structuredClone(summary);
+   x.activity.commissions.totalTeamExp=s.prog.exp;
+   x.activity.commissions.expShare=s.prog.exp?Number((x.activity.commissions.rewardExp/s.prog.exp).toFixed(3)):null;
+   const rank=summary.rank??{};
+   x.activity.rank={...rank,talents:{...(s.talents??{})},talentPoints:Object.values(s.talents??{}).reduce((n,v)=>n+v,0),
+    cumulative:rank.after??0,teamLevel:rank.levelAfter??rankLevel(rank.after??0)};
    st.partnersBrought+=summary.brought.length;
    st.shards+=summary.shards.reduce((n,row)=>n+row.count,0);
    x.kills=killsOf(s);
@@ -482,7 +895,8 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
   if((s.phase==='playing'||capped)&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors)observeBossFloor(s,x);
   if(capped){
    const L=s.units[s.leader],visited=memo.visited[s.dungeon.level]??new Set(),obj=objective(s,memo);
-   if(process.env.SOAK_DEBUG)console.log(where,memo.trail.slice(-30).join(' '),s.log.slice(-6));
+   if(process.env.SOAK_DEBUG==='trace')console.log('SOAK_TRACE_JSON='+JSON.stringify({game:where,seed:Number(gameId.match(/seed (\d+)/)?.[1]??0),round:s.round,doomed:memo.doomed,suicidal:memo.suicidal,lastFoe:memo.lastFoe?{...memo.lastFoe}:null,leader:s.units[s.leader]?.pos,allies:s.queue.map(id=>({id,pos:s.units[id]?.pos,hp:s.units[id]?.hp})),frontier:explorationRoute(visibleView(s)),objective:objective(visibleView(s),memo),seen:s.seen.length,knownWalls:s.seenWalls?.length??0,challengeDiagnostic:challengeDiagnostic(s),commandTrace:memo.commandTrace,log:s.log.slice(-8)}));
+   else if(process.env.SOAK_DEBUG)console.log(where,memo.trail.slice(-30).join(' '),s.log.slice(-6));
    x.kills=killsOf(s);
    // A timeout is still an observed run: include progress before the cap in the report.
    if(s.dungeon.boss){
@@ -504,25 +918,40 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
   }
   commands++;(memo.trail??=[]).push(`${s.round}:${key(s.units[s.leader].pos)}:${s.phase}`);
   if(commands%9===0)await probe(port,store,st,where);
-  if(s.phase==='evolution'){const r=await send(port,store,{type:'evolve',species:s.pendingEvolutions[0].choices[0]},st,where+' evolution');assert.ok(r.ok,r.error);continue;}
+  if(s.phase==='evolution'){
+   const cmd={type:'evolve',species:s.pendingEvolutions[0].choices[0]},r=await send(port,store,cmd,st,where+' evolution');
+   assert.ok(r.ok,r.error);observeActivity(s,store.state,cmd,x,memo);continue;
+  }
   if(s.phase==='invitation'){
    const {out}=chooseInvite(s,memo);st.invites++;let done=false;
-   for(const cmd of out){const r=await send(port,store,cmd,st,where+' invite');if(r.ok){done=true;cmd.choice==='accept'?st.accepted++:st.rejected++;if(cmd.outgoing)st.swapped++;break;}}
+   for(const cmd of out){const before=store.state,r=await send(port,store,cmd,st,where+' invite');if(r.ok){observeActivity(before,store.state,cmd,x,memo);done=true;cmd.choice==='accept'?st.accepted++:st.rejected++;if(cmd.outgoing)st.swapped++;break;}}
    assert.ok(done,`${where}: no invitation answer accepted`);continue;
   }
   if(s.phase==='exit')assert.fail(where+': roguelike bot reached an evacuation phase');
   if(s.phase==='transit'){
    const r=await send(port,store,{type:'finishTransit'},st,where);assert.ok(r.ok,`${where}: finishTransit refused: ${r.error}`);
+   observeActivity(s,store.state,{type:'finishTransit'},x,memo);
    store.state.dungeon.level!==s.dungeon.level?st.transits++:st.cancelledTransits++;continue;
   }
   let moved=false;
-  for(const cmd of candidates(s,memo)){
+  const ordered=botCommands(s,memo);
+  assert.ok(ordered.length,`${where}: no bot command for phase ${s.phase}`);
+  const attempts=[];
+  for(const cmd of ordered){
    const od=cmd.type==='round'&&s.phase==='playing'&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors?otherDamage(s,cmd):null;
    const r=await send(port,store,cmd,st,where+' '+cmd.type);
+   if(process.env.SOAK_DEBUG==='trace')attempts.push({command:cmd,ok:r.ok,...(!r.ok?{error:r.error}:{})});
    if(r.ok&&od!==null){x.f3dmg=(x.f3dmg??0)+od;x.f3rounds=(x.f3rounds??0)+1;}
-   if(!r.ok){if(cmd.type==='round'&&cmd.action.type==='interact'){const p=s.points.find(p=>same(p.pos,s.units[s.leader].pos));if(p)memo.declined.add(`${s.dungeon.level}:${key(p.pos)}`);st.declined++;}continue;}
+   if(!r.ok){const lastFoeBefore=memo.lastFoe?{...memo.lastFoe}:null;const clearedFoe=clearStaleForcedFoeAfterBlockedMove(s,memo,cmd,r.error);if(clearedFoe&&process.env.SOAK_DEBUG==='trace'){if(attempts.length)attempts[attempts.length-1].clearedLastFoe=true;console.log('SOAK_FORCED_FOE_CLEAR_JSON='+JSON.stringify({game:where,round:s.round,leader:s.units[s.leader]?.pos,lastFoe:lastFoeBefore,frontier:explorationRoute(visibleView(s)),command:cmd,error:r.error}));}if(cmd.type==='round'&&cmd.action.type==='interact'){const p=s.points.find(p=>same(p.pos,s.units[s.leader].pos));if(p)memo.declined.add(`${s.dungeon.level}:${key(p.pos)}`);st.declined++;}continue;}
+   if(process.env.SOAK_DEBUG==='trace'&&s.round>=1150){
+    const view=visibleView(s),L=view.units[view.leader],main=objective(view,memo),rooms=visibleRooms(view).map(room=>({id:room.room,type:room.type,state:room.state,distance:routeLength(view,L.pos,room.interaction)}));
+    memo.commandTrace.push({round:s.round,doomed:memo.doomed,suicidal:memo.suicidal,lastFoe:memo.lastFoe?{...memo.lastFoe}:null,phase:s.phase,leaderBefore:L.pos,alliesBefore:view.queue.map(id=>({id,pos:view.units[id]?.pos,hp:view.units[id]?.hp})),mainTarget:main?{kind:main.kind,pos:main.pos}:null,frontier:explorationRoute(view),visibleRooms:rooms,firstCommand:ordered[0],attempts,acceptedCommand:cmd,leaderAfter:store.state.units[store.state.leader]?.pos,alliesAfter:store.state.queue.map(id=>({id,pos:store.state.units[id]?.pos,hp:store.state.units[id]?.hp}))});
+    if(memo.commandTrace.length>70)memo.commandTrace.shift();
+   }
+   observeActivity(s,store.state,cmd,x,memo);
    if(cmd.type==='switch'){memo.lastSwitch=s.round;st.switches++;moved=true;break;}
    if(cmd.type==='buy'){st.bought++;moved=true;break;}
+   if(cmd.type!=='round'){moved=true;break;}
    rounds++;moved=true;
    const a=cmd.action;
    if(process.env.SOAK_TRACE&&s.dungeon.boss&&s.dungeon.level===s.dungeon.floors){const bb=s.enemies.map(i=>s.units[i]).find(u=>u.boss);console.error(`${gameId} r${s.round} ${s.queue.map(i=>`${i}:${s.units[i].hp}@${s.units[i].pos?key(s.units[i].pos):'x'}`).join(' ')} boss:${bb?.hp}@${bb?key(bb.pos):''} ${JSON.stringify(a)}`);} // debug only (env SOAK_TRACE)
@@ -642,21 +1071,51 @@ function checkSettlement(before,after,world,summary,where){
 }
 
 export const seedOf=i=>1000+i*7919;
+const TALENT_IDS=['vitality','offense','supplies'];
+function normalizeTalents(value){
+ if(value===undefined||value===0||value==='0'||value===null)return {};
+ assert.ok(value&&typeof value==='object'&&!Array.isArray(value),'talents must be 0 or an object');
+ const selected={};let total=0;
+ for(const [id,raw] of Object.entries(value)){
+  assert.ok(TALENT_IDS.includes(id),'unknown talent '+id);
+  assert.ok(Number.isInteger(raw)&&raw>=0&&raw<=5,'talent levels must be integers from 0 to 5');
+  if(raw){selected[id]=raw;total+=raw;}
+ }
+ assert.ok(total<=4,'reference comparison supports at most four starting talent points');
+ return selected;
+}
+export function clearStaleForcedFoeAfterBlockedMove(source,memo,command,error){
+ if(!memo?.doomed||!memo.suicidal||!memo.lastFoe||command?.type!=='round'||command.action?.type!=='move')return false;
+ const reason=String(error??'');
+ if(!reason.includes('会先进入')||!reason.includes('挡住'))return false;
+ const view=visibleView(source);
+ if(view.enemies.some(id=>aliveU(view.units[id])))return false;
+ memo.lastFoe=null;
+ return true;
+}
 export async function playSeed(i,options={}){
  const policy=options.policy??'naive',difficulty=options.difficulty??'normal';
  assert.ok(['naive','tactical','tactical-stand','cautious'].includes(policy),'unknown policy '+policy);
  assert.ok(['easy','normal','hard'].includes(difficulty),'unknown difficulty '+difficulty);
- const tactical=policy==='tactical'||policy==='tactical-stand',cautious=policy==='cautious';
+ const talents=normalizeTalents(options.talents),talentPoints=Object.values(talents).reduce((n,v)=>n+v,0);
  const seed=seedOf(i),port=memory(),st=stats(),games=[],doomed=i%4===3,extra=[];
- const moveUse={},ref={};let store=new TrialStore(port);
- assert.equal(await store.beginNewGame(doomed?doomedProfile():makeProfile(),false),true,'seed '+seed+': initial camp save');
+ const moveUse={},ref={};let store=new TrialStore(port),profile=doomed?doomedProfile():makeProfile();
+ if(talentPoints)profile.rankExp=60; // Lv5 is the spec's starting rank for the reference group.
+ assert.equal(await store.beginNewGame(profile,false),true,'seed '+seed+': initial camp save');
  roundTrip(port,store,'seed '+seed+' initial camp');
+ for(const id of TALENT_IDS)for(let n=0;n<(talents[id]??0);n++){
+  const result=await store.baseAction({type:'talent',talent:id});
+  assert.ok(result.ok,'seed '+seed+': initial talent '+id+' refused: '+(result.error??''));
+  roundTrip(port,store,'seed '+seed+' talent '+id+' '+(n+1));
+ }
+ assert.deepEqual(store.profile.talents,talents,'seed '+seed+': starting talent configuration differs');
+ assert.equal(Object.values(store.profile.talents).reduce((n,v)=>n+v,0),talentPoints,'seed '+seed+': starting talent-point count differs');
  await baseTurn(port,store,seed,0,st,'seed '+seed+' g0 base',difficulty);
  for(let g=0;g<GAMES;g++){
   const id='seed '+seed+' game '+g,before=store.profile,x={};
   ref.store=store;
-  const r=await playRun(port,ref,id,st,!tactical&&!cautious&&i%3===2&&!doomed,doomed,g%2===0,policy,x,moveUse);
-  store=ref.store;extra.push({outcome:r.outcome,doomed,...x});games.push({seed,game:g,reckless:i%3===2,doomed,...r});
+  const r=await playRun(port,ref,id,st,false,doomed,g%2===0,policy,x,moveUse);
+  store=ref.store;extra.push({outcome:r.outcome,doomed,...x});games.push({seed,game:g,reckless:false,doomed,...r});
   if(r.outcome==='timeout')break;
   const ended=structuredClone(store.state),summary=structuredClone(store.settlementSummary);
   const terminalRaw=port.getItem(store.key),terminalWrites=port.writes();
@@ -673,5 +1132,5 @@ export async function playSeed(i,options={}){
   if(g<GAMES-1)await baseTurn(port,store,seed,g+1,st,id+' base',difficulty);
  }
  return {seed,games,st,moveUse,roster:store.profile?.roster.length??0,vault:store.profile?.vault??{},extra,
-  shards:store.profile?.shards??{},doomed,policy,difficulty};
+  shards:store.profile?.shards??{},doomed,policy,difficulty,talents,talentPoints,rankExp:store.profile?.rankExp??0,teamLevel:rankLevel(store.profile?.rankExp??0)};
 }

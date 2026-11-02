@@ -11,7 +11,7 @@ export const unitName=(u:Unit|undefined,fallback=''):string=>u?.species?speciesZ
 export const unitLabel=(u:Unit|undefined,id:string):string=>{const n=unitName(u);return n?`${id} ${n}`:id;};
 /** A skill is a move id, so its label is the move's Chinese name with no behavior suffix. */
 export const skillLabel=(_u:Unit|undefined,skill:Skill):string=>SKILL_CN[skill]??moveZh(skill);
-const RANGE_CN:Record<MoveRange,string>={front:'上下左右相邻',front2:'同排／列1–2格，无遮挡',line10:'同排／列至多10格，命中首个单位（队友也会被命中）',around:'使用者周围8格',room:'同房间；走廊或无房间数据时周围2格',user:'自身'};
+const RANGE_CN:Record<MoveRange,string>={front:'相邻1格（含斜向，斜向不穿墙角）',front2:'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角',line10:'同排、同列或斜线至多10格，命中首个单位（队友也会被命中），斜向不穿墙角',around:'使用者周围8格（斜向不穿墙角）',room:'同房间；走廊或无房间数据时周围2格',user:'自身'};
 export function moveRangeLabel(id:string):string{const spec=moveOf(id);return spec?RANGE_CN[spec.range]:'未知射程';}
 export type DamageSummaryContext={s:World;sourceId:string;targetId?:string};
 /** Uses the engine estimate for player-facing action previews; without context, existing reference text stays intact. */

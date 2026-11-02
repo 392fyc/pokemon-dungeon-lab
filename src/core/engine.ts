@@ -448,7 +448,7 @@ function shortestFloorDistance(s:World,start:Pos,goal:Pos):number|null {
   const floor=new Set(s.floor.map(key)),depth=new Map<string,number>([[key(start),0]]),queue=[start];
   for(let i=0;i<queue.length;i++){
     const p=queue[i],n=depth.get(key(p))!;if(same(p,goal))return n;
-    for(const d of DIRS){const next=plus(p,d),k=key(next);if(floor.has(k)&&!depth.has(k)){depth.set(k,n+1);queue.push(next);}}
+    for(const d of DIRS8){const next=plus(p,d),k=key(next);if(floor.has(k)&&!depth.has(k)&&floorStepOk(floor,p,next)){depth.set(k,n+1);queue.push(next);}}   // 8.8: eight directions, no corner cutting
   }
   return null;
 }

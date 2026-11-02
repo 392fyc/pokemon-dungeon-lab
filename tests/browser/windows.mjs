@@ -100,7 +100,7 @@ await test('M2、S1：开发场景探看与关闭后回到空的内存状态',as
 });
 await test('M3：电光一闪两格射程、合法目标提示与T撤离',async()=>{
  const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
-  await click(p,'skill-quickattack');let label=await p.locator('#skill-quickattack').innerText();assert.match(label,/电光一闪/);assert.match(label,/同排／列1–2格/);assert.match(label,/造成约8点/);
+  await click(p,'skill-quickattack');let label=await p.locator('#skill-quickattack').innerText();assert.match(label,/电光一闪/);assert.match(label,/同排、同列或斜线1–2格/);assert.match(label,/造成约8点/);
   await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.pp.quickattack,1); // E's 8 HP are defeated by an 8-point Quick Attack from two cells away
   await key(p,'ArrowRight');s=await state(p);assert.equal(s.units.C.pos.x,3); // kill E before the remaining Quick Attack PP is used on R
   for(let i=0;i<4;i++)await key(p,'.');s=await state(p);assert.equal(s.round,6);assert.equal(s.units.R.hp,8);assert.deepEqual(s.units.R.pos,{x:4,y:1});assert.equal(s.units.C.hp,16); // R walks from 9 to 4, then deals one 4-point Tackle
@@ -125,7 +125,7 @@ await test('M6：邀请替换、双方换位、承伤撤离',async()=>{
   await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,13);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,16,10]);assert.equal(s.units.C.hp,12);assert.deepEqual(s.camp,['C']);assert.deepEqual(s.camp.map(i=>s.units[i].hp),[12]);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(errors,[]);return {rounds:13,team:['A20','B16','N10'],camp:'C12'};}finally{await context.close();}
 });
 await test('V1/V2、I1：直接预检、草稿取消、切主控清空、长按和详情',async()=>{
- const {context,page:p,errors}=await setup('V1');try{await start(p);const original=await state(p);await key(p,'ArrowLeft');assert.deepEqual(await state(p),original);const reason=await p.locator('#message').innerText();assert.match(reason,/B/);assert.match(reason,/4/);assert.match(reason,/先|前序/);assert.match(reason,/本轮未执行/);assert.doesNotMatch(reason,/可能/);
+ const {context,page:p,errors}=await setup('V1');try{await start(p);const original=await state(p);await key(p,'ArrowUp');assert.deepEqual(await state(p),original);const reason=await p.locator('#message').innerText();assert.match(reason,/墙/);assert.match(reason,/本轮未执行/);   assert.doesNotMatch(reason,/可能/);   // 8.8 (G5.12): walking into B's cell now swaps, so the refused direct move is the wall above C
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');assert.equal((await state(p)).round,7);assert.equal(await p.locator('#submit').isEnabled(),true);await click(p,'detail-1');await click(p,'detail-1');assert.ok(await p.locator('#submit').count());await click(p,'cancel-draft');assert.deepEqual(await state(p),original);
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await key(p,'2');assert.equal(await p.locator('#submit').count(),0);assert.equal((await state(p)).round,7);await key(p,'3');
  await click(p,'arrange');await click(p,'partner-B');await click(p,'wait');await click(p,'edit-main');await key(p,'ArrowLeft');await click(p,'submit');let s=await state(p);assert.equal(s.round,8);assert.deepEqual(s.queue.map(i=>s.units[i].pos.x),[2,3,4]);
@@ -256,11 +256,10 @@ await test('PR5 非法移动点名真实原因且说明本轮未执行',async()=
   const {context,page:p,errors}=await setup(fixture);
   try{
    await start(p);const before=await state(p),bytes=await raw(p);
-   await key(p,fixture==='V1'?'ArrowLeft':'ArrowUp');
+   await key(p,'ArrowUp');
    const text=await p.locator('#message').innerText();
    assert.match(text,/本轮未执行/);assert.doesNotMatch(text,/可能/);
-   if(fixture==='V1'){assert.match(text,/B/);assert.match(text,/4/);assert.match(text,/先|前序/);}
-   else assert.match(text,/墙|不可行走|非地面|不是可行走/);
+   assert.match(text,/墙|不可行走|非地面|不是可行走/);   // 8.8: both fixtures use the wall above the leader; the V1 teammate-block reason no longer exists
    assert.deepEqual(await state(p),before);assert.equal(await raw(p),bytes);assert.deepEqual(errors,[]);
    observations.push({fixture:fixture??'main-invite',text});
   }finally{await context.close();}
@@ -540,7 +539,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
    await p.goto(base+'?dev=1&seed=4243');await p.locator('#start').waitFor();
    assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),profile),true);await p.reload();await ready(p);
    let s=await state(p);assert.equal(s,null);
-  const baseMoves=await p.locator('#party').innerText();assert.match(baseMoves,/上下左右相邻/);assert.match(baseMoves,/基础伤害/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
+  const baseMoves=await p.locator('#party').innerText();assert.match(baseMoves,/相邻1格（含斜向/);assert.match(baseMoves,/基础伤害/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
   const prof=()=>p.evaluate(()=>window.trial.profile());
   let pr=await prof();assert.deepEqual(pr.vault,{protect:1});assert.equal(pr.expeditions,1);assert.deepEqual(pr.roster.map(i=>i.species),['charmander','squirtle','bulbasaur']);
   await p.screenshot({path:artifact+'windows-base-1.png',fullPage:true});

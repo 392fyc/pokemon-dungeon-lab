@@ -316,6 +316,23 @@ test('K5 offense matches the shared estimate for basic and skill attacks; wall i
   assert.deepEqual([enemyCounter(0),enemyCounter(5)],[[6,6],[7,7]],'enemy counter returns actual damage without a second offense multiplier');
 });
 
+test('K5 offense boosts an enemy hit but not friendly fire; previews match the actual beam damage',()=>{
+  const beam=(offense,friendly)=>{
+    const actor=friend('A',1,1,100,{flamethrower:2},100);
+    const foe=enemy('E',friendly?8:3,1,100,'melee',{waitOnly:true});delete foe.species;delete foe.entrySpecies;
+    const ally=friend('B',3,1,100,{},100);ally.tactic='wait';
+    const s=world({A:actor,E:foe,...(friendly?{B:ally}:{})},{floor:row(10),leader:'A',queue:friendly?['A','B']:['A'],enemies:['E']});
+    s.talents={offense};const target=friendly?'B':'E';
+    const estimate=estimateAttackDamage(s,'A',target,'flamethrower');
+    const ordinary=estimateAttackDamage(s,'A',undefined,'flamethrower');
+    const after=command(s,{type:'skill',skill:'flamethrower',target});
+    if(friendly)assert.equal(after.units.E.hp,100,'the ally intercepts the beam before it reaches the enemy');
+    return [estimate,100-after.units[target].hp,ordinary];
+  };
+  assert.deepEqual([beam(0,true),beam(5,true)],[[15,15,15],[15,15,17]],'friendly fire stays at 15; ordinary opposing-target preview still includes offense');
+  assert.deepEqual([beam(0,false),beam(5,false)],[[15,15,15],[17,17,17]],'enemy damage and its preview both gain offense');
+});
+
 test('K6 supplies start with no berry at rank 2 and one at rank 3; blessing is added before guardian halves healing',()=>{
   const suppliesRun=level=>{
     const profile=initialProfile();profile.rankExp=rankThreshold(level+1);profile.talents={supplies:level};

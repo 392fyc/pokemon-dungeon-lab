@@ -754,14 +754,14 @@ function basicCategory(u:Unit):'Physical'|'Special' {
   return b&&b.spa>b.atk?'Special':'Physical';
 }
 export const STAT_DAMAGE_RATIO=Object.freeze({min:0.8,max:1.25} as const);
-/** Shared, side-effect-free damage calculation. An absent target represents an ordinary ratio-1 target. */
+/** Shared, side-effect-free damage calculation. An absent target represents an ordinary opposing ratio-1 target. */
 function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>):number {
   const attackStats=source.species?speciesOf(source.species)?.baseStats:undefined;
   const defenceStats=target?.species?speciesOf(target.species)?.baseStats:undefined;
   const ratio=attackStats&&defenceStats&&category!=='Status'
     ?Math.max(STAT_DAMAGE_RATIO.min,Math.min(STAT_DAMAGE_RATIO.max,category==='Special'?attackStats.spa/defenceStats.spd:attackStats.atk/defenceStats.def)):1;
   const afterSpeciesRatio=Math.max(1,Math.round(baseDamage*ratio));
-  const offense=source.side==='friend'&&category!=='Status'?3*(s.talents?.offense??0):0;
+  const offense=source.side==='friend'&&(!target||target.side==='enemy')&&category!=='Status'?3*(s.talents?.offense??0):0;
   const scaled=Math.max(1,applyTalentBonus(afterSpeciesRatio,offense));
   const opposing=!!target&&source.side!==target.side;
   const attackDistance=source.pos&&target?.pos?distance(source.pos,target.pos):0;

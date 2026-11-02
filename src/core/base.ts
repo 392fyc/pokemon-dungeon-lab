@@ -21,7 +21,7 @@ export type LostRecord={id:string;species:string;expedition:number};
 export type TalentId='vitality'|'offense'|'supplies';
 export const TALENTS:Readonly<Record<TalentId,{name:string;description:string}>>={
   vitality:{name:'体质',description:'同行伙伴（包括局内新招募的伙伴）最大 HP 每级提高 5%；出发、升级和进化时重算并四舍五入。'},
-  offense:{name:'攻势',description:'伙伴招式和普攻伤害每级提高 3%；不影响吹飞碰撞伤害和反击反弹。'},
+  offense:{name:'攻势',description:'伙伴对敌方的招式和普攻伤害每级提高 3%；不加成误伤同行，不影响吹飞碰撞伤害和反击反弹。'},
   supplies:{name:'补给',description:'每级使橙橙果多回复 1 HP；达到 3 级后，出发时背包自带 1 个橙橙果。'},
 };
 /**

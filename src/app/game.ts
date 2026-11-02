@@ -270,7 +270,7 @@ function rankPanel(p:Profile,ready:boolean):string{
  const level=rankLevel(p.rankExp),floor=rankThreshold(level),next=rankThreshold(level+1),points=availableTalentPoints(p);
  const rows=(['vitality','offense','supplies'] as TalentId[]).map(id=>{
   const n=p.talents[id]??0;
-  const effect=id==='vitality'?`全队最大 HP +${n*5}%`:id==='offense'?`伙伴普攻与招式伤害 +${n*3}%`:`橙橙果额外回复 ${n} HP${n>=3?'，出发自带 1 个橙橙果':'；达到 3 级时出发自带 1 个橙橙果'}`;
+  const effect=id==='vitality'?`全队最大 HP +${n*5}%`:id==='offense'?`伙伴对敌方的普攻与招式伤害 +${n*3}%；误伤同行不加成`:`橙橙果额外回复 ${n} HP${n>=3?'，出发自带 1 个橙橙果':'；达到 3 级时出发自带 1 个橙橙果'}`;
   return `<article class="unit" id="talent-${id}"><h3>${esc(TALENTS[id].name)} <small>${n}/5</small></h3><p>${effect}</p>${button(`talent-add-${id}`,'加一点',!ready||points<1||n>=5)}</article>`;
  }).join('');
  return `<section id="rank-panel"><h2>探险队成长</h2><p id="rank-level">探险队 Lv${level} · 累计经验 ${p.rankExp}</p><p id="rank-progress">升到 Lv${level+1}：${p.rankExp-floor}/${next-floor}</p><p id="talent-points">未分配天赋点：${points}</p>${button('talent-tree-toggle',talentsOpen?'收起天赋树':'天赋树',!ready,`aria-expanded="${talentsOpen}" aria-controls="talent-tree"`)}${talentsOpen?`<section id="talent-tree"><h3>自由分配天赋点</h3>${rows}${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0))}<p class="muted">每升一级获得 1 点，每项最多 5 级。加点立即保存，下一次出发生效；免费重置会退回全部已用点数。</p></section>`:''}</section>`;

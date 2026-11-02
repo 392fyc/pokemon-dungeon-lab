@@ -380,3 +380,17 @@ test('F3 raising the user\'s own stats is rolled once per use and only when the 
   const r=skill(mk(true),'A','chargebeam','E');assert.equal(stageOf(r.units.A,'spa'),1);assert.equal(r.battleRng,rngStep(LOW).state,'exactly one draw: the 70% roll');
   const m=skill(mk(false),'A','chargebeam','E');assert.equal(stageOf(m.units.A,'spa'),0);assert.equal(m.battleRng,rngStep(HIGH).state,'only the hit roll');
 });
+test('D1 the battle stream comes from the dungeon seed when there is one (the run id does not matter); without a dungeon it comes from the run id; the same input always gives the same result',()=>{
+  const run=(runId,seed)=>{
+    const a=friend('A',1,1,60);equip(a,'bite',9);const e=foeOf('E','geodude',2,1,200,{tackle:9});
+    const s=world({friends:[a],enemies:[e],hit:false});s.runId=runId;
+    if(seed!==undefined)s.dungeon={seed,width:36,height:24,floors:3,level:1,stored:{}};
+    let t=s;for(let i=0;i<8;i++)t=play(t,{type:'skill',skill:'bite',target:'E'});
+    return {hp:[t.units.A.hp,t.units.E.hp],rng:t.battleRng,log:t.log};
+  };
+  assert.deepEqual(run('one',42),run('two',42),'same dungeon seed, different run ids: identical');
+  assert.deepEqual(run('same'),run('same'),'no dungeon, same run id: identical');
+  const seeds=new Set([1,2,3,4,5,6].map(seed=>run('x',seed).rng));assert.ok(seeds.size>1,'different dungeon seeds give different streams');
+  // a fixed-map developer scenario has no dungeon, so two page loads (random run ids) draw different streams: that is the only non-seed input
+  const ids=new Set(['a','b','c','d','e','f'].map(id=>run(id).rng));assert.ok(ids.size>1);
+});

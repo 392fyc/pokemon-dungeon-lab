@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import {inferEvents} from '../../src/render/animation.ts';
+import {moveOf} from '../../src/core/moves.ts';
+import {floorIndex,adjacentReachable,rayReachable} from '../../src/render/reach.ts';
 
 const artifactDir='.artifacts/trial';
 fs.mkdirSync(artifactDir,{recursive:true});
@@ -71,7 +73,7 @@ function visibleView(s){
  }
  const team=s.queue.map(id=>{
   const u=s.units[id];
-  return {id,hp:u?.hp??0,maxHp:u?.maxHp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null};
+  return {id,hp:u?.hp??0,maxHp:u?.maxHp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null,learned:[...(u?.learned??[])],pp:{...(u?.pp??{})},maxPp:{...(u?.maxPp??{})}};
  });
  const enemies=s.enemies.map(id=>{
   const u=s.units[id];
@@ -81,7 +83,7 @@ function visibleView(s){
  const points=s.points.filter(p=>seen.has(p.pos.x+','+p.pos.y))
   .map(p=>({kind:p.kind,pos:{x:p.pos.x,y:p.pos.y},used:!!p.used}));
  const leader=team.find(u=>u.id===s.leader);
- return {level:s.dungeon?.level??1,seen:[...seen],seenWalls:[...seenWalls],team,leaderId:s.leader,leaderPos:leader?.pos??null,enemies,points};
+ return {level:s.dungeon?.level??1,seen:[...seen],seenWalls:[...seenWalls],team,leaderId:s.leader,leaderPos:leader?.pos??null,enemies,points,items:{...(s.prog?.items??{})}};
 }
 
 // Replays actual UI input. State reads here only translate a chosen visible
@@ -163,6 +165,7 @@ function floorStepAllowed(floor,from,to){
  return dx===0||dy===0||(floor.has(posKey({x:to.x,y:from.y}))&&floor.has(posKey({x:from.x,y:to.y})));
 }
 const fromKey=k=>{const [x,y]=k.split(',').map(Number);return {x,y};};
+const visibleFloor=view=>floorIndex(view.seen.map(fromKey));
 const add=(p,d)=>({x:p.x+d.dx,y:p.y+d.dy});
 function unknownExitMayBeReached(floor,known,from,d){
  const to=add(from,d);if(known.has(posKey(to)))return false;
@@ -244,10 +247,42 @@ function recoverBlockedRoute(view,memory){
  }
  return null;
 }
+function visibleDamageTarget(view,actor,target,spec){
+ if(spec.target!=='enemy'||!spec.effects.includes('damage'))return false;
+ const floor=visibleFloor(view);if(!new Set(view.seen).has(posKey(target.pos)))return false;
+ if(spec.range==='front'||spec.range==='around')return adjacentReachable(floor,actor.pos,target.pos);
+ if(spec.range!=='front2'&&spec.range!=='line10')return false;
+ const occupied=new Set([...view.team,...view.enemies].filter(unit=>unit.id!==actor.id&&unit.id!==target.id&&unit.hp>0&&unit.pos).map(unit=>posKey(unit.pos)));
+ return rayReachable(floor,occupied,actor.pos,target.pos,spec.range==='front2'?2:10);
+}
+function planVisibleDamage(view,requirePp=true){
+ const actor=view.team.find(unit=>unit.id===view.leaderId);if(!actor||actor.hp<=0||!actor.pos)return null;
+ const candidates=[];
+ for(const skill of actor.learned??[]){
+  const spec=moveOf(skill);if(!spec||!spec.effects.includes('damage')||spec.target!=='enemy'||(requirePp&&(actor.pp[skill]??0)<1))continue;
+  for(const target of view.enemies)if(visibleDamageTarget(view,actor,target,spec))candidates.push({skill,target,power:spec.power??0});
+ }
+ candidates.sort((a,b)=>b.power-a.power||a.target.hp-b.target.hp||a.target.pos.y-b.target.pos.y||a.target.pos.x-b.target.pos.x||a.skill.localeCompare(b.skill));
+ const best=candidates[0];return best?{type:'skill',skill:best.skill,target:best.target.id,targetPos:{x:best.target.pos.x,y:best.target.pos.y}}:null;
+}
+function planVisibleBerry(view){
+ const actor=view.team.find(unit=>unit.id===view.leaderId);
+ return (view.items?.berry??0)>0&&actor?.pos&&actor.hp>0&&actor.hp<actor.maxHp?{type:'use',item:'berry',target:actor.id}:null;
+}
+function planVisibleTonic(view){
+ const actor=view.team.find(unit=>unit.id===view.leaderId);
+ if((view.items?.tonic??0)<1||!actor?.pos||actor.hp<=0||!planVisibleDamage(view,false))return null;
+ return (actor.learned??[]).some(skill=>(actor.pp[skill]??0)<(actor.maxPp[skill]??0))?{type:'use',item:'tonic',target:actor.id}:null;
+}
 function planVisibleAction(view,route,memory,shopBought){
- // Combat uses only enemies whose positions are already in the revealed-cell set.
+ // Self-target supplies stay legal if a companion moves earlier in the same round.
+ const berry=planVisibleBerry(view);if(berry)return {kind:'round',action:berry};
+ const damage=planVisibleDamage(view);if(damage)return {kind:'round',action:damage};
+ const tonic=planVisibleTonic(view);if(tonic)return {kind:'round',action:tonic};
  const awake=adjacentEnemy(view,{awakeOnly:true});
  if(awake)return {kind:'round',action:{type:'basic',targetPos:awake.pos}};
+ const pickup=view.points.find(p=>!p.used&&(p.kind==='berry'||p.kind==='tonic')&&posKey(p.pos)===posKey(view.leaderPos));
+ if(pickup)return {kind:'round',action:{type:'interact',exit:false}};
  // Prioritize visible pickups, then the downward stair. There is no retreat destination.
  const target=view.points.find(p=>!p.used&&(p.kind==='goal'||p.kind==='item'))??view.points.find(p=>p.kind==='down');
  if(target){
@@ -348,6 +383,20 @@ try{
  for(const k of frontierFloor){const p=fromKey(k);for(const d of directions){const candidate=posKey(add(p,d));if(!frontierFloor.has(candidate)&&candidate!=='1,-1')frontierWalls.add(candidate);}}
  const openDiagonalFrontier={...wallView,seen:[...frontierFloor],seenWalls:[...frontierWalls]};
  assert.deepEqual(nearestRevealedEdge(openDiagonalFrontier,{known:new Set(),tried:new Set()})?.pos,{x:0,y:0},'an unknown diagonal is a frontier when both side cells are revealed floor');
+ const attackView={level:1,seen:['0,0','1,0','2,0'],seenWalls:[],leaderId:'A',leaderPos:{x:0,y:0},team:[{id:'A',hp:10,maxHp:10,pos:{x:0,y:0},learned:['quickattack'],pp:{quickattack:1},maxPp:{quickattack:2}}],enemies:[{id:'E',hp:10,pos:{x:2,y:0}}],points:[],items:{berry:0,tonic:0}};
+ assert.deepEqual(planVisibleDamage(attackView),{type:'skill',skill:'quickattack',target:'E',targetPos:{x:2,y:0}},'a learned damaging move with PP can target a visible legal enemy');
+ assert.equal(planVisibleDamage({...attackView,team:[{...attackView.team[0],pp:{quickattack:0}}]}),null,'a damaging move is not issued at zero PP');
+ assert.equal(planVisibleDamage({...attackView,seen:['0,0','1,0']}),null,'an enemy outside revealed floor is never selected');
+ assert.equal(planVisibleDamage({...attackView,team:[attackView.team[0],{id:'B',hp:10,pos:{x:1,y:0},learned:[],pp:{},maxPp:{}}]}),null,'a visible teammate blocks the intermediate ray cell');
+ const cornerAttack={...attackView,leaderPos:{x:0,y:0},seen:['0,0','1,0','1,1'],team:[{...attackView.team[0],pos:{x:0,y:0}}],enemies:[{id:'E',hp:10,pos:{x:1,y:1}}]};
+ assert.equal(planVisibleDamage(cornerAttack),null,'an unknown side floor blocks a diagonal attack ray');
+ const injuredWithBerry={...attackView,team:[{...attackView.team[0],hp:5}],items:{berry:1,tonic:0}};
+ assert.deepEqual(planVisibleBerry(injuredWithBerry),{type:'use',item:'berry',target:'A'});
+ assert.equal(planVisibleBerry({...injuredWithBerry,items:{berry:0,tonic:0}}),null,'no berry means no item action');
+ const exhaustedWithTonic={...attackView,team:[{...attackView.team[0],pp:{quickattack:0}}],items:{berry:0,tonic:1}};
+ assert.deepEqual(planVisibleTonic(exhaustedWithTonic),{type:'use',item:'tonic',target:'A'},'tonic is used only for a real PP gap and a legal visible attack');
+ assert.equal(planVisibleTonic({...exhaustedWithTonic,items:{berry:0,tonic:0}}),null,'no tonic means ordinary fallback remains available');
+ report.visibleMoveAndSupplyRegression=true;
  report.eightDirectionAndCornerRegression=true;
  // Regression: the known corridor to a goal/shop is blocked by a distant sleeper.
  // Exhausted edges must lead toward that visible blocker, then attack when adjacent.

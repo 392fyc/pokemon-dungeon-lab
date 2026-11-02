@@ -1,0 +1,7 @@
+{
+ "id": "floor-base-wet",
+ "model": "gpt-image-2.5-flare",
+ "quality": "high",
+ "size": "1024x1024",
+ "prompt": "A continuous damp blue-grey cave ground of smooth wet stone, with irregular darker damp patches, a few faint shallow water sheens and small pale pebbles scattered unevenly. Seamless tileable texture that wraps perfectly on all four edges, filling the whole image edge to edge, seen straight from above. Chunky 16-bit pixel art with large visible pixel blocks, as if the whole image were a 96x96 pixel canvas. Low contrast and quiet so characters stand out on top of it: no tile seams, no grid, no flagstones, no mortar lines, no repeating squares, no borders, no frame; irregular organic variation only, soft ambient light from the top-left. No text, no letters, no characters, no creatures, no objects."
+}

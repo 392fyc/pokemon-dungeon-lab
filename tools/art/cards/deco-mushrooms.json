@@ -1,0 +1,8 @@
+{
+ "id": "deco-mushrooms",
+ "model": "gpt-image-2.5-flare",
+ "quality": "high",
+ "size": "1024x1024",
+ "prompt": "Two or three tiny cave mushrooms with pale brown caps growing together, meant for a mossy grey stone cave floor. Top-down 2D dungeon game floor decoration in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, simple silhouette with a dark outline, few colours, muted values a little lighter than the floor so it reads as part of the ground and never as a pickup item, soft ambient light from the top-left, a faint soft shadow under it, centred on a plain transparent background with wide empty margins. No text, no letters, no characters, no creatures.",
+ "background": "transparent"
+}

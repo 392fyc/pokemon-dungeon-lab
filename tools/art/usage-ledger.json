@@ -1113,6 +1113,594 @@
    "usd": 0.05334,
    "seconds": 18.9,
    "raw": "20261101T153707Z-gpt-image-2.5-flare-high.png"
+  },
+  {
+   "at": "20261101T181551Z",
+   "card": "deco-rocks",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 142,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 142
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1898
+   },
+   "usd": 0.05339,
+   "seconds": 16.8,
+   "raw": "20261101T181551Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181608Z",
+   "card": "deco-rocks",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 142,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 142
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1898
+   },
+   "usd": 0.05339,
+   "seconds": 18.0,
+   "raw": "20261101T181608Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181626Z",
+   "card": "deco-grass",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 147,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 147
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1903
+   },
+   "usd": 0.05342,
+   "seconds": 16.4,
+   "raw": "20261101T181626Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181643Z",
+   "card": "deco-grass",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 147,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 147
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1903
+   },
+   "usd": 0.05342,
+   "seconds": 19.5,
+   "raw": "20261101T181643Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181703Z",
+   "card": "deco-mushrooms",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 136,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 136
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1892
+   },
+   "usd": 0.05336,
+   "seconds": 19.3,
+   "raw": "20261101T181703Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181723Z",
+   "card": "deco-mushrooms",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 136,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 136
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1892
+   },
+   "usd": 0.05336,
+   "seconds": 18.5,
+   "raw": "20261101T181723Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181742Z",
+   "card": "deco-pebbles",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 143,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 143
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1899
+   },
+   "usd": 0.0534,
+   "seconds": 17.1,
+   "raw": "20261101T181742Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181759Z",
+   "card": "deco-pebbles",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 143,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 143
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1899
+   },
+   "usd": 0.0534,
+   "seconds": 17.1,
+   "raw": "20261101T181759Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181817Z",
+   "card": "deco-crack",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 152,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 152
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1908
+   },
+   "usd": 0.05344,
+   "seconds": 17.0,
+   "raw": "20261101T181817Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181834Z",
+   "card": "deco-crack",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 152,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 152
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1908
+   },
+   "usd": 0.05344,
+   "seconds": 16.2,
+   "raw": "20261101T181834Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181850Z",
+   "card": "deco-moss",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 142,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 142
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1898
+   },
+   "usd": 0.05339,
+   "seconds": 18.6,
+   "raw": "20261101T181850Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181909Z",
+   "card": "deco-moss",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 142,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 142
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1898
+   },
+   "usd": 0.05339,
+   "seconds": 16.7,
+   "raw": "20261101T181909Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181926Z",
+   "card": "deco-puddle",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 148,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 148
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1904
+   },
+   "usd": 0.05342,
+   "seconds": 18.7,
+   "raw": "20261101T181926Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T181945Z",
+   "card": "deco-puddle",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 148,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 148
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1904
+   },
+   "usd": 0.05342,
+   "seconds": 19.9,
+   "raw": "20261101T181945Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T182005Z",
+   "card": "deco-embers",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 147,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 147
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1903
+   },
+   "usd": 0.05342,
+   "seconds": 17.4,
+   "raw": "20261101T182005Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261101T182023Z",
+   "card": "deco-embers",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-3-deco",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 147,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 147
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1903
+   },
+   "usd": 0.05342,
+   "seconds": 18.0,
+   "raw": "20261101T182023Z-gpt-image-2.5-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261102T002826Z",
+   "card": "floor-base-moss",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-4-floor",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 160,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 160
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1916
+   },
+   "usd": 0.05348,
+   "seconds": 24.6,
+   "raw": "20261102T002826Z-gpt-image-2.5-flare-high.png"
+  },
+  {
+   "at": "20261102T002850Z",
+   "card": "floor-base-moss",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-4-floor",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 160,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 160
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1916
+   },
+   "usd": 0.05348,
+   "seconds": 24.8,
+   "raw": "20261102T002850Z-gpt-image-2.5-flare-high.png"
+  },
+  {
+   "at": "20261102T002916Z",
+   "card": "floor-base-wet",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-4-floor",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 160,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 160
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1916
+   },
+   "usd": 0.05348,
+   "seconds": 23.1,
+   "raw": "20261102T002916Z-gpt-image-2.5-flare-high.png"
+  },
+  {
+   "at": "20261102T002939Z",
+   "card": "floor-base-wet",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-4-floor",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 160,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 160
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1916
+   },
+   "usd": 0.05348,
+   "seconds": 22.3,
+   "raw": "20261102T002939Z-gpt-image-2.5-flare-high.png"
+  },
+  {
+   "at": "20261102T003001Z",
+   "card": "floor-base-ash",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-4-floor",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 161,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 161
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1917
+   },
+   "usd": 0.05349,
+   "seconds": 22.1,
+   "raw": "20261102T003001Z-gpt-image-2.5-flare-high.png"
+  },
+  {
+   "at": "20261102T003024Z",
+   "card": "floor-base-ash",
+   "model": "gpt-image-2.5-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-sample-4-floor",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 161,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 161
+    },
+    "output_tokens": 1756,
+    "output_tokens_details": {
+     "image_tokens": 1756,
+     "text_tokens": 0
+    },
+    "total_tokens": 1917
+   },
+   "usd": 0.05349,
+   "seconds": 23.0,
+   "raw": "20261102T003024Z-gpt-image-2.5-flare-high.png"
   }
  ]
 }

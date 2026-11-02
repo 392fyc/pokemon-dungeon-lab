@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>标题画面</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;900&display=swap">
+<style>
+body{margin:0}
+a{color:#e8d48a}a:hover{color:#fff1b8}
+.bg{background-image:url(../img/dungeon-moss.png);background-size:cover;background-position:center;image-rendering:pixelated}
+.mon{image-rendering:pixelated}
+</style>
+</head>
+<body>
+<div style="width: 1280px; height: 720px; position: relative; overflow: hidden; background: #0b0f0d; font-family: 'Noto Sans SC', system-ui, sans-serif; color: #f2eee0">
+  <div class="bg" aria-hidden="true" style="position: absolute; inset: 0; filter: blur(2px) brightness(0.45); transform: scale(1.05)"></div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,9,7,0.2) 0%, rgba(6,9,7,0.85) 100%)"></div>
+
+  <div style="position: absolute; left: 0; top: 120px; width: 1280px; display: flex; flex-direction: column; align-items: center; gap: 14px">
+    <div style="font-size: 72px; font-weight: 900; letter-spacing: 12px; color: #fff1b8; text-shadow: 0 4px 0 #3a2a10, 0 0 24px rgba(232,212,138,0.35)">宝可梦地牢探索</div>
+    <div style="font-size: 16px; letter-spacing: 6px; color: #c9c4b0">三人小队 · 随机迷宫 · 击败第三层的首领</div>
+  </div>
+
+  <div style="position: absolute; left: 0; top: 330px; width: 1280px; display: flex; flex-direction: column; align-items: center; gap: 14px">
+    
+      <a href="camp.html" style="width: 300px; height: 56px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 20px; font-weight: 600; color: #0b0f0d; background: #e8d48a; border-radius: 12px">继续冒险</a>
+    
+    <a href="starter.html" style="width: 300px; height: 56px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 20px; font-weight: 600; color: #f2eee0; background: rgba(20,28,24,0.85); border: 1px solid #5a6a5c; border-radius: 12px; box-sizing: border-box">新的冒险</a>
+    <button type="button" style="width: 300px; height: 56px; font: inherit; font-size: 18px; color: #c9c4b0; background: rgba(20,28,24,0.6); border: 1px solid #3d4a40; border-radius: 12px">设置与存档</button>
+  </div>
+
+  <div aria-hidden="true" style="position: absolute; left: 0; bottom: 40px; width: 1280px; display: flex; justify-content: center; align-items: flex-end; gap: 46px">
+    <img class="mon" src="../img/bulbasaur.png" alt="" style="height: 84px">
+    <img class="mon" src="../img/charmander.png" alt="" style="height: 88px">
+    <img class="mon" src="../img/squirtle.png" alt="" style="height: 90px">
+    <img class="mon" src="../img/chikorita.png" alt="" style="height: 84px">
+    <img class="mon" src="../img/cyndaquil.png" alt="" style="height: 85px">
+    <img class="mon" src="../img/totodile.png" alt="" style="height: 80px">
+    <img class="mon" src="../img/treecko.png" alt="" style="height: 84px">
+    <img class="mon" src="../img/torchic.png" alt="" style="height: 88px">
+  </div>
+  <div style="position: absolute; right: 20px; bottom: 12px; font-size: 12px; color: #8f8a78">版本 0.1 · 私有试玩</div>
+</div>
+</body>
+</html>

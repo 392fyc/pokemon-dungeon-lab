@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>选择起始伙伴</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;800&display=swap">
+<style>
+body{margin:0}
+a{color:#e8d48a}a:hover{color:#fff1b8}
+.mon{image-rendering:pixelated}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+(function () {
+  var T = { 草: '#3f7a3a', 毒: '#6a3f8a', 火: '#a8482a', 水: '#2b5f8a', 一般: '#6a6a5a' };
+  var ON = '#e8d48a', ME = '#7fbfef', OFF = '#2a332d', DIM = '#6b6240';
+  var ring8 = [6, 7, 8, 11, 13, 16, 17, 18];
+  var front = Array.from({ length: 25 }, function (_, i) { return i === 12 ? ME : i === 7 ? ON : ring8.indexOf(i) >= 0 ? DIM : OFF; });
+  var DESC = { 撞击: '用整个身体撞向对手进行攻击。', 抓: '用坚硬且无比锋利的爪子抓对手进行攻击。', 拍击: '使用长长的尾巴或手等拍打对手进行攻击。', 火花: '向对手发射小型火焰进行攻击。有时会让对手陷入灼伤状态。', 水枪: '向对手猛烈地喷射水流进行攻击。', 种子炸弹: '将许多外壳坚硬的大种子从上方砸下攻击对手。', 魔法叶: '散落可以追踪对手的神奇叶片。', 树叶: '将叶片打向对手，进行攻击。' };
+  function mv(name, type, cat, pow, acc, pp) { return { name: name, type: type, typeColor: T[type], cat: cat, pow: pow, acc: acc, pp: pp, reach: '1 格（含斜向）', area: '面朝的一格 · 单体', grid: front, desc: DESC[name] }; }
+  var TACKLE = mv('撞击', '一般', '物理', 6, '95%', 30), SCRATCH = mv('抓', '一般', '物理', 6, '90%', 28), POUND = mv('拍击', '一般', '物理', 6, '90%', 27);
+  var EMBER = mv('火花', '火', '特殊', 7, '88%', 15), WATERGUN = mv('水枪', '水', '特殊', 5, '88%', 17);
+  function S(hp, atk, def, spa, spd, spe) { return [['HP', hp, '#6ccf6c'], ['攻击', atk, '#e8a04a'], ['防御', def, '#e8d04a'], ['特攻', spa, '#6aa8e8'], ['特防', spd, '#7ad0a8'], ['速度', spe, '#e87aa8']].map(function (a) { return { label: a[0], value: a[1], color: a[2] }; }); }
+  function ty() { return Array.prototype.map.call(arguments, function (n) { return { name: n, color: T[n] }; }); }
+  var R = 92;
+  function ang(i) { return (-90 + i * 60) * Math.PI / 180; }
+  function pt(i, r) { return (r * Math.cos(ang(i))).toFixed(1) + ',' + (r * Math.sin(ang(i))).toFixed(1); }
+  function ring(f) { return [0, 1, 2, 3, 4, 5].map(function (i) { return pt(i, R * f); }).join(' '); }
+  var IMG = function (n) { return '../img/' + n + '.png'; };
+  var list = [
+    { id: 'bulbasaur', name: '妙蛙种子', types: ty('草', '毒'), stats: S(45, 49, 49, 65, 65, 45), img: IMG('bulbasaur'), moves: [TACKLE, mv('种子炸弹', '草', '物理', 16, '88%', 11)] },
+    { id: 'charmander', name: '小火龙', types: ty('火'), stats: S(39, 52, 43, 60, 50, 65), img: IMG('charmander'), moves: [SCRATCH, EMBER] },
+    { id: 'squirtle', name: '杰尼龟', types: ty('水'), stats: S(44, 48, 65, 50, 64, 43), img: IMG('squirtle'), moves: [TACKLE, WATERGUN] },
+    { id: 'chikorita', name: '菊草叶', types: ty('草'), stats: S(45, 49, 65, 49, 65, 45), img: IMG('chikorita'), moves: [TACKLE, mv('魔法叶', '草', '特殊', 12, '必中', 8)] },
+    { id: 'cyndaquil', name: '火球鼠', types: ty('火'), stats: S(39, 52, 43, 60, 50, 65), img: IMG('cyndaquil'), moves: [TACKLE, EMBER] },
+    { id: 'totodile', name: '小锯鳄', types: ty('水'), stats: S(50, 65, 64, 44, 48, 43), img: IMG('totodile'), moves: [SCRATCH, WATERGUN] },
+    { id: 'treecko', name: '木守宫', types: ty('草'), stats: S(40, 45, 35, 65, 55, 70), img: IMG('treecko'), moves: [POUND, mv('树叶', '草', '物理', 6, '—', '—')] },
+    { id: 'torchic', name: '火稚鸡', types: ty('火'), stats: S(45, 60, 40, 70, 50, 45), img: IMG('torchic'), moves: [SCRATCH, EMBER] }
+  ];
+  var q = new URLSearchParams(location.search).get('state') || 'squirtle';
+  var picked = 'squirtle', hover = q === 'hover' ? 1 : null;
+  if (list.some(function (m) { return m.id === q; })) picked = q;
+
+  function render() {
+    var c = list.filter(function (m) { return m.id === picked; })[0];
+    var st = c.stats;
+    var radar = st.map(function (s, i) { return pt(i, R * Math.min(s.value, 100) / 100); }).join(' ');
+    var statsLabel = st.map(function (s) { return s.label + s.value; }).join('，');
+    var axes = [0, 1, 2, 3, 4, 5].map(function (i) { return '<line x1="0" y1="0" x2="' + (R * Math.cos(ang(i))).toFixed(1) + '" y2="' + (R * Math.sin(ang(i))).toFixed(1) + '" stroke="#2f3a33" stroke-width="1"></line>'; }).join('');
+    var dots = st.map(function (s, i) { var r = R * Math.min(s.value, 100) / 100; return '<span style="position: absolute; left: ' + (145 + r * Math.cos(ang(i))).toFixed(1) + 'px; top: ' + (145 + r * Math.sin(ang(i))).toFixed(1) + 'px; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: ' + s.color + '; box-shadow: 0 0 0 2px #131a16"></span>'; }).join('');
+    var labels = st.map(function (s, i) { return '<div style="position: absolute; left: ' + (145 + 124 * Math.cos(ang(i))).toFixed(1) + 'px; top: ' + (145 + 124 * Math.sin(ang(i))).toFixed(1) + 'px; transform: translate(-50%, -50%); text-align: center; white-space: nowrap; line-height: 1.2"><div style="font-size: 12px; font-weight: 600; color: ' + s.color + '">' + s.label + '</div><div style="font-size: 15px; font-weight: 700; color: #f2eee0">' + s.value + '</div></div>'; }).join('');
+    var types = c.types.map(function (t) { return '<span style="font-size: 13px; padding: 3px 12px; border-radius: 12px; background: ' + t.color + '">' + t.name + '</span>'; }).join('');
+    var moves = c.moves.map(function (m, i) {
+      var grid = m.grid.map(function (g) { return '<span style="background: ' + g + '; border-radius: 2px"></span>'; }).join('');
+      return '<div class="mvcard" style="position: relative; padding: 10px 14px; background: #1f2b24; border: 1px solid #4d5d50; border-radius: 12px; display: flex; gap: 14px">' +
+        '<div aria-label="范围示意：自己在中间，亮格是会打到的格子" role="img" style="display: grid; grid-template-columns: repeat(5, 14px); grid-auto-rows: 14px; gap: 2px; align-self: center">' + grid + '</div>' +
+        '<div style="flex: 1; display: flex; flex-direction: column; gap: 6px">' +
+        '<div style="display: flex; align-items: center; gap: 8px"><span style="font-size: 17px; font-weight: 700">' + m.name + '</span><span style="font-size: 12px; padding: 2px 8px; border-radius: 10px; background: ' + m.typeColor + '">' + m.type + '</span><span style="font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #2a3a30">' + m.cat + '</span></div>' +
+        '<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; font-size: 12px">' +
+        '<span><span style="display: block; color: #8f8a78">威力</span>' + m.pow + '</span><span><span style="display: block; color: #8f8a78">命中</span>' + m.acc + '</span><span><span style="display: block; color: #8f8a78">PP</span>' + m.pp + '</span><span><span style="display: block; color: #8f8a78">射程</span>' + m.reach + '</span><span><span style="display: block; color: #8f8a78">范围</span>' + m.area + '</span></div>' +
+        '<div class="desc" style="display: ' + (hover === i ? 'block' : 'none') + '; position: absolute; left: 0; right: 0; top: 100%; margin-top: 6px; z-index: 2; padding: 10px 14px; background: rgba(12,18,15,0.97); border: 1px solid #e8d48a; border-radius: 10px; font-size: 13px; color: #e6e1cf; line-height: 1.6">' + m.desc + '</div>' +
+        '</div></div>';
+    }).join('');
+    var mons = list.map(function (m) {
+      var on = m.id === picked;
+      return '<button type="button" data-id="' + m.id + '" aria-label="' + m.name + '" aria-pressed="' + on + '" style="font: inherit; color: inherit; height: 112px; background: ' + (on ? '#22302a' : 'rgba(19,26,22,0.9)') + '; border: ' + (on ? '3px solid #e8d48a' : '1px solid #3d4a40') + '; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer"><img class="mon" src="' + m.img + '" alt="" style="height: 58px"><span style="font-size: 13px">' + m.name + '</span></button>';
+    }).join('');
+    document.getElementById('root').innerHTML =
+'<div style="width: 1280px; height: 720px; box-sizing: border-box; background: radial-gradient(circle at 50% 30%, #1a241e 0, #0b0f0d 70%); font-family: \'Noto Sans SC\', system-ui, sans-serif; color: #f2eee0; padding: 28px 80px; display: flex; flex-direction: column; gap: 18px">' +
+'<div style="display: flex; justify-content: space-between; align-items: center"><a href="title.html" style="font-size: 14px; text-decoration: none; color: #c9c4b0">‹ 返回标题</a><div style="font-size: 14px; color: #c9c4b0">选一只宝可梦，和你一起出发</div><div style="width: 80px"></div></div>' +
+'<div style="display: flex; gap: 28px; background: rgba(19,26,22,0.9); border: 1px solid #3d4a40; border-radius: 16px; padding: 22px 28px; height: 400px; box-sizing: border-box">' +
+'<div style="width: 200px; display: flex; flex-direction: column; align-items: center; gap: 10px">' +
+'<div style="width: 190px; height: 190px; border-radius: 18px; background: radial-gradient(circle at 50% 70%, #2a3a30 0, #141c18 70%); display: flex; align-items: center; justify-content: center"><img class="mon" src="' + c.img + '" alt="' + c.name + '" style="height: 150px"></div>' +
+'<div style="font-size: 30px; font-weight: 800">' + c.name + '</div><div style="display: flex; gap: 6px">' + types + '</div>' +
+'<a href="camp.html" style="margin-top: 8px; width: 170px; height: 52px; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 19px; font-weight: 800; color: #0b0f0d; background: #e8d48a; border-radius: 12px">就选它</a></div>' +
+'<div style="width: 300px; display: flex; align-items: center; justify-content: center"><div style="position: relative; width: 290px; height: 290px">' +
+'<svg width="290" height="290" style="position: absolute; left: 0; top: 0" viewBox="-145 -145 290 290" overflow="visible" role="img" aria-label="' + statsLabel + '">' +
+'<polygon points="' + ring(1) + '" fill="none" stroke="#3d4a40" stroke-width="1"></polygon><polygon points="' + ring(0.66) + '" fill="none" stroke="#2f3a33" stroke-width="1"></polygon><polygon points="' + ring(0.33) + '" fill="none" stroke="#2f3a33" stroke-width="1"></polygon>' + axes +
+'<polygon points="' + radar + '" fill="rgba(232,212,138,0.35)" stroke="#e8d48a" stroke-width="2"></polygon></svg>' + dots + labels + '</div></div>' +
+'<div style="flex: 1; display: flex; flex-direction: column; gap: 10px; justify-content: center">' + moves + '</div></div>' +
+'<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px">' + mons + '</div></div>';
+    var root = document.getElementById('root');
+    root.querySelectorAll('button[data-id]').forEach(function (b) { b.onclick = function () { picked = b.getAttribute('data-id'); hover = null; render(); }; });
+    root.querySelectorAll('.mvcard').forEach(function (el) {
+      var d = el.querySelector('.desc');
+      el.onmouseenter = function () { d.style.display = 'block'; };
+      el.onmouseleave = function () { d.style.display = 'none'; };
+    });
+  }
+  render();
+})();
+</script>
+</body>
+</html>

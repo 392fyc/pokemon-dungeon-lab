@@ -1,0 +1,16 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-02T15:40:00Z"},
+  "title": "宝可梦地牢探索 画面返工样稿",
+  "launch": {"view": "focused", "file": "Title.dc.html"},
+  "pages": [],
+  "boards": {
+    "Title.dc.html": {"x": 0, "y": 0, "w": 1280, "h": 720, "title": "1 标题画面", "is_interactive": true},
+    "Starter.dc.html": {"x": 1360, "y": 0, "w": 1280, "h": 720, "title": "2 选择起始伙伴", "is_interactive": true},
+    "Camp.dc.html": {"x": 0, "y": 840, "w": 1280, "h": 720, "title": "3 营地", "is_interactive": true},
+    "Main.dc.html": {"x": 1360, "y": 840, "w": 1280, "h": 720, "title": "4 迷宫画面", "is_interactive": true}
+  },
+  "order": ["Title.dc.html", "Starter.dc.html", "Camp.dc.html", "Main.dc.html"],
+  "notes": {},
+  "designSystems": []
+}

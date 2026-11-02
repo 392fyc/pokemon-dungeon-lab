@@ -7,10 +7,11 @@ import {
 } from '../../src/core/base.ts';
 import {BUILD_ID,TrialStore} from '../../src/core/save.ts';
 import {
-  applyCommand,closeOut,createExpedition,estimateAttackDamage,speciesUnit,
+  applyCommand,applyTalentBonus,closeOut,createExpedition,estimateAttackDamage,speciesUnit,recruitUnit,
   CONTENT_VERSION,RULE_VERSION,
 } from '../../src/core/engine.ts';
 import {enemy,friend,pos,row,world} from '../acceptance/fixtures.mjs';
+import {MOVE_DEFS} from '../../src/core/moves.ts';
 
 function memoryPort(initialRaw=null,failAt=[]) {
   let raw=initialRaw,attempts=0,writes=0;
@@ -152,6 +153,14 @@ test('K3 only 0..5 branch ranks totaling at most Lv-1 validate; failed camp edit
   const before=structuredClone(distributed),sixth=applyBase(distributed,{type:'talent',talent:'vitality'});
   assert.equal(sixth.ok,false);assert.deepEqual(distributed,before,'the rejected sixth level does not mutate its input');
 
+  const empty=initialProfile(),unchanged=structuredClone(empty);
+  const noPoints=applyBase(empty,{type:'talent',talent:'vitality'});
+  assert.equal(noPoints.ok,false);assert.equal(noPoints.error,'没有可分配的天赋点');
+  assert.deepEqual(empty,unchanged,'rank 0 branch is rejected solely because no points remain');
+  const badId=applyBase(capped,{type:'talent',talent:'unknown'});
+  assert.equal(badId.ok,false);assert.equal(badId.error,'天赋分支不合法');
+  assert.deepEqual(capped,{...initialProfile(),rankExp:rankThreshold(6)},'invalid branch does not mutate input');
+
   const saved=initialProfile();saved.rankExp=rankThreshold(4);
   const port=memoryPort(),store=new TrialStore(port,'rank-k3');
   assert.equal(await store.beginNewGame(saved,false),true,store.error);
@@ -241,6 +250,27 @@ test('K4 vitality applies at departure, level-up, evolution, and the half-HP rec
   assert.deepEqual([invited.invitations[0].unit.hp,invited.invitations[0].unit.maxHp],[12,24],'Lv6 Pidgey uses the same enhanced max HP before halving');
 });
 
+test('K4/K5 integer talent percentages round exact halves up for all base values 1..300 and ranks 0..5',()=>{
+  for(let value=1;value<=300;value++)for(let rank=0;rank<=5;rank++)for(const step of [3,5]){
+    const numerator=BigInt(value)*BigInt(100+step*rank);
+    const expected=Number(numerator/100n+(numerator%100n>=50n?1n:0n));
+    assert.equal(applyTalentBonus(value,step*rank),expected,`${value}, rank ${rank}, step ${step}`);
+  }
+  assert.equal(speciesUnit('A','charmander',36).maxHp,50);
+  const recruited=recruitUnit('N','charmander',36,3);
+  assert.deepEqual([recruited.maxHp,recruited.hp],[58,29],'50 HP with vitality 3 rounds 57.5 to 58 before halving');
+
+  const original=MOVE_DEFS.scratch;
+  try{
+    MOVE_DEFS.scratch={...original,power:88}; // Controlled 50-damage half-point fixture through real resolution.
+    const actor=friend('A',1,1,100,{scratch:2},100),foe=enemy('E',2,1,200,'melee',{waitOnly:true});
+    delete foe.species;delete foe.entrySpecies;
+    const s=world({A:actor,E:foe},{floor:row(4),leader:'A',queue:['A'],enemies:['E']});s.talents={offense:5};
+    assert.equal(estimateAttackDamage(s,'A','E','scratch'),58);
+    assert.equal(200-command(s,{type:'skill',skill:'scratch',target:'E'}).units.E.hp,58);
+  }finally{MOVE_DEFS.scratch=original;}
+});
+
 test('K5 offense matches the shared estimate for basic and skill attacks; wall impact and enemy counter-reflection stay unchanged',()=>{
   const attack=(offense,skill)=>{
     const actor=friend('A',1,1,40,skill?{scratch:5}:{},40);actor.species='charmander';
@@ -275,6 +305,15 @@ test('K5 offense matches the shared estimate for basic and skill attacks; wall i
   const noBonus=counterResult(0),fullBonus=counterResult(5);
   assert.deepEqual(fullBonus,noBonus,'partner offense does not amplify enemy damage or its reflected counter damage');
   assert.equal(noBonus[1],noBonus[2],'counter reflects exactly the enemy damage estimate');
+
+  const enemyCounter=offense=>{
+    const actor=friend('A',1,1,100,{},100),foe=enemy('E',2,1,100,'melee',{waitOnly:true});
+    delete foe.species;delete foe.entrySpecies;foe.counter=3;
+    const s=world({A:actor,E:foe},{floor:row(4),leader:'A',queue:['A'],enemies:['E']});s.talents={offense};
+    const after=command(s,{type:'basic',target:'E'});
+    return [100-after.units.E.hp,100-after.units.A.hp];
+  };
+  assert.deepEqual([enemyCounter(0),enemyCounter(5)],[[6,6],[7,7]],'enemy counter returns actual damage without a second offense multiplier');
 });
 
 test('K6 supplies start with no berry at rank 2 and one at rank 3; blessing is added before guardian halves healing',()=>{

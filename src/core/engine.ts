@@ -139,8 +139,12 @@ export function speciesUnit(id:string,speciesId:string,level=INITIAL_LEVEL,pos:P
   const sp=SPECIES[speciesId],maxHp=speciesMaxHp(speciesId,level);
   return {id,side:'friend',hp:maxHp,maxHp,pos,pp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),learned:sp.kit.map(k=>k.move),species:speciesId,entrySpecies:speciesId,level,...freshCombatState(),reflect:0,lightscreen:0,tactic:'together'};
 }
+/** Integer percentages keep exact half points from rounding down due to a binary float multiplier. */
+export function applyTalentBonus(value:number,percent:number):number {
+  return Math.floor((value*(100+percent)+50)/100);
+}
 function vitalityMaxHp(speciesId:string,level:number,vitality=0):number {
-  return Math.round(speciesMaxHp(speciesId,level)*(1+0.05*vitality));
+  return applyTalentBonus(speciesMaxHp(speciesId,level),5*vitality);
 }
 /** R07 half snapshot of a new recruit: HP floor(max/2) (at least 1); each kit move PP floor(max/2) (at least 1, at most max). */
 export function recruitUnit(id:string,speciesId:string,level:number,vitality=0):Unit {
@@ -757,8 +761,8 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
   const ratio=attackStats&&defenceStats&&category!=='Status'
     ?Math.max(STAT_DAMAGE_RATIO.min,Math.min(STAT_DAMAGE_RATIO.max,category==='Special'?attackStats.spa/defenceStats.spd:attackStats.atk/defenceStats.def)):1;
   const afterSpeciesRatio=Math.max(1,Math.round(baseDamage*ratio));
-  const offense=source.side==='friend'&&category!=='Status'?1+0.03*(s.talents?.offense??0):1;
-  const scaled=Math.max(1,Math.round(afterSpeciesRatio*offense));
+  const offense=source.side==='friend'&&category!=='Status'?3*(s.talents?.offense??0):0;
+  const scaled=Math.max(1,applyTalentBonus(afterSpeciesRatio,offense));
   const opposing=!!target&&source.side!==target.side;
   const attackDistance=source.pos&&target?.pos?distance(source.pos,target.pos):0;
   const base=source.side==='enemy'?Math.max(1,Math.round(scaled*DIFFICULTY[s.difficulty??'normal'])):scaled;

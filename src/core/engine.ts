@@ -3,19 +3,24 @@ import {generateFloor,generateChallengeEncounter,serviceRoll,ENEMY_DIFFICULTY,DI
 import {ECON} from './economy.ts';
 import {SPECIES,speciesOf,tmPool,learnableMove,speciesMaxHp,type KitMove} from './roster.ts';
 import {TACTICS,isTactic,type Tactic} from './tactics.ts';
-import {moveOf,moveCategory,type MoveSpec} from './moves.ts';
+import {moveOf,moveCategory,moveEffects,type MoveSpec,type StageKey,type StageChange,type StatusId} from './moves.ts';
 import names from '../data/names-zh.json' with {type:'json'};
 import commissionData from '../data/commissions.json' with {type:'json'};
 import blessingData from '../data/blessings.json' with {type:'json'};
 export type Pos = {x:number;y:number};
+export type {StatusId,StageKey} from './moves.ts';
+export type StatusState={left?:number;tick?:number};
 /** Skills are move ids; PP and learned use the same keys. */
 export type Skill = string;
 /** Camp talent levels copied into a new camp expedition; absent on developer and legacy worlds. */
 export type ExpeditionTalents=Partial<Record<'vitality'|'offense'|'supplies',number>>;
 export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; pos:Pos|null;
   pp:Partial<Record<Skill,number>>; maxPp:Partial<Record<Skill,number>>; learned:Skill[];
-  stages:{atk:number;def:number}; protect:number; counter:number; lastMove:string|null;
+  /** `atk`/`def` always exist; the 8.8 stages (special attack/defence, accuracy, evasion) appear only once changed and read as 0 when missing. Speed has no stage (the game has no speed). */
+  stages:{atk:number;def:number;spa?:number;spd?:number;acc?:number;eva?:number}; protect:number; counter:number; lastMove:string|null;
   reflect?:number; lightscreen?:number;
+  /** 8.8 (#165) status conditions, absent when none. `left` counts the unit's own remaining action opportunities (par, frz, confusion, flinch); `tick` counts round ends until the next damage (psn, tox, brn last the whole floor). */
+  status?:Partial<Record<StatusId,StatusState>>;
   tactic?:Tactic; level?:number; entrySpecies?:string;
   post?:Pos;
   asleep?:boolean; wakeSkip?:boolean; targetMemory?:Pos|null; lostSightTurns?:number; roamTarget?:Pos|null; direction?:Pos|null;
@@ -42,12 +47,20 @@ export type Command = {type:'switch';actor:string}|{type:'round';action:Action;o
 export type Invitation = {id:string;unit:Unit;status:'pending'|'accepted'|'rejected'|'cancelled'};
 /** `to` is set only for a stairs request (the target floor number); a plain exit request has no `to`. */
 export type ExitRequest = {actor:string;pos:Pos;locked:boolean;to?:number};
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'rest'|'shop'|'exchange';
-export type ShopItem='berry'|'tonic'|'tm';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'healSeed'|'rest'|'shop'|'exchange';
+export type ShopItem='berry'|'tonic'|'tm'|'pechaBerry'|'healSeed';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
-export type Item='berry'|'tonic'|'bigBerry'|'teamTonic';
+export type Item='berry'|'tonic'|'bigBerry'|'teamTonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'healSeed';
+/** 8.8 (#165, G9.1): items lying on the floor, picked up by walking onto them. */
+export type PickupKind=Extract<PointKind,Item>;
+export const PICKUP_KINDS:readonly PickupKind[]=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','healSeed'];
+export const isPickupKind=(kind:string):kind is PickupKind=>(PICKUP_KINDS as readonly string[]).includes(kind);
 export const SKILL_CN:Record<Skill,string>=(names as unknown as {moves:Record<string,string>}).moves;
-export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂'};
+export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂',pechaBerry:'桃桃果',rawstBerry:'木子果',cheriBerry:'零余果',healSeed:'治愈之种'};
+/** 8.8 (#165, G9.1): which status conditions each cure item removes (Heal Seed: all of them). */
+export const ITEM_CURES:Partial<Record<Item,readonly StatusId[]>>={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],healSeed:['psn','tox','brn','par','frz','confusion','flinch']};
+export const STATUS_NAMES:Record<StatusId,string>={psn:'中毒',tox:'剧毒',brn:'灼伤',par:'麻痹',frz:'冰冻',confusion:'混乱',flinch:'畏缩'};
+export const STAGE_NAMES:Record<StageKey,string>={atk:'攻击',def:'防御',spa:'特攻',spd:'特防',spe:'速度',acc:'命中',eva:'闪避'};
 export type CommissionId='hunter'|'collector'|'scout'|'guardian'|'speedrun';
 export type BlessingId='berryBoost'|'floorHeal'|'battleSpirit'|'lullaby'|'rally'|'tmChoice';
 export type CommissionDefinition={name:string;description:string;progressTarget:number|null;equivalentEnemies:number;penalty:'defenseMinusOne'|'berryHealHalf'|null;floors:number[];speedMultiplier?:number;requiresRoomTypes?:AdventureRoom['type'][]};
@@ -65,10 +78,10 @@ export type Rect={x:number;y:number;w:number;h:number};
  * `rng` is the recruit-draw state (a 32-bit integer, separate from `dungeon.seed`); `kills` holds defeated enemies of the current round
  * until the round-end settlement and is empty at every checkpoint; `made` counts recruits created so far (ids N1, N2...).
  */
-export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number}};
+export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number;pechaBerry?:number;rawstBerry?:number;cheriBerry?:number;healSeed?:number}};
 /** Cumulative experience thresholds: reaching Lv L costs the sum of levels 5 through L-1. */
 const expThreshold=(level:number)=>level<=INITIAL_LEVEL?0:level*(level-1)/2-((INITIAL_LEVEL-1)*INITIAL_LEVEL)/2;
-export const PROG={recruitChance:0.3,thresholds:Array.from({length:101},(_,level)=>expThreshold(level)),initialLevel:INITIAL_LEVEL,maxLevel:100,hpPerLevel:1,damagePerLevel:1,damageEveryLevels:4,expMultiplier:2,goalExp:0,bossExp:0,berryHeal:8,tonicPp:1,restPp:2};
+export const PROG={recruitChance:0.3,thresholds:Array.from({length:101},(_,level)=>expThreshold(level)),initialLevel:INITIAL_LEVEL,maxLevel:100,hpPerLevel:1,damagePerLevel:1,damageEveryLevels:4,expMultiplier:2,goalExp:0,bossExp:0,berryHeal:8,tonicPp:10,teamTonicPp:5,restPp:5,bagLimit:null as number|null};
 export const levelFor=(exp:number)=>Math.max(INITIAL_LEVEL,PROG.thresholds.reduce((best,t,level)=>t<=exp?level:best,INITIAL_LEVEL));
 export const levelDamageBonus=(level:number)=>Math.floor(Math.max(0,level-INITIAL_LEVEL)/PROG.damageEveryLevels);
 export type Point={pos:Pos;kind:PointKind;used:boolean};
@@ -82,7 +95,7 @@ export type Dungeon={seed:number;width:number;height:number;floors:number;level:
 /** A technique machine obtained in this run; `sent` remains a possible in-run fate, while final rogue fate is decided by win or wipe. */
 export type TmItem={move:string;source:'target'|'shop'|'boss'|'challenge';fate:'held'|'brought'|'sent'|'lost'};
 /** 7.2 the shop of this run: fixed stock decided at the start, and every sale so far. `tm` is null once sold. */
-export type Shop={level:number;stock:{berry:number;tonic:number;tm:string|null};trades:{item:ShopItem;price:number}[]};
+export type Shop={level:number;stock:{berry:number;tonic:number;tm:string|null;pechaBerry?:number;healSeed?:number};trades:{item:ShopItem;price:number}[]};
 /** 7.2 the exchanger of this run: used at most once; `sent` is the companion it took home. */
 export type Exchange={level:number;used:boolean;sent:string|null};
 /**
@@ -103,10 +116,19 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   commissions?:ActiveCommission[];blessings?:BlessingId[];pendingChoices?:PendingChoice[];lullabyPending?:boolean;tmChoiceReady?:boolean;pendingEnd?:'won'|'wipe'|'normal';
   /** 8.5: only a new camp expedition has these; missing completedCommissions marks a legacy/developer world with no new score. */
   talents?:ExpeditionTalents;completedCommissions?:number;
+  /** 8.8 (#165): state of the separate battle random stream (hits, secondary effects, status durations, confusion). Derived from the dungeon seed on first use; never saved. */
+  battleRng?:number;
+  /** 8.8 (#165): what happened in the latest round command (misses, status changes, status damage, pickups), for the interface. Absent when nothing happened; reset by every round command. */
+  events?:RoundEvent[];
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
   pendingEvolutions?:{actor:string;choices:string[]}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
   purse?:number;tms?:TmItem[];shop?:Shop;exchange?:Exchange};
+export type RoundEvent=
+  |{type:'miss';actor:string;target:string;skill:string|null}
+  |{type:'status';target:string;status:StatusId;change:'apply'|'refresh'|'cure'|'expire'|'unchanged'}
+  |{type:'statusDamage';target:string;status:'psn'|'tox'|'brn';amount:number}
+  |{type:'pickup';actor:string;item:Item;ok:boolean};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
 export const RULE_VERSION='trial-rules-5';
 export const CONTENT_VERSION='trial-content-5';
@@ -119,7 +141,7 @@ export const DIRS:Pos[]=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 export const DIRS8:Pos[]=[...DIRS,{x:1,y:1},{x:-1,y:1},{x:-1,y:-1},{x:1,y:-1}];
 export const plus=(a:Pos,b:Pos):Pos=>({x:a.x+b.x,y:a.y+b.y});
 export const clone=<T>(v:T):T=>structuredClone(v);
-const freshCombatState=()=>({stages:{atk:0,def:0},protect:0,counter:0,lastMove:null as string|null});
+const freshCombatState=()=>({stages:{atk:0,def:0} as Unit['stages'],protect:0,counter:0,lastMove:null as string|null});
 export function friend(id:string,x:number,y:number,hp=20,pp:Unit['pp']={}):Unit {
   return {id,side:'friend',hp,maxHp:20,pos:hp>0?{x,y}:null,pp:{...pp},maxPp:Object.fromEntries(Object.keys(pp).map(k=>[k,2])),learned:Object.keys(pp),...freshCombatState(),reflect:0,lightscreen:0,tactic:'together',level:INITIAL_LEVEL};
 }
@@ -148,10 +170,9 @@ export function applyTalentBonus(value:number,percent:number):number {
 function vitalityMaxHp(speciesId:string,level:number,vitality=0):number {
   return applyTalentBonus(speciesMaxHp(speciesId,level),5*vitality);
 }
-/** R07 half snapshot of a new recruit: HP floor(max/2) (at least 1); each kit move PP floor(max/2) (at least 1, at most max). */
+/** R07 half snapshot of a new recruit: HP floor(max/2) (at least 1). 8.8 (#165, G8.2): PP is full, not halved. */
 export function recruitUnit(id:string,speciesId:string,level:number,vitality=0):Unit {
   const u=speciesUnit(id,speciesId,level);u.maxHp=vitalityMaxHp(speciesId,level,vitality);u.hp=Math.max(1,Math.floor(u.maxHp/2));
-  for(const k of Object.keys(u.maxPp))u.pp[k]=Math.min(u.maxPp[k]!,Math.max(1,Math.floor(u.maxPp[k]!/2)));
   return u;
 }
 /** Recoverable recruit-draw stream: mulberry32 stepped from an explicit state, so the state can be saved and resumed without redrawing. */
@@ -186,6 +207,89 @@ const active=(s:World)=>[...s.queue,...s.enemies].map(id=>s.units[id]).filter(u=
 const occupied=(s:World,p:Pos)=>active(s).some(u=>same(u.pos,p));
 const alive=(u:Unit|undefined):u is Unit&{pos:Pos}=>!!u&&u.hp>0&&u.pos!==null;
 const note=(s:World,t:string)=>{s.log.push(t);s.log=s.log.slice(-80);};
+/* ---------- 8.8 (#165): battle random stream, hit chance, status conditions ---------- */
+const BATTLE_STREAM=0x3B1F6A27;
+/** The battle stream is separate from recruit draws (`prog.rng`), drops and enemy AI: adding hits and statuses leaves those draws unchanged. */
+function battleRandom(s:World):number {
+  const state=s.battleRng??((Math.imul((s.dungeon?.seed??hashText(s.runId))>>>0,0x9E3779B1)^BATTLE_STREAM)>>>0),next=rngStep(state);
+  s.battleRng=next.state;return next.value;
+}
+const battleInt=(s:World,lo:number,hi:number)=>lo+Math.floor(battleRandom(s)*(hi-lo+1));
+const emit=(s:World,e:RoundEvent)=>{(s.events??=[]).push(e);};
+/** Stage of a unit; the missing keys of old units read as 0 and speed never has one. */
+export const stageOf=(u:Unit,k:StageKey):number=>k==='spe'?0:((u.stages as Record<string,number|undefined>|undefined)?.[k]??0);
+/** G2 (8.8): stage difference n is clamped to -3...+3; n>=0 gives (3+n)/3, n<0 gives 3/(3-n). */
+export const accuracyMultiplier=(n:number):number=>{const c=Math.max(-3,Math.min(3,n));return c>=0?(3+c)/3:3/(3-c);};
+/** Moves are judged for a hit when they target opponents or everyone (a line attack that can also catch a companion); self buffs, guards, Helping Hand, screens and Quick Guard never roll. */
+const needsHitRoll=(spec:MoveSpec)=>spec.target==='enemy'||spec.target==='all';
+/**
+ * Percent chance (0-100, may be fractional) that `sourceId` connects with `targetId`. `skill` undefined means a basic attack: 100 unless the attacker's
+ * accuracy stage is negative. Moves with no accuracy data or "always hits" data are 100. Interface and auto-selection read this; resolution rolls it.
+ */
+export function hitChance(s:World,sourceId:string,targetId:string,skill?:Skill):number {
+  const src=s.units[sourceId],tgt=s.units[targetId];if(!src||!tgt)return 0;
+  if(skill===undefined)return Math.min(100,100*accuracyMultiplier(Math.min(0,stageOf(src,'acc'))));
+  const spec=moveOf(skill),base=moveEffects(skill)?.acc;
+  if(!spec||!needsHitRoll(spec)||base===null||base===undefined)return 100;
+  return Math.min(100,base*accuracyMultiplier(stageOf(src,'acc')-stageOf(tgt,'eva')));
+}
+function rollHit(s:World,sourceId:string,targetId:string,skill?:Skill):boolean {
+  const chance=hitChance(s,sourceId,targetId,skill);
+  return chance>=100||battleRandom(s)*100<chance;
+}
+const STATUS_DURATION:Partial<Record<StatusId,[number,number]>>={par:[2,3],frz:[1,3],confusion:[7,12]};
+const STATUS_INTERVAL:Partial<Record<StatusId,number>>={psn:20,tox:2,brn:20};
+export const hasStatus=(u:Unit|undefined,k:StatusId):boolean=>!!u&&u.status?.[k]!==undefined;
+function dropStatus(u:Unit,k:StatusId):boolean {
+  if(!u.status||u.status[k]===undefined)return false;
+  delete u.status[k];if(!Object.keys(u.status).length)delete u.status;return true;
+}
+/** Applies one status condition under the stacking rules (G5.13): all may coexist; frz and brn replace each other; tox replaces psn and psn never replaces tox. */
+function applyStatus(s:World,targetId:string,kind:StatusId):void {
+  const t=s.units[targetId];if(!alive(t))return;
+  const name=STATUS_NAMES[kind];
+  if(kind==='psn'&&hasStatus(t,'tox')){note(s,`${targetId}已经是剧毒，仍保持剧毒`);emit(s,{type:'status',target:targetId,status:'tox',change:'unchanged'});return;}
+  const had=hasStatus(t,kind),interval=STATUS_INTERVAL[kind];
+  if(kind==='frz'&&dropStatus(t,'brn'))note(s,`${targetId}的灼伤被冰冻顶掉`);
+  if(kind==='brn'&&dropStatus(t,'frz'))note(s,`${targetId}的冰冻被灼伤顶掉`);
+  if(kind==='tox'&&dropStatus(t,'psn'))note(s,`${targetId}的中毒被剧毒顶掉`);
+  if(interval!==undefined){
+    if(had){emit(s,{type:'status',target:targetId,status:kind,change:'unchanged'});return;}
+    (t.status??={})[kind]={tick:1};
+  }else{
+    const range=STATUS_DURATION[kind];
+    (t.status??={})[kind]={left:range?battleInt(s,range[0],range[1]):1};
+  }
+  note(s,`${targetId}${had?'的':'陷入'}${name}${had?'持续时间重新计算':'状态'}`);
+  emit(s,{type:'status',target:targetId,status:kind,change:had?'refresh':'apply'});
+}
+/** Removes the listed conditions; returns the ones that were present. */
+function cureStatuses(s:World,u:Unit,kinds:readonly StatusId[]):StatusId[] {
+  const cured=kinds.filter(k=>dropStatus(u,k));
+  for(const k of cured)emit(s,{type:'status',target:u.id,status:k,change:'cure'});
+  return cured;
+}
+/** End of one of the unit's own action opportunities (whether or not it could act): par, frz, confusion and flinch count down by one. */
+function endOwnTurn(s:World,id:string):void {
+  const u=s.units[id];if(!alive(u)||!u.status)return;
+  for(const k of ['par','frz','confusion','flinch'] as const){
+    const st=u.status?.[k];if(!st)continue;
+    st.left=(st.left??1)-1;
+    if(st.left<=0){dropStatus(u,k);note(s,`${id}的${STATUS_NAMES[k]}解除`);emit(s,{type:'status',target:id,status:k,change:'expire'});}
+  }
+}
+/** Round end: poison, bad poison and burn tick (first damage at the first round end after being applied, then every 20 / 2 / 20 rounds). */
+function statusRoundEnd(s:World):void {
+  for(const id of [...s.queue,...s.enemies]){
+    for(const k of ['psn','tox','brn'] as const){
+      const u=s.units[id],st=u?.status?.[k];if(!alive(u)||!st)continue;
+      st.tick=(st.tick??1)-1;if(st.tick>0)continue;
+      st.tick=STATUS_INTERVAL[k]!;
+      const amount=Math.max(1,Math.floor(u.maxHp/(k==='tox'?8:12)));
+      emit(s,{type:'statusDamage',target:id,status:k,amount:hit(s,id,amount,STATUS_NAMES[k])});
+    }
+  }
+}
 /** Revealed ground and walls are kept separately: movement and legacy saves use ground-only `seen`. */
 export function reveal(s:World):void {
   const seen=new Set(s.seen),walls=new Set(s.seenWalls??[]),floor=new Set(s.floor.map(key));
@@ -491,7 +595,7 @@ function pickDamageAction(s:World,id:string,tactic:Tactic,quickguard:ReadonlySet
       const dist=chebyshev(actor.pos!,target.pos!);
       let score=0;
       if(spec.effects.includes('damage')&&spec.power!==null){
-        score+=estimateAttackDamage(s,id,target.id,move,quickguard);
+        score+=estimateAttackDamage(s,id,target.id,move,quickguard)*hitChance(s,id,target.id,move)/100;
       }
       if(spec.effects.includes('blowaway')){
         const collision=blowawayCollision(s,actor,target);
@@ -705,7 +809,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
       if(point.kind==='item')return '目标T不是撤离点';
       return '本局没有撤离点，击败首领后结束';
     }
-    if(point.kind==='berry'||point.kind==='tonic'){if(a.exit)return '这里不是出口，不能请求撤离';return point.used?`${ITEM_NAMES[point.kind]}已拾取`:null;}
+    if(isPickupKind(point.kind)){if(a.exit)return '这里不是出口，不能请求撤离';return point.used?`${ITEM_NAMES[point.kind]}已拾取`:null;}
     if(point.kind==='rest'){if(a.exit)return '这里不是出口，不能请求撤离';if(point.used)return '休整点已使用，每局只能用一次';
       return restTargets(s).length?null:'在场成员的所有招式PP都已满，没有可整理的补给；休整机会没有消耗';}
     if(point.kind==='shop')return a.exit?'这里不是出口，不能请求撤离':'商店格上直接购买，不用“取得”';
@@ -727,6 +831,15 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
       return null;
     }
     if(a.item==='teamTonic')return null;
+    const cures=ITEM_CURES[a.item];
+    if(cures){
+      const w=s.units[a.target];
+      if(!w||w.side!=='friend'||!s.queue.includes(w.id))return '物品只能对同行伙伴使用';
+      if(!alive(w))return `${w.id}已倒下，物品不能救起倒下的伙伴`;
+      if(w.id!==id&&!adjacent(s,u.pos,w.pos))return `${w.id}不在相邻格，物品只能对自己或相邻同行使用`;
+      if(!cures.some(k=>hasStatus(w,k)))return `${w.id}没有${ITEM_NAMES[a.item]}能治好的状态，${ITEM_NAMES[a.item]}不会有效果`;
+      return null;
+    }
     const w=s.units[a.target];
     if(!w||w.side!=='friend'||!s.queue.includes(w.id))return '物品只能对同行伙伴使用';
     if(!alive(w))return `${w.id}已倒下，物品不能救起倒下的伙伴`;
@@ -751,18 +864,32 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(t.boss&&!bossCanBeBlownAway(t)&&spec.effects.includes('blowaway')&&!spec.effects.includes('damage'))return '首领不能被吹飞';
   return null;
 }
-/** 6.5 rest point: for each living member on the map, the move with the lowest remaining PP ratio (first in learned order on ties) if it is below its maximum. */
+/** 8.8 (#165, G9.2): the rest point refills every move of every living member on the map that is below its maximum. */
 function restTargets(s:World):{id:string;skill:Skill}[] {
   const out:{id:string;skill:Skill}[]=[];
   for(const id of s.queue){const u=s.units[id];if(!alive(u))continue;
-    let best:Skill|null=null,ratio=2;
-    for(const k of u.learned){const max=u.maxPp[k]??0,cur=u.pp[k]??0;if(max<=0||cur>=max)continue;if(cur/max<ratio){ratio=cur/max;best=k;}}
-    if(best)out.push({id,skill:best});}
+    for(const k of u.learned){const max=u.maxPp[k]??0,cur=u.pp[k]??0;if(max>0&&cur<max)out.push({id,skill:k});}}
   return out;
 }
-function hit(s:World,id:string,n:number):void {
-  const u=s.units[id],before=u.hp;u.hp=Math.max(0,u.hp-n);note(s,`${id}受到${n}伤害，HP ${u.hp}`);
-  if(u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
+/** Item count carried in the backpack. */
+export const bagCount=(s:World):number=>Object.values(s.prog?.items??{}).reduce<number>((a,n)=>a+(n??0),0);
+/** G9.1 (8.8): the rule layer only reports "picked up" or "bag full, not picked up"; the capacity itself (`PROG.bagLimit`, null = unlimited) is for the interface line to set. */
+export const bagFull=(s:World):boolean=>PROG.bagLimit!==null&&bagCount(s)>=PROG.bagLimit;
+/** G9.1 (8.8): a living team member standing on an unused floor item takes it without spending an action. */
+function tryPickup(s:World,actorId:string):void {
+  const u=s.units[actorId];if(!s.prog||!alive(u)||!s.queue.includes(actorId))return;
+  const point=s.points.find(q=>!q.used&&isPickupKind(q.kind)&&same(q.pos,u.pos));if(!point)return;
+  const item=point.kind as PickupKind;
+  if(bagFull(s)){note(s,`${actorId}脚下的${ITEM_NAMES[item]}没有拾取：背包已满`);emit(s,{type:'pickup',actor:actorId,item,ok:false});return;}
+  const amount=(s.prog.items[item]??0)+1;s.prog.items[item]=amount;point.used=true;
+  note(s,`${actorId}拾取${ITEM_NAMES[item]}，背包共${amount}`);emit(s,{type:'pickup',actor:actorId,item,ok:true});progressCommission(s,'collector');
+}
+/** Applies HP loss and returns the HP actually lost. `cause` marks status damage (poison, burn), which has its own log line and does not wake a sleeper. A frozen unit takes no damage at all (8.8). */
+function hit(s:World,id:string,n:number,cause?:string):number {
+  const u=s.units[id],before=u.hp;
+  if(n>0&&hasStatus(u,'frz')){note(s,`${id}冰冻中，不受伤害`);return 0;}
+  u.hp=Math.max(0,u.hp-n);note(s,cause?`${id}因${cause}损失${n}HP，HP ${u.hp}`:`${id}受到${n}伤害，HP ${u.hp}`);
+  if(!cause&&u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
   if(before>0&&u.hp===0){u.pos=null;note(s,`${id}倒下退图`);
     if(u.side==='friend')for(const c of [...(s.commissions??[])].filter(c=>c.id==='guardian'))failCommission(s,c,'同行倒下');
     if(u.side==='enemy')progressCommission(s,'hunter');
@@ -775,6 +902,7 @@ function hit(s:World,id:string,n:number):void {
     const unit=clone(u.recruit);unit.id=`${u.recruit.id}`; // fixture IDs are stable; each event initializes once
     if(s.units[unit.id]||s.invitations.some(i=>i.unit.id===unit.id))unit.id=`${unit.id}-${s.invitations.length+1}`;
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});}}
+  return before-u.hp;
 }
 /** Spec 3.1: a basic attack is Special when the actor's species has the higher base Sp. Atk than Atk, otherwise Physical (ties and units without a species count as Physical). */
 function basicCategory(u:Unit):'Physical'|'Special' {
@@ -783,7 +911,7 @@ function basicCategory(u:Unit):'Physical'|'Special' {
 }
 export const STAT_DAMAGE_RATIO=Object.freeze({min:0.8,max:1.25} as const);
 /** Shared, side-effect-free damage calculation. An absent target represents an ordinary opposing ratio-1 target. */
-function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>):number {
+function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>,thaw=false):number {
   const attackStats=source.species?speciesOf(source.species)?.baseStats:undefined;
   const defenceStats=target?.species?speciesOf(target.species)?.baseStats:undefined;
   const ratio=attackStats&&defenceStats&&category!=='Status'
@@ -794,17 +922,23 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
   const opposing=!!target&&source.side!==target.side;
   const attackDistance=source.pos&&target?.pos?chebyshev(source.pos,target.pos):0;
   const base=source.side==='enemy'?Math.max(1,Math.round(scaled*DIFFICULTY[s.difficulty??'normal'])):scaled;
-  const raw=base+(source.stages?.atk??0);
+  // 8.8 (G5.3 step 4): special attacks use the special attack / special defence stages, everything else attack / defence.
+  const special=category==='Special';
+  const raw=base+stageOf(source,special?'spa':'atk');
   const hunterPenalty=target?.side==='friend'&&activeCommission(s,'hunter')?1:0;
-  const defenceStage=Math.max(-3,Math.min(3,(target?.stages?.def??0)-hunterPenalty));
+  const defenceStage=Math.max(-3,Math.min(3,(target?stageOf(target,special?'spd':'def'):0)-hunterPenalty));
   let amount=raw<=0?0:Math.max(0,raw-defenceStage);
   if(opposing&&amount>0){
     if(category==='Physical'&&(target!.reflect??0)>0)amount=Math.floor(amount/2);
     if(category==='Special'&&(target!.lightscreen??0)>0)amount=Math.floor(amount/2);
   }
+  // 8.8 (G5.3 step 5b): a burned attacker deals 80% (rounded down, at least 1).
+  if(amount>0&&hasStatus(source,'brn'))amount=Math.max(1,Math.floor(amount*4/5));
   const blocked=opposing&&(target!.protect>0||(quickguard.has(target!.id)&&attackDistance>1));
   if(blocked)amount=0;
   else if(raw>0)amount=Math.max(1,amount);
+  // 8.8: a frozen target takes no damage, except from a thawing hit (fire moves, Scald).
+  if(target&&hasStatus(target,'frz')&&!thaw)amount=0;
   return amount;
 }
 /** HP loss for the damage part of a move/basic attack; AI and UI use the same arithmetic as resolution. */
@@ -817,13 +951,14 @@ export function estimateAttackDamage(s:World,sourceId:string,targetId:string|und
   const base=6+(spec?Math.ceil(spec.power!/2):0)+levelDamageBonus(level);
   const category=skill===undefined?basicCategory(source):moveCategory(skill);
   if(!category)throw new Error(`缺少招式类别：${skill}`);
-  const amount=damageAmount(s,source,target,base,category,quickguard);
+  const amount=damageAmount(s,source,target,base,category,quickguard,!!(skill&&moveEffects(skill)?.thaw));
   return target?Math.min(target.hp,amount):amount;
 }
 /** Apply the shared damage amount; return actual HP lost for drain and counter. */
-function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set()):number {
+function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set(),thaw=false):number {
   const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
-  const amount=damageAmount(s,source,target,baseDamage,category,quickguard);
+  const amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw);
+  if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,`${targetId}被打中而解冻`);emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
   const hpBefore=target.hp;
   hit(s,targetId,amount);
   const actual=hpBefore-target.hp;
@@ -854,29 +989,56 @@ function blowAway(s:World,actor:Unit,target:Unit):void {
   if(wall)collide(s,target.id);
   else if(blocker){collide(s,target.id);collide(s,blocker.id);}
 }
-function changeStage(s:World,targetId:string,stat:'atk'|'def',change:number):void {
-  const target=s.units[targetId],before=target.stages[stat];
+function changeStage(s:World,targetId:string,stat:StageKey,change:number):void {
+  if(stat==='spe')return; // the game has no speed: speed changes do not take effect (8.8, 4)
+  const target=s.units[targetId],before=stageOf(target,stat);
   target.stages[stat]=Math.max(-3,Math.min(3,before+change));
-  note(s,`${targetId}${stat==='atk'?'攻击':'防御'}阶段变为${target.stages[stat]}`);
+  note(s,`${targetId}${STAGE_NAMES[stat]}阶段变为${target.stages[stat]}`);
+}
+const applyStageChange=(s:World,targetId:string,change:StageChange)=>{for(const [k,v] of Object.entries(change))changeStage(s,targetId,k as StageKey,v as number);};
+const RANGE_CELLS={front:1,front2:2,line10:10} as const;
+const DIR_NAMES:Record<string,string>={'1,0':'右','0,1':'下','-1,0':'左','0,-1':'上','1,1':'右下','-1,1':'左下','-1,-1':'左上','1,-1':'右上'};
+/** 8.8 (G5.14): the first unit a confused attacker's random-direction strike meets within `range` cells, whatever its side; undefined when the line is empty or blocked. */
+function confusedStrike(s:World,actor:Unit&{pos:Pos},range:number):Unit|undefined {
+  const dir=DIRS8[Math.floor(battleRandom(s)*8)];
+  note(s,`${actor.id}因混乱朝${DIR_NAMES[key(dir)]}出手`);
+  let at=actor.pos;
+  for(let i=0;i<range;i++){
+    const next=plus(at,dir);if(!walk(s,next)||!stepOk(s,at,next))return undefined;
+    const found=active(s).find(v=>v.id!==actor.id&&same(v.pos,next));if(found)return found;
+    at=next;
+  }
+  return undefined;
 }
 function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>):void {
-  const actor=s.units[id],spec=moveOf(a.skill)!;actor.pp[a.skill]=(actor.pp[a.skill]??0)-1;actor.lastMove=a.skill;
+  const actor=s.units[id],spec=moveOf(a.skill)!,fx=moveEffects(a.skill);actor.pp[a.skill]=(actor.pp[a.skill]??0)-1;actor.lastMove=a.skill;
   note(s,`${id}使用${SKILL_CN[a.skill]??a.skill}`);
   let targets=spec.range==='room'||spec.range==='around'?moveTargetsInReach(s,id,spec):[s.units[a.target]];
   if(spec.range==='user')targets=[actor];
+  if(hasStatus(actor,'confusion')&&alive(actor)&&(spec.range==='front'||spec.range==='front2'||spec.range==='line10')){
+    const found=confusedStrike(s,actor,RANGE_CELLS[spec.range]);
+    targets=found?[found]:[];
+    if(!found)note(s,`${id}的招式没有打到任何单位`);
+  }
+  // 8.8 (G5.1): every target is judged separately; a miss takes no damage and no side effect, and the PP stays spent.
+  const landed=targets.filter(t=>{
+    if(!alive(t)||!needsHitRoll(spec))return true;
+    if(rollHit(s,id,t.id,a.skill))return true;
+    note(s,`${id}的${SKILL_CN[a.skill]??a.skill}没打中${t.id}`);emit(s,{type:'miss',actor:id,target:t.id,skill:a.skill});return false;
+  });
   let dealt=0;
   for(const effect of spec.effects){
     const stage=effect.match(/^stage:(atk|def):([+-]\d+)$/);
-    if(stage){for(const target of targets)if(alive(target))changeStage(s,target.id,stage[1] as 'atk'|'def',Number(stage[2]));continue;}
+    if(stage){for(const target of landed)if(alive(target))changeStage(s,target.id,stage[1] as 'atk'|'def',Number(stage[2]));continue;}
     if(effect==='protect'){actor.protect=3;note(s,`${id}进入守住状态`);continue;}
     if(effect==='counter'){actor.counter=3;note(s,`${id}进入反击状态`);continue;}
     if(effect==='quickguard'){
-      const guarded=targets.filter(t=>alive(t)&&t.side===actor.side);
+      const guarded=landed.filter(t=>alive(t)&&t.side===actor.side);
       for(const target of guarded)createdGuard.add(target.id);
       note(s,`${id}为${guarded.map(t=>t.id).join('、')}开启快速防守`);continue;
     }
     if(effect==='reflect'||effect==='lightscreen'){
-      for(const target of targets)if(alive(target)&&target.side===actor.side){
+      for(const target of landed)if(alive(target)&&target.side===actor.side){
         target[effect]=10;
         note(s,`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续10个对方行动阶段`);
       }
@@ -884,19 +1046,40 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
     }
     if(effect==='damage'&&spec.power!==null){
       const base=6+Math.ceil(spec.power/2)+levelDamageBonus(actor.side==='friend'?(s.prog?.level??actor.level??INITIAL_LEVEL):(actor.level??INITIAL_LEVEL));
-      for(const target of targets)if(alive(target)){
-        const hpBefore=target.hp;resolveDamage(s,id,target.id,base,moveCategory(a.skill),blockingGuard);dealt+=hpBefore-target.hp;
+      for(const target of landed)if(alive(target)){
+        const hpBefore=target.hp;resolveDamage(s,id,target.id,base,moveCategory(a.skill),blockingGuard,!!fx?.thaw);dealt+=hpBefore-target.hp;
       }
       continue;
     }
     if(effect==='blowaway'){
-      for(const target of targets)if(alive(target)&&bossCanBeBlownAway(target))blowAway(s,actor,target);
+      for(const target of landed)if(alive(target)&&bossCanBeBlownAway(target))blowAway(s,actor,target);
     }
   }
   if(spec.effects.includes('drain')&&dealt>0&&actor.hp>0){
     const before=actor.hp,heal=Math.max(1,Math.floor(dealt/2));actor.hp=Math.min(actor.maxHp,actor.hp+heal);
     note(s,`${id}吸取生命，HP ${before}→${actor.hp}`);
   }
+  // 8.8 (G5.15): side effects, one independent chance per target that was hit and is still standing; a guarded target (Protect, Quick Guard) is untouched.
+  let connected=false;
+  if(fx?.fx&&spec.effects.includes('damage'))for(const target of landed){
+    if(!alive(target)||(target.side!==actor.side&&(target.protect>0||(blockingGuard.has(target.id)&&chebyshev(actor.pos??target.pos,target.pos)>1))))continue;
+    connected=true;
+    for(const entry of fx.fx){
+      if(entry.self)continue;
+      if(!alive(target))break;
+      if(entry.chance<100&&battleRandom(s)*100>=entry.chance)continue;
+      if(entry.status)applyStatus(s,target.id,entry.status);
+      if(entry.foe)applyStageChange(s,target.id,entry.foe);
+    }
+  }
+  // Raising the user's own stats is rolled once per use (not once per target), and only if the move connected with someone.
+  if(connected&&alive(actor))for(const entry of fx!.fx!){
+    if(!entry.self)continue;
+    if(entry.chance<100&&battleRandom(s)*100>=entry.chance)continue;
+    applyStageChange(s,id,entry.self);
+  }
+  // 8.8 (G5.15): the price of a few strong moves is paid when the move connects with at least one target; if every target was missed there is no price (main-series behaviour).
+  if(fx?.cost&&alive(actor)&&landed.length>0)applyStageChange(s,id,fx.cost);
 }
 /** 7.2: the exchanger's effect. The companion leaves the queue (its slot stays empty), the chosen machines become 'sent', the exchanger is used up. */
 function sendHome(s:World,a:Extract<Action,{type:'exchange'}>):void {
@@ -911,8 +1094,17 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
   if(a.type!=='skill')u.lastMove=null;
   if(a.type==='move'){const from=clone(u.pos!),mate=allyAt(s,id,a.to);u.pos=clone(a.to);if(mate)mate.pos=clone(from);
     if(u.side==='friend'){onRoomEntry(s,from,a.to);if(mate)onRoomEntry(s,a.to,from);}
-    reveal(s);note(s,mate?`${id}与${mate.id}换位`:`${id}移动到${key(a.to)}`);}
-  else if(a.type==='basic')resolveDamage(s,id,a.target,6+bonus,basicCategory(u),blockingGuard);
+    reveal(s);note(s,mate?`${id}与${mate.id}换位`:`${id}移动到${key(a.to)}`);
+    if(u.side==='friend'){tryPickup(s,id);if(mate)tryPickup(s,mate.id);}}
+  else if(a.type==='basic'){
+    // 8.8 (G5.1): a basic attack always hits unless its user's accuracy stage is lowered; a confused attacker strikes a random direction.
+    let target:string|undefined=a.target;
+    if(hasStatus(u,'confusion')){const found=confusedStrike(s,u as Unit&{pos:Pos},1);target=found?.id;if(!found)note(s,`${id}的普攻没有打到任何单位`);}
+    if(target!==undefined){
+      if(rollHit(s,id,target))resolveDamage(s,id,target,6+bonus,basicCategory(u),blockingGuard);
+      else{note(s,`${id}的普攻没打中${target}`);emit(s,{type:'miss',actor:id,target,skill:null});}
+    }
+  }
   else if(a.type==='use'){
     const t=s.units[a.target];s.prog!.items[a.item]=(s.prog!.items[a.item]??0)-1;
     if(a.item==='bigBerry'){
@@ -920,12 +1112,15 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     }else if(a.item==='berry'){
       const before=t.hp,boost=(s.blessings??[]).includes('berryBoost')?(BLESSINGS.berryBoost.berryHealBonus??0):0;
       const raw=PROG.berryHeal+boost+(s.talents?.supplies??0),heal=activeCommission(s,'guardian')?Math.floor(raw/2):raw;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
+    }else if(ITEM_CURES[a.item]){
+      const cured=cureStatuses(s,t,ITEM_CURES[a.item]!);
+      note(s,`${id}对${t.id}使用${ITEM_NAMES[a.item]}，治好了${cured.map(k=>STATUS_NAMES[k]).join('、')}`);
     }else if(a.item==='teamTonic'){
       const restored:string[]=[];
       for(const member of s.queue){const ally=s.units[member];if(!alive(ally))continue;
         for(const skill of ally.learned){const before=ally.pp[skill]??0,max=ally.maxPp[skill]??0;if(before>=max)continue;
-          ally.pp[skill]=Math.min(max,before+1);restored.push(`${member}的${SKILL_CN[skill]??skill}PP ${before}→${ally.pp[skill]}`);}}
-      note(s,`${id}使用${ITEM_NAMES.teamTonic}，在场存活同行每招恢复1PP（${restored.join('，')}）`);
+          ally.pp[skill]=Math.min(max,before+PROG.teamTonicPp);restored.push(`${member}的${SKILL_CN[skill]??skill}PP ${before}→${ally.pp[skill]}`);}}
+      note(s,`${id}使用${ITEM_NAMES.teamTonic}，在场存活同行每招恢复${PROG.teamTonicPp}PP（${restored.join('，')}）`);
     }else{
       for(const k of t.learned)t.pp[k]=Math.min(t.maxPp[k]??0,(t.pp[k]??0)+PROG.tonicPp);note(s,`${id}对${t.id}使用${ITEM_NAMES.tonic}，每招PP+${PROG.tonicPp}（不超上限）`);
     }
@@ -956,15 +1151,15 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
       for(const t of restTargets(s)){const m=s.units[t.id],before=m.pp[t.skill]??0;m.pp[t.skill]=Math.min(m.maxPp[t.skill]??0,before+PROG.restPp);parts.push(`${t.id}的${SKILL_CN[t.skill]}PP ${before}→${m.pp[t.skill]}`);}
       p.used=true;note(s,`休整点：整理招式补给，${parts.join('，')}`);return;
     }
+    if(isPickupKind(p.kind)){if(s.prog)tryPickup(s,id);else p.used=true;return;}
     if(!stairs&&!p.used){if(p.kind==='goal'){s.goal=true;if(s.prog)s.prog.exp+=PROG.goalExp;}
       if(p.kind==='item'){s.bag++;if(s.prog){
         if(s.tmChoiceReady){if(addPendingTmChoice(s,'target',s.dungeon?.level??null,key(p.pos)))note(s,`${id}取得招式机，${BLESSINGS.tmChoice.name}提供选择`);}
         else{const r=rngStep(s.prog.rng);s.prog.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];queueTmItem(s,move,'target');note(s,`${id}取得招式机：${move}`);}
       }}
-      if((p.kind==='berry'||p.kind==='tonic')&&s.prog){s.prog.items[p.kind]++;note(s,`${id}拾取${ITEM_NAMES[p.kind]}，背包共${s.prog.items[p.kind]}`);progressCommission(s,'collector');}p.used=true;}
-    if(p.kind==='berry'||p.kind==='tonic'){/* a pickup is never an exit */}
-    else if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
-    if(p.kind!=='berry'&&p.kind!=='tonic')note(s,stairs?`${id}请求${p.kind==='down'?'下':'上'}楼梯跨层`:`${id}交互${a.exit?'并请求撤离':''}`);
+      p.used=true;}
+    if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
+    note(s,stairs?`${id}请求${p.kind==='down'?'下':'上'}楼梯跨层`:`${id}交互${a.exit?'并请求撤离':''}`);
   }else note(s,`${id}等待`);
 }
 type MovePlan={id:string;pos:Pos};
@@ -1066,6 +1261,22 @@ function wakeAdjacentEnemies(s:World):void {
     if(s.queue.some(q=>alive(s.units[q])&&adjacent(s,e.pos,s.units[q].pos!))){e.asleep=false;e.wakeSkip=true;note(s,`${id}被相邻的对方惊醒，本回合不行动`);}
   }
 }
+/** 8.8 (G5.13): why the unit's chosen action cannot happen because of a status condition, or null. */
+function statusBlock(u:Unit,a:Action):string|null {
+  if(a.type==='wait')return null;
+  if(hasStatus(u,'frz'))return '冰冻中，无法行动';
+  if((a.type==='skill'||a.type==='basic')&&hasStatus(u,'par'))return '麻痹中，无法使用招式和普攻';
+  if((a.type==='skill'||a.type==='basic')&&hasStatus(u,'flinch'))return '畏缩中，无法使用招式和普攻';
+  return null;
+}
+/** 8.8 (G5.14): a confused member's chosen step is replaced by a random one of the eight directions; a step that cannot be taken leaves it standing (the action is still used). */
+function confusedMove(s:World,id:string,chosen:Extract<Action,{type:'move'}>):Action {
+  void chosen;
+  const u=s.units[id] as Unit&{pos:Pos},dir=DIRS8[Math.floor(battleRandom(s)*8)],to=plus(u.pos,dir);
+  const alt:Action={type:'move',to};
+  if(invalid(s,id,alt)){note(s,`${id}因混乱朝${DIR_NAMES[key(dir)]}乱走，被挡住，原地不动`);return {type:'wait'};}
+  note(s,`${id}因混乱朝${DIR_NAMES[key(dir)]}乱走`);return alt;
+}
 function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,trace?:TraceStep[]):string|null {
   const lead=s.leader,moved=new Set<string>(),friendGuard=new Set<string>(),enemyGuard=new Set<string>(),blockingFromEnemies=new Set(s.quickguard?.owner==='enemy'?s.quickguard.units:[]);
   if(cmd.override&&(cmd.override.actor===lead||!s.queue.includes(cmd.override.actor)||!alive(s.units[cmd.override.actor])))return '只能安排另一名存活伙伴';
@@ -1075,34 +1286,54 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   if(swap){if(cmd.override)return '换位已占唯一伙伴干预';const err=invalid(s,lead,cmd.action);if(err)return err;}
   const later=swap?Math.max(s.queue.indexOf(lead),s.queue.indexOf(swap)):-1;
   // 7.2 exchanger: the leader's whole action. The companion leaves at once (it takes no further part this round), then everyone else acts as usual.
-  const ex=cmd.action.type==='exchange'?cmd.action:null;
+  // 8.8: a frozen leader cannot operate it; then the command falls through to the normal turn below, where the action is lost.
+  const ex=cmd.action.type==='exchange'&&!statusBlock(s.units[lead],cmd.action)?cmd.action:null;
   if(ex){const err=invalid(s,lead,ex);if(err)return err;if(cmd.override?.actor===ex.target)return '被送走的伙伴不能同时被安排动作';
     sendHome(s,ex);trace?.push({id:lead,action:ex,explicit:true,failed:false});}
   const order=[...s.queue];
-  for(let i=0;i<order.length;i++){const id=order[i];if(!s.queue.includes(id)||!alive(s.units[id])||(ex&&id===lead))continue;
+  for(let i=0;i<order.length;i++){const id=order[i];if(!s.queue.includes(id)||!alive(s.units[id])||(ex&&id===lead)){if(ex&&id===lead&&alive(s.units[id]))endOwnTurn(s,id);continue;}
+    // 8.8: whatever happens in this turn (even a swap or a refused action), it counts as one of the member's own action opportunities.
+    try{
     if(swap&&(id===lead||id===swap)){
       if(i===later){const err=invalid(s,lead,cmd.action);if(err){if(preflight)return err;continue;}
+        // 8.8: a frozen leader or a frozen partner turns the swap into a lost action (no PP); a confused leader's swap becomes a random step instead.
+        const blockedBy=statusBlock(s.units[lead],cmd.action)??(hasStatus(s.units[swap],'frz')?'的换位对象冰冻中':null);
+        if(blockedBy){s.units[lead].lastMove=null;note(s,`${lead}${blockedBy}，换位落空，未扣PP`);trace?.push({id:lead,action:cmd.action,explicit:true,failed:true});continue;}
+        if(hasStatus(s.units[lead],'confusion')){const step=confusedMove(s,lead,{type:'move',to:s.units[swap].pos!});
+          const mate2=step.type==='move'?allyAt(s,lead,step.to):undefined;execute(s,lead,step,blockingFromEnemies,friendGuard);if(step.type==='move')moved.add(lead);trace?.push({id:lead,action:step,explicit:true,failed:false,...(mate2?{swapWith:mate2.id}:{})});continue;}
         const p=s.units[lead].pos,q=s.units[swap].pos;if(p&&q){onRoomEntry(s,p,q);onRoomEntry(s,q,p);}
-        s.units[lead].pos=q;s.units[swap].pos=p;s.units[lead].lastMove=null;s.units[swap].lastMove=null;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
+        s.units[lead].pos=q;s.units[swap].pos=p;s.units[lead].lastMove=null;s.units[swap].lastMove=null;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);tryPickup(s,lead);tryPickup(s,swap);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
     const explicit=id===lead?cmd.action:cmd.override?.actor===id?cmd.override.action:null;
-    const a=explicit??defaultAction(s,id,blockingFromEnemies,friendGuard);const err=invalid(s,id,a,moved);
+    let a=explicit??defaultAction(s,id,blockingFromEnemies,friendGuard);const err=invalid(s,id,a,moved);
     if(err){if(explicit&&preflight)return err;s.units[id].lastMove=null;note(s,`${id}动作失效，等待，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
+    // 8.8: a frozen member cannot act; a paralysed or flinching one cannot use moves or basic attacks. The command is accepted and the action is lost (no PP is spent).
+    const lost=statusBlock(s.units[id],a);
+    if(lost){s.units[id].lastMove=null;note(s,`${id}${lost}，本次行动落空，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
+    if(a.type==='move'&&hasStatus(s.units[id],'confusion'))a=confusedMove(s,id,a);
     const mate=a.type==='move'?allyAt(s,id,a.to):undefined;
     execute(s,id,a,blockingFromEnemies,friendGuard);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false,...(mate?{swapWith:mate.id}:{})});
+    }finally{endOwnTurn(s,id);}
   }
   if(preflight)return null;
   decayOpponentStatuses(s,'friend');
   s.quickguard=friendGuard.size?{owner:'friend',units:[...friendGuard]}:undefined;
   for(const id of s.enemies){const e=s.units[id];if(!alive(e))continue;
+    try{
     if(e.asleep)continue;if(e.wakeSkip){e.wakeSkip=false;continue;}
-    const action=chooseEnemyAction(s,id,friendGuard,enemyGuard);
+    let action=chooseEnemyAction(s,id,friendGuard,enemyGuard);
+    // 8.8: a frozen enemy cannot act; a paralysed or flinching one cannot use moves or basic attacks; a confused one walks in a random direction.
+    const lost=statusBlock(e,action);
+    if(lost){note(s,`${id}${lost}`);continue;}
+    if(action.type==='move'&&hasStatus(e,'confusion')){const to=plus(e.pos,DIRS8[Math.floor(battleRandom(s)*8)]);note(s,`${id}因混乱乱走`);action={type:'move',to};}
     if(action.type==='move'){
       if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)){note(s,`${id}无路可走，等待`);continue;}
       const previous=clone(e.pos);execute(s,id,action,friendGuard,enemyGuard);e.direction={x:Math.sign(action.to.x-previous.x),y:Math.sign(action.to.y-previous.y)};
       if(e.roamTarget&&same(action.to,e.roamTarget))e.roamTarget=null;
     }else if(action.type==='skill'||action.type==='basic')execute(s,id,action,friendGuard,enemyGuard);
     else note(s,`${id}等待`);
+    }finally{endOwnTurn(s,id);}
   }
+  statusRoundEnd(s);
   decayOpponentStatuses(s,'enemy');wakeAdjacentEnemies(s);
   s.quickguard=enemyGuard.size?{owner:'enemy',units:[...enemyGuard]}:undefined;
   return null;
@@ -1157,7 +1388,7 @@ function end(s:World,outcome:End['outcome']):void {
 }
 function clearUnitCombatState(u:Unit):void {
   u.stages={atk:0,def:0};u.protect=0;u.counter=0;u.lastMove=null;
-  u.reflect=0;u.lightscreen=0;
+  u.reflect=0;u.lightscreen=0;delete u.status;
 }
 function clearCombatState(s:World):void {
   for(const u of Object.values(s.units))clearUnitCombatState(u);
@@ -1334,7 +1565,7 @@ export function buyProblem(s:World,item:ShopItem):string|null {
   const point=lead?.pos?s.points.find(p=>same(p.pos,lead.pos)):undefined;
   if(!point||point.kind!=='shop')return '主控必须站在商店格上才能购买';
   if(!(item in ECON.price))return '没有这种商品';
-  if(item==='tm'?sh.stock.tm===null:sh.stock[item]<1)return '这件商品已售罄，库存不会刷新';
+  if(item==='tm'?sh.stock.tm===null:(sh.stock[item]??0)<1)return '这件商品已售罄，库存不会刷新';
   const price=ECON.price[item],purse=s.purse??0;
   if(purse<price)return `钱袋不足：需要${price}，还差${price-purse}`;
   return null;
@@ -1343,7 +1574,7 @@ function buy(original:World,item:ShopItem):World {
   const s=clone(original),sh=s.shop!,price=ECON.price[item];
   s.purse=(s.purse??0)-price;sh.trades.push({item,price});
   if(item==='tm'){(s.tms??=[]).push({move:sh.stock.tm!,source:'shop',fate:'held'});note(s,`${s.leader}在商店买下招式机：${sh.stock.tm}，花费${price}`);sh.stock.tm=null;}
-  else{sh.stock[item]--;s.prog!.items[item]++;note(s,`${s.leader}在商店买下${ITEM_NAMES[item]}，花费${price}，背包共${s.prog!.items[item]}`);}
+  else{sh.stock[item]=(sh.stock[item]??0)-1;const amount=(s.prog!.items[item]??0)+1;s.prog!.items[item]=amount;note(s,`${s.leader}在商店买下${ITEM_NAMES[item]}，花费${price}，背包共${amount}`);}
   return s;
 }
 function resumeAfterChoice(s:World):void {
@@ -1414,7 +1645,7 @@ export function applyCommand(original:World,cmd:Command):Result {
   if(cmd.type==='round'){
     if(original.phase!=='playing')return fail('先处理邀请、撤离或终局');
     const err=ownPhase(clone(original),cmd,true);if(err)return fail(err);
-    const s=clone(original);s.round++;ownPhase(s,cmd,false);afterRound(s);return {ok:true,state:s};
+    const s=clone(original);s.round++;delete s.events;ownPhase(s,cmd,false);afterRound(s);return {ok:true,state:s};
   }
   if(cmd.type==='finishTransit'){
     if(original.phase!=='transit'||!original.request?.locked||original.request.to===undefined||!original.dungeon)return fail('没有已成立且完成邀请处理的跨层请求');
@@ -1543,7 +1774,7 @@ export function createExpedition(runId:string,seed:number,floors=2,squad?:{membe
     prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:(squad?.talents?.supplies??0)>=3?1:0,tonic:0}},purse:0,tms:[]};
   if(squad){
     const roll=serviceRoll(d.seed,floors);
-    if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};
+    if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,pechaBerry:ECON.stock.pechaBerry,healSeed:ECON.stock.healSeed,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};
     if(roll.exchange)s.exchange={level:roll.exchange.level,used:false,sent:null};
   }
   for(const id of s.queue)s.units[id].pos=null;

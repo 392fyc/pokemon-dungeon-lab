@@ -44,7 +44,10 @@ const emptyReady=p=>p.waitForFunction(()=>window.trial?.store.status==='empty'&&
 const state=p=>p.evaluate(()=>window.trial.getState());
 const raw=p=>p.evaluate(()=>localStorage.getItem(window.trial.store.key));
 async function startMemory(p,world,profile=null){await p.evaluate(({world,profile})=>window.trial.store.start(world,profile),{world,profile});await p.evaluate(()=>window.dispatchEvent(new Event('blur')));await ready(p);}
-async function start(p){await p.locator('#start').click();await ready(p);}
+async function start(p){await p.locator('#start').click();await ready(p);await sureHit(p);}
+// 8.8 (#165): moves can miss now, and a shipped dev scenario gets a random runId (crypto.randomUUID) while it has no dungeon seed, so its battle random stream differs from page load to page load (M2, S1 once failed 16 !== 12 and passed on rerun for exactly this reason). `start` therefore applies this to every journey. Journeys that count exact HP give every unit accuracy +3 (doubles any hit chance, so even 50% becomes 100%) in the live in-memory world;
+// this is the browser counterpart of tests/core/sure-hit.mjs. New floors create fresh units, so it must be applied again after a floor change.
+const sureHit=p=>p.evaluate(()=>{const w=window.trial.store.world;for(const u of Object.values(w.units))u.stages={...u.stages,acc:3};});
 async function key(p,k){await p.keyboard.press(k);await ready(p);}
 async function click(p,id){await p.locator('#'+id).click();await ready(p);}
 async function cell(p,x,y){
@@ -99,7 +102,7 @@ await test('M2、S1：开发场景探看与关闭后回到空的内存状态',as
  await p.close();const q=await context.newPage();await q.goto(base+'?dev=1');await q.locator('#start').waitFor();await emptyReady(q);assert.equal(await state(q),null);assert.equal(await raw(q),null);await start(q);await prefix(q);await reject(q);await key(q,'ArrowRight');await exit(q);s=await state(q);assert.equal(s.round,5);assert.deepEqual(errors,[]);return {revealedRBeforeClose:true,closeDropsDeveloperRun:true,freshRunStarts:true};}finally{await context.close();}
 });
 await test('M3：电光一闪两格射程、合法目标提示与T撤离',async()=>{
- const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
+ const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);await sureHit(p);
   await click(p,'skill-quickattack');let label=await p.locator('#skill-quickattack').innerText();assert.match(label,/电光一闪/);assert.match(label,/同排、同列或斜线1–2格/);assert.match(label,/造成约8点/);
   await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.pp.quickattack,1); // E's 8 HP are defeated by an 8-point Quick Attack from two cells away
   await key(p,'ArrowRight');s=await state(p);assert.equal(s.units.C.pos.x,3); // kill E before the remaining Quick Attack PP is used on R
@@ -119,7 +122,7 @@ await test('M3：三格直线目标拒绝且不耗PP或回合',async()=>{
  }finally{await context.close();}
 });
 await test('M6：邀请替换、双方换位、承伤撤离',async()=>{
- const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await key(p,'2');await click(p,'swap');await click(p,'partner-N');assert.ok((await p.locator('#controls').innerText()).includes('双方行动'));await click(p,'submit');
+ const {context,page:p,errors}=await setup();try{await start(p);await sureHit(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await key(p,'2');await click(p,'swap');await click(p,'partner-N');assert.ok((await p.locator('#controls').innerText()).includes('双方行动'));await click(p,'submit');
   // B now leads at x=3 and R is at 5. B waits (R steps adjacent), then trades basic attacks: R tackles B once (4), B's second hit (6+6>=8) kills it.
   await key(p,'.');await cell(p,4,1);await cell(p,4,1);assert.equal((await state(p)).units.R.hp,0);
   await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,13);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,16,10]);assert.equal(s.units.C.hp,12);assert.deepEqual(s.camp,['C']);assert.deepEqual(s.camp.map(i=>s.units[i].hp),[12]);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(errors,[]);return {rounds:13,team:['A20','B16','N10'],camp:'C12'};}finally{await context.close();}
@@ -227,7 +230,7 @@ await test('PR5 历史单层G/T重复交互不重复领取',async()=>{
   const {context,page:p,errors}=await setup(kind.startsWith('V')?kind:undefined);
   try{
    if(!kind.startsWith('V'))await p.locator('#config').selectOption('main-none');
-   await start(p);
+   await start(p);await sureHit(p);
    if(kind==='G'||kind==='T'){
      await defeatMainEAndRecordG(p);
     if(kind==='T'){
@@ -461,6 +464,8 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
    await p.goto(base+'?dev=1&seed=3');await p.locator('#start').waitFor();await p.locator('#config').selectOption('expedition');await start(p);
+   // 8.8 (#165): floor item kinds are randomised (seed 3 has a rawst berry where the orange berry used to be); this journey is about the orange berry, so that point is set to one in the live world
+   await p.evaluate(()=>{const w=window.trial.store.world,pt=w.points.find(q=>q.kind==='rawstBerry');pt.kind='berry';for(const u of Object.values(w.units))u.stages={...u.stages,acc:3};});await p.evaluate(()=>window.dispatchEvent(new Event('blur')));await ready(p);
    for(const id of ['A','B'])await p.locator('#tactic-run-'+id).selectOption('wait');await p.waitForFunction(()=>['A','B'].every(id=>window.trial.getState().units[id].tactic==='wait'));
   let s=await state(p);assert.equal(s.prog.level,5);assert.deepEqual(s.queue.map(i=>s.units[i].species),['charmander','squirtle','bulbasaur']);
   assert.match(await p.locator('#party').innerText(),/小火龙.*Lv5/s);assert.match(await p.locator('#goal-label').innerText(),/橙橙果×0/);
@@ -481,7 +486,8 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   }
   const berry=s.points.find(q=>q.kind==='berry').pos;
   await go(berry);await settlePrompt();s=await state(p);
-  await click(p,'take');s=await state(p);assert.deepEqual(s.prog.items,{berry:1,tonic:0});assert.equal(s.points.find(q=>q.kind==='berry').used,true);
+  // 8.8 (G9.1): walking onto the item picks it up at once; there is no take button any more
+  assert.equal(s.prog.items.berry,1);assert.equal(s.prog.items.tonic,0);assert.equal(s.points.find(q=>q.kind==='berry').used,true);
   assert.match(await p.locator('#goal-label').innerText(),/橙橙果×1/);assert.equal(await p.locator('#take').count(),0);
   // refusal: everyone is still at full HP (or the user is healthy), so the berry is refused with its reason
   const full=s.queue.every(i=>s.units[i].hp===s.units[i].maxHp);
@@ -568,12 +574,13 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
    const campBeforeDeparture=await raw(p);
   await click(p,'depart');s=await state(p);
   assert.deepEqual(s.queue,['A','B','C']);assert.equal(s.leader,'B');assert.equal(s.round,0);assert.equal(s.prog.level,5);assert.equal(s.dungeon.seed,4243);
-  assert.deepEqual(s.units.B.moves,['tackle','protect']);assert.deepEqual(s.units.B.pp,{tackle:3,protect:1});assert.equal(s.units.B.hp,s.units.B.maxHp);
+  assert.deepEqual(s.units.B.moves,['tackle','protect']);assert.deepEqual(s.units.B.pp,{tackle:30,protect:10});assert.equal(s.units.B.hp,s.units.B.maxHp);   // 8.8 (#165): official max PP (tackle 30, protect 10)
    assert.deepEqual(s.units.A.species,'squirtle');assert.equal(await raw(p),campBeforeDeparture,'departure leaves the camp record byte-for-byte unchanged');
   // The learned protect applies to B itself; the nearby ally gets no protection state.
   const ally=['A','C'].find(id=>Math.abs(s.units[id].pos.x-s.units.B.pos.x)+Math.abs(s.units[id].pos.y-s.units.B.pos.y)===1);assert.ok(ally,'an ally stands next to the leader');
   await click(p,'skill-protect');await cell(p,s.units.B.pos.x,s.units.B.pos.y);
-  s=await state(p);assert.equal(s.round,1);assert.equal(s.units.B.pp.protect,0);assert.ok(s.units.B.protect>0,'守住保护使用者本人');assert.equal(s.units[ally].protect,0,'相邻队友没有获得守住状态');assert.ok(s.log.includes('B进入守住状态'));
+  s=await state(p);assert.equal(s.round,1);assert.equal(s.units.B.pp.protect,9);   // 8.8 (#165): 10 official PP, one spent
+  assert.ok(s.units.B.protect>0,'守住保护使用者本人');assert.equal(s.units[ally].protect,0,'相邻队友没有获得守住状态');assert.ok(s.log.includes('B进入守住状态'));
   assert.match(await p.locator('[data-unit-status="B"]').innerText(),/守住：剩余2个敌方阶段/);
    assert.equal(await raw(p),campBeforeDeparture,'turn actions remain in memory until terminal settlement');
   assert.deepEqual(errors,[]);return {learned:'protect',carried:['tackle','protect'],selfProtected:'B',adjacentAllyUnaffected:ally,squad:['P2','P3','P1'],usedInRun:true,writeFailureFrozeAndRetried:true};
@@ -601,7 +608,7 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
   // Reload discards the first developer world; create a second in-memory fixture with one PP spent.
   await p.reload();await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,spent,profile);
   await click(p,'rest');const s1=await state(p);
-  assert.equal(s1.units.C.pp[spentMove],Math.min(2,s0.units.C.maxPp[spentMove]));assert.equal(s1.points.find(q=>q.kind==='rest').used,true);assert.equal(s1.round,s0.round+1);
+  assert.equal(s1.units.C.pp[spentMove],Math.min(5,s0.units.C.maxPp[spentMove]));assert.equal(s1.points.find(q=>q.kind==='rest').used,true);assert.equal(s1.round,s0.round+1);   // 8.8 (#165, G9.2): the rest point restores 5 PP per move
   assert.equal(await p.locator('#rest').isDisabled(),true);
   assert.equal(await raw(p),null);assert.deepEqual(errors,[]);
   return {refusedWhenFull:true,usedOnce:true,fixturesMemoryOnly:true};
@@ -638,7 +645,7 @@ await test('服务点7.2：商店购买不占回合；交换机送回伙伴与�
  const {createExpedition,reveal}=await import('../../src/core/engine.ts');
  const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
  const profile=newGameProfile('chikorita','cyndaquil').profile;
- profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false});
+ profile.roster.push({id:'P3',species:'pidgey',learned:[{move:'tackle',pp:30},{move:'gust',pp:19}],carry:['tackle','gust'],protected:false});
  profile.next=4;profile.team=['P1','P2','P3'];profile.leader='P1';
  const makeWorld=(kind,items)=>{const w=createExpedition('svc-run',103,2,squadOf(profile),0);w.purse=100; // service fixture: money already earned during the run
   if(kind==='exchange'){
@@ -1022,7 +1029,8 @@ await test('8.3 道具房：实际拾取大树果与全员PP补剂，背包使�
    await click(p,'use-'+item);if(item==='bigBerry')await click(p,'item-target-bigBerry-A');
    s=await state(p);assert.equal(s.prog.items[item],0);
    if(item==='bigBerry')assert.equal(s.units.A.hp,s.units.A.maxHp);
-   else{assert.equal(s.units.A.pp.tackle,2);assert.equal(s.units.B.pp.tackle,3);}
+   else{assert.equal(s.units.A.pp.tackle,6);assert.equal(s.units.B.pp.tackle,7);   // 8.8 (#165, G9.1): the team tonic restores 5 per move (1 to 6, 2 to 7; maxima 20)
+  }
    await p.screenshot({path:artifact+'windows-rooms83-'+item+'.png',fullPage:true});checks.push({seed,item,pickedAndUsed:true});
   }
   assert.deepEqual(errors,[]);return {checks,fixtureBoundary:'地图生成后初始主控摆在道具格，预设受伤及PP不足；拾取和使用均为实际UI输入，不代表自然探索路线。'};

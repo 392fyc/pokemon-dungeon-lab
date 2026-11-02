@@ -30,18 +30,18 @@ test('D1 the expanded roster keeps the established 23 species first and freezes 
  assert.equal(roster.species.length,175);
  assert.deepEqual(roster.species.slice(0,23).map(s=>s.id),ESTABLISHED23);
  // The new import expands learnable and adds generation/availability metadata. Only these four fields were frozen by the Pokédex batch-import specification.
- assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,23).map(frozenSpecies))).digest('hex'),'3419bec7d22f9269b39f11810276f78544d248197c68b1aa8fb6f74f3712a962');
+ assert.equal(createHash('sha256').update(JSON.stringify(roster.species.slice(0,23).map(frozenSpecies))).digest('hex'),'af13b831e65983167897fe562b9fb241d09fefe4a3c88863ca10a293784be803');   // 8.8 (#165): the kit PP of the 23 established species is now the official basePp, so the frozen hash changed
 });
 test('D2 the eight new species are not starters, have a kit of 1-2 moves and a non-empty learnable list; kits are the importer output (assumptions A1-A3, observed 2026-10-30)',()=>{
  for(const id of NEW8){assert.equal(by[id].starter,false);assert.ok(by[id].kit.length>=1&&by[id].kit.length<=2,id);assert.ok(by[id].learnable.length>0,id);}
- assert.deepEqual(kitOf('sandshrew'),[['scratch',3],['defensecurl',4]]);
- assert.deepEqual(kitOf('growlithe'),[['ember',2],['bite',2]]);
- assert.deepEqual(kitOf('magnemite'),[['tackle',3],['thundershock',3]]);
- assert.deepEqual(kitOf('onix'),[['tackle',3],['harden',3]]);
- assert.deepEqual(kitOf('dratini'),[['dragontail',1],['slam',2]]);
- assert.deepEqual(kitOf('wooper'),[['watergun',2],['slam',2]]);
- assert.deepEqual(kitOf('houndour'),[['ember',2],['roar',2]]);
- assert.deepEqual(kitOf('makuhita'),[['tackle',3],['whirlwind',2]]);
+ assert.deepEqual(kitOf('sandshrew'),[['scratch',28],['defensecurl',16]]);   // 8.8 (#165): official basePp
+ assert.deepEqual(kitOf('growlithe'),[['ember',15],['bite',19]]);
+ assert.deepEqual(kitOf('magnemite'),[['tackle',30],['thundershock',17]]);
+ assert.deepEqual(kitOf('onix'),[['tackle',30],['harden',16]]);
+ assert.deepEqual(kitOf('dratini'),[['dragontail',13],['slam',12]]);
+ assert.deepEqual(kitOf('wooper'),[['watergun',17],['slam',12]]);
+ assert.deepEqual(kitOf('houndour'),[['ember',15],['roar',14]]);
+ assert.deepEqual(kitOf('makuhita'),[['tackle',30],['whirlwind',27]]);
 });
 test('D3 established push and guard kits remain available in the expanded type-based encounter pools',()=>{
  assert.deepEqual(NEW8.filter(id=>by[id].kit.some(k=>['dragontail','roar','whirlwind'].includes(k.move))),['dratini','houndour','makuhita']);
@@ -58,26 +58,27 @@ test('D4 Arcanine can be an ordinary encounter; the boss designation is a unit f
 test('D5 the Chinese name table has the eight new species, the boss and the four new machine moves',()=>{
  assert.deepEqual(NEW8.map(speciesZh),['穿山鼠','卡蒂狗','小磁怪','大岩蛇','迷你龙','乌波','戴鲁比','幕下力士']);
  assert.equal(speciesZh('arcanine'),'风速狗');
- assert.deepEqual(['dragontail','helpinghand','mudslap','terablast'].map(tmZh),['龙尾','帮助','掷泥','太晶爆发']);
+ assert.deepEqual(['dragontail','helpinghand','mudslap'].map(tmZh),['龙尾','帮助','掷泥']);   // 8.8 (#165): Tera Blast is no longer a machine
  assert.deepEqual(['protect','whirlwind','roar'].map(tmZh),['守住','吹飞','吼叫']);
  for(const s of roster.species)for(const m of [...s.kit,...s.learnable])if(m.move!=='visegrip')assert.ok(NAME_TABLE.moves[m.move],m.move);
  assert.equal(moveZh('visegrip'),'visegrip','the documented PokeAPI spelling exception falls back to its Showdown id');
 });
 
 /* ---------- T: technique machines ---------- */
-test('T1 the machine list has 7 entries, the first three being 守住, 吹飞, 吼叫; the legacy list is the three',()=>{
- assert.equal(TM_MOVES.length,7);assert.deepEqual(TM_MOVES.slice(0,3),['protect','whirlwind','roar']);assert.deepEqual(TM_MOVES.slice(0,3).map(tmZh),['守住','吹飞','吼叫']);
+test('T1 the machine list has 6 entries (8.8: Tera Blast removed), the first three being 守住, 吹飞, 吼叫; the legacy list is the three',()=>{
+ assert.equal(TM_MOVES.length,6);assert.ok(!TM_MOVES.includes('terablast'));assert.deepEqual(TM_MOVES.slice(0,3),['protect','whirlwind','roar']);assert.deepEqual(TM_MOVES.slice(0,3).map(tmZh),['守住','吹飞','吼叫']);
  assert.deepEqual([...LEGACY_TM_MOVES],['protect','whirlwind','roar']);
  assert.deepEqual([...tmPool({boss:true})],[...TM_MOVES]);assert.deepEqual([...tmPool({})],[...LEGACY_TM_MOVES]);assert.deepEqual([...tmPool(undefined)],[...LEGACY_TM_MOVES]);
 });
-test('T2 each new machine move can be learned by at least 2 roster species, with the behavior and PP observed from the import',()=>{
+test('T2 each new machine move can be learned by at least 2 roster species, with the official PP; Tera Blast is learnable by nobody (8.8)',()=>{
  const learners=m=>roster.species.filter(s=>s.learnable.some(l=>l.move===m)).map(s=>s.id);
- for(const m of ['dragontail','helpinghand','mudslap','terablast'])assert.ok(learners(m).length>=2,m);
+ for(const m of ['dragontail','helpinghand','mudslap'])assert.ok(learners(m).length>=2,m);
+ assert.equal(learners('terablast').length,0);
  for(const id of ['charmander','treecko','onix','dratini'])assert.ok(learners('dragontail').includes(id),id);
- assert.deepEqual(learnableMove('charmander','dragontail'),{move:'dragontail',pp:1});
- assert.deepEqual(learnableMove('bulbasaur','helpinghand'),{move:'helpinghand',pp:2});
- assert.deepEqual(learnableMove('rattata','mudslap'),{move:'mudslap',pp:1});
- assert.deepEqual(learnableMove('geodude','terablast'),{move:'terablast',pp:1});
+ assert.deepEqual(learnableMove('charmander','dragontail'),{move:'dragontail',pp:13});
+ assert.deepEqual(learnableMove('bulbasaur','helpinghand'),{move:'helpinghand',pp:16});
+ assert.deepEqual(learnableMove('rattata','mudslap'),{move:'mudslap',pp:16});
+ assert.equal(learnableMove('geodude','terablast'),undefined);
 });
 const base=()=>squadOf(initialProfile());
 test('T3 without the boss mark the shop machine is always one of the legacy three (seeds 1-200), and the machine seed 2 sells differs by mark',()=>{
@@ -85,7 +86,7 @@ test('T3 without the boss mark the shop machine is always one of the legacy thre
  for(let seed=1;seed<=200;seed++){const w=createExpedition('t3',seed,2,base(),0);if(w.shop){shops++;assert.ok(['protect','whirlwind','roar'].includes(w.shop.stock.tm),`seed ${seed}`);}}
  assert.ok(shops>40,'the check really covered shops: '+shops);
  assert.equal(createExpedition('t3',2,2,base(),0).shop.stock.tm,'whirlwind');   // 7.2 value, also asserted in rescue.test R14
- assert.equal(createExpedition('t3',2,3,base(),0).shop.stock.tm,'dragontail'); // same seed, boss mark: draw index 0.49*7
+ assert.equal(createExpedition('t3',2,3,base(),0).shop.stock.tm,'dragontail'); // same seed, boss mark: tmDraw 0.556 gives index floor(0.556*6)=3, the fourth of the six machines (8.8: dragontail)
 });
 function atItem(w){const it=w.points.find(p=>p.kind==='item');w.units[w.leader].pos={...it.pos};return w;}
 test('T3b without the boss mark target T also draws from the legacy three (seeds 1-40)',()=>{
@@ -93,14 +94,13 @@ test('T3b without the boss mark target T also draws from the legacy three (seeds
   const r=applyCommand(w,{type:'round',action:{type:'interact',exit:false}});assert.equal(r.ok,true,r.error);
   assert.ok(['protect','whirlwind','roar'].includes(r.state.tms[0].move),`seed ${seed}: ${r.state.tms[0].move}`);}
 });
-test('T4 with the boss mark, T and the shop reach the four new machines (fixed seeds searched in advance)',()=>{
+test('T4 with the boss mark, T and the shop reach the three new machines (fixed seeds searched in advance; 8.8: Tera Blast removed)',()=>{
  const t=seed=>{const w=atItem(jumpToFloor(createExpedition('t4',seed,3,base(),0),3));const r=applyCommand(w,{type:'round',action:{type:'interact',exit:false}});assert.equal(r.ok,true,r.error);return r.state.tms;};
  assert.deepEqual(t(5),[{move:'dragontail',source:'target',fate:'held'}]);
- assert.deepEqual(t(2),[{move:'helpinghand',source:'target',fate:'held'}]);
- assert.deepEqual(t(6),[{move:'mudslap',source:'target',fate:'held'}]);
- assert.deepEqual(t(1),[{move:'terablast',source:'target',fate:'held'}]);
- assert.deepEqual([[2,1,'dragontail'],[6,1,'helpinghand'],[40,1,'mudslap'],[38,2,'terablast']].map(([seed])=>{const s=createExpedition('t4s',seed,3,base(),0).shop;return [seed,s.level,s.stock.tm];}),
-  [[2,1,'dragontail'],[6,1,'helpinghand'],[40,1,'mudslap'],[38,2,'terablast']]);
+ assert.deepEqual(t(3),[{move:'helpinghand',source:'target',fate:'held'}]);
+ assert.deepEqual(t(1),[{move:'mudslap',source:'target',fate:'held'}]);
+ assert.deepEqual([[2,1,'dragontail'],[6,1,'helpinghand'],[38,2,'mudslap']].map(([seed])=>{const s=createExpedition('t4s',seed,3,base(),0).shop;return [seed,s.level,s.stock.tm];}),
+  [[2,1,'dragontail'],[6,1,'helpinghand'],[38,2,'mudslap']]);
 });
 
 /* ---------- L: floors and themes ---------- */
@@ -369,8 +369,9 @@ test('S3 tampering is rejected (each case first checked in its untouched form)',
  {const w=floor3();w.enemies=['boss',...w.enemies.filter(i=>i!=='boss')];rejects(w,'boss not last');}
 });
 test('S3b an old-format record still reads: a boss machine and boss fields are the only new things, so a 7.2 run with the new machines is not accepted',()=>{
- const w=oldTwo();w.tms=[{move:'terablast',source:'target',fate:'held'}];w.bag=1;rejects(w,'new machine in a run without the mark');
- const v=floor3();v.tms=[{move:'terablast',source:'target',fate:'held'}];v.bag=1;accepted(v);
+ // 8.8 (#165): the stand-in new machine is dragontail, because terablast is removed from every saved run on load (see tests in official-moves-save).
+ const w=oldTwo();w.tms=[{move:'dragontail',source:'target',fate:'held'}];w.bag=1;rejects(w,'new machine in a run without the mark');
+ const v=floor3();v.tms=[{move:'dragontail',source:'target',fate:'held'}];v.bag=1;accepted(v);
 });
 function historicalBossFloor(level){
  const sample=structuredClone(legacyBossSeed4.floors[level]),units={};

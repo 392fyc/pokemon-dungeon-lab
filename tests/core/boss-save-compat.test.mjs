@@ -109,9 +109,8 @@ test('Arcanine without the boss mark is not accepted as an ordinary enemy',()=>{
 test('legacy nested recruit/invitation cannot carry a boss mark; Arcanine stays boss-only in historical Worlds',()=>{
   const accepted=legacyRecord(),carrier=accepted.current.enemies[0];
   accepted.current.units[carrier].recruit={id:'N1',side:'friend',hp:10,maxHp:10,pos:null,pp:{},maxPp:{},learned:[],species:'pidgey'};
-  const inviteKit=SPECIES.pidgey.kit;
   accepted.current.invitations=[{id:'invite-pidgey',status:'rejected',unit:{id:'invite-pidgey',side:'friend',hp:Math.max(1,Math.floor(SPECIES.pidgey.maxHp/2)),maxHp:SPECIES.pidgey.maxHp,pos:null,
-    pp:{strong:inviteKit[0].pp,line:inviteKit[1].pp},maxPp:{strong:inviteKit[0].pp,line:inviteKit[1].pp},learned:['strong','line'],species:'pidgey'}}];
+    pp:{strong:3,line:3},maxPp:{strong:3,line:3},learned:['strong','line'],species:'pidgey'}}];   // 8.8 (#165): a v1 record carries the frozen old PP (3 and 3), which the load migrates to the official values
   assert.doesNotThrow(()=>decodeLegacy(JSON.stringify(accepted)));
   const markedRecruit=copy(accepted);markedRecruit.current.units[carrier].recruit.boss=true;
   assert.throws(()=>decodeLegacy(JSON.stringify(markedRecruit)),/存档结构损坏/);

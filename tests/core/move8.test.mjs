@@ -4,6 +4,7 @@ import {
   applyCommand, createExpedition, jumpToFloor, createMain, estimateAttackDamage, friend, key, skillTargets, traceRound,
 } from '../../src/core/engine.ts';
 import {foeOf} from './foe-fixture.mjs';
+import {sureHit} from './sure-hit.mjs';   // 8.8 (#165): damage and reach tests take the accuracy roll out of the picture
 
 // 8.8 (4.1, 4.2): eight movement directions, diagonal reach for "front" style attacks, no cutting wall corners, and walking into a companion swaps places.
 // A "wall" is any cell outside `floor`; second terrain (water, lava) is such a cell too, so it counts as a wall for the corner rule.
@@ -18,7 +19,7 @@ function world({floor=rect(0,8,0,8),friends=[friend('A',1,1,20,{tackle:5})],enem
   if(rooms)s.rooms=rooms;else delete s.rooms;
   if(liquid)s.liquid=liquid;
   delete s.dungeon;delete s.prog;delete s.tms;delete s.shop;delete s.exchange;s.purse=0;
-  return s;
+  return sureHit(s);
 }
 const wholeRoom=(floor)=>{const xs=floor.map(c=>c.x),ys=floor.map(c=>c.y),x=Math.min(...xs),y=Math.min(...ys);return [{x,y,w:Math.max(...xs)-x+1,h:Math.max(...ys)-y+1}];};
 function attempt(s,action,override){return applyCommand(s,{type:'round',action,...(override?{override}:{})});}

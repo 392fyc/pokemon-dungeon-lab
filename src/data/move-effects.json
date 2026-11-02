@@ -1,0 +1,1366 @@
+{
+ "source": {
+  "project": "Pokémon Showdown",
+  "file": "moves.json",
+  "sha256": "26909a321a7e4528d14a7dffd24173aa03a6845776cf41c39cc3d76f8e14616b",
+  "githubCommit": "ccfaa20f32af363569cd21a9d501b2bc1ded26b1",
+  "accuracy": "探险队 official.accuracy（Bulbapedia）；Showdown accuracy 为 true 或探险队为“—%”时必中",
+  "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建"
+ },
+ "moves": {
+  "absorb": {
+   "acc": 88
+  },
+  "acid": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "spd": -1
+     }
+    }
+   ]
+  },
+  "acidarmor": {
+   "acc": null
+  },
+  "acidspray": {
+   "acc": 75,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spd": -2
+     }
+    }
+   ]
+  },
+  "aerialace": {
+   "acc": null
+  },
+  "aircutter": {
+   "acc": 90
+  },
+  "airslash": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "flinch"
+    }
+   ]
+  },
+  "ancientpower": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "self": {
+      "atk": 1,
+      "def": 1,
+      "spa": 1,
+      "spd": 1,
+      "spe": 1
+     }
+    }
+   ]
+  },
+  "aquajet": {
+   "acc": 88
+  },
+  "aquatail": {
+   "acc": 80
+  },
+  "astonish": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "flinch"
+    }
+   ]
+  },
+  "aurasphere": {
+   "acc": null
+  },
+  "aurorabeam": {
+   "acc": 61.75,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "atk": -1
+     }
+    }
+   ]
+  },
+  "belch": {
+   "acc": 90
+  },
+  "bind": {
+   "acc": 78
+  },
+  "bite": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "flinch"
+    }
+   ]
+  },
+  "blazekick": {
+   "acc": 88,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "brn"
+    }
+   ]
+  },
+  "blizzard": {
+   "acc": 67.2,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "frz"
+    }
+   ]
+  },
+  "bodyslam": {
+   "acc": 85,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "par"
+    }
+   ]
+  },
+  "brickbreak": {
+   "acc": 88
+  },
+  "brine": {
+   "acc": 88
+  },
+  "bubblebeam": {
+   "acc": 83.6,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "spe": -1
+     }
+    }
+   ]
+  },
+  "bugbite": {
+   "acc": 100
+  },
+  "bugbuzz": {
+   "acc": 77.44,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "spd": -1
+     }
+    }
+   ]
+  },
+  "bulkup": {
+   "acc": null
+  },
+  "bulldoze": {
+   "acc": 60,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spe": -1
+     }
+    }
+   ]
+  },
+  "bulletpunch": {
+   "acc": 88
+  },
+  "chargebeam": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 70,
+     "self": {
+      "spa": 1
+     }
+    }
+   ]
+  },
+  "circlethrow": {
+   "acc": 95
+  },
+  "clearsmog": {
+   "acc": null
+  },
+  "closecombat": {
+   "acc": 80,
+   "cost": {
+    "def": -1,
+    "spd": -1
+   }
+  },
+  "confusion": {
+   "acc": 85,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "confusion"
+    }
+   ]
+  },
+  "covet": {
+   "acc": 88
+  },
+  "crabhammer": {
+   "acc": 77.44
+  },
+  "crosschop": {
+   "acc": 84
+  },
+  "crosspoison": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "psn"
+    }
+   ]
+  },
+  "crunch": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 20,
+     "foe": {
+      "def": -1
+     }
+    }
+   ]
+  },
+  "crushclaw": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 50,
+     "foe": {
+      "def": -1
+     }
+    }
+   ]
+  },
+  "darkpulse": {
+   "acc": 73.92,
+   "fx": [
+    {
+     "chance": 20,
+     "status": "flinch"
+    }
+   ]
+  },
+  "dazzlinggleam": {
+   "acc": 90
+  },
+  "defensecurl": {
+   "acc": null
+  },
+  "disarmingvoice": {
+   "acc": null
+  },
+  "discharge": {
+   "acc": 70,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "par"
+    }
+   ]
+  },
+  "dracometeor": {
+   "acc": 80,
+   "cost": {
+    "spa": -2
+   }
+  },
+  "dragonbreath": {
+   "acc": 83.6,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "par"
+    }
+   ]
+  },
+  "dragonclaw": {
+   "acc": 88
+  },
+  "dragonpulse": {
+   "acc": 80
+  },
+  "dragonrush": {
+   "acc": 80,
+   "fx": [
+    {
+     "chance": 20,
+     "status": "flinch"
+    }
+   ]
+  },
+  "dragontail": {
+   "acc": 95
+  },
+  "drainingkiss": {
+   "acc": 95
+  },
+  "drainpunch": {
+   "acc": 88
+  },
+  "drillpeck": {
+   "acc": 88
+  },
+  "drillrun": {
+   "acc": 95
+  },
+  "dynamicpunch": {
+   "acc": 78,
+   "fx": [
+    {
+     "chance": 100,
+     "status": "confusion"
+    }
+   ]
+  },
+  "earthpower": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "spd": -1
+     }
+    }
+   ]
+  },
+  "electroweb": {
+   "acc": 60,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spe": -1
+     }
+    }
+   ]
+  },
+  "ember": {
+   "acc": 88,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "brn"
+    }
+   ]
+  },
+  "energyball": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "spd": -1
+     }
+    }
+   ]
+  },
+  "extrasensory": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "flinch"
+    }
+   ]
+  },
+  "extremespeed": {
+   "acc": 88
+  },
+  "facade": {
+   "acc": 84
+  },
+  "fakeout": {
+   "acc": 80,
+   "fx": [
+    {
+     "chance": 100,
+     "status": "flinch"
+    }
+   ]
+  },
+  "falseswipe": {
+   "acc": 100
+  },
+  "feint": {
+   "acc": 88
+  },
+  "feintattack": {
+   "acc": null
+  },
+  "fellstinger": {
+   "acc": 95
+  },
+  "fireblast": {
+   "acc": 88,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "brn"
+    }
+   ]
+  },
+  "firefang": {
+   "acc": 88,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "brn"
+    },
+    {
+     "chance": 10,
+     "status": "flinch"
+    }
+   ]
+  },
+  "firepunch": {
+   "acc": 78,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "brn"
+    }
+   ]
+  },
+  "firespin": {
+   "acc": 73,
+   "thaw": true
+  },
+  "flamecharge": {
+   "acc": 95,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 100,
+     "self": {
+      "spe": 1
+     }
+    }
+   ]
+  },
+  "flamethrower": {
+   "acc": 83.6,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "brn"
+    }
+   ]
+  },
+  "flamewheel": {
+   "acc": 88,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "brn"
+    }
+   ]
+  },
+  "flashcannon": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "spd": -1
+     }
+    }
+   ]
+  },
+  "focusblast": {
+   "acc": 80,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "spd": -1
+     }
+    }
+   ]
+  },
+  "focuspunch": {
+   "acc": 100
+  },
+  "forcepalm": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "par"
+    }
+   ]
+  },
+  "foulplay": {
+   "acc": 95
+  },
+  "freezedry": {
+   "acc": 95,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "frz"
+    }
+   ]
+  },
+  "gigadrain": {
+   "acc": 88
+  },
+  "gunkshot": {
+   "acc": 80,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "psn"
+    }
+   ]
+  },
+  "gust": {
+   "acc": 88
+  },
+  "hammerarm": {
+   "acc": 80,
+   "cost": {
+    "spe": -1
+   }
+  },
+  "harden": {
+   "acc": null
+  },
+  "headbutt": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "flinch"
+    }
+   ]
+  },
+  "heatwave": {
+   "acc": 80,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "brn"
+    }
+   ]
+  },
+  "helpinghand": {
+   "acc": null
+  },
+  "highhorsepower": {
+   "acc": 90
+  },
+  "hornattack": {
+   "acc": 95
+  },
+  "hurricane": {
+   "acc": 75,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "confusion"
+    }
+   ]
+  },
+  "hydropump": {
+   "acc": 79.8
+  },
+  "hyperfang": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "flinch"
+    }
+   ]
+  },
+  "hypervoice": {
+   "acc": 90
+  },
+  "icebeam": {
+   "acc": 83.6,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "frz"
+    }
+   ]
+  },
+  "icefang": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "frz"
+    },
+    {
+     "chance": 10,
+     "status": "flinch"
+    }
+   ]
+  },
+  "icepunch": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "frz"
+    }
+   ]
+  },
+  "iceshard": {
+   "acc": 88
+  },
+  "iciclecrash": {
+   "acc": 85,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "flinch"
+    }
+   ]
+  },
+  "icywind": {
+   "acc": 79.8,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spe": -1
+     }
+    }
+   ]
+  },
+  "incinerate": {
+   "acc": 95,
+   "thaw": true
+  },
+  "inferno": {
+   "acc": 50,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 100,
+     "status": "brn"
+    }
+   ]
+  },
+  "infestation": {
+   "acc": 95
+  },
+  "irondefense": {
+   "acc": null
+  },
+  "ironhead": {
+   "acc": 80,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "flinch"
+    }
+   ]
+  },
+  "irontail": {
+   "acc": 78,
+   "fx": [
+    {
+     "chance": 30,
+     "foe": {
+      "def": -1
+     }
+    }
+   ]
+  },
+  "lastresort": {
+   "acc": 80
+  },
+  "lavaplume": {
+   "acc": 70.4,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "brn"
+    }
+   ]
+  },
+  "leafage": {
+   "acc": 100
+  },
+  "leafblade": {
+   "acc": 88
+  },
+  "leafstorm": {
+   "acc": 80,
+   "cost": {
+    "spa": -2
+   }
+  },
+  "leechlife": {
+   "acc": 90
+  },
+  "lick": {
+   "acc": 100,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "par"
+    }
+   ]
+  },
+  "lightscreen": {
+   "acc": null
+  },
+  "liquidation": {
+   "acc": 95,
+   "fx": [
+    {
+     "chance": 20,
+     "foe": {
+      "def": -1
+     }
+    }
+   ]
+  },
+  "lowsweep": {
+   "acc": 70,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spe": -1
+     }
+    }
+   ]
+  },
+  "machpunch": {
+   "acc": 90
+  },
+  "magicalleaf": {
+   "acc": null
+  },
+  "megadrain": {
+   "acc": 88
+  },
+  "megahorn": {
+   "acc": 84
+  },
+  "megakick": {
+   "acc": 84
+  },
+  "megapunch": {
+   "acc": 88
+  },
+  "metalclaw": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 10,
+     "self": {
+      "atk": 1
+     }
+    }
+   ]
+  },
+  "meteormash": {
+   "acc": 83.6,
+   "fx": [
+    {
+     "chance": 20,
+     "self": {
+      "atk": 1
+     }
+    }
+   ]
+  },
+  "moonblast": {
+   "acc": 95,
+   "fx": [
+    {
+     "chance": 30,
+     "foe": {
+      "spa": -1
+     }
+    }
+   ]
+  },
+  "muddywater": {
+   "acc": 84,
+   "fx": [
+    {
+     "chance": 30,
+     "foe": {
+      "acc": -1
+     }
+    }
+   ]
+  },
+  "mudshot": {
+   "acc": 65,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spe": -1
+     }
+    }
+   ]
+  },
+  "mudslap": {
+   "acc": 84,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "acc": -1
+     }
+    }
+   ]
+  },
+  "mysticalfire": {
+   "acc": 70,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spa": -1
+     }
+    }
+   ]
+  },
+  "nightslash": {
+   "acc": 88
+  },
+  "nuzzle": {
+   "acc": 50,
+   "fx": [
+    {
+     "chance": 100,
+     "status": "par"
+    }
+   ]
+  },
+  "overheat": {
+   "acc": 84,
+   "thaw": true,
+   "cost": {
+    "spa": -2
+   }
+  },
+  "payday": {
+   "acc": 90
+  },
+  "peck": {
+   "acc": 95
+  },
+  "petalblizzard": {
+   "acc": 85
+  },
+  "playrough": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "atk": -1
+     }
+    }
+   ]
+  },
+  "pluck": {
+   "acc": 100
+  },
+  "poisonfang": {
+   "acc": 73.92,
+   "fx": [
+    {
+     "chance": 50,
+     "status": "tox"
+    }
+   ]
+  },
+  "poisonjab": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "psn"
+    }
+   ]
+  },
+  "poisonsting": {
+   "acc": 73,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "psn"
+    }
+   ]
+  },
+  "poisontail": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "psn"
+    }
+   ]
+  },
+  "pound": {
+   "acc": 90
+  },
+  "powdersnow": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "frz"
+    }
+   ]
+  },
+  "powergem": {
+   "acc": 88
+  },
+  "powerwhip": {
+   "acc": 80
+  },
+  "protect": {
+   "acc": null
+  },
+  "psybeam": {
+   "acc": 79.8,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "confusion"
+    }
+   ]
+  },
+  "psychic": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "foe": {
+      "spd": -1
+     }
+    }
+   ]
+  },
+  "psychocut": {
+   "acc": 88
+  },
+  "psyshock": {
+   "acc": 95
+  },
+  "psystrike": {
+   "acc": 95
+  },
+  "pursuit": {
+   "acc": null
+  },
+  "quickattack": {
+   "acc": 88
+  },
+  "quickguard": {
+   "acc": null
+  },
+  "rapidspin": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 100,
+     "self": {
+      "spe": 1
+     }
+    }
+   ]
+  },
+  "razorleaf": {
+   "acc": 79.8
+  },
+  "razorshell": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 50,
+     "foe": {
+      "def": -1
+     }
+    }
+   ]
+  },
+  "reflect": {
+   "acc": null
+  },
+  "retaliate": {
+   "acc": 95
+  },
+  "roar": {
+   "acc": null
+  },
+  "rockslide": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "flinch"
+    }
+   ]
+  },
+  "rockthrow": {
+   "acc": 90
+  },
+  "rocktomb": {
+   "acc": 60,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spe": -1
+     }
+    }
+   ]
+  },
+  "sandtomb": {
+   "acc": 73
+  },
+  "scald": {
+   "acc": 80,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "brn"
+    }
+   ]
+  },
+  "scratch": {
+   "acc": 90
+  },
+  "seedbomb": {
+   "acc": 88
+  },
+  "shadowball": {
+   "acc": 83.6,
+   "fx": [
+    {
+     "chance": 20,
+     "foe": {
+      "spd": -1
+     }
+    }
+   ]
+  },
+  "shadowclaw": {
+   "acc": 88
+  },
+  "shadowpunch": {
+   "acc": null
+  },
+  "shadowsneak": {
+   "acc": 88
+  },
+  "shockwave": {
+   "acc": null
+  },
+  "slam": {
+   "acc": 78
+  },
+  "slash": {
+   "acc": 88
+  },
+  "sludge": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "psn"
+    }
+   ]
+  },
+  "sludgebomb": {
+   "acc": 79.8,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "psn"
+    }
+   ]
+  },
+  "sludgewave": {
+   "acc": 85,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "psn"
+    }
+   ]
+  },
+  "smackdown": {
+   "acc": 95
+  },
+  "smartstrike": {
+   "acc": null
+  },
+  "smog": {
+   "acc": 73,
+   "fx": [
+    {
+     "chance": 40,
+     "status": "psn"
+    }
+   ]
+  },
+  "snarl": {
+   "acc": 85,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spa": -1
+     }
+    }
+   ]
+  },
+  "spark": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "par"
+    }
+   ]
+  },
+  "steelwing": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "self": {
+      "def": 1
+     }
+    }
+   ]
+  },
+  "stomp": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "flinch"
+    }
+   ]
+  },
+  "stoneedge": {
+   "acc": 80
+  },
+  "stormthrow": {
+   "acc": 95
+  },
+  "strugglebug": {
+   "acc": 75,
+   "fx": [
+    {
+     "chance": 100,
+     "foe": {
+      "spa": -1
+     }
+    }
+   ]
+  },
+  "suckerpunch": {
+   "acc": 88
+  },
+  "superpower": {
+   "acc": 90,
+   "cost": {
+    "atk": -1,
+    "def": -1
+   }
+  },
+  "surf": {
+   "acc": 88
+  },
+  "swift": {
+   "acc": null
+  },
+  "swordsdance": {
+   "acc": null
+  },
+  "tackle": {
+   "acc": 95
+  },
+  "thief": {
+   "acc": 100
+  },
+  "throatchop": {
+   "acc": 95
+  },
+  "thunder": {
+   "acc": 73,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "par"
+    }
+   ]
+  },
+  "thunderbolt": {
+   "acc": 73.92,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "par"
+    }
+   ]
+  },
+  "thunderfang": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "par"
+    },
+    {
+     "chance": 10,
+     "status": "flinch"
+    }
+   ]
+  },
+  "thunderpunch": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "par"
+    }
+   ]
+  },
+  "thundershock": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "par"
+    }
+   ]
+  },
+  "triattack": {
+   "acc": 100
+  },
+  "twister": {
+   "acc": 90,
+   "fx": [
+    {
+     "chance": 20,
+     "status": "flinch"
+    }
+   ]
+  },
+  "vacuumwave": {
+   "acc": 88
+  },
+  "venoshock": {
+   "acc": 95
+  },
+  "vinewhip": {
+   "acc": 88
+  },
+  "visegrip": {
+   "acc": 90
+  },
+  "waterfall": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 20,
+     "status": "flinch"
+    }
+   ]
+  },
+  "watergun": {
+   "acc": 88
+  },
+  "waterpulse": {
+   "acc": 83.6,
+   "fx": [
+    {
+     "chance": 20,
+     "status": "confusion"
+    }
+   ]
+  },
+  "weatherball": {
+   "acc": 85.5
+  },
+  "whirlpool": {
+   "acc": 78
+  },
+  "whirlwind": {
+   "acc": null
+  },
+  "wingattack": {
+   "acc": 95
+  },
+  "withdraw": {
+   "acc": null
+  },
+  "xscissor": {
+   "acc": 88
+  },
+  "zapcannon": {
+   "acc": 61.75,
+   "fx": [
+    {
+     "chance": 100,
+     "status": "par"
+    }
+   ]
+  },
+  "zenheadbutt": {
+   "acc": 88,
+   "fx": [
+    {
+     "chance": 20,
+     "status": "flinch"
+    }
+   ]
+  }
+ }
+}

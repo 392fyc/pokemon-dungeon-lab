@@ -26,10 +26,10 @@ function blocked(raw){
   assert.throws(()=>decodeLegacy(raw),/存档结构损坏|无法迁移/);
 }
 
-test('7.7b keeps both historical draw lists and enables the ten-move list only with a boss tmPool:3 mark',()=>{
+test('7.7b keeps both historical draw lists and enables the nine-move list only with a boss tmPool:3 mark (8.8: Tera Blast removed from both)',()=>{
   assert.equal(RULE_VERSION,'trial-rules-5');assert.equal(CONTENT_VERSION,'trial-content-5');
   assert.deepEqual([...LEGACY_TM_MOVES],['protect','whirlwind','roar']);
-  assert.deepEqual([...TM_MOVES],['protect','whirlwind','roar','dragontail','helpinghand','mudslap','terablast']);
+  assert.deepEqual([...TM_MOVES],['protect','whirlwind','roar','dragontail','helpinghand','mudslap']);
   assert.deepEqual([...TM_MOVES_V3],[...TM_MOVES,'quickguard','reflect','lightscreen']);
   assert.deepEqual([...ALL_TM_MOVES],[...TM_MOVES_V3]);
   assert.deepEqual([...tmPool(undefined)],[...LEGACY_TM_MOVES]);
@@ -38,21 +38,21 @@ test('7.7b keeps both historical draw lists and enables the ten-move list only w
   assert.deepEqual([...tmPool({boss:true,tmPool:3})],[...TM_MOVES_V3]);
 });
 
-test('fixed old no-tmPool draws keep their pre-7.7b literal results at the target, shop and boss',()=>{
+test('fixed old no-tmPool draws at the target, shop and boss (8.8: the six-entry list shifts every index, so the literal results were re-observed)',()=>{
   const target=targetRun(1,undefined);
   assert.equal(target.dungeon.tmPool,undefined);
-  assert.deepEqual(target.tms,[{move:'terablast',source:'target',fate:'held'}]);
+  assert.deepEqual(target.tms,[{move:'mudslap',source:'target',fate:'held'}]);   // 8.8: floor(r*6) replaces floor(r*7)
 
   const shop=createExpedition('team-guard-old-shop-38',38,3,squadOf(initialProfile()),0);
   assert.equal(shop.dungeon.tmPool,undefined);
-  assert.deepEqual(shop.shop.stock,{berry:2,tonic:1,tm:'terablast'});
+  assert.deepEqual(shop.shop.stock,{berry:2,tonic:1,pechaBerry:1,healSeed:1,tm:'mudslap'});   // 8.8: two new stock items (G9.4)
 
   const boss=createScenario('BOSS','team-guard-old-boss');
   assert.equal(boss.dungeon.tmPool,undefined);
   boss.units.boss.hp=1;boss.prog.rng=4;
   const drop=applyCommand(boss,{type:'round',action:{type:'basic',target:'boss'}});
   assert.equal(drop.ok,true,drop.error);
-  assert.deepEqual(drop.state.tms,[{move:'terablast',source:'boss',fate:'brought'}],'the old draw list is unchanged; the v0.1 terminal win brings the boss drop immediately');
+  assert.deepEqual(drop.state.tms,[{move:'mudslap',source:'boss',fate:'brought'}],'the old draw list is unchanged; the v0.1 terminal win brings the boss drop immediately');
 });
 
 test('a new base departure creates tmPool:3 in memory and leaves the saved camp unchanged',async()=>{

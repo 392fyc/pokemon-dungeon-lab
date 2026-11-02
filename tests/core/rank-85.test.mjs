@@ -12,6 +12,7 @@ import {
 } from '../../src/core/engine.ts';
 import {enemy,friend,pos,row,world} from '../acceptance/fixtures.mjs';
 import {MOVE_DEFS} from '../../src/core/moves.ts';
+import {sureHit} from './sure-hit.mjs';   // 8.8 (#165): flamethrower (a line that can also catch a companion) now has a hit chance
 
 function memoryPort(initialRaw=null,failAt=[]) {
   let raw=initialRaw,attempts=0,writes=0;
@@ -321,7 +322,7 @@ test('K5 offense boosts an enemy hit but not friendly fire; previews match the a
     const actor=friend('A',1,1,100,{flamethrower:2},100);
     const foe=enemy('E',friendly?8:3,1,100,'melee',{waitOnly:true});delete foe.species;delete foe.entrySpecies;
     const ally=friend('B',3,1,100,{},100);ally.tactic='wait';
-    const s=world({A:actor,E:foe,...(friendly?{B:ally}:{})},{floor:row(10),leader:'A',queue:friendly?['A','B']:['A'],enemies:['E']});
+    const s=sureHit(world({A:actor,E:foe,...(friendly?{B:ally}:{})},{floor:row(10),leader:'A',queue:friendly?['A','B']:['A'],enemies:['E']}));
     s.talents={offense};const target=friendly?'B':'E';
     const estimate=estimateAttackDamage(s,'A',target,'flamethrower');
     const ordinary=estimateAttackDamage(s,'A',undefined,'flamethrower');

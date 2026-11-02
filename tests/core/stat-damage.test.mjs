@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {applyCommand,estimateAttackDamage,speciesUnit} from '../../src/core/engine.ts';
 import {world,row} from '../acceptance/fixtures.mjs';
+import {sureHit} from './sure-hit.mjs';   // 8.8 (#165): these examples fix damage numbers, so the accuracy roll is taken out
 
 // Literal results from #112's approved examples, never derived with the production calculator.
 function duel(attacker,defender,{side='friend',level=5,move='tackle'}={}){
@@ -13,7 +14,7 @@ function duel(attacker,defender,{side='friend',level=5,move='tackle'}={}){
  d.waitOnly=true;
  const s=world({A:a,D:d},{floor:row(8),leader:side==='friend'?'A':'D',queue:[side==='friend'?'A':'D'],enemies:[side==='friend'?'D':'A']});
  s.enemyAiRng=12345;
- return s;
+ return sureHit(s);
 }
 function strike(s,move){
  const before=structuredClone(s);

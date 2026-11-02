@@ -327,6 +327,27 @@ export function migrateProfileMoves(v:unknown):unknown {
   return profile;
 }
 
+/**
+ * 8.8 (#165): brings a camp profile written before the official-PP change up to date, in place: every learned move gets the species' current (official)
+ * maximum PP (camp PP is always full, so nothing else needs to change), and Tera Blast, which the game no longer has, is removed from learned and carried
+ * moves and from the vault. Idempotent; leaves anything it does not recognise for the strict validator to reject.
+ */
+export function migrateProfilePp(v:unknown):void {
+  if(!obj(v))return;
+  if(obj(v.vault))delete v.vault.terablast;
+  const fix=(inst:unknown)=>{
+    if(!obj(inst)||typeof inst.species!=='string')return;
+    if(Array.isArray(inst.learned))inst.learned=inst.learned.filter((l:unknown)=>!(obj(l)&&l.move==='terablast')).map((l:unknown)=>{
+      if(!obj(l)||typeof l.move!=='string')return l;
+      const m=learnableMove(inst.species as string,l.move);
+      return m?{...l,pp:m.pp}:l;
+    });
+    if(Array.isArray(inst.carry))inst.carry=inst.carry.filter((c:unknown)=>c!=='terablast');
+  };
+  if(Array.isArray(v.roster))v.roster.forEach(fix);
+  if(Array.isArray(v.rescue))for(const r of v.rescue)if(obj(r))fix(r.inst);
+}
+
 /* ---------- validation ---------- */
 const obj=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const nat=(v:unknown):v is number=>Number.isInteger(v)&&(v as number)>=0;

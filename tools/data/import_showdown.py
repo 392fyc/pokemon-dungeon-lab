@@ -60,33 +60,35 @@ ROSTER = [
 
 # ---- 冻结的初始招式：来自 7.6 roster.json 的原 kit ----
 # 旧行为语义不再参与生成。迁移用的 behavior -> move 对照保存在
-# src/core/legacy-moves.ts；这里仅保留原招式与 PP，避免新数据改变开局。
+# src/core/legacy-moves.ts；这里仅保留原招式，避免新数据改变开局。
+# 8.8（#165）：PP 不再冻结，一律取探险队官方 basePp（见 pp_from_specs）。
 FROZEN_KITS = {
-    "bulbasaur": [("tackle", 3), ("seedbomb", 1)],
-    "charmander": [("scratch", 3), ("ember", 2)],
-    "squirtle": [("tackle", 3), ("watergun", 2)],
-    "pidgey": [("tackle", 3), ("gust", 3)],
-    "rattata": [("tackle", 3)],
-    "spearow": [("pursuit", 2)],
-    "pikachu": [("quickattack", 3), ("thundershock", 3)],
-    "zubat": [("absorb", 2), ("poisonfang", 1)],
-    "geodude": [("tackle", 3), ("defensecurl", 4)],
-    "chikorita": [("tackle", 3), ("magicalleaf", 2)],
-    "cyndaquil": [("tackle", 3), ("ember", 2)],
-    "totodile": [("scratch", 3), ("watergun", 2)],
-    "treecko": [("pound", 3), ("leafage", 4)],
-    "torchic": [("scratch", 3), ("ember", 2)],
-    "mudkip": [("tackle", 3), ("watergun", 2)],
-    "sandshrew": [("scratch", 3), ("defensecurl", 4)],
-    "growlithe": [("ember", 2), ("bite", 2)],
-    "magnemite": [("tackle", 3), ("thundershock", 3)],
-    "onix": [("tackle", 3), ("harden", 3)],
-    "dratini": [("dragontail", 1), ("slam", 2)],
-    "wooper": [("watergun", 2), ("slam", 2)],
-    "houndour": [("ember", 2), ("roar", 2)],
-    "makuhita": [("tackle", 3), ("whirlwind", 2)],
+    "bulbasaur": ["tackle", "seedbomb"],
+    "charmander": ["scratch", "ember"],
+    "squirtle": ["tackle", "watergun"],
+    "pidgey": ["tackle", "gust"],
+    "rattata": ["tackle"],
+    "spearow": ["pursuit"],
+    "pikachu": ["quickattack", "thundershock"],
+    "zubat": ["absorb", "poisonfang"],
+    "geodude": ["tackle", "defensecurl"],
+    "chikorita": ["tackle", "magicalleaf"],
+    "cyndaquil": ["tackle", "ember"],
+    "totodile": ["scratch", "watergun"],
+    "treecko": ["pound", "leafage"],
+    "torchic": ["scratch", "ember"],
+    "mudkip": ["tackle", "watergun"],
+    "sandshrew": ["scratch", "defensecurl"],
+    "growlithe": ["ember", "bite"],
+    "magnemite": ["tackle", "thundershock"],
+    "onix": ["tackle", "harden"],
+    "dratini": ["dragontail", "slam"],
+    "wooper": ["watergun", "slam"],
+    "houndour": ["ember", "roar"],
+    "makuhita": ["tackle", "whirlwind"],
 }
-TM_MOVES = ("protect", "whirlwind", "roar", "dragontail", "helpinghand", "mudslap", "terablast")
+# 8.8（#165）：太晶爆发（terablast）已从招式机与可学招式中去除。
+TM_MOVES = ("protect", "whirlwind", "roar", "dragontail", "helpinghand", "mudslap")
 
 
 def sha256_of(path):
@@ -115,8 +117,19 @@ def load(src):
     return data
 
 
-def game_pp(showdown_pp):
-    return max(1, min(4, math.floor(showdown_pp / 10)))
+def pp_from_specs(specs, showdown_moves):
+    """8.8（#165）：每招最大 PP＝探险队官方 basePp；没有官方数据的招式（叶影）取 Showdown 的基础 PP（40）。返回 move_id -> int。"""
+    def pp_of(move_id):
+        official = (specs.get(move_id) or {}).get("official")
+        base = official.get("basePp") if isinstance(official, dict) else None
+        if isinstance(base, str) and base.isdigit() and int(base) > 0:
+            return int(base)
+        move = showdown_moves.get(move_id)
+        pp = move.get("pp") if isinstance(move, dict) else None
+        if not isinstance(pp, int) or pp <= 0:
+            sys.exit(f"招式 {move_id} 既没有官方 basePp，也没有有效的 Showdown PP：{pp!r}")
+        return pp
+    return pp_of
 
 
 CODE = re.compile(r"^(\d+)([A-Z])(\d*)$")
@@ -131,7 +144,7 @@ def parse_codes(codes):
     return out
 
 
-def build(data):
+def build(data, pp_of):
     dex, moves, learn = data["pokedex"], data["moves"], data["learnsets"]
     species, report = [], []
     for sid, num, starter in ROSTER:
@@ -143,13 +156,13 @@ def build(data):
         parsed = {mid: parse_codes(cs) for mid, cs in learn[sid]["learnset"].items()}
         # 时代：该物种存在 level-up（L）条目的最新世代
         era = max(g for ps in parsed.values() for g, k, _ in ps if k == "L")
-        kit = [{"move": mid, "pp": pp} for mid, pp in FROZEN_KITS[sid]]
+        kit = [{"move": mid, "pp": pp_of(mid)} for mid in FROZEN_KITS[sid]]
         learnable_by_id = {m["move"]: dict(m) for m in kit}
         # 招式机以该物种第九世代 learnset 中存在任一学习方式作为可学依据；初始招式无条件冻结保留。
         for mid, ps in parsed.items():
             if mid not in TM_MOVES or mid not in moves or not any(g == era for g, _, _ in ps):
                 continue
-            learnable_by_id.setdefault(mid, {"move": mid, "pp": game_pp(moves[mid]["pp"])})
+            learnable_by_id.setdefault(mid, {"move": mid, "pp": pp_of(mid)})
         learnable = list(learnable_by_id.values())
         learnable.sort(key=lambda e: e["move"])
         species.append({
@@ -176,7 +189,8 @@ def main():
     args = ap.parse_args()
     src = args.src or default_src()
     data = load(src)
-    species, report = build(data)
+    pmd = json.loads((REPO / "src" / "data" / "pmd-moves.json").read_text(encoding="utf-8"))
+    species, report = build(data, pp_from_specs(pmd["moves"], data["moves"]))
     doc = {
         "source": {
             "project": "Pokémon Showdown",
@@ -185,7 +199,7 @@ def main():
             "downloaded": SOURCE_DATE,
             "githubCommit": SOURCE_COMMIT,
             "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建",
-            "note": "工作候选：名单、maxHp 公式与 PP 换算待后续平衡决定；初始招式按7.6名单冻结，learnable仅含初始招式与首批招式机",
+            "note": "工作候选：名单与 maxHp 公式待后续平衡决定；初始招式按7.6名单冻结，PP 取探险队官方 basePp（8.8），learnable仅含初始招式与首批招式机",
         },
         "species": species,
     }

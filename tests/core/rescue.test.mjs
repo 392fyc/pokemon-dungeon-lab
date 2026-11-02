@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 const legacyRecord=name=>JSON.parse(readFileSync(new URL('./fixtures77-regression/'+name+'.json',import.meta.url),'utf8'));
 import assert from 'node:assert/strict';
 import {createExpedition,applyCommand,closeOut,recruitUnit,previewInvitation,reveal,RULE_VERSION,CONTENT_VERSION} from '../../src/core/engine.ts';
-import {newGameProfile,initialProfile,squadOf,settleRun,settleSummary,payRescue,purseProblem,profileProblem,migrateProfile} from '../../src/core/base.ts';
+import {newGameProfile,initialProfile,squadOf,settleRun,settleSummary,payRescue,purseProblem,profileProblem,migrateProfile,migrateProfilePp} from '../../src/core/base.ts';
 import {TrialStore,decode,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 import {serviceRoll} from '../../src/core/dungeon.ts';
 
@@ -15,8 +15,8 @@ import {serviceRoll} from '../../src/core/dungeon.ts';
  * seed 103 has a shop on floor 1 (machine roar) and still rolls an exchanger on floor 1; the compatibility fixture places that cell by hand while retaining v0.1 settlement rules. Seed 5 has neither.
  */
 const memory=()=>{const m=new Map();let writes=0;return {getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);writes++;},map:m,writes:()=>writes};};
-const pidgey=id=>({id,species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3}],carry:['tackle','gust'],protected:false,tactic:'together'});
-const zubat=id=>({id,species:'zubat',learned:[{move:'absorb',pp:2},{move:'poisonfang',pp:1}],carry:['absorb','poisonfang'],protected:false,tactic:'together'});
+const pidgey=id=>({id,species:'pidgey',learned:[{move:'tackle',pp:30},{move:'gust',pp:19}],carry:['tackle','gust'],protected:false,tactic:'together'});
+const zubat=id=>({id,species:'zubat',learned:[{move:'absorb',pp:15},{move:'poisonfang',pp:15}],carry:['absorb','poisonfang'],protected:false,tactic:'together'});
 /** P1 chikorita and P2 cyndaquil are protected (new flow); P3 pidgey and P4 zubat are ordinary partners. */
 function profile4(over={}){
  const p=newGameProfile('chikorita','cyndaquil').profile;
@@ -106,7 +106,7 @@ test('R7 paying: C = 60 from the account; short accounts are refused with the mi
  const raw=port.getItem(store.key);const r=await store.baseAction({type:'rescue',inst:'P5'});assert.equal(r.ok,false);assert.equal(port.getItem(store.key),raw);
 });
 test('R8 paid partners return at the end of the wait with their own moves; unpaid ones are lost for good',()=>{
- const personal=pidgey('P5');personal.learned.push({move:'protect',pp:1});personal.carry=['tackle','protect'];
+ const personal=pidgey('P5');personal.learned.push({move:'protect',pp:10});personal.carry=['tackle','protect'];
  const p=profile4({account:0,rescue:[entry(personal,true,1),entry(zubat('P6'),false,1),entry(pidgey('P7'),false,4)],next:8});
  const after=settleRun(p,finished(p,{goal:true}));
  assert.deepEqual(roster(after),['P1','P2','P3','P4','P5']);
@@ -177,7 +177,7 @@ function shopRun(){
 }
 const buy=(s,item)=>applyCommand(s,{type:'buy',item});
 test('R14 shop: stock and prices stay fixed; purchases use the purse and remain in the live World',async()=>{
- const s=shopRun();assert.deepEqual(s.shop,{level:1,stock:{berry:2,tonic:1,tm:'whirlwind'},trades:[]});
+ const s=shopRun();assert.deepEqual(s.shop,{level:1,stock:{berry:2,tonic:1,pechaBerry:1,healSeed:1,tm:'whirlwind'},trades:[]});   // 8.8 (G9.4): stock adds one Pecha Berry and one Heal Seed
  assert.equal(serviceRoll(2,2).shop.level,1);
  let r=buy(s,'berry');assert.equal(r.ok,true);
  assert.equal(r.state.purse,80);assert.equal(r.state.prog.items.berry,1);assert.equal(r.state.shop.stock.berry,1);assert.equal(r.state.round,0);
@@ -190,7 +190,7 @@ test('R14 shop: stock and prices stay fixed; purchases use the purse and remain 
  assert.equal(buy(bought,'tm').ok,false);
  const port=memory(),live=new TrialStore(port);assert.equal(await live.start(s),true);
  const writes=port.writes();assert.equal((await live.dispatch({type:'buy',item:'berry'})).ok,true);assert.equal(port.writes(),writes);
- assert.deepEqual(live.state.shop,{level:1,stock:{berry:1,tonic:1,tm:'whirlwind'},trades:[{item:'berry',price:20}]});assert.equal(live.state.purse,80);
+ assert.deepEqual(live.state.shop,{level:1,stock:{berry:1,tonic:1,pechaBerry:1,healSeed:1,tm:'whirlwind'},trades:[{item:'berry',price:20}]});assert.equal(live.state.purse,80);
  assert.equal((await live.dispatch({type:'buy',item:'tonic'})).ok,true);assert.equal(port.writes(),writes);
  assert.equal((await live.dispatch({type:'buy',item:'tonic'})).ok,false);assert.equal(port.writes(),writes,'a refusal writes nothing');
  assert.equal(new TrialStore(port).status,'empty');
@@ -323,7 +323,8 @@ test('R24 an old ended World settles the purse, rescue pool, squad and machines 
  for(const id of s.queue){s.units[id].hp=0;s.units[id].pos=null;}
  s.phase='ended';s.request=null;s.anchor=null;s.end=closeOut(s,'wipe');
  const raw=JSON.stringify({format:1,rules:'trial-rules-2',content:'trial-content-2',build:BUILD_ID,sequence:9,current:s,recent:null,profile:p});
- const expected={...settleRun(p,s),difficulty:'normal',shards:{},rankExp:0,talents:{}},port=memory();port.setItem('dungeon-trial.player.v1',raw);const beforeWrites=port.writes(),live=new TrialStore(port);
+ const expected={...settleRun(p,s),difficulty:'normal',shards:{},rankExp:0,talents:{}};migrateProfilePp(expected);   // 8.8 (#165): the frozen profile carries the old PP; loading migrates it to the official values
+ const port=memory();port.setItem('dungeon-trial.player.v1',raw);const beforeWrites=port.writes(),live=new TrialStore(port);
  assert.equal(await live.whenReady,true,live.error);assert.equal(live.status,'ready',live.error);assert.equal(port.writes(),beforeWrites+1);
  const q=live.profile;
  // The frozen rules-2 World has a terminal goal and wipe: reward is paid, purse and held machine are lost, the paid rescue returns, the unpaid one is lost,

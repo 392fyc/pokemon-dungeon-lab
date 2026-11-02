@@ -104,9 +104,11 @@ function assertLegacyAndRosterArtifacts(rosterDoc, moveDoc, label) {
     assert.ok(current, `${label}: missing legacy species ${old.id}`);
     assert.equal(current.starter, old.starter, `${label}: ${old.id} starter`);
     assert.equal(current.maxHp, old.maxHp, `${label}: ${old.id} maxHp`);
-    assert.deepEqual(current.kit, old.kit, `${label}: ${old.id} kit`);
+    // 8.8 (#165): the frozen part of a legacy kit is its move ids; the PP is now the official basePp (checked below for every kit and learnable move).
+    assert.deepEqual(current.kit.map(item => item.move), old.kit.map(item => item.move), `${label}: ${old.id} kit`);
     const currentLearnable = new Set(current.learnable.map(entry => entry.move));
     for (const oldMove of old.oldLearnableIds) {
+      if (oldMove === 'terablast') continue;   // 8.8 (#165): the one deliberate removal
       assert.ok(currentLearnable.has(oldMove), `${label}: ${old.id} lost old learnable move ${oldMove}`);
     }
   }
@@ -119,8 +121,10 @@ function assertLegacyAndRosterArtifacts(rosterDoc, moveDoc, label) {
   const ppByMove = new Map();
   for (const entry of species) {
     for (const item of [...entry.kit, ...entry.learnable]) {
-      assert.ok(Number.isInteger(item.pp) && item.pp >= 1 && item.pp <= 4, `${label}: ${entry.id}/${item.move} has invalid PP`);
       assert.ok(actualMoveIds.has(item.move), `${label}: ${entry.id}/${item.move} has no move definition`);
+      const officialPp = moveDoc.moves[item.move].official?.basePp;
+      assert.equal(item.pp, officialPp ? Number(officialPp) : 40, `${label}: ${entry.id}/${item.move} PP must be the official basePp (leafage, with no official data: 40)`);
+      assert.notEqual(item.move, 'terablast', `${label}: ${entry.id} must not learn terablast`);
       if (ppByMove.has(item.move)) assert.equal(item.pp, ppByMove.get(item.move), `${label}: PP must be global for ${item.move}`);
       else ppByMove.set(item.move, item.pp);
     }
@@ -410,8 +414,10 @@ test('图鉴正式静态产物覆盖175种，保留旧名单、25招原文字节
   assert.deepEqual(Object.keys(moveDoc.categories).sort(),Object.keys(moveDoc.moves).sort());
   assert.equal(Object.keys(moveDoc.moves).length, 217, 'committed move table must contain 217 admitted moves without requiring snapshots');
   const gen1Moves = new Set(roster.species.filter(entry => Number(entry.dex) <= 151).flatMap(entry => entry.learnable.map(item => item.move)));
-  assert.equal([...gen1Moves].filter(id => Object.hasOwn(moveDoc.moves, id)).length, 215, 'committed generation-one learnable moves must contain 215 admitted moves');
-  for (const [id, count, pp] of [['quickguard', 9, 1], ['reflect', 30, 2], ['lightscreen', 45, 3]]) {
+  assert.equal([...gen1Moves].filter(id => Object.hasOwn(moveDoc.moves, id)).length, 214, 'committed generation-one learnable moves must contain 214 moves (215 admitted, Tera Blast no longer learnable, 8.8)');
+  // 8.8 (#165): max PP is the official basePp, so the converted values 1/2/3 became 13/15/15; Tera Blast is learnable by nobody.
+  assert.equal(roster.species.some(entry => entry.learnable.some(item => item.move === 'terablast')), false, 'terablast removed from every learnable list');
+  for (const [id, count, pp] of [['quickguard', 9, 13], ['reflect', 30, 15], ['lightscreen', 45, 15]]) {
     const learners = roster.species.filter(entry => entry.learnable.some(item => item.move === id));
     assert.equal(learners.length, count, `${id} committed learnable count`);
     for (const entry of learners) assert.equal(entry.learnable.find(item => item.move === id).pp, pp, `${entry.id}/${id} global converted PP`);
@@ -504,9 +510,9 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
     const actualIds = generated.roster.species.filter(entry => entry.learnable.some(item => item.move === moveId)).map(entry => entry.id).sort();
     assert.deepEqual(actualIds, expectedIds, `${moveId} learnable species must come from their selected era without V methods`);
     assert.equal(actualIds.length, expectedCount, `${moveId} learnable count across all 175 species`);
-    const expectedPp = Math.max(1, Math.min(4, Math.floor(showdownMoves[moveId].pp / 10)));
+    const expectedPp = Number(generated.moveDoc.moves[moveId].official.basePp);   // 8.8 (#165): official basePp instead of the converted Showdown PP
     for (const speciesId of actualIds) {
-      assert.equal(generatedById.get(speciesId).learnable.find(item => item.move === moveId).pp, expectedPp, `${speciesId}/${moveId} uses the global converted PP`);
+      assert.equal(generatedById.get(speciesId).learnable.find(item => item.move === moveId).pp, expectedPp, `${speciesId}/${moveId} uses the global official PP`);
     }
   }
   const outputMoveIds = new Set(Object.keys(generated.moveDoc.moves));

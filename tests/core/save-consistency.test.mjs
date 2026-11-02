@@ -27,7 +27,7 @@ test('S2 an old in-progress World is discarded without validation; a valid camp 
  assert.equal(store.envelope.format,2);assert.equal(store.envelope.rules,RULE_VERSION);assert.equal(store.envelope.content,CONTENT_VERSION);
  assert.equal(Object.hasOwn(store.envelope,'current'),false);assert.equal(Object.hasOwn(store.envelope,'recent'),false);
  assert.deepEqual(store.profile.roster.map(i=>i.species),['charmander','squirtle','bulbasaur']);
- assert.deepEqual(store.profile.roster[0].learned,[{move:'scratch',pp:3},{move:'ember',pp:2}]);
+ assert.deepEqual(store.profile.roster[0].learned,[{move:'scratch',pp:28},{move:'ember',pp:15}]);
  assert.equal(storage.writes(),1);assert.deepEqual(JSON.parse(storage.raw()),store.envelope);
 });
 

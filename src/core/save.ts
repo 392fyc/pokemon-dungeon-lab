@@ -2,7 +2,7 @@ import {applyCommand,clone,RULE_VERSION,CONTENT_VERSION,closeOut,isProtected,rea
 import {BOSS,serviceRoll} from './dungeon.ts';
 import {ECON} from './economy.ts';
 import {speciesOf,tmPool,learnableMove} from './roster.ts';
-import {profileProblem,profileFitsWorld,settleRun,settleSummary,applyBase,squadOf,migrateProfile,migrateProfileMoves,purseProblem,type Profile,type BaseAction,type SettleSummary} from './base.ts';
+import {profileProblem,profileFitsWorld,settleRun,settleSummary,applyBase,squadOf,migrateProfile,migrateProfileMoves,migrateProfilePp,purseProblem,type Profile,type BaseAction,type SettleSummary} from './base.ts';
 import {createExpedition} from './engine.ts';
 import {moveOf} from './moves.ts';
 import {LEGACY_BEHAVIOR_MOVE,legacyMoveForBehavior,legacySpeciesMove} from './legacy-moves.ts';
@@ -30,18 +30,23 @@ const LEGACY_BOSS_SPECIES=new Set<string>(['arcanine']);
 // 7.3 boss tuple and its earlier released tuple. BOSS in current dungeon data now contains identity only.
 const BOSS_HISTORY=[{hp:60,damage:4,range:3},{hp:80,damage:6,range:3}] as const;
 const validBossNumbers=(v:Record<string,unknown>)=>BOSS_HISTORY.some(b=>v.maxHp===b.hp&&v.damage===b.damage&&v.range===b.range);
+/** 8.8: a status state holds only `left` and `tick`, each a non-negative integer when present. */
+const validStatusState=(v:unknown)=>object(v)&&Object.keys(v).every(k=>(k==='left'||k==='tick')&&integer(v[k])&&(v[k] as number)>=0);
 function validUnit(v:unknown,depth=0):boolean {
   // 7.3 H1: a nested unit (a recruit) never carries the boss mark or the boss species.
   if(depth>0&&object(v)&&(v.boss!==undefined||(typeof v.species==='string'&&LEGACY_BOSS_SPECIES.has(v.species))))return false;
   if(!object(v)||typeof v.id!=='string'||!['friend','enemy'].includes(String(v.side))||!integer(v.hp)||!integer(v.maxHp)||(v.maxHp as number)<=0||(v.hp as number)<0||(v.hp as number)>(v.maxHp as number)||(v.pos!==null&&!position(v.pos))||!object(v.pp)||!object(v.maxPp)||!moveIds(v.learned))return false;
-  const allowed=['id','side','hp','maxHp','pos','pp','maxPp','learned','ai','protected','damage','range','recruit','species','inst','moves','boss','stages','protect','counter','lastMove','reflect','lightscreen'];
+  const allowed=['id','side','hp','maxHp','pos','pp','maxPp','learned','ai','protected','damage','range','recruit','species','inst','moves','boss','stages','protect','counter','lastMove','reflect','lightscreen','status'];
   if(Object.keys(v).some(k=>!allowed.includes(k))||new Set(v.learned).size!==v.learned.length)return false;
   if(v.side==='enemy'&&(v.reflect!==undefined||v.lightscreen!==undefined))return false;
   for(const k of ['reflect','lightscreen'] as const){const n=v[k];if(n!==undefined&&(v.side!=='friend'||!integer(n)||(n as number)<0||(n as number)>10))return false;}
   const learned=v.learned as string[];
   if(!exactKeys(v.pp,learned)||!exactKeys(v.maxPp,learned))return false;
   for(const k of learned){const n=v.pp[k],max=v.maxPp[k];if(!integer(n)||!integer(max)||(max as number)<1||(n as number)<0||(n as number)>(max as number))return false;}
-  if(!object(v.stages)||!exactKeys(v.stages,['atk','def'])||!integer(v.stages.atk)||!integer(v.stages.def)||(v.stages.atk as number)<-3||(v.stages.atk as number)>3||(v.stages.def as number)<-3||(v.stages.def as number)>3)return false;
+  // 8.8 (#165): `atk` and `def` always exist; the special, accuracy and evasion stages exist once changed.
+  const stg=v.stages as Record<string,unknown>|undefined,sts=v.status as Record<string,unknown>|undefined;
+  if(!object(stg)||!integer(stg.atk)||!integer(stg.def)||Object.keys(stg).some(k=>!['atk','def','spa','spd','acc','eva'].includes(k)||!integer(stg[k])||(stg[k] as number)<-3||(stg[k] as number)>3))return false;
+  if(sts!==undefined&&(!object(sts)||Object.keys(sts).some(k=>!['psn','tox','brn','par','frz','confusion','flinch'].includes(k)||!validStatusState(sts[k]))))return false;
   if(!integer(v.protect)||(v.protect as number)<0||(v.protect as number)>3||!integer(v.counter)||(v.counter as number)<0||(v.counter as number)>3)return false;
   if(v.lastMove!==null&&(typeof v.lastMove!=='string'||!moveOf(v.lastMove)||!learned.includes(v.lastMove)))return false;
   if((v.inst===undefined)!==(v.moves===undefined)||(v.moves!==undefined&&(!moveIds(v.moves)||v.moves.length!==learned.length||v.moves.some((m,i)=>m!==learned[i]))))return false;
@@ -59,9 +64,9 @@ function validUnit(v:unknown,depth=0):boolean {
   return v.recruit===undefined||(depth<1&&validUnit(v.recruit,depth+1));
 }
 const keyOf=(p:{x:number;y:number})=>`${p.x},${p.y}`;
-const pointKinds=['goal','item','exit','down','up','berry','tonic','rest','shop','exchange'];
+const pointKinds=['goal','item','exit','down','up','berry','tonic','pechaBerry','rawstBerry','cheriBerry','healSeed','rest','shop','exchange'];
 /** Points that exist only in 6.4+ expeditions (pickups, the 6.5 rest point and the 7.2 service cells). */
-const isPickup=(k:unknown)=>k==='berry'||k==='tonic'||k==='rest'||k==='shop'||k==='exchange';
+const isPickup=(k:unknown)=>k==='berry'||k==='tonic'||k==='pechaBerry'||k==='rawstBerry'||k==='cheriBerry'||k==='healSeed'||k==='rest'||k==='shop'||k==='exchange';
 const validPoint=(p:unknown,cells:Set<string>)=>object(p)&&position(p.pos)&&pointKinds.includes(String(p.kind))&&typeof p.used==='boolean'&&cells.has(keyOf(p.pos));
 /** A stored (non-current) floor: terrain, revealed cells, real enemies and points. Ids are claimed in `taken` so none repeats across floors. */
 function validStored(f:unknown,d:Dungeon,taken:Set<string>,run:boolean):f is StoredFloor {
@@ -173,7 +178,8 @@ function validRun(s:World):boolean {
     if(i.status==='pending'){
       const u=i.unit,top=speciesOf(u.species!)!.maxHp+LEGACY_PROG.hpPerLevel*(p.level-1);
       if(u.maxHp!==top||u.hp!==Math.max(1,Math.floor(top/2)))return false;
-      for(const [k,m] of Object.entries(u.maxPp))if(!integer(m)||(u.pp as Record<string,number>)[k]!==Math.min(m as number,Math.max(1,Math.floor((m as number)/2))))return false;
+      // 8.8 (#165, G8.2): a new partner now arrives with full PP; the HP snapshot stays halved.
+      for(const [k,m] of Object.entries(u.maxPp))if(!integer(m)||(u.pp as Record<string,number>)[k]!==m)return false;
     }
   }
   return true;
@@ -275,6 +281,47 @@ function migrateWorld(w:unknown,profile:unknown,history=false):void {
   }
 }
 
+/**
+ * 8.8 (#165) PP and Tera Blast migration for a saved unit: Tera Blast is removed from what it knows, each move of a roster species gets the new
+ * (official) maximum PP and its current PP is capped to it. `full` sets current PP to the maximum too (a pending partner arrives with full PP).
+ */
+function migrateUnitPp(v:unknown,full=false):void {
+  if(!object(v))return;
+  if(Array.isArray(v.learned)&&strings(v.learned)){
+    const at=v.learned.indexOf('terablast');
+    if(at>=0){
+      v.learned=v.learned.filter((_,i)=>i!==at);
+      if(Array.isArray(v.moves))v.moves=v.moves.filter((_,i)=>i!==at);
+      if(object(v.pp))delete v.pp.terablast;
+      if(object(v.maxPp))delete v.maxPp.terablast;
+      if(v.lastMove==='terablast')v.lastMove=null;
+    }
+    if(typeof v.species==='string'&&object(v.pp)&&object(v.maxPp))
+      for(const k of v.learned as string[]){
+        const m=learnableMove(v.species,k);if(!m)continue;
+        v.maxPp[k]=m.pp;
+        v.pp[k]=full?m.pp:Math.min(integer(v.pp[k])?(v.pp[k] as number):m.pp,m.pp);
+      }
+  }
+  if(object(v.recruit))migrateUnitPp(v.recruit,true);
+}
+/** 8.8 (#165): applies `migrateUnitPp` everywhere a saved world keeps units, and removes Tera Blast machines from the run and its end record. */
+function migrateWorldPp(w:unknown):void {
+  if(!object(w))return;
+  if(object(w.units))for(const u of Object.values(w.units))migrateUnitPp(u);
+  if(Array.isArray(w.invitations))for(const i of w.invitations)if(object(i))migrateUnitPp(i.unit,i.status==='pending');
+  if(object(w.dungeon)&&object(w.dungeon.stored))for(const f of Object.values(w.dungeon.stored))
+    if(object(f)&&object(f.units))for(const u of Object.values(f.units))migrateUnitPp(u);
+  const drop=(list:unknown)=>Array.isArray(list)?list.filter(t=>!(object(t)&&t.move==='terablast')):list;
+  const hadTera=(list:unknown)=>Array.isArray(list)&&list.some(t=>object(t)&&t.move==='terablast');
+  const changed=hadTera(w.tms)||(object(w.end)&&hadTera(w.end.tms));
+  if(w.tms!==undefined)w.tms=drop(w.tms);
+  if(object(w.end)&&w.end.tms!==undefined)w.end.tms=drop(w.end.tms);
+  if(changed&&object(w.end)&&Array.isArray(w.end.reasons)){
+    const reasons=reasonsOf(w as unknown as World);w.end.reasons=reasons;w.end.effective=reasons.length>0;
+  }
+}
+
 /** Remap one v1 unit as a whole. Every old key must be explained before any key is replaced. */
 function migrateLegacyUnit(v:unknown):void {
   if(!object(v))throw Error('旧远征单位不是对象，无法迁移；原记录已保留');
@@ -370,7 +417,7 @@ function migrateV3Camp(raw:string):Envelope {
   if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isInteger(e.sequence)||Number(e.sequence)<1)
     throw Error('旧存档结构损坏；原记录已保留');
   const profile=structuredClone(e.profile) as unknown;
-  defaultProfileTactics(profile);
+  defaultProfileTactics(profile);migrateProfilePp(profile);
   const upgraded=upgradeV4Profile(profile);
   if(!upgraded)throw Error('旧存档的营地档案损坏；原记录已保留');
   return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:e.build,sequence:Math.min(Number(e.sequence)+1,Number.MAX_SAFE_INTEGER),profile:upgraded};
@@ -388,8 +435,9 @@ function upgradeV4Profile(v:unknown):Profile|null {
   return strictProfileShape(profile)?profile as unknown as Profile:null;
 }
 function upgradeLegacyProfile(v:unknown):Profile|null {
-  if(strictProfileShape(v))return structuredClone(v);
-  return upgradeV4Profile(v);
+  const copy=structuredClone(v) as unknown;migrateProfilePp(copy);
+  if(strictProfileShape(copy))return copy;
+  return upgradeV4Profile(copy);
 }
 function migrateV4Camp(raw:string):Envelope {
   const parsed=parseJson(raw);
@@ -398,7 +446,8 @@ function migrateV4Camp(raw:string):Envelope {
   const e=parsed;
   if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isSafeInteger(e.sequence)||Number(e.sequence)<1)
     throw Error('旧存档结构损坏；原记录已保留');
-  const profile=upgradeV4Profile(e.profile);
+  const v4=structuredClone(e.profile) as unknown;migrateProfilePp(v4);
+  const profile=upgradeV4Profile(v4);
   if(!profile)throw Error('旧存档的营地档案损坏；原记录已保留');
   return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:e.build,sequence:Math.min(Number(e.sequence)+1,Number.MAX_SAFE_INTEGER),profile};
 }
@@ -439,6 +488,7 @@ function decodeLegacyRecord(e:Record<string,unknown>,validateWorld:boolean):Lega
   if(!upgraded)throw Error('旧存档的营地档案损坏；原记录已保留');
   e.profile=upgraded;
   if(validateWorld){
+    migrateWorldPp(e.current);migrateWorldPp(e.recent);
     defaultWorldTeamGuardState(e.current);defaultWorldTeamGuardState(e.recent);
     if((e.current!==null&&!validWorld(e.current))||(e.recent!==null&&(!validWorld(e.recent)||e.recent.phase!=='ended')))throw Error('旧存档结构损坏；原记录已保留');
     if(e.current!==null&&((e.current as World).scenario!=='expedition'||!profileFitsWorld(e.profile as Profile,e.current as World)))throw Error('旧存档结构损坏；原记录已保留');
@@ -455,9 +505,10 @@ export function decode(raw:string):Envelope {
   if(!object(parsed))throw Error('存档结构损坏；原记录已保留');
   const e=parsed;
   if(e.format!==2||e.rules!==RULE_VERSION||e.content!==CONTENT_VERSION)throw Error('存档版本不兼容；原记录已保留');
-  if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isSafeInteger(e.sequence)||Number(e.sequence)<1||!strictProfileShape(e.profile))throw Error('存档结构损坏；原记录已保留');
+  if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isSafeInteger(e.sequence)||Number(e.sequence)<1)throw Error('存档结构损坏；原记录已保留');
+  // 8.8 (#165): records written before the official-PP change keep the same version numbers; their moves are brought up to date here.
   const normalized=structuredClone(e) as unknown as Envelope;
-  defaultProfileTactics(normalized.profile);
+  defaultProfileTactics(normalized.profile);migrateProfilePp(normalized.profile);
   if(!strictProfileShape(normalized.profile))throw Error('存档结构损坏；原记录已保留');
   return normalized;
 }

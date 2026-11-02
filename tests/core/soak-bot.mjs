@@ -4,6 +4,10 @@ import {newGameProfile,profileProblem,rankLevel} from '../../src/core/base.ts';
 import {TrialStore} from '../../src/core/save.ts';
 import {ECON} from '../../src/core/economy.ts';
 import {moveOf} from '../../src/core/moves.ts';
+// 8.8 (#165): floor items other than the orange berry and the PP tonic are the cure berries and the heal seed; walking onto one picks it up.
+const FLOOR_ITEMS=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','healSeed'];
+const CURES={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],healSeed:['psn','tox','brn','par','frz','confusion','flinch']};
+const STATUS_KEYS=['psn','tox','brn','par','frz','confusion','flinch'];
 const damageMoves=u=>u.learned.filter(k=>(u.pp[k]??0)>0&&moveOf(k)?.effects.includes('damage'));
 const hitMoves=(s,u,e)=>damageMoves(u).filter(k=>skillTargets(s,u.id,k).includes(e.id));
 const rangedMoves=u=>damageMoves(u).filter(k=>['front2','line10'].includes(moveOf(k).range));
@@ -54,6 +58,16 @@ function checkWorld(s,where){
  for(const id of [...s.queue,...s.enemies]){const u=s.units[id];if(!aliveU(u))continue;
   assert.ok(cells.has(key(u.pos)),`${at}: ${id} stands off the floor`);
   assert.ok(!taken.has(key(u.pos)),`${at}: ${id} overlaps ${taken.get(key(u.pos))} at ${key(u.pos)}`);taken.set(key(u.pos),id);}
+ for(const [id,u] of Object.entries(s.units)){
+  // 8.8 (#165): status and stage invariants
+  const st=u.status??{};
+  for(const [k,v] of Object.entries(st)){assert.ok(STATUS_KEYS.includes(k),`${at}: ${id} unknown status ${k}`);assert.ok(typeof v==='object'&&v!==null,`${at}: ${id} status ${k} state`);
+   if(v.left!==undefined)assert.ok(Number.isInteger(v.left)&&v.left>=1&&v.left<=12,`${at}: ${id} ${k} left ${v.left}`);
+   if(v.tick!==undefined)assert.ok(Number.isInteger(v.tick)&&v.tick>=1&&v.tick<=20,`${at}: ${id} ${k} tick ${v.tick}`);}
+  assert.ok(!(st.frz&&st.brn),`${at}: ${id} frozen and burned together`);assert.ok(!(st.psn&&st.tox),`${at}: ${id} poisoned and badly poisoned together`);
+  if(u.hp===0)assert.equal(u.pos,null,`${at}: fallen ${id} still on the map`);
+  for(const [k,v] of Object.entries(u.stages??{}))assert.ok(['atk','def','spa','spd','acc','eva'].includes(k)&&Number.isInteger(v)&&v>=-3&&v<=3,`${at}: ${id} stage ${k}=${v}`);
+ }
  assert.ok(s.bag>=0,`${at}: bag ${s.bag}`);
  assert.ok(s.prog.level>=5&&s.prog.level<=PROG.maxLevel,`${at}: level ${s.prog.level}`);
  assert.ok(s.prog.items.berry>=0&&s.prog.items.tonic>=0,`${at}: negative item count`);
@@ -127,7 +141,7 @@ function objective(s,memo){
  const near=(kinds,max)=>{let best=null;for(const p of pts){if(!kinds.includes(p.kind)||p.used||memo.declined.has(level+':'+key(p.pos)))continue;
    const r=route(s,L.pos,c=>same(c,p.pos));const d=same(L.pos,p.pos)?0:r?.len;if(d===undefined||d>max)continue;if(!best||d<best.d)best={p,d};}return best?.p;};
  const members=s.queue.map(i=>s.units[i]).filter(aliveU);
- const pickups=()=>near(["berry","tonic",...(level===3&&!(s.tms??[]).some(t=>t.source==='target')?['item']:[]),...(affordable(s).length?['shop']:[]),...(s.exchange&&!s.exchange.used&&memo.useExchange?['exchange']:[])],8);
+ const pickups=()=>near([...FLOOR_ITEMS,...(level===3&&!(s.tms??[]).some(t=>t.source==='target')?['item']:[]),...(affordable(s).length?['shop']:[]),...(s.exchange&&!s.exchange.used&&memo.useExchange?['exchange']:[])],8);
  const resting=()=>members.some(m=>ppDeficit(m))||members.some(m=>m.hp<m.maxHp)?near(["rest"],6):undefined;
  const pick=pickups()??resting();
  if(pick)return pick;
@@ -277,7 +291,7 @@ function visibleEnemyCountForHunt(s){
  return n;
 }
 function seenUncollectedItems(s){
- return (s.points??[]).filter(p=>['berry','tonic'].includes(p.kind)&&!p.used).length+
+ return (s.points??[]).filter(p=>FLOOR_ITEMS.includes(p.kind)&&!p.used).length+
   visibleRooms(s).filter(r=>r.type==='item'&&r.state==='idle').length;
 }
 function visibleDown(s){return (s.points??[]).find(p=>p.kind==='down'&&!p.used);}
@@ -351,7 +365,7 @@ function visibleCommissionTarget(s,memo){
  const main=memo.policy==='naive'?targetForDetour(s,memo):null,limit=memo.policy==='naive'?(memo.naiveDetourAllowance??2):policyRoomLimit(memo);
  const options=[];
  if(active.some(c=>c.id==='collector'))for(const p of s.points??[]){
-  if(!['berry','tonic'].includes(p.kind)||p.used)continue;
+  if(!FLOOR_ITEMS.includes(p.kind)||p.used)continue;
   const r=route(s,L.pos,c=>same(c,p.pos));if(!r)continue;const extra=main?detourTo(s,memo,p.pos):r.len;
   if(extra<=limit)options.push({pos:p.pos,route:r,kind:'collector'});
  }
@@ -478,6 +492,12 @@ function backpackCommands(s,memo){
  const members=s.queue.map(i=>s.units[i]).filter(policyAlive),cau=cautiousOn(memo);
  const low=u=>u.hp/u.maxHp;
  const reachable=members.filter(m=>m.id===L.id||(m.pos&&adj(s,m.pos,L.pos)));
+ // 8.8: status conditions. Use a cure item on a reachable member that has a condition it cures (the heal seed last, it cures everything). A frozen or paralysed leader simply keeps playing: the engine accepts the command and the action is lost.
+ if(!memo.reckless)for(const item of ['pechaBerry','rawstBerry','cheriBerry','healSeed']){
+  if((s.prog.items[item]??0)<1)continue;
+  const sick=reachable.find(m=>CURES[item].some(k=>m.status?.[k]!==undefined));
+  if(sick){act({type:'use',item,target:sick.id});break;}
+ }
  const lowReach=reachable.filter(m=>low(m)<=(cau?0.6:0.5)).sort((a,b)=>low(a)-low(b))[0];
  if(!memo.reckless&&lowReach&&s.prog.items.bigBerry>0)act({type:'use',item:'bigBerry',target:lowReach.id});
  const hurt=reachable.filter(m=>low(m)<=(cau?0.6:0.5)).sort((a,b)=>low(a)-low(b))[0];
@@ -1035,7 +1055,7 @@ function makeProfile(main='charmander',deputy='squirtle'){
 }
 function doomedProfile(){
  const p=makeProfile('chikorita','cyndaquil');
- p.roster.push(kit('P3','pidgey',[{move:'tackle',pp:3},{move:'gust',pp:3}]),kit('P4','zubat',[{move:'absorb',pp:2},{move:'poisonfang',pp:1}]));
+ p.roster.push(kit('P3','pidgey',[{move:'tackle',pp:30},{move:'gust',pp:19}]),kit('P4','zubat',[{move:'absorb',pp:15},{move:'poisonfang',pp:15}]));
  p.next=5;p.team=['P1','P3','P4'];p.leader='P1';return p;
 }
 

@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import index from './characters.json';
 import {WILD_SPECIES} from '../core/dungeon.ts';
 import {SPECIES,BOSS_SPECIES} from '../core/roster.ts';
+import {buildAtlas,buildFloorTexture,type TerrainThemeKey,type TerrainLayer,type PixelTexture} from './terrain.ts';
 /** Character sheets come from SpriteCollab and tiles from tools/art; provenance is in public/assets/manifest.json. */
 type AnimMeta = {file:string;w:number;h:number;durations:number[]};
 const CHARACTERS = index as Record<string, Record<string, AnimMeta>>;
@@ -24,6 +25,8 @@ export function preloadArt(scene:Phaser.Scene):void {
   // 7.3 theme tiles (named by the key the renderer asks for); a missing file only means the stone tile is tinted instead.
   for (const t of ['floor-wet', 'wall-wet', 'floor-ash', 'wall-basalt', 'floor-arena']) scene.load.image(t, base + `tiles/${t}.png`);
   scene.load.image('wall', base + 'tiles/wall-rock.png');
+  for (const theme of ['moss', 'wet', 'ash'])
+    scene.load.atlas(`deco-${theme}`, base + `tiles/deco/deco-${theme}.png`, base + `tiles/deco/deco-${theme}.json`);
   scene.load.image('exit', base + 'tiles/marker-exit.png');
   scene.load.image('goal', base + 'props/marker-goal.png');
   scene.load.image('item', base + 'props/marker-item.png');
@@ -42,4 +45,33 @@ export function createAnims(scene:Phaser.Scene):void {
       for (let row = 0; row < 8; row++)
         scene.anims.create({key:animKey(dex, name, row), repeat:name === 'Idle' || name === 'Walk' ? -1 : 0,
           frames:m.durations.map((d, i) => ({key:`${dex}-${name}`, frame:row * m.durations.length + i, duration:d * 1000 / 60}))});
+}
+
+/** Generate each theme once, on first use. No downloaded atlas or canvas API is needed by the pure painter. */
+export function createTerrainArt(scene:Phaser.Scene,theme:TerrainThemeKey):void {
+  const install=(name:string,pixels:PixelTexture)=>{
+    const texture=scene.textures.createCanvas(name,pixels.width,pixels.height);
+    if(!texture)throw new Error(`无法创建地形纹理：${name}`);
+    const ctx=texture.getContext(),data=ctx.createImageData(pixels.width,pixels.height);
+    data.data.set(pixels.data);ctx.putImageData(data,0,0);texture.refresh();return texture;
+  };
+  const floorKey=`terrain-${theme}-floor`;
+  if(!scene.textures.exists(floorKey)){
+    const texture=install(floorKey,buildFloorTexture(theme));
+    for(let y=0;y<16;y++)for(let x=0;x<16;x++)texture.add(`${x},${y}`,0,x*TILE,y*TILE,TILE,TILE);
+  }
+  for(const layer of ['edge','liquid','wall'] as const){
+    const name=`terrain-${theme}-${layer}`;if(scene.textures.exists(name))continue;
+    const pixels=buildAtlas(theme,layer),texture=install(name,pixels);
+    for(let variant=0;variant<pixels.height/(6*TILE);variant++)for(let frame=0;frame<47;frame++)
+      texture.add(`v${variant}-f${frame}`,0,(frame%8)*TILE,(variant*6+Math.floor(frame/8))*TILE,TILE,TILE);
+  }
+}
+
+/** Developer-only single-file export; the browser downloads exactly the runtime texture used on screen. */
+export function exportTerrainArt(scene:Phaser.Scene,theme:TerrainThemeKey,layer:TerrainLayer|'floor'):void {
+  createTerrainArt(scene,theme);
+  const texture=scene.textures.get(`terrain-${theme}-${layer}`) as Phaser.Textures.CanvasTexture;
+  const a=document.createElement('a');a.href=texture.getCanvas().toDataURL('image/png');
+  a.download=`terrain-${theme}-${layer}.png`;a.click();
 }

@@ -73,7 +73,7 @@ export const levelFor=(exp:number)=>Math.max(INITIAL_LEVEL,PROG.thresholds.reduc
 export const levelDamageBonus=(level:number)=>Math.floor(Math.max(0,level-INITIAL_LEVEL)/PROG.damageEveryLevels);
 export type Point={pos:Pos;kind:PointKind;used:boolean};
 /** A floor that is not the current one: its terrain, revealed cells, real enemies (with their HP and positions) and points. */
-export type StoredFloor={floor:Pos[];seen:string[];seenWalls?:string[];enemies:string[];units:Record<string,Unit>;points:Point[];rooms?:Rect[];bossRoom?:number;enemyAiRng?:number;adventureRooms?:AdventureRoom[]};
+export type StoredFloor={floor:Pos[];liquid?:string[];arrival?:Pos;seen:string[];seenWalls?:string[];enemies:string[];units:Record<string,Unit>;points:Point[];rooms?:Rect[];bossRoom?:number;enemyAiRng?:number;adventureRooms?:AdventureRoom[]};
 /** Expedition-only data. `stored` holds every visited floor except the current one; unvisited floors are generated from `seed` on first entry. */
 /** `base` (6.5): true for a run started from the base; only those runs get the floor-2 rest point (older generated runs keep their exact floors). */
 /** `services` (7.2): true for a run that may hold a shop and an exchanger (decided by `serviceRoll` from the seed). Older runs never get them. */
@@ -93,7 +93,7 @@ export type Exchange={level:number;used:boolean;sent:string|null};
 export type End = {id:string;outcome:'normal'|'won'|'wipe';team:string[];camp:string[];goal:boolean;acquired:number;brought:number;
   /** 7.3 (boss-marked runs only): whether the boss was defeated (its HP is 0 in the final state). */
   boss?:boolean;tms?:TmItem[];lost?:string[];effective?:boolean;reasons?:string[];reward?:number;purse?:number;refund?:number};
-export type World = {runId:string;scenario:string;round:number;floor:Pos[];seen:string[];seenWalls?:string[];units:Record<string,Unit>;
+export type World = {runId:string;scenario:string;round:number;floor:Pos[];liquid?:string[];arrival?:Pos;seen:string[];seenWalls?:string[];units:Record<string,Unit>;
   queue:string[];enemies:string[];camp:string[];leader:string;points:Point[];
   goal:boolean;bag:number;phase:'playing'|'evolution'|'invitation'|'commission'|'blessing'|'tmChoice'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
   request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;difficulty?:Difficulty;prog?:Progress;rooms?:Rect[];bossRoom?:number;
@@ -1423,17 +1423,19 @@ function floorUnits(g:GeneratedFloor):{units:Record<string,Unit>;enemies:string[
 /** Active expeditions use the current generator; legacy save validation never regenerates their historical maps. */
 function freshFloor(d:Dungeon,level:number,run:boolean,difficulty:Difficulty='normal',enemySleepChance=0.25):StoredFloor&{arrival:Pos;adventureRooms?:AdventureRoom[]} {
   const g=generateFloor(d.seed,level,{width:d.width,height:d.height,floors:d.floors,...(d.boss?{boss:true}:{}),...(d.roguelike?{roguelike:true}:{}),difficulty,enemySleepChance});
-  return {floor:g.floor,seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),enemyAiRng:g.enemyAiRng,...(run?{rooms:g.rooms.map(r=>({...r}))}:{}),...(run&&g.adventureRooms?{adventureRooms:clone(g.adventureRooms)}:{}),...(g.bossRoom!==undefined?{bossRoom:g.bossRoom}:{}),arrival:g.arrival};
+  return {floor:g.floor,liquid:g.liquid.map(key),arrival:clone(g.arrival),seen:[],points:[...g.points,...(run?g.pickups:[]),...(run&&d.base&&g.rest?[g.rest]:[]),...(run&&d.services?g.services:[])].map(p=>({...p})),...floorUnits(g),enemyAiRng:g.enemyAiRng,...(run?{rooms:g.rooms.map(r=>({...r}))}:{}),...(run&&g.adventureRooms?{adventureRooms:clone(g.adventureRooms)}:{}),...(g.bossRoom!==undefined?{bossRoom:g.bossRoom}:{})};
 }
 function stashFloor(s:World):StoredFloor {
   const units:Record<string,Unit>={};for(const id of s.enemies)units[id]=s.units[id];
-  return clone({floor:s.floor,seen:s.seen,...(s.seenWalls?{seenWalls:s.seenWalls}:{}),enemies:s.enemies,units,points:s.points,...(s.rooms?{rooms:s.rooms}:{}),...(s.bossRoom!==undefined?{bossRoom:s.bossRoom}:{}),...(s.enemyAiRng!==undefined?{enemyAiRng:s.enemyAiRng}:{}),...(s.adventureRooms?{adventureRooms:s.adventureRooms}:{})});
+  return clone({floor:s.floor,...(s.liquid?{liquid:s.liquid}:{}),...(s.arrival?{arrival:s.arrival}:{}),seen:s.seen,...(s.seenWalls?{seenWalls:s.seenWalls}:{}),enemies:s.enemies,units,points:s.points,...(s.rooms?{rooms:s.rooms}:{}),...(s.bossRoom!==undefined?{bossRoom:s.bossRoom}:{}),...(s.enemyAiRng!==undefined?{enemyAiRng:s.enemyAiRng}:{}),...(s.adventureRooms?{adventureRooms:s.adventureRooms}:{})});
 }
 function loadFloor(s:World,f:StoredFloor):void {
   for(const id of s.enemies)delete s.units[id];
   delete s.pendingAdventureStart;
   if(f.adventureRooms)s.adventureRooms=clone(f.adventureRooms);else delete s.adventureRooms;
   if(f.seenWalls)s.seenWalls=f.seenWalls;else delete s.seenWalls;
+  if(f.liquid)s.liquid=f.liquid;else delete s.liquid;
+  if(f.arrival)s.arrival=clone(f.arrival);else delete s.arrival;
   s.floor=f.floor;s.seen=f.seen;s.enemies=f.enemies;s.points=f.points;Object.assign(s.units,f.units);
   if(f.rooms)s.rooms=f.rooms;else delete s.rooms;
   if(f.bossRoom!==undefined)s.bossRoom=f.bossRoom;else delete s.bossRoom;
@@ -1502,7 +1504,7 @@ export function createExpedition(runId:string,seed:number,floors=2,squad?:{membe
   const selectedDifficulty=isDifficulty(difficulty)?difficulty:'normal';
   const d:Dungeon={seed:seed>>>0,width:36,height:24,floors,level:1,stored:{},roguelike:true,...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...(tmPoolVersion===3&&squad&&boss?{tmPool:3 as const}:{})};
   const f=freshFloor(d,1,true,selectedDifficulty);
-  const s:World={runId,scenario:'expedition',round:0,floor:f.floor,seen:[],
+  const s:World={runId,scenario:'expedition',round:0,floor:f.floor,liquid:f.liquid,arrival:f.arrival,seen:[],
     units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m,squad.talents?.vitality??0)])):{A:speciesUnit('A','charmander',INITIAL_LEVEL),B:speciesUnit('B','squirtle',INITIAL_LEVEL),C:speciesUnit('C','bulbasaur',INITIAL_LEVEL)}),...f.units},
     queue:squad?squad.members.map((_,i)=>'ABC'[i]):['A','B','C'],enemies:f.enemies,camp:[],leader:squad?'ABC'[squad.leader]:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d,
     rooms:f.rooms,...(f.adventureRooms?{adventureRooms:clone(f.adventureRooms)}:{}),...(f.bossRoom!==undefined?{bossRoom:f.bossRoom}:{}),enemyAiRng:f.enemyAiRng,difficulty:selectedDifficulty,

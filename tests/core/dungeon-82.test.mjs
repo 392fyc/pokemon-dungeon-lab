@@ -28,8 +28,8 @@ function distances(cells,start,blocked=new Set()){
  }
  return dist;
 }
-function separatedByTwoWalls(a,b){
- return a.x+a.w+2<=b.x||b.x+b.w+2<=a.x||a.y+a.h+2<=b.y||b.y+b.h+2<=a.y;
+function separatedByThreeWalls(a,b){
+ return a.x+a.w+3<=b.x||b.x+b.w+3<=a.x||a.y+a.h+3<=b.y||b.y+b.h+3<=a.y;
 }
 function hasFloor2x2(cell,floor){
  for(const x of [cell.x-1,cell.x])for(const y of [cell.y-1,cell.y]){
@@ -62,7 +62,7 @@ function assertRoomLayout(g,seed,level){
   else assert.ok(r.w>=4&&r.w<=8&&r.h>=3&&r.h<=6,`seed ${seed} floor ${level}: ordinary room ${i} has planned dimensions`);
   assert.ok(r.x>=1&&r.y>=1&&r.x+r.w<=35&&r.y+r.h<=23,`seed ${seed} floor ${level}: room ${i} stays inside the outer wall`);
   for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)assert.ok(g.floor.some(p=>p.x===x&&p.y===y),`seed ${seed} floor ${level}: room ${i} is fully ground`);
-  for(const other of g.rooms.slice(i+1))assert.ok(separatedByTwoWalls(r,other),`seed ${seed} floor ${level}: rooms keep two wall cells between them`);
+  for(const other of g.rooms.slice(i+1))assert.ok(separatedByThreeWalls(r,other),`seed ${seed} floor ${level}: rooms keep three wall cells between them (8.5b)`);
  }
 }
 function assertArrivalAndStairs(g,seed,level){

@@ -270,9 +270,9 @@ test('P9 standing in a room shows the whole room; a corridor keeps its 4-cell ra
  const inCorridor=build(true,pos(10,2));
  assert.ok(!roomKeys.some(k=>inCorridor.seen.includes(k)&&!['6,2'].includes(k)),'a corridor position does not reveal the room');
 });
-test('P9b a new expedition shows the start room entirely; seed 3 room 0 is x9..16,y17..22',()=>{
- const s=createExpedition('r',3);const r=s.rooms[0];assert.deepEqual(r,{x:9,y:17,w:8,h:6});
- for(let y=17;y<23;y++)for(let x=9;x<17;x++)assert.ok(s.seen.includes(x+','+y),`cell ${x},${y} shown`);
+test('P9b a new expedition shows the start room entirely; seed 3 room 0 is x19..22,y18..20',()=>{
+ const s=createExpedition('r',3);const r=s.rooms[0];assert.deepEqual(r,{x:19,y:18,w:4,h:3});
+ for(let y=18;y<21;y++)for(let x=19;x<23;x++)assert.ok(s.seen.includes(x+','+y),`cell ${x},${y} shown`);
 });
 
 /* ---------- worlds without the 6.4 data keep the 6.3 behaviour ---------- */

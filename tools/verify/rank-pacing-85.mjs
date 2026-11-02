@@ -1,7 +1,7 @@
 // 8.5 探险队等级的升级节奏纸面模拟（main 云端工作者，只读，不调用 src）。
 //
 // 问题（8.5 Q4）：8.3 房间、8.4 委托加入后，每局探险队经验变多；天赋又会抬高首领击败率，击败首领再多拿分。
-// 门槛 2L(L−1) 下，到 Lv5、Lv10、Lv16 要几局？要不要提高门槛？
+// 原门槛 2L(L−1) 下，到 Lv5、Lv10、Lv16 要几局？要不要提高门槛？
 //
 // 模型（每局独立抽签，按 8.5 第 2 节计分；每个输入都写在 SCEN 里，便于改）：
 // - 胜负：0 点天赋时的击败率 p0（8.6 校准目标 50—65％，取 57.5％；cautious 取 8.1 长测的 34.8％）。
@@ -56,10 +56,10 @@ function simulate(s,c,policy,seed=1){
     winRate:Object.fromEntries(Object.entries(winAt).map(([r,v])=>[r,+(mean(v)*100).toFixed(1)]))};
 }
 
-// 情景：8.1 现状（没有委托、不捡 T）用来对照 8.5 第 3.1 节的实测（tactical 每局 8.30 分、5 局 13/23 到 Lv5）。
+// 情景：8.1 现状（没有委托、不捡 T、天赋不加击败率）用来对照 8.5 第 3.1 节的实测（8.1 长测是 0 点天赋：tactical 每局 8.30 分、5 局 13/23 到 Lv5）。
 const base={lossDepth:[0.05,0.15],recruit:0.75,talents:true};
 const SCEN={
-  '8.1 现状（无委托、不捡 T）':{...base,p0:.574,accept:0,complete:0,tPick:0},
+  '8.1 现状（无委托、不捡 T、0 点天赋）':{...base,p0:.574,accept:0,complete:0,tPick:0,talents:false},
   '8.4 现行委托（完成约 90％）':{...base,p0:.575,accept:.8,complete:.9,tPick:.8,recruit:.9},
   '8.6 校准后委托（完成约 72％）':{...base,p0:.575,accept:.8,complete:.72,tPick:.8,recruit:.9},
   '同上但天赋不加击败率（对照）':{...base,p0:.575,accept:.8,complete:.72,tPick:.8,recruit:.9,talents:false},

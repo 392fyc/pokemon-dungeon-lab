@@ -1,2 +1,6 @@
 # Asset files carry SHA-256 digests in public/assets/manifest.json; keep their exact bytes.
 public/assets/** -text
+
+# Windows launcher scripts in the trial build must keep CRLF on every platform.
+public/*.bat text eol=crlf
+public/*.ps1 text eol=crlf

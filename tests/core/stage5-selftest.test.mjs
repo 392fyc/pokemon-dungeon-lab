@@ -18,9 +18,9 @@ test('line blocked by a wall names the wall cell',()=>{
  denied(s,line('R'),/射线在\(3,1\)被墙挡住/);
 });
 test('line off the row and column says so',()=>{
- const s=createScenario('K1','line-diagonal');s.units.H.pos={x:4,y:2};
+ const s=createScenario('K1','line-diagonal');s.units.H.pos={x:4,y:1};
  const r=applyCommand(s,{type:'round',action:{type:'wait'},override:{actor:'C',action:{type:'skill',skill:'quickattack',target:'H'}}});
- assert.equal(r.ok,false);assert.match(r.error,/招式只能指定同排或同列的目标/);
+ assert.equal(r.ok,false);assert.match(r.error,/招式只能指定同排、同列或正斜线上的目标/);
 });
 test('quickattack hits a clear target exactly two cells away',()=>{
  const s=createScenario('K4','line-ok');s.units.B.pos={x:1,y:1};s.units.R.pos={x:4,y:1};

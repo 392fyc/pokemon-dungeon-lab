@@ -39,7 +39,7 @@ test('首批 25 个官方招式都有可用的射程、目标、威力和效果�
   assert.equal(moveOf('helpinghand').effects[0],'stage:atk:+1');
 });
 
-test('front 只命中上下左右相邻；front2 到两格且要求直线无遮挡',()=>{
+test('front 命中八个相邻格；front2 到两格且要求直线无遮挡',()=>{
   const a=friend('A',0,1,20,{tackle:2,quickattack:2}),e=enemy('E',1,1,30,'melee',0);
   const s=world({floor:row(0,4),friends:[a],enemies:[e]});
   assert.deepEqual(skillTargets(s,'A','tackle'),['E']);
@@ -52,7 +52,10 @@ test('front 只命中上下左右相邻；front2 到两格且要求直线无遮�
   const tooFar=world({floor:row(0,4),friends:[friend('A',0,1,20,{tackle:2})],enemies:[enemy('E',2,1,30,'melee',0)]});
   assert.match(reject(tooFar,'tackle','E'),/相邻格/);assert.equal(tooFar.units.A.pp.tackle,2);
   const diagonal=world({floor:rect(0,2,0,2),friends:[friend('A',0,0,20,{quickattack:2})],enemies:[enemy('E',1,1,30,'melee',0)]});
-  assert.deepEqual(skillTargets(diagonal,'A','quickattack'),[]);assert.match(reject(diagonal,'quickattack','E'),/同排或同列/);
+  // 8.8 (4.1): a diagonal line is a legal front2 line; only targets off every row, column and diagonal are refused.
+  assert.deepEqual(skillTargets(diagonal,'A','quickattack'),['E']);assert.equal(use(diagonal,'quickattack','E').units.E.hp,22);
+  const knight=world({floor:rect(0,2,0,2),friends:[friend('A',0,0,20,{quickattack:2})],enemies:[enemy('E',1,2,30,'melee',0)]});
+  assert.deepEqual(skillTargets(knight,'A','quickattack'),[]);assert.match(reject(knight,'quickattack','E'),/同排、同列或正斜线/);
   const blocked=world({floor:[...row(0,0),...row(2,2)],friends:[friend('A',0,1,20,{quickattack:2})],enemies:[enemy('E',2,1,30,'melee',0)]});
   assert.deepEqual(skillTargets(blocked,'A','quickattack'),[]);assert.match(reject(blocked,'quickattack','E'),/被墙挡住/);
   const unitBlocked=world({floor:row(0,3),friends:[friend('A',0,1,20,{quickattack:2}),friend('B',1,1)],enemies:[enemy('E',2,1,30,'melee',0)]});

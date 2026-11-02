@@ -115,6 +115,8 @@ export const key=(p:Pos)=>`${p.x},${p.y}`;
 export const same=(a:Pos|null,b:Pos|null)=>!!a&&!!b&&a.x===b.x&&a.y===b.y;
 export const distance=(a:Pos,b:Pos)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 export const DIRS:Pos[]=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
+/** 8.8 (4.1): eight movement directions. The four straight ones come first so equal-length paths still prefer them (right/down/left/up, then the diagonals). */
+export const DIRS8:Pos[]=[...DIRS,{x:1,y:1},{x:-1,y:1},{x:-1,y:-1},{x:1,y:-1}];
 export const plus=(a:Pos,b:Pos):Pos=>({x:a.x+b.x,y:a.y+b.y});
 export const clone=<T>(v:T):T=>structuredClone(v);
 const freshCombatState=()=>({stages:{atk:0,def:0},protect:0,counter:0,lastMove:null as string|null});
@@ -167,6 +169,19 @@ export function createMain(runId:string,invitation=true):World {
   reveal(s);return s;
 }
 const walk=(s:World,p:Pos)=>s.floor.some(q=>same(p,q));
+/** The side cells a diagonal step a to b passes beside, as keys; straight steps have none. */
+const sideKeys=(a:Pos,b:Pos):string[]=>a.x===b.x||a.y===b.y?[]:[`${b.x},${a.y}`,`${a.x},${b.y}`];
+/** 8.8 (4.1): a diagonal step may not cut a corner, i.e. both side cells must be floor (a wall or second terrain on either side forbids it). */
+const floorStepOk=(floor:ReadonlySet<string>,a:Pos,b:Pos)=>sideKeys(a,b).every(k=>floor.has(k));
+/** The side cells that make the diagonal step a to b cut a corner (not floor); empty when the step is allowed. */
+function cornerBlockers(s:World,a:Pos,b:Pos):Pos[] {
+  if(a.x===b.x||a.y===b.y)return [];
+  return [{x:b.x,y:a.y},{x:a.x,y:b.y}].filter(c=>!walk(s,c));
+}
+const stepOk=(s:World,a:Pos,b:Pos)=>cornerBlockers(s,a,b).length===0;
+const chebyshev=(a:Pos,b:Pos)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
+/** 8.8 (4.1): "adjacent" for attacks, swaps and items: one of the eight neighbours, and a diagonal one only when it does not cut a wall corner. */
+const adjacent=(s:World,a:Pos,b:Pos)=>chebyshev(a,b)===1&&stepOk(s,a,b);
 const active=(s:World)=>[...s.queue,...s.enemies].map(id=>s.units[id]).filter(u=>u.hp>0&&u.pos);
 const occupied=(s:World,p:Pos)=>active(s).some(u=>same(u.pos,p));
 const alive=(u:Unit|undefined):u is Unit&{pos:Pos}=>!!u&&u.hp>0&&u.pos!==null;
@@ -196,7 +211,7 @@ function paths(s:World,start:Pos,blocked:boolean):Map<string,{p:Pos;len:number;f
   const floor=new Set(s.floor.map(key)),occupiedCells=blocked?new Set(active(s).map(u=>key(u.pos!))):null;
   result.set(key(start),{p:start,len:0,first:start});const q=[start];
   for(let i=0;i<q.length;i++){const cur=result.get(key(q[i]))!;
-    for(const d of DIRS){const p=plus(cur.p,d),k=key(p);if(!floor.has(k)||!seen.has(k)||result.has(k)||occupiedCells?.has(k))continue;
+    for(const d of DIRS8){const p=plus(cur.p,d),k=key(p);if(!floor.has(k)||!seen.has(k)||result.has(k)||occupiedCells?.has(k)||!floorStepOk(floor,cur.p,p))continue;
       result.set(k,{p,len:cur.len+1,first:cur.len===0?p:cur.first});q.push(p);}}
   return result;
 }
@@ -204,20 +219,25 @@ function defaultAction(s:World,id:string,blockingGuard:ReadonlySet<string>=new S
   return chooseAllyAction(s,id,blockingGuard,createdGuard);
 }
 function clearRay(s:World,a:Pos,b:Pos,range:number):boolean {
-  if((a.x!==b.x&&a.y!==b.y)||distance(a,b)<1||distance(a,b)>range)return false;
-  const d={x:Math.sign(b.x-a.x),y:Math.sign(b.y-a.y)};let p=plus(a,d);
-  while(!same(p,b)){if(!walk(s,p)||occupied(s,p))return false;p=plus(p,d);}return true;
+  const dx=b.x-a.x,dy=b.y-a.y,n=Math.max(Math.abs(dx),Math.abs(dy));
+  if(n<1||n>range||(dx!==0&&dy!==0&&Math.abs(dx)!==Math.abs(dy)))return false;
+  const d={x:Math.sign(dx),y:Math.sign(dy)};let p=a;
+  for(let i=1;i<=n;i++){const next=plus(p,d);if(!stepOk(s,p,next)||(i<n&&(!walk(s,next)||occupied(s,next))))return false;p=next;}
+  return true;
 }
 /** Names the first reason a straight-line move cannot reach its target. */
 function rayProblem(s:World,a:Pos,b:Pos,range:number):string|null {
-  if(a.x!==b.x&&a.y!==b.y)return '招式只能指定同排或同列的目标';
-  if(distance(a,b)<1)return '招式不能指定自己所在的格';
-  if(distance(a,b)>range)return `目标相距${distance(a,b)}格，超出招式射程${range}格`;
-  const d={x:Math.sign(b.x-a.x),y:Math.sign(b.y-a.y)};let p=plus(a,d);
-  while(!same(p,b)){if(!walk(s,p))return `射线在(${p.x},${p.y})被墙挡住`;const blocker=active(s).find(v=>same(v.pos,p));if(blocker)return `射线被${blocker.id}挡住`;p=plus(p,d);}
+  const dx=b.x-a.x,dy=b.y-a.y,n=Math.max(Math.abs(dx),Math.abs(dy));
+  if(dx!==0&&dy!==0&&Math.abs(dx)!==Math.abs(dy))return '招式只能指定同排、同列或正斜线上的目标';
+  if(n<1)return '招式不能指定自己所在的格';
+  if(n>range)return `目标相距${n}格，超出招式射程${range}格`;
+  const d={x:Math.sign(dx),y:Math.sign(dy)};let p=a;
+  for(let i=1;i<=n;i++){const next=plus(p,d),corners=cornerBlockers(s,p,next);
+    if(corners.length)return `射线斜向穿过墙角，${corners.map(c=>`(${c.x},${c.y})`).join('、')}是墙或第二地形`;
+    if(i<n){if(!walk(s,next))return `射线在(${next.x},${next.y})被墙挡住`;const blocker=active(s).find(v=>same(v.pos,next));if(blocker)return `射线被${blocker.id}挡住`;}
+    p=next;}
   return null;
 }
-const chebyshev=(a:Pos,b:Pos)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
 const inRect=(p:Pos,r:Rect)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
 function inRoomReach(s:World,actor:Pos,target:Pos):boolean {
   const room=(s.rooms??[]).find(r=>inRect(actor,r));
@@ -240,10 +260,10 @@ function moveTargetsInReach(s:World,actorId:string,spec:MoveSpec):Unit[] {
   if(spec.range==='user')return targetKindMatches(s,actorId,actor,spec)?[actor]:[];
   const candidates=active(s).filter(t=>targetKindMatches(s,actorId,t,spec));
   if(spec.range==='room')return candidates.filter(t=>inRoomReach(s,actor.pos,t.pos!));
-  if(spec.range==='around')return candidates.filter(t=>t.id!==actorId&&chebyshev(actor.pos,t.pos!)===1);
+  if(spec.range==='around')return candidates.filter(t=>t.id!==actorId&&adjacent(s,actor.pos,t.pos!));
   return candidates.filter(t=>{
     switch(spec.range){
-      case 'front':return distance(actor.pos,t.pos!)===1;
+      case 'front':return adjacent(s,actor.pos,t.pos!);
       case 'front2':return clearRay(s,actor.pos,t.pos!,2);
       case 'line10':return clearRay(s,actor.pos,t.pos!,10);
       default:return false;
@@ -270,7 +290,7 @@ export function skillTargets(s:World,actorId:string,skill:Skill):string[] {
 }
 function moveRangeProblem(s:World,actor:Unit,target:Unit,spec:MoveSpec):string {
   switch(spec.range){
-    case 'front':return '目标不在上下左右相邻格';
+    case 'front':return chebyshev(actor.pos!,target.pos!)===1?`斜向相邻，但(${actor.pos!.x},${actor.pos!.y})到(${target.pos!.x},${target.pos!.y})会穿过墙角，不能攻击`:'目标不在八个相邻格内';
     case 'front2':return rayProblem(s,actor.pos!,target.pos!,2)??'目标不在两格直线射程内';
     case 'line10':return rayProblem(s,actor.pos!,target.pos!,10)??'目标不在直线射程内';
     case 'around':return '目标不在使用者周围八格内';
@@ -420,7 +440,7 @@ function firstStepTo(s:World,start:Pos,target:Pos,seenOnly:boolean):Pos|null {
   const q:{p:Pos;first:Pos|null}[]=[{p:start,first:null}],seen=new Set([key(start)]);
   const floor=new Set(s.floor.map(key)),known=seenOnly?new Set(s.seen):null,occupiedCells=new Set(active(s).map(u=>key(u.pos!)));
   for(let i=0;i<q.length;i++){
-    const cur=q[i];for(const d of DIRS){const p=plus(cur.p,d),k=key(p);if(!floor.has(k)||seen.has(k)||(known&&!known.has(k)))continue;
+    const cur=q[i];for(const d of DIRS8){const p=plus(cur.p,d),k=key(p);if(!floor.has(k)||seen.has(k)||(known&&!known.has(k))||!floorStepOk(floor,cur.p,p))continue;
       const first=cur.first??p;if(same(p,target))return first;
       if(occupiedCells.has(k))continue;seen.add(k);q.push({p,first});
     }
@@ -431,9 +451,9 @@ function towardLeader(s:World,id:string,avoid:Pos[]=[]):Action {
   const u=s.units[id],lead=s.units[s.leader];if(!alive(u)||!alive(lead)||id===s.leader)return {type:'wait'};
   const terrain=paths(s,lead.pos,false),current=terrain.get(key(u.pos))?.len;if(current===undefined)return {type:'wait'};
   let best:{p:Pos;len:number}|undefined;
-  for(const d of DIRS){const p=plus(u.pos,d),k=key(p),td=terrain.get(k)?.len;
-    if(td===undefined||td>=current||occupied(s,p)||avoid.some(o=>distance(o,p)<=1))continue;
-    const len=distance(u.pos,p);if(!best||td<best.len)best={p,len:td};
+  for(const d of DIRS8){const p=plus(u.pos,d),k=key(p),td=terrain.get(k)?.len;
+    if(td===undefined||td>=current||occupied(s,p)||!stepOk(s,u.pos,p)||avoid.some(o=>chebyshev(o,p)<=1))continue;
+    const len=chebyshev(u.pos,p);if(!best||td<best.len)best={p,len:td};
   }
   return best?{type:'move',to:best.p}:{type:'wait'};
 }
@@ -442,12 +462,12 @@ function attackableTargets(s:World,id:string,spec:MoveSpec):Unit[] {
 }
 function tacticalTargetAllowed(s:World,actor:Unit,target:Unit,tactic:Tactic):boolean {
   if(tactic==='avoid')return false;
-  if(tactic==='followme')return distance(actor.pos!,target.pos!)===1;
+  if(tactic==='followme')return chebyshev(actor.pos!,target.pos!)===1;
   if(tactic==='together'||tactic==='nomoves'){
     // The leader may already have fallen during this phase: fall back to the first living queue member, then to no restriction.
     const anchor=alive(s.units[s.leader])?s.units[s.leader]:s.queue.map(i=>s.units[i]).find(alive);
     const anchorPos=anchor?.pos;
-    return distance(actor.pos!,target.pos!)===1||!anchorPos||distance(anchorPos,target.pos!)<=3;
+    return chebyshev(actor.pos!,target.pos!)===1||!anchorPos||chebyshev(anchorPos,target.pos!)<=3;
   }
   return true;
 }
@@ -455,7 +475,7 @@ type ScoredAction={action:Action;score:number;pp:number;moveIndex:number;distanc
 function blowawayCollision(s:World,actor:Unit,target:Unit):'wall'|'opponent'|'friend'|null {
   if(!bossCanBeBlownAway(target)||!alive(actor)||!alive(target))return null;
   const delta={x:Math.sign(target.pos.x-actor.pos.x),y:Math.sign(target.pos.y-actor.pos.y)};let at=target.pos;
-  for(let i=0;i<10;i++){const next=plus(at,delta);if(!walk(s,next))return 'wall';
+  for(let i=0;i<10;i++){const next=plus(at,delta);if(!walk(s,next)||!stepOk(s,at,next))return 'wall';
     const blocker=active(s).find(u=>u.id!==target.id&&same(u.pos,next));if(blocker)return blocker.side===actor.side?'friend':'opponent';at=next;}
   return null;
 }
@@ -468,7 +488,7 @@ function pickDamageAction(s:World,id:string,tactic:Tactic,quickguard:ReadonlySet
     for(const target of targets){
       if(visibleOnly&&!visibleOnly.has(target.id))continue;
       if(!tacticalTargetAllowed(s,actor,target,tactic)||rejectedForBoss(spec,target))continue;
-      const dist=distance(actor.pos!,target.pos!);
+      const dist=chebyshev(actor.pos!,target.pos!);
       let score=0;
       if(spec.effects.includes('damage')&&spec.power!==null){
         score+=estimateAttackDamage(s,id,target.id,move,quickguard);
@@ -496,8 +516,8 @@ function threatenedByOpponent(s:World,id:string,quickguard:ReadonlySet<string>,r
   const target=s.units[id];if(!alive(target))return false;
   for(const sourceId of opponentIds(s,target.side)){
     const source=s.units[sourceId];if(!alive(source)||source.asleep||source.wakeSkip||source.waitOnly||!currentlyVisible(s,source.pos,target.pos))continue;
-    for(const move of source.learned){const spec=moveOf(move);if(!spec||!spec.effects.includes('damage')||(source.pp[move]??0)<1||rangedOnly&&distance(source.pos,target.pos)<=1)continue;
-      if(target.protect>0||quickguard.has(id)&&distance(source.pos,target.pos)>1)continue;
+    for(const move of source.learned){const spec=moveOf(move);if(!spec||!spec.effects.includes('damage')||(source.pp[move]??0)<1||rangedOnly&&chebyshev(source.pos,target.pos)<=1)continue;
+      if(target.protect>0||quickguard.has(id)&&chebyshev(source.pos,target.pos)>1)continue;
       if(moveTargetsInReach(s,sourceId,spec).some(t=>t.id===id))return true;
     }
   }
@@ -523,7 +543,7 @@ function supportAction(s:World,id:string,quickguard:ReadonlySet<string>):Action|
 }
 function legalBasicTarget(s:World,id:string,tactic:Tactic,visibleOnly?:ReadonlySet<string>):Unit|undefined {
   const actor=s.units[id];if(!alive(actor))return undefined;
-  return opponentIds(s,actor.side).map(i=>s.units[i]).find(t=>alive(t)&&distance(actor.pos,t.pos)===1&&(!visibleOnly||visibleOnly.has(t.id))&&tacticalTargetAllowed(s,actor,t,tactic));
+  return opponentIds(s,actor.side).map(i=>s.units[i]).find(t=>alive(t)&&adjacent(s,actor.pos,t.pos)&&(!visibleOnly||visibleOnly.has(t.id))&&tacticalTargetAllowed(s,actor,t,tactic));
 }
 function chooseAllyAction(s:World,id:string,blockingGuard:ReadonlySet<string>=new Set(),createdGuard:ReadonlySet<string>=new Set()):Action {
   const actor=s.units[id];if(!alive(actor))return {type:'wait'};
@@ -538,16 +558,16 @@ function chooseAllyAction(s:World,id:string,blockingGuard:ReadonlySet<string>=ne
   const basic=legalBasicTarget(s,id,tactic,visible);if(basic)return {type:'basic',target:basic.id};
   if(tactic==='wait')return {type:'wait'};
   if(tactic==='gofoes'&&visible?.size){
-    const target=opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&visible.has(t.id)).sort((a,b)=>distance(actorPos,a.pos!)-distance(actorPos,b.pos!))[0];
+    const target=opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&visible.has(t.id)).sort((a,b)=>chebyshev(actorPos,a.pos!)-chebyshev(actorPos,b.pos!))[0];
     const step=target?firstStepTo(s,actorPos,target.pos!,true):null;return step?{type:'move',to:step}:{type:'wait'};
   }
   if(tactic==='avoid'){
-    const close=opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&currentlyVisible(s,actorPos,t.pos!)&&distance(actorPos,t.pos!)<=1);
+    const close=opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&currentlyVisible(s,actorPos,t.pos!)&&chebyshev(actorPos,t.pos!)<=1);
     if(close.length){
       let best:{p:Pos;distance:number;leaderDistance:number;order:number}|undefined;
-      for(const [order,d] of DIRS.entries()){const p=plus(actorPos,d);if(!walk(s,p)||!s.seen.includes(key(p))||occupied(s,p))continue;
-        const nearest=Math.min(...close.map(t=>distance(t.pos!,p))),current=Math.min(...close.map(t=>distance(t.pos!,actorPos)));
-        if(nearest<=current)continue;const ld=alive(s.units[s.leader])?distance(p,s.units[s.leader].pos!):0;
+      for(const [order,d] of DIRS8.entries()){const p=plus(actorPos,d);if(!walk(s,p)||!s.seen.includes(key(p))||occupied(s,p)||!stepOk(s,actorPos,p))continue;
+        const nearest=Math.min(...close.map(t=>chebyshev(t.pos!,p))),current=Math.min(...close.map(t=>chebyshev(t.pos!,actorPos)));
+        if(nearest<=current)continue;const ld=alive(s.units[s.leader])?chebyshev(p,s.units[s.leader].pos!):0;
         if(!best||nearest>best.distance||nearest===best.distance&&ld<best.leaderDistance)best={p,distance:nearest,leaderDistance:ld,order};}
       return best?{type:'move',to:best.p}:{type:'wait'};
     }
@@ -562,7 +582,7 @@ function chooseEnemyAction(s:World,id:string,blockingGuard:ReadonlySet<string>,c
   const visible=opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&currentlyVisible(s,actorPos,t.pos!));
   if(visible.length){
     const visibleIds=new Set(visible.map(t=>t.id));
-    const ordered=visible.sort((a,b)=>distance(actorPos,a.pos!)-distance(actorPos,b.pos!)||opponentIds(s,actor.side).indexOf(a.id)-opponentIds(s,actor.side).indexOf(b.id));
+    const ordered=visible.sort((a,b)=>chebyshev(actorPos,a.pos!)-chebyshev(actorPos,b.pos!)||opponentIds(s,actor.side).indexOf(a.id)-opponentIds(s,actor.side).indexOf(b.id));
     actor.targetMemory=clone(ordered[0].pos!);actor.lostSightTurns=0;
     const quickguard=new Set([...blockingGuard,...createdGuard]);
     const damage=pickDamageAction(s,id,'gofoes',quickguard,visibleIds);if(damage)return damage;
@@ -616,16 +636,24 @@ function roamAction(s:World,actor:Unit):Action {
   const target=plus(actor.pos,chosen);if(occupied(s,target))return {type:'wait'};
   return {type:'move',to:target};
 }
+/** 8.8 (4.2): the living companion standing on `p` when queue member `id` moves there (they swap places); undefined for enemies, other cells or an empty cell. */
+function allyAt(s:World,id:string,p:Pos):Unit|undefined {
+  if(!s.queue.includes(id))return undefined;
+  return s.queue.map(i=>s.units[i]).find(v=>v.id!==id&&alive(v)&&same(v.pos,p));
+}
 function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set()):string|null {
   const u=s.units[id];if(!alive(u))return `${id}已倒下，不能行动`;
   if(a.type==='wait')return null;
   if(a.type==='move'){
     const cell=`(${a.to.x},${a.to.y})`;
-    if(distance(u.pos,a.to)!==1)return `${id}只能移动到相邻格`;
+    if(chebyshev(u.pos,a.to)!==1)return `${id}只能移动到相邻格（含斜向相邻格）`;
     if(!walk(s,a.to))return `目标格${cell}是墙，不能进入`;
     if(!s.seen.includes(key(a.to)))return `目标格${cell}尚未揭示，不能进入`;
+    const corners=cornerBlockers(s,u.pos,a.to);
+    if(corners.length)return `斜向移动不能穿过墙角：${corners.map(c=>`(${c.x},${c.y})`).join('、')}是墙或第二地形`;
     const blocker=active(s).find(v=>same(v.pos,a.to));
-    if(blocker)return moved.has(blocker.id)?`${blocker.id}会先进入${cell}，挡住${id}；请选择另一动作或切换主控`:`目标格${cell}被${blocker.id}占据，不能进入`;
+    if(blocker&&allyAt(s,id,a.to))return null; // 8.8 (4.2): walking into a companion swaps places
+    if(blocker)return `目标格${cell}被${blocker.id}占据，不能进入`;
     return null;
   }
   if(a.type==='exchange'){
@@ -694,7 +722,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
       const w=s.units[a.target];
       if(!w||w.side!=='friend'||!s.queue.includes(w.id))return '物品只能对同行伙伴使用';
       if(!alive(w))return `${w.id}已倒下，物品不能救起倒下的伙伴`;
-      if(w.id!==id&&distance(u.pos,w.pos)!==1)return `${w.id}不在相邻格，物品只能对自己或相邻同行使用`;
+      if(w.id!==id&&!adjacent(s,u.pos,w.pos))return `${w.id}不在相邻格，物品只能对自己或相邻同行使用`;
       if(w.hp>=w.maxHp)return `${w.id}的HP已满，${ITEM_NAMES[a.item]}不会有效果`;
       return null;
     }
@@ -702,14 +730,14 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
     const w=s.units[a.target];
     if(!w||w.side!=='friend'||!s.queue.includes(w.id))return '物品只能对同行伙伴使用';
     if(!alive(w))return `${w.id}已倒下，物品不能救起倒下的伙伴`;
-    if(w.id!==id&&distance(u.pos,w.pos)!==1)return `${w.id}不在相邻格，物品只能对自己或相邻同行使用`;
+    if(w.id!==id&&!adjacent(s,u.pos,w.pos))return `${w.id}不在相邻格，物品只能对自己或相邻同行使用`;
     if(!w.learned.some(k=>(w.pp[k]??0)<(w.maxPp[k]??0)))return `${w.id}的所有招式PP已满，${ITEM_NAMES[a.item]}不会有效果`;
     return null;
   }
   const t=s.units[a.target];if(!alive(t)||(!s.queue.includes(t.id)&&!s.enemies.includes(t.id)))return '目标不存在或已倒下';
   if(!s.seen.includes(key(t.pos)))return '目标尚未发现';
-  if(a.type==='swap')return !s.queue.includes(t.id)||id===t.id||distance(u.pos,t.pos)!==1?'只能与相邻存活伙伴换位':null;
-  if(a.type==='basic')return t.side===u.side||distance(u.pos,t.pos)!==1?'普攻需要相邻对方':null;
+  if(a.type==='swap')return !s.queue.includes(t.id)||id===t.id||!adjacent(s,u.pos,t.pos)?'只能与相邻存活伙伴换位':null;
+  if(a.type==='basic')return t.side===u.side||!adjacent(s,u.pos,t.pos)?'普攻需要相邻对方（斜向相邻也算，但不能穿过墙角）':null;
   if(!u.learned.includes(a.skill)||(u.pp[a.skill]??0)<1)return '未装备该招式或PP不足';
   const spec=moveOf(a.skill);if(!spec)return '招式数据不存在';
   if(isProtectionMove(spec)&&isProtectionMoveId(u.lastMove))return '守住与快速防守不能连续使用';
@@ -764,7 +792,7 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
   const offense=source.side==='friend'&&(!target||target.side==='enemy')&&category!=='Status'?3*(s.talents?.offense??0):0;
   const scaled=Math.max(1,applyTalentBonus(afterSpeciesRatio,offense));
   const opposing=!!target&&source.side!==target.side;
-  const attackDistance=source.pos&&target?.pos?distance(source.pos,target.pos):0;
+  const attackDistance=source.pos&&target?.pos?chebyshev(source.pos,target.pos):0;
   const base=source.side==='enemy'?Math.max(1,Math.round(scaled*DIFFICULTY[s.difficulty??'normal'])):scaled;
   const raw=base+(source.stages?.atk??0);
   const hunterPenalty=target?.side==='friend'&&activeCommission(s,'hunter')?1:0;
@@ -799,7 +827,7 @@ function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number
   const hpBefore=target.hp;
   hit(s,targetId,amount);
   const actual=hpBefore-target.hp;
-  if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&distance(source.pos,target.pos)===1)
+  if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos))
     hit(s,sourceId,actual);
   return actual;
 }
@@ -815,7 +843,7 @@ function blowAway(s:World,actor:Unit,target:Unit):void {
   let at=target.pos,wall=false,blocker:Unit|undefined;
   for(let i=0;i<10;i++){
     const next=plus(at,delta);
-    if(!walk(s,next)){wall=true;break;}
+    if(!walk(s,next)||!stepOk(s,at,next)){wall=true;break;}
     blocker=active(s).find(u=>u.id!==target.id&&same(u.pos,next));
     if(blocker)break;
     at=next;
@@ -881,7 +909,9 @@ function sendHome(s:World,a:Extract<Action,{type:'exchange'}>):void {
 function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>):void {
   const u=s.units[id],level=u.side==='friend'?(s.prog?.level??u.level??INITIAL_LEVEL):(u.level??INITIAL_LEVEL),bonus=levelDamageBonus(level);
   if(a.type!=='skill')u.lastMove=null;
-  if(a.type==='move'){const from=clone(u.pos!);u.pos=clone(a.to);if(u.side==='friend')onRoomEntry(s,from,a.to);reveal(s);note(s,`${id}移动到${key(a.to)}`);}
+  if(a.type==='move'){const from=clone(u.pos!),mate=allyAt(s,id,a.to);u.pos=clone(a.to);if(mate)mate.pos=clone(from);
+    if(u.side==='friend'){onRoomEntry(s,from,a.to);if(mate)onRoomEntry(s,a.to,from);}
+    reveal(s);note(s,mate?`${id}与${mate.id}换位`:`${id}移动到${key(a.to)}`);}
   else if(a.type==='basic')resolveDamage(s,id,a.target,6+bonus,basicCategory(u),blockingGuard);
   else if(a.type==='use'){
     const t=s.units[a.target];s.prog!.items[a.item]=(s.prog!.items[a.item]??0)-1;
@@ -978,7 +1008,7 @@ function challengeStartPlan(s:World,room:AdventureRoom,enemies:{id:string;specie
   for(const enemy of enemies){
     const available=roomCells(rect).filter(p=>walk(s,p)&&key(p)!==interaction&&!unavailablePoints.has(key(p))&&!occupied.has(key(p)));
     if(!available.length)return null;
-    const separated=available.filter(p=>team.every(ally=>distance(ally,p)>1));
+    const separated=available.filter(p=>team.every(ally=>chebyshev(ally,p)>1));   // 8.8: spawn cells diagonal to a team member count as adjacent; the push-away and "farthest cell" choices below stay Manhattan
     const pool=separated.length?separated:available;
     const ordered=pool.sort((a,b)=>Math.min(...team.map(t=>distance(t,a)))-Math.min(...team.map(t=>distance(t,b)))||b.y-a.y||b.x-a.x);
     const target=ordered[ordered.length-1];
@@ -1033,7 +1063,7 @@ function decayOpponentStatuses(s:World,actedSide:Unit['side']):void {
 }
 function wakeAdjacentEnemies(s:World):void {
   for(const id of s.enemies){const e=s.units[id];if(!alive(e)||!e.asleep)continue;
-    if(s.queue.some(q=>alive(s.units[q])&&chebyshev(e.pos,s.units[q].pos!)<=1)){e.asleep=false;e.wakeSkip=true;note(s,`${id}被相邻的对方惊醒，本回合不行动`);}
+    if(s.queue.some(q=>alive(s.units[q])&&adjacent(s,e.pos,s.units[q].pos!))){e.asleep=false;e.wakeSkip=true;note(s,`${id}被相邻的对方惊醒，本回合不行动`);}
   }
 }
 function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,trace?:TraceStep[]):string|null {
@@ -1057,7 +1087,8 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     const explicit=id===lead?cmd.action:cmd.override?.actor===id?cmd.override.action:null;
     const a=explicit??defaultAction(s,id,blockingFromEnemies,friendGuard);const err=invalid(s,id,a,moved);
     if(err){if(explicit&&preflight)return err;s.units[id].lastMove=null;note(s,`${id}动作失效，等待，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
-    execute(s,id,a,blockingFromEnemies,friendGuard);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false});
+    const mate=a.type==='move'?allyAt(s,id,a.to):undefined;
+    execute(s,id,a,blockingFromEnemies,friendGuard);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false,...(mate?{swapWith:mate.id}:{})});
   }
   if(preflight)return null;
   decayOpponentStatuses(s,'friend');
@@ -1066,7 +1097,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     if(e.asleep)continue;if(e.wakeSkip){e.wakeSkip=false;continue;}
     const action=chooseEnemyAction(s,id,friendGuard,enemyGuard);
     if(action.type==='move'){
-      if(!walk(s,action.to)||occupied(s,action.to)){note(s,`${id}无路可走，等待`);continue;}
+      if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)){note(s,`${id}无路可走，等待`);continue;}
       const previous=clone(e.pos);execute(s,id,action,friendGuard,enemyGuard);e.direction={x:Math.sign(action.to.x-previous.x),y:Math.sign(action.to.y-previous.y)};
       if(e.roamTarget&&same(action.to,e.roamTarget))e.roamTarget=null;
     }else if(action.type==='skill'||action.type==='basic')execute(s,id,action,friendGuard,enemyGuard);

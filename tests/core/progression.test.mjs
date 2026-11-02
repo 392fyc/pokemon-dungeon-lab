@@ -85,7 +85,7 @@ test('P3d geodude keeps its guard move: defense curl 4 gives 2, tackle 3 gives 1
 });
 test('P3e two defeats in one round draw in defeat order (queue order): B kills pidgey first, then C kills rattata',()=>{
  const floor=[...row(5),...row(5).map(p=>({x:p.x,y:2}))];
- const low=wild('e2',1,6,'pidgey',2);low.pos=pos(1,2);
+ const low=wild('e2',1,6,'pidgey',2);low.pos=pos(2,2);   // 8.8: (2,2) is next to B and C but two columns from A, so A (acting first by default) cannot take the kill
  const base=run({rng:8,floor,enemies:[wild('e1',3,6,'rattata',2),low]});
  const s=round(base,basic('e1'),'B',basic('e2'));
  // state 8: first draw 0.156 (invite), second draw 0.625 (none): the invitation belongs to the first defeat, B's pidgey

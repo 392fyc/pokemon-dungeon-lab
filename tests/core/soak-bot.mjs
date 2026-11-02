@@ -19,6 +19,17 @@ const rangedMoves=u=>damageMoves(u).filter(k=>['front2','line10'].includes(moveO
 export const GAMES=5,ROUND_CAP=1200,COMMAND_CAP=4500;
 const key=p=>`${p.x},${p.y}`;
 const DIRS=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
+// 8.8 (4.1): eight directions, the straight ones first. A diagonal step or reach needs both side cells to be revealed floor (a wall or second terrain beside it cuts the corner);
+// an unrevealed side cell is treated as blocked, which can only make the bot more careful than the engine, never break a rule.
+const DIRS8=[...DIRS,{x:1,y:1},{x:-1,y:1},{x:-1,y:-1},{x:1,y:-1}];
+const seenSets=new WeakMap();
+const seenSet=s=>{let v=seenSets.get(s.seen);if(!v){v=new Set(s.seen);seenSets.set(s.seen,v);}return v;};
+const cornerFree=(floor,a,b)=>a.x===b.x||a.y===b.y||(floor.has(`${b.x},${a.y}`)&&floor.has(`${a.x},${b.y}`));
+/** One cell apart in any of the eight directions, without cutting a wall corner: what the engine accepts for basic attacks, front moves, swaps and items. */
+const cheb=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
+/** Threat estimate: a diagonal reach is blocked only by a wall already seen beside it; unrevealed side cells count as floor (the bot would rather overestimate the danger). */
+const adjLoose=(s,a,b)=>cheb(a,b)===1&&(a.x===b.x||a.y===b.y||![`${b.x},${a.y}`,`${a.x},${b.y}`].some(k=>(s.seenWalls??[]).includes(k)));
+const adj=(s,a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y))===1&&cornerFree(seenSet(s),a,b);
 // Keep this in sync with src/render/terrain.ts prepareTerrainMap: the renderer
 // paints wall cells in all eight neighboring directions around revealed floor.
 const WALL_NEIGHBORS=[{x:0,y:-1},{x:1,y:-1},{x:1,y:0},{x:1,y:1},{x:0,y:1},{x:-1,y:1},{x:-1,y:0},{x:-1,y:-1}];
@@ -93,7 +104,7 @@ function injectMemoryWorld(store,world,where){
 
 /* ---------- the bot ---------- */
 export const stats=()=>({reachedBoss:0,bossDefeated:0,bossContacts:0,bossWipes:0,wipes:0,doomedWipes:0,invites:0,accepted:0,rejected:0,swapped:0,partnersBrought:0,shards:0,tmGot:0,tmBrought:0,bought:0,exchanged:0,levelUps:0,evolutions:0,transits:0,cancelledTransits:0,berries:0,tonics:0,rests:0,guards:0,lines:0,switches:0,declined:0,rejections:0,probes:0,learned:0});
-const adjacentEnemies=s=>s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&dist(u.pos,s.units[s.leader].pos)===1);
+const adjacentEnemies=s=>s.enemies.map(i=>s.units[i]).filter(u=>aliveU(u)&&adj(s,u.pos,s.units[s.leader].pos));
 /** The 'cautious' policy (a careful, low-kill player) is off on the forced-wipe seeds, like the tactical one. */
 const cautiousOn=memo=>memo.policy==='cautious'&&!memo.doomed;
 /** Enemies knocked out in this run: dead enemies stay in `units` (hp 0, off the map) on the current floor and in `dungeon.stored[floor].units` on the others. */
@@ -104,7 +115,7 @@ function route(s,from,wanted){
  const seen=new Set(s.seen),first=new Map([[key(from),null]]),len=new Map([[key(from),0]]),q=[from];
  for(let i=0;i<q.length;i++){const cur=q[i];
   if(len.get(key(cur))>0&&wanted(cur))return {to:cur,step:first.get(key(cur)),len:len.get(key(cur))};
-  for(const d of DIRS){const p={x:cur.x+d.x,y:cur.y+d.y};if(!seen.has(key(p))||first.has(key(p)))continue;
+  for(const d of DIRS8){const p={x:cur.x+d.x,y:cur.y+d.y};if(!seen.has(key(p))||first.has(key(p))||!cornerFree(seen,cur,p))continue;
    first.set(key(p),first.get(key(cur))??p);len.set(key(p),len.get(key(cur))+1);q.push(p);}}
  return null;
 }
@@ -384,7 +395,7 @@ const bossLive=s=>!!s.dungeon?.boss&&!bossDefeated(s);
 /** Intent (rule "floors 1-2 use strong/line only when the lead is at <=50% HP or the move kills this round"): would a skill finish enemy `e` this round
  *  while a basic attack plus the neighbours' basic attacks would not? Neighbours that stand next to `e` also strike in the same round. */
 function skillKills(s,L,e){
- const helpers=s.queue.map(i=>s.units[i]).filter(m=>aliveU(m)&&m.id!==L.id&&dist(m.pos,e.pos)===1).reduce((n,m)=>n+basicDamage(s,m,e),0);
+ const helpers=s.queue.map(i=>s.units[i]).filter(m=>aliveU(m)&&m.id!==L.id&&adj(s,m.pos,e.pos)).reduce((n,m)=>n+basicDamage(s,m,e),0);
  const best=Math.max(0,...hitMoves(s,L,e).map(k=>estDamage(s,L,e,k)));
  return e.hp<=best+helpers&&e.hp>basicDamage(s,L,e)+helpers;
 }
@@ -405,7 +416,7 @@ function roomMates(s,L){
 }
 /** Can the enemy `e` hit member `L` this round: adjacent, or a ranged enemy with a clear straight line within its range (what the player sees on the board). */
 function foeReaches(s,e,L){
- if(dist(e.pos,L.pos)===1)return true;
+ if(adjLoose(s,e.pos,L.pos))return true;
  return !e.asleep&&!e.waitOnly&&hitMoves(s,e,L).length>0;
 }
 /** A blow from L pushes `e` straight away from L: safe when the path ends at a wall or an enemy (they take collision damage) and not at one of our own. */
@@ -418,17 +429,17 @@ function blowSafe(s,L,e){
 }
 /** True when a ray of length 1..3 from `from` to `to` crosses only floor cells nobody stands on (the leader itself is ignored: it is the one moving). */
 function rayClear(s,from,to,leaderId){
- if(from.x!==to.x&&from.y!==to.y)return false;const d=dist(from,to);if(d<1||d>3)return false;
+ const dx0=to.x-from.x,dy0=to.y-from.y,d=Math.max(Math.abs(dx0),Math.abs(dy0));if(d<1||d>3||(dx0!==0&&dy0!==0&&Math.abs(dx0)!==Math.abs(dy0)))return false;
  const seen=new Set(s.seen),occ=new Set([...s.queue,...s.enemies].filter(i=>i!==leaderId).map(i=>s.units[i]).filter(aliveU).map(u=>key(u.pos)));
  const dx=Math.sign(to.x-from.x),dy=Math.sign(to.y-from.y);let p={x:from.x+dx,y:from.y+dy};
- while(!same(p,to)){if(!seen.has(key(p))||occ.has(key(p)))return false;p={x:p.x+dx,y:p.y+dy};}
- return seen.has(key(to));
+ let prev=from;while(!same(p,to)){if(!seen.has(key(p))||occ.has(key(p))||!cornerFree(seen,prev,p))return false;prev=p;p={x:p.x+dx,y:p.y+dy};}
+ return seen.has(key(to))&&cornerFree(seen,prev,to);
 }
 /** Revealed floor cells in the boss's row or column at distance d with a clear ray to it and no enemy on them (an ally on the cell is fine: the bot swaps). */
 function lineSpots(s,B,d,leaderId){
  const foes=new Set(s.enemies.map(i=>s.units[i]).filter(aliveU).map(u=>key(u.pos)));
  return s.seen.map(value=>{const [x,y]=value.split(',').map(Number);return {x,y};})
-  .filter(c=>(c.x===B.pos.x||c.y===B.pos.y)&&dist(c,B.pos)===d&&!foes.has(key(c))&&rayClear(s,c,B.pos,leaderId)).reduce((set,c)=>set.add(key(c)),new Set());
+  .filter(c=>(c.x===B.pos.x||c.y===B.pos.y||Math.abs(c.x-B.pos.x)===Math.abs(c.y-B.pos.y))&&Math.max(Math.abs(c.x-B.pos.x),Math.abs(c.y-B.pos.y))===d&&!foes.has(key(c))&&rayClear(s,c,B.pos,leaderId)).reduce((set,c)=>set.add(key(c)),new Set());
 }
 /** The command that takes one step along a route result: move, swap with an ally in the way, or hit an enemy in the way. */
 function stepCommand(s,r){
@@ -444,7 +455,7 @@ function stepCommand(s,r){
 function bossPrep(s,memo,B){
  const L=s.units[s.leader],members=s.queue.map(i=>s.units[i]).filter(policyAlive),out=[];
  if(adjacentEnemies(s).length)return out; // fight first
- const reach=members.filter(m=>m.id===L.id||(m.pos&&dist(m.pos,L.pos)===1)),act=a=>out.push({type:'round',action:a});
+ const reach=members.filter(m=>m.id===L.id||(m.pos&&adj(s,m.pos,L.pos))),act=a=>out.push({type:'round',action:a});
  const hurtAny=members.some(m=>ratioOf(m)<0.7);
  if(hurtAny&&s.prog.items.berry>0){
   const t=reach.filter(m=>ratioOf(m)<0.7).sort((a,b)=>ratioOf(a)-ratioOf(b))[0];
@@ -466,7 +477,7 @@ function backpackCommands(s,memo){
  const L=s.units[s.leader],out=[],act=a=>out.push({type:'round',action:a});
  const members=s.queue.map(i=>s.units[i]).filter(policyAlive),cau=cautiousOn(memo);
  const low=u=>u.hp/u.maxHp;
- const reachable=members.filter(m=>m.id===L.id||(m.pos&&dist(m.pos,L.pos)===1));
+ const reachable=members.filter(m=>m.id===L.id||(m.pos&&adj(s,m.pos,L.pos)));
  const lowReach=reachable.filter(m=>low(m)<=(cau?0.6:0.5)).sort((a,b)=>low(a)-low(b))[0];
  if(!memo.reckless&&lowReach&&s.prog.items.bigBerry>0)act({type:'use',item:'bigBerry',target:lowReach.id});
  const hurt=reachable.filter(m=>low(m)<=(cau?0.6:0.5)).sort((a,b)=>low(a)-low(b))[0];
@@ -488,7 +499,7 @@ function backpackCommands(s,memo){
 function bossTurn(s,memo,B){
  const L=s.units[s.leader],out=[],act=a=>out.push({type:'round',action:a});
  const members=s.queue.map(i=>s.units[i]).filter(u=>aliveU(u)&&u.pos);
- const d=dist(L.pos,B.pos),canHitNow=d===1||hitMoves(s,L,B).length>0;
+ const d=adj(s,L.pos,B.pos)?1:dist(L.pos,B.pos),canHitNow=d===1||hitMoves(s,L,B).length>0;
  // Lead switch: the lead is at <=40% HP and a clearly healthier member exists (cooldown 2 rounds).
  // The boss picks its victim by queue order and position, not by who leads, so a switch does not save the old lead; it only costs the lead's own attack.
  // So it is skipped while the lead can hit the boss this round, and used when the lead cannot (the healthier member then does the walking and shooting).
@@ -497,8 +508,8 @@ function bossTurn(s,memo,B){
  // Boss-engaged early return still applies the normal reachable-item rules.
  out.push(...backpackCommands(s,memo));
  // 7.7 protect shields only the acting member for 3 enemy phases: use it when the boss will pick the lead (first adjacent member in queue order, else nearest on a line) and the lead is at <=40% HP.
- const adjB=members.filter(m=>dist(m.pos,B.pos)===1);
- const victim=adjB[0]??members.filter(m=>(m.pos.x===B.pos.x||m.pos.y===B.pos.y)&&dist(m.pos,B.pos)<=3).sort((a,c)=>dist(a.pos,B.pos)-dist(c.pos,B.pos))[0];
+ const adjB=members.filter(m=>adj(s,m.pos,B.pos));
+ const victim=adjB[0]??members.filter(m=>(m.pos.x===B.pos.x||m.pos.y===B.pos.y||Math.abs(m.pos.x-B.pos.x)===Math.abs(m.pos.y-B.pos.y))&&cheb(m.pos,B.pos)<=3).sort((a,c)=>cheb(a.pos,B.pos)-cheb(c.pos,B.pos))[0];
  const guard=movesWith(L,isProtect)[0];
  if(victim?.id===L.id&&ratioOf(L)<=0.4&&guard&&!(L.protect>0)&&L.lastMove!==guard)act({type:'skill',skill:guard,target:L.id});
  const hits=bestMoves(s,L,B);
@@ -534,7 +545,7 @@ function tacticalFight(s,L,members,adj,visible,saveSkills,mayUse){
  if(guard&&ratioOf(L)<=0.4&&!(L.protect>0)&&L.lastMove!==guard&&visible.some(e=>foeReaches(s,e,L)&&rangedMoves(e).length>0))act({type:'skill',skill:guard,target:L.id});
  const hurtMates=members.filter(m=>m.pos&&m.id!==L.id&&ratioOf(m)<0.6);
  for(const k of pureBlow(L))for(const e of adj)
-  if(!e.boss&&e.hp>basicDamage(s,L,e)&&hurtMates.some(m=>dist(m.pos,e.pos)===1)&&blowSafe(s,L,e))act({type:'skill',skill:k,target:e.id});
+  if(!e.boss&&e.hp>basicDamage(s,L,e)&&hurtMates.some(m=>adj(s,m.pos,e.pos))&&blowSafe(s,L,e))act({type:'skill',skill:k,target:e.id});
  for(const e of adj){
   const hits=bestMoves(s,L,e),drain=hits.find(k=>moveOf(k).effects.includes('drain'));
   if(drain&&ratioOf(L)<0.7)act({type:'skill',skill:drain,target:e.id});
@@ -775,7 +786,7 @@ function otherDamage(s,cmd){
 function observeBossFloor(s,x){
  if(!x.entry)x.entry={ratios:s.queue.map(i=>+(s.units[i].hp/s.units[i].maxHp).toFixed(3)),alive:s.queue.filter(i=>aliveU(s.units[i])).length,hp:hpSum(s),max:maxSum(s)};
  const B=s.enemies.map(i=>s.units[i]).find(u=>u.boss&&aliveU(u));
- if(B&&!x.contact&&s.queue.some(i=>{const m=s.units[i];return aliveU(m)&&(dist(m.pos,B.pos)===1||rayClear(s,m.pos,B.pos,null));}))
+ if(B&&!x.contact&&s.queue.some(i=>{const m=s.units[i];return aliveU(m)&&(adj(s,m.pos,B.pos)||rayClear(s,m.pos,B.pos,null));}))
   x.contact={alive:s.queue.filter(i=>aliveU(s.units[i])).length,hp:hpSum(s),max:maxSum(s),round:s.round};
 }
 /** Timeout-only diagnostics; hidden state is read for evidence and never reaches the bot policy. */
@@ -942,7 +953,7 @@ async function playRun(port,ref,gameId,st,reckless=false,doomed=false,useExchang
    const r=await send(port,store,cmd,st,where+' '+cmd.type);
    if(process.env.SOAK_DEBUG==='trace')attempts.push({command:cmd,ok:r.ok,...(!r.ok?{error:r.error}:{})});
    if(r.ok&&od!==null){x.f3dmg=(x.f3dmg??0)+od;x.f3rounds=(x.f3rounds??0)+1;}
-   if(!r.ok){const lastFoeBefore=memo.lastFoe?{...memo.lastFoe}:null;const clearedFoe=clearStaleForcedFoeAfterBlockedMove(s,memo,cmd,r.error);if(clearedFoe&&process.env.SOAK_DEBUG==='trace'){if(attempts.length)attempts[attempts.length-1].clearedLastFoe=true;console.log('SOAK_FORCED_FOE_CLEAR_JSON='+JSON.stringify({game:where,round:s.round,leader:s.units[s.leader]?.pos,lastFoe:lastFoeBefore,frontier:explorationRoute(visibleView(s)),command:cmd,error:r.error}));}if(cmd.type==='round'&&cmd.action.type==='interact'){const p=s.points.find(p=>same(p.pos,s.units[s.leader].pos));if(p)memo.declined.add(`${s.dungeon.level}:${key(p.pos)}`);st.declined++;}continue;}
+   if(!r.ok){if(cmd.type==='round'&&cmd.action.type==='interact'){const p=s.points.find(p=>same(p.pos,s.units[s.leader].pos));if(p)memo.declined.add(`${s.dungeon.level}:${key(p.pos)}`);st.declined++;}continue;}
    if(process.env.SOAK_DEBUG==='trace'&&s.round>=1150){
     const view=visibleView(s),L=view.units[view.leader],main=objective(view,memo),rooms=visibleRooms(view).map(room=>({id:room.room,type:room.type,state:room.state,distance:routeLength(view,L.pos,room.interaction)}));
     memo.commandTrace.push({round:s.round,doomed:memo.doomed,suicidal:memo.suicidal,lastFoe:memo.lastFoe?{...memo.lastFoe}:null,phase:s.phase,leaderBefore:L.pos,alliesBefore:view.queue.map(id=>({id,pos:view.units[id]?.pos,hp:view.units[id]?.hp})),mainTarget:main?{kind:main.kind,pos:main.pos}:null,frontier:explorationRoute(view),visibleRooms:rooms,firstCommand:ordered[0],attempts,acceptedCommand:cmd,leaderAfter:store.state.units[store.state.leader]?.pos,alliesAfter:store.state.queue.map(id=>({id,pos:store.state.units[id]?.pos,hp:store.state.units[id]?.hp}))});
@@ -1083,15 +1094,6 @@ function normalizeTalents(value){
  }
  assert.ok(total<=4,'reference comparison supports at most four starting talent points');
  return selected;
-}
-export function clearStaleForcedFoeAfterBlockedMove(source,memo,command,error){
- if(!memo?.doomed||!memo.suicidal||!memo.lastFoe||command?.type!=='round'||command.action?.type!=='move')return false;
- const reason=String(error??'');
- if(!reason.includes('会先进入')||!reason.includes('挡住'))return false;
- const view=visibleView(source);
- if(view.enemies.some(id=>aliveU(view.units[id])))return false;
- memo.lastFoe=null;
- return true;
 }
 export async function playSeed(i,options={}){
  const policy=options.policy??'naive',difficulty=options.difficulty??'normal';

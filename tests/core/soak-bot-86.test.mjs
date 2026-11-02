@@ -7,7 +7,6 @@ import {
   challengeShouldStart,
   commissionDecision,
   blessingChoice,
-  clearStaleForcedFoeAfterBlockedMove,
   observeActivity
 } from './soak-bot.mjs';
 import {applyCommand} from '../../src/core/engine.ts';
@@ -431,7 +430,7 @@ test('8.6 B6回归：全图已揭示的挑战房内有远处睡眠敌人时机�
   }
 });
 
-test('S81 forced-wipe: 拒绝队友占位移动后沿可见边界恢复',()=>{
+test('S81 forced-wipe: 队友不再挡路，记忆中的敌人路线照常前进',()=>{
   const makeWorldState=(hiddenPos)=>{
     const floor=[];
     const add=(x,y)=>floor.push(pos(x,y));
@@ -467,27 +466,26 @@ test('S81 forced-wipe: 拒绝队友占位移动后沿可见边界恢复',()=>{
     const blocked=initial.find(command=>command.type==='round');
     assert.deepEqual(blocked?.action,{type:'move',to:pos(29,7)},
       'the forced-wipe memory first aims at the move that the real team will reject');
-    const rejection=applyCommand(s,blocked);
-    assert.equal(rejection.ok,false,'the engine rejects the move after A takes its destination');
-    assert.match(rejection.error,/A会先进入\(29,7\)，挡住C/);
-    assert.equal(clearStaleForcedFoeAfterBlockedMove(s,memo,blocked,rejection.error),true,
-      'the rejected teammate-blocked move clears only the stale forced-foe memory');
-    assert.equal(memo.lastFoe,null);
-
-    const recovered=botCommands(s,memo);
-    const fallback=recovered.find(command=>command.type==='round');
-    assert.deepEqual(fallback?.action,{type:'move',to:pos(28,6)},
-      'after clearing the memory, the bot takes the visible frontier route');
-    const moved=applyCommand(s,fallback);
+    // 8.8 (4.1, 4.2): A no longer steps into (29,7) first (it is already diagonally next to C), and walking into a teammate swaps places,
+    // so the forced-wipe memory's first move is simply accepted and no teammate-blocked rejection (or stale-memory clearing) happens.
+    const accepted=applyCommand(s,blocked);
+    assert.equal(accepted.ok,true,accepted.error);
+    assert.deepEqual(accepted.state.units.C.pos,pos(29,7));
+    assert.deepEqual(accepted.state.units.A.pos,pos(28,7));
+    assert.deepEqual(memo.lastFoe,pos(24,14),'the forced-foe memory is kept: nothing was rejected');
+    const fallback=botCommands(accepted.state,memo).find(command=>command.type==='round');
+    assert.deepEqual(fallback?.action,{type:'move',to:pos(29,8)},
+      'the bot keeps walking the remembered foe route down the corridor');
+    const moved=applyCommand(accepted.state,fallback);
     assert.equal(moved.ok,true,moved.error);
-    assert.deepEqual(moved.state.units.C.pos,pos(28,6));
+    assert.deepEqual(moved.state.units.C.pos,pos(29,8));
     const next=botCommands(moved.state,memo).find(command=>command.type==='round');
-    assert.deepEqual(next?.action,{type:'move',to:pos(27,6)},
-      'from the fallback tile the next frontier step continues toward the edge at 23,5');
+    assert.deepEqual(next?.action,{type:'move',to:pos(29,9)},
+      'the following step continues down the corridor');
     snapshots.push({initial:blocked,recovered:fallback,next});
   }
   assert.deepEqual(snapshots[1],snapshots[0],
-    'changing the position of an unrevealed enemy does not affect either recovery step');
+    'changing the position of an unrevealed enemy does not affect either step');
 });
 test('8.6 §3.1.4: 大树果照回复门槛治疗主控或相邻同行',()=>{
   const leaderHurt=engagedBossWorld({partyHp:[10,20,20]});

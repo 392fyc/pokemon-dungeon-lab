@@ -7,7 +7,7 @@ import {friend,enemy,world,row,pos} from '../acceptance/fixtures.mjs';
 const kinds=['hunter','collector','scout','guardian','speedrun'];
 const blessings=['berryBoost','floorHeal','battleSpirit','lullaby','rally','tmChoice'];
 const midpoint={1:5.5,2:9.5,3:16};
-const commissionXp={hunter:{1:33,2:57,3:96},collector:{1:11,2:19,3:32},scout:{1:33,2:57},guardian:{1:33,2:57},speedrun:{1:33,2:57}};
+const commissionXp={hunter:{1:33,2:57,3:96},collector:{1:11,2:19,3:32},scout:{1:33,2:57},guardian:{1:22,2:38},speedrun:{1:33,2:57}};
 const interact=exit=>({type:'interact',exit});
 const move=x=>({type:'move',to:pos(x)});
 const wait={type:'wait'};
@@ -26,7 +26,7 @@ const chooseCommission=(s,choice='accept')=>apply(s,{type:'commissionChoice',cho
 const chooseBlessing=(s,blessing)=>apply(s,{type:'blessingChoice',blessing});
 const pending=(s,type)=>s.pendingChoices?.find(c=>c.type===type);
 const roomAt=(s,index)=>s.adventureRooms.find(r=>r.room===index);
-const commissionXpFor=(id,level)=>commissionXp[id]?.[level]??Math.round(({hunter:3,collector:1,scout:3,guardian:3,speedrun:3}[id])*2*midpoint[level]);
+const commissionXpFor=(id,level)=>commissionXp[id]?.[level]??Math.round(({hunter:3,collector:1,scout:3,guardian:2,speedrun:3}[id])*2*midpoint[level]);
 
 /** A small, explicit walkable floor. Tests change a unit's position only to set up a command. */
 function fixture({seed=1,level=1,roomTypes=['commission'],downX=12,partySize=1,targets=[]}={}){
@@ -498,7 +498,7 @@ test('C15: a same-round downstairs completion levels the team before the resulti
   const result=applyCommand(s,{type:'round',action:interact(true),override:{actor:'B',action:basic('same-round-kill')}});
   assert.equal(result.ok,true,result.error);s=result.state;
   assert.equal(s.request.locked,true);assert.equal(s.phase,'invitation');assert.equal(s.commissions.length,0);
-  assert.equal(s.prog.exp,43);assert.equal(s.prog.level,10);
+  assert.equal(s.prog.exp,32);assert.equal(s.prog.level,9);
   const invite=s.invitations.find(i=>i.status==='pending');assert.ok(invite);
   assert.equal(invite.unit.level,s.prog.level,'the invite snapshot uses the level after the stair commission reward');
 });

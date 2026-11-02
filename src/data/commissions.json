@@ -28,7 +28,7 @@
     "name": "守护",
     "description": "下楼时全队存活；树果回复量减半。",
     "progressTarget": 1,
-    "equivalentEnemies": 3,
+    "equivalentEnemies": 2,
     "penalty": "berryHealHalf",
     "floors": [1, 2]
   },

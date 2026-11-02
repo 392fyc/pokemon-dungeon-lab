@@ -40,5 +40,5 @@ test('difficulty: enemy max HP is the roster value times 0.4; the boss also take
   ['shellder',8,8],['drowzee',11,12],['wooper',8,10],['drowzee',8,11],['wooper',8,10],['shellder',9,9]
  ],'each literal is the roster HP at that level multiplied by 0.4 and rounded');
  const b=generateFloor(7,3,{width:36,height:24,floors:3,boss:true,roguelike:true}).enemies.find(e=>e.boss);
- assert.deepEqual([b.species,b.level,b.hp],['arcanine',22,56],'Lv22 HP 47 x hpMultiplier 3 x 0.4 = 56.4 -> 56');
+ assert.deepEqual([b.species,b.level,b.hp],['arcanine',22,75],'Lv22 HP 47 x hpMultiplier 4 x 0.4 = 75.2 -> 75');
 });

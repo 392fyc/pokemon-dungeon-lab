@@ -18,14 +18,43 @@ export type Instance={id:string;species:string;learned:KitMove[];carry:string[];
 export type RescueEntry={inst:Instance;paid:boolean;left:number};
 /** 7.2 a partner lost for good, and the expedition count when it happened. */
 export type LostRecord={id:string;species:string;expedition:number};
+export type TalentId='vitality'|'offense'|'supplies';
+export const TALENTS:Readonly<Record<TalentId,{name:string;description:string}>>={
+  vitality:{name:'体质',description:'同行伙伴（包括局内新招募的伙伴）最大 HP 每级提高 5%；出发、升级和进化时重算并四舍五入。'},
+  offense:{name:'攻势',description:'伙伴对敌方的招式和普攻伤害每级提高 3%；不加成误伤同行，不影响吹飞碰撞伤害和反击反弹。'},
+  supplies:{name:'补给',description:'每级使橙橙果多回复 1 HP；达到 3 级后，出发时背包自带 1 个橙橙果。'},
+};
 /**
  * `account` (7.2) is the base money; `rescue` and `lost` are the pool and the record of lost partners; `origin` is the founding main character's
  * instance id, used to refill an empty squad.
  */
-export type Profile={expeditions:number;next:number;roster:Instance[];vault:Record<string,number>;team:string[];leader:string;account:number;rescue:RescueEntry[];lost:LostRecord[];origin:string;difficulty:Difficulty;shards:Record<string,number>;rankExp:number;talents:Record<string,number>};
-export type BaseAction={type:'learn';inst:string;move:string}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string}|{type:'tactic';inst:string;tactic:Tactic}|{type:'difficulty';difficulty:Difficulty};
+export type Profile={expeditions:number;next:number;roster:Instance[];vault:Record<string,number>;team:string[];leader:string;account:number;rescue:RescueEntry[];lost:LostRecord[];origin:string;difficulty:Difficulty;shards:Record<string,number>;rankExp:number;talents:Partial<Record<TalentId,number>>};
+export type BaseAction={type:'learn';inst:string;move:string}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string}|{type:'tactic';inst:string;tactic:Tactic}|{type:'difficulty';difficulty:Difficulty}|{type:'talent';talent:TalentId}|{type:'resetTalents'};
 export type BaseResult={ok:true;profile:Profile}|{ok:false;error:string};
 export const MAX_CARRY=2,MAX_TEAM=3;
+const TALENT_IDS=Object.keys(TALENTS) as TalentId[];
+const isTalentId=(value:unknown):value is TalentId=>typeof value==='string'&&TALENT_IDS.includes(value as TalentId);
+/** Experience needed to reach the given expedition rank. Rank 1 starts at zero experience. */
+export function rankThreshold(level:number):number {return Number.isInteger(level)&&level>=1?3*level*(level-1):0;}
+/** Highest rank whose cumulative threshold has been reached. */
+export function rankLevel(exp:number):number {
+  if(!Number.isFinite(exp)||exp<0)return 1;
+  const points=Math.floor(exp);
+  let level=Math.max(1,Math.floor(Math.sqrt(points/3+0.25)+0.5));
+  while(level>1&&level-1<level&&rankThreshold(level)>points)level--;
+  while(level+1>level&&rankThreshold(level+1)<=points)level++;
+  return level;
+}
+/** Unspent talent points at camp; invalid talent data has no spendable points. */
+export function availableTalentPoints(profile:Profile):number {
+  if(!Number.isInteger(profile.rankExp)||profile.rankExp<0||!profile.talents||typeof profile.talents!=='object')return 0;
+  let spent=0;
+  for(const [id,rank] of Object.entries(profile.talents)){
+    if(!isTalentId(id)||!Number.isInteger(rank)||rank<0||rank>5)return 0;
+    spent+=rank;
+  }
+  return Math.max(0,rankLevel(profile.rankExp)-1-spent);
+}
 const kitOf=(species:string):KitMove[]=>SPECIES[species].kit.map(k=>({move:k.move,pp:k.pp}));
 const newInstance=(id:string,species:string,isProtected=false,tactic:Tactic='together'):Instance=>({id,species,learned:kitOf(species),carry:SPECIES[species].kit.map(k=>k.move),protected:isProtected,tactic});
 const clone=<T>(v:T):T=>structuredClone(v);
@@ -103,13 +132,33 @@ export function purseProblem(p:Profile,purse:number):string|null {
   if(purse>ECON.purseMax)return `钱袋最多装${ECON.purseMax}`;
   return null;
 }
+function addTalent(original:Profile,talent:unknown):BaseResult {
+  if(!isTalentId(talent))return fail('天赋分支不合法');
+  const current=original.talents[talent]??0;
+  if(!Number.isInteger(current)||current<0||current>=5)return fail(`${TALENTS[talent].name}已达到 5 级`);
+  if(availableTalentPoints(original)<1)return fail('没有可分配的天赋点');
+  const p=clone(original);p.talents[talent]=current+1;return {ok:true,profile:p};
+}
+function resetTalents(original:Profile):BaseResult {
+  const p=clone(original);p.talents={vitality:0,offense:0,supplies:0};return {ok:true,profile:p};
+}
 export function applyBase(p:Profile,a:BaseAction):BaseResult {
-  return a.type==='learn'?learnTm(p,a.inst,a.move):a.type==='carry'?setCarry(p,a.inst,a.moves):a.type==='rescue'?payRescue(p,a.inst):a.type==='tactic'?setTactic(p,a.inst,a.tactic):a.type==='difficulty'?setDifficulty(p,a.difficulty):setTeam(p,a.team,a.leader);
+  switch(a.type){
+    case 'learn':return learnTm(p,a.inst,a.move);
+    case 'carry':return setCarry(p,a.inst,a.moves);
+    case 'rescue':return payRescue(p,a.inst);
+    case 'tactic':return setTactic(p,a.inst,a.tactic);
+    case 'difficulty':return setDifficulty(p,a.difficulty);
+    case 'talent':return addTalent(p,a.talent);
+    case 'resetTalents':return resetTalents(p);
+    case 'team':return setTeam(p,a.team,a.leader);
+    default:return fail('营地操作不合法');
+  }
 }
 /** The squad for a new run, in queue order. Carried moves come from the instance's learned list (max PP included). */
-export function squadOf(p:Profile):{members:SquadMember[];leader:number} {
+export function squadOf(p:Profile):{members:SquadMember[];leader:number;talents?:Partial<Record<TalentId,number>>} {
   const members=p.team.map(id=>{const i=instanceOf(p,id)!;return {inst:i.id,species:i.species,carry:i.carry.map(n=>i.learned.find(l=>l.move===n)!),protected:i.protected,tactic:i.tactic??'together'};});
-  return {members,leader:p.team.indexOf(p.leader)};
+  return {members,leader:p.team.indexOf(p.leader),talents:{...p.talents}};
 }
 /**
  * Settlement after a finished run (spec 失败回归与服务点.md "回到基地"). `profile` is null for records that never had one: they start from the initial profile.
@@ -167,13 +216,14 @@ export function settleRun(profile:Profile|null,w:World):Profile|null {
   else if(!p.team.includes(p.leader))p.leader=p.team[0];
   return p;
 }
+export type RankSummary={depth:number;boss:number;commissions:number;recruits:number;tms:number;total:number;before:number;after:number;levelBefore:number;levelAfter:number};
 /** What a settlement would change in the rescue pool, for the result screen (computed by the same function that settles; nothing is written). */
-export type SettleSummary={account:{before:number;after:number};returned:{id:string;species:string}[];gone:{id:string;species:string}[];missing:{id:string;species:string}[];advanced:{id:string;species:string;paid:boolean;from:number;to:number}[];brought:{id:string;species:string}[];shards:{species:string;count:number}[]};
+export type SettleSummary={account:{before:number;after:number};returned:{id:string;species:string}[];gone:{id:string;species:string}[];missing:{id:string;species:string}[];advanced:{id:string;species:string;paid:boolean;from:number;to:number}[];brought:{id:string;species:string}[];shards:{species:string;count:number}[];rank?:RankSummary};
 export function settleSummary(profile:Profile|null,w:World):SettleSummary|null {
   const before=profile??initialProfile(),after=settleRun(profile,w);if(!after)return null;
   if(w.dungeon?.roguelike===true){
     const settled=settleRoguelike(profile,w);if(!settled)return null;
-    return {account:{before:before.account,after:after.account},returned:[],gone:[],missing:[],advanced:[],brought:settled.brought,shards:settled.shards};
+    return {account:{before:before.account,after:after.account},returned:[],gone:[],missing:[],advanced:[],brought:settled.brought,shards:settled.shards,...(settled.rank?{rank:settled.rank}:{})};
   }
   const inPool=(p:Profile,id:string)=>p.rescue.find(r=>r.inst.id===id);
   const returned=before.rescue.filter(r=>r.paid&&after.roster.some(i=>i.id===r.inst.id)).map(r=>({id:r.inst.id,species:r.inst.species}));
@@ -183,11 +233,12 @@ export function settleSummary(profile:Profile|null,w:World):SettleSummary|null {
   return {account:{before:before.account,after:after.account},returned,gone,missing,advanced,brought:[],shards:[]};
 }
 
-type RoguelikeSettlement={profile:Profile;brought:{id:string;species:string}[];shards:{species:string;count:number}[]};
+type RoguelikeSettlement={profile:Profile;brought:{id:string;species:string}[];shards:{species:string;count:number}[];rank?:RankSummary};
 /** v0.1 brings every member back after a win or wipe; only a duplicate newly recruited species becomes a shard. */
 function settleRoguelike(profile:Profile|null,w:World):RoguelikeSettlement|null {
   if(w.phase!=='ended'||w.scenario!=='expedition'||!w.prog||!w.end||!Array.isArray(w.end.tms)||!['won','wipe'].includes(w.end.outcome))return null;
   const p=profile?clone(profile):initialProfile();
+  const originalRosterIds=new Set(p.roster.map(inst=>inst.id));
   const members=[...w.end.team,...w.end.camp,...(w.exchange?.sent?[w.exchange.sent]:[])];
   if(new Set(members).size!==members.length)return null;
   const brought:{id:string;species:string}[]=[],shardCounts=new Map<string,number>();
@@ -219,7 +270,18 @@ function settleRoguelike(profile:Profile|null,w:World):RoguelikeSettlement|null 
     for(const t of w.end.tms)if(t.fate==='brought')p.vault[t.move]=(p.vault[t.move]??0)+1;
   }
   for(const [species,count] of shardCounts){p.shards[species]=(p.shards[species]??0)+count;}
-  return {profile:p,brought,shards:[...shardCounts].map(([species,count])=>({species,count}))};
+  let rank:RankSummary|undefined;
+  if(w.completedCommissions!==undefined){
+    const depth=Math.max(1,Math.min(3,Math.floor(w.dungeon?.level??1)));
+    const boss=w.end.outcome==='won'?6:0;
+    const commissions=Math.min(3,Math.max(0,Math.floor(w.completedCommissions)));
+    const recruits=Math.min(2,p.roster.filter(inst=>!originalRosterIds.has(inst.id)).length);
+    const tms=w.end.outcome==='won'?Math.min(2,w.end.tms.filter(t=>t.fate==='brought').length)*2:0;
+    const total=depth+boss+commissions+recruits+tms,before=p.rankExp,after=before+total;
+    rank={depth,boss,commissions,recruits,tms,total,before,after,levelBefore:rankLevel(before),levelAfter:rankLevel(after)};
+    p.rankExp=after;
+  }
+  return {profile:p,brought,shards:[...shardCounts].map(([species,count])=>({species,count})),...(rank?{rank}:{})};
 }
 
 /**
@@ -300,7 +362,13 @@ export function profileProblem(v:unknown):string|null {
     if(!speciesOf(species)||speciesOf(species)?.availability==='暂不出场')return `碎片物种${species}不在可用名册中`;
     if(!nat(count))return `物种${species}的碎片数必须是非负整数`;
   }
-  for(const [name,rank] of Object.entries(v.talents))if(!name||!nat(rank))return `天赋字段${name}结构错误`;
+  let talentPoints=0;
+  for(const [name,rank] of Object.entries(v.talents)){
+    if(!isTalentId(name))return `天赋分支${name}不合法`;
+    if(!nat(rank)||rank>5)return `天赋字段${name}须为0到5级整数`;
+    talentPoints+=rank;
+  }
+  if(talentPoints>rankLevel(v.rankExp as number)-1)return '天赋点数超过探险队等级可分配数量';
   if(!nat(v.expeditions)||!nat(v.next)||!Array.isArray(v.roster)||!obj(v.vault)||!Array.isArray(v.team)||typeof v.leader!=='string')return '档案字段缺失或类型错误';
   if(!nat(v.account)||!Array.isArray(v.rescue)||!Array.isArray(v.lost)||typeof v.origin!=='string')return '档案缺少账户、救援池、失去记录或初始主控字段';
   const roster=v.roster as unknown[],ids=new Set<string>(),rosterIds=new Set<string>();

@@ -609,7 +609,8 @@ await test('结算8.1：全灭仍带回伙伴，招式机丢失，三组结算�
   assert.deepEqual(ended.end.lost,[]);assert.equal(ended.end.reward,0);assert.equal(ended.purse,0);
   assert.ok(ended.end.tms.every(t=>t.fate==='lost'));
   for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
-  assert.match(await p.locator('#depth-rewards').innerText(),/本局无此项奖励/);
+  assert.match(await p.locator('#depth-rewards').innerText(),/深度：\+3/);
+  assert.match(await p.locator('#rank-gain').innerText(),/经验 \+3.*0 → 3/);
   assert.match(await p.locator('#camp-task-rewards').innerText(),/本局无此项奖励/);
   assert.match(await p.locator('#harvest-rewards').innerText(),/伙伴.*招式机/s);
   const after=await p.evaluate(()=>window.trial.profile());assert.equal(after.expeditions,before.expeditions+1);
@@ -1076,6 +1077,69 @@ await test('8.4 选机：真实三选一按钮、一次消费与挑战奖励来�
   await p.screenshot({path:artifact+'windows-84-challenge-tm-source.png',fullPage:true});
   assert.deepEqual(errors,[]);
   return {options,selected:options[1],source:'target',priorSource:'challenge',fixtureBoundary:'初始放置T并设置已拥有选机的内存夹具；取得和选择通过实际按钮。'};
+ }finally{await context.close();}
+});
+await test('8.5 营地天赋树：独立入口、自由分配、重置、保存与出发效果',async()=>{
+ const {context,page:p,errors}=await setup();try{
+  await emptyReady(p);
+  const {newGameProfile}=await import('../../src/core/base.ts');
+  const {speciesMaxHp}=await import('../../src/core/roster.ts');
+  const profile=newGameProfile('mudkip','charmander').profile;
+  profile.rankExp=60;
+  assert.equal(await p.evaluate(pr=>window.trial.store.beginNewGame(pr,true),profile),true);
+  await p.reload();await ready(p);
+  assert.match(await p.locator('#rank-level').innerText(),/Lv5/);
+  assert.equal(await p.locator('#talent-tree').count(),0);
+  assert.match(await p.locator('#talent-points').innerText(),/4/);
+  await click(p,'talent-tree-toggle');
+  await p.screenshot({path:artifact+'windows-85-talent-tree.png',fullPage:true});
+  const writes=await p.evaluate(()=>window.__fault.writes.length);
+  await click(p,'talent-add-vitality');await click(p,'talent-add-vitality');
+  await click(p,'talent-add-offense');await click(p,'talent-add-offense');
+  assert.deepEqual(await p.evaluate(()=>window.trial.profile().talents),{vitality:2,offense:2});
+  assert.equal(await p.evaluate(()=>window.__fault.writes.length),writes+4,'one saved write per allocation');
+  assert.equal(await p.locator('#talent-add-supplies').isDisabled(),true);
+  await click(p,'talent-reset');
+  assert.deepEqual(await p.evaluate(()=>window.trial.profile().talents),{vitality:0,offense:0,supplies:0});
+  assert.equal(await p.evaluate(()=>window.__fault.writes.length),writes+5,'reset writes once');
+  await click(p,'talent-add-supplies');await click(p,'talent-add-supplies');await click(p,'talent-add-supplies');
+  await click(p,'talent-add-vitality');
+  const saved=await raw(p);await p.reload();await ready(p);
+  assert.equal(await raw(p),saved);assert.equal(await p.locator('#talent-tree').count(),0);
+  assert.deepEqual(await p.evaluate(()=>window.trial.profile().talents),{vitality:1,offense:0,supplies:3});
+  await click(p,'depart');const s=await state(p);
+  assert.equal(s.prog.items.berry,1);
+  for(const id of s.queue)assert.equal(s.units[id].maxHp,Math.round(speciesMaxHp(s.units[id].species,5)*1.05));
+  assert.equal(await raw(p),saved,'departure does not write storage');
+  assert.deepEqual(errors,[]);
+  return {fixtureBoundary:'只把初始营地经验设为60；天赋入口、加点、重置、刷新与出发均为真实界面操作。',savedAllocation:{supplies:3,vitality:1}};
+ }finally{await context.close();}
+});
+await test('8.5 结算：三组奖励、五项经验与升级显示',async()=>{
+ const {context,page:p,errors}=await setup();try{
+  await emptyReady(p);
+  const {newGameProfile,squadOf}=await import('../../src/core/base.ts');
+  const {createExpedition,speciesUnit}=await import('../../src/core/engine.ts');
+  const profile=newGameProfile('mudkip','charmander').profile;profile.rankExp=5;
+  const fixture=createExpedition('rank-ui-wipe',4,3,squadOf(profile),0,true,3);
+  const at=fixture.floor.find(p=>fixture.floor.some(q=>q.x===p.x+1&&q.y===p.y));
+  for(const id of fixture.queue){fixture.units[id].hp=0;fixture.units[id].pos=null;}
+  fixture.leader=fixture.queue[0];fixture.units[fixture.leader].hp=1;fixture.units[fixture.leader].pos={...at};
+  for(const id of fixture.enemies){fixture.units[id].hp=0;fixture.units[id].pos=null;}
+  const e=speciesUnit('rank-ui-enemy','arcanine',30,{x:at.x+1,y:at.y});e.side='enemy';e.learned=['tackle'];e.pp={tackle:10};e.maxPp={tackle:10};
+  fixture.units[e.id]=e;fixture.enemies=[e.id];fixture.completedCommissions=2;
+  fixture.seen=fixture.floor.map(p=>p.x+','+p.y);
+  await startMemory(p,fixture,profile);await click(p,'wait');
+  assert.equal((await state(p)).phase,'ended');assert.equal((await state(p)).end.outcome,'wipe');
+  for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
+  const score=await p.locator('#rank-breakdown').innerText();
+  assert.match(score,/深度：\+1/);assert.match(score,/击败首领：\+0/);assert.match(score,/完成委托：\+2/);
+  assert.match(score,/新招募伙伴：\+0/);assert.match(score,/带回招式机：\+0/);
+  assert.match(await p.locator('#rank-gain').innerText(),/经验 \+3.*5 → 8/);
+  assert.match(await p.locator('#rank-level-change').innerText(),/Lv1 → Lv2.*1 个天赋点/);
+  await p.screenshot({path:artifact+'windows-85-rank-settlement.png',fullPage:true});
+  assert.equal(await raw(p),null);assert.deepEqual(errors,[]);
+  return {fixtureBoundary:'预置营地经验5、两条已完成委托及只剩1HP的同行；真实等待触发全灭与结算，开发者夹具不写存档。',rankBefore:5,rankAfter:8};
  }finally{await context.close();}
 });
 await browser.close();

@@ -8,7 +8,7 @@ let loading=false;
 /** Only check for record presence here. TrialStore owns all validation and migration after entry. */
 function titleContext():TitleContext{
  try{
-  // This is the existing public storage key (G11.4), not a second save reader.
+  // This is the existing public storage key (docs/05-制作流程/实现备注.md, section 1), not a second save reader.
   const hasRecord=window.localStorage.getItem('dungeon-trial.player.v1')!==null;
   return {hasRecord,status:hasRecord?'pending':'empty',error:'',saveLine:'读取存档详情需要加载游戏',asking:false,exported:false};
  }catch{

@@ -35,9 +35,17 @@ test('S81 all four policies finish only by boss victory or wipe, with settlement
   assert.equal(result.games.filter(g=>g.outcome==='timeout').length,0,'stuck games for '+policy+': '+result.games.filter(g=>g.outcome==='timeout').map(g=>g.reason).join(' | '));
   assert.ok(result.games.every(g=>g.outcome==='won'||g.outcome==='wipe'),policy+': unexpected outcome');
   assert.ok(result.st.probes>0&&result.st.rejections>0,policy+': soak did not verify rejected commands');
+  assert.ok(result.games.every(g=>g.reckless===false),policy+': formal policy run is marked reckless');
   for(const x of result.extra){
    assert.ok(Array.isArray(x.summary.brought),policy+': missing brought-partner summary');
    assert.ok(Array.isArray(x.summary.shards),policy+': missing shard summary');
+   assert.ok(x.activity?.rank&&x.summary?.rank,policy+': missing rank observation or settlement rank');
+   assert.equal(x.activity.rank.cumulative,x.summary.rank.after,policy+': observed cumulative rank differs from the settled total');
+   assert.equal(x.activity.rank.teamLevel,x.summary.rank.levelAfter,policy+': observed team level differs from the settled level');
+   for(const [id,counters] of Object.entries(x.activity.commissions.byType)){
+    assert.equal(counters.accepted,counters.completed+counters.failed,
+     policy+'/'+id+': each accepted commission must be completed or counted as failed, including terminal voids');
+   }
   }
   result.games.forEach((g,n)=>{assert.ok(Number.isInteger(g.kills)&&g.kills>=0);assert.equal(result.extra[n].kills,g.kills);});
   for(const x of result.extra)if(x.bossRun){for(const k of ['reached','contacted','defeated','survivors','bossHpLeft'])assert.ok(Object.hasOwn(x,k),k);}
@@ -46,8 +54,8 @@ test('S81 all four policies finish only by boss victory or wipe, with settlement
  }
 });
 
-// 固定样本按索引递增筛选：排除强制全灭索引（i%4===3），且5局都无超时、至少一次接触首领。
-// 更小的候选索引0、1、2、4、5、6、8、9、10均为零接触；index 12是首个满足项。
+// 固定 seed 96028（playSeed 索引 12）验证 hard 难度传入真实局，且 cautious 继续寻找首领。
+// 该样本不用于声明 8.6 机器人改版后仍是较小索引中的最早接触样本。
 test('S81 difficult setting is passed into real expeditions and cautious keeps seeking the boss',async()=>{
  const result=await playSeed(12,{policy:'cautious',difficulty:'hard'});
  assert.equal(result.difficulty,'hard');

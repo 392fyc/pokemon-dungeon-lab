@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>迷宫画面</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;800&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#e8d48a}a:hover{color:#fff1b8}
+.map{background-image:url(/_blob/b481dbe069fb79bd4221ecdf76f152e4);background-size:cover;background-position:center;image-rendering:pixelated}
+.mon{image-rendering:pixelated}
+</style>
+</helmet>
+<div style="width: 1280px; height: 720px; position: relative; overflow: hidden; background: #0b0f0d; font-family: 'Noto Sans SC', system-ui, sans-serif; color: #f2eee0">
+  <div class="map" aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1280px; height: 610px"></div>
+  <!-- 暗度场示意：队伍周围的光圈平滑过渡到“探索过”的暗度，不再是一格一格的方块 -->
+  <div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 1280px; height: 610px; background: radial-gradient(circle at 650px 330px, rgba(22,26,18,0) 0, rgba(22,26,18,0) 120px, rgba(22,26,18,0.3) 190px, rgba(22,26,18,0.58) 280px, rgba(16,18,14,0.62) 520px, rgba(10,12,10,0.82) 760px)"></div>
+
+  <!-- 左上：队伍卡片（点卡片切换操控；下面一行是增益／减益） -->
+  <div style="position: absolute; left: 14px; top: 14px; display: flex; flex-direction: column; gap: 6px">
+    <sc-for list="{{team}}" as="t" hint-placeholder-count="3">
+      <button type="button" onClick="{{t.pick}}" aria-pressed="{{t.active}}" style="font: inherit; color: inherit; text-align: left; width: 236px; padding: 6px 10px; background: rgba(10,15,12,0.85); border: {{t.border}}; border-radius: 10px; box-sizing: border-box; display: flex; gap: 8px; align-items: center; cursor: pointer">
+        <img class="mon" src="{{t.img}}" alt="" style="height: 34px; width: 34px; object-fit: contain">
+        <span style="flex: 1; display: flex; flex-direction: column; gap: 3px">
+          <span style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 600"><span>{{t.name}}</span><span style="font-size: 11px; color: #c9c4b0">{{t.hp}}</span></span>
+          <span style="height: 6px; background: #2a2f2a; border-radius: 4px"><span style="display: block; width: {{t.pct}}; height: 6px; background: {{t.hpColor}}; border-radius: 4px"></span></span>
+          <span style="display: flex; gap: 4px; min-height: 16px">
+            <sc-for list="{{t.status}}" as="s" hint-placeholder-count="2">
+              <span style="font-size: 10px; line-height: 16px; padding: 0 5px; border-radius: 4px; background: {{s.bg}}">{{s.text}}</span>
+            </sc-for>
+          </span>
+        </span>
+      </button>
+    </sc-for>
+  </div>
+
+  <!-- 右上：小地图 -->
+  <div style="position: absolute; right: 14px; top: 14px; width: 220px; padding: 8px; background: rgba(10,15,12,0.85); border-radius: 10px; box-sizing: border-box">
+    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #c9c4b0"><span>苔石洞 1F</span><span>第 42 轮</span></div>
+    <div aria-hidden="true" style="margin-top: 6px; height: 116px; background: #121814; border-radius: 6px; position: relative">
+      <div style="position: absolute; left: 18px; top: 18px; width: 52px; height: 34px; border: 2px solid #8a9a7a"></div>
+      <div style="position: absolute; left: 70px; top: 34px; width: 40px; height: 2px; background: #8a9a7a"></div>
+      <div style="position: absolute; left: 110px; top: 22px; width: 64px; height: 44px; border: 2px solid #8a9a7a"></div>
+      <div style="position: absolute; left: 140px; top: 42px; width: 7px; height: 7px; background: #fff1b8; border-radius: 50%"></div>
+      <div style="position: absolute; left: 154px; top: 52px; width: 6px; height: 6px; background: #e06060; border-radius: 50%"></div>
+    </div>
+  </div>
+
+  <!-- 右侧：委托与祝福 -->
+  <div style="position: absolute; right: 14px; top: 176px; width: 220px; padding: 10px 12px; background: rgba(10,15,12,0.85); border-radius: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 5px; font-size: 12px">
+    <div style="color: #e8d48a; font-weight: 600">委托 1/3</div>
+    <div>猎手 · 本层再击倒 2 只</div>
+    <div style="color: #e8d48a; font-weight: 600; margin-top: 4px">祝福</div>
+    <div>号召 · 招募概率 45％</div>
+  </div>
+
+  <!-- 消息记录 -->
+  <div style="position: absolute; left: 14px; bottom: 132px; width: 500px; padding: 8px 12px; background: rgba(10,15,12,0.7); border-radius: 10px; font-size: 13px; line-height: 1.65">
+    <div style="color: #8f8a78">小火龙 的 火花！小拉达 受到 8 点伤害</div>
+    <div style="color: #b9b3a0">小拉达 陷入了 灼伤</div>
+    <div>杰尼龟 捡到了 橙橙果</div>
+  </div>
+
+  <!-- 右下：快捷键说明（半透明小卡） -->
+  <div style="position: absolute; right: 14px; bottom: 132px; padding: 8px 12px; background: rgba(10,15,12,0.55); border-radius: 8px; font-size: 11px; line-height: 1.75; color: #d6d0bc; display: grid; grid-template-columns: auto auto; column-gap: 10px">
+    <span style="color: #e8d48a">WASD</span><span>移动</span><span style="color: #e8d48a">W+D 等</span><span>斜向移动</span>
+    <span style="color: #e8d48a">1—4</span><span>招式</span>
+    <span style="color: #e8d48a">5—0</span><span>快捷物品</span>
+    <span style="color: #e8d48a">Tab</span><span>切换操控</span>
+    <span style="color: #e8d48a">B</span><span>背包</span>
+  </div>
+
+  <!-- 底栏 -->
+  <div style="position: absolute; left: 0; bottom: 0; width: 1280px; height: 118px; background: linear-gradient(180deg, #18211c, #101612); border-top: 2px solid #4d5d50; box-sizing: border-box; padding: 10px 16px; display: flex; gap: 14px; align-items: stretch">
+    <div style="width: 286px; display: flex; flex-direction: column; gap: 6px">
+      <!-- 全队共享经验，放在头像上方 -->
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #c9c4b0">
+        <span style="white-space: nowrap">队伍 Lv7</span>
+        <span style="flex: 1; height: 5px; background: #2a2f2a; border-radius: 3px"><span style="display: block; width: 34%; height: 5px; background: #7fb3e8; border-radius: 3px"></span></span>
+        <span style="white-space: nowrap">12/35</span>
+      </div>
+      <div style="flex: 1; display: flex; gap: 10px; align-items: center">
+        <div style="width: 70px; height: 70px; border-radius: 12px; background: radial-gradient(circle at 50% 70%, #2a3a30 0, #141c18 75%); display: flex; align-items: center; justify-content: center"><img class="mon" src="{{cur.img}}" alt="{{cur.name}}" style="height: 56px"></div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 5px">
+          <div style="font-size: 17px; font-weight: 800">{{cur.name}}</div>
+          <div style="height: 10px; background: #2a2f2a; border-radius: 5px"><div style="width: {{cur.pct}}; height: 10px; background: {{cur.hpColor}}; border-radius: 5px"></div></div>
+          <div style="font-size: 12px; color: #c9c4b0">HP {{cur.hp}}</div>
+        </div>
+      </div>
+    </div>
+    <div style="flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+      <sc-for list="{{cur.moves}}" as="m" hint-placeholder-count="4">
+        <button type="button" disabled="{{m.empty}}" onMouseEnter="{{m.enter}}" onMouseLeave="{{m.leave}}" onFocus="{{m.enter}}" onBlur="{{m.leave}}" style="font: inherit; color: #f2eee0; text-align: left; background: {{m.bg}}; border: {{m.border}}; border-radius: 10px; padding: 8px 12px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer">
+          <span style="font-size: 16px; font-weight: 700">{{m.name}}</span>
+          <span style="display: flex; justify-content: space-between; font-size: 11px; color: rgba(242,238,224,0.8)"><span>{{m.type}}</span><span>{{m.pp}}</span></span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, 60px); grid-template-rows: repeat(2, 44px); gap: 6px; align-content: center">
+      <sc-for list="{{quick}}" as="q" hint-placeholder-count="6">
+        <button type="button" aria-label="{{q.label}}" style="width: 60px; height: 44px; box-sizing: border-box; overflow: hidden; font: inherit; font-size: 11px; color: inherit; background: {{q.bg}}; border: {{q.border}}; border-radius: 8px; line-height: 1.25; padding: 2px">{{q.text}}</button>
+      </sc-for>
+    </div>
+    <div style="display: flex; align-items: center">
+      <button type="button" onClick="{{toggleBag}}" style="font: inherit; font-size: 14px; font-weight: 600; color: #0b0f0d; background: #e8d48a; border: 0; border-radius: 24px; width: 92px; height: 48px; cursor: pointer">背包</button>
+    </div>
+  </div>
+
+  <!-- 招式说明：鼠标移到招式卡上时显示 -->
+  <sc-if value="{{tip}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 310px; bottom: 126px; width: 380px; padding: 12px 14px; background: rgba(12,18,15,0.96); border: 1px solid #e8d48a; border-radius: 12px; box-sizing: border-box; display: flex; gap: 14px">
+      <div role="img" aria-label="范围示意" style="display: grid; grid-template-columns: repeat(5, 12px); grid-auto-rows: 12px; gap: 2px; align-self: center">
+        <sc-for list="{{tip.grid}}" as="c" hint-placeholder-count="25"><span style="background: {{c}}; border-radius: 2px"></span></sc-for>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 6px">
+        <div style="display: flex; gap: 8px; align-items: center"><span style="font-size: 16px; font-weight: 700">{{tip.name}}</span><span style="font-size: 11px; padding: 1px 7px; border-radius: 9px; background: {{tip.bg}}">{{tip.type}}</span><span style="font-size: 11px; padding: 1px 7px; border-radius: 9px; background: #2a3a30">{{tip.cat}}</span></div>
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; font-size: 11px">
+          <span><span style="display: block; color: #8f8a78">威力</span>{{tip.pow}}</span>
+          <span><span style="display: block; color: #8f8a78">命中</span>{{tip.acc}}</span>
+          <span><span style="display: block; color: #8f8a78">PP</span>{{tip.pp}}</span>
+          <span><span style="display: block; color: #8f8a78">射程</span>1 格</span>
+          <span><span style="display: block; color: #8f8a78">范围</span>单体</span>
+        </div>
+        <div style="font-size: 12px; color: #d6d0bc; line-height: 1.5">{{tip.desc}}</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- 背包：调整快捷物品 -->
+  <sc-if value="{{bagOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 330px; top: 120px; width: 620px; padding: 18px; background: rgba(12,18,15,0.96); border: 2px solid #e8d48a; border-radius: 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 19px; font-weight: 800">背包</span><button type="button" aria-label="关闭" onClick="{{toggleBag}}" style="font: inherit; color: inherit; background: transparent; border: 1px solid #4d5d50; border-radius: 8px; width: 44px; height: 36px; cursor: pointer">✕</button></div>
+      <div style="font-size: 13px; color: #c9c4b0">快捷物品</div>
+      <div style="display: grid; grid-template-columns: repeat(6, 76px); grid-auto-rows: 56px; gap: 8px">
+        <sc-for list="{{quick}}" as="q" hint-placeholder-count="6">
+          <div style="width: 76px; height: 56px; box-sizing: border-box; font-size: 12px; background: {{q.bg}}; border: {{q.border}}; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.3">{{q.text}}</div>
+        </sc-for>
+      </div>
+      <div role="tablist" style="display: flex; gap: 6px">
+        <sc-for list="{{bagTabs}}" as="tab" hint-placeholder-count="5">
+          <button type="button" role="tab" aria-selected="{{tab.sel}}" onClick="{{tab.pick}}" style="font: inherit; font-size: 13px; color: {{tab.color}}; background: {{tab.bg}}; border: 1px solid #4d5d50; border-radius: 16px; height: 32px; padding: 0 14px; cursor: pointer">{{tab.name}}</button>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(6, 76px); grid-auto-rows: 56px; gap: 8px; min-height: 120px">
+        <sc-for list="{{bagItems}}" as="it" hint-placeholder-count="4">
+          <div style="width: 76px; height: 56px; box-sizing: border-box; font-size: 12px; background: #1f2b24; border: 1px solid #4d5d50; border-radius: 8px; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.3; white-space: pre-line">{{it.text}}</div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { active: 'squirtle', bag: false }; }
+  renderVals() {
+    const TC = { 一般: '#5f5e50', 水: '#2b5f8a', 火: '#a8482a', 草: '#3f7a3a' };
+    const D = { 撞击: ['物理', 6, '95%', '用整个身体撞向对手进行攻击。'], 水枪: ['特殊', 5, '88%', '向对手猛烈地喷射水流进行攻击。'], 抓: ['物理', 6, '90%', '用坚硬且无比锋利的爪子抓对手进行攻击。'], 火花: ['特殊', 7, '88%', '向对手发射小型火焰进行攻击。有时会让对手陷入灼伤状态。'], 种子炸弹: ['物理', 16, '88%', '将许多外壳坚硬的大种子从上方砸下攻击对手。'] };
+    const GRID = Array.from({ length: 25 }, (_, i) => (i === 12 ? '#7fbfef' : i === 7 ? '#e8d48a' : [6, 8, 11, 13, 16, 17, 18].includes(i) ? '#6b6240' : '#2a332d'));
+    const mv = (name, type, pp) => {
+      const d = D[name];
+      const tipData = { name, type, pp, bg: TC[type], cat: d[0], pow: d[1], acc: d[2], desc: d[3], grid: GRID };
+      return { name, type, pp, empty: false, bg: TC[type], border: '1px solid rgba(255,255,255,0.18)', enter: () => this.setState({ tip: tipData }), leave: () => this.setState({ tip: null }) };
+    };
+    const none = { name: '', type: '', pp: '', enter: () => {}, leave: () => {}, empty: true, bg: '#141c18', border: '1px dashed #3d4a40' };
+    const buff = (text) => ({ text, bg: '#2f6a3a' }), debuff = (text) => ({ text, bg: '#7a2f2f' });
+    const members = [
+      { id: 'squirtle', name: '杰尼龟', hp: '16/20', pct: '80%', hpColor: '#6ccf6c', img: '/_blob/d4d532ca9fcb9069ef5d855955b8b4c6', status: [debuff('防御↓1')], moves: [mv('撞击', '一般', '30/30'), mv('水枪', '水', '14/17'), none, none] },
+      { id: 'charmander', name: '小火龙', hp: '10/19', pct: '53%', hpColor: '#e8c34a', img: '/_blob/601a86936a8f911e833508b9e64a6cf5', status: [buff('攻击↑1'), debuff('防御↓1')], moves: [mv('抓', '一般', '25/28'), mv('火花', '火', '11/15'), none, none] },
+      { id: 'bulbasaur', name: '妙蛙种子', hp: '21/21', pct: '100%', hpColor: '#6ccf6c', img: '/_blob/17dbff1ca9e0f7160b16ceb9d11628bc', status: [debuff('防御↓1')], moves: [mv('撞击', '一般', '30/30'), mv('种子炸弹', '草', '9/11'), none, none] }
+    ];
+    const active = this.state.active;
+    const team = members.map((m) => ({ ...m, active: m.id === active ? 'true' : 'false', border: m.id === active ? '2px solid #fff1b8' : '1px solid #3d4a40', pick: () => this.setState({ active: m.id }) }));
+    const item = (text, label) => ({ text, label, bg: '#1f2b24', border: '1px solid #4d5d50' });
+    const slot = { text: '', label: '空快捷格', bg: '#141c18', border: '1px dashed #3d4a40' };
+    const quick = [item('橙橙果 ×2', '橙橙果 ×2'), item('PP剂 ×1', 'PP多项小补剂 ×1'), item('大树果 ×1', '大树果 ×1'), slot, slot, slot];
+    const ALL = [
+      { text: '橙橙果\n×2', cat: 'berry' }, { text: '大树果\n×1', cat: 'berry' },
+      { text: 'PP多项\n小补剂 ×1', cat: 'drink' }, { text: '全员\nPP补剂 ×1', cat: 'drink' },
+      { text: '招式机\n守住', cat: 'tm' }, { text: '招式机\n光墙', cat: 'tm' }
+    ];
+    const TABS = [['all', '全部'], ['berry', '树果'], ['drink', '补剂'], ['tm', '招式机'], ['other', '其他']];
+    const curTab = this.state.bagTab || 'all';
+    const bagTabs = TABS.map(([id, name]) => ({ name, sel: id === curTab ? 'true' : 'false', bg: id === curTab ? '#e8d48a' : 'transparent', color: id === curTab ? '#0b0f0d' : '#f2eee0', pick: () => this.setState({ bagTab: id }) }));
+    const bagItems = ALL.filter((x) => curTab === 'all' || x.cat === curTab);
+    return { team, cur: members.find((m) => m.id === active), quick, tip: this.state.tip || false, bagTabs, bagItems, bagOpen: this.state.bag, toggleBag: () => this.setState({ bag: !this.state.bag }) };
+  }
+}
+</script>
+</body>
+</html>

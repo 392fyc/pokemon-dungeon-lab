@@ -893,6 +893,10 @@ export function decorationCandidates(input: DecorationInput): DecorationCandidat
 export function selectDecorations(input: DecorationInput): Decoration[] {
   const frames = input.atlas?.frames;
   if (!frames?.length) return [];
+  const framesByKind: Record<DecorationKind, string[]> = {
+    floor: frames.filter((frame) => frame.startsWith('floor-')),
+    wallTop: frames.filter((frame) => frame.startsWith('wall-')),
+  };
   const map = prepareTerrainMap(input.map);
   const candidates = decorationCandidates({ ...input, map });
   const placed: DecorationCandidate[] = [];
@@ -902,13 +906,15 @@ export function selectDecorations(input: DecorationInput): Decoration[] {
   }
   return placed
     .filter((candidate) => map.known.has(cellKey(candidate.x, candidate.y)))
+    .filter((candidate) => framesByKind[candidate.kind].length > 0)
     .map((candidate) => {
       const frameHash = hash32(candidate.x, candidate.y, 'deco', input.seed, input.level, 0x51ed270b);
+      const kindFrames = framesByKind[candidate.kind];
       return {
         x: candidate.x,
         y: candidate.y,
         kind: candidate.kind,
-        frame: frames[frameHash % frames.length],
+        frame: kindFrames[frameHash % kindFrames.length],
       };
     });
 }

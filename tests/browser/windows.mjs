@@ -1166,18 +1166,39 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
   const room=[...rooms].sort((a,b)=>shoreScore(b)-shoreScore(a)||b.w*b.h-a.w*a.h)[0];
   const fixture=structuredClone(original),leader=fixture.units[fixture.leader];
   for(const id of fixture.queue)if(id!==fixture.leader){fixture.units[id].hp=0;fixture.units[id].pos=null;}
-  leader.pos={x:room.x+Math.floor(room.w/2),y:room.y+Math.floor(room.h/2)};
+  // 镜头向左一格，固定seed73同一房间中三个主题都能展示真装饰和岸边。
+  leader.pos={x:room.x+Math.floor(room.w/2)-1,y:room.y+Math.floor(room.h/2)};
   fixture.seen=fixture.floor.map(c=>`${c.x},${c.y}`);fixture.seenWalls=[];
-  const screenshots=[],exports=[];
+  const screenshots=[],exports=[],decorationViews=[];
   for(const [index,theme] of ['moss','wet','ash'].entries()){
    // Hold geometry and camera fixed to compare palettes; this fixture does not prove three-floor gameplay.
    const shown=structuredClone(fixture);shown.dungeon.level=index+1;
    if(index){await p.reload();await p.locator('#start').waitFor();}
    await startMemory(p,shown);
    await p.getByText('开发者菜单：检查入口（隔离存储）',{exact:true}).click();
+   await p.waitForFunction(theme=>{
+    const v=window.trial.view(),c=v?.cameraView;
+    return c?.width>0&&v.decorations?.some(d=>d.texture===`deco-${theme}`&&d.x+20>c.x&&d.x-20<c.x+c.width&&d.y>c.y&&d.y-40<c.y+c.height);
+   },theme,{timeout:10000}).catch(async error=>{
+    fs.writeFileSync(output+`decor-visibility-failure-${theme}.json`,JSON.stringify(await p.evaluate(()=>({view:window.trial.view(),camera:window.trial.camera()})),null,2));
+    throw error;
+   });
    const view=await p.evaluate(()=>window.trial.view());
    for(const layer of ['floor','edge','liquid','wall'])assert.ok(view.tiles.includes(`terrain-${theme}-${layer}`),`${theme}: ${layer} layer actually drawn`);
    assert.ok(!view.tiles.some(t=>/^(floor|wall)(-|$)/.test(t)),'roguelike uses runtime terrain throughout');
+   const drawn=view.decorations.filter(d=>d.texture===`deco-${theme}`),camera=view.cameraView;
+   const visible=drawn.filter(d=>d.x+20>camera.x&&d.x-20<camera.x+camera.width&&d.y>camera.y&&d.y-40<camera.y+camera.height);
+   assert.ok(visible.length>0,`${theme}: the screenshot viewport actually contains decorations`);
+   const ground=new Set(shown.floor.map(c=>`${c.x},${c.y}`));
+   const atlasFrames=JSON.parse(fs.readFileSync(`public/assets/tiles/deco/deco-${theme}.json`,'utf8')).frames;
+   for(const deco of drawn){
+    const x=Math.floor(deco.x/40),y=Math.round(deco.y/40)-1;
+    assert.ok(Object.hasOwn(atlasFrames,deco.frame),'drawn frame exists in the real atlas');
+    assert.ok(String(deco.frame).startsWith(ground.has(`${x},${y}`)?'floor-':'wall-'),'drawn frame matches the terrain kind');
+    assert.equal(deco.y,(y+1)*40,'the frame bottom is aligned with the cell bottom; baked 2px padding is not repeated');
+    assert.equal(deco.depth,1.5,'decorations stay between terrain and units');
+   }
+   decorationViews.push({theme,drawn:drawn.length,visible:visible.length,visibleFrames:[...new Set(visible.map(d=>d.frame))].sort()});
    const file=`windows-85b-${theme}.png`;await p.screenshot({path:output+file,fullPage:true});screenshots.push(file);
    await p.locator('#terrain-theme').selectOption(theme);
    for(const layer of ['floor','edge','liquid','wall']){
@@ -1194,11 +1215,13 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
   await startMemory(p,boundary);
   const knownFloor=new Set(boundary.seen),known=new Set(boundary.seenWalls);
   for(const c of boundary.floor)if(knownFloor.has(`${c.x},${c.y}`))for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)known.add(`${c.x+dx},${c.y+dy}`);
-  const rendered=await p.evaluate(()=>window.trial.view().terrain);
+  const boundaryView=await p.evaluate(()=>window.trial.view());
+  const rendered=boundaryView.terrain;
   for(const t of rendered)assert.ok(known.has(`${Math.floor(t.x/40)},${Math.floor(t.y/40)}`),'no terrain outside the known map is drawn');
+  for(const d of boundaryView.decorations)assert.ok(known.has(`${Math.floor(d.x/40)},${Math.round(d.y/40)-1}`),'unknown cells do not display decorations');
   const file='windows-85b-unknown-boundary.png';await p.screenshot({path:output+file,fullPage:true});screenshots.push(file);
   assert.deepEqual(errors,[]);
-  const report={fixtureBoundary:'真实 seed73 第2层地图与第二地形，固定相机与房间，分别套用三个主题；独立边界图重新运行reveal。截图不代表完整游玩。',screenshots,exports,knownBoundaryOnly:true};
+  const report={fixtureBoundary:'真实 seed73 第2层地图与第二地形，固定相机与房间，分别套用三个主题；独立边界图重新运行reveal。截图不代表完整游玩。',screenshots,exports,decorationViews,knownBoundaryOnly:true};
   fs.writeFileSync(output+'browser-terrain.json',JSON.stringify(report,null,2));return report;
  }finally{await context.close();}
 });

@@ -25,6 +25,8 @@ export function preloadArt(scene:Phaser.Scene):void {
   // 7.3 theme tiles (named by the key the renderer asks for); a missing file only means the stone tile is tinted instead.
   for (const t of ['floor-wet', 'wall-wet', 'floor-ash', 'wall-basalt', 'floor-arena']) scene.load.image(t, base + `tiles/${t}.png`);
   scene.load.image('wall', base + 'tiles/wall-rock.png');
+  for (const theme of ['moss', 'wet', 'ash'])
+    scene.load.atlas(`deco-${theme}`, base + `tiles/deco/deco-${theme}.png`, base + `tiles/deco/deco-${theme}.json`);
   scene.load.image('exit', base + 'tiles/marker-exit.png');
   scene.load.image('goal', base + 'props/marker-goal.png');
   scene.load.image('item', base + 'props/marker-item.png');

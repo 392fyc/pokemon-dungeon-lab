@@ -507,16 +507,18 @@ test('T7: decorations use eligible cells, honor exclusions and spacing, obey den
   assert.ok(Math.abs(floorRate - TERRAIN_THEMES.moss.decoDensity.floor) <= 0.02, `floor decoration rate ${floorRate}`);
   assert.ok(Math.abs(wallTopRate - TERRAIN_THEMES.moss.decoDensity.wallTop) <= 0.02, `wall-top decoration rate ${wallTopRate}`);
 
-  const atlas = {frames: ['stub-0', 'stub-1', 'stub-2']};
+  const atlas = {frames: ['floor-rocks', 'floor-pebbles', 'wall-moss', 'wall-rocks']};
   const full = selectDecorations({...input, seed: 81, atlas});
   assert.ok(full.length > 0, 'the fixture map receives decorations');
   for (let i = 0; i < full.length; i++) {
     const d = full[i];
     assert.ok(atlas.frames.includes(d.frame), `decoration ${cellKey(d)} uses a substitute atlas frame`);
     if (d.kind === 'floor') {
+      assert.ok(d.frame.startsWith('floor-'), `ground decoration ${cellKey(d)} uses a ground frame`);
       assert.ok(floorSet.has(cellKey(d)), `floor decoration ${cellKey(d)} is on ground`);
       assert.ok(d.x > 2 && d.x < 60 && d.y > 2 && d.y < 30, `floor decoration ${cellKey(d)} has no wall neighbor`);
     } else {
+      assert.ok(d.frame.startsWith('wall-'), `wall-top decoration ${cellKey(d)} uses a wall frame`);
       assert.ok(!floorSet.has(cellKey(d)), `wall-top decoration ${cellKey(d)} is on a wall`);
       assert.ok(!floorSet.has(key(d.x, d.y - 1)) && !floorSet.has(key(d.x, d.y + 1)),
         `wall-top decoration ${cellKey(d)} has wall north and south`);
@@ -534,6 +536,14 @@ test('T7: decorations use eligible cells, honor exclusions and spacing, obey den
   assert.ok(!excluded.some((candidate) => cellKey(candidate) === cellKey(selected)), 'excluded cells are never selected');
   const afterExclusion = selectDecorations({...input, seed: 81, atlas, excluded: [cellKey(selected)]});
   assert.ok(!afterExclusion.some((decoration) => cellKey(decoration) === cellKey(selected)), 'excluded cells never receive a displayed decoration');
+
+  const floorOnlyAtlas = {frames: ['floor-rocks']};
+  const floorOnly = selectDecorations({...input, seed: 81, atlas: floorOnlyAtlas});
+  assert.ok(floorOnly.length > 0 && floorOnly.every((d) => d.kind === 'floor' && d.frame.startsWith('floor-')),
+    'a missing wall frame hides wall-top candidates without changing the floor placements');
+  assert.deepEqual(floorOnly.map(({x, y, kind}) => ({x, y, kind})),
+    full.filter((d) => d.kind === 'floor').map(({x, y, kind}) => ({x, y, kind})),
+    'wall-top candidates still go through the shared spacing pass when their kind has no atlas frames');
 
   const partialMap = prepareTerrainMap({width, height, floor, seen: [floor[300] ? cellKey(floor[300]) : ''], seenWalls: []});
   const partial = selectDecorations({...input, map: partialMap, seed: 81, atlas});

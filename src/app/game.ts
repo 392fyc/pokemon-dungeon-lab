@@ -515,7 +515,7 @@ class BoardScene extends Phaser.Scene {
   // Arrival is kept separately from the current leader so exploring never moves decorations.
   if(s.arrival)excluded.push(s.arrival);
   for(const deco of selectDecorations({map,theme,seed,level,excluded,atlas})){
-   const c=center(deco);this.tiles.push(this.add.image(c.x,c.y+g.cell/2-2*scale,decoKey,deco.frame).setOrigin(.5,1).setScale(scale).setDepth(1.5));
+   const c=center(deco);this.tiles.push(this.add.image(c.x,c.y+g.cell/2,decoKey,deco.frame).setOrigin(.5,1).setScale(scale).setDepth(1.5));
   }
  }else{
  const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){if(fog&&!s.seen.includes(key(p)))continue;walls.add(key(q));tileImg('wall',wallName,center(q),s.seen.includes(key(p))?.85:.3);}}
@@ -562,7 +562,7 @@ class BoardScene extends Phaser.Scene {
  exportTerrain(theme:TerrainThemeKey,layer:TerrainLayer|'floor'){exportTerrainArt(this,theme,layer);}
  skip(){this.skipNow?.();}
  /** Read-only view of what is drawn, for the browser checks: the tile textures in use, and the boss sprite's scale next to a normal unit's, with its labels. */
- debug(){const unit=(id:string)=>{const v=this.views.get(id);return v?{scale:Number(v.sprite.scaleX.toFixed(3)),labels:v.labels.map(l=>l.t.text)}:null;};return {tiles:[...new Set(this.tiles.map(t=>t.texture.key))].sort(),terrain:this.tiles.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),boss:unit('boss'),leader:unit(live()?.leader??'')};}
+ debug(){const unit=(id:string)=>{const v=this.views.get(id);return v?{scale:Number(v.sprite.scaleX.toFixed(3)),labels:v.labels.map(l=>l.t.text)}:null;};const worldView=this.cameras.main.worldView;return {tiles:[...new Set(this.tiles.map(t=>t.texture.key))].sort(),terrain:this.tiles.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:this.tiles.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},boss:unit('boss'),leader:unit(live()?.leader??'')};}
 }
 return BoardScene;
 }

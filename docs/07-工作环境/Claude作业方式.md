@@ -2,7 +2,7 @@
 tags:
   - 工作环境/配置
   - 项目/分工
-updated: 2026-11-01
+updated: 2026-11-03
 ---
 # Claude 主会话的作业方式
 
@@ -54,7 +54,11 @@ updated: 2026-11-01
 | 环境 | `pokemon-dungeon-lab`，只绑定本仓库，不放密钥；安装脚本装 Node 24.22.1（按官方 SHASUMS256 校验）与 Playwright 1.59.1 的 Chromium，环境变量 `PLAYWRIGHT_MODULE` 指向它 |
 | Linux 实测 | 云会话在 PR #120 评论记录：`npm test` 只跳过 1 项（缺数据快照），`test:acceptance`、`test:browser` 全部通过；Linux 结果不代替 Windows |
 | 身份 | 任务说明以 `[CLOUD-OF=main]` 开头；不是 lane 会话，不认领 issue、不用 lane bus |
-| 沟通 | 本机 `main` 用跨会话消息直接派任务（云会话权限模式不同时，消息要用户在云会话里批准后才送达）；云会话不能回发消息，结论写成 PR 评论或草稿 PR，`main` 从 GitHub 读取；需要转给 Codex 的内容由用户转交 |
+| 派活 | 本机 `main` 用 `SendMessage`，收件人写会话名“Pokemon Dungeon Lab 云端工作流程”。它不在本机会话列表（`list_sessions`）里，要用 `ListAgents` 确认它在线、空闲（2026-11-03 main 观察：`list_sessions` 含已归档共 14 个会话，没有它；`ListAgents` 列出它为 cloud、idle）。云会话权限模式不同时，消息要用户在云会话里批准后才送达。每条任务说明首行是 `[CLOUD-OF=main]`，并写明：任务和对应的 Issue 或 PR、要读的 KB 全文（K3）、限时、交付形式 |
+| 回报 | 云会话不能回发消息，结论写成 PR 评论或草稿 PR；`main` 用 `gh pr view <号> --comments` 读对话评论，逐行审查评论用 `gh api repos/392fyc/pokemon-dungeon-lab/pulls/<号>/comments` 读。需要转给 Codex 的内容由 `main` 经 lane bus 转达 |
+| KB 查询 | 按 [KB 维护规则](../01-现行规则/KB维护规则.md) K3 读，回答规则问题或给结论前读完游戏规则全文；每条结论按 K8 查证并附依据，查不到的列为“待查” |
+| KB 写入 | 只在自己的任务分支、经 PR 写，按 K4 同步更新对应文档并写 `KB:` 行；决策登记只登记能在 Issue、PR 或现行文档里逐字找到的用户原话，云会话自己的判断不写成用户决定（K6）；PR 由 `main` 按 K9 审查后合并 |
+| KB 维护 | 里程碑收尾整理（K10）由 `main` 做；云会话发现过时或冲突的文字，在 PR 评论里列出位置和依据，由 `main` 处理 |
 | 限制 | 看不到本机 lane bus、`.tmp/`、`.artifacts/`；不推送 `main`、不强推、不改他人分支；`main` 在线时不合并（`main` 下线时按 D-20261101-18 代行） |
 
 ## 共同规则

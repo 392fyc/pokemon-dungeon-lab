@@ -60,7 +60,7 @@ function rngThatInvitesAfterBossDrop(){
   throw new Error('could not find a deterministic invitation draw');
 }
 
-test('three difficulty multipliers scale the generated boss HP to 39, 56 and 79',()=>{
+test('three difficulty multipliers scale the generated boss HP to 53, 75 and 105',()=>{
   assert.deepEqual(DIFFICULTY,{easy:0.28,normal:0.4,hard:0.56});
   assert.ok(isDifficulty('easy')&&isDifficulty('normal')&&isDifficulty('hard'));
   assert.equal(isDifficulty('extreme'),false);
@@ -68,7 +68,7 @@ test('three difficulty multipliers scale the generated boss HP to 39, 56 and 79'
     const floor=generateFloor(39,3,{width:36,height:24,floors:3,boss:true,roguelike:true,difficulty});
     return floor.enemies.find(enemy=>enemy.boss).hp;
   });
-  assert.deepEqual(actual,[39,56,79]);
+  assert.deepEqual(actual,[53,75,105]);
 });
 
 test('the 8.2 generator has no exits even without the optional roguelike marker and uses normal HP',()=>{
@@ -77,7 +77,7 @@ test('the 8.2 generator has no exits even without the optional roguelike marker 
   const last=generateFloor(39,3,params);
   assert.equal(first.points.some(point=>point.kind==='exit'||point.kind==='up'),false);
   assert.equal(last.points.some(point=>point.kind==='exit'||point.kind==='up'||point.kind==='down'),false);
-  assert.equal(last.enemies.find(enemy=>enemy.boss).hp,56);
+  assert.equal(last.enemies.find(enemy=>enemy.boss).hp,75);
   assert.equal(ENEMY_DIFFICULTY,0.4);
 });
 

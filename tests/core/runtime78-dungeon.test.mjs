@@ -45,6 +45,6 @@ test('7.8 independent streams, six enemies per floor, level bands and boss HP ar
    assert.equal(typeof e.asleep,'boolean');
   }
   assert.equal(g.enemyAiRng,(streamSeed(seed,level,'enemy-ai')+6*0x6D2B79F5)>>>0);
-  if(level===3){const boss=g.enemies.find(e=>e.boss);assert.equal(boss.level,22);assert.equal(boss.hp,56);assert.equal(boss.asleep,false);assert.equal(BOSS_CONFIG.arcanine.canMove,false);}
+  if(level===3){const boss=g.enemies.find(e=>e.boss);assert.equal(boss.level,22);assert.equal(boss.hp,75);assert.equal(boss.asleep,false);assert.equal(BOSS_CONFIG.arcanine.canMove,false);}
  }
 });

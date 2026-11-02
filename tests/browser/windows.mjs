@@ -841,7 +841,7 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
  try{
   const options=await p.locator('#fixture option').allTextContents();assert.ok(options.includes('首领层（紧邻首领）'),'the developer menu offers the boss scene: '+options);
   await start(p);
-  const s=await state(p);assert.equal(s.dungeon.level,3);assert.equal(s.dungeon.boss,true);assert.equal(s.units.boss.maxHp,56);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
+  const s=await state(p);assert.equal(s.dungeon.level,3);assert.equal(s.dungeon.boss,true);assert.equal(s.units.boss.maxHp,75);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
   const v=await p.evaluate(()=>window.trial.view());
   assert.deepEqual(v.tiles.filter(t=>/^terrain-.*-(floor|edge|wall)$/.test(t)),['terrain-ash-edge','terrain-ash-floor','terrain-ash-wall'],'runtime ash theme uses continuous floor and 47-shape edges and walls');
   assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01,'the boss is drawn 1.5 times larger: '+v.boss.scale/v.leader.scale);assert.ok(v.boss.labels.includes('首领'),'the boss carries a name tag');

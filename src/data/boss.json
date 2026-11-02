@@ -3,7 +3,7 @@
   "bosses": {
     "arcanine": {
       "levelBonus": 2,
-      "hpMultiplier": 3,
+      "hpMultiplier": 4,
       "canMove": false,
       "canBeBlownAway": false
     }

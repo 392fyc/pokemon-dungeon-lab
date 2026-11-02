@@ -4,7 +4,15 @@ import {createRequire} from 'node:module';
 import {BOSS} from '../../src/core/dungeon.ts';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const browser=await chromium.launch({...(process.env.BROWSER_EXECUTABLE ? {executablePath:process.env.BROWSER_EXECUTABLE} : {channel:'msedge'}),headless:true});
+let browser;
+// 完整Windows浏览器检查最多10分钟；到期关闭浏览器并明确失败，不跳过检查。
+const browserDeadline=setTimeout(()=>{
+ console.error('Windows browser suite exceeded its 600-second deadline');
+ Promise.resolve(browser?.close()).finally(()=>process.exit(124));
+ setTimeout(()=>process.exit(124),5000).unref();
+},600_000);
+browserDeadline.unref();
+browser=await chromium.launch({...(process.env.BROWSER_EXECUTABLE ? {executablePath:process.env.BROWSER_EXECUTABLE} : {channel:'msedge'}),headless:true});
 const results=[];
 const base=process.env.TRIAL_URL;
 if(!base) throw Error('Set TRIAL_URL to the local running trial.');
@@ -321,6 +329,7 @@ await test('阶段5 换位草稿不被方向键、句点或点地图改写',asyn
 /* Stage 6.3 expedition: fixed seed, real keyboard and mouse. Route finding below only reads the state to choose the next key. */
 const EXPEDITION_SEED=process.env.EXPEDITION_SEED??'3';
 async function walkTo(p,target,{mouseFirst=false}={}){
+ const {applyCommand}=await import('../../src/core/engine.ts');
  const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
  for(let step=0;step<150;step++){
   const s=await state(p),c=s.units[s.leader].pos;if(c.x===target.x&&c.y===target.y)return step;
@@ -328,7 +337,9 @@ async function walkTo(p,target,{mouseFirst=false}={}){
   for(let i=0;i<q.length;i++)for(const d of Object.keys(arrows)){const [dx,dy]=d.split(',').map(Number),n={x:q[i].x+dx,y:q[i].y+dy},k=n.x+','+n.y;if(floor.has(k)&&!dist.has(k)){dist.set(k,dist.get(q[i].x+','+q[i].y)+1);q.push(n);}}
   const taken=new Set([...s.queue,...s.enemies].map(id=>s.units[id]).filter(u=>u.hp>0&&u.pos).map(u=>u.pos.x+','+u.pos.y));
   const options=Object.keys(arrows).map(d=>{const [dx,dy]=d.split(',').map(Number),k=(c.x+dx)+','+(c.y+dy);return {d,dx,dy,k};})
-   .filter(o=>s.seen.includes(o.k)&&!taken.has(o.k)&&dist.has(o.k)).sort((a,b)=>dist.get(a.k)-dist.get(b.k));
+   .filter(o=>s.seen.includes(o.k)&&!taken.has(o.k)&&dist.has(o.k))
+   // A teammate may act first and occupy an apparently empty cell; plan only legal full rounds.
+   .filter(o=>applyCommand(s,{type:'round',action:{type:'move',to:{x:c.x+o.dx,y:c.y+o.dy}}}).ok).sort((a,b)=>dist.get(a.k)-dist.get(b.k));
   assert.ok(options.length,'no step available at '+JSON.stringify(c));
   if(mouseFirst&&step===0)await cell(p,c.x+options[0].dx,c.y+options[0].dy);else await key(p,arrows[options[0].d]);
  }
@@ -370,9 +381,9 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
  try{
   await openEmpty();
   const expectedFloors=[
-   {level:1,floor:355,rooms:9,arrival:{x:13,y:20},down:{x:28,y:8}},
-   {level:2,floor:453,rooms:10,arrival:{x:13,y:13},down:{x:32,y:8}},
-   {level:3,floor:373,rooms:10,arrival:{x:18,y:3},down:null}
+   {level:1,floor:385,rooms:9,arrival:{x:21,y:19},down:{x:3,y:6}},
+   {level:2,floor:395,rooms:10,arrival:{x:13,y:13},down:{x:23,y:3}},
+   {level:3,floor:381,rooms:9,arrival:{x:19,y:20},down:null}
   ];
   for(const expected of expectedFloors){
    if(expected.level>1)await resetEmpty();
@@ -392,7 +403,7 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
   }
 
   await resetEmpty();
-  const sight=makeWorld(3,1),corridorStart={x:9,y:4},corridor={x:9,y:5};
+  const sight=makeWorld(3,1),corridorStart={x:11,y:16},corridor={x:11,y:17};
   const inside=(r,p)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
   assert.ok(sight.rooms.some(r=>inside(r,corridorStart)),'the Q6 fixture starts in a room');
   assert.ok(!sight.rooms.some(r=>inside(r,corridor)),'the Q6 fixture steps into a corridor');
@@ -832,7 +843,7 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
   await start(p);
   const s=await state(p);assert.equal(s.dungeon.level,3);assert.equal(s.dungeon.boss,true);assert.equal(s.units.boss.maxHp,56);assert.equal(s.units.boss.hp,s.units.boss.maxHp);
   const v=await p.evaluate(()=>window.trial.view());
-  assert.deepEqual(v.tiles.filter(t=>/^(floor|wall)/.test(t)),['floor-arena','floor-ash','wall-basalt'],'ash theme tiles and the arena tile, no stone tiles');
+  assert.deepEqual(v.tiles.filter(t=>/^terrain-.*-(floor|edge|wall)$/.test(t)),['terrain-ash-edge','terrain-ash-floor','terrain-ash-wall'],'runtime ash theme uses continuous floor and 47-shape edges and walls');
   assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01,'the boss is drawn 1.5 times larger: '+v.boss.scale/v.leader.scale);assert.ok(v.boss.labels.includes('首领'),'the boss carries a name tag');
   await hoverCell(p,s.units.boss.pos.x,s.units.boss.pos.y);await p.waitForSelector('#enemy-info');
   const info=await p.locator('#enemy-info').innerText();
@@ -879,14 +890,14 @@ await test('难度8.1：困难选择保存，刷新保留，出发固定零钱�
   assert.deepEqual(errors,[]);return {hardSaved:true,enemyHpGreaterThanNormal:true,zeroPurse:true};
  }finally{await context.close();}
 });
-await test('7.3 新游戏→出发→第1层：苔石主题（原石地与岩壁），三层带首领的远征',async()=>{
+await test('8.5b 新游戏→出发→第1层：苔石运行时纹理，三层带首领的远征',async()=>{
  const {context,page:p,errors}=await plainContext();
  try{
   await p.goto(base);await p.locator('#title-new').waitFor();await p.locator('#title-new').click();
   await newGameClicks(p,'treecko','mudkip');
   await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   const s=await state(p);assert.equal(s.dungeon.floors,3);assert.equal(s.dungeon.boss,true);assert.equal(s.dungeon.level,1);assert.equal(s.dungeon.base,true);
-  const v=await p.evaluate(()=>window.trial.view());assert.deepEqual(v.tiles.filter(t=>/^(floor|wall)/.test(t)),['floor','wall'],'floor 1 shows the original stone tiles');
+  const v=await p.evaluate(()=>window.trial.view());assert.deepEqual(v.tiles.filter(t=>/^terrain-.*-(floor|edge|wall)$/.test(t)),['terrain-moss-edge','terrain-moss-floor','terrain-moss-wall'],'floor 1 shows runtime moss textures');
   assert.match(await p.locator('#world-label').innerText(),/第1层/);
   await p.screenshot({path:artifact+'windows-boss-3-floor1.png',fullPage:true});
   assert.deepEqual(errors,[]);return {tiles:v.tiles,floors:s.dungeon.floors};
@@ -1024,7 +1035,7 @@ await test('8.4 委托与祝福：实际接下、拒绝、三选一、放弃及�
   const checks=[];
   for(const [type,choice] of [['commission','accept'],['commission','reject'],['blessing','take'],['blessing','skip']]){
    await p.reload();await emptyReady(p);
-   const fixture=createExpedition('browser-84-'+type+'-'+choice,1,3,{members:[
+   const fixture=createExpedition('browser-84-'+type+'-'+choice,5,3,{members:[
     {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'}],leader:0},0,true,3);
    const room=fixture.adventureRooms.find(r=>r.type===type);assert.ok(room);
    fixture.units.A.pos={...room.interaction};fixture.seen=fixture.floor.map(q=>q.x+','+q.y);
@@ -1048,9 +1059,9 @@ await test('8.4 委托与祝福：实际接下、拒绝、三选一、放弃及�
    }
    assert.equal(await raw(p),null,'the developer run and its choices stay in memory');
    await p.screenshot({path:artifact+'windows-84-'+type+'-'+choice+'-result.png',fullPage:true});
-   checks.push({type,choice,round:offered.round});
+   checks.push({seed:5,type,choice,round:offered.round});
   }
-  assert.deepEqual(errors,[]);return {checks,fixtureBoundary:'seed1生成地图，初始主控放到交互格且普通敌人等待；之后通过真实按钮作选择，不代表自然探索通关。'};
+  assert.deepEqual(errors,[]);return {checks,fixtureBoundary:'seed5生成地图（8.5b后同时有委托与祝福房），初始主控放到交互格且普通敌人等待；之后通过真实按钮作选择，不代表自然探索通关。'};
  }finally{await context.close();}
 });
 await test('8.4 选机：真实三选一按钮、一次消费与挑战奖励来源文字',async()=>{
@@ -1142,5 +1153,56 @@ await test('8.5 结算：三组奖励、五项经验与升级显示',async()=>{
   return {fixtureBoundary:'预置营地经验5、两条已完成委托及只剩1HP的同行；真实等待触发全灭与结算，开发者夹具不写存档。',rankBefore:5,rankAfter:8};
  }finally{await context.close();}
 });
+
+await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async()=>{
+ const {context,page:p,errors}=await setup('K1');
+ const output='.artifacts/terrain148/';fs.mkdirSync(output,{recursive:true});
+ const {createExpedition,jumpToFloor,reveal}=await import('../../src/core/engine.ts');
+ const {initialProfile,squadOf}=await import('../../src/core/base.ts');
+ try{
+  const original=jumpToFloor(createExpedition('terrain-visual',73,3,squadOf(initialProfile()),0,true,3),2);
+  const liquid=new Set(original.liquid),rooms=original.rooms;
+  const shoreScore=r=>{let n=0;for(let y=r.y-1;y<=r.y+r.h;y++)for(let x=r.x-1;x<=r.x+r.w;x++)if(liquid.has(`${x},${y}`))n++;return n;};
+  const room=[...rooms].sort((a,b)=>shoreScore(b)-shoreScore(a)||b.w*b.h-a.w*a.h)[0];
+  const fixture=structuredClone(original),leader=fixture.units[fixture.leader];
+  for(const id of fixture.queue)if(id!==fixture.leader){fixture.units[id].hp=0;fixture.units[id].pos=null;}
+  leader.pos={x:room.x+Math.floor(room.w/2),y:room.y+Math.floor(room.h/2)};
+  fixture.seen=fixture.floor.map(c=>`${c.x},${c.y}`);fixture.seenWalls=[];
+  const screenshots=[],exports=[];
+  for(const [index,theme] of ['moss','wet','ash'].entries()){
+   // Hold geometry and camera fixed to compare palettes; this fixture does not prove three-floor gameplay.
+   const shown=structuredClone(fixture);shown.dungeon.level=index+1;
+   if(index){await p.reload();await p.locator('#start').waitFor();}
+   await startMemory(p,shown);
+   await p.getByText('开发者菜单：检查入口（隔离存储）',{exact:true}).click();
+   const view=await p.evaluate(()=>window.trial.view());
+   for(const layer of ['floor','edge','liquid','wall'])assert.ok(view.tiles.includes(`terrain-${theme}-${layer}`),`${theme}: ${layer} layer actually drawn`);
+   assert.ok(!view.tiles.some(t=>/^(floor|wall)(-|$)/.test(t)),'roguelike uses runtime terrain throughout');
+   const file=`windows-85b-${theme}.png`;await p.screenshot({path:output+file,fullPage:true});screenshots.push(file);
+   await p.locator('#terrain-theme').selectOption(theme);
+   for(const layer of ['floor','edge','liquid','wall']){
+    await p.locator('#terrain-layer').selectOption(layer);
+    const pending=p.waitForEvent('download');await p.locator('#export-terrain').click();const download=await pending;
+    assert.equal(download.suggestedFilename(),`terrain-${theme}-${layer}.png`);
+    const filename=download.suggestedFilename();await download.saveAs(output+filename);
+    const png=fs.readFileSync(output+filename);assert.equal(png.toString('hex',0,8),'89504e470d0a1a0a');
+    assert.deepEqual([png.readUInt32BE(16),png.readUInt32BE(20)],layer==='floor'?[384,384]:[192,576]);exports.push(filename);
+   }
+  }
+  const boundary=structuredClone(fixture);boundary.seen=[];boundary.seenWalls=[];reveal(boundary);
+  await p.reload();await p.locator('#start').waitFor();
+  await startMemory(p,boundary);
+  const knownFloor=new Set(boundary.seen),known=new Set(boundary.seenWalls);
+  for(const c of boundary.floor)if(knownFloor.has(`${c.x},${c.y}`))for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)known.add(`${c.x+dx},${c.y+dy}`);
+  const rendered=await p.evaluate(()=>window.trial.view().terrain);
+  for(const t of rendered)assert.ok(known.has(`${Math.floor(t.x/40)},${Math.floor(t.y/40)}`),'no terrain outside the known map is drawn');
+  const file='windows-85b-unknown-boundary.png';await p.screenshot({path:output+file,fullPage:true});screenshots.push(file);
+  assert.deepEqual(errors,[]);
+  const report={fixtureBoundary:'真实 seed73 第2层地图与第二地形，固定相机与房间，分别套用三个主题；独立边界图重新运行reveal。截图不代表完整游玩。',screenshots,exports,knownBoundaryOnly:true};
+  fs.writeFileSync(output+'browser-terrain.json',JSON.stringify(report,null,2));return report;
+ }finally{await context.close();}
+});
+
 await browser.close();
+clearTimeout(browserDeadline);
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

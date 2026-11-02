@@ -220,7 +220,7 @@ test('8.3 R7: evolution choice precedes opening and an independent preselected T
 });
 
 test('8.3 R1/R2/R13/R14/R16: 600 floors retain the fixed 8.2 content and independently valid room sites',()=>{
- assert.equal(baseline.source,'ec58786f85fb7de83b3656113755bff1c22fdd3a');
+ assert.equal(baseline.source,'79dd47e6861c2c8d0cb1e3707752a2d53cb04fd8');
  assert.equal(baseline.samples.length,600);
  for(const b of baseline.samples){
   const {seed,level}=b,g=generateFloor(seed,level),label=`seed ${seed} floor ${level}`;
@@ -248,21 +248,21 @@ test('8.3 R1/R2/R13/R14/R16: 600 floors retain the fixed 8.2 content and indepen
   }
   if(b.goalAnchor)for(const e of g.enemies.filter(e=>!e.post&&!e.boss))assert.ok(distance(e.pos,b.goalAnchor)>=2,`${label}: hidden goal remains an enemy placement anchor`);
  }
- const collision=generateFloor(8,3).adventureRooms.find(a=>a.room===3);
- assert.deepEqual(collision.interaction,{x:6,y:18},'R14: w3d at 6,19 forces the y-first adjacent cell');
+ const collision=generateFloor(7,3).adventureRooms.find(a=>a.room===6);
+ assert.deepEqual(collision.interaction,{x:29,y:17},'R14: w3c at 29,18 forces the y-first adjacent cell');
 });
 
 test('8.3 R3: 3000 official floors have the exact independently observed reference allocation',()=>{
  const counts={challenge:0,commission:0,blessing:0,item:0};
  for(let seed=1;seed<=1000;seed++)for(let level=1;level<=3;level++)for(const a of generateFloor(seed,level).adventureRooms)counts[a.type]++;
- // ec58786 official layouts + the independently maintained rooms-83 reference assignRooms.
- assert.deepEqual(counts,{challenge:1909,commission:2578,blessing:1778,item:1239});
+ // 79dd47e 的8.5b布局，以及独立维护的 rooms-83 参考 assignRooms。
+ assert.deepEqual(counts,{challenge:1822,commission:2622,blessing:1793,item:1267});
 });
 
 test('8.3 compatibility: legacy generator keeps goal and exchange, with no adventure-room state',()=>{
  const params={width:36,height:24,floors:3,boss:true};
  const g=generateFloor(12345,1,params);
- assert.deepEqual(g.points,[{pos:{x:27,y:16},kind:'down',used:false},{pos:{x:16,y:6},kind:'goal',used:false}]);
+ assert.deepEqual(g.points,[{pos:{x:5,y:20},kind:'down',used:false},{pos:{x:22,y:22},kind:'goal',used:false}]);
  assert.equal(g.adventureRooms,undefined);
  let found=false;
  for(let seed=1;seed<=30;seed++)for(let level=1;level<=3;level++)if(generateFloor(seed,level,params).services.some(p=>p.kind==='exchange'))found=true;

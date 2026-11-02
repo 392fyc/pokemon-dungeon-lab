@@ -23513,6 +23513,236 @@
       },
       "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
     },
+    "tiles/deco/crack.png": {
+      "bytes": 323,
+      "sha256": "d4297b345651df316cc9ef0acebe3c571483b46f615a1c3334bec749440cbfd2",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "deco-crack",
+      "prompt": "A thin jagged dark crack in a stone floor with one or two short branches, drawn only as the dark crack line and a faint light rim, meant to overlay a grey stone cave floor. Top-down 2D dungeon game floor decoration in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, simple silhouette with a dark outline, few colours, muted values a little lighter than the floor so it reads as part of the ground and never as a pickup item, soft ambient light from the top-left, a faint soft shadow under it, centred on a plain transparent background with wide empty margins. No text, no letters, no characters, no creatures.",
+      "rawSha256": "754e92e9f6b7b99a922380cdfe3cfa0f4bd20113544a40f35be5f1e18269f4d4",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "content": 20,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/deco/deco-ash.json": {
+      "bytes": 1730,
+      "sha256": "61fe1466ad358e6019e6345cadecedeeb23b8336b0e7a3df77d3785031a52de9",
+      "source": "derived",
+      "builtFrom": [
+        "tiles/deco/embers.png",
+        "tiles/deco/crack.png",
+        "tiles/deco/pebbles.png",
+        "tiles/deco/rocks.png"
+      ],
+      "licence": "Packed from project decorations by tools/art/build_deco_atlas.py; private build only."
+    },
+    "tiles/deco/deco-ash.png": {
+      "bytes": 2134,
+      "sha256": "4e1409b4efe6571c94cbbc7a50a342865bd4ef5c8d291c2f11aa481f11141e5d",
+      "source": "derived",
+      "builtFrom": [
+        "tiles/deco/embers.png",
+        "tiles/deco/crack.png",
+        "tiles/deco/pebbles.png",
+        "tiles/deco/rocks.png"
+      ],
+      "licence": "Packed from project decorations by tools/art/build_deco_atlas.py; private build only."
+    },
+    "tiles/deco/deco-moss.json": {
+      "bytes": 2264,
+      "sha256": "75175ef2a7c89a58c7dd6236bd1217d2c7ec6b2c1cc4d4523dd9335f8e5c3385",
+      "source": "derived",
+      "builtFrom": [
+        "tiles/deco/rocks.png",
+        "tiles/deco/grass.png",
+        "tiles/deco/mushrooms.png",
+        "tiles/deco/pebbles.png",
+        "tiles/deco/crack.png",
+        "tiles/deco/moss.png"
+      ],
+      "licence": "Packed from project decorations by tools/art/build_deco_atlas.py; private build only."
+    },
+    "tiles/deco/deco-moss.png": {
+      "bytes": 2959,
+      "sha256": "d8351b651227da7f1e2b2d73d02db121c485bd97a6b54b4045f8e1934d3c6a7b",
+      "source": "derived",
+      "builtFrom": [
+        "tiles/deco/rocks.png",
+        "tiles/deco/grass.png",
+        "tiles/deco/mushrooms.png",
+        "tiles/deco/pebbles.png",
+        "tiles/deco/crack.png",
+        "tiles/deco/moss.png"
+      ],
+      "licence": "Packed from project decorations by tools/art/build_deco_atlas.py; private build only."
+    },
+    "tiles/deco/deco-wet.json": {
+      "bytes": 1730,
+      "sha256": "2c7ae7ba9c69d1450acab6e2e12efda4e468151a39065e6b795169f4bd85bcb5",
+      "source": "derived",
+      "builtFrom": [
+        "tiles/deco/puddle.png",
+        "tiles/deco/pebbles.png",
+        "tiles/deco/rocks.png",
+        "tiles/deco/crack.png",
+        "tiles/deco/moss.png"
+      ],
+      "licence": "Packed from project decorations by tools/art/build_deco_atlas.py; private build only."
+    },
+    "tiles/deco/deco-wet.png": {
+      "bytes": 2646,
+      "sha256": "79ae0d22bc36be75f852fe225b02bb91a855ef3fcf04dd51cab758f62448901d",
+      "source": "derived",
+      "builtFrom": [
+        "tiles/deco/puddle.png",
+        "tiles/deco/pebbles.png",
+        "tiles/deco/rocks.png",
+        "tiles/deco/crack.png",
+        "tiles/deco/moss.png"
+      ],
+      "licence": "Packed from project decorations by tools/art/build_deco_atlas.py; private build only."
+    },
+    "tiles/deco/embers.png": {
+      "bytes": 717,
+      "sha256": "71ba2045283aa4e1543d3e2b0d36bf3719326a0583ffc07840cff207800bd1a8",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "deco-embers",
+      "prompt": "A small pile of grey ash and charred black stones with two or three tiny glowing orange embers, lying on the ground, meant for a dark volcanic basalt floor. Top-down 2D dungeon game floor decoration in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, simple silhouette with a dark outline, few colours, muted values a little lighter than the floor so it reads as part of the ground and never as a pickup item, soft ambient light from the top-left, a faint soft shadow under it, centred on a plain transparent background with wide empty margins. No text, no letters, no characters, no creatures.",
+      "rawSha256": "327b264974c8f22022cc68e0db7cfd39aef6b79fff5b08d7c232ff7bdc09387a",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "content": 18,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/deco/grass.png": {
+      "bytes": 624,
+      "sha256": "28566163802870302a3032e52dc47b0c35f15ae8ab06ea1431275ba76b053152",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "deco-grass",
+      "prompt": "A small tuft of short wild grass blades growing out of a crack in stone, a few blades bent, muted green, meant for a mossy grey stone cave floor. Top-down 2D dungeon game floor decoration in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, simple silhouette with a dark outline, few colours, muted values a little lighter than the floor so it reads as part of the ground and never as a pickup item, soft ambient light from the top-left, a faint soft shadow under it, centred on a plain transparent background with wide empty margins. No text, no letters, no characters, no creatures.",
+      "rawSha256": "e5497e82bdb1f850f74fbf19a8d6dc5552ca634ef37826d0fa339e2be4c96277",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "content": 17,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/deco/moss.png": {
+      "bytes": 593,
+      "sha256": "c3dae511bb504092b51819f7fef30ab5c68df2331452bcdf264032726e00d0e2",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "deco-moss",
+      "prompt": "A small irregular flat patch of soft green moss with a ragged edge, lying flat on the ground, meant for a grey stone cave floor. Top-down 2D dungeon game floor decoration in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, simple silhouette with a dark outline, few colours, muted values a little lighter than the floor so it reads as part of the ground and never as a pickup item, soft ambient light from the top-left, a faint soft shadow under it, centred on a plain transparent background with wide empty margins. No text, no letters, no characters, no creatures.",
+      "rawSha256": "891a291328a24355cd81b4e24f9bc4fb8db280c446d50f2837cea11866aaae2e",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "content": 20,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/deco/mushrooms.png": {
+      "bytes": 503,
+      "sha256": "a9fd706079fad50c89ebbdcdd9830aa8e8af139ce8f1837ae8b9e2463b46c0d5",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "deco-mushrooms",
+      "prompt": "Two or three tiny cave mushrooms with pale brown caps growing together, meant for a mossy grey stone cave floor. Top-down 2D dungeon game floor decoration in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, simple silhouette with a dark outline, few colours, muted values a little lighter than the floor so it reads as part of the ground and never as a pickup item, soft ambient light from the top-left, a faint soft shadow under it, centred on a plain transparent background with wide empty margins. No text, no letters, no characters, no creatures.",
+      "rawSha256": "769dcb1efdb1b1f403fc0d3a74ddd8b9018008c3ebc07d548525684a0708f048",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "content": 14,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/deco/pebbles.png": {
+      "bytes": 633,
+      "sha256": "4150bde9088e1049fd94b9236b8670d7a95ce76d1be128c8fa6d9d2ce04fc95c",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "deco-pebbles",
+      "prompt": "A loose scatter of six to eight tiny grey and beige pebbles spread over a small area, meant for a mossy grey stone cave floor. Top-down 2D dungeon game floor decoration in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, simple silhouette with a dark outline, few colours, muted values a little lighter than the floor so it reads as part of the ground and never as a pickup item, soft ambient light from the top-left, a faint soft shadow under it, centred on a plain transparent background with wide empty margins. No text, no letters, no characters, no creatures.",
+      "rawSha256": "4186bc92950fa1f31aebd2ad16aa2b0d50011cf7a6390a1fbcb16a4e2cf576fc",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "content": 16,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/deco/puddle.png": {
+      "bytes": 767,
+      "sha256": "c4676d84e520e4dfe77eb85315f14dd16830429ee90c967dcf127ad6ea06e55d",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "deco-puddle",
+      "prompt": "A small shallow irregular water puddle with a light blue rim highlight and a dark blue-grey centre, lying flat on the ground, meant for a wet blue-grey cave floor. Top-down 2D dungeon game floor decoration in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, simple silhouette with a dark outline, few colours, muted values a little lighter than the floor so it reads as part of the ground and never as a pickup item, soft ambient light from the top-left, a faint soft shadow under it, centred on a plain transparent background with wide empty margins. No text, no letters, no characters, no creatures.",
+      "rawSha256": "5ea228078a273d8eba480d7070defcf7675b80d3f254bd25ead6c770c76d8075",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "content": 22,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
+    "tiles/deco/rocks.png": {
+      "bytes": 693,
+      "sha256": "6d1d2b0e5a0d713f52a037d631a348bcb171a8ff0293574cb0cc5a9b46be65ac",
+      "source": "generated",
+      "model": "gpt-image-2.5-flare",
+      "card": "deco-rocks",
+      "prompt": "A small cluster of two or three rounded grey cave rocks of different sizes lying on the ground, meant for a mossy grey stone cave floor. Top-down 2D dungeon game floor decoration in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, simple silhouette with a dark outline, few colours, muted values a little lighter than the floor so it reads as part of the ground and never as a pickup item, soft ambient light from the top-left, a faint soft shadow under it, centred on a plain transparent background with wide empty margins. No text, no letters, no characters, no creatures.",
+      "rawSha256": "324926b1a2cf756f3da3b24b74f82211160be05f55a0c329da733777f0a17582",
+      "postprocess": {
+        "crop": null,
+        "trim": true,
+        "content": 18,
+        "size": 24,
+        "colors": 16,
+        "resample": "box",
+        "quantize": "mediancut"
+      },
+      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+    },
     "tiles/floor-arena.png": {
       "bytes": 1218,
       "sha256": "dcd90fa4c3132fbfa27a50e96132ac2969c7c6d72c7644327899f2f36d7f50d4",

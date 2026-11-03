@@ -142,11 +142,12 @@
   gap: clamp(2px, 1.6vw, 20px);
 }
 
-.title-portrait {
-  --sprite-scale: min(4px, 0.34vw, 0.57vh);
+.title-starters { --sprite-scale: min(4px, 0.34vw, 0.57vh); }
+
+.standing-sprite {
   display: block;
   width: calc(var(--frame-width) * var(--sprite-scale));
-  height: calc(var(--frame-height) * var(--sprite-scale));
+  height: calc(var(--visible-height) * var(--sprite-scale));
   flex: none;
   image-rendering: pixelated;
   background-repeat: no-repeat;

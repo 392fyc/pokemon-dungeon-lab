@@ -17,6 +17,38 @@ browser=await chromium.launch({...(process.env.BROWSER_EXECUTABLE ? {executableP
 const results=[];
 const base=process.env.TRIAL_URL;
 if(!base) throw Error('Set TRIAL_URL to the local running trial.');
+async function campPanelFits(page) {
+ const size=await page.locator('#camp-dialog[open]').evaluate(el=>({
+  width:innerWidth,height:innerHeight,clientHeight:el.clientHeight,scrollHeight:el.scrollHeight,
+  clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,
+ }));
+ assert.deepEqual([size.width,size.height],[1280,720],'the layout check uses the reference viewport');
+ assert.ok(size.scrollHeight<=size.clientHeight&&size.scrollWidth<=size.clientWidth,
+  'camp panel fits without scrolling: '+JSON.stringify(size));
+ return size;
+}
+async function starterFeet(page, selector, count) {
+ const sprites=await page.locator(selector).evaluateAll(async elements=>Promise.all(elements.map(async sprite=>{
+  const width=Number(sprite.dataset.frameWidth),height=Number(sprite.dataset.frameHeight);
+  const img=new Image();
+  img.src=getComputedStyle(sprite).backgroundImage.slice(5,-2);
+  await img.decode();
+  const canvas=document.createElement('canvas');
+  canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext('2d');
+  ctx.drawImage(img,0,0);
+  const pixels=ctx.getImageData(0,0,width,height).data;
+  let bottom=0;
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++)if(pixels[(y*width+x)*4+3])bottom=y+1;
+  const rect=sprite.getBoundingClientRect(),paintedHeight=bottom*rect.width/width;
+  return {foot:rect.top+paintedHeight,clipped:!bottom||paintedHeight>rect.height+1};
+ })));
+ assert.equal(sprites.length,count);
+ assert.ok(sprites.every(sprite=>!sprite.clipped),'no visible foot pixels are clipped');
+ const feet=sprites.map(sprite=>sprite.foot);
+ assert.ok(Math.max(...feet)-Math.min(...feet)<=2,'visible feet share one baseline: '+JSON.stringify(feet));
+ return feet;
+}
 const artifact='.artifacts/trial/';
 fs.mkdirSync(artifact,{recursive:true});
 const map122Artifact='.artifacts/map122/';
@@ -484,7 +516,10 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
    w.seen=[];delete w.seenWalls;reveal(w);
    assert.ok(w.seen.includes(`${boss.pos.x},${boss.pos.y}`),'boss is in the revealed room');
    const start=await load(w);assert.equal(start.dungeon.level,3);assert.deepEqual(start.units[start.leader].pos,c.leader);
-   const v=await p.evaluate(()=>window.trial.view()),cam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(cam,expectedCamera(v,c.leader),`${c.spot}: camera follows the exact placed leader cell at the live viewport size`);
+   const v=await p.evaluate(()=>window.trial.view()),expected=expectedCamera(v,c.leader);
+   await p.waitForFunction(({x,y})=>{const camera=window.trial.camera();return camera?.x===x&&camera.y===y;},expected,{timeout:3000});
+   const cam=await p.evaluate(()=>window.trial.camera());
+   assert.deepEqual(cam,expected,`${c.spot}: camera follows the exact placed leader cell at the live viewport size`);
    assert.ok(v.boss?.labels.includes('首领'));assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01);
    const filename=`boss-${c.spot}.png`;await p.screenshot({path:map122Artifact+filename,fullPage:true});
    report.screenshots.push({file:filename,seed:c.seed,level:3,bossRoom:w.bossRoom,boss:c.boss,leader:c.leader,camera:cam,placement:'fixture'});
@@ -596,6 +631,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
   });
  const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
+   await p.setViewportSize({width:1280,height:720});
    await p.goto(base+'?dev=1&seed=4243');await p.locator('#start').waitFor();
    assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),profile),true);await p.reload();await ready(p);
    let s=await state(p);assert.equal(s,null);
@@ -603,6 +639,11 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
   const baseMoves=await p.locator('.camp-move-controls button').evaluateAll(items=>items.map(item=>item.title).join(' '));assert.match(baseMoves,/相邻1格（含斜向/);assert.match(baseMoves,/基础伤害/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
   const prof=()=>p.evaluate(()=>window.trial.profile());
   let pr=await prof();assert.deepEqual(pr.vault,{protect:1});assert.equal(pr.expeditions,1);assert.deepEqual(pr.roster.map(i=>i.species),['charmander','squirtle','bulbasaur']);
+  const rosterLayout=await campPanelFits(p);
+  assert.equal(await p.locator('#squad .camp-party-slot:not(.is-empty)').count(),3);
+  assert.equal(await p.locator('#camp-roster article').count(),3);
+  assert.doesNotMatch(await p.locator('#camp-roster').innerText(),/\bP[123]\b/,'roster shows species and role without internal IDs');
+  await p.screenshot({path:artifact+'windows-camp-roster-three-1280.png'});
   await p.screenshot({path:artifact+'windows-base-1.png',fullPage:true});
   // learning
   await click(p,'tm-protect');await click(p,'learn-P3');pr=await prof();
@@ -638,7 +679,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
   s=await state(p);assert.equal(s.round,1);assert.equal(s.units.B.pp.protect,9);assert.ok(s.units.B.protect>0,'守住保护使用者本人');assert.equal(s.units[ally].protect,0,'相邻队友没有获得守住状态');assert.ok(s.log.includes('B进入守住状态'));
   assert.ok((await p.locator('[data-unit-status="B"] .hud-status-badge').allTextContents()).includes(`守住${s.units.B.protect}`),'the short status badge retains the actual remaining protect count');
    assert.equal(await raw(p),campBeforeDeparture,'turn actions remain in memory until terminal settlement');
-  assert.deepEqual(errors,[]);return {learned:'protect',carried:['tackle','protect'],selfProtected:'B',adjacentAllyUnaffected:ally,squad:['P2','P3','P1'],usedInRun:true,writeFailureFrozeAndRetried:true};
+  assert.deepEqual(errors,[]);return {learned:'protect',carried:['tackle','protect'],selfProtected:'B',adjacentAllyUnaffected:ally,squad:['P2','P3','P1'],usedInRun:true,writeFailureFrozeAndRetried:true,rosterLayout};
  }finally{await context.close();}
 });
 /* Stage 6.5 rest point: fixed memory worlds are made by the rule code, then actions use real clicks. */
@@ -763,17 +804,22 @@ async function newGameClicks(p,main,deputy){
 await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基地→出发，只用真实点击与按键',async()=>{
  const {context,page:p,errors}=await plainContext();
  try{
+  await p.setViewportSize({width:1280,height:720});
   await p.goto(base);await p.locator('#title-new').waitFor();
+  const titleFeet=await starterFeet(p,'.title-starters .standing-sprite',9);
+  await p.screenshot({path:artifact+'windows-title-aligned-1280.png'});
   for(const sel of ['#start','#fixture','#config','#coords-toggle','#title-continue','#open-fixture'])assert.equal(await p.locator(sel).count(),0,sel+' must not exist on the player path');
   await p.locator('#title-new').click();
   await p.locator('.starter-option').nth(8).waitFor({state:'visible'});
   assert.equal(await p.locator('.starter-option').count(),9);
+  const mainFeet=await starterFeet(p,'.starter-option .standing-sprite',9);
   const text=await p.locator('#title-screen').innerText();
   for(const n of ['妙蛙种子','小火龙','杰尼龟','菊草叶','火球鼠','小锯鳄','木守宫','火稚鸡','水跃鱼'])assert.ok(text.includes(n),n);
   assert.match(text,/撞击/);assert.doesNotMatch(text,/tackle/);
   assert.equal(await p.locator('#main-next').isDisabled(),true);
   await p.locator('#pick-main-squirtle').click();
   assert.match(await p.locator('.starter-stats').getAttribute('aria-label'),/HP 44.*攻击 48.*防御 65.*特攻 50.*特防 64.*速度 43/);
+  await p.screenshot({path:artifact+'windows-starter-aligned-1280.png'});
   const water=p.locator('[data-starter-move=watergun]');
   assert.deepEqual(await water.locator('dt').allTextContents(),['威力','命中','PP','射程','范围']);
   assert.equal(await water.locator('.hud-range-cell').count(),25);
@@ -782,16 +828,48 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   assert.match(await water.locator('.starter-move-description').innerText(),/向对手猛烈地喷射水流进行攻击/);
   await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
   assert.equal(await p.locator('.starter-option').count(),8);assert.equal(await p.locator('#pick-deputy-treecko').count(),0);
+  const deputyFeet=await starterFeet(p,'.starter-option .standing-sprite',8);
   assert.equal(await p.locator('#newgame-start').isDisabled(),true);
   await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();
   await p.locator('#depart').waitFor();await ready(p);
    assert.equal(await p.locator('#base .camp-building').count(),4);
    assert.equal(await p.locator('#base .camp-squad > span').count(),2);
+   const map=await p.locator('.camp-map').boundingBox();
+   assert.deepEqual(map,{x:0,y:0,width:1280,height:720});
+   await p.screenshot({path:artifact+'windows-camp-painting-1280.png'});
+   const campSpots={depart:[579,0,117,104], 'camp-open-party':[196,75,225,217], 'camp-open-vault':[858,88,283,212], 'camp-open-talents':[183,429,238,225], 'camp-open-records':[862,462,221,162]};
+   for(const [id,expected] of Object.entries(campSpots)){
+    const rect=await p.locator('#'+id).boundingBox();assert.ok(rect,id+' is visible');
+    assert.ok([rect.x,rect.y,rect.width,rect.height].every((value,i)=>Math.abs(value-expected[i])<1),id+' aligns with the art: '+JSON.stringify(rect));
+   }
+   const campKeepers=p.locator('.camp-map .camp-keeper');
+   assert.equal(await campKeepers.count(),2);
+   for(const [i,[x,y]] of [[316,306],[960,318]].entries()){
+    const rect=await campKeepers.nth(i).boundingBox();
+    assert.ok(rect&&Math.abs(rect.x+rect.width/2-x)<1&&Math.abs(rect.y+rect.height-y)<1,'keeper feet align with the building: '+JSON.stringify(rect));
+   }
+   const partyHotspot=p.locator('#camp-open-party');
+   await partyHotspot.hover();
+   assert.equal(await partyHotspot.evaluate(el=>getComputedStyle(el).outlineStyle),'solid');
+   await p.screenshot({path:artifact+'windows-camp-hover-1280.png'});
+   await p.mouse.move(0,0);
+   for(let i=0;i<9&&!(await p.locator('#depart:focus-visible').count());i++)await p.keyboard.press('Tab');
+   assert.equal(await p.locator('#depart:focus-visible').count(),1,'Tab reaches the entrance');
+   await p.screenshot({path:artifact+'windows-camp-gate-focus-1280.png'});
    const campSave=await raw(p);
-   for(const [panel,name,keeper] of [['vault','仓库','卡比兽'],['talents','天赋石碑','凯西'],['records','记录板','波波']]){
+   for(const [panel,x,y] of [['party',316,306],['vault',960,318]]){
+    await p.mouse.click(x,y-2);
+    await p.locator('#camp-dialog[data-camp-panel='+panel+'][open]').waitFor();
+    await p.keyboard.press('Escape');
+   }
+   for(const [panel,name,keeper] of [['vault','仓库','卡比兽'],['talents','天赋石碑',null],['records','记录板',null]]){
     await openCampPanel(p,panel);
     assert.equal(await p.locator('#camp-dialog-heading').innerText(),name);
-    assert.match(await p.locator('.camp-dialog-keeper').innerText(),new RegExp(keeper));
+    if(keeper)assert.match(await p.locator('.camp-dialog-keeper').innerText(),new RegExp(keeper));
+    else{
+     assert.equal(await p.locator('.camp-dialog-keeper').count(),0);
+     assert.equal(await p.locator('.camp-greeting').count(),0);
+    }
     await p.keyboard.press('Escape');
     assert.equal(await p.locator('#camp-dialog').count(),0);
    }
@@ -822,7 +900,7 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
    assert.equal(await p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1')),campBeforeRun,'refresh preserves the exact pre-departure camp bytes');
     await p.locator('#title-continue').click();await ready(p);assert.equal(await state(p),null);assert.equal(await p.locator('#depart').isEnabled(),true);assert.equal(await p.locator('#guide-card').count(),0,'the guide stays closed');
     assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(i=>i.tactic),['followme','avoid'],'unsettled maze tactic edits are discarded by refresh');
-    assert.deepEqual(errors,[]);return {roster:pr.roster.map(i=>i.species),baseTactics:['followme','avoid'],mazeEditNoTurn:true,tacticHover:true,refreshReturnsToCamp:true};
+    assert.deepEqual(errors,[]);return {roster:pr.roster.map(i=>i.species),baseTactics:['followme','avoid'],mazeEditNoTurn:true,tacticHover:true,refreshReturnsToCamp:true,titleFeet,mainFeet,deputyFeet};
  }finally{await context.close();}
 });
 await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包分类、切换与无溢出',async()=>{
@@ -1530,6 +1608,7 @@ await test('8.5 营地天赋树：独立入口、自由分配、重置、保存�
   const {speciesMaxHp}=await import('../../src/core/roster.ts');
   const profile=newGameProfile('mudkip','charmander').profile;
   profile.rankExp=60;
+  await p.setViewportSize({width:1280,height:720});
   assert.equal(await p.evaluate(pr=>window.trial.store.beginNewGame(pr,true),profile),true);
   await p.reload();await ready(p);
   assert.match(await p.locator('.camp-badge').innerText(),/Lv5/);
@@ -1537,6 +1616,8 @@ await test('8.5 营地天赋树：独立入口、自由分配、重置、保存�
   await openCampPanel(p,'talents');
   assert.match(await p.locator('#rank-level').innerText(),/Lv5/);
   assert.match(await p.locator('#talent-points').innerText(),/4/);
+  const talentLayout=await campPanelFits(p);
+  await p.screenshot({path:artifact+'windows-camp-talents-1280.png'});
   await p.screenshot({path:artifact+'windows-85-talent-tree.png',fullPage:true});
   const writes=await p.evaluate(()=>window.__fault.writes.length);
   await click(p,'talent-add-vitality');await click(p,'talent-add-vitality');
@@ -1557,7 +1638,7 @@ await test('8.5 营地天赋树：独立入口、自由分配、重置、保存�
   for(const id of s.queue)assert.equal(s.units[id].maxHp,Math.round(speciesMaxHp(s.units[id].species,5)*1.05));
   assert.equal(await raw(p),saved,'departure does not write storage');
   assert.deepEqual(errors,[]);
-  return {fixtureBoundary:'只把初始营地经验设为60；天赋入口、加点、重置、刷新与出发均为真实界面操作。',savedAllocation:{supplies:3,vitality:1}};
+  return {fixtureBoundary:'只把初始营地经验设为60；天赋入口、加点、重置、刷新与出发均为真实界面操作。',savedAllocation:{supplies:3,vitality:1},talentLayout};
  }finally{await context.close();}
 });
 await test('8.5 结算：三组奖励、五项经验与升级显示',async()=>{

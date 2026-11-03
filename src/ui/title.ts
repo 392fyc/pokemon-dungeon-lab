@@ -4,6 +4,7 @@ import {speciesZh,moveZh,typeZh} from '../core/names.ts';
 import {starterMoveFields} from '../render/hud.ts';
 import '../render/starter-picker.css';
 import {sheet} from '../render/sprites.ts';
+import {starterStandee} from './title-shell.ts';
 
 export type NewGameState={step:1|2;main:string|null;deputy:string|null;overwrite:boolean};
 export {renderTitle} from './title-shell.ts';
@@ -81,7 +82,7 @@ export function renderNewGame(g: NewGameState, error = ''): string {
   const preview = selected ?? options[0];
   const species = SPECIES[preview];
   const choices = options.map(id => `<button class="starter-option" id="pick-${first ? 'main' : 'deputy'}-${id}"
-    aria-pressed="${selected === id}">${portrait(id)}<span>${esc(speciesZh(id))}</span></button>`).join('');
+    aria-pressed="${selected === id}"><span class="starter-icon">${starterStandee(SPECIES[id].dex)}</span><span>${esc(speciesZh(id))}</span></button>`).join('');
   const types = (species.types ?? []).map(type => `<span data-move-type="${esc(type)}">${esc(typeZh(type))}</span>`).join('');
   return `<div class="screen-inner starter-picker">
     <div class="starter-picker-nav">

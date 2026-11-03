@@ -3,17 +3,27 @@ import "../render/title-screen.css";
 export type TitleContext={hasRecord:boolean;status:string;error:string;saveLine:string;asking:boolean;exported:boolean};
 const esc=(s:unknown)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 // The title loads before the full animation index or game data.
-const STARTER_FRAMES = [
-  ['0001', 32, 40, 3], ['0004', 32, 40, 4], ['0007', 32, 32, 8],
-  ['0152', 24, 48, 6], ['0155', 24, 32, 2], ['0158', 32, 48, 7],
-  ['0252', 32, 40, 3], ['0255', 24, 40, 5], ['0258', 24, 40, 7],
-] as const;
+type StandingFrame = readonly [width:number, height:number, columns:number, visibleHeight:number];
+const STARTER_FRAMES:Readonly<Record<string,StandingFrame|undefined>> = {
+  '0001': [32, 40, 3, 27], '0004': [32, 40, 4, 26], '0007': [32, 32, 8, 21],
+  '0152': [24, 48, 6, 30], '0155': [24, 32, 2, 20], '0158': [32, 48, 7, 30],
+  '0252': [32, 40, 3, 26], '0255': [24, 40, 5, 26], '0258': [24, 40, 7, 26],
+} as const;
+
+// Trim the transparent rows below the first down-facing Idle frame.
+export function standingSprite(dex:string, width:number, height:number, columns:number, visibleHeight:number):string {
+  return '<span class="standing-sprite" data-frame-width="' + width + '" data-frame-height="' + height +
+    '" style="--frame-width:' + width + ';--frame-height:' + height + ';--sheet-columns:' + columns +
+    ';--visible-height:' + visibleHeight + ';background-image:url(assets/characters/' + dex + '/Idle-Anim.png)"></span>';
+}
+
+export function starterStandee(dex:string):string {
+  const frame = STARTER_FRAMES[dex];
+  return frame ? standingSprite(dex, ...frame) : '';
+}
+
 function titleStarters(): string {
-  return STARTER_FRAMES.map(([dex, width, height, frames]) =>
-    '<span class="title-portrait" style="--frame-width:' + width +
-    ';--frame-height:' + height + ';--sheet-columns:' + frames +
-    ';background-image:url(assets/characters/' + dex + '/Idle-Anim.png)"></span>'
-  ).join('');
+  return Object.keys(STARTER_FRAMES).map(starterStandee).join('');
 }
 export function renderTitle(c:TitleContext):string {
   const blocked=c.status==='blocked';

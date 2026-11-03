@@ -372,7 +372,8 @@ function rankPanel(p:Profile,ready:boolean):string{
  return `<section id="rank-panel"><p id="rank-level">探险队 Lv${level}</p>
   <p id="rank-progress">下一级 ${p.rankExp-floor}/${next-floor}</p>
   <p id="talent-points">未分配天赋点：${points}</p>
-  <div id="talent-tree">${rows}${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0))}</div></section>`;
+  <div id="talent-tree">${rows}</div>
+  ${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0))}</section>`;
 }
 function campParty(p:Profile,ready:boolean,rosterOpen:boolean):string {
  const slots=Array.from({length:MAX_TEAM},(_,index)=>{
@@ -384,14 +385,14 @@ function campParty(p:Profile,ready:boolean,rosterOpen:boolean):string {
  }).join('');
  const roster=p.roster.map(member=>{
   const id=member.id,position=p.team.indexOf(id);
-  return `<article class="unit" id="inst-${esc(id)}">
-   <div><strong>${esc(spName(member.species))}</strong><span>${esc(id)} · ${position<0?'留守':id===p.leader?'操控者':'同行'}</span></div>
-   ${tacticSelect(`tactic-base-${id}`,member.tactic,!ready)}
+  return `<article class="unit camp-roster-entry" id="inst-${esc(id)}">
+   <div class="camp-roster-member"><strong>${esc(spName(member.species))}</strong><span>${position<0?'留守':id===p.leader?'操控者':'同行'}</span></div>
+   <div class="camp-roster-actions">${tacticSelect(`tactic-base-${id}`,member.tactic,!ready)}
+   ${button(`team-${id}`,position<0?'加入队伍':'移出队伍',!ready)}
+   ${button(`lead-${id}`,'设为操控者',!ready||position<0||id===p.leader)}</div>
    <div class="camp-move-controls">${member.learned.map(l=>button(`carry-${id}-${l.move}`,
     `${member.carry.includes(l.move)?'卸下':'携带'} ${esc(moveZh(l.move))}`,!ready,
-    `aria-pressed="${member.carry.includes(l.move)}" class="${member.carry.includes(l.move)?'selected':''}" title="${esc(moveSummary(l.move))}"`)).join('')}</div>
-   <div>${button(`team-${id}`,position<0?'加入队伍':'移出队伍',!ready)}
-   ${button(`lead-${id}`,'设为操控者',!ready||position<0||id===p.leader)}</div></article>`;
+    `aria-pressed="${member.carry.includes(l.move)}" class="${member.carry.includes(l.move)?'selected':''}" title="${esc(moveSummary(l.move))}"`)).join('')}</div></article>`;
  }).join('');
  return '<h3>出发阵容</h3><div class="camp-party-strip" id="squad">'+slots+'</div><details id="camp-roster"'+(rosterOpen?' open':'')+'><summary>名册</summary>'+roster+'</details>';
 }

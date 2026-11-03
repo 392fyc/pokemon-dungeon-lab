@@ -290,20 +290,47 @@ function statusRoundEnd(s:World):void {
     }
   }
 }
-/** Revealed ground and walls are kept separately: movement and legacy saves use ground-only `seen`. */
+/** Cells in sight of any living party member. This is separate from enemy/ally AI sight. */
+export function playerVisibleCells(s:World):Set<string> {
+  const visible=new Set<string>();
+  const mark=(x:number,y:number)=>{
+    if(!s.dungeon||(x>=0&&y>=0&&x<s.dungeon.width&&y<s.dungeon.height))visible.add(`${x},${y}`);
+  };
+  for(const id of s.queue){
+    const unit=s.units[id];
+    if(!alive(unit))continue;
+    const room=roomAt(s,unit.pos);
+    if(room){
+      for(let y=room.y-1;y<=room.y+room.h;y++)for(let x=room.x-1;x<=room.x+room.w;x++)mark(x,y);
+    }else{
+      mark(unit.pos.x,unit.pos.y);
+      for(const dir of DIRS8)mark(unit.pos.x+dir.x,unit.pos.y+dir.y);
+    }
+  }
+  return visible;
+}
+/** Keep explored ground separate from explored walls/liquid for movement and legacy saves. */
 export function reveal(s:World):void {
   const seen=new Set(s.seen),walls=new Set(s.seenWalls??[]),floor=new Set(s.floor.map(key));
-  const inside=(p:Pos)=>!s.dungeon||(p.x>=0&&p.y>=0&&p.x<s.dungeon.width&&p.y<s.dungeon.height);
-  const mark=(p:Pos)=>{if(inside(p))(floor.has(key(p))?seen:walls).add(key(p));};
-  for(const id of s.queue){const u=s.units[id];if(!alive(u))continue;seen.add(key(u.pos));
-    const room=(s.rooms??[]).find(r=>inRect(u.pos,r));
-    for(const d of DIRS){let p=u.pos;for(let n=0;n<4;n++){
-      p=plus(p,d);
-      if(room){if(!floor.has(key(p)))break;seen.add(key(p));}
-      else {mark(p);mark({x:p.x-d.y,y:p.y+d.x});mark({x:p.x+d.y,y:p.y-d.x});if(!floor.has(key(p)))break;}
-    }}
-    // Room sight stays unchanged, including its existing straight rays through doors.
-    if(room)for(let y=room.y;y<room.y+room.h;y++)for(let x=room.x;x<room.x+room.w;x++)if(floor.has(`${x},${y}`))seen.add(`${x},${y}`);
+  if(s.dungeon){
+    for(const cell of playerVisibleCells(s))(floor.has(cell)?seen:walls).add(cell);
+  }else{
+    // Fixed single-floor developer scenarios keep the original trial sight.
+    const mark=(p:Pos)=>(floor.has(key(p))?seen:walls).add(key(p));
+    for(const id of s.queue){
+      const u=s.units[id];if(!alive(u))continue;
+      seen.add(key(u.pos));
+      const room=roomAt(s,u.pos);
+      for(const d of DIRS){
+        let p=u.pos;
+        for(let n=0;n<4;n++){
+          p=plus(p,d);
+          if(room){if(!floor.has(key(p)))break;seen.add(key(p));}
+          else {mark(p);mark({x:p.x-d.y,y:p.y+d.x});mark({x:p.x+d.y,y:p.y-d.x});if(!floor.has(key(p)))break;}
+        }
+      }
+      if(room)for(let y=room.y;y<room.y+room.h;y++)for(let x=room.x;x<room.x+room.w;x++)if(floor.has(x+','+y))seen.add(x+','+y);
+    }
   }
   s.seen=[...seen].sort();if(walls.size)s.seenWalls=[...walls].sort();
 }

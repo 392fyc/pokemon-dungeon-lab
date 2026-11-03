@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate} from '../render/hud.ts';
 import '../render/hud.css';
 import {CAMP_BUILDINGS,campScene,campPanelMarkup,type CampPanel} from '../render/camp.ts';
-import {applyCommand,traceRound,previewInvitation,createMain,createExpedition,key,same,plus,clone,skillTargets,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
+import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,skillTargets,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
@@ -17,6 +17,7 @@ import {THEME_FLOORS,themeOfLevel,ARENA_TILE,isDifficulty,type Difficulty} from 
 import {preloadArt,createAnims,createTerrainArt,exportTerrainArt,skinFor,facingRow,animKey,TILE} from '../render/sprites.ts';
 import {terrainSource} from '../render/dtef.ts';
 import {paintDtef,type DtefAnimator} from '../render/dtef-scene.ts';
+import {BOARD_BACKGROUND,darknessBackground,DungeonDarkness} from '../render/darkness.ts';
 import {prepareTerrainMap,maskAt,frameOf,terrainVariant,selectDecorations,type TerrainThemeKey,type TerrainLayer} from '../render/terrain.ts';
 import {inferEvents,plan,newLines,type AnimEvent} from '../render/animation.ts';
 import {selfOrAdjacentReachable} from '../render/reach.ts';
@@ -621,29 +622,31 @@ class BoardScene extends Phaser.Scene {
  private graphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;
  constructor(){super('board');}
  preload(){preloadArt(this);}
- private dtefAnim:DtefAnimator|null=null;
- update(time:number){this.dtefAnim?.update(time);}
- create(){createAnims(this);this.graphics=this.add.graphics().setDepth(0);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
+ private dtefAnim:DtefAnimator|null=null;private darkness!:DungeonDarkness;
+ update(time:number){this.dtefAnim?.update(time);this.darkness?.update(time);}
+ create(){createAnims(this);this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.events.once('shutdown',()=>this.darkness.clear());this.graphics=this.add.graphics().setDepth(0);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
   // worldX/worldY already include the camera scroll, so clicks stay correct while the camera follows the leader.
   const x=Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX;const y=Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY;pinnedId=enemyAt({x,y});updateInspect();clickCell({x,y});});
   this.input.on('pointermove',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);const id=enemyAt({x:Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX,y:Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY});if(id!==hoverId){hoverId=id;updateInspect();}});scene=this;this.scale.on('resize',()=>{if(!anim.active)this.paint(live());});this.paint(live());}
  geometry(s:World){if(s.dungeon){const d=s.dungeon;return {minX:0,minY:0,cell:DUNGEON_CELL,ox:0,oy:0,dungeon:true,w:d.width*DUNGEON_CELL,h:d.height*DUNGEON_CELL};}
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,(this.scale.width-80)/(maxX-minX+1),(this.scale.height-80)/(maxY-minY+1));return {minX,minY,cell,ox:(this.scale.width-(maxX-minX+1)*cell)/2,oy:(this.scale.height-(maxY-minY+1)*cell)/2,dungeon:false,w:this.scale.width,h:this.scale.height};}
  paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());});this.views.clear();this.graphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.dtefAnim=null;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
- this.graphics.fillStyle(0x101c1b);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.cameras.main.setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
- const g=this.geometry(s);const fog=g.dungeon;if(fog){this.graphics.fillStyle(0x101c1b);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
+ this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
+ const g=this.geometry(s);const fog=g.dungeon;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
  // 7.3 floor themes: boss-marked runs use the theme tiles of the floor (moss: the original stone). A missing texture falls back to the stone tile with a theme tint.
  const theme=themeOfLevel(s.dungeon?.boss,s.dungeon?.level??1),themeCfg=THEME_FLOORS.find(t=>t.theme===theme)!;
+ this.cameras.main.setBackgroundColor(fog?darknessBackground(theme):BOARD_BACKGROUND);
  const tileImg=(kind:'floor'|'wall',name:string,c:{x:number;y:number},alpha:number)=>{const have=this.textures.exists(name);const im=this.add.image(c.x,c.y,have?name:kind).setScale(scale).setAlpha(alpha).setDepth(1);if(!have&&theme!=='moss')im.setTint(theme==='wet'?0x6aa8d8:0xa08c80);this.tiles.push(im);};
  const floorName=theme==='moss'?'floor':themeCfg.floorTile,wallName=theme==='moss'?'wall':themeCfg.wallTile,roomMarkers=adventureRoomMarkers(s);
  const arena=s.bossRoom!==undefined?s.rooms?.[s.bossRoom]??null:null;
  const inArena=(p:Pos)=>!!arena&&p.x>=arena.x&&p.x<arena.x+arena.w&&p.y>=arena.y&&p.y<arena.y+arena.h;
  const terrain=!!s.dungeon?.roguelike;
+ const dungeonMap=s.dungeon?prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.seen,seenWalls:s.seenWalls,onlyRevealed:true}):null;
  if(terrain){
   const dtef=terrainSource()==='dtef';
   if(!dtef)createTerrainArt(this,theme);
-  const map=prepareTerrainMap({width:s.dungeon!.width,height:s.dungeon!.height,floor:s.floor,liquid:s.liquid,seen:s.seen,seenWalls:s.seenWalls});
+  const map=dungeonMap!;
   const seed=s.dungeon!.seed,level=s.dungeon!.level;
   const terrainImage=(x:number,y:number,layer:TerrainLayer|'floor')=>{
    const c=center({x,y}),frame=layer==='floor'?`${((x%16)+16)%16},${((y%16)+16)%16}`:`v${terrainVariant(x,y,layer,seed,level,theme)}-f${frameOf(maskAt(map,x,y,layer))}`;
@@ -660,7 +663,7 @@ class BoardScene extends Phaser.Scene {
    const c=center(deco);this.tiles.push(this.add.image(c.x,c.y+g.cell/2,decoKey,deco.frame).setOrigin(.5,1).setScale(scale).setDepth(1.5));
   }
  }else{
- const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){if(fog&&!s.seen.includes(key(p)))continue;walls.add(key(q));tileImg('wall',wallName,center(q),s.seen.includes(key(p))?.85:.3);}}
+ const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();if(!fog)for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){walls.add(key(q));tileImg('wall',wallName,center(q),s.seen.includes(key(p))?.85:.3);}}
  for(const wall of s.seenWalls??[]){if(floorKeys.has(wall)||walls.has(wall))continue;const [x,y]=wall.split(',').map(Number);tileImg('wall',wallName,center({x,y}),.85);walls.add(wall);}
  }
  for(const p of s.floor){const c=center(p),seen=s.seen.includes(key(p));if(fog&&!seen)continue;if(!terrain)tileImg('floor',inArena(p)?ARENA_TILE:floorName,c,seen?1:.28);if(seen){const point=s.points.find(q=>same(p,q.pos));if(point&&point.kind==='rest'){this.overlay.fillStyle(0x6ec3ff,point.used?.18:.4);this.overlay.fillCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(2,0x9fdcff,point.used?.3:1);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);text(c.x,c.y,'休','#e4f4ff',16);}else if(point&&(point.kind==='shop'||point.kind==='exchange')){const col=point.kind==='shop'?0xf2b84b:0xc58bff;this.overlay.fillStyle(col,point.used?.2:.4);this.overlay.fillCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(2,col,point.used?.3:1);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);text(c.x,c.y,point.kind==='shop'?'商':'换','#fff4dc',16);}else if(point&&(point.kind==='berry'||point.kind==='tonic')){img(point.kind==='berry'?'item-berry':'item-tonic',c,point.used?.3:1,2,.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='berry'?'果':'剂','#e4efb0',11);}else if(point){const stairs=point.kind==='down'||point.kind==='up';img(point.kind==='goal'?'goal':point.kind==='item'?'item':point.kind==='down'?'stairs-down':point.kind==='up'?'stairs-up':'exit',c,point.used?.45:1,2,point.kind==='exit'||stairs?1:.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='goal'?'G':point.kind==='item'?'T':point.kind==='down'?'下':point.kind==='up'?'上':'出口','#e4efb0',11);}}if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,`${p.x},${p.y}`,'#8fa89c',9);}
@@ -685,6 +688,16 @@ class BoardScene extends Phaser.Scene {
  {const cam=this.cameras.main,lead=s.units[s.leader]?.pos;
   // Keep nearby targets clear of the HUD, including at the map boundary.
   if(g.dungeon){const c=lead?center(lead):{x:g.w/2,y:g.h/2};cam.setScroll(c.x-this.scale.width/2,c.y-this.scale.height/2);}else cam.setScroll(0,0);}
+ if(dungeonMap){
+  const lights=s.queue.flatMap(id=>{
+   const unit=s.units[id];
+   if(!unit?.pos||unit.hp<=0)return [];
+   return [{...unit.pos,primary:id===s.leader,fire:!!(unit.species&&SPECIES[unit.species]?.types?.includes('Fire'))}];
+  });
+  this.darkness.show([s.runId,s.dungeon!.level,theme,dungeonMap.width,dungeonMap.height].join(':'),theme,g.cell,{
+   width:dungeonMap.width,height:dungeonMap.height,known:dungeonMap.known,visible:playerVisibleCells(s),lights,
+  },animationEnabled());
+ }
  if(selectedSkill&&s.phase==='playing'&&!draft?.swap){const editor=draft?.editor??s.leader;for(const target of skillTargets(s,editor,selectedSkill)){const u=s.units[target];if(!u?.pos||!s.seen.includes(key(u.pos)))continue;const c=center(u.pos);this.overlay.lineStyle(2,0xf1d88e);this.overlay.strokeCircle(c.x,c.y,g.cell*.46);}}
  if(s.phase==='invitation'&&inviteChoice){const p=previewInvitation(s,inviteChoice);if(p.ok){const c=center(p.pos);this.overlay.lineStyle(3,0xf1d88e);this.overlay.strokeRect(c.x-g.cell/2+3,c.y-g.cell/2+3,g.cell-6,g.cell-6);}}
  }

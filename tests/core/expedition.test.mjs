@@ -23,21 +23,22 @@ test('X2 crossing: leader on the entry, followers on the first revealed free cel
  assert.deepEqual(s.enemies,['w2a']);assert.deepEqual(s.units.w2a.pos,pos(7));assert.equal(s.units.w2a.hp,9);
  assert.equal(s.units.E,undefined,'floor 1 enemy must not follow');
  assert.deepEqual(s.points.map(p=>p.kind),['up','item']);
- assert.deepEqual(s.seen,['0,1','1,1','2,1','3,1','4,1','5,1','6,1','7,1','8,1']);   // A on (4,1) also sees 5..8
+ assert.deepEqual(s.seen,['1,1','2,1','3,1','4,1','5,1']);   // A and B each add the next cell beyond the entry's neighbors
  assert.deepEqual(Object.keys(s.dungeon.stored),['1']);
 });
 test('X3 no enemy phase on arrival: an enemy beside the entry does not strike, and its cell is skipped for followers',()=>{
  const base=expedition();
  base.dungeon.stored['2'].units.w2a.pos=pos(4);       // right next to the entry (3,1)
+ base.dungeon.stored['2'].seen.push('5,1');           // previously explored, still eligible even when beyond the entry's current sight
  const s=cross(requested(base));
  assert.equal(s.units.C.hp,20);assert.equal(s.units.w2a.hp,9);
- assert.deepEqual(coords(s),[pos(2),pos(5),pos(3)]);  // right (4,1) is held by the enemy: A takes left; B takes the next cell out in walk order, (5,1) behind the enemy (sight passes living units)
+ assert.deepEqual(coords(s),[pos(2),pos(5),pos(3)]);  // right (4,1) is held by the enemy: A takes left; B takes the next cell out in walk order, (5,1) behind the enemy (from map memory)
 });
 test('X4 return keeps the old floor exactly: enemy HP, taken marks, revealed cells',()=>{
  // E and w2a are wait-only here: the test locks that the stored floor is kept byte-for-byte, so no enemy may wander on either floor
  const start=expedition({enemies:[enemy('E',9,1,5,'melee',{waitOnly:true})]});start.dungeon.stored['2'].units.w2a.waitOnly=true;start.seenWalls=['9,7'];
  const away=cross(requested(start));
- assert.deepEqual(away.dungeon.stored['1'].seenWalls,['0,0','0,2','1,0','1,2','2,0','2,2','3,0','3,2','4,0','4,2','5,0','5,2','6,0','6,2','7,0','7,2','8,0','8,2','9,0','9,2','9,7'],'floor 1 keeps its revealed walls in its own saved state');
+ assert.deepEqual(away.dungeon.stored['1'].seenWalls,['2,0','2,2','3,0','3,2','4,0','4,2','5,0','5,2','6,0','6,2','9,7'],'floor 1 keeps its revealed walls in its own saved state');
  assert.ok(!away.seenWalls?.includes('9,7'),'the old floor wall is not carried into floor 2');
  away.seenWalls=[...(away.seenWalls??[]),'8,7'];
  const back=cross(round(away,stairs));

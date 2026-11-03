@@ -261,7 +261,7 @@ test('P8f floor item points (8.8): 2-4 per floor drawn from the five floor items
 });
 
 /* ---------- room reveal ---------- */
-test('P9 standing in a room shows the whole room; a corridor keeps its 4-cell rays and adds Q6 side sight',()=>{
+test('P9 standing in a room shows the whole room; a corridor shows only the cells adjacent to each party member',()=>{
  const room=[];for(let y=1;y<=3;y++)for(let x=2;x<=5;x++)room.push(pos(x,y));
  const corridor=[];for(let x=6;x<=14;x++)corridor.push(pos(x,2));
  const build=(rooms,at)=>{const s=run({enemies:[],floor:[...room,...corridor]});s.units.A.pos=pos(at.x+1,at.y);s.units.B.pos=pos(at.x,at.y+1);s.units.C.pos=at;
@@ -269,8 +269,8 @@ test('P9 standing in a room shows the whole room; a corridor keeps its 4-cell ra
  const withRooms=build(true,pos(3,2)),plain=build(false,pos(3,2));
  const roomKeys=room.map(p=>p.x+','+p.y);
  assert.ok(roomKeys.every(k=>withRooms.seen.includes(k)),'the whole room is shown');
- assert.ok(plain.seen.includes('2,1'),'corridor side sight now reveals a ground cell beside the straight ray');
- assert.ok(withRooms.seen.includes('7,2'));assert.ok(!withRooms.seen.includes('9,2'),'the corridor beyond 4 cells stays hidden');
+ assert.deepEqual(plain.seen,['2,1','2,2','2,3','3,1','3,2','3,3','4,1','4,2','4,3','5,1','5,2','5,3'],'the three party members each contribute their surrounding ground');
+ assert.ok(withRooms.seen.includes('6,2'));assert.ok(!withRooms.seen.includes('7,2'),'the corridor beyond the room ring stays hidden');
  const inCorridor=build(true,pos(10,2));
  assert.ok(!roomKeys.some(k=>inCorridor.seen.includes(k)&&!['6,2'].includes(k)),'a corridor position does not reveal the room');
 });

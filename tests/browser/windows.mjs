@@ -75,8 +75,7 @@ async function click(p,id,settle=true){
 }
 function expectedCamera(view,pos){
  const g=view.geometry,v=view.cameraView,cx=g.ox+(pos.x-g.minX+.5)*g.cell,cy=g.oy+(pos.y-g.minY+.5)*g.cell;
- const fit=(at,viewport,size)=>size<=viewport?(size-viewport)/2:Math.min(Math.max(at-viewport/2,0),size-viewport);
- return {x:fit(cx,v.width,g.w),y:fit(cy,v.height,g.h)};
+ return {x:cx-v.width/2,y:cy-v.height/2};
 }
 async function cell(p,x,y){
  const canvas=p.locator('canvas'),s=await state(p);assert.ok(s,'a live world is required for a map click');
@@ -932,6 +931,73 @@ await test('162 新果实：八种背包物品、分类分配、真实使用与�
   return {checks,allConsumables:8,quickNamesOneLine:true,fixtureBoundary:'初始内存夹具注入本队背包与相邻伙伴状态，并将队员方针和敌人设为等待以隔离治疗效果；分类、快捷分配、无效拒绝和治疗均走真实界面输入，不代表自然探索路线。'};
  }finally{await context.close();}
 });
+await test('162 画布输入：短窗口的小地图和追踪区不拦截攻击',async()=>{
+ const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef');
+ try{
+  await p.setViewportSize({width:460,height:410});
+  const {createExpedition,jumpToFloor}=await import('../../src/core/engine.ts');
+  const {initialProfile,squadOf}=await import('../../src/core/base.ts');
+  const world=jumpToFloor(createExpedition('hud-overlay-click',64352,3,squadOf(initialProfile()),0,true,3),2);
+  const from={x:30,y:3},northEast={x:31,y:2},southEast={x:31,y:4};
+  const leader=world.units[world.leader];
+  leader.pos=from;leader.learned=['tackle'];leader.pp={tackle:5};leader.maxPp={tackle:5};
+  for(const [id,pos] of [['w2a',northEast],['w2b',southEast]]){
+   world.units[id].pos=pos;world.units[id].hp=world.units[id].maxHp=50;
+  }
+  for(const id of world.queue)world.units[id].tactic='wait';
+  for(const id of world.enemies)world.units[id].waitOnly=true;
+  world.seen=world.floor.map(c=>c.x+','+c.y);
+  await startMemory(p,world);
+  const b=await p.locator('canvas').boundingBox(),map=await p.locator('#hud-map').boundingBox();
+  const view=await p.evaluate(()=>window.trial.view()),camera=await p.evaluate(()=>window.trial.camera());
+  const {geometry:g,cameraView:v}=view;
+  const screen=target=>({
+   x:b.x+(g.ox+(target.x-g.minX+.5)*g.cell-camera.x)*b.width/v.width,
+   y:b.y+(g.oy+(target.y-g.minY+.5)*g.cell-camera.y)*b.height/v.height
+  });
+  const inside=(q,r)=>q.x>=r.x&&q.x<r.x+r.width&&q.y>=r.y&&q.y<r.y+r.height;
+  assert.ok(inside(screen(northEast),map),'the northeast enemy is under the minimap');
+  for(const target of [northEast,southEast]){
+   const before=await state(p);
+   await click(p,'skill-tackle');await cell(p,target.x,target.y);
+   const after=await state(p);
+   assert.equal(after.round,before.round+1,'the real canvas click at '+JSON.stringify(target)+' spends one round');
+   assert.equal(after.units[world.leader].pp.tackle,before.units[world.leader].pp.tackle-1,'the selected move was used');
+  }
+  assert.ok(!inside(screen(southEast),await p.locator('#activity-status').boundingBox()),'the compact tracking panel leaves the southeast enemy clear');
+  assert.deepEqual(errors,[]);
+ }finally{await context.close();}
+});
+await test('162 画布输入：靠左上地图边缘时攻击不误切换队员',async()=>{
+ const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef');
+ try{
+  const {createExpedition}=await import('../../src/core/engine.ts');
+  const world=createExpedition('hud-party-edge-click',16838,3,{leader:1,members:[
+   {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'},
+   {inst:'P2',species:'chikorita',carry:[{move:'magicalleaf',pp:8}],tactic:'wait'},
+   {inst:'P3',species:'lickitung',carry:[{move:'lick',pp:20}],tactic:'wait'}
+  ]},0,true,3);
+  const from={x:5,y:4},target={x:4,y:3};
+  world.units[world.leader].pos=from;
+  world.units[world.queue[0]].pos={x:5,y:5};
+  world.units[world.queue[2]].pos={x:6,y:5};
+  world.units.w1a.pos=target;
+  for(const id of world.enemies)world.units[id].waitOnly=true;
+  world.seen=world.floor.map(c=>c.x+','+c.y);
+  await startMemory(p,world);
+  const before=await state(p);
+  await click(p,'skill-magicalleaf');await cell(p,target.x,target.y);
+  const after=await state(p);
+  assert.equal(after.leader,before.leader,'clicking a combat target must not switch to the third party member');
+  assert.equal(after.round,before.round+1);
+  assert.equal(after.units[world.leader].pp.magicalleaf,before.units[world.leader].pp.magicalleaf-1);
+  const next=after.queue[2];
+  await p.locator('.hud-party-main').nth(2).click();
+  assert.equal((await state(p)).leader,next,'the party card itself still switches control');
+  assert.equal((await state(p)).round,after.round);
+  assert.deepEqual(errors,[]);
+ }finally{await context.close();}
+});
 await test('162 WASD 双键只推进一轮，斜向遵守墙角，其他动作取消待执行方向',async()=>{
  const {context,page:p,errors}=await setup();
  try{
@@ -1578,6 +1644,8 @@ await test('8.8 #178：默认地形读原版DTEF图集，三个主题的墙、�
    const v=await p.evaluate(()=>window.trial.view());
    const dtef=v.tiles.filter(t=>t.startsWith('dtef-'));
    assert.ok(dtef.includes(`dtef-${sets[level]}-tileset_0`),`floor ${level}: base sheet drawn: ${dtef}`);
+   assert.equal(v.geometry.cell,48,'the default dungeon uses 48px cells');
+   assert.deepEqual(v.decorations,[],'the default DTEF source omits painter decorations');
    assert.ok(!v.tiles.some(t=>t.startsWith('terrain-')),'no painter texture on the default source');
    seen.push(dtef);
   }

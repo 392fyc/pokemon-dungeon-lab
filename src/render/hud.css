@@ -88,7 +88,12 @@ body.dungeon-mode #hud-bag {
   pointer-events: auto;
 }
 
-body.dungeon-mode #dungeon-hud #inspect {
+body.dungeon-mode #dungeon-hud #hud-map,
+body.dungeon-mode #dungeon-hud #activity-status,
+body.dungeon-mode #dungeon-hud #inspect,
+body.dungeon-mode #dungeon-hud #recent-events,
+body.dungeon-mode #dungeon-hud #message,
+body.dungeon-mode #dungeon-hud #shortcut-card {
   pointer-events: none;
 }
 
@@ -1385,13 +1390,19 @@ body.dungeon-mode :focus-visible {
     bottom: 106px;
   }
 
-  body.dungeon-mode #activity-status {
+  body.dungeon-mode #dungeon-hud #activity-status {
     top: 166px;
     max-height: calc(100vh - 300px);
     overflow: auto;
+    pointer-events: auto;
   }
 
   body.dungeon-mode .hud-minimap-map {
     height: 72px;
+  }
+}
+@media (max-height: 620px) and (max-width: 650px) {
+  body.dungeon-mode #dungeon-hud #activity-status {
+    width: 26vw;
   }
 }

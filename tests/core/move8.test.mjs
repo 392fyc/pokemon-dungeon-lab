@@ -85,20 +85,24 @@ test('4.1 第二地形（水面、岩浆）和墙一样挡住墙角，但目标�
 });
 
 test('4.1 真实生成的楼层：第二地形格不在地面里，紧贴它的斜向步被拒绝',()=>{
-  let run=null;
-  for(const level of [2,3]){const r=jumpToFloor(createExpedition('move8-liquid',85,3),level);if(r.liquid?.length>0){run=r;break;}}
-  assert.ok(run,'这个种子的第2或第3层有第二地形');
-  const floor=new Set(run.floor.map(key)),liquid=new Set(run.liquid);
-  assert.ok([...liquid].every(k=>!floor.has(k)),'第二地形格不是地面');
-  let found=null;
-  for(const k of liquid){
-    const [lx,ly]=k.split(',').map(Number);
-    for(const [dx,dy] of [[1,1],[1,-1],[-1,1],[-1,-1]]){
-      // The liquid cell is a side cell of the step a -> b when a=(lx-dx.., ...): choose a beside it and b diagonal to a with the liquid between.
-      const a={x:lx-dx,y:ly},b={x:lx,y:ly+dy};
-      if(floor.has(key(a))&&floor.has(key(b)))found??={a,b};
+  // 8.8（#178）起地形整形后，种子 85 的第 2、3 层没有这样的格对；从 85 起逐个种子、逐层找，直到某层有第二地形且存在这样的格对。
+  let run=null,found=null,floor=null;
+  for(let seed=85;seed<125&&!found;seed++)for(const level of [2,3]){
+    const r=jumpToFloor(createExpedition('move8-liquid',seed,3),level);
+    if(!(r.liquid?.length>0))continue;
+    const ground=new Set(r.floor.map(key)),liquid=new Set(r.liquid);
+    assert.ok([...liquid].every(k=>!ground.has(k)),'第二地形格不是地面');
+    for(const k of liquid){
+      const [lx,ly]=k.split(',').map(Number);
+      for(const [dx,dy] of [[1,1],[1,-1],[-1,1],[-1,-1]]){
+        // The liquid cell is a side cell of the step a -> b when a=(lx-dx.., ...): choose a beside it and b diagonal to a with the liquid between.
+        const a={x:lx-dx,y:ly},b={x:lx,y:ly+dy};
+        if(ground.has(key(a))&&ground.has(key(b)))found??={a,b};
+      }
     }
+    if(found){run=r;floor=ground;break;}
   }
+  assert.ok(run,'这个种子的第2或第3层有第二地形');
   assert.ok(found,'存在一对斜向相邻地面格，侧格是第二地形');
   const s=structuredClone(run);
   s.units[s.leader].pos={x:found.a.x,y:found.a.y};

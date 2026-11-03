@@ -559,14 +559,14 @@ function bossTurn(s,memo,B){
  * Order: protect (a ranged enemy or the boss can hit the lead, lead <=40% HP) > blow a plain enemy off a hurt mate > drain while hurt (<70%)
  * > counter (not on floors 1-2 while the boss is still to come: its PP is kept for the boss) > the strongest usable damage move > the basic attack.
  */
-function tacticalFight(s,L,members,adj,visible,saveSkills,mayUse){
+function tacticalFight(s,L,members,adjEnemies,visible,saveSkills,mayUse){
  const out=[],act=a=>out.push({type:'round',action:a});
  const guard=movesWith(L,isProtect)[0];
  if(guard&&ratioOf(L)<=0.4&&!(L.protect>0)&&L.lastMove!==guard&&visible.some(e=>foeReaches(s,e,L)&&rangedMoves(e).length>0))act({type:'skill',skill:guard,target:L.id});
  const hurtMates=members.filter(m=>m.pos&&m.id!==L.id&&ratioOf(m)<0.6);
- for(const k of pureBlow(L))for(const e of adj)
+ for(const k of pureBlow(L))for(const e of adjEnemies)
   if(!e.boss&&e.hp>basicDamage(s,L,e)&&hurtMates.some(m=>adj(s,m.pos,e.pos))&&blowSafe(s,L,e))act({type:'skill',skill:k,target:e.id});
- for(const e of adj){
+ for(const e of adjEnemies){
   const hits=bestMoves(s,L,e),drain=hits.find(k=>moveOf(k).effects.includes('drain'));
   if(drain&&ratioOf(L)<0.7)act({type:'skill',skill:drain,target:e.id});
   const counter=movesWith(L,isCounter)[0];
@@ -574,7 +574,7 @@ function tacticalFight(s,L,members,adj,visible,saveSkills,mayUse){
   if(mayUse(e))for(const skill of hits)act({type:'skill',skill,target:e.id});
   act({type:'basic',target:e.id});
  }
- if(!adj.length)for(const e of visible){const drain=bestMoves(s,L,e).find(k=>moveOf(k).effects.includes('drain'));
+ if(!adjEnemies.length)for(const e of visible){const drain=bestMoves(s,L,e).find(k=>moveOf(k).effects.includes('drain'));
   if(drain&&ratioOf(L)<0.7)act({type:'skill',skill:drain,target:e.id});
   if(mayUse(e))for(const skill of bestMoves(s,L,e))act({type:'skill',skill,target:e.id});}
  return out;

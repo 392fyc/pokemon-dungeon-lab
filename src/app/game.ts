@@ -1,13 +1,14 @@
 import type Phaser from 'phaser';
 import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate} from '../render/hud.ts';
 import '../render/hud.css';
+import {CAMP_BUILDINGS,campScene,campPanelMarkup,type CampPanel} from '../render/camp.ts';
 import {applyCommand,traceRound,previewInvitation,createMain,createExpedition,key,same,plus,clone,skillTargets,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
 import {moveOf} from '../core/moves.ts';
 import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,teammateInfo,localizeLog,moveSummary,damageEstimateText,adventureRoomMarkers} from '../core/describe.ts';
-import {renderTitle,renderNewGame,portraitTick,type NewGameState} from '../ui/title.ts';
+import {renderTitle,renderNewGame,portrait,portraitTick,type NewGameState} from '../ui/title.ts';
 import {learnTm,newGameProfile,initialProfile,squadOf,MAX_TEAM,TALENTS,rankLevel,rankThreshold,availableTalentPoints,type BaseAction,type Profile,type TalentId} from '../core/base.ts';
 import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
 import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from '../core/save.ts';
@@ -43,7 +44,7 @@ const params=new URLSearchParams(location.search);
 /** Developer mode (stage 7.1): `?dev=1` or `?fixture=`. Only here do the fixed map, the no-invitation control, fixtures, `?seed=` and coordinates exist; the title screen is skipped. */
 const dev=params.get('dev')==='1'||(params.get('fixture')!==null&&(SCENARIOS as readonly string[]).includes(params.get('fixture')!));
 const app=document.querySelector<HTMLDivElement>('#app')!;
-app.innerHTML=`<header><div class="brand">宝可梦地牢探索</div><div class="build">版本 ${BUILD_ID.replace(/^trial-/,'')} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'使用开发者菜单检查固定场景或三层首领战，结果只在本页内存中。':'逐层探索迷宫、招募伙伴，击败第三层的首领。伙伴始终归营，招式机胜利后带回。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未出发</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标</span><span>T 成果</span><span>下 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><p class="muted">在队友卡片上更改作战方针，不占回合；悬停成员可查看当前方针。</p><div id="party"></div></section><section id="controls"></section>${dev?`<details id="developer-tools"><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button><p>运行时地形图集（每层含 47 种形状及 4 个变体）</p><label>主题 <select id="terrain-theme"><option value="moss">苔石洞</option><option value="wet">潮湿水窟</option><option value="ash">灰烬裂谷</option></select></label><label>图层 <select id="terrain-layer"><option value="floor">连续地面</option><option value="edge">地面边缘</option><option value="liquid">水面／岩浆</option><option value="wall">墙体</option></select></label><button id="export-terrain">导出地形图集 PNG</button></details>`:''}<footer>无需账号，进度保存在此浏览器</footer></aside></main><div id="title-screen" class="screen" hidden></div><dialog id="settings" aria-labelledby="settings-heading"><h2 id="settings-heading">设置与存档</h2><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label><p>营地档案保存在此浏览器、此网页来源。远征途中只有内存状态；击败首领或全队倒下时自动结算保存。</p><button id="save-export">导出存档文件</button><button id="save-import">导入存档文件</button><input id="save-file" type="file" accept=".json,application/json" hidden><p id="transfer-message" role="status" aria-live="polite"></p><details><summary>操作说明</summary><p>方向键移动；点相邻敌人普攻；句点等待。每做一个动作，就推进完整一轮（你、伙伴、敌人各行动一次）。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑操控者动作并提交。没有安排时，伙伴按各自方针选择默认行动；在队友卡片上可以更改方针，不占回合。倒下退图但仍占名额。</p><p>下楼梯也占一轮，敌人仍会行动。击败首领或全队倒下时自动结算并保存；在此之前关闭或刷新会回到出发前的基地存档。</p><p>远征为随机三层迷宫，第三层有区域首领。楼梯只能向下，途中没有撤离出口。货币只在局内使用，伙伴无论胜负都回营；招式机击败首领才带回，全灭则丢失。</p></details><button id="settings-close">关闭设置</button></dialog>`;
+app.innerHTML=`<header><div class="brand">宝可梦地牢探索</div><div class="build">版本 ${BUILD_ID.replace(/^trial-/,'')} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'使用开发者菜单检查固定场景或三层首领战，结果只在本页内存中。':'逐层探索迷宫、招募伙伴，击败第三层的首领。伙伴始终归营，招式机胜利后带回。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未出发</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标</span><span>T 成果</span><span>下 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><p class="muted">在队友卡片上更改作战方针，不占回合；悬停成员可查看当前方针。</p><div id="party"></div></section><section id="controls"></section>${dev?`<details id="developer-tools"><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button><p>运行时地形图集（每层含 47 种形状及 4 个变体）</p><label>主题 <select id="terrain-theme"><option value="moss">苔石洞</option><option value="wet">潮湿水窟</option><option value="ash">灰烬裂谷</option></select></label><label>图层 <select id="terrain-layer"><option value="floor">连续地面</option><option value="edge">地面边缘</option><option value="liquid">水面／岩浆</option><option value="wall">墙体</option></select></label><button id="export-terrain">导出地形图集 PNG</button></details>`:''}<footer>无需账号，进度保存在此浏览器</footer></aside></main><div id="title-screen" class="screen" hidden></div><dialog id="settings" aria-labelledby="settings-heading"><h2 id="settings-heading">设置与存档</h2><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label><p>营地档案保存在此浏览器、此网页来源。远征途中只有内存状态；击败首领或全队倒下时自动结算保存。</p><button id="save-export">导出存档文件</button><button id="save-import">导入存档文件</button><input id="save-file" type="file" accept=".json,application/json" hidden><p id="transfer-message" role="status" aria-live="polite"></p><details><summary>操作说明</summary><p>方向键移动；点相邻敌人普攻；句点等待。每做一个动作，就推进完整一轮（你、伙伴、敌人各行动一次）。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑操控者动作并提交。没有安排时，伙伴按各自方针选择默认行动；在队友卡片上可以更改方针，不占回合。倒下退图但仍占名额。</p><p>下楼梯也占一轮，敌人仍会行动。击败首领或全队倒下时自动结算并保存；在此之前关闭或刷新会回到出发前的基地存档。</p><p>远征为随机三层迷宫，第三层有区域首领。楼梯只能向下，途中没有撤离出口。货币只在局内使用，伙伴无论胜负都回营；招式机击败首领才带回，全灭则丢失。</p></details><button id="camp-title" hidden>返回标题</button><button id="settings-close">关闭设置</button></dialog>`;
 const fixture=params.get('fixture') as ScenarioId|null;
 const checkMode=fixture!==null&&SCENARIOS.includes(fixture);
 const legend=document.querySelector<HTMLElement>('.legend')!;
@@ -79,7 +80,8 @@ let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
 let inviteChoice:string|undefined,inviteReject=false,notice='',detailsId:string|null=null;
 let tmPick:string|null=null;
-let talentsOpen=false;
+let campPanel:CampPanel|null=null;
+let lastCampReport='';
 /** 7.2: the purse chosen at the base, and the exchanger choices (companion to send, indexes of the machines to carry) before they are confirmed. */
 let exTarget:string|null=null,exCargo:number[]=[];
 type BoardScene=InstanceType<ReturnType<typeof makeBoardScene>>;
@@ -197,7 +199,7 @@ function adventureRoomPanel(s:World,room:AdventureRoom,editor:string,ready:boole
  if(room.type==='commission')return `<section class="service" id="adventure-room-panel" data-room-type="commission" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以查看本层试炼，选择接下或拒绝；拒绝会完成此房间。':'此房间已处理；进行中的委托进度与效果显示在右侧。'}</p>${room.state==='idle'?button('interact-commission','查看本层委托',!canAct,'data-action="interact-commission"'):''}</section>`;
  return `<section class="service" id="adventure-room-panel" data-room-type="blessing" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以选择一项祝福，也可以放弃。':`此房间已处理；已获得的祝福显示在右侧。`}</p>${room.state==='idle'?button('interact-blessing','查看祝福选项',!canAct,'data-action="interact-blessing"'):''}</section>`;
 }
-function render(){syncDungeonLayout();for(const id of ['context-actions','hud-bottom','hud-item-targets'])$(id).replaceChildren();renderOverlay();renderMain();renderExtras();renderDungeonHud();refreshTransfer();if(screen==='play')void ensureBoard();}
+function render(){document.body.classList.toggle('camp-mode',screen==='play'&&store.atBase);syncDungeonLayout();for(const id of ['context-actions','hud-bottom','hud-item-targets'])$(id).replaceChildren();renderOverlay();renderMain();renderExtras();renderDungeonHud();refreshTransfer();if(screen==='play')void ensureBoard();}
 
 function chooseHudSkill(skill:Skill){cancelMoveInput();selectedSkill=selectedSkill===skill?null:skill;choosingItem=null;bagOpen=false;actionsOpen=false;render();}
 function chooseHudItem(item:Item){
@@ -295,7 +297,7 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   const end=s.end!;$('controls').innerHTML='';const persistentRun=s.scenario==='expedition'&&!!store.envelope;
   const resultSummary=s.dungeon?.roguelike?`<p>讨伐首领：${end.boss?'成功':'未击败'}</p>`:`<p>目标${end.goal?'已完成':'未完成'} · 已取得 ${end.acquired} · 正常带出 ${end.brought}${end.boss===undefined?'':` · 讨伐首领：${end.boss?'成功':'未挑战'}`}</p>`;
   $('flow').innerHTML=`<div class="result"><small>本局结果</small><h2>${end.outcome==='won'?'击败首领':end.outcome==='normal'?'正常撤离':'全队倒下'}${s.difficulty&&s.difficulty!=='normal'?`（${DIFFICULTY_LABEL[s.difficulty]}）`:''}</h2>${resultSummary}<p>${end.team.map(id=>`${esc(resources(s,id))}，${s.dungeon?.roguelike?'伙伴归营':end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。远征中已学的永久招式保留，回营后可以整备再出发。</p>${resultDetails(s)}${persistentRun?button('to-base','回到基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}<p class="muted">${persistentRun?(ready?'终局已结算并自动保存。':'终局已结算，保存失败；重试成功前不能回营地。'):'这是内存开发场景；结算不会写入营地存档。'} 终局ID ${esc(end.id)}</p></div>`;
-  bind('to-base',()=>{if(anim.active)return;clear();notice='';void transition(store.returnToBase());});
+  bind('to-base',()=>{if(anim.active)return;clear();notice='';const report='<h3>上一局 · '+(end.outcome==='won'?'击败首领':'全队倒下')+'</h3>'+resultDetails(s);void transition(store.returnToBase().then(ok=>{if(ok){lastCampReport=report;campPanel=null;}return ok;}));});
   bind('new',()=>{const next=checkMode?createScenario(fixture!,newId()):begin(s.scenario==='main-invite'||s.scenario==='expedition'?s.scenario:'main-none');void transition(store.newTrial(next));});return;
  }
  if(s.phase==='commission'){
@@ -364,38 +366,78 @@ function rankPanel(p:Profile,ready:boolean):string{
  const level=rankLevel(p.rankExp),floor=rankThreshold(level),next=rankThreshold(level+1),points=availableTalentPoints(p);
  const rows=(['vitality','offense','supplies'] as TalentId[]).map(id=>{
   const n=p.talents[id]??0;
-  const effect=id==='vitality'?`全队最大 HP +${n*5}%`:id==='offense'?`伙伴对敌方的普攻与招式伤害 +${n*3}%；误伤同行不加成`:`橙橙果额外回复 ${n} HP${n>=3?'，出发自带 1 个橙橙果':'；达到 3 级时出发自带 1 个橙橙果'}`;
+  const effect=id==='vitality'?`全队最大 HP +${n*5}%`:id==='offense'?`对敌伤害 +${n*3}%`:`橙橙果回复 +${n} HP${n>=3?' · 出发带 1 个橙橙果':''}`;
   return `<article class="unit" id="talent-${id}"><h3>${esc(TALENTS[id].name)} <small>${n}/5</small></h3><p>${effect}</p>${button(`talent-add-${id}`,'加一点',!ready||points<1||n>=5)}</article>`;
  }).join('');
- return `<section id="rank-panel"><h2>探险队成长</h2><p id="rank-level">探险队 Lv${level} · 累计经验 ${p.rankExp}</p><p id="rank-progress">升到 Lv${level+1}：${p.rankExp-floor}/${next-floor}</p><p id="talent-points">未分配天赋点：${points}</p>${button('talent-tree-toggle',talentsOpen?'收起天赋树':'天赋树',!ready,`aria-expanded="${talentsOpen}" aria-controls="talent-tree"`)}${talentsOpen?`<section id="talent-tree"><h3>自由分配天赋点</h3>${rows}${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0))}<p class="muted">每升一级获得 1 点，每项最多 5 级。加点立即保存，下一次出发生效；免费重置会退回全部已用点数。</p></section>`:''}</section>`;
+ return `<section id="rank-panel"><p id="rank-level">探险队 Lv${level}</p>
+  <p id="rank-progress">下一级 ${p.rankExp-floor}/${next-floor}</p>
+  <p id="talent-points">未分配天赋点：${points}</p>
+  <div id="talent-tree">${rows}${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0))}</div></section>`;
+}
+function campParty(p:Profile,ready:boolean,rosterOpen:boolean):string {
+ const slots=Array.from({length:MAX_TEAM},(_,index)=>{
+  const id=p.team[index];
+  const member=p.roster.find(item=>item.id===id);
+  return member
+   ? `<div class="camp-party-slot ${id===p.leader?'is-leader':''}" data-member="${esc(id)}" data-leader="${id===p.leader}">${portrait(member.species)}${esc(spName(member.species))}</div>`
+   : '<div class="camp-party-slot is-empty" aria-label="空位">＋</div>';
+ }).join('');
+ const roster=p.roster.map(member=>{
+  const id=member.id,position=p.team.indexOf(id);
+  return `<article class="unit" id="inst-${esc(id)}">
+   <div><strong>${esc(spName(member.species))}</strong><span>${esc(id)} · ${position<0?'留守':id===p.leader?'操控者':'同行'}</span></div>
+   ${tacticSelect(`tactic-base-${id}`,member.tactic,!ready)}
+   <div class="camp-move-controls">${member.learned.map(l=>button(`carry-${id}-${l.move}`,
+    `${member.carry.includes(l.move)?'卸下':'携带'} ${esc(moveZh(l.move))}`,!ready,
+    `aria-pressed="${member.carry.includes(l.move)}" class="${member.carry.includes(l.move)?'selected':''}" title="${esc(moveSummary(l.move))}"`)).join('')}</div>
+   <div>${button(`team-${id}`,position<0?'加入队伍':'移出队伍',!ready)}
+   ${button(`lead-${id}`,'设为操控者',!ready||position<0||id===p.leader)}</div></article>`;
+ }).join('');
+ return '<h3>出发阵容</h3><div class="camp-party-strip" id="squad">'+slots+'</div><details id="camp-roster"'+(rosterOpen?' open':'')+'><summary>名册</summary>'+roster+'</details>';
+}
+function campVault(p:Profile,ready:boolean):string {
+ const vault=ALL_TM_MOVES.map(m=>button(`tm-${m}`,`${esc(tmName(m))}招式机 ×${p.vault[m]??0}`,
+  !ready||(p.vault[m]??0)<1,tmPick===m?'class="selected"':'')).join('');
+ const learnRows=tmPick?p.roster.map(i=>{
+  const r=learnTm(p,i.id,tmPick!);
+  return button(`learn-${i.id}`,`${esc(spName(i.species))} · ${r.ok?'可学习':esc(r.error.split('；')[0])}`,!ready);
+ }).join(''):'';
+ const shards=Object.entries(p.shards).map(([species,count])=>`${esc(spName(species))} ×${count}`).join('、');
+ return `<h3>招式机</h3><div>${vault}</div>${learnRows?'<div class="camp-learn-targets">'+learnRows+'</div>':''}
+  <h3>伙伴碎片</h3><p id="camp-shards">${shards||'暂无伙伴碎片'}</p>`;
 }
 function renderBase(){
- const p=store.profile;const ready=store.status==='ready';
- if(!p){$('flow').innerHTML='<p class="error">基地档案缺失。</p>';$('party').innerHTML='';$('controls').innerHTML='';return;}
- $('party').innerHTML=`<h2>名册 <small>${p.roster.length}只 · 每只最多携带2招</small></h2>`+p.roster.map(i=>{const pos=p.team.indexOf(i.id);
-  return `<article class="unit ${i.id===p.leader&&pos>=0?'leader':''}" id="inst-${i.id}"><div><strong>${esc(i.id)}</strong><span>${esc(spName(i.species))} · ${pos>=0?`出发第${pos+1}位${i.id===p.leader?' · 操控者':''}`:'留守'}</span></div>
-  ${i.protected?'<p class="muted">初始成员</p>':''}<p>已学：${i.learned.map(l=>`${esc(moveZh(l.move))}（${esc(moveSummary(l.move))}；PP${l.pp}）`).join('、')}</p>
-   <p>携带：${i.carry.length?i.carry.map(n=>`${esc(moveZh(n))}（${esc(moveSummary(n))}）`).join('、'):'无'}</p>${tacticSelect(`tactic-base-${i.id}`,i.tactic??'together',!ready)}
-  <div>${i.learned.map(l=>button(`carry-${i.id}-${l.move}`,`${i.carry.includes(l.move)?'卸下':'携带'} ${esc(moveZh(l.move))}`,!ready,i.carry.includes(l.move)?'class="selected"':'')).join('')}</div>
-  <div>${button(`team-${i.id}`,pos>=0?'移出队伍':'加入队伍',!ready)}${button(`lead-${i.id}`,'设为操控者',!ready||pos<0||i.id===p.leader)}</div></article>`;}).join('');
- const vault=ALL_TM_MOVES.map(m=>button(`tm-${m}`,`${esc(tmName(m))}招式机 ×${p.vault[m]??0}`,!ready||(p.vault[m]??0)<1,tmPick===m?'class="selected"':'')).join('');
- const learnRows=tmPick?`<p>把${esc(tmName(tmPick))}招式机教给：</p>${p.roster.map(i=>{const r=learnTm(p,i.id,tmPick!);return button(`learn-${i.id}`,`${esc(i.id)} ${esc(spName(i.species))}：${r.ok?'可学习':esc(r.error.split('；')[0])}`,!ready);}).join('')}`:'';
- $('flow').innerHTML=`<div class="result" id="base"><small>基地</small><h2>整备后再出发</h2>
-  <p>已完成远征 ${p.expeditions} 次。招式机在这里永久教给一只伙伴；换下的招式不会丢，也不会退还招式机。</p>
-  ${rankPanel(p,ready)}
-  <h2>伙伴碎片</h2><p id="camp-shards">${Object.entries(p.shards).length?Object.entries(p.shards).map(([species,count])=>`${esc(spName(species))} ×${count}`).join('、'):'暂无伙伴碎片'}</p>
-  <h2>仓库（招式机）</h2><div>${vault}</div>${learnRows}
-  <h2>出发队伍</h2><p id="squad">${p.team.map((id,n)=>`${n+1}. ${esc(id)} ${esc(spName(p.roster.find(i=>i.id===id)!.species))}${id===p.leader?'（操控者）':''}`).join(' → ')}（选择顺序即队列顺序，最多${MAX_TEAM}只）</p>
-  <p class="muted">出发是免费的基本整备：全员HP、PP全满；本局等级从 Lv5 开始；新的随机地图。升到下一级所需经验等于当前等级。</p><p class="warn-text">远征途中只有内存状态。关闭或刷新页面会回到出发前的营地存档，本次远征作废。</p>
-  <h2>出发前：难度</h2><div id="difficulty-picker" role="group" aria-label="远征难度">${(['easy','normal','hard'] as Difficulty[]).map(d=>button(`difficulty-${d}`,DIFFICULTY_LABEL[d],!ready,`aria-pressed="${p.difficulty===d}" ${p.difficulty===d?'class="selected"':''}`)).join('')}</div><p class="muted">简单：敌人更脆、打得更轻。困难：敌人更硬、打得更重。出发后不能更改。</p><p id="purse-picker">出发钱袋为 0。击倒敌人获得局内货币，结束后清零。</p>
-  ${button('depart','出发',!ready,'data-confirm="true" class="primary"')}</div>`;
- $('controls').innerHTML='';
+ const p=store.profile;
+ if(!p){$('flow').innerHTML='<p class="error">基地档案缺失。</p>';return;}
+ const ready=store.status==='ready';
+ const retry=store.status==='failed'?button('camp-retry','重试保存'):'';
+ const feedback=notice||retry?`<div class="camp-feedback" role="status">${esc(notice.replaceAll('主控','操控者'))}${retry}</div>`:'';
+ const difficulties=(['easy','normal','hard'] as Difficulty[]).map(d=>button(`difficulty-${d}`,DIFFICULTY_LABEL[d],!ready,
+  `aria-pressed="${p.difficulty===d}"`)).join('');
+ const difficultyPicker='<div class="camp-difficulty" id="difficulty-picker" role="group" aria-label="远征难度">'+difficulties+'</div>';
+ const rosterOpen=(document.getElementById('camp-roster') as HTMLDetailsElement|null)?.open??false;
+ const contents=campPanel==='party'?campParty(p,ready,rosterOpen):campPanel==='vault'?campVault(p,ready):campPanel==='talents'?rankPanel(p,ready):
+  '<p>完成远征 '+p.expeditions+' 次</p>'+(lastCampReport||'<p>暂无战报</p>');
+ const focusId=(document.activeElement as HTMLElement|null)?.id;
+ const scrollTop=document.getElementById('camp-dialog')?.scrollTop??0;
+ $('party').innerHTML='';$('controls').innerHTML='';
+ $('flow').innerHTML=campScene(p,ready,difficultyPicker,campPanel?'':feedback)+(campPanel?campPanelMarkup(campPanel,contents,feedback):'');
+ for(const section of Object.keys(CAMP_BUILDINGS) as CampPanel[])bind('camp-open-'+section,()=>{campPanel=section;notice='';render();});
+ const dialog=document.getElementById('camp-dialog') as HTMLDialogElement|null;
+ if(dialog){
+  const close=()=>{const panel=campPanel;campPanel=null;tmPick=null;render();if(panel)$('camp-open-'+panel).focus();};
+  dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
+  bind('camp-close',close);
+  dialog.showModal();dialog.scrollTop=scrollTop;
+  if(focusId&&dialog.contains(document.getElementById(focusId)))document.getElementById(focusId)?.focus({preventScroll:true});
+ }
+ bind('camp-menu',openSettings);
+ bind('camp-retry',()=>{notice='';void transition(store.retry());});
  const edit=async(a:BaseAction,after?:()=>void)=>{if(anim.active||store.status!=='ready')return;const pending=store.baseAction(a);render();const r=await pending;notice=r.ok?(r.saved?'':'这次改动尚未保存；请重试保存'):r.error;if(r.ok&&r.saved)after?.();render();};
- bind('talent-tree-toggle',()=>{talentsOpen=!talentsOpen;render();});
  for(const talent of ['vitality','offense','supplies'] as TalentId[])bind(`talent-add-${talent}`,()=>void edit({type:'talent',talent}));
  bind('talent-reset',()=>void edit({type:'resetTalents'}));
  for(const i of p.roster){
-   const tactic=$(`tactic-base-${i.id}`) as HTMLSelectElement;tactic.addEventListener('change',()=>{if(isTactic(tactic.value))void edit({type:'tactic',inst:i.id,tactic:tactic.value});});
+   const tactic=document.getElementById(`tactic-base-${i.id}`) as HTMLSelectElement|null;tactic?.addEventListener('change',()=>{if(isTactic(tactic.value))void edit({type:'tactic',inst:i.id,tactic:tactic.value});});
   for(const l of i.learned)bind(`carry-${i.id}-${l.move}`,()=>void edit({type:'carry',inst:i.id,moves:i.carry.includes(l.move)?i.carry.filter(n=>n!==l.move):[...i.carry,l.move]}));
   bind(`team-${i.id}`,()=>{const pos=p.team.indexOf(i.id);const team=pos>=0?p.team.filter(t=>t!==i.id):[...p.team,i.id];
    void edit({type:'team',team,leader:team.includes(p.leader)?p.leader:team[0]??p.leader});});
@@ -509,7 +551,7 @@ async function startNewGame(){
  const made=newGameProfile(ng.main,ng.deputy);if(!made.ok){ngError=made.error;render();return;}
  const ok=await store.beginNewGame(made.profile,ng.overwrite);
  if(!ok){ngError=store.error?`没有写入新存档：${store.error}。原存档保持不变。`:'没有写入新存档；原存档保持不变。';render();return;}
- quickItems=Array.from({length:6},()=>null);bagSlot=0;bagCategory='all';bagOpen=false;
+ quickItems=Array.from({length:6},()=>null);bagSlot=0;bagCategory='all';bagOpen=false;campPanel=null;lastCampReport='';
  clear();notice='';tmPick=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
 }
 /** Log lines the player may see: lines about an enemy on an unrevealed cell are dropped. */
@@ -683,6 +725,8 @@ function refreshTransfer(){
  ($('save-export') as HTMLButtonElement).disabled=busy||!['ready','blocked'].includes(store.status);
  ($('save-import') as HTMLButtonElement).disabled=busy||store.status==='failed';
  ($('settings-close') as HTMLButtonElement).disabled=transferBusy;
+ const campTitle=$('camp-title') as HTMLButtonElement;
+ campTitle.hidden=!store.atBase||screen!=='play'||dev;campTitle.disabled=transferBusy;
  $('save-export').textContent=store.status==='blocked'?'导出原记录':'导出存档文件';
 }
 function openSettings(){
@@ -713,7 +757,7 @@ $('save-file').addEventListener('change',async()=>{
   }
   const pending=store.importRecord(raw,true);render();
   const ok=await pending;
-  if(ok){clear();inviteChoice=undefined;inviteReject=false;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
+  if(ok){clear();campPanel=null;lastCampReport='';inviteChoice=undefined;inviteReject=false;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
    $('transfer-message').textContent='存档已导入并保存，关闭设置后可继续游戏。';
   }else $('transfer-message').textContent=store.importError;
   render();
@@ -721,10 +765,12 @@ $('save-file').addEventListener('change',async()=>{
  }catch{$('transfer-message').textContent='无法读取所选文件，请重新选择。当前存档没有改动。';}
  finally{transferBusy=false;refreshTransfer();}
 });
-bind('to-title',()=>{if(anim.active)return;clear();askOverwrite=false;screen='title';render();});
+function returnToTitle(){if(anim.active||transferBusy)return;clear();campPanel=null;askOverwrite=false;if(settings.open)settings.close();screen='title';render();}
+bind('to-title',returnToTitle);
+bind('camp-title',returnToTitle);
 {const box=document.getElementById('coords-toggle') as HTMLInputElement|null;box?.addEventListener('change',()=>{showCoords=box.checked;scene?.paint(live());});}
 new ResizeObserver(placeInspectBelowParty).observe($('party'));
-setInterval(()=>{if(screen!=='play')portraitTick(performance.now(),animationEnabled());},80);
+setInterval(()=>{if(screen!=='play'||store.atBase)portraitTick(performance.now(),animationEnabled());},80);
 bind('export-terrain',()=>{const theme=($('terrain-theme') as HTMLSelectElement).value as TerrainThemeKey,layer=($('terrain-layer') as HTMLSelectElement).value as TerrainLayer|'floor';scene?.exportTerrain(theme,layer);});
 bind('open-fixture',()=>{const id=(document.getElementById('fixture') as HTMLSelectElement).value;window.open(`?fixture=${encodeURIComponent(id)}`,'_blank','noopener');});
 
@@ -740,7 +786,7 @@ function flushMoveInput(){
 document.addEventListener('keyup',e=>{if(e.key==='Shift')anim.shift=false;const k=e.key.length===1?e.key.toLowerCase():e.key;if(heldDirections.has(k)){if(moveTimer!==null)flushMoveInput();heldDirections.delete(k);}});
 document.addEventListener('click',e=>{if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, label:has(#anim-toggle), summary')){e.stopPropagation();e.preventDefault();}},true);
 document.addEventListener('keydown',e=>{
- if(settings.open||screen!=='play')return;
+ if(settings.open||screen!=='play'||store.atBase)return;
  if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}
  if(e.repeat){e.preventDefault();return;}
  if(anim.active){if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}

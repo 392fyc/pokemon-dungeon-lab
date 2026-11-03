@@ -1,0 +1,173 @@
+.screen:has(> .title-landing) {
+  padding: 0;
+}
+
+.screen .title-landing {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-content: center;
+  gap: clamp(12px, 3vh, 26px);
+  width: 100%;
+  min-height: 100%;
+  max-width: none;
+  padding: 24px 16px;
+  overflow: hidden;
+  background: #0b1310;
+}
+
+.title-landscape {
+  position: absolute;
+  z-index: -1;
+  inset: -12px;
+  overflow: hidden;
+  filter: blur(3px);
+  pointer-events: none;
+}
+
+.title-landscape::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: radial-gradient(ellipse at center, #0b131080, #060b09df 88%);
+}
+
+.title-landscape > span {
+  position: absolute;
+  background: #66774c url("/assets/tiles/floor-stone.png") 0 0 / 120px 120px repeat;
+  box-shadow: 0 0 0 18px #33412e;
+}
+
+.title-landscape > span:nth-child(1) {
+  top: 9%;
+  right: 18%;
+  width: 49%;
+  height: 59%;
+}
+
+.title-landscape > span:nth-child(2) {
+  top: 38%;
+  left: -3%;
+  width: 33%;
+  height: 49%;
+}
+
+.title-landscape > span:nth-child(3) {
+  top: 48%;
+  left: 27%;
+  width: 22%;
+  height: 9%;
+}
+
+.title-core {
+  align-self: center;
+  display: grid;
+  justify-items: center;
+  gap: clamp(16px, 6vh, 54px);
+  padding-top: min(6vh, 42px);
+}
+
+.title-core .brand.big {
+  margin: 0;
+  color: #fff1b8;
+  font-size: clamp(27px, 6.2vw, 76px);
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-shadow: 0 0 24px #f0d88255;
+}
+
+.title-core .title-menu {
+  display: grid;
+  justify-content: stretch;
+  gap: 12px;
+  width: min(300px, 100%);
+  margin: 0;
+}
+
+.title-core .title-menu button {
+  min-height: 52px;
+  margin: 0;
+  border-radius: 12px;
+  border-color: #5b6b58;
+  background: #17221bbd;
+  color: #f4eedb;
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.title-core .title-menu button:hover:not(:disabled) {
+  border-color: #ebd78c;
+}
+
+.title-core .title-menu .primary {
+  background: #ead58b;
+  border-color: #ead58b;
+  color: #151711;
+}
+
+.title-save-summary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.title-core > .error,
+.title-landing #entry-status {
+  max-width: min(560px, 100%);
+  margin: 0 auto;
+}
+
+.title-landing #entry-status:empty {
+  display: none;
+}
+
+.title-core .confirm-box {
+  position: absolute;
+  z-index: 1;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  width: min(520px, calc(100% - 32px));
+  margin: 0;
+}
+
+.title-starters {
+  display: flex;
+  justify-content: center;
+  align-items: end;
+  gap: clamp(2px, 1.6vw, 20px);
+}
+
+.title-portrait {
+  --sprite-scale: min(4px, 0.34vw, 0.57vh);
+  display: block;
+  width: calc(var(--frame-width) * var(--sprite-scale));
+  height: calc(var(--frame-height) * var(--sprite-scale));
+  flex: none;
+  image-rendering: pixelated;
+  background-repeat: no-repeat;
+  background-size:
+    calc(var(--frame-width) * var(--sheet-columns) * var(--sprite-scale))
+    calc(var(--frame-height) * 8 * var(--sprite-scale));
+}
+
+@media (max-height: 520px) {
+  .screen .title-landing {
+    gap: 12px;
+    padding-block: 12px;
+  }
+
+  .title-core {
+    gap: 14px;
+    padding-top: 0;
+  }
+
+  .title-core .title-menu button {
+    min-height: 38px;
+    padding-block: 7px;
+  }
+}

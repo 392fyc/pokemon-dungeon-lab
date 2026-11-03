@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {campControl} from './camp-ui.mjs';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
@@ -19,6 +20,7 @@ const readyOn=page=>page.waitForFunction(()=>window.trial?.store.status==='ready
 const ready=()=>readyOn(p);
 async function clickUI(page,id){
  if(id==='open-settings'&&await page.locator('#hud-settings').isVisible())id='hud-settings';
+ id=await campControl(page,id);
  const target=page.locator('#'+id),actions=page.locator('#hud-actions'),actionsOpen=page.locator('#actions-open');
  if(await target.count()&&await actions.count()&&await actions.isHidden()&&await actionsOpen.isVisible()&&await target.evaluate(el=>!!(el.closest('#controls,#hud-actions')||(el.closest('#save')&&!el.closest('#flow'))))){await actionsOpen.click();await readyOn(page);}
  await target.click();await readyOn(page);

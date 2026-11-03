@@ -1,11 +1,40 @@
-/** Title HTML only: no engine, save validation, art metadata or species data. */
+/** Lightweight title markup. Only the first frames of the shipped starter sprites are needed here. */
+import "../render/title-screen.css";
 export type TitleContext={hasRecord:boolean;status:string;error:string;saveLine:string;asking:boolean;exported:boolean};
 const esc=(s:unknown)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+// The title loads before the full animation index or game data.
+const STARTER_FRAMES = [
+  ['0001', 32, 40, 3], ['0004', 32, 40, 4], ['0007', 32, 32, 8],
+  ['0152', 24, 48, 6], ['0155', 24, 32, 2], ['0158', 32, 48, 7],
+  ['0252', 32, 40, 3], ['0255', 24, 40, 5], ['0258', 24, 40, 7],
+] as const;
+function titleStarters(): string {
+  return STARTER_FRAMES.map(([dex, width, height, frames]) =>
+    '<span class="title-portrait" style="--frame-width:' + width +
+    ';--frame-height:' + height + ';--sheet-columns:' + frames +
+    ';background-image:url(assets/characters/' + dex + '/Idle-Anim.png)"></span>'
+  ).join('');
+}
 export function renderTitle(c:TitleContext):string {
   const blocked=c.status==='blocked';
   const ask=c.asking?`<div class="confirm-box" id="overwrite-box" role="alertdialog"><h2>开始新游戏会覆盖现有存档</h2><p>此浏览器里已有一份存档（${esc(c.saveLine||'无法读取')}）。覆盖后无法恢复；先导出原记录可以保留一份备份。取消则一切保持原样。</p>
   <button id="overwrite-export">导出原记录</button><button id="overwrite-yes" data-confirm="true" ${blocked&&!c.exported?'disabled':''}>确认覆盖，继续选择角色</button><button id="overwrite-cancel">取消</button>${blocked&&!c.exported?'<p class="muted">原记录无法读取，须先导出才能覆盖。</p>':''}</div>`:'';
-  return `<div class="screen-inner"><h1 class="brand big">宝可梦地牢探索</h1><p class="muted">私有试玩构建 · 进度只保存在此浏览器</p>
-  <div class="title-menu">${c.hasRecord&&!blocked?`<button id="title-continue" class="primary">${c.status==='pending'?'读取存档':'继续'}</button>`:''}<button id="title-new" ${c.asking?'disabled':''} class="${c.hasRecord?'':'primary'}">新游戏</button></div>
-  ${c.hasRecord&&!blocked?`<p class="muted" id="title-save-line">${c.status==='pending'?'':'现有存档：'}${esc(c.saveLine)}</p>`:''}${blocked?`<p class="error">存档无法载入：${esc(c.error)}。原记录没有被改动。</p>`:''}${c.status==='failed'?'<p class="error">最新结果未保存，请先继续游戏并重试保存。</p>':''}${ask}</div>`;
+  const menu = [
+    c.hasRecord && !blocked
+      ? `<button id="title-continue" class="primary" aria-describedby="title-save-line">${c.status === 'pending' ? '读取存档' : '继续冒险'}</button>`
+      : '',
+    `<button id="title-new" ${c.asking ? 'disabled' : ''} class="${c.hasRecord ? '' : 'primary'}">新的冒险</button>`,
+  ].join('');
+  return `<div class="screen-inner title-landing">
+    <div class="title-landscape" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="title-core">
+      <h1 class="brand big">宝可梦地牢探索</h1>
+      <div class="title-menu">${menu}</div>
+      ${c.hasRecord && !blocked ? `<p class="title-save-summary" id="title-save-line">${c.status === 'pending' ? '' : '现有存档：'}${esc(c.saveLine)}</p>` : ''}
+      ${blocked ? `<p class="error">存档无法载入：${esc(c.error)}。原记录没有被改动。</p>` : ''}
+      ${c.status === 'failed' ? '<p class="error">最新结果未保存，请先继续游戏并重试保存。</p>' : ''}
+      ${ask}
+    </div>
+    <div class="title-starters" aria-hidden="true">${titleStarters()}</div>
+  </div>`;
 }

@@ -18,6 +18,7 @@ import {
   type World,
 } from "../core/engine.ts";
 import { moveCategory, moveEffects, moveOf, type MoveRange } from "../core/moves.ts";
+import { THEME_FLOORS, themeOfLevel } from "../core/dungeon.ts";
 import { itemZh, moveZh, speciesZh, tmZh, typeZh } from "../core/names.ts";
 import { damageEstimateText, moveRangeLabel } from "../core/describe.ts";
 import { sheet, skinFor } from "./sprites.ts";
@@ -118,17 +119,28 @@ function itemTitle(item: Item): string {
   return ITEM_NAMES[item] ?? itemZh(item);
 }
 
+const QUICK_ITEM_NAMES: Record<Item, string> = {
+  berry: "橙橙果",
+  bigBerry: "大树果",
+  tonic: "PP剂",
+  teamTonic: "全员PP剂",
+  pechaBerry: "桃桃果",
+  rawstBerry: "木子果",
+  cheriBerry: "零余果",
+  healSeed: "治愈种",
+};
+
 function quickSlotMarkup(world: World, item: Item | null, index: number, disabled: boolean): string {
-  if (!item) {
+  const amount = item ? itemCount(world, item) : 0;
+  if (!item || amount < 1) {
     return '<button type="button" class="hud-quick-slot is-empty" data-hud-quick="' + index +
       '" aria-label="空快捷格" disabled><span aria-hidden="true"></span></button>';
   }
-  const amount = itemCount(world, item);
   const name = itemTitle(item);
-  const unavailable = disabled || amount < 1;
+  const unavailable = disabled;
   return '<button type="button" class="hud-quick-slot" data-hud-quick="' + index +
     '" aria-label="' + esc(name + " ×" + amount) + '"' + (unavailable ? " disabled" : "") + ">" +
-    '<span class="hud-quick-name">' + esc(name) + '</span><span class="hud-quick-count">×' +
+    '<span class="hud-quick-name">' + esc(QUICK_ITEM_NAMES[item]) + '</span><span class="hud-quick-count">×' +
     amount + "</span></button>";
 }
 
@@ -235,7 +247,7 @@ function scopeGrid(range: MoveRange | undefined): string {
 }
 
 function consumableList(world: World): Array<{ item: Item; category: string; amount: number }> {
-  const items: Item[] = ["berry", "bigBerry", "tonic", "teamTonic"];
+  const items = Object.keys(ITEM_CATEGORIES) as Item[];
   return items
     .map((item) => ({ item, category: ITEM_CATEGORIES[item], amount: itemCount(world, item) }))
     .filter((entry) => entry.amount > 0);
@@ -362,10 +374,12 @@ export function hudMinimap(s: World): string {
     '<circle class="hud-map-unit is-enemy" cx="' + (unit.pos!.x + 0.5) +
     '" cy="' + (unit.pos!.y + 0.5) + '" r="0.32"></circle>',
   ).join("");
-  const floorLabel = s.dungeon ? "第 " + s.dungeon.level + " 层" : "固定地图";
+  const theme = s.dungeon ? themeOfLevel(s.dungeon.boss, s.dungeon.level) : null;
+  const mazeName = theme ? THEME_FLOORS.find((floor) => floor.theme === theme)?.name ?? "迷宫" : "固定地图";
+  const floorLabel = s.dungeon ? mazeName + " " + s.dungeon.level + "F" : mazeName;
   const roundLabel = "第 " + s.round + " 轮";
   return '<section class="hud-minimap-panel" aria-label="小地图">' +
-    '<div class="hud-minimap-heading"><span>' + floorLabel + '</span><span>' + roundLabel + "</span></div>" +
+    '<div class="hud-minimap-heading"><span>' + esc(floorLabel) + '</span><span>' + esc(roundLabel) + "</span></div>" +
     '<svg class="hud-minimap-map" viewBox="' + minX + " " + minY + " " + width + " " + height +
     '" role="img" aria-label="已探索区域">' + wallMarkup + floorMarkup + pointMarkup +
     friendMarkup + enemyMarkup + "</svg></section>";
@@ -442,11 +456,12 @@ export function hudBag(
   const quickMarkup = Array.from({ length: 6 }, (_, index) => {
     const item = quick[index] ?? null;
     const amount = item ? itemCount(s, item) : 0;
-    const label = item ? itemTitle(item) + " ×" + amount : "空快捷格";
-    return '<button type="button" class="hud-bag-slot' + (item ? "" : " is-empty") +
+    const occupied = !!item && amount > 0;
+    const label = occupied ? itemTitle(item!) + " ×" + amount : "空快捷格";
+    return '<button type="button" class="hud-bag-slot' + (occupied ? "" : " is-empty") +
       '" data-bag-slot="' + index + '" aria-pressed="' + (selected && selectedSlot === index) +
       '" aria-label="快捷格 ' + (index + 1) + "：" + esc(label) + '">' +
-      (item ? '<span>' + esc(itemTitle(item)) + '</span><small>×' + amount + "</small>" : "") +
+      (occupied ? '<span>' + esc(QUICK_ITEM_NAMES[item!]) + '</span><small>×' + amount + "</small>" : "") +
       "</button>";
   }).join("");
 
@@ -484,6 +499,10 @@ export function hudBag(
     '<div class="hud-bag-quick-grid" aria-label="快捷格">' + quickMarkup + "</div>" +
     '<div class="hud-bag-tabs" role="tablist" aria-label="物品分类">' + tabs + "</div>" +
     '<div class="hud-bag-item-grid" aria-label="背包物品">' + itemMarkup + "</div></section>";
+}
+
+export function hudDamageEstimate(s: World, actor: string, targetId?: string, skill?: Skill): string {
+  return damageEstimateText(s, actor, targetId, skill).replace(/（对普通目标）$/, "");
 }
 
 function formatAccuracy(chance: number): string {
@@ -535,6 +554,6 @@ export function hudMoveTip(s: World, skill: Skill): string {
     '<div class="hud-tip-field" data-move-range="' + esc(spec?.range ?? "") + '"><span>射程</span><strong aria-label="' + esc(fullRange) + '">' + esc(range) + "</strong></div>" +
     '<div class="hud-tip-field"><span>范围</span><strong>' + esc(target) + "</strong></div></div>" +
     '<div class="hud-tip-preview"><span>预计伤害</span><strong data-move-preview="' +
-    esc(skill) + '">' + esc(damageEstimateText(s, s.leader, undefined, skill)) + '</strong></div>' +
+    esc(skill) + '">' + esc(hudDamageEstimate(s, s.leader, undefined, skill)) + '</strong></div>' +
     '<p class="hud-tip-description" data-move-description>' + esc(description) + '</p></div></div></section>';
 }

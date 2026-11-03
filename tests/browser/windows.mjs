@@ -5,12 +5,12 @@ import {BOSS} from '../../src/core/dungeon.ts';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 let browser;
-// 完整Windows浏览器检查最多10分钟；到期关闭浏览器并明确失败，不跳过检查。
+// 完整浏览器检查最多20分钟；Linux上51项曾两次触及10分钟预算，扩大运行预算不改变任何断言。
 const browserDeadline=setTimeout(()=>{
- console.error('Windows browser suite exceeded its 600-second deadline');
+ console.error('Windows browser suite exceeded its 1200-second deadline');
  Promise.resolve(browser?.close()).finally(()=>process.exit(124));
  setTimeout(()=>process.exit(124),5000).unref();
-},600_000);
+},1_200_000);
 browserDeadline.unref();
 browser=await chromium.launch({...(process.env.BROWSER_EXECUTABLE ? {executablePath:process.env.BROWSER_EXECUTABLE} : {channel:'msedge'}),headless:true});
 const results=[];
@@ -58,7 +58,16 @@ async function chord(p,first,second){
  return trace[1].at-trace[0].at;
 }
 async function click(p,id,settle=true){
- if(id.startsWith('use-')){const slot={berry:0,tonic:1,bigBerry:2,teamTonic:3}[id.slice(4)];await p.locator(`[data-hud-quick="${slot}"]`).click();if(settle)await ready(p);return;}
+ if(id.startsWith('use-')){
+  const item=id.slice(4),slot={berry:0,tonic:1,bigBerry:2,teamTonic:3}[item];
+  assert.notEqual(slot,undefined,'the helper names an existing consumable');
+  await p.locator('#bag-open').click();await ready(p);
+  await p.locator('[data-bag-slot="'+slot+'"]').click();await ready(p);
+  await p.locator('[data-bag-category="all"]').click();await ready(p);
+  await p.locator('[data-bag-item="'+item+'"]').click();await ready(p);
+  await p.locator('#bag-close').click();await ready(p);
+  await p.locator('[data-hud-quick="'+slot+'"]').click();if(settle)await ready(p);return;
+ }
  const target=p.locator('#'+id),actions=p.locator('#hud-actions'),actionsOpen=p.locator('#actions-open');
  if(await target.count()&&await actions.count()&&await actions.isHidden()&&await actionsOpen.isVisible()&&await target.evaluate(el=>!!(el.closest('#controls,#hud-actions')||(el.closest('#save')&&!el.closest('#flow'))))){await actionsOpen.click();if(settle)await ready(p);}
  await target.click();if(settle)await ready(p);
@@ -814,6 +823,15 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   }
   for(const keyLabel of ['1—4','5—0','Tab','B'])assert.ok((await p.locator('#shortcut-card').innerText()).includes(keyLabel),`in-frame shortcut card includes ${keyLabel}`);
   assert.equal(await p.locator('#party [id^="unit-card-"]').count(),2);
+  assert.equal(await p.locator('#hud-bottom .hud-quick-slot.is-empty').count(),6,'new runs show six empty quick slots without zero-count items');
+  assert.equal(await p.locator('.hud-minimap-heading > span').first().innerText(),'苔石洞 1F');
+  const memberBounds=await p.locator('.hud-party-card').evaluateAll(cards=>cards.map(card=>{
+   const rect=selector=>{const r=card.querySelector(selector).getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};};
+   return {details:rect('.hud-party-details'),hp:rect('.hud-hp-track'),status:rect('.hud-unit-status')};
+  }));
+  const intersects=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;
+  await p.screenshot({path:artifact+'windows-hud-detail-bounds.png',fullPage:false});
+  for(const bounds of memberBounds){assert.equal(intersects(bounds.details,bounds.hp),false,'the detail entry does not overlap the HP bar: '+JSON.stringify(bounds));assert.equal(intersects(bounds.details,bounds.status),false,'the detail entry does not overlap status badges: '+JSON.stringify(bounds));}
   assert.equal(await p.locator('#guide-card').count(),0,'the old explanatory guide is absent from the maze');
   let overflow=await p.evaluate(()=>({scrollY:window.scrollY,scrollX:window.scrollX,scrollHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,clientHeight:document.documentElement.clientHeight,clientWidth:document.documentElement.clientWidth}));
   assert.equal(overflow.scrollY,0);assert.equal(overflow.scrollX,0);assert.ok(overflow.scrollHeight<=overflow.clientHeight&&overflow.scrollWidth<=overflow.clientWidth,'the full-screen HUD fits the viewport without page scrolling');
@@ -827,6 +845,7 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   const moveDescription=JSON.parse(fs.readFileSync(new URL('../../src/data/move-desc-zh.json',import.meta.url),'utf8')).moves[skill].desc;
   assert.equal(await tip.locator('[data-move-description]').textContent(),moveDescription,'the hover tooltip matches the local Chinese description for the selected move');
   assert.ok((await tip.locator(`[data-move-preview="${skill}"]`).textContent())?.trim(),'the hover card carries the live move estimate');
+  assert.doesNotMatch(await tip.locator('[data-move-preview]').innerText(),/对普通目标|[（）]/,'the visual estimate omits explanatory parentheses');
   assert.doesNotMatch(await move.innerText(),/同排|同列|斜线|造成约/,'compact move cards do not carry the old detailed explanation');
   assert.ok(!(await move.innerText()).includes(moveDescription),'full move prose appears in the hover tooltip only');
   await p.screenshot({path:artifact+'windows-hud-main-hover.png',fullPage:false});
@@ -850,6 +869,65 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   assert.equal(overflow.scrollY,0);assert.equal(overflow.scrollX,0);assert.ok(overflow.scrollHeight<=overflow.clientHeight&&overflow.scrollWidth<=overflow.clientWidth);
   assert.deepEqual(errors,[]);
   return {realPlayerSave:true,moves:4,quickSlots:6,firstMoveKey:true,tooltipFields:['威力','命中','PP','射程','范围'],bagCategories:['all','berry','drink','tm','other'],emptyInventory:true,tabCycle:true,guideAbsent:true,noPageOverflow:true,screenshots:['windows-hud-main-default.png','windows-hud-main-hover.png','windows-hud-main-bag.png','windows-hud-main-switch.png']};
+ }finally{await context.close();}
+});
+await test('162 新果实：八种背包物品、分类分配、真实使用与无效目标拒绝',async()=>{
+ const {context,page:p,errors}=await setup('K1');
+ try{
+  const {createScenario}=await import('../../src/core/scenarios.ts');
+  const {ITEM_NAMES}=await import('../../src/core/engine.ts');
+  const cases=[['pechaBerry','psn','berry'],['rawstBerry','brn','berry'],['cheriBerry','par','berry'],['healSeed','frz','other']],checks=[];
+  await p.setViewportSize({width:1280,height:720});
+  for(let index=0;index<cases.length;index++){
+   const [item,status,category]=cases[index];
+   if(index){await p.reload();await p.locator('#start').waitFor();}
+   const fixture=createScenario('K1','hud-cure-'+item);
+   fixture.prog={level:5,exp:0,rng:1,made:0,kills:[],items:{berry:1,tonic:1,bigBerry:1,teamTonic:1,pechaBerry:1,rawstBerry:1,cheriBerry:1,healSeed:1}};
+   for(const id of fixture.queue)fixture.units[id].tactic='wait';
+   for(const id of fixture.enemies)fixture.units[id].waitOnly=true;
+   fixture.units.B.status={[status]:{left:3,tick:2}};
+   await startMemory(p,fixture);const before=await state(p);
+   assert.equal(await p.locator('#hud-bottom .hud-quick-slot.is-empty').count(),6,'a fresh page does not preassign owned items');
+   await click(p,'bag-open');await p.locator('[data-bag-category="all"]').click();await ready(p);
+   assert.equal(await p.locator('[data-bag-item]').count(),8,'all eight owned consumables are listed');
+   await p.locator('[data-bag-category="'+category+'"]').click();await ready(p);
+   assert.equal(await p.locator('[data-bag-item="'+item+'"]').count(),1,item+' is visible in its actual category');
+   await p.screenshot({path:artifact+'windows-hud-new-fruit-'+item+'-bag.png',fullPage:false});
+   await p.locator('[data-bag-slot="'+index+'"]').click();await ready(p);
+   await p.locator('[data-bag-item="'+item+'"]').click();await ready(p);
+   const slot=p.locator('[data-hud-quick="'+index+'"]');
+   assert.equal(await slot.getAttribute('aria-label'),ITEM_NAMES[item]+' ×1','the assigned slot identifies the owned item and quantity');
+   if(index===0){
+    await p.locator('[data-bag-category="drink"]').click();await ready(p);
+    for(const [drink,n,label] of [['tonic',4,'PP剂'],['teamTonic',5,'全员PP剂']]){
+     await p.locator('[data-bag-slot="'+n+'"]').click();await p.locator('[data-bag-item="'+drink+'"]').click();await ready(p);
+     const name=p.locator('[data-hud-quick="'+n+'"] .hud-quick-name');
+     assert.equal(await name.innerText(),label);
+     assert.equal(await name.evaluate(el=>getComputedStyle(el).whiteSpace),'nowrap','quick names stay on one line');
+     const fit=await name.evaluate(el=>({label:el.textContent,scroll:el.scrollWidth,width:el.clientWidth,box:el.getBoundingClientRect().toJSON()}));
+     await p.screenshot({path:artifact+'windows-hud-quick-'+drink+'.png',fullPage:false});
+     assert.ok(fit.scroll<=fit.width,'the short name fits its slot without clipping: '+JSON.stringify(fit));
+    }
+   }
+   assert.deepEqual(await state(p),before,'browsing and assigning inventory do not mutate the world or spend a turn');
+   await click(p,'bag-close');await slot.click();await ready(p);await click(p,'item-target-A');
+   assert.deepEqual(await state(p),before,'an item with no matching condition is refused without consuming inventory or an action');
+   const refusedMessage=await p.locator('#message').innerText();
+   assert.ok(refusedMessage.includes('没有'+ITEM_NAMES[item]+'能治好的状态')&&refusedMessage.includes('本轮未执行'));
+   await slot.click();await ready(p);await click(p,'item-target-B');
+   const after=await state(p);
+   assert.equal(after.round,before.round+1,'a real item use advances exactly one round');
+   assert.equal(after.prog.items[item],0,'the used item is consumed once');
+   assert.equal(after.units.B.status?.[status],undefined,'the matching condition is cured on the adjacent companion');
+   assert.ok(after.events.some(e=>e.type==='status'&&e.target==='B'&&e.status===status&&e.change==='cure'),'the round records the actual cure event');
+   assert.equal(await slot.getAttribute('aria-label'),'空快捷格','an exhausted assignment renders as an empty slot');
+   assert.equal(await slot.isDisabled(),true);
+   assert.doesNotMatch(await slot.innerText(),/×0|桃桃果|木子果|零余果|治愈之种/);
+   await p.screenshot({path:artifact+'windows-hud-new-fruit-'+item+'-used.png',fullPage:false});
+   checks.push({item,category,status,assignedSlot:index,refusedWithoutCondition:true,curedCompanion:true,round:after.round});
+  }
+  assert.deepEqual(errors,[]);
+  return {checks,allConsumables:8,quickNamesOneLine:true,fixtureBoundary:'初始内存夹具注入本队背包与相邻伙伴状态，并将队员方针和敌人设为等待以隔离治疗效果；分类、快捷分配、无效拒绝和治疗均走真实界面输入，不代表自然探索路线。'};
  }finally{await context.close();}
 });
 await test('162 WASD 双键只推进一轮，斜向遵守墙角，其他动作取消待执行方向',async()=>{
@@ -949,6 +1027,50 @@ await test('7.1(b) 已有存档：新游戏需要确认，取消后原存档不�
   assert.deepEqual(errors,[]);return {cancelKeptOriginal:true,exportMatches:true,overwriteAfterConfirm:true};
  }finally{await context.close();}
 });
+await test('162 同页替换新档：成功清空快捷分配，写入失败保留旧分配',async()=>{
+ const {context,page:p,errors}=await plainContext();
+ await context.addInitScript(()=>{
+  const set=Storage.prototype.setItem;
+  Storage.prototype.setItem=function(k,v){if(window.__failNewProfile&&k.startsWith('dungeon-trial.'))throw new DOMException('Injected new-profile write failure','QuotaExceededError');return set.call(this,k,v);};
+ });
+ try{
+  const {speciesUnit}=await import('../../src/core/engine.ts');
+  const injectHeldTonic=async()=>{await p.evaluate(()=>{window.trial.store.world.prog.items.tonic=1;window.dispatchEvent(new Event('blur'));});await ready(p);};
+  const finishThroughWipe=async()=>{
+   const fixture=await state(p),at=fixture.floor.find(q=>fixture.floor.some(r=>r.x===q.x+1&&r.y===q.y));
+   assert.ok(at,'the generated map has two adjacent walkable cells for the isolated terminal fixture');
+   for(const id of fixture.queue){fixture.units[id].hp=0;fixture.units[id].pos=null;}
+   fixture.units[fixture.leader].hp=1;fixture.units[fixture.leader].pos={...at};
+   for(const id of fixture.enemies){fixture.units[id].hp=0;fixture.units[id].pos=null;}
+   const enemy=speciesUnit('newprofile-ui-enemy','arcanine',30,{x:at.x+1,y:at.y});enemy.side='enemy';enemy.learned=[];enemy.pp={};enemy.maxPp={};
+   fixture.units[enemy.id]=enemy;fixture.enemies=[enemy.id];fixture.seen=fixture.floor.map(q=>q.x+','+q.y);
+   await p.evaluate(world=>{window.trial.store.world=world;window.dispatchEvent(new Event('blur'));},fixture);await ready(p);
+   await click(p,'wait');assert.equal((await state(p)).phase,'ended');assert.equal((await state(p)).end.outcome,'wipe');
+   await click(p,'to-base');assert.equal(await state(p),null);await p.locator('#to-title').click();await p.locator('#title-new').waitFor();
+  };
+  await p.goto(base);await p.locator('#title-new').click();await newGameClicks(p,'treecko','mudkip');
+  await p.locator('#depart').click();await ready(p);await injectHeldTonic();
+  await click(p,'bag-open');await p.locator('[data-bag-slot="4"]').click();await p.locator('[data-bag-category="all"]').click();await p.locator('[data-bag-item="tonic"]').click();await click(p,'bag-close');
+  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1');
+  await finishThroughWipe();const original=await raw(p);assert.ok(original);
+  await p.locator('#title-new').click();await p.locator('#overwrite-yes').click();
+  await p.locator('#pick-main-charmander').click();await p.locator('#main-next').click();await p.locator('#pick-deputy-squirtle').click();
+  await p.evaluate(()=>{window.__failNewProfile=true;});await p.locator('#newgame-start').click();
+  await p.getByText(/没有写入新存档/).waitFor();assert.equal(await raw(p),original,'a failed replacement retains the exact old camp bytes');
+  await p.evaluate(()=>{window.__failNewProfile=false;});await p.locator('#deputy-back').click();await p.locator('#newgame-cancel').click();await p.locator('#title-continue').click();
+  await p.locator('#depart').click();await ready(p);await injectHeldTonic();
+  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1','failed new-game persistence retains the old UI assignment');
+  await finishThroughWipe();await p.locator('#title-new').click();await p.locator('#overwrite-yes').click();await newGameClicks(p,'charmander','squirtle');
+  assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(u=>u.species),['charmander','squirtle']);
+  await p.locator('#depart').click();await ready(p);await injectHeldTonic();const before=await state(p);
+  assert.equal(before.prog.items.tonic,1,'the new run owns the same item previously assigned by the old profile');
+  assert.equal(await p.locator('#hud-bottom .hud-quick-slot.is-empty').count(),6,'a successful same-page replacement clears every old quick assignment');
+  await key(p,'9');assert.deepEqual(await state(p),before,'the old slot key no longer selects or uses the item');
+  await p.screenshot({path:artifact+'windows-hud-new-profile-empty-slots.png',fullPage:false});
+  assert.deepEqual(errors,[]);
+  return {samePage:true,failedWriteKeepsBytesAndAssignment:true,successfulNewProfileClearsAllSix:true,fixtureBoundary:'同页真实新建、分配、覆盖确认和失败重试；为隔离档案界面，注入一份PP剂库存，并两次将队伍预置为只剩1HP、相邻Lv30敌人无招式以普攻触发真实全灭结算。此夹具不证明正常战斗与探索路线。'};
+ }finally{await context.close();}
+});
 await test('7.1/7.8 可读性：悬停敌人看等级与招式、组合草稿显示执行顺序与默认行为',async()=>{
  const {context,page:p,errors}=await setup('K1');
  try{
@@ -974,13 +1096,13 @@ await test('#112 能力值：悬停目标与草稿成员即时改变招式估算
   await startMemory(p,fixture);const before=await state(p);
   const card=p.locator('#skill-tackle'),preview=p.locator('#hud-tooltip [data-move-preview="tackle"]');
   await click(p,'skill-tackle');await card.hover();await preview.waitFor();
-  assert.match(await preview.innerText(),/约9点（对普通目标）/);
+  assert.equal(await preview.innerText(),'约9点');
   await hoverCell(p,fixture.units.H.pos.x,fixture.units.H.pos.y);await card.hover();
   await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('约11点'));
   assert.match(await preview.innerText(),/约11点/,'Mudkip atk70 / Pidgey def40 is clamped to 1.25, so round(9*1.25)=11');
   await p.screenshot({path:artifact+'windows-stat-damage-hover.png',fullPage:true});
   await hoverCell(p,before.units.A.pos.x,before.units.A.pos.y);await card.hover();
-  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('对普通目标'));
+  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent==='约9点');
   await click(p,'arrange');await click(p,'partner-B');await click(p,'edit-partner');
   const partnerDraftText=await p.locator('#controls .draft').innerText();assert.match(partnerDraftText,/正在编辑 B/,'the visible draft identifies B as the actor being edited');
   await click(p,'actions-open');await hoverCell(p,before.units.H.pos.x,before.units.H.pos.y);await card.hover();
@@ -1225,6 +1347,8 @@ await test('8.3 道具房：实际拾取大树果与全员PP补剂，背包使�
    if(item==='bigBerry'){
     const beforeAssign=await state(p);await click(p,'bag-open');
     for(const category of ['all','berry','drink','tm','other'])assert.equal(await p.locator(`[data-bag-category="${category}"]`).count(),1,`bag category ${category} is present`);
+    await p.locator('[data-bag-slot="2"]').click();await p.locator('[data-bag-category="berry"]').click();await p.locator('[data-bag-item="bigBerry"]').click();await ready(p);
+    assert.match(await p.locator('[data-hud-quick="2"]').innerText(),/大树果/,'assign the collected item before testing duplicate reassignment');
     await p.locator('[data-bag-slot="4"]').click();await p.locator('[data-bag-category="berry"]').click();
     const assign=p.locator('[data-bag-item="bigBerry"]');assert.equal(await assign.count(),1,'the actually collected big berry can be assigned from the berry category');await assign.click();await ready(p);
     assert.match(await p.locator('[data-hud-quick="4"]').innerText(),/大树果/,'the collected item is assigned to quick slot 5');

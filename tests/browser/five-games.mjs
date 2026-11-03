@@ -32,7 +32,24 @@ const envelope=()=>page.evaluate(()=>window.trial.store.envelope);
 const raw=()=>page.evaluate(()=>localStorage.getItem(window.trial.store.key));
 const click=async id=>{
  if(id==='open-settings'&&await page.locator('#hud-settings').isVisible())id='hud-settings';
- if(id.startsWith('use-')){const slot={berry:0,tonic:1,bigBerry:2,teamTonic:3}[id.slice(4)];await page.locator(`[data-hud-quick="${slot}"]`).click();await ready();return;}
+ if(id.startsWith('use-')){
+  const item=id.slice(4),inventory=await state();
+  assert.ok((inventory.prog?.items?.[item]??0)>0,'the selected consumable must exist in the visible party inventory');
+  const bag=page.locator('#hud-bag');
+  if(!(await bag.isVisible())){await page.locator('#bag-open').click();await ready();}
+  await bag.locator('[data-bag-slot="0"]').click();await ready();
+  await bag.locator('[data-bag-category="all"]').click();await ready();
+  const itemButton=bag.locator('[data-bag-item="'+item+'"]');
+  assert.equal(await itemButton.count(),1,'the held consumable must appear in the all-items category');
+  const itemName=(await itemButton.locator('span').innerText()).trim();
+  await itemButton.click();await ready();
+  const slotLabel=await bag.locator('[data-bag-slot="0"]').getAttribute('aria-label');
+  assert.ok(slotLabel?.includes(itemName),'the selected item must appear in the assigned quick slot');
+  await page.locator('#bag-close').click();await ready();
+  const quick=page.locator('[data-hud-quick="0"]');
+  assert.ok(await quick.isEnabled(),'the assigned quick slot must be usable while inventory remains');
+  await quick.click();await ready();return;
+ }
  const target=page.locator('#'+id),actions=page.locator('#hud-actions'),actionsOpen=page.locator('#actions-open');
  if(await target.count()&&await actions.count()&&await actions.isHidden()&&await actionsOpen.isVisible()&&await target.evaluate(el=>!!(el.closest('#controls,#hud-actions')||(el.closest('#save')&&!el.closest('#flow'))))){await actionsOpen.click();await ready();}
  await target.click();await ready();

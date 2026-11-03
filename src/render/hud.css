@@ -5,6 +5,8 @@ body.dungeon-mode {
   color: #f2eee0;
 }
 
+body.dungeon-mode .hud-party-main,
+body.dungeon-mode .hud-party-details,
 body.dungeon-mode .hud-skill,
 body.dungeon-mode .hud-quick-slot,
 body.dungeon-mode .hud-bag-slot,
@@ -120,6 +122,7 @@ body.dungeon-mode .hud-party-card.is-leader {
 }
 
 body.dungeon-mode .hud-party-main {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -252,6 +255,7 @@ body.dungeon-mode .hud-status-badge.is-down {
 }
 
 body.dungeon-mode .hud-party-details {
+  box-sizing: border-box;
   position: absolute;
   right: 6px;
   bottom: 6px;
@@ -727,7 +731,7 @@ body.dungeon-mode .hud-bag-item {
 
 body.dungeon-mode .hud-quick-slot {
   min-height: 44px;
-  padding: 2px 4px;
+  padding: 2px 3px;
   font-size: 11px;
   line-height: 1.25;
   cursor: pointer;
@@ -747,7 +751,14 @@ body.dungeon-mode .hud-quick-slot:disabled:not(.is-empty) {
 }
 
 body.dungeon-mode .hud-quick-name,
-body.dungeon-mode .hud-bag-slot > span,
+body.dungeon-mode .hud-bag-slot > span {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 body.dungeon-mode .hud-bag-item > span {
   display: -webkit-box;
   overflow: hidden;

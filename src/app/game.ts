@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy} from '../render/hud.ts';
+import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate} from '../render/hud.ts';
 import '../render/hud.css';
 import {applyCommand,traceRound,previewInvitation,createMain,createExpedition,key,same,plus,clone,skillTargets,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
@@ -52,7 +52,7 @@ app.append(dungeonLayout);
 const panelHomes=new Map<HTMLElement,Comment>();
 for(const id of ['board','party','activity-status','recent-events','message','inspect','controls','flow','save',...(dev?['developer-tools']:[])]){const el=document.getElementById(id)!;const home=document.createComment(id);el.before(home);panelHomes.set(el,home);}
 let actionsOpen=false,bagOpen=false,bagCategory='all',bagSlot=0;
-let quickItems:(Item|null)[]=['berry','tonic','bigBerry','teamTonic',null,null];
+let quickItems:(Item|null)[]=Array.from({length:6},()=>null);
 function dungeonMode(){return screen==='play'&&!!live();}
 function syncDungeonLayout(){
  const active=dungeonMode();document.body.classList.toggle('dungeon-mode',active);dungeonLayout.hidden=!active;
@@ -505,6 +505,7 @@ async function startNewGame(){
  const made=newGameProfile(ng.main,ng.deputy);if(!made.ok){ngError=made.error;render();return;}
  const ok=await store.beginNewGame(made.profile,ng.overwrite);
  if(!ok){ngError=store.error?`没有写入新存档：${store.error}。原存档保持不变。`:'没有写入新存档；原存档保持不变。';render();return;}
+ quickItems=Array.from({length:6},()=>null);bagSlot=0;bagCategory='all';bagOpen=false;
  clear();notice='';tmPick=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
 }
 /** Log lines the player may see: lines about an enemy on an unrevealed cell are dropped. */
@@ -547,7 +548,7 @@ function visibleHoverTarget(s:World):string|undefined{return hoverId&&enemyInfo(
 function refreshDamagePreviews(s:World):void{
  const targetId=visibleHoverTarget(s),sourceId=draft?.editor??s.leader;
  document.querySelectorAll<HTMLElement>('[data-move-preview]').forEach(el=>{
-  const id=el.dataset.movePreview;if(id)el.textContent=el.closest('#hud-tooltip')?damageEstimateText(s,$('hud-tooltip').dataset.sourceId??s.leader,targetId,id):moveSummary(id,{s,sourceId,targetId});
+  const id=el.dataset.movePreview;if(id)el.textContent=el.closest('#hud-tooltip')?hudDamageEstimate(s,$('hud-tooltip').dataset.sourceId??s.leader,targetId,id):moveSummary(id,{s,sourceId,targetId});
  });
  document.querySelectorAll<HTMLElement>('[data-move-accuracy]').forEach(el=>{
   const id=el.dataset.moveAccuracy;

@@ -330,7 +330,8 @@ await test('阶段5 换位草稿不被方向键、句点或点地图改写',asyn
 });
 
 /* Stage 6.3 expedition: fixed seed, real keyboard and mouse. Route finding below only reads the state to choose the next key. */
-const EXPEDITION_SEED=process.env.EXPEDITION_SEED??'3';
+// 8.8 (#178): the map for seed 3 changed; its first-floor route now meets an awake wanderer in the corridor and this movement-only route cannot pass it. Seed 2 has a clear route (also 5, 6).
+const EXPEDITION_SEED=process.env.EXPEDITION_SEED??'2';
 async function walkTo(p,target,{mouseFirst=false}={}){
  const {applyCommand}=await import('../../src/core/engine.ts');
  const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
@@ -384,9 +385,9 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
  try{
   await openEmpty();
   const expectedFloors=[
-   {level:1,floor:385,rooms:9,arrival:{x:21,y:19},down:{x:3,y:6}},
-   {level:2,floor:395,rooms:10,arrival:{x:13,y:13},down:{x:23,y:3}},
-   {level:3,floor:381,rooms:9,arrival:{x:19,y:20},down:null}
+   {level:1,floor:329,rooms:9,arrival:{x:21,y:19},down:{x:3,y:6}},
+   {level:2,floor:323,rooms:10,arrival:{x:13,y:13},down:{x:28,y:20}},
+   {level:3,floor:355,rooms:9,arrival:{x:3,y:21},down:null}
   ];
   for(const expected of expectedFloors){
    if(expected.level>1)await resetEmpty();
@@ -406,7 +407,7 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
   }
 
   await resetEmpty();
-  const sight=makeWorld(3,1),corridorStart={x:11,y:16},corridor={x:11,y:17};
+  const sight=makeWorld(3,1),corridorStart={x:10,y:16},corridor={x:10,y:17};
   const inside=(r,p)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
   assert.ok(sight.rooms.some(r=>inside(r,corridorStart)),'the Q6 fixture starts in a room');
   assert.ok(!sight.rooms.some(r=>inside(r,corridor)),'the Q6 fixture steps into a corridor');

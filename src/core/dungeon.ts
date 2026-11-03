@@ -31,7 +31,7 @@ export type GeneratedFloor={level:number;width:number;height:number;floor:Cell[]
   /** Accepted room-to-room routes. `path` is the ordered list of 2x2 brush top-left cells, including both anchors. */
   corridors:{fromRoom:number;toRoom:number;path:Cell[]}[];
   /** 仅供生成验收诊断；不进入运行世界或营地存档。 */
-  generationStats:{layoutAttempts:number;connectionRetries:number};
+  generationStats:{layoutAttempts:number;connectionRetries:number;shapeRetries:number;liquidRetries:number;liquidLayoutRetries:number};
   /** Non-walkable second terrain, generated only on cells that are not floor. */
   liquid:Cell[];
   /** Where the team first arrives from outside or from the floor above. */
@@ -188,85 +188,166 @@ export type LiquidFeatures={rivers:Cell[][];lakes:Cell[][]};
 const liquidThemeConfig=(terrainThemesJson as unknown as Record<ThemeId,LiquidThemeConfig>);
 const liquidStreamSeed=(seed:number,level:number)=>(Math.imul(seed>>>0,0x7FEB352D)^Math.imul(level,0x846CA68B)^0xB5297A4D)>>>0;
 /**
- * Generates water or lava from its own random stream. The supplied ground and rooms are read only;
- * every returned feature cell is a wall cell, so this layer cannot change paths, points, or units.
+ * 8.8 (#178) liquid shaping limits (WORKING CANDIDATES). A shaped layer may turn at most this share of its non-ground cells into liquid;
+ * floors 2 and 3 must keep at least `LIQUID_MIN_CELLS` liquid cells; the raw features are redrawn up to `LIQUID_ATTEMPTS` times before the whole layout is redrawn.
  */
-export function generateLiquidFeatures(seed:number,level:number,params:FloorParams,floor:Cell[],rooms:Room[]):LiquidFeatures {
-  const {width,height}=params,theme=themeOfLevel(params.boss,level),config=liquidThemeConfig[theme].liquidGen;
-  const random=mulberry32(liquidStreamSeed(seed,level));
+export const LIQUID_MAX_SHARE=0.3;
+export const LIQUID_MIN_CELLS=16;
+export const LIQUID_ATTEMPTS=24;
+const GROUND=1,LIQUID=2;
+/**
+ * One shaped attempt: raw rivers and lakes (own random stream), then opening (every liquid cell must belong to a 2x2 all-liquid block),
+ * then gap filling (a 1-cell wall between liquid and liquid/ground, or two liquid cells meeting only diagonally, gets a whole 2x2 liquid block),
+ * repeated until stable. Only wall cells ever change; ground is never touched. Returns null when this attempt cannot satisfy the shape rules.
+ */
+function shapeLiquidAttempt(seed:number,level:number,params:FloorParams,floor:Cell[],rooms:Room[],attempt:number):LiquidFeatures|null {
+  const {width:W,height:H}=params,theme=themeOfLevel(params.boss,level),config=liquidThemeConfig[theme].liquidGen;
+  const random=mulberry32((liquidStreamSeed(seed,level)+Math.imul(attempt,0x9E3779B1))>>>0);
   const int=(range:[number,number])=>range[0]+Math.floor(random()*(range[1]-range[0]+1));
-  const floorKeys=new Set(floor.map(k)),occupied=new Set<string>();
-  const rivers:Cell[][]=[],lakes:Cell[][]=[];
   const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
-  const inBounds=(c:Cell)=>c.x>=0&&c.y>=0&&c.x<width&&c.y<height;
-  const wallCell=(c:Cell)=>inBounds(c)&&!floorKeys.has(k(c))&&!occupied.has(k(c));
+  const kind=new Uint8Array(W*H),owner=new Int16Array(W*H).fill(-1);
+  const at=(x:number,y:number)=>y*W+x,inBounds=(x:number,y:number)=>x>=0&&y>=0&&x<W&&y<H;
+  const ring=(x:number,y:number)=>x===0||y===0||x===W-1||y===H-1;
+  for(const c of floor)kind[at(c.x,c.y)]=GROUND;
+  const isLiquid=(x:number,y:number)=>inBounds(x,y)&&kind[at(x,y)]===LIQUID;
+  const isGround=(x:number,y:number)=>inBounds(x,y)&&kind[at(x,y)]===GROUND;
+  const isWall=(x:number,y:number)=>inBounds(x,y)&&kind[at(x,y)]===0;
+  const open=(x:number,y:number)=>inBounds(x,y)&&kind[at(x,y)]!==0;
   const drift=()=>{
     const total=config.drift.reduce((sum,[,weight])=>sum+weight,0);let roll=random()*total;
     for(const [distance,weight] of config.drift){if(roll<weight)return distance;roll-=weight;}
     return config.drift[config.drift.length-1][0];
   };
-  const roomBufferHit=(left:number,y:number,widthCells:number)=>rooms.some(r=>
-    y>=r.y-1&&y<r.y+r.h+1&&left<r.x+r.w+1&&left+widthCells>r.x-1);
-  for(let riverNo=0,count=int(config.rivers);riverNo<count;riverNo++){
-    const widthCells=int(config.riverWidth),maxLeft=Math.max(0,width-widthCells);
-    const minStart=Math.min(6,maxLeft),maxStart=Math.max(minStart,width-6-widthCells);
+  const roomBufferHit=(left:number,rows:number[],widthCells:number)=>rooms.some(r=>
+    rows.some(y=>y>=r.y-1&&y<r.y+r.h+1)&&left<r.x+r.w+1&&left+widthCells>r.x-1);
+  let featureNo=0;const riverCount=int(config.rivers);
+  // Rivers run top-to-bottom or bottom-to-top in two-row steps, so every liquid cell sits in a 2x2 block of its own step; a step moves at most one column.
+  for(let riverNo=0;riverNo<riverCount;riverNo++,featureNo++){
+    const widthCells=Math.max(2,int(config.riverWidth)),maxLeft=Math.max(0,W-widthCells);
+    const minStart=Math.min(6,maxLeft),maxStart=Math.max(minStart,W-6-widthCells);
     let x=clamp(minStart+Math.floor(random()*(maxStart-minStart+1)),0,maxLeft);
     const fromBottom=random()<0.5,step=fromBottom?-1:1;
-    let y=fromBottom?height-1:0;const river:Cell[]=[];
-    for(let row=0;row<height;row++){
-      if(row){x=clamp(x+drift(),0,maxLeft);if(roomBufferHit(x,y,widthCells)){
-        const offsets=[-1,1,-2,2,-3,3];
-        const alternate=offsets.map(offset=>clamp(x+offset,0,maxLeft)).find(candidate=>!roomBufferHit(candidate,y,widthCells));
-        if(alternate!==undefined)x=alternate;
-      }}
-      for(let dx=0;dx<widthCells;dx++){const cell={x:x+dx,y};if(wallCell(cell)){occupied.add(k(cell));river.push(cell);}}
-      y+=step;
+    for(let row=0;row<H;row++){
+      const y=fromBottom?H-1-row:row;
+      if(row>0&&row%2===0){
+        const previous=x,rows=[y,y+step].filter(v=>v>=0&&v<H);
+        const wanted=clamp(previous+clamp(drift(),-1,1),0,maxLeft);
+        const order=[wanted,previous,clamp(previous-1,0,maxLeft),clamp(previous+1,0,maxLeft)];
+        x=order.find(candidate=>!roomBufferHit(candidate,rows,widthCells))??wanted;
+      }
+      for(let dx=0;dx<widthCells;dx++)if(isWall(x+dx,y)){kind[at(x+dx,y)]=LIQUID;owner[at(x+dx,y)]=featureNo;}
     }
-    rivers.push(river);
   }
-  const ringAround=(room:Room):Cell[]=>{
-    const out:Cell[]=[];
-    for(let y=Math.max(0,room.y-2);y<Math.min(height,room.y+room.h+2);y++)for(let x=Math.max(0,room.x-2);x<Math.min(width,room.x+room.w+2);x++){
-      const dx=x<room.x?room.x-x:x>=room.x+room.w?x-(room.x+room.w-1):0;
-      const dy=y<room.y?room.y-y:y>=room.y+room.h?y-(room.y+room.h-1):0;
-      if(Math.max(dx,dy)===2){const cell={x,y};if(wallCell(cell))out.push(cell);}
-    }
-    return out;
-  };
-  const growLake=(start:Cell,target:number):Cell[]|null=>{
-    const cells=[start],keys=new Set([k(start)]);
+  const lakeCount=int(config.lakes);
+  for(let lakeNo=0;lakeNo<lakeCount;lakeNo++,featureNo++){
+    const target=int(config.lakeSize);
+    const seeds:Cell[]=[];
+    for(let y=0;y<H-1;y++)for(let x=0;x<W-1;x++)if(isWall(x,y)&&isWall(x+1,y)&&isWall(x,y+1)&&isWall(x+1,y+1))seeds.push({x,y});
+    if(!seeds.length)return null;
+    const start=seeds[Math.floor(random()*seeds.length)];
+    const cells=[{x:start.x,y:start.y},{x:start.x+1,y:start.y},{x:start.x,y:start.y+1},{x:start.x+1,y:start.y+1}];
+    for(const c of cells){kind[at(c.x,c.y)]=LIQUID;owner[at(c.x,c.y)]=featureNo;}
     while(cells.length<target){
       const frontier=new Map<string,Cell>();
-      for(const cell of cells)for(const d of DIRS){
-        const next={x:cell.x+d.x,y:cell.y+d.y},key=k(next);
-        if(!keys.has(key)&&wallCell(next))frontier.set(key,next);
-      }
-      const choices=[...frontier.values()];if(!choices.length)return null;
-      const next=choices[Math.floor(random()*choices.length)];cells.push(next);keys.add(k(next));
+      for(const cell of cells)for(const d of DIRS){const nx=cell.x+d.x,ny=cell.y+d.y;if(isWall(nx,ny))frontier.set(nx+','+ny,{x:nx,y:ny});}
+      const choices=[...frontier.values()];if(!choices.length)break;
+      const next=choices[Math.floor(random()*choices.length)];cells.push(next);kind[at(next.x,next.y)]=LIQUID;owner[at(next.x,next.y)]=featureNo;
     }
-    return cells;
-  };
-  for(let lakeNo=0,count=int(config.lakes);lakeNo<count;lakeNo++){
-    const target=int(config.lakeSize);
-    const nearRooms=rooms.flatMap(ringAround),allWalls:Cell[]=[];
-    for(let y=0;y<height;y++)for(let x=0;x<width;x++){const c={x,y};if(wallCell(c))allWalls.push(c);}
-    const candidates=[...new Map([...nearRooms,...allWalls].map(c=>[k(c),c])).values()];
-    let lake:Cell[]|null=null;
-    while(candidates.length&&!lake){
-      const seedCell=candidates.splice(Math.floor(random()*candidates.length),1)[0];
-      lake=growLake(seedCell,target);
-    }
-    if(!lake)throw new Error(`floor generator could not grow a ${target}-cell liquid lake`);
-    for(const cell of lake)occupied.add(k(cell));
-    lakes.push(lake);
   }
-  return {rivers,lakes};
+  // Opening (the keep-map below): liquid cells outside every 2x2 all-liquid block turn back into wall.
+  const keep=new Uint8Array(W*H);
+  for(let y=0;y<H-1;y++)for(let x=0;x<W-1;x++)if(isLiquid(x,y)&&isLiquid(x+1,y)&&isLiquid(x,y+1)&&isLiquid(x+1,y+1)){
+    keep[at(x,y)]=keep[at(x+1,y)]=keep[at(x,y+1)]=keep[at(x+1,y+1)]=1;
+  }
+  for(let i=0;i<W*H;i++)if(kind[i]===LIQUID&&!keep[i]){kind[i]=0;owner[i]=-1;}
+  // Gap filling. A block may only use wall cells that are not on the outer ring; any ground cell in it cancels that fill.
+  const tryBlock=(cells:Cell[],from:number):boolean=>{
+    for(const c of cells){
+      if(!inBounds(c.x,c.y)||isGround(c.x,c.y))return false;
+      if(!isLiquid(c.x,c.y)&&ring(c.x,c.y))return false;
+    }
+    for(const c of cells)if(!isLiquid(c.x,c.y)){kind[at(c.x,c.y)]=LIQUID;owner[at(c.x,c.y)]=from;}
+    return true;
+  };
+  const addedCount=(cells:Cell[])=>cells.filter(c=>!isLiquid(c.x,c.y)).length;
+  const fillThin=(gx:number,gy:number,dx:number,dy:number):boolean=>{
+    // g is a wall cell whose two neighbours along (dx,dy) are liquid/liquid or liquid/ground.
+    const options:{cells:Cell[];from:number;added:number}[]=[];
+    const px=dy,py=dx;
+    for(const side of [-1,1])if(isLiquid(gx+side*dx,gy+side*dy))for(const s of [1,-1]){
+      const cells=[{x:gx,y:gy},{x:gx+s*px,y:gy+s*py},{x:gx+side*dx,y:gy+side*dy},{x:gx+side*dx+s*px,y:gy+side*dy+s*py}];
+      options.push({cells,from:owner[at(gx+side*dx,gy+side*dy)],added:addedCount(cells)});
+    }
+    options.sort((a,b)=>a.added-b.added);
+    for(const option of options)if(tryBlock(option.cells,option.from))return true;
+    return false;
+  };
+  for(let pass=0;pass<400;pass++){
+    let changed=false;
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      if(!isWall(x,y))continue;
+      for(const [dx,dy] of [[1,0],[0,1]]){
+        const la=isLiquid(x-dx,y-dy),lb=isLiquid(x+dx,y+dy);
+        if((la&&(lb||isGround(x+dx,y+dy)))||(lb&&isGround(x-dx,y-dy))){if(fillThin(x,y,dx,dy)){changed=true;break;}}
+      }
+    }
+    for(let y=0;y<H-1;y++)for(let x=0;x<W-1;x++){
+      const d1=isLiquid(x,y)&&isLiquid(x+1,y+1)&&!isLiquid(x+1,y)&&!isLiquid(x,y+1);
+      const d2=isLiquid(x+1,y)&&isLiquid(x,y+1)&&!isLiquid(x,y)&&!isLiquid(x+1,y+1);
+      if(!d1&&!d2)continue;
+      const cells=[{x,y},{x:x+1,y},{x,y:y+1},{x:x+1,y:y+1}];
+      if(tryBlock(cells,owner[at(d1?x:x+1,y)]))changed=true;
+    }
+    if(!changed)break;
+  }
+  // What could not be filled must not leave a pillar or a diagonal-only liquid contact.
+  let total=0,walls=0;
+  const featureCells:Cell[][]=Array.from({length:featureNo},()=>[]);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const i=at(x,y);
+    if(kind[i]===LIQUID){total++;if(owner[i]>=0)featureCells[owner[i]].push({x,y});}
+    if(kind[i]!==GROUND)walls++;
+    if(kind[i]===0&&(isLiquid(x-1,y)||isLiquid(x+1,y)||isLiquid(x,y-1)||isLiquid(x,y+1))
+      &&((open(x-1,y)&&open(x+1,y))||(open(x,y-1)&&open(x,y+1))))return null;
+    if(x<W-1&&y<H-1){
+      const a=isLiquid(x,y),b=isLiquid(x+1,y),c=isLiquid(x,y+1),d=isLiquid(x+1,y+1);
+      if((a&&d&&!b&&!c)||(b&&c&&!a&&!d))return null;
+    }
+  }
+  if(total>Math.floor(walls*LIQUID_MAX_SHARE))return null;
+  if(featureCells.some(cells=>cells.length<4))return null;
+  if(theme!=='moss'&&total<LIQUID_MIN_CELLS)return null;
+  return {rivers:featureCells.slice(0,riverCount),lakes:featureCells.slice(riverCount)};
 }
+/** Shaped liquid, or null after `LIQUID_ATTEMPTS` failed redraws (the caller then redraws the layout). `attempts` says how many redraws were used. */
+export function tryLiquidFeatures(seed:number,level:number,params:FloorParams,floor:Cell[],rooms:Room[]):{features:LiquidFeatures;attempts:number}|null {
+  for(let attempt=0;attempt<LIQUID_ATTEMPTS;attempt++){
+    const features=shapeLiquidAttempt(seed,level,params,floor,rooms,attempt);
+    if(features)return {features,attempts:attempt+1};
+  }
+  return null;
+}
+/**
+ * Generates water or lava from its own random stream and shapes it for 47-shape tiling. The supplied ground and rooms are read only;
+ * every returned feature cell is a wall cell, so this layer cannot change paths, points, or units.
+ */
+export function generateLiquidFeatures(seed:number,level:number,params:FloorParams,floor:Cell[],rooms:Room[]):LiquidFeatures {
+  const result=tryLiquidFeatures(seed,level,params,floor,rooms);
+  if(!result)throw new Error(`floor generator could not shape liquid in ${LIQUID_ATTEMPTS} attempts (seed ${seed}, level ${level})`);
+  return result.features;
+}
+const unionLiquid=(features:LiquidFeatures):Cell[]=>{
+  const all=[...features.rivers.flat(),...features.lakes.flat()];
+  return [...new Map(all.map(cell=>[k(cell),cell])).values()].sort((a,b)=>a.y-b.y||a.x-b.x);
+};
 /** Pure union helper used by the generator and topology tests. */
 export function generateLiquid(seed:number,level:number,params:FloorParams,floor:Cell[],rooms:Room[]):Cell[] {
-  const features=generateLiquidFeatures(seed,level,params,floor,rooms),all=[...features.rivers.flat(),...features.lakes.flat()];
-  return [...new Map(all.map(cell=>[k(cell),cell])).values()].sort((a,b)=>a.y-b.y||a.x-b.x);
+  return unionLiquid(generateLiquidFeatures(seed,level,params,floor,rooms));
 }
+/** Wall cells kept between ground pieces (rooms and corridor stretches) except at doors and junctions, and around the boss room. */
+const BUFFER=2;
+/** Layout redraw limit; redraws come from failed connections, ground shapes, or liquid shaping. */
+const MAX_LAYOUT_ATTEMPTS=64;
 export function generateFloor(seed:number,level:number,params:FloorParams=DEFAULT_PARAMS):GeneratedFloor {
   const {width:W,height:H,floors}=params;
   const bossEnabled=params.boss===true;
@@ -299,7 +380,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
   const target=int(9,12);
   const apart=(a:Room,b:Room)=>
     a.x>=b.x+b.w+3||b.x>=a.x+a.w+3||a.y>=b.y+b.h+3||b.y>=a.y+a.h+3;
-  let connectionRetries=0,layoutAttempts=0;
+  let connectionRetries=0,layoutAttempts=0,shapeRetries=0,liquidRetries=0,liquidLayoutRetries=0;
   const retryConnection=()=>{connectionRetries++;return null;};
   const tryLayout=()=>{
     const rooms:Room[]=[];
@@ -322,7 +403,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     };
     rooms.forEach(room=>roomCells(room).forEach(carve));
     const bossBox:Room|null=bossFloor
-      ?{x:rooms[bossRoom].x-1,y:rooms[bossRoom].y-1,w:rooms[bossRoom].w+2,h:rooms[bossRoom].h+2}
+      ?{x:rooms[bossRoom].x-BUFFER,y:rooms[bossRoom].y-BUFFER,w:rooms[bossRoom].w+2*BUFFER,h:rooms[bossRoom].h+2*BUFFER}
       :null;
     const inRect=(c:Cell,r:Room)=>c.x>=r.x&&c.x<r.x+r.w&&c.y>=r.y&&c.y<r.y+r.h;
     const brush=(x:number,y:number):Cell[]=>[
@@ -356,12 +437,26 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     ].filter(c=>c.x>=1&&c.y>=1&&c.x<=W-3&&c.y<=H-3):[];
     const corridorRng=mulberry32((Math.imul(seed>>>0,0xD1B54A35)^Math.imul(level,0x94D049BB)^0x6A09E667)>>>0);
     const corridorInt=(lo:number,hi:number)=>lo+Math.floor(corridorRng()*(hi-lo+1));
-    const footprintLegal=(p:Cell,a:number,b:number):boolean=>{
+    // 8.8 (#178): next to its own room (within BUFFER cells outside it) a route may only go straight out of, or into, a room face: no cell in a corner zone,
+    // and no sideways step while any brush cell is that close. That is the door; running along the room's outside would be hugging.
+    const doorOk=(cellsNow:Cell[],cellsBefore:Cell[]|null,step:Cell|null,room:Room):boolean=>{
+      for(const group of cellsBefore?[cellsNow,cellsBefore]:[cellsNow])for(const c of group){
+        const dx=c.x<room.x?room.x-c.x:c.x>=room.x+room.w?c.x-(room.x+room.w-1):0;
+        const dy=c.y<room.y?room.y-c.y:c.y>=room.y+room.h?c.y-(room.y+room.h-1):0;
+        if(Math.max(dx,dy)===0||Math.max(dx,dy)>BUFFER)continue;
+        if(dx>0&&dy>0)return false;
+        if(step&&((dx===0&&step.x!==0)||(dy===0&&step.y!==0)))return false;
+      }
+      return true;
+    };
+    const footprintLegal=(p:Cell,a:number,b:number,from:Cell|null=null):boolean=>{
       const cellsHere=brush(p.x,p.y);
       if(cellsHere.some(c=>c.x<1||c.y<1||c.x>=W-1||c.y>=H-1))return false;
       for(let i=0;i<rooms.length;i++)if(i!==a&&i!==b){
-        const r=rooms[i];if(cellsHere.some(c=>c.x>=r.x-1&&c.x<r.x+r.w+1&&c.y>=r.y-1&&c.y<r.y+r.h+1))return false;
+        const r=rooms[i];if(cellsHere.some(c=>c.x>=r.x-BUFFER&&c.x<r.x+r.w+BUFFER&&c.y>=r.y-BUFFER&&c.y<r.y+r.h+BUFFER))return false;
       }
+      const before=from?brush(from.x,from.y):null,step=from?{x:p.x-from.x,y:p.y-from.y}:null;
+      if(!doorOk(cellsHere,before,step,rooms[a])||!doorOk(cellsHere,before,step,rooms[b]))return false;
       return !(bossBox&&a!==bossRoom&&b!==bossRoom&&cellsHere.some(c=>inRect(c,bossBox)));
     };
     const toward=(at:Cell,q:Cell):Cell[]=>[
@@ -397,7 +492,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
           (Math.abs(current.p.x+v.x-q.x)+Math.abs(current.p.y+v.y-q.y)));
         for(const d of directions){
           const next={x:current.p.x+d.x,y:current.p.y+d.y};
-          if(!footprintLegal(next,a,b))continue;
+          if(!footprintLegal(next,a,b,current.p))continue;
           const nextEntered=touchesBoss(next);
           if(oneWayBossEntry&&current.entered&&!nextEntered)continue;
           const turned=current.turned||((current.dx!==0||current.dy!==0)
@@ -426,8 +521,9 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
           for(const side of [sign,-sign]){
             let next={x:at.x,y:at.y};const sidePath:Cell[]=[];
             for(let n=0;n<length;n++){
+              const before=next;
               next=axis==='x'?{x:next.x+side,y:next.y}:{x:next.x,y:next.y+side};
-              if(!footprintLegal(next,a,b)){sidePath.length=0;break;}sidePath.push(next);
+              if(!footprintLegal(next,a,b,before)){sidePath.length=0;break;}sidePath.push(next);
             }
             if(sidePath.length){path.push(...sidePath);at=sidePath[sidePath.length-1];last=axis==='x'?{x:side,y:0}:{x:0,y:side};sideways++;shifted=true;break;}
           }
@@ -449,14 +545,14 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
         for(let n=0;n<segment;n++){
           const available=toward(at,q);if(!available.length)break;
           const candidates=[chosen,...available.filter(d=>!sameDir(d,chosen))].filter(d=>available.some(v=>sameDir(v,d)));
-          const nextDir=candidates.find(d=>footprintLegal({x:at.x+d.x,y:at.y+d.y},a,b));
+          const nextDir=candidates.find(d=>footprintLegal({x:at.x+d.x,y:at.y+d.y},a,b,at));
           if(!nextDir)return null;
           const blockedTurn=!sameDir(nextDir,chosen);chosen=nextDir;
           at={x:at.x+chosen.x,y:at.y+chosen.y};path.push(at);last=chosen;
           if(blockedTurn)break;
         }
       }
-      return path.every(c=>footprintLegal(c,a,b))?path:null;
+      return path.every((c,i)=>footprintLegal(c,a,b,i?path[i-1]:null))?path:null;
     };
     const detourPath=(p:Cell,q:Cell,a:number,b:number,oneWayBossEntry=false):Cell[]|null=>{
       const inBoss=(p:Cell)=>!!bossBox&&brush(p.x,p.y).some(c=>inRect(c,bossBox!));
@@ -469,7 +565,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
           (Math.abs(at.x+u.x-q.x)+Math.abs(at.y+u.y-q.y))-(Math.abs(at.x+v.x-q.x)+Math.abs(at.y+v.y-q.y)));
         for(const d of ordered){
           const next={x:at.x+d.x,y:at.y+d.y},nextKey=k(next);
-          if(!footprintLegal(next,a,b))continue;
+          if(!footprintLegal(next,a,b,at))continue;
           const nextEntered=inBoss(next);if(oneWayBossEntry&&current.entered&&!nextEntered)continue;
           const id=stateKey(next,current.entered||nextEntered);if(previous.has(id))continue;
           previous.set(id,stateKey(at,current.entered));positions.set(id,{p:next,entered:current.entered||nextEntered});queue.push({p:next,entered:current.entered||nextEntered});
@@ -495,8 +591,44 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       return entered;
     };
     const corridors:{fromRoom:number;toRoom:number;path:Cell[]}[]=[];
+    // 8.8 (#178): ground spacing. A new route cell may sit within BUFFER cells of an existing or other new ground cell only where the two are joined
+    // by a short ground path (a door or a junction); otherwise two walls at least must lie between them (no parallel edge-rubbing, no diagonal-only contact).
+    const roomsNear=(c:Cell):number[]=>{
+      const out:number[]=[];
+      rooms.forEach((r,i)=>{if(c.x>=r.x-BUFFER&&c.x<r.x+r.w+BUFFER&&c.y>=r.y-BUFFER&&c.y<r.y+r.h+BUFFER)out.push(i);});
+      return out;
+    };
+    const spacingOk=(path:Cell[]):boolean=>{
+      const fresh=new Map<string,Cell>();
+      for(const c of brushPath(path))if(!cells.has(k(c)))fresh.set(k(c),c);
+      const has=(x:number,y:number)=>cells.has(x+','+y)||fresh.has(x+','+y);
+      const joined=(from:Cell,to:Cell):boolean=>{
+        const seen=new Set([k(from)]);let ring:Cell[]=[from];
+        for(let depth=0;depth<4;depth++){
+          const next:Cell[]=[];
+          for(const c of ring)for(const d of DIRS){
+            const n={x:c.x+d.x,y:c.y+d.y},key=k(n);
+            if(seen.has(key)||!has(n.x,n.y))continue;
+            if(n.x===to.x&&n.y===to.y)return true;
+            seen.add(key);next.push(n);
+          }
+          ring=next;
+        }
+        return false;
+      };
+      for(const c of fresh.values())for(let dy=-BUFFER;dy<=BUFFER;dy++)for(let dx=-BUFFER;dx<=BUFFER;dx++){
+        if((dx===0&&dy===0)||Math.abs(dx)+Math.abs(dy)===1)continue;
+        const n={x:c.x+dx,y:c.y+dy};
+        if(!has(n.x,n.y))continue;
+        if(fresh.has(k(n))&&(n.y<c.y||(n.y===c.y&&n.x<c.x)))continue;
+        const near=roomsNear(c);
+        if(near.length&&roomsNear(n).some(i=>near.includes(i)))continue;
+        if(!joined(c,n))return false;
+      }
+      return true;
+    };
     const acceptPath=(a:number,b:number,path:Cell[]):boolean=>{
-      if(path.some(c=>!footprintLegal(c,a,b))||crossesBoss(path,a,b))return false;
+      if(path.some((c,i)=>!footprintLegal(c,a,b,i?path[i-1]:null))||crossesBoss(path,a,b)||!spacingOk(path))return false;
       for(const c of brushPath(path))carve(c);
       corridors.push({fromRoom:a,toRoom:b,path:path.map(c=>({x:c.x,y:c.y}))});
       return true;
@@ -615,7 +747,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
         if(current.p.x===goal.x&&current.p.y===goal.y&&(!requireHallwayTurn||current.turned)){found=currentKey;break;}
         for(const d of DIRS){
           const next={x:current.p.x+d.x,y:current.p.y+d.y};
-          if(!validBrush(next)||!footprintLegal(next,from,to))continue;
+          if(!validBrush(next)||!footprintLegal(next,from,to,current.p))continue;
           const hallway=(current.dx!==0||current.dy!==0)
             &&hallwayPosition(current.p,from,to)&&hallwayPosition(next,from,to);
           const turned=current.turned||(hallway&&(current.dx!==d.x||current.dy!==d.y));
@@ -634,15 +766,29 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       if(!path)return retryConnection();
       route.path=path;
     }
+    // Final shape check on the real ground: no one-cell wall between two ground cells (this includes single-wall pillars) and no ground cell pair that only touches diagonally.
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const here=cells.has(x+','+y);
+      if(!here&&((cells.has((x-1)+','+y)&&cells.has((x+1)+','+y))||(cells.has(x+','+(y-1))&&cells.has(x+','+(y+1))))){shapeRetries++;return null;}
+      const right=cells.has((x+1)+','+y),below=cells.has(x+','+(y+1)),diag=cells.has((x+1)+','+(y+1));
+      if((here&&diag&&!right&&!below)||(right&&below&&!here&&!diag)){shapeRetries++;return null;}
+    }
     return {rooms,bossRoom,cells,corridors,ordinaryRooms,inRect};
   };
-  let topology:ReturnType<typeof tryLayout>=null;
-  for(;layoutAttempts<16&&!topology;layoutAttempts++)topology=tryLayout();
-  if(!topology)throw new Error(`floor generator could not build a connected nine-room layout in 16 attempts (seed ${seed}, level ${level})`);
+  let topology:ReturnType<typeof tryLayout>=null,shaped:LiquidFeatures|null=null,floor:Cell[]=[];
+  while(layoutAttempts<MAX_LAYOUT_ATTEMPTS&&!shaped){
+    layoutAttempts++;
+    topology=tryLayout();
+    if(!topology)continue;
+    floor=[...topology.cells.values()].sort((a,b)=>a.y-b.y||a.x-b.x);
+    const result=tryLiquidFeatures(seed,level,params,floor,topology.rooms);
+    if(!result){liquidLayoutRetries++;liquidRetries+=LIQUID_ATTEMPTS;topology=null;continue;}
+    liquidRetries+=result.attempts-1;shaped=result.features;
+  }
+  if(!topology||!shaped)throw new Error(`floor generator could not build a connected, well-shaped layout in ${MAX_LAYOUT_ATTEMPTS} attempts (seed ${seed}, level ${level})`);
   const {rooms,bossRoom,cells,corridors,ordinaryRooms,inRect}=topology;
-  const generationStats={layoutAttempts,connectionRetries};
+  const generationStats={layoutAttempts,connectionRetries,shapeRetries,liquidRetries,liquidLayoutRetries};
 
-  const floor=[...cells.values()].sort((a,b)=>a.y-b.y||a.x-b.x);
   const distancesFrom=(start:Cell):Map<string,number>=>{
     const depth=new Map<string,number>([[k(start),0]]),queue=[start];
     for(let n=0;n<queue.length;n++)for(const d of DIRS){
@@ -803,7 +949,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       used.add(k(pos));pickups.push({pos:{x:pos.x,y:pos.y},kind,used:false});
     }
   }
-  const liquid=generateLiquid(seed,level,params,floor,rooms);
+  const liquid=unionLiquid(shaped);
   return {level,width:W,height:H,floor,rooms,corridors,generationStats,liquid,arrivalRoom,arrival,up:null,down,points:outputPoints,enemies,enemyAiRng,
     pickups,rest,services:outputServices,...(roguelike?{adventureRooms,
       ...(goalAnchor?{goalAnchor:{x:goalAnchor.x,y:goalAnchor.y}}:{})}:{}),

@@ -24,15 +24,15 @@ test('D2 same seed and level give identical floors, whatever was generated befor
 });
 test('D3 pinned regression values for seed 12345 (observed once, then frozen)',()=>{
  const g=generateFloor(12345,1);
- assert.equal(g.floor.length,357);assert.equal(g.rooms.length,9);
- assert.deepEqual(g.points,[{pos:{x:5,y:20},kind:'down',used:false}]);
- assert.deepEqual(g.goalAnchor,{x:22,y:22});
+ assert.equal(g.floor.length,319);assert.equal(g.rooms.length,9);
+ assert.deepEqual(g.points,[{pos:{x:5,y:9},kind:'down',used:false}]);
+ assert.deepEqual(g.goalAnchor,{x:31,y:22});
  assert.deepEqual(g.enemies.map(e=>[e.id,e.species,e.pos.x,e.pos.y,e.post?`${e.post.x},${e.post.y}`:null]),[
-  ['w1a','tauros',14,13,'14,13'],['w1b','omanyte',13,20,'13,20'],['w1c','bellsprout',3,18,null],
-  ['w1d','meowth',25,12,null],['w1e','farfetchd',28,14,null],['w1f','pinsir',12,7,null]
+  ['w1a','tauros',14,13,'14,13'],['w1b','omanyte',13,20,'13,20'],['w1c','bellsprout',4,19,null],
+  ['w1d','meowth',25,12,null],['w1e','farfetchd',28,14,null],['w1f','pinsir',17,7,null]
  ]);
  const h=generateFloor(12345,2);
- assert.deepEqual(h.points.map(p=>[p.kind,p.pos.x,p.pos.y]),[['down',28,6]]);
+ assert.deepEqual(h.points.map(p=>[p.kind,p.pos.x,p.pos.y]),[['down',31,21]]);
 });
 test('D4 different seeds give different floors; different levels differ too',()=>{
  const shapes=new Set();for(let seed=1;seed<=40;seed++)shapes.add(JSON.stringify(generateFloor(seed,1).floor));

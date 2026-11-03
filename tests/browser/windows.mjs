@@ -20,10 +20,11 @@ const artifact='.artifacts/trial/';
 fs.mkdirSync(artifact,{recursive:true});
 const map122Artifact='.artifacts/map122/';
 fs.mkdirSync(map122Artifact,{recursive:true});
-async function setup(fixture,mode='pass',animate=false){
+async function setup(fixture,mode='pass',animate=false,source='painter'){
  const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
  // Stage 6.4: the 22 existing checks run with animations off; only the animation check turns them on.
- await context.addInitScript(({animate})=>{if(!animate)window.__trialNoAnim=true;},{animate});
+ await context.addInitScript(({animate,source})=>{if(!animate)window.__trialNoAnim=true;window.__terrainSource=source;},{animate,source});
+ // #178: the game now draws original DTEF sheets by default; the 8.5b painter checks below pin the painter source, the DTEF checks pass source='dtef'.
  await context.addInitScript(({mode})=>{
   const original=Storage.prototype.setItem;
   window.__fault={mode,pending:[],writes:[]};
@@ -369,7 +370,8 @@ await test('阶段5 换位草稿不被方向键、句点或点地图改写',asyn
 });
 
 /* Stage 6.3 expedition: fixed seed, real keyboard and mouse. Route finding below only reads the state to choose the next key. */
-const EXPEDITION_SEED=process.env.EXPEDITION_SEED??'3';
+// 8.8 (#178): the map for seed 3 changed; its first-floor route now meets an awake wanderer in the corridor and this movement-only route cannot pass it. Seed 2 has a clear route (also 5, 6).
+const EXPEDITION_SEED=process.env.EXPEDITION_SEED??'2';
 async function walkTo(p,target,{mouseFirst=false}={}){
  const {applyCommand}=await import('../../src/core/engine.ts');
  const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
@@ -423,9 +425,9 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
  try{
   await openEmpty();
   const expectedFloors=[
-   {level:1,floor:385,rooms:9,arrival:{x:21,y:19},down:{x:3,y:6}},
-   {level:2,floor:395,rooms:10,arrival:{x:13,y:13},down:{x:23,y:3}},
-   {level:3,floor:381,rooms:9,arrival:{x:19,y:20},down:null}
+   {level:1,floor:329,rooms:9,arrival:{x:21,y:19},down:{x:3,y:6}},
+   {level:2,floor:323,rooms:10,arrival:{x:13,y:13},down:{x:28,y:20}},
+   {level:3,floor:355,rooms:9,arrival:{x:3,y:21},down:null}
   ];
   for(const expected of expectedFloors){
    if(expected.level>1)await resetEmpty();
@@ -446,7 +448,7 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
   }
 
   await resetEmpty();
-  const sight=makeWorld(3,1),corridorStart={x:11,y:16},corridor={x:11,y:17};
+  const sight=makeWorld(3,1),corridorStart={x:10,y:16},corridor={x:10,y:17};
   const inside=(r,p)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
   assert.ok(sight.rooms.some(r=>inside(r,corridorStart)),'the Q6 fixture starts in a room');
   assert.ok(!sight.rooms.some(r=>inside(r,corridor)),'the Q6 fixture steps into a corridor');
@@ -1218,7 +1220,7 @@ await test('8.5b 新游戏→出发→第1层：苔石运行时纹理，三层�
   await newGameClicks(p,'treecko','mudkip');
   await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   const s=await state(p);assert.equal(s.dungeon.floors,3);assert.equal(s.dungeon.boss,true);assert.equal(s.dungeon.level,1);assert.equal(s.dungeon.base,true);
-  const v=await p.evaluate(()=>window.trial.view());assert.deepEqual(v.tiles.filter(t=>/^terrain-.*-(floor|edge|wall)$/.test(t)),['terrain-moss-edge','terrain-moss-floor','terrain-moss-wall'],'floor 1 shows runtime moss textures');
+  const v=await p.evaluate(()=>window.trial.view());assert.ok(v.tiles.includes('dtef-TinyWoods-tileset_0')&&!v.tiles.some(t=>t.startsWith('terrain-')),'floor 1 shows the original TinyWoods DTEF sheet by default (#178)');
   assert.match(await p.locator('#world-label').innerText(),/第1层/);
   await p.screenshot({path:artifact+'windows-boss-3-floor1.png',fullPage:true});
   assert.deepEqual(errors,[]);return {tiles:v.tiles,floors:s.dungeon.floors};
@@ -1559,6 +1561,46 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
   assert.deepEqual(errors,[]);
   const report={fixtureBoundary:'真实 seed73 第2层地图与第二地形，固定相机与房间，分别套用三个主题；独立边界图重新运行reveal。截图不代表完整游玩。',screenshots,exports,decorationViews,knownBoundaryOnly:true};
   fs.writeFileSync(output+'browser-terrain.json',JSON.stringify(report,null,2));return report;
+ }finally{await context.close();}
+});
+
+await test('8.8 #178：默认地形读原版DTEF图集，三个主题的墙、第二地形与地面都用图集绘制',async()=>{
+ const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef');
+ const {createExpedition,jumpToFloor,reveal}=await import('../../src/core/engine.ts');
+ const {initialProfile,squadOf}=await import('../../src/core/base.ts');
+ try{
+  const sets={1:'TinyWoods',2:'WaterfallCave',3:'MagmaCavern2'},seen=[];
+  for(const level of [1,2,3]){
+   const world=jumpToFloor(createExpedition('dtef-visual',178,3,squadOf(initialProfile()),0,true,3),level);
+   world.seen=world.floor.map(c=>`${c.x},${c.y}`);world.seenWalls=[];
+   if(level>1){await p.reload();await p.locator('#start').waitFor();}
+   await startMemory(p,world);
+   const v=await p.evaluate(()=>window.trial.view());
+   const dtef=v.tiles.filter(t=>t.startsWith('dtef-'));
+   assert.ok(dtef.includes(`dtef-${sets[level]}-tileset_0`),`floor ${level}: base sheet drawn: ${dtef}`);
+   assert.ok(!v.tiles.some(t=>t.startsWith('terrain-')),'no painter texture on the default source');
+   seen.push(dtef);
+  }
+  assert.deepEqual(errors,[]);return {seen};
+ }finally{await context.close();}
+});
+
+await test('8.8 #178：动画开启时离开DTEF地形层（回基地或标题的重绘），动画覆盖图不再被碰，画面循环不停',async()=>{
+ const {context,page:p,errors}=await setup(undefined,'pass',true,'dtef');
+ const {createExpedition,jumpToFloor}=await import('../../src/core/engine.ts');
+ const {initialProfile,squadOf}=await import('../../src/core/base.ts');
+ try{
+  const world=jumpToFloor(createExpedition('dtef-loop',178,3,squadOf(initialProfile()),0,true,3),2);
+  world.seen=world.floor.map(c=>`${c.x},${c.y}`);world.seenWalls=[];
+  await startMemory(p,world);
+  await click(p,'actions-open');
+  await p.getByText('开发者菜单：检查入口（隔离存储）',{exact:true}).click();
+  await p.evaluate(()=>{window.scrollTo(0,0);window.__raf=0;const o=window.requestAnimationFrame.bind(window);window.requestAnimationFrame=cb=>o(t=>{window.__raf++;cb(t);});});
+  await p.waitForFunction(()=>window.trial.view()?.tiles.some(t=>/^dtef-WaterfallCave-tileset_0_frame/.test(t)),null,{timeout:10000});
+  await p.evaluate(()=>window.trial.repaint(null));
+  const a=await p.evaluate(()=>window.__raf);await p.waitForTimeout(1200);const b=await p.evaluate(()=>window.__raf);
+  assert.ok(b>a+20,`render loop keeps running after the repaint: ${a} -> ${b}`);
+  assert.deepEqual(errors,[]);return {frames:[a,b]};
  }finally{await context.close();}
 });
 

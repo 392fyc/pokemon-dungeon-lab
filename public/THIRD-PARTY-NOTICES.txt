@@ -107,3 +107,8 @@ Species folders and credited authors:
 
 Generated environment art (public/assets/tiles, public/assets/props, public/assets/effects): original images made for this project with OpenAI
 gpt-image-2.5 models and pixelised locally; prompts and parameters are listed in public/assets/manifest.json.
+
+Original dungeon tilesets (public/assets/tiles/dtef: TinyWoods, WaterfallCave, MagmaCavern2): extracted game art from the Pokemon Mystery Dungeon series,
+from PMDCollab/RawAsset commit 03c80dad937911572f8fb19903771a47956fc696 (TileDtef). Rights belong to Spike Chunsoft, Nintendo and others; the
+repository carries no licence text. Private build only; must be replaced before any public release (D-20261103-12). The order of the 47 shape rules
+follows SkyTemple skytemple_dtef rules.py (GPL-3.0); only that table is used, as data.

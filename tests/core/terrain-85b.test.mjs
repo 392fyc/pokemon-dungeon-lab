@@ -174,13 +174,13 @@ function assertTerrainGeneration(g, seed, level) {
       for (let i = 0; i < g.rooms.length; i++) {
         if (i === route.fromRoom || i === route.toRoom) continue;
         const room = g.rooms[i];
-        assert.ok(brushOf(p).every((c) => c.x < room.x - 1 || c.x >= room.x + room.w + 1
-          || c.y < room.y - 1 || c.y >= room.y + room.h + 1),
-        `seed ${seed} floor ${level}: route avoids unrelated room ${i} and its one-cell border`);
+        assert.ok(brushOf(p).every((c) => c.x < room.x - 2 || c.x >= room.x + room.w + 2
+          || c.y < room.y - 2 || c.y >= room.y + room.h + 2),
+        `seed ${seed} floor ${level}: route avoids unrelated room ${i} and its two-cell border (8.8: was one cell)`);
       }
       if (g.bossRoom !== undefined && route.fromRoom !== g.bossRoom && route.toRoom !== g.bossRoom) {
         const boss = g.rooms[g.bossRoom];
-        const bossBox = {x: boss.x - 1, y: boss.y - 1, w: boss.w + 2, h: boss.h + 2};
+        const bossBox = {x: boss.x - 2, y: boss.y - 2, w: boss.w + 4, h: boss.h + 4};
         assert.ok(brushOf(p).every((c) => !contains(bossBox, c)),
           `seed ${seed} floor ${level}: non-boss route stays outside the boss room frame`);
       }
@@ -387,16 +387,18 @@ test('T3: coordinate variants stay stable, weighted 2:1:1:1, and do not use Math
 
 test('T4: 200 seeds on all three floors satisfy room, corridor, reachability, and width rules', t => {
   const params = {width: 36, height: 24, floors: 3, boss: true, roguelike: true};
+  let redraws = 0;
   for (let seed = 0; seed < 200; seed++) {
     for (let level = 1; level <= 3; level++) {
       let generated;
       assert.doesNotThrow(() => { generated = generateFloor(seed, level, params); }, `seed ${seed} floor ${level}: a floor fits`);
       assertTerrainGeneration(generated, seed, level);
-      assert.equal(generated.generationStats.connectionRetries, 0, `seed ${seed} floor ${level}: no connection-failure layout retry in the 600-floor sample`);
-      assert.ok(generated.generationStats.layoutAttempts >= 1 && generated.generationStats.layoutAttempts <= 16);
+      // 8.8 (#178): the ground spacing rules make layout redraws normal (8.5b had no connection-failure redraw in this sample, and a 16 limit); measured maximum is 16, so 32 leaves headroom.
+      assert.ok(generated.generationStats.layoutAttempts >= 1 && generated.generationStats.layoutAttempts <= 32);
+      redraws += generated.generationStats.layoutAttempts - 1;
     }
   }
-  t.diagnostic('600层：连接失败引发的布局重试共0次；所有楼层在16次上限内完成。');
+  t.diagnostic(`600层：布局重画共${redraws}次（含房间数不足的重画；8.8 起通道约束使连接失败的重画不再为 0，8.5b 为 0），所有楼层在32次内完成（实测最大16）。`);
 });
 
 test('T5: second-terrain features stay off the floor, preserve input bytes, and follow theme counts', () => {

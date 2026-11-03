@@ -100,8 +100,7 @@ const emptyOf = (theme: DtefTheme, variant: number): Set<number> => {
 };
 export type DtefChoice = {variant: number; id: number; overlays: readonly DtefAnimation[]};
 /**
- * Which variant sheet a cell draws from. Variant 0 takes `variantZeroShare` of the cells (main working value, 80%, to be
- * confirmed from screenshots); the other variants share the rest equally. A tile that is empty in the chosen variant reuses
+ * Which variant sheet a cell draws from. Variant 0 takes `variantZeroShare` of the cells (95%, chosen from screenshots); the other variants share the rest equally. A tile that is empty in the chosen variant reuses
  * the previous variant. A tile animated in variant 0 stays on variant 0 unless the variant has its own animation, so the
  * second terrain does not mix still and moving cells.
  */

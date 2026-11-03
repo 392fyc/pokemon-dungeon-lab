@@ -34,7 +34,7 @@ async function cell(pos){
  // canvas after hover instead of clicking the pixel measured before that shift.
  for(let attempt=0;attempt<4;attempt++){
   const camera=await page.evaluate(()=>window.trial.camera()),box=await page.locator('canvas').boundingBox();
-  const x=(pos.x*40+20-camera.x)*box.width/680,y=(pos.y*40+20-camera.y)*box.height/350;
+  const x=(pos.x*48+24-camera.x)*box.width/680,y=(pos.y*48+24-camera.y)*box.height/350;
   assert.ok(x>=0&&x<box.width&&y>=0&&y<box.height,'target must be visible on canvas');
   await page.mouse.move(box.x+x,box.y+y);await page.waitForTimeout(150);
   const after=await page.locator('canvas').boundingBox(),afterCamera=await page.evaluate(()=>window.trial.camera());

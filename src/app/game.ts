@@ -17,6 +17,8 @@ import {paintDtef,type DtefAnimator} from '../render/dtef-scene.ts';
 import {prepareTerrainMap,maskAt,frameOf,terrainVariant,selectDecorations,type TerrainThemeKey,type TerrainLayer} from '../render/terrain.ts';
 import {inferEvents,plan,newLines,type AnimEvent} from '../render/animation.ts';
 import {playEvents,type Stage,type UnitView} from '../render/playback.ts';
+/** #178: dungeon cell size in canvas pixels, an exact 2x of the 24 px DTEF tile (D-20261103). */
+const DUNGEON_CELL=TILE*2;
 const DIFFICULTY_LABEL:Record<Difficulty,string>={easy:'简单',normal:'普通',hard:'困难'};
 const specName=(u:Unit)=>u.species?speciesZh(u.species):'';
 const tmName=(m:string)=>tmZh(m);
@@ -492,7 +494,7 @@ class BoardScene extends Phaser.Scene {
   // worldX/worldY already include the camera scroll, so clicks stay correct while the camera follows the leader.
   const x=Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX;const y=Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY;pinnedId=enemyAt({x,y});updateInspect();clickCell({x,y});});
   this.input.on('pointermove',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);const id=enemyAt({x:Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX,y:Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY});if(id!==hoverId){hoverId=id;updateInspect();}});scene=this;this.paint(live());}
- geometry(s:World){if(s.dungeon){const d=s.dungeon;return {minX:0,minY:0,cell:40,ox:0,oy:0,dungeon:true,w:d.width*40,h:d.height*40};}
+ geometry(s:World){if(s.dungeon){const d=s.dungeon;return {minX:0,minY:0,cell:DUNGEON_CELL,ox:0,oy:0,dungeon:true,w:d.width*DUNGEON_CELL,h:d.height*DUNGEON_CELL};}
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,600/(maxX-minX+1),270/(maxY-minY+1));return {minX,minY,cell,ox:(680-(maxX-minX+1)*cell)/2,oy:(350-(maxY-minY+1)*cell)/2,dungeon:false,w:680,h:350};}
  paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());});this.views.clear();this.graphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.dtefAnim=null;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
  this.graphics.fillStyle(0x101c1b);this.graphics.fillRoundedRect(0,0,680,350,14);if(!s){this.cameras.main.setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
@@ -520,7 +522,8 @@ class BoardScene extends Phaser.Scene {
   const excluded=[...s.points.map(p=>p.pos),...(s.adventureRooms??[]).map(r=>r.interaction),...(s.rooms??[]).flatMap((r,i)=>i===s.bossRoom?Array.from({length:r.h},(_,dy)=>Array.from({length:r.w},(_,dx)=>({x:r.x+dx,y:r.y+dy}))).flat():[])];
   // Arrival is kept separately from the current leader so exploring never moves decorations.
   if(s.arrival)excluded.push(s.arrival);
-  for(const deco of selectDecorations({map,theme,seed,level,excluded,atlas})){
+  // #178: the default DTEF route draws no 8.5b decorations (D-20261103: removed); decorations are purely visual here (point and room markers are separate overlay objects), so no game information is lost. The painter route keeps them.
+  if(!dtef)for(const deco of selectDecorations({map,theme,seed,level,excluded,atlas})){
    const c=center(deco);this.tiles.push(this.add.image(c.x,c.y+g.cell/2,decoKey,deco.frame).setOrigin(.5,1).setScale(scale).setDepth(1.5));
   }
  }else{

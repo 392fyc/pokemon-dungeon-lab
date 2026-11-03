@@ -54,12 +54,12 @@ async function click(p,id){await p.locator('#'+id).click();await ready(p);}
 async function cell(p,x,y){
  const canvas=p.locator('canvas');await canvas.scrollIntoViewIfNeeded();
  const s=await state(p),b=await canvas.boundingBox();
- if(s.dungeon){ // expedition: fixed 40 px cells, camera follows the leader
+ if(s.dungeon){ // expedition: fixed 48 px cells, camera follows the leader
   // The new status cards can scroll the canvas when a lower skill button is clicked.
   // As in five-games.mjs, measure again after hover details and camera movement settle.
   for(let attempt=0;attempt<4;attempt++){
    const cam=await p.evaluate(()=>window.trial.camera()),box=await canvas.boundingBox();
-   const dx=(x*40+20-cam.x)*box.width/680,dy=(y*40+20-cam.y)*box.height/350;
+   const dx=(x*48+24-cam.x)*box.width/680,dy=(y*48+24-cam.y)*box.height/350;
    assert.ok(dx>=0&&dx<box.width&&dy>=0&&dy<box.height,'target must be visible on canvas');
    await p.mouse.move(box.x+dx,box.y+dy);await p.waitForTimeout(150);
    const after=await canvas.boundingBox(),afterCam=await p.evaluate(()=>window.trial.camera());
@@ -377,7 +377,7 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
  const {initialProfile,squadOf}=await import('../../src/core/base.ts');
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});
  const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
- const report={browser:await browser.version(),viewport:{width:1440,height:1100},canvas:{width:680,height:350,cell:40},screenshots:[],actualInputs:[],fixtureBoundary:'生成截图使用固定种子生成的地图，并通过开发者内存状态装入；楼层截图从各层到达点显示，boss截图会把小队直接摆进首领房。它们不表示自然走完楼层或完整通关。相机点击检查在该夹具上通过真实方向键和画布鼠标点击。',status:'FAIL'};
+ const report={browser:await browser.version(),viewport:{width:1440,height:1100},canvas:{width:680,height:350,cell:48},screenshots:[],actualInputs:[],fixtureBoundary:'生成截图使用固定种子生成的地图，并通过开发者内存状态装入；楼层截图从各层到达点显示，boss截图会把小队直接摆进首领房。它们不表示自然走完楼层或完整通关。相机点击检查在该夹具上通过真实方向键和画布鼠标点击。',status:'FAIL'};
  const makeWorld=(seed,level)=>{let w=createExpedition(`map122-${seed}`,seed,3,squadOf(initialProfile()),0,true,3);if(level>1)w=jumpToFloor(w,level);return w;};
  const openEmpty=async()=>{await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await emptyReady(p);};
  const resetEmpty=async()=>{await p.reload();await p.locator('#start').waitFor();await emptyReady(p);};
@@ -431,8 +431,8 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
   report.screenshots.push({file:q6file,seed:3,level:1,corridorStart,corridor,seenGround:seenState.seen.length,seenWalls:seenState.seenWalls.length});
 
   const bossCases=[
-   {spot:'center',seed:1,boss:{x:17,y:11},leader:{x:20,y:11},friends:{A:{x:15,y:12},B:{x:15,y:13}},camera:{x:480,y:285}},
-   {spot:'east',seed:4,boss:{x:31,y:11},leader:{x:34,y:11},friends:{A:{x:29,y:9},B:{x:29,y:13}},camera:{x:760,y:285}}
+   {spot:'center',seed:1,boss:{x:17,y:11},leader:{x:20,y:11},friends:{A:{x:15,y:12},B:{x:15,y:13}},camera:null},
+   {spot:'east',seed:4,boss:{x:31,y:11},leader:{x:34,y:11},friends:{A:{x:29,y:9},B:{x:29,y:13}},camera:null}
   ];
   for(const [index,c] of bossCases.entries()){
    await resetEmpty();const w=makeWorld(c.seed,3),r=w.rooms[w.bossRoom],boss=w.units.boss;
@@ -442,18 +442,18 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
    w.seen=[];delete w.seenWalls;reveal(w);
    assert.ok(w.seen.includes(`${boss.pos.x},${boss.pos.y}`),'boss is in the revealed room');
    const start=await load(w);assert.equal(start.dungeon.level,3);assert.deepEqual(start.units[start.leader].pos,c.leader);
-   const cam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(cam,c.camera,`${c.spot}: camera follows the exact placed leader cell`);
+   const cam=await p.evaluate(()=>window.trial.camera());const camAt=pos=>({x:Math.max(0,Math.min(pos.x*48+24-340,start.dungeon.width*48-680)),y:Math.max(0,Math.min(pos.y*48+24-175,start.dungeon.height*48-350))});assert.deepEqual(cam,camAt(c.leader),`${c.spot}: camera follows the exact placed leader cell`);
    const v=await p.evaluate(()=>window.trial.view());assert.ok(v.boss?.labels.includes('首领'));assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01);
    const filename=`boss-${c.spot}.png`;await p.screenshot({path:map122Artifact+filename,fullPage:true});
    report.screenshots.push({file:filename,seed:c.seed,level:3,bossRoom:w.bossRoom,boss:c.boss,leader:c.leader,camera:cam,placement:'fixture'});
    if(index===0){
     await key(p,'ArrowDown');let s=await state(p);assert.equal(s.round,1);assert.deepEqual(s.units[s.leader].pos,{x:20,y:12},'ArrowDown moves the leader one generated floor cell');
-    let movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,{x:480,y:325},'camera follows keyboard movement');
+    let movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,camAt({x:20,y:12}),'camera follows keyboard movement');
     await cell(p,19,12);s=await state(p);assert.equal(s.round,2);assert.deepEqual(s.units[s.leader].pos,{x:19,y:12},'canvas click maps to the intended world cell after camera scroll');
-    movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,{x:440,y:325},'camera follows the canvas click destination');
+    movedCam=await p.evaluate(()=>window.trial.camera());assert.deepEqual(movedCam,camAt({x:19,y:12}),'camera follows the canvas click destination');
     const clickfile='camera-keyboard-canvas-click.png';await p.screenshot({path:map122Artifact+clickfile,fullPage:true});
-    report.screenshots.push({file:clickfile,seed:c.seed,level:3,afterKeyboard:{leader:{x:20,y:12},camera:{x:480,y:325}},afterCanvasClick:{leader:{x:19,y:12},camera:movedCam},inputChain:'real ArrowDown key then real canvas mouse click'});
-    report.actualInputs.push({input:'ArrowDown',round:s.round-1,leaderAfterKey:{x:20,y:12},cameraAfterKey:{x:480,y:325}});
+    report.screenshots.push({file:clickfile,seed:c.seed,level:3,afterKeyboard:{leader:{x:20,y:12},camera:camAt({x:20,y:12})},afterCanvasClick:{leader:{x:19,y:12},camera:movedCam},inputChain:'real ArrowDown key then real canvas mouse click'});
+    report.actualInputs.push({input:'ArrowDown',round:s.round-1,leaderAfterKey:{x:20,y:12},cameraAfterKey:camAt({x:20,y:12})});
     report.actualInputs.push({input:'canvas click cell 19,12',round:s.round,leaderAfterClick:{x:19,y:12},cameraAfterClick:movedCam});
    }
   }
@@ -839,10 +839,10 @@ await test('7.8 UI夹具：伊布进化选择与暂缓按钮实际可点击',asy
  }finally{await second.context.close();}
 });
 /* Stage 7.3: the boss floor, through the developer menu scenes (isolated storage). BOSS: whole floor shown, the team beside the boss. BOSSX: the team on the lobby exit.
-   The mouse is moved over canvas cells with the same fixed 40 px cell geometry the other dungeon checks use. */
+   The mouse is moved over canvas cells with the same fixed 48 px cell geometry the other dungeon checks use. */
 async function hoverCell(p,x,y){
  const s=await state(p),b=await p.locator('canvas').boundingBox(),cam=await p.evaluate(()=>window.trial.camera());
- await p.mouse.move(b.x+(x*40+20-cam.x)*b.width/680,b.y+(y*40+20-cam.y)*b.height/350);
+ await p.mouse.move(b.x+(x*48+24-cam.x)*b.width/680,b.y+(y*48+24-cam.y)*b.height/350);
 }
 await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放大与名牌、首领信息、吹飞被拒的中文原因',async()=>{
  const {context,page:p,errors}=await setup('BOSS');
@@ -1187,7 +1187,7 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
    await p.getByText('开发者菜单：检查入口（隔离存储）',{exact:true}).click();
    await p.waitForFunction(theme=>{
     const v=window.trial.view(),c=v?.cameraView;
-    return c?.width>0&&v.decorations?.some(d=>d.texture===`deco-${theme}`&&d.x+20>c.x&&d.x-20<c.x+c.width&&d.y>c.y&&d.y-40<c.y+c.height);
+    return c?.width>0&&v.decorations?.some(d=>d.texture===`deco-${theme}`&&d.x+24>c.x&&d.x-24<c.x+c.width&&d.y>c.y&&d.y-48<c.y+c.height);
    },theme,{timeout:10000}).catch(async error=>{
     fs.writeFileSync(output+`decor-visibility-failure-${theme}.json`,JSON.stringify(await p.evaluate(()=>({view:window.trial.view(),camera:window.trial.camera()})),null,2));
     throw error;
@@ -1196,15 +1196,15 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
    for(const layer of ['floor','edge','liquid','wall'])assert.ok(view.tiles.includes(`terrain-${theme}-${layer}`),`${theme}: ${layer} layer actually drawn`);
    assert.ok(!view.tiles.some(t=>/^(floor|wall)(-|$)/.test(t)),'roguelike uses runtime terrain throughout');
    const drawn=view.decorations.filter(d=>d.texture===`deco-${theme}`),camera=view.cameraView;
-   const visible=drawn.filter(d=>d.x+20>camera.x&&d.x-20<camera.x+camera.width&&d.y>camera.y&&d.y-40<camera.y+camera.height);
+   const visible=drawn.filter(d=>d.x+24>camera.x&&d.x-24<camera.x+camera.width&&d.y>camera.y&&d.y-48<camera.y+camera.height);
    assert.ok(visible.length>0,`${theme}: the screenshot viewport actually contains decorations`);
    const ground=new Set(shown.floor.map(c=>`${c.x},${c.y}`));
    const atlasFrames=JSON.parse(fs.readFileSync(`public/assets/tiles/deco/deco-${theme}.json`,'utf8')).frames;
    for(const deco of drawn){
-    const x=Math.floor(deco.x/40),y=Math.round(deco.y/40)-1;
+    const x=Math.floor(deco.x/48),y=Math.round(deco.y/48)-1;
     assert.ok(Object.hasOwn(atlasFrames,deco.frame),'drawn frame exists in the real atlas');
     assert.ok(String(deco.frame).startsWith(ground.has(`${x},${y}`)?'floor-':'wall-'),'drawn frame matches the terrain kind');
-    assert.equal(deco.y,(y+1)*40,'the frame bottom is aligned with the cell bottom; baked 2px padding is not repeated');
+    assert.equal(deco.y,(y+1)*48,'the frame bottom is aligned with the cell bottom; baked 2px padding is not repeated');
     assert.equal(deco.depth,1.5,'decorations stay between terrain and units');
    }
    decorationViews.push({theme,drawn:drawn.length,visible:visible.length,visibleFrames:[...new Set(visible.map(d=>d.frame))].sort()});
@@ -1226,8 +1226,8 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
   for(const c of boundary.floor)if(knownFloor.has(`${c.x},${c.y}`))for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)known.add(`${c.x+dx},${c.y+dy}`);
   const boundaryView=await p.evaluate(()=>window.trial.view());
   const rendered=boundaryView.terrain;
-  for(const t of rendered)assert.ok(known.has(`${Math.floor(t.x/40)},${Math.floor(t.y/40)}`),'no terrain outside the known map is drawn');
-  for(const d of boundaryView.decorations)assert.ok(known.has(`${Math.floor(d.x/40)},${Math.round(d.y/40)-1}`),'unknown cells do not display decorations');
+  for(const t of rendered)assert.ok(known.has(`${Math.floor(t.x/48)},${Math.floor(t.y/48)}`),'no terrain outside the known map is drawn');
+  for(const d of boundaryView.decorations)assert.ok(known.has(`${Math.floor(d.x/48)},${Math.round(d.y/48)-1}`),'unknown cells do not display decorations');
   const file='windows-85b-unknown-boundary.png';await p.screenshot({path:output+file,fullPage:true});screenshots.push(file);
   assert.deepEqual(errors,[]);
   const report={fixtureBoundary:'真实 seed73 第2层地图与第二地形，固定相机与房间，分别套用三个主题；独立边界图重新运行reveal。截图不代表完整游玩。',screenshots,exports,decorationViews,knownBoundaryOnly:true};

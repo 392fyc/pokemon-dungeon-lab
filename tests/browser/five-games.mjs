@@ -4,6 +4,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
+import {inferEvents,newLines} from '../../src/render/animation.ts';
+import {applyCommand,createExpedition,rngStep} from '../../src/core/engine.ts';
+import {moveOf} from '../../src/core/moves.ts';
+import {floorIndex,adjacentReachable,rayReachable} from '../../src/render/reach.ts';
 
 const artifactDir='.artifacts/trial';
 fs.mkdirSync(artifactDir,{recursive:true});
@@ -26,15 +30,41 @@ const ready=()=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&w
 const state=()=>page.evaluate(()=>window.trial.getState());
 const envelope=()=>page.evaluate(()=>window.trial.store.envelope);
 const raw=()=>page.evaluate(()=>localStorage.getItem(window.trial.store.key));
-const click=async id=>{await page.locator('#'+id).click();await ready();};
+const click=async id=>{
+ if(id==='open-settings'&&await page.locator('#hud-settings').isVisible())id='hud-settings';
+ if(id.startsWith('use-')){
+  const item=id.slice(4),inventory=await state();
+  assert.ok((inventory.prog?.items?.[item]??0)>0,'the selected consumable must exist in the visible party inventory');
+  const bag=page.locator('#hud-bag');
+  if(!(await bag.isVisible())){await page.locator('#bag-open').click();await ready();}
+  await bag.locator('[data-bag-slot="0"]').click();await ready();
+  await bag.locator('[data-bag-category="all"]').click();await ready();
+  const itemButton=bag.locator('[data-bag-item="'+item+'"]');
+  assert.equal(await itemButton.count(),1,'the held consumable must appear in the all-items category');
+  const itemName=(await itemButton.locator('span').innerText()).trim();
+  await itemButton.click();await ready();
+  const slotLabel=await bag.locator('[data-bag-slot="0"]').getAttribute('aria-label');
+  assert.ok(slotLabel?.includes(itemName),'the selected item must appear in the assigned quick slot');
+  await page.locator('#bag-close').click();await ready();
+  const quick=page.locator('[data-hud-quick="0"]');
+  assert.ok(await quick.isEnabled(),'the assigned quick slot must be usable while inventory remains');
+  await quick.click();await ready();return;
+ }
+ const target=page.locator('#'+id),actions=page.locator('#hud-actions'),actionsOpen=page.locator('#actions-open');
+ if(await target.count()&&await actions.count()&&await actions.isHidden()&&await actionsOpen.isVisible()&&await target.evaluate(el=>!!(el.closest('#controls,#hud-actions')||(el.closest('#save')&&!el.closest('#flow'))))){await actionsOpen.click();await ready();}
+ await target.click();await ready();
+};
 async function cell(pos){
- await page.locator('canvas').scrollIntoViewIfNeeded();
  await page.waitForTimeout(400);   // let the camera finish following before converting a cell to pixels
- // Hover details can change document height and scroll anchoring. Re-read the
- // canvas after hover instead of clicking the pixel measured before that shift.
+ // Read the live map geometry and camera viewport so the click follows the
+ // responsive HUD canvas at its current size and position.
+ const actions=page.locator('#hud-actions');if(await actions.count()&&await actions.isVisible()&&await page.locator('#actions-open').isVisible()){await page.locator('#actions-open').click();await ready();}
+ const bag=page.locator('#hud-bag');if(await bag.count()&&await bag.isVisible()){await page.locator('#bag-close').click();await ready();}
  for(let attempt=0;attempt<4;attempt++){
+  const view=await page.evaluate(()=>window.trial.view()),g=view.geometry,v=view.cameraView;
   const camera=await page.evaluate(()=>window.trial.camera()),box=await page.locator('canvas').boundingBox();
-  const x=(pos.x*48+24-camera.x)*box.width/680,y=(pos.y*48+24-camera.y)*box.height/350;
+  const x=(g.ox+(pos.x-g.minX+.5)*g.cell-camera.x)*box.width/v.width;
+  const y=(g.oy+(pos.y-g.minY+.5)*g.cell-camera.y)*box.height/v.height;
   assert.ok(x>=0&&x<box.width&&y>=0&&y<box.height,'target must be visible on canvas');
   await page.mouse.move(box.x+x,box.y+y);await page.waitForTimeout(150);
   const after=await page.locator('canvas').boundingBox(),afterCamera=await page.evaluate(()=>window.trial.camera());
@@ -60,8 +90,9 @@ function visibleView(s){
   }
  }
  const team=s.queue.map(id=>{
-  const u=s.units[id];
-  return {id,hp:u?.hp??0,maxHp:u?.maxHp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null};
+  const u=s.units[id],status={};
+  for(const key of ['frz','confusion'])if(u?.status?.[key]!==undefined)status[key]={...u.status[key]};
+  return {id,hp:u?.hp??0,maxHp:u?.maxHp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null,learned:[...(u?.learned??[])],pp:{...(u?.pp??{})},maxPp:{...(u?.maxPp??{})},...(Object.keys(status).length?{status}:{})};
  });
  const enemies=s.enemies.map(id=>{
   const u=s.units[id];
@@ -71,7 +102,7 @@ function visibleView(s){
  const points=s.points.filter(p=>seen.has(p.pos.x+','+p.pos.y))
   .map(p=>({kind:p.kind,pos:{x:p.pos.x,y:p.pos.y},used:!!p.used}));
  const leader=team.find(u=>u.id===s.leader);
- return {level:s.dungeon?.level??1,seen:[...seen],seenWalls:[...seenWalls],team,leaderId:s.leader,leaderPos:leader?.pos??null,enemies,points};
+ return {level:s.dungeon?.level??1,seen:[...seen],seenWalls:[...seenWalls],team,leaderId:s.leader,leaderPos:leader?.pos??null,enemies,points,items:{...(s.prog?.items??{})}};
 }
 
 // Replays actual UI input. State reads here only translate a chosen visible
@@ -93,10 +124,11 @@ async function command(c){
  }
  if(c.type==='buy'){await click('buy-'+c.item);return;}
  assert.equal(c.type,'round');
- const a=c.action;
+ const a=c.action,movementBefore=a.type==='move'?await state():null;
  if(a.type==='move'){
-  assert.ok(['ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(a.key));
-  await page.keyboard.press(a.key);await ready();
+  assert.ok(Array.isArray(a.keys)&&a.keys.length>=1&&a.keys.length<=2,'movement uses one cardinal key or a two-key diagonal chord');
+  await page.keyboard.press(a.keys.join('+'));
+  await ready();
  }else if(a.type==='basic')await cell(a.targetPos);
  else if(a.type==='skill'){await click('skill-'+a.skill);await cell(a.targetPos);}
  else if(a.type==='wait')await click('wait');
@@ -108,6 +140,47 @@ async function command(c){
  }else throw Error('Unsupported route action '+JSON.stringify(a));
  const after=await state();
  assert.ok(after.round>c.beforeRound,'UI action must advance a complete round; action: '+JSON.stringify(a)+'; notice: '+await page.locator('#message').innerText()+'; visible state: '+JSON.stringify(visibleView(after)));
+ if(a.type==='move'){
+  const id=movementBefore.leader,pos=movementBefore.units[id].pos,to={x:pos.x+a.dx,y:pos.y+a.dy};
+  assertMovementOutcome(movementBefore,after,to);
+ }
+}
+function movementEventsFor(events,id){
+ return events.flatMap(ev=>{
+  if(ev.k==='move'&&ev.by===id&&ev.id===id)return [{to:ev.to,kind:'move'}];
+  if(ev.k==='swap'&&ev.by===id){
+   if(ev.a===id)return [{to:ev.pb,kind:'swap'}];
+   if(ev.b===id)return [{to:ev.pa,kind:'swap'}];
+  }
+  return [];
+ });
+}
+function samePos(a,b){return a.x===b.x&&a.y===b.y;}
+function assertMovementOutcome(before,after,requested){
+ const id=before.leader,pos=before.units[id].pos;
+ assert.equal(after.round,before.round+1,'one cardinal key or two-key chord must produce exactly one round');
+ const lines=newLines(before.log,after.log),events=inferEvents(before,after,{type:'round',action:{type:'move',to:requested}});
+ const ownMoves=movementEventsFor(events,id),status=visibleView(before).team.find(u=>u.id===id)?.status;
+ if(status?.frz){
+  assert.equal(ownMoves.length,0,'a frozen leader cannot produce a movement event');
+  assert.ok(lines.includes(id+'冰冻中，无法行动，本次行动落空，未扣PP'),'a frozen no-move result requires an exact lost-action log from this round');
+  return 'frozen-action-lost';
+ }
+ const confusedLines=status?.confusion?lines.filter(line=>line.startsWith(id+'因混乱朝')):[];
+ if(status?.confusion)assert.equal(confusedLines.length,1,"an active confusion status must be proven by this round's leader log");
+ if(ownMoves.length===1&&samePos(ownMoves[0].to,requested))return 'arrived';
+ if(status?.confusion&&confusedLines.length===1&&confusedLines[0].endsWith('，被挡住，原地不动')){
+  assert.equal(ownMoves.length,0,'a blocked confused move has no leader move/swap event');
+  return 'confused-step-blocked';
+ }
+ if(status?.confusion&&confusedLines.length===1&&confusedLines[0].endsWith('乱走')){
+  assert.equal(ownMoves.length,1,'a redirected confused move must have one real leader move/swap event');
+  const actual=ownMoves[0].to;
+  assert.equal(Math.max(Math.abs(actual.x-pos.x),Math.abs(actual.y-pos.y)),1,'a redirected move still travels exactly one neighboring cell');
+  assert.notDeepEqual(actual,requested,'this exception only accepts a logged confusion redirection away from the planned destination');
+  return 'confused-direction-replaced';
+ }
+ assert.fail('keyboard move lacks a matching movement event or specific status proof; leader='+id+'; status='+JSON.stringify(status)+'; round log='+JSON.stringify(lines)+'; movement events='+JSON.stringify(ownMoves));
 }
 async function roundTrip(label){
  const before=await envelope();
@@ -126,15 +199,29 @@ async function roundTrip(label){
 }
 
 const directions=[
- {dx:1,dy:0,key:'ArrowRight'},
- {dx:0,dy:1,key:'ArrowDown'},
- {dx:-1,dy:0,key:'ArrowLeft'},
- {dx:0,dy:-1,key:'ArrowUp'}
+ {dx:1,dy:0,keys:['ArrowRight']},
+ {dx:0,dy:1,keys:['ArrowDown']},
+ {dx:-1,dy:0,keys:['ArrowLeft']},
+ {dx:0,dy:-1,keys:['ArrowUp']},
+ {dx:1,dy:1,keys:['d','s']},
+ {dx:-1,dy:1,keys:['a','s']},
+ {dx:-1,dy:-1,keys:['a','w']},
+ {dx:1,dy:-1,keys:['d','w']}
 ];
 const posKey=p=>p.x+','+p.y;
-const manhattan=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+const chebyshev=(a,b)=>Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));
+function floorStepAllowed(floor,from,to){
+ const dx=to.x-from.x,dy=to.y-from.y;
+ if(chebyshev(from,to)!==1||!floor.has(posKey(to)))return false;
+ return dx===0||dy===0||(floor.has(posKey({x:to.x,y:from.y}))&&floor.has(posKey({x:from.x,y:to.y})));
+}
 const fromKey=k=>{const [x,y]=k.split(',').map(Number);return {x,y};};
+const visibleFloor=view=>floorIndex(view.seen.map(fromKey));
 const add=(p,d)=>({x:p.x+d.dx,y:p.y+d.dy});
+function unknownExitMayBeReached(floor,known,from,d){
+ const to=add(from,d);if(known.has(posKey(to)))return false;
+ return d.dx===0||d.dy===0||(floor.has(posKey({x:from.x+d.dx,y:from.y}))&&floor.has(posKey({x:from.x,y:from.y+d.dy})));
+}
 function refreshScoutMemory(view,memory){
  const now=new Set([...view.seen,...(view.seenWalls??[])]);
  for(const k of now)if(!memory.known.has(k)){
@@ -151,7 +238,7 @@ function visibleDistances(view,start){
   const cur=queue[i],nextDistance=distance.get(posKey(cur))+1;
   for(const d of directions){
    const next=add(cur,d),k=posKey(next);
-   if(!floor.has(k)||blocked.has(k)||distance.has(k))continue;
+   if(!floor.has(k)||blocked.has(k)||distance.has(k)||!floorStepAllowed(floor,cur,next))continue;
    distance.set(k,nextDistance);queue.push(next);
   }
  }
@@ -164,14 +251,14 @@ function nextStep(view,target){
  const distances=visibleDistances(view,target);
  const currentDistance=distances.get(posKey(start));
  if(currentDistance===undefined)return null;
- const blocked=new Set(view.enemies.map(e=>posKey(e.pos)));
+ const floor=new Set(view.seen),blocked=new Set(view.enemies.map(e=>posKey(e.pos)));
  const options=directions.map(d=>({d,p:add(start,d),k:posKey(add(start,d))}))
-  .filter(o=>distances.has(o.k)&&!blocked.has(o.k)&&distances.get(o.k)<currentDistance)
+  .filter(o=>distances.has(o.k)&&!blocked.has(o.k)&&floorStepAllowed(floor,start,o.p)&&distances.get(o.k)<currentDistance)
   .sort((a,b)=>distances.get(a.k)-distances.get(b.k));
  if(!options.length)return null;
  const first=options[0];
  const ally=view.team.find(u=>u.id!==view.leaderId&&u.hp>0&&u.pos&&posKey(u.pos)===first.k);
- return ally?{action:{type:'swap',target:ally.id}}:{action:{type:'move',key:first.d.key}};
+ return ally?{action:{type:'swap',target:ally.id}}:{action:{type:'move',keys:first.d.keys,dx:first.d.dx,dy:first.d.dy}};
 }
 function nearestRevealedEdge(view,memory){
  const start=view.leaderPos;
@@ -180,7 +267,7 @@ function nearestRevealedEdge(view,memory){
  for(const k of view.seen){
   if(memory.tried.has(k)||!distances.has(k))continue;
   const p=fromKey(k);
-  if(!directions.some(d=>!known.has(posKey(add(p,d)))))continue;
+  if(!directions.some(d=>unknownExitMayBeReached(floor,known,p,d)))continue;
   edges.push({pos:p,key:k,distance:distances.get(k)});
  }
  edges.sort((a,b)=>a.distance-b.distance||a.pos.y-b.pos.y||a.pos.x-b.pos.x);
@@ -188,7 +275,8 @@ function nearestRevealedEdge(view,memory){
 }
 function adjacentEnemy(view,{awakeOnly=false}={}){
  if(!view.leaderPos)return null;
- return view.enemies.filter(e=>manhattan(view.leaderPos,e.pos)===1&&(!awakeOnly||!e.asleep))
+ const floor=new Set(view.seen);
+ return view.enemies.filter(e=>floorStepAllowed(floor,view.leaderPos,e.pos)&&(!awakeOnly||!e.asleep))
   .sort((a,b)=>a.hp-b.hp||a.pos.y-b.pos.y||a.pos.x-b.pos.x)[0]??null;
 }
 function recoverBlockedRoute(view,memory){
@@ -198,10 +286,10 @@ function recoverBlockedRoute(view,memory){
  if(edge)return {kind:'scout',edge};
  // A sleeping enemy cannot approach us. Walk to a reachable, revealed cell beside
  // a visible enemy instead of waiting forever on this side of the obstruction.
- const distances=visibleDistances(view,view.leaderPos),approaches=[];
+ const distances=visibleDistances(view,view.leaderPos),approaches=[],floor=new Set(view.seen);
  for(const enemy of view.enemies)for(const d of directions){
   const pos=add(enemy.pos,d),distance=distances.get(posKey(pos));
-  if(distance!==undefined&&distance>0)approaches.push({pos,distance});
+  if(floorStepAllowed(floor,enemy.pos,pos)&&distance!==undefined&&distance>0)approaches.push({pos,distance});
  }
  approaches.sort((a,b)=>a.distance-b.distance||a.pos.y-b.pos.y||a.pos.x-b.pos.x);
  for(const approach of approaches){
@@ -210,10 +298,42 @@ function recoverBlockedRoute(view,memory){
  }
  return null;
 }
+function visibleDamageTarget(view,actor,target,spec){
+ if(spec.target!=='enemy'||!spec.effects.includes('damage'))return false;
+ const floor=visibleFloor(view);if(!new Set(view.seen).has(posKey(target.pos)))return false;
+ if(spec.range==='front'||spec.range==='around')return adjacentReachable(floor,actor.pos,target.pos);
+ if(spec.range!=='front2'&&spec.range!=='line10')return false;
+ const occupied=new Set([...view.team,...view.enemies].filter(unit=>unit.id!==actor.id&&unit.id!==target.id&&unit.hp>0&&unit.pos).map(unit=>posKey(unit.pos)));
+ return rayReachable(floor,occupied,actor.pos,target.pos,spec.range==='front2'?2:10);
+}
+function planVisibleDamage(view,requirePp=true){
+ const actor=view.team.find(unit=>unit.id===view.leaderId);if(!actor||actor.hp<=0||!actor.pos)return null;
+ const candidates=[];
+ for(const skill of actor.learned??[]){
+  const spec=moveOf(skill);if(!spec||!spec.effects.includes('damage')||spec.target!=='enemy'||(requirePp&&(actor.pp[skill]??0)<1))continue;
+  for(const target of view.enemies)if(visibleDamageTarget(view,actor,target,spec))candidates.push({skill,target,power:spec.power??0});
+ }
+ candidates.sort((a,b)=>b.power-a.power||a.target.hp-b.target.hp||a.target.pos.y-b.target.pos.y||a.target.pos.x-b.target.pos.x||a.skill.localeCompare(b.skill));
+ const best=candidates[0];return best?{type:'skill',skill:best.skill,target:best.target.id,targetPos:{x:best.target.pos.x,y:best.target.pos.y}}:null;
+}
+function planVisibleBerry(view){
+ const actor=view.team.find(unit=>unit.id===view.leaderId);
+ return (view.items?.berry??0)>0&&actor?.pos&&actor.hp>0&&actor.hp<actor.maxHp?{type:'use',item:'berry',target:actor.id}:null;
+}
+function planVisibleTonic(view){
+ const actor=view.team.find(unit=>unit.id===view.leaderId);
+ if((view.items?.tonic??0)<1||!actor?.pos||actor.hp<=0||!planVisibleDamage(view,false))return null;
+ return (actor.learned??[]).some(skill=>(actor.pp[skill]??0)<(actor.maxPp[skill]??0))?{type:'use',item:'tonic',target:actor.id}:null;
+}
 function planVisibleAction(view,route,memory,shopBought){
- // Combat uses only enemies whose positions are already in the revealed-cell set.
+ // Self-target supplies stay legal if a companion moves earlier in the same round.
+ const berry=planVisibleBerry(view);if(berry)return {kind:'round',action:berry};
+ const damage=planVisibleDamage(view);if(damage)return {kind:'round',action:damage};
+ const tonic=planVisibleTonic(view);if(tonic)return {kind:'round',action:tonic};
  const awake=adjacentEnemy(view,{awakeOnly:true});
  if(awake)return {kind:'round',action:{type:'basic',targetPos:awake.pos}};
+ const pickup=view.points.find(p=>!p.used&&(p.kind==='berry'||p.kind==='tonic')&&posKey(p.pos)===posKey(view.leaderPos));
+ if(pickup)return {kind:'round',action:{type:'interact',exit:false}};
  // Prioritize visible pickups, then the downward stair. There is no retreat destination.
  const target=view.points.find(p=>!p.used&&(p.kind==='goal'||p.kind==='item'))??view.points.find(p=>p.kind==='down');
  if(target){
@@ -288,25 +408,85 @@ try{
  const projectionState=extraFloor=>({seen:['0,0'],seenWalls:[],floor:[{x:0,y:0},{x:1,y:0},{x:10,y:10},...extraFloor],queue:['A'],units:{A:{id:'A',hp:10,pos:{x:0,y:0}}},leader:'A',enemies:[],points:[],dungeon:{level:1}});
  const nearProjection=visibleView(projectionState([])),farProjection=visibleView(projectionState([{x:11,y:10},{x:10,y:11}]));
  assert.deepEqual(farProjection,nearProjection,'far hidden floor changes do not enter the visible planner projection');
+ const statusProjection=visibleView({...projectionState([]),units:{A:{id:'A',hp:10,pos:{x:0,y:0},status:{frz:{left:2},confusion:{left:4},brn:{tick:3}}}}});
+ assert.deepEqual(statusProjection.team[0].status,{frz:{left:2},confusion:{left:4}},'movement reasoning receives only the leader-relevant visible freeze and confusion fields');
+ report.movementStatusProjectionRegression=true;
  const projectionEdge=view=>nearestRevealedEdge(view,{known:new Set([...view.seen,...view.seenWalls]),tried:new Set()});
  assert.deepEqual(projectionEdge(farProjection),projectionEdge(nearProjection),'far hidden floor changes do not change the selected exploration edge');
  report.hiddenTerrainProjectionRegression=true;
- const wallView={level:1,seen:['0,0'],seenWalls:['1,0','0,1','-1,0','0,-1'],leaderId:'A',leaderPos:{x:0,y:0},team:[{id:'A',hp:10,pos:{x:0,y:0}}],enemies:[],points:[]};
+ const moveFixture=status=>{
+  const w=createExpedition('five-games-status-smoke',24681357,1),id=w.leader;
+  w.queue=[id];w.enemies=[];w.points=[];w.floor=[];
+  for(let y=0;y<3;y++)for(let x=0;x<3;x++)w.floor.push({x,y});
+  w.seen=w.floor.map(posKey);w.units[id].pos={x:1,y:1};w.units[id].status=structuredClone(status);w.round=0;
+  return w;
+ };
+ const requested={x:2,y:1};
+ const paralysedBefore=moveFixture({par:{left:2}}),paralysedResult=applyCommand(paralysedBefore,{type:'round',action:{type:'move',to:requested}});
+ assert.equal(assertMovementOutcome(paralysedBefore,paralysedResult.state,requested),'arrived','paralysis blocks moves and basic attacks, not walking');
+ const frozenBefore=moveFixture({frz:{left:2}}),frozenResult=applyCommand(frozenBefore,{type:'round',action:{type:'move',to:requested}});
+ assert.equal(frozenResult.ok,true,'the engine accepts a geometrically valid move even while frozen');
+ assert.equal(assertMovementOutcome(frozenBefore,frozenResult.state,requested),'frozen-action-lost','only the exact same-round freeze log permits a no-move result');
+ const confusedBefore=moveFixture({confusion:{left:2}});
+ let confusionRng=0,confusionDirection=Math.floor(rngStep(confusionRng).value*8);
+ while(confusionDirection===0){confusionRng++;confusionDirection=Math.floor(rngStep(confusionRng).value*8);}
+ confusedBefore.battleRng=confusionRng;
+ const confusedResult=applyCommand(confusedBefore,{type:'round',action:{type:'move',to:requested}});
+ assert.equal(confusedResult.ok,true);
+ const confusedPos=confusedResult.state.units[confusedBefore.leader].pos;
+ assert.notDeepEqual(confusedPos,requested,'the deterministic fixture chooses a different direction, without changing the fresh-run random stream');
+ assert.equal(assertMovementOutcome(confusedBefore,confusedResult.state,requested),'confused-direction-replaced','the actual confusion log and actual move event prove the changed destination');
+ const blockedBefore=moveFixture({confusion:{left:2}});
+ blockedBefore.floor=blockedBefore.floor.filter(p=>p.x!==0||p.y!==1);blockedBefore.seen=blockedBefore.floor.map(posKey);blockedBefore.battleRng=confusionRng;
+ const blockedResult=applyCommand(blockedBefore,{type:'round',action:{type:'move',to:requested}});
+ assert.equal(blockedResult.ok,true);
+ assert.equal(assertMovementOutcome(blockedBefore,blockedResult.state,requested),'confused-step-blocked','the no-move exception needs the engine log that the drawn direction was blocked');
+ report.statusMovementCoreRegression=true;
+ const wallView={level:1,seen:['0,0'],seenWalls:['1,0','0,1','-1,0','0,-1','1,1','-1,1','-1,-1','1,-1'],leaderId:'A',leaderPos:{x:0,y:0},team:[{id:'A',hp:10,pos:{x:0,y:0}}],enemies:[],points:[]};
  const wallMemory={known:new Set(['0,0']),tried:new Set()};
  assert.equal(nearestRevealedEdge(wallView,wallMemory),null,'drawn walls are known terrain, not unexplored edges');
  wallView.seenWalls.pop();
- assert.deepEqual(nearestRevealedEdge(wallView,wallMemory)?.pos,{x:0,y:0},'a genuinely unknown neighbor remains an exploration edge');
+ assert.equal(nearestRevealedEdge(wallView,wallMemory),null,'an unknown diagonal behind two known wall sides is not treated as an exploration entrance');
  const wallRevealMemory={known:new Set(['0,0']),tried:new Set(['0,0'])};
  refreshScoutMemory({seen:['0,0'],seenWalls:['1,0']},wallRevealMemory);
  assert.ok(!wallRevealMemory.tried.has('0,0'),'newly drawn wall terrain refreshes adjacent frontier memory');
  report.wallKnowledgeRegression=true;
+ const openCornerView={level:1,seen:['0,0','1,1','1,0','0,1'],seenWalls:[],leaderId:'A',leaderPos:{x:0,y:0},team:[{id:'A',hp:10,pos:{x:0,y:0}}],enemies:[],points:[]};
+ assert.equal(visibleDistances(openCornerView,openCornerView.leaderPos).get('1,1'),1,'the planner can use an eight-direction step when both revealed side cells are floor');
+ assert.deepEqual(nextStep(openCornerView,{x:1,y:1})?.action,{type:'move',keys:['d','s'],dx:1,dy:1},'a diagonal route becomes a real two-key input chord');
+ const blockedCornerView={...openCornerView,seen:['0,0','1,1','1,0']};
+ const blockedCornerDistances=visibleDistances(blockedCornerView,blockedCornerView.leaderPos);
+ assert.equal(blockedCornerDistances.get('1,1'),2,'the destination remains reachable by the two legal orthogonal steps');
+ assert.deepEqual(nextStep(blockedCornerView,{x:1,y:1})?.action,{type:'move',keys:['ArrowRight'],dx:1,dy:0},'nextStep must not choose the unreachable direct diagonal edge');
+ const diagonalEnemy={id:'E',hp:5,asleep:false,pos:{x:1,y:1}};
+ assert.equal(adjacentEnemy({...openCornerView,enemies:[diagonalEnemy]},{awakeOnly:true})?.id,'E','a visible diagonal enemy is attackable when both side cells are revealed floor');
+ assert.equal(adjacentEnemy({...blockedCornerView,enemies:[diagonalEnemy]},{awakeOnly:true}),null,'a diagonal enemy is not selected through an unknown or wall corner');
+ const frontierFloor=new Set(['0,0','1,0','0,-1']),frontierWalls=new Set();
+ for(const k of frontierFloor){const p=fromKey(k);for(const d of directions){const candidate=posKey(add(p,d));if(!frontierFloor.has(candidate)&&candidate!=='1,-1')frontierWalls.add(candidate);}}
+ const openDiagonalFrontier={...wallView,seen:[...frontierFloor],seenWalls:[...frontierWalls]};
+ assert.deepEqual(nearestRevealedEdge(openDiagonalFrontier,{known:new Set(),tried:new Set()})?.pos,{x:0,y:0},'an unknown diagonal is a frontier when both side cells are revealed floor');
+ const attackView={level:1,seen:['0,0','1,0','2,0'],seenWalls:[],leaderId:'A',leaderPos:{x:0,y:0},team:[{id:'A',hp:10,maxHp:10,pos:{x:0,y:0},learned:['quickattack'],pp:{quickattack:1},maxPp:{quickattack:2}}],enemies:[{id:'E',hp:10,pos:{x:2,y:0}}],points:[],items:{berry:0,tonic:0}};
+ assert.deepEqual(planVisibleDamage(attackView),{type:'skill',skill:'quickattack',target:'E',targetPos:{x:2,y:0}},'a learned damaging move with PP can target a visible legal enemy');
+ assert.equal(planVisibleDamage({...attackView,team:[{...attackView.team[0],pp:{quickattack:0}}]}),null,'a damaging move is not issued at zero PP');
+ assert.equal(planVisibleDamage({...attackView,seen:['0,0','1,0']}),null,'an enemy outside revealed floor is never selected');
+ assert.equal(planVisibleDamage({...attackView,team:[attackView.team[0],{id:'B',hp:10,pos:{x:1,y:0},learned:[],pp:{},maxPp:{}}]}),null,'a visible teammate blocks the intermediate ray cell');
+ const cornerAttack={...attackView,leaderPos:{x:0,y:0},seen:['0,0','1,0','1,1'],team:[{...attackView.team[0],pos:{x:0,y:0}}],enemies:[{id:'E',hp:10,pos:{x:1,y:1}}]};
+ assert.equal(planVisibleDamage(cornerAttack),null,'an unknown side floor blocks a diagonal attack ray');
+ const injuredWithBerry={...attackView,team:[{...attackView.team[0],hp:5}],items:{berry:1,tonic:0}};
+ assert.deepEqual(planVisibleBerry(injuredWithBerry),{type:'use',item:'berry',target:'A'});
+ assert.equal(planVisibleBerry({...injuredWithBerry,items:{berry:0,tonic:0}}),null,'no berry means no item action');
+ const exhaustedWithTonic={...attackView,team:[{...attackView.team[0],pp:{quickattack:0}}],items:{berry:0,tonic:1}};
+ assert.deepEqual(planVisibleTonic(exhaustedWithTonic),{type:'use',item:'tonic',target:'A'},'tonic is used only for a real PP gap and a legal visible attack');
+ assert.equal(planVisibleTonic({...exhaustedWithTonic,items:{berry:0,tonic:0}}),null,'no tonic means ordinary fallback remains available');
+ report.visibleMoveAndSupplyRegression=true;
+ report.eightDirectionAndCornerRegression=true;
  // Regression: the known corridor to a goal/shop is blocked by a distant sleeper.
  // Exhausted edges must lead toward that visible blocker, then attack when adjacent.
  for(const kind of ['goal','down']){
   const seen=['0,0','1,0','2,0','3,0'];
   const view={seen,leaderId:'A',leaderPos:{x:0,y:0},team:[{id:'A',hp:10,pos:{x:0,y:0}}],enemies:[{id:'E',hp:5,asleep:true,pos:{x:2,y:0}}],points:[{kind:'goal',pos:{x:3,y:0},used:kind==='down'},...(kind==='down'?[{kind:'down',pos:{x:3,y:0},used:false}]:[])]};
   const memory={known:new Set(seen),tried:new Set(seen)},route={purse:20};
-  assert.deepEqual(planVisibleAction(view,route,memory,false),{kind:'round',action:{type:'move',key:'ArrowRight'}},kind+' approaches a visible sleeping blocker');
+  assert.deepEqual(planVisibleAction(view,route,memory,false),{kind:'round',action:{type:'move',keys:['ArrowRight'],dx:1,dy:0}},kind+' approaches a visible sleeping blocker');
   view.leaderPos={x:1,y:0};view.team[0].pos=view.leaderPos;
   assert.deepEqual(planVisibleAction(view,route,memory,false),{kind:'round',action:{type:'basic',targetPos:{x:2,y:0}}},kind+' attacks the now-adjacent visible blocker');
  }

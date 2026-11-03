@@ -47,6 +47,7 @@ export type TerrainMap = {
   liquid?: readonly (TerrainCell | string)[];
   seen: readonly string[];
   seenWalls?: readonly string[];
+  onlyRevealed?: boolean;
 };
 
 export type PreparedTerrainMap = {
@@ -212,12 +213,15 @@ function setFromCells(cells: readonly (TerrainCell | string)[] | undefined): Set
 export function prepareTerrainMap(map: TerrainMapInput): PreparedTerrainMap {
   if ('preparedTerrainMap' in map && map.preparedTerrainMap) return map;
   const source = map as TerrainMap;
-  const floor = setFromCells(source.floor);
-  const liquid = setFromCells(source.liquid);
   const seen = new Set(source.seen ?? []);
   const seenWalls = new Set(source.seenWalls ?? []);
   const known = new Set<string>([...seen, ...seenWalls]);
-  for (const key of seen) {
+  const floor = setFromCells(source.onlyRevealed
+    ? source.floor.filter(cell => seen.has(cellKey(cell.x, cell.y))) : source.floor);
+  const liquid = setFromCells(source.onlyRevealed
+    ? source.liquid?.filter(cell => seenWalls.has(typeof cell === 'string' ? cell : cellKey(cell.x, cell.y))) : source.liquid);
+  // Atlas previews and older fixture callers can still derive their wall fringe.
+  if (!source.onlyRevealed) for (const key of seen) {
     const cell = parseCellKey(key);
     if (!cell) continue;
     for (const neighbor of NEIGHBORS) {
@@ -872,7 +876,7 @@ export function decorationCandidates(input: DecorationInput): DecorationCandidat
   for (let y = 0; y < map.height; y++) {
     for (let x = 0; x < map.width; x++) {
       const key = cellKey(x, y);
-      if (excluded.has(key)) continue;
+      if (excluded.has(key) || (map.source.onlyRevealed && !map.known.has(key))) continue;
       let kind: DecorationKind | null = null;
       if (map.floor.has(key) && frameOf(fullMaskAt(map, x, y, 'edge')) === 46) {
         kind = 'floor';

@@ -492,15 +492,13 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
   const groundKeys=new Set(sight.floor.map(q=>`${q.x},${q.y}`));
   const before=await load(sight);for(let y=room.y;y<room.y+room.h;y++)for(let x=room.x;x<room.x+room.w;x++)assert.ok(before.seen.includes(`${x},${y}`),`room ground ${x},${y} remains visible`);
   await key(p,'ArrowDown');const seenState=await state(p);assert.deepEqual(seenState.units[seenState.leader].pos,corridor,'the real keyboard input enters the corridor');
-  const seen=new Set(seenState.seen),walls=new Set(seenState.seenWalls??[]),dirs=[[1,0],[0,1],[-1,0],[0,-1]],insideMap=(q)=>q.x>=0&&q.y>=0&&q.x<seenState.dungeon.width&&q.y<seenState.dungeon.height;
-  for(const [dx,dy] of dirs)for(let n=1;n<=4;n++){
-   const c={x:corridor.x+dx*n,y:corridor.y+dy*n},sideA={x:c.x-dy,y:c.y+dx},sideB={x:c.x+dy,y:c.y-dx};
-   for(const q of [c,sideA,sideB])if(insideMap(q)){const k=`${q.x},${q.y}`;if(groundKeys.has(k))assert.ok(seen.has(k),`Q6 ground ${k} is revealed`);else assert.ok(walls.has(k),`Q6 wall ${k} is revealed separately`);}
-   if(!groundKeys.has(`${c.x},${c.y}`))break;
-  }
+  const seen=new Set(seenState.seen),walls=new Set(seenState.seenWalls??[]);
+  const expected=new Set([...before.seen,...(before.seenWalls??[])]);
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)expected.add((corridor.x+dx)+','+(corridor.y+dy));
+  assert.deepEqual([...new Set([...seen,...walls])].sort(),[...expected].sort(),'stepping out reveals exactly the neighboring cells and preserves all known room cells');
   assert.ok(seenState.seenWalls?.length>0,'corridor sight records walls separately from ground');
   assert.ok(seenState.seen.every(k=>groundKeys.has(k)),'seen contains ground cells only');
-  assert.ok(seenState.seenWalls.every(k=>!groundKeys.has(k)&&!seen.has(k)),'seenWalls contains unrevealed wall cells only');
+  assert.ok(seenState.seenWalls.every(k=>!groundKeys.has(k)&&!seen.has(k)),'seenWalls contains revealed non-floor cells only');
   const q6file='corridor-q6.png';await p.screenshot({path:map122Artifact+q6file,fullPage:true});
   report.screenshots.push({file:q6file,seed:3,level:1,corridorStart,corridor,seenGround:seenState.seen.length,seenWalls:seenState.seenWalls.length});
 
@@ -1669,6 +1667,15 @@ await test('8.5 结算：三组奖励、五项经验与升级显示',async()=>{
  }finally{await context.close();}
 });
 
+// Atlas coverage uses a fully explored fixture; the separate boundary checks run real reveal.
+function revealAllTerrain(world){
+ const ground=new Set(world.floor.map(c=>c.x+','+c.y)),walls=[];
+ for(let y=0;y<world.dungeon.height;y++)for(let x=0;x<world.dungeon.width;x++){
+  const k=x+','+y;if(!ground.has(k))walls.push(k);
+ }
+ world.seen=[...ground].sort();world.seenWalls=walls.sort();
+}
+
 await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async()=>{
  const {context,page:p,errors}=await setup('K1');
  const output='.artifacts/terrain148/';fs.mkdirSync(output,{recursive:true});
@@ -1683,7 +1690,7 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
   for(const id of fixture.queue)if(id!==fixture.leader){fixture.units[id].hp=0;fixture.units[id].pos=null;}
   // 镜头向左一格，固定seed73同一房间中三个主题都能展示真装饰和岸边。
   leader.pos={x:room.x+Math.floor(room.w/2)-1,y:room.y+Math.floor(room.h/2)};
-  fixture.seen=fixture.floor.map(c=>`${c.x},${c.y}`);fixture.seenWalls=[];
+  revealAllTerrain(fixture);
   const screenshots=[],exports=[],decorationViews=[];
   for(const [index,theme] of ['moss','wet','ash'].entries()){
    // Hold geometry and camera fixed to compare palettes; this fixture does not prove three-floor gameplay.
@@ -1728,8 +1735,7 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
   const boundary=structuredClone(fixture);boundary.seen=[];boundary.seenWalls=[];reveal(boundary);
   await p.reload();await p.locator('#start').waitFor();
   await startMemory(p,boundary);
-  const knownFloor=new Set(boundary.seen),known=new Set(boundary.seenWalls);
-  for(const c of boundary.floor)if(knownFloor.has(`${c.x},${c.y}`))for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++)known.add(`${c.x+dx},${c.y+dy}`);
+  const known=new Set([...boundary.seen,...boundary.seenWalls]);
   const boundaryView=await p.evaluate(()=>window.trial.view());
   const rendered=boundaryView.terrain,cell=boundaryView.geometry.cell;
   for(const t of rendered)assert.ok(known.has(`${Math.floor(t.x/cell)},${Math.floor(t.y/cell)}`),'no terrain outside the known map is drawn');
@@ -1749,7 +1755,7 @@ await test('8.8 #178：默认地形读原版DTEF图集，三个主题的墙、�
   const sets={1:'TinyWoods',2:'WaterfallCave',3:'MagmaCavern2'},seen=[];
   for(const level of [1,2,3]){
    const world=jumpToFloor(createExpedition('dtef-visual',178,3,squadOf(initialProfile()),0,true,3),level);
-   world.seen=world.floor.map(c=>`${c.x},${c.y}`);world.seenWalls=[];
+   revealAllTerrain(world);
    if(level>1){await p.reload();await p.locator('#start').waitFor();}
    await startMemory(p,world);
    const v=await p.evaluate(()=>window.trial.view());
@@ -1770,7 +1776,7 @@ await test('8.8 #178：动画开启时离开DTEF地形层（回基地或标题�
  const {initialProfile,squadOf}=await import('../../src/core/base.ts');
  try{
   const world=jumpToFloor(createExpedition('dtef-loop',178,3,squadOf(initialProfile()),0,true,3),2);
-  world.seen=world.floor.map(c=>`${c.x},${c.y}`);world.seenWalls=[];
+  revealAllTerrain(world);
   await startMemory(p,world);
   await click(p,'actions-open');
   await p.getByText('开发者菜单：检查入口（隔离存储）',{exact:true}).click();
@@ -1781,6 +1787,91 @@ await test('8.8 #178：动画开启时离开DTEF地形层（回基地或标题�
   assert.ok(b>a+20,`render loop keeps running after the repaint: ${a} -> ${b}`);
   assert.deepEqual(errors,[]);return {frames:[a,b]};
  }finally{await context.close();}
+});
+
+
+await test('8.8 #166：两种图源的未知墙与水像素一致，三主题暗层截图',async()=>{
+ const {createExpedition,jumpToFloor,reveal}=await import('../../src/core/engine.ts');
+ const {initialProfile,squadOf}=await import('../../src/core/base.ts');
+ const output='.artifacts/sight166/';fs.mkdirSync(output,{recursive:true});
+ const make=level=>{const w=createExpedition('sight-166',73,3,squadOf(initialProfile()),0,true,3);return level===1?w:jumpToFloor(w,level);};
+ const key=({x,y})=>x+','+y;
+ const inside=(p,r)=>p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h;
+ const forPhoto=level=>{
+  const w=make(level),liquid=new Set(w.liquid),lead=w.units[w.leader];
+  const score=r=>[...liquid].filter(k=>{const [x,y]=k.split(',').map(Number);return inside({x,y},{x:r.x-1,y:r.y-1,w:r.w+2,h:r.h+2});}).length;
+  const room=[...w.rooms].sort((a,b)=>score(b)-score(a)||b.w*b.h-a.w*a.h)[0];
+  const roomGround=w.floor.filter(p=>inside(p,room));
+  const corridor=w.floor.filter(p=>!w.rooms.some(r=>inside(p,r))),steps=(a,b)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
+  const paths=corridor.filter(p=>roomGround.some(q=>steps(p,q)===1)).map(p=>[p]);
+  for(let i=0;i<paths.length;i++){
+   const path=paths[i],last=path.at(-1);
+   if(path.length===4)break;
+   for(const next of corridor)if(steps(last,next)===1&&!path.includes(next))paths.push([...path,next]);
+  }
+  const path=paths.find(p=>p.length===4);
+  assert.ok(path,'each photo uses a real four-cell passage leading away from a generated room');
+  w.enemies=[];w.seen=[];w.seenWalls=[];w.log=[];
+  for(const [i,id] of w.queue.entries())w.units[id].pos=roomGround[i];
+  reveal(w);
+  for(const [i,id] of w.queue.filter(id=>id!==w.leader).entries())w.units[id].pos=path[i+1];
+  lead.pos=path[3];reveal(w);return w;
+ };
+ const fixtures=[];
+ for(const source of ['dtef','painter']){
+  const {context,page:p,errors}=await setup(undefined,'pass',false,source);
+  try{
+   await p.setViewportSize({width:1280,height:720});
+   const w=make(2);w.floor=[];w.rooms=[{x:10,y:9,w:6,h:5}];w.liquid=[];
+   for(let y=9;y<=13;y++)for(let x=10;x<=15;x++)w.floor.push({x,y});
+   w.floor.push({x:16,y:12},{x:17,y:12});w.enemies=[];w.points=[];w.seen=[];w.seenWalls=[];
+   for(const id of w.queue)if(id!==w.leader){w.units[id].hp=0;w.units[id].pos=null;}
+   const lead=w.units[w.leader];lead.pos={x:15,y:12};reveal(w);
+   lead.pos={x:16,y:12};reveal(w);
+   const hidden={x:18,y:12};assert.ok(w.seen.includes('17,12'),'the hidden cell touches explored ground');
+   assert.ok(!w.seen.includes(key(hidden))&&!w.seenWalls.includes(key(hidden)),'the cell remains outside both known sets');
+   await startMemory(p,w);
+   const canvas=p.locator('#board canvas'),bounds=await canvas.boundingBox();
+   const {geometry,cameraView}=await p.evaluate(()=>window.trial.view());
+   const sx=bounds.width/cameraView.width,sy=bounds.height/cameraView.height,c=geometry.cell;
+   const clip={x:Math.floor(bounds.x+((hidden.x-1)*c-cameraView.x)*sx),y:Math.floor(bounds.y+(hidden.y*c-cameraView.y)*sy),width:Math.ceil(2*c*sx),height:Math.ceil(c*sy)};
+   const repaint=async world=>{
+    await p.evaluate(world=>{window.trial.repaint(world);return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));},world);
+    return p.screenshot({clip});
+   };
+   const wall=await repaint(w);
+   const water=structuredClone(w);water.liquid=[key(hidden)];
+   const hiddenWater=await repaint(water);
+   assert.ok(wall.equals(hiddenWater),source+': changing the hidden neighbor from wall to water leaves both tiles pixel-identical');
+   water.seenWalls.push(key(hidden));
+   const revealedWater=await repaint(water);
+   assert.ok(!wall.equals(revealedWater),source+': the same pixel crop changes when that water is explicitly revealed');
+   fixtures.push({source,hidden,clip,pixelComparison:'identical when hidden; changes when revealed'});
+   if(source==='dtef'){
+    const lamp=make(1);lamp.floor=[];lamp.rooms=[];lamp.enemies=[];lamp.points=[];lamp.liquid=[];lamp.seen=[];lamp.seenWalls=[];
+    for(let y=11;y<=12;y++)for(let x=7;x<=28;x++)lamp.floor.push({x,y});
+    for(const id of lamp.queue)if(id!==lamp.leader){lamp.units[id].hp=0;lamp.units[id].pos=null;}
+    // A real revealed corridor leaves historical floor outside either kind of current sight.
+    for(let x=11;x<=24;x++){lamp.units[lamp.leader].pos={x,y:12};reveal(lamp);}
+    lamp.units[lamp.leader].pos={x:17,y:12};reveal(lamp);
+    const probe=offset=>p.screenshot({clip:{
+     x:Math.round(bounds.x+bounds.width/2+offset*c),y:Math.round(bounds.y+bounds.height/2-10),width:8,height:12,
+    }});
+    await repaint(lamp);
+    const ordinary=await probe(2.2),ordinaryFar=await probe(3.2);
+    lamp.units[lamp.leader].species='charmander';await repaint(lamp);
+    assert.ok(!ordinary.equals(await probe(2.2)),'fire lights floor beyond the ordinary light radius, without changing the floor or camera');
+    assert.ok(ordinaryFar.equals(await probe(3.2)),'floor beyond both light radii is unchanged');
+    for(const [i,theme] of ['moss','wet','ash'].entries()){
+     await p.reload();await p.locator('#start').waitFor();await startMemory(p,forPhoto(i+1));
+     const shot=await p.screenshot({path:output+theme+'.png'});
+     assert.deepEqual([shot.readUInt32BE(16),shot.readUInt32BE(20)],[1280,720]);
+    }
+   }
+   assert.deepEqual(errors,[]);
+  }finally{await context.close();}
+ }
+ return {fixtures,screenshots:['moss.png','wet.png','ash.png'],seed:73,viewport:[1280,720]};
 });
 
 await browser.close();

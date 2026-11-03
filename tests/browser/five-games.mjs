@@ -82,15 +82,6 @@ async function cell(pos){
 function visibleView(s){
  const seen=new Set(s.seen);
  const seenWalls=new Set(s.seenWalls??[]);
- // Match the renderer: draw non-floor cells in the 8-cell neighborhood of visible ground.
- // The raw floor set is used only to exclude hidden floor from this wall projection.
- const terrain=new Set(s.floor.map(posKey));
- for(const value of seen){
-  const p=fromKey(value);
-  for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){
-   const wall=posKey({x:p.x+dx,y:p.y+dy});if(!terrain.has(wall))seenWalls.add(wall);
-  }
- }
  const team=s.queue.map(id=>{
   const u=s.units[id],status={};
   for(const key of ['frz','confusion'])if(u?.status?.[key]!==undefined)status[key]={...u.status[key]};
@@ -407,8 +398,11 @@ async function playRun(index,route){
 }
 
 try{
- const projectionState=extraFloor=>({seen:['0,0'],seenWalls:[],floor:[{x:0,y:0},{x:1,y:0},{x:10,y:10},...extraFloor],queue:['A'],units:{A:{id:'A',hp:10,pos:{x:0,y:0}}},leader:'A',enemies:[],points:[],dungeon:{level:1}});
+ const projectionState=extraFloor=>({seen:['0,0'],seenWalls:['0,1'],floor:[{x:0,y:0},{x:10,y:10},...extraFloor],queue:['A'],units:{A:{id:'A',hp:10,pos:{x:0,y:0}}},leader:'A',enemies:[],points:[],dungeon:{level:1}});
  const nearProjection=visibleView(projectionState([])),farProjection=visibleView(projectionState([{x:11,y:10},{x:10,y:11}]));
+ assert.deepEqual(nearProjection.seenWalls,['0,1'],'the planner receives only walls actually revealed');
+ const adjacentProjection=visibleView(projectionState([{x:1,y:0}]));
+ assert.deepEqual(adjacentProjection,nearProjection,'adjacent hidden floor changes do not enter the visible planner projection');
  assert.deepEqual(farProjection,nearProjection,'far hidden floor changes do not enter the visible planner projection');
  const statusProjection=visibleView({...projectionState([]),units:{A:{id:'A',hp:10,pos:{x:0,y:0},status:{frz:{left:2},confusion:{left:4},brn:{tick:3}}}}});
  assert.deepEqual(statusProjection.team[0].status,{frz:{left:2},confusion:{left:4}},'movement reasoning receives only the leader-relevant visible freeze and confusion fields');
@@ -499,7 +493,7 @@ try{
  await page.locator('#main-next').click();await page.locator('#pick-deputy-'+routes.deputy).click();
  await page.locator('#newgame-start').click();await ready();
  assert.equal((await envelope()).profile.expeditions,0);
- const runIds=new Set();let accepted=0,learned=false,carriedIntoRun=false,trainedMove=null;
+ const runIds=new Set();let accepted=0,learned=false,carriedIntoRun=false,trainedMove=null,trainedInst=null;
  assert.equal(routes.games.length,5);
  assert.equal(new Set(routes.games.map(g=>g.seed)).size,5,'five games must use five distinct seeds');
  for(const [index,route] of routes.games.entries()){
@@ -509,7 +503,7 @@ try{
   assert.deepEqual(Object.keys(before).sort(),['build','content','format','profile','rules','sequence']);assert.equal(before.profile.expeditions,index);
   assert.equal(await page.locator('#depart').isEnabled(),true);const campBytes=await raw();await click('depart');assert.equal(await raw(),campBytes,'departure retains the exact camp bytes');assert.deepEqual(await envelope(),before);
   let s=await state();assert.equal(s.dungeon.seed,route.seed);assert.ok(!runIds.has(s.runId));runIds.add(s.runId);
-  if(learned){const u=Object.values(s.units).find(u=>u.inst===routes.training.inst);assert.ok(u.learned.includes(trainedMove));carriedIntoRun=true;}
+  if(learned){const u=Object.values(s.units).find(u=>u.inst===trainedInst);assert.ok(u?.learned.includes(trainedMove),'the next expedition actually carries the trained move');carriedIntoRun=true;}
   try{accepted+=await playRun(index,route);}
   catch(error){throw new Error('第 '+(index+1)+' 局：'+(error instanceof Error?error.message:String(error)),{cause:error});}
   s=await state();assert.equal(s.phase,'ended');assert.ok(['won','wipe'].includes(s.end.outcome));
@@ -518,16 +512,34 @@ try{
   assert.equal(await state(),null);assert.equal((await envelope()).profile.expeditions,index+1);
   if(routes.training.afterGame===index+1){
    const t=routes.training,p=(await envelope()).profile;
-   trainedMove=Object.keys(p.vault).find(m=>p.vault[m]>0);
-   if(trainedMove){
-    const unit=p.roster.find(u=>u.id===t.inst);
-    if(!unit.learned.some(k=>k.move===trainedMove)){
-     await click('tm-'+trainedMove);
-     const learn=page.locator('#learn-'+t.inst);
-     if(await learn.isEnabled()){
-      await click('learn-'+t.inst);await click('carry-'+t.inst+'-'+unit.carry[0]);await click('carry-'+t.inst+'-'+trainedMove);learned=true;
+   // A fresh save starts with an empty vault. Every available TM here was brought back through real play.
+   const moves=[...new Set([t.move,...Object.keys(p.vault)])].filter(move=>p.vault[move]>0);
+   const squad=[...new Set([t.inst,...p.team])].filter(inst=>p.team.includes(inst));
+   if(moves.length){
+    let choice;
+    for(const move of moves){
+     await click('tm-'+move);
+     for(const inst of squad){
+      const learn=page.locator('#learn-'+inst);
+      // An incompatible button is clickable so the game can explain why it rejects the action.
+      if((await learn.innerText()).trim().endsWith(' · 可学习')){choice={move,inst};break;}
      }
+     if(choice)break;
     }
+    assert.ok(choice,'real vault TMs are present but no departing member can learn them: '+moves.join(', '));
+    ({move:trainedMove,inst:trainedInst}=choice);
+    const unit=p.roster.find(u=>u.id===trainedInst);
+    await click('learn-'+trainedInst);
+    const afterLearn=(await envelope()).profile;
+    assert.ok(afterLearn.roster.find(u=>u.id===trainedInst)?.learned.some(k=>k.move===trainedMove),'training actually adds the move');
+    assert.equal(afterLearn.vault[trainedMove]??0,p.vault[trainedMove]-1,'training consumes exactly one of the selected TM');
+    const removed=unit.carry.includes(t.removeMove)?t.removeMove:unit.carry[0];
+    if(removed)await click('carry-'+trainedInst+'-'+removed);
+    await click('carry-'+trainedInst+'-'+trainedMove);
+    const equipped=(await envelope()).profile.roster.find(u=>u.id===trainedInst);
+    assert.deepEqual(equipped?.carry,[...unit.carry.filter(move=>move!==removed),trainedMove],'the trained move replaces only the selected slot');
+    report.training={inst:trainedInst,move:trainedMove,removed:removed??null,consumed:true,equipped:true};
+    learned=true;
    }
   }
   await roundTrip('game '+(index+1)+' base');

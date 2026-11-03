@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {generateFloor} from '../../src/core/dungeon.ts';
-import {applyCommand,createExpedition,reveal,currentlyVisible} from '../../src/core/engine.ts';
+import {applyCommand,createExpedition,createMain,reveal,currentlyVisible} from '../../src/core/engine.ts';
 import {enemy,friend,world} from '../acceptance/fixtures.mjs';
 
 const DIRS=[[1,0],[0,1],[-1,0],[0,-1]];
@@ -225,53 +225,45 @@ function sightWorld({floor,at,rooms=[],width,height}){
  s.rooms=rooms;s.seen=[];s.dungeon={seed:1,width,height,floors:3,level:1,stored:{}};
  return s;
 }
-test('8.2 Q6: corridor sight reveals each forward and side ground cell through distance four',()=>{
- const floor=[];
- for(let x=5;x<=9;x++)for(const y of [4,5,6])if(!(x===9&&y===5))floor.push({x,y});
- const s=sightWorld({floor,at:{x:5,y:5},width:14,height:11});reveal(s);
- for(const x of [6,7,8]){
-  assert.ok(s.seen.includes(`${x},5`),`forward ground ${x},5 is shown`);
- }
- for(const x of [6,7,8,9]){
-  assert.ok(s.seen.includes(`${x},4`),`upper side ground ${x},4 is shown`);
-  assert.ok(s.seen.includes(`${x},6`),`lower side ground ${x},6 is shown`);
- }
- assert.ok(s.seenWalls.includes('9,5'),'the wall at distance four is shown separately');
- assert.ok(!s.seenWalls.includes('10,5')&&!s.seenWalls.includes('10,4')&&!s.seenWalls.includes('10,6'),'cells beyond the wall are hidden');
-
- // T11: a two-cell corridor is revealed from one side, including the side of a nearer blocking wall.
- const wide=[];for(let x=2;x<=9;x++)for(const y of [3,4])if(!(x===6&&y===3))wide.push({x,y});
- const side=sightWorld({floor:wide,at:{x:3,y:3},width:12,height:8});reveal(side);
- for(const x of [4,5,6])assert.ok(side.seen.includes(`${x},4`),'the other corridor lane is revealed');
- assert.ok(side.seenWalls.includes('6,3'),'the wall three cells ahead is revealed');
- assert.ok(!side.seen.includes('7,3')&&!side.seen.includes('7,4'),'both lanes beyond that wall remain hidden');
-
- // A historical one-cell corridor keeps exactly the same ground, adding only wall memory.
- const narrow=sightWorld({floor:Array.from({length:6},(_,i)=>({x:i+2,y:3})),at:{x:4,y:3},width:12,height:8});reveal(narrow);
- assert.deepEqual(narrow.seen,['2,3','3,3','4,3','5,3','6,3','7,3']);
- for(const wall of ['1,3','8,3','6,2','6,4'])assert.ok(narrow.seenWalls.includes(wall),'corridor ends and side walls are revealed');
+test('8.8 #166: corridor sight shows exactly nine cells, including diagonals through closed corners',()=>{
+ const s=sightWorld({
+  floor:[{x:5,y:5},{x:6,y:4},{x:4,y:6},{x:7,y:5},{x:5,y:7}],
+  at:{x:5,y:5},width:14,height:11,
+ });
+ s.liquid=['6,5','7,4'];
+ reveal(s);
+ assert.deepEqual(s.seen,['4,6','5,5','6,4'],'diagonal ground is revealed despite blocked orthogonal steps');
+ assert.deepEqual(s.seenWalls,['4,4','4,5','5,4','5,6','6,5','6,6'],'all adjacent walls and liquid are revealed; nothing two cells away is shown');
+ s.units.A.pos={x:6,y:4};reveal(s);
+ assert.deepEqual(s.seen,['4,6','5,5','6,4','7,5'],'exploring another patch preserves earlier ground memory');
+ assert.deepEqual(s.seenWalls,['4,4','4,5','5,3','5,4','5,6','6,3','6,5','6,6','7,3','7,4'],'wall and liquid memory accumulate independently');
 });
 
-test('8.2 Q6: a revealed wall and its two side cells stop the ray behind them',()=>{
- const floor=[];
- for(let x=5;x<=8;x++)floor.push({x,y:5});
- for(let x=6;x<=8;x++)for(const y of [4,6])floor.push({x,y});
- floor.push({x:9,y:4},{x:9,y:6});
- const s=sightWorld({floor,at:{x:5,y:5},width:14,height:11});reveal(s);
- assert.ok(s.seen.includes('8,5'),'ground immediately before the wall is shown');
- assert.ok(s.seenWalls.includes('9,5'),'the blocking wall is shown');
- assert.ok(s.seen.includes('9,4')&&s.seen.includes('9,6'),'ground beside the blocking wall is shown');
- assert.ok(!s.seenWalls.includes('10,5')&&!s.seen.includes('10,5'),'nothing behind the wall is shown');
+test('8.8 #166: the same corridor keeps four-cell rays only in fixed trial scenarios',()=>{
+ const fixed=createMain('fixed-sight'),dungeon=structuredClone(fixed);
+ dungeon.dungeon={seed:1,width:10,height:8,floors:3,level:1,stored:{}};
+ dungeon.seen=[];dungeon.seenWalls=[];reveal(dungeon);
+ assert.deepEqual(fixed.seen,['0,1','1,1','2,1','3,1','4,1','5,1','6,1']);
+ assert.deepEqual(dungeon.seen,['0,1','1,1','2,1','3,1']);
 });
 
-test('8.2 Q6: room reveal and currentlyVisible keep their prior rules',()=>{
+test('8.8 #166: a corridor on the map edge does not reveal out-of-bounds cells',()=>{
+ const s=sightWorld({floor:[{x:0,y:0},{x:1,y:1},{x:2,y:0}],at:{x:0,y:0},width:12,height:8});
+ reveal(s);
+ assert.deepEqual(s.seen,['0,0','1,1']);
+ assert.deepEqual(s.seenWalls,['0,1','1,0']);
+});
+
+test('8.8 #166: player room sight covers the whole room plus its one-tile ring; AI sight stays unchanged',()=>{
  const floor=[];
  for(let y=2;y<=4;y++)for(let x=2;x<=5;x++)floor.push({x,y});
  for(let x=6;x<=10;x++)floor.push({x,y:3});
- const s=sightWorld({floor,at:{x:3,y:3},rooms:[{x:2,y:2,w:4,h:3}],width:14,height:11});reveal(s);
- for(let y=2;y<=4;y++)for(let x=2;x<=5;x++)assert.ok(s.seen.includes(`${x},${y}`),`room cell ${x},${y} is shown`);
- assert.ok(s.seen.includes('7,3'),'the existing four-cell room ray remains');
- assert.ok(!s.seen.includes('8,3')&&!s.seen.includes('7,2')&&!s.seen.includes('7,4'),'room sight gains no corridor side fan');
+ const s=sightWorld({floor,at:{x:3,y:3},rooms:[{x:2,y:2,w:4,h:3}],width:14,height:11});
+ s.liquid=['6,2','7,2'];reveal(s);
+ const all=[],ground=new Set(floor.map(p=>p.x+','+p.y));
+ for(let x=1;x<=6;x++)for(let y=1;y<=5;y++)all.push(x+','+y);
+ assert.deepEqual(s.seen,all.filter(k=>ground.has(k)),'room ground and door-mouth ground are shown; no rays extend beyond the ring');
+ assert.deepEqual(s.seenWalls,all.filter(k=>!ground.has(k)),'the entire ring of walls and liquid is shown, including its corners');
  assert.equal(currentlyVisible(s,{x:3,y:3},{x:5,y:4}),true,'all cells in the same room are currently visible');
  assert.equal(currentlyVisible(s,{x:3,y:3},{x:6,y:3}),true,'the room mouth is currently visible');
  assert.equal(currentlyVisible(s,{x:3,y:3},{x:7,y:3}),false,'current sight does not extend past the mouth');

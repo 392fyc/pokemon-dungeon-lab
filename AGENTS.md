@@ -85,7 +85,7 @@ A session that holds its lane's lane-bus seat (`bash .mercury/packs/lanes/script
 
 2026-10-30用户决定本机Codex重新上线，与Claude并行推进，并登记lane：`main`由Claude主导（计划、规格、研究设计、平衡分析、图片生成、审查并合并PR），`dev`由Codex主导（按规格实现里程碑，不合并PR、不调用图片生成）。两条lane的位置、文件分工、认领、审查与合并方式以`docs/07-工作环境/多lane并行协作.md`为准；会话开始时必须从起始指令的`[LANE=<id>]`得知自己的lane，不能按任务猜。本月GitHub Actions停用期间，合并前按该文档手工运行Mercury检查。
 
-另：`main` lane应用户要求拟定了Codex云环境使用方针（工作候选，用户可随时修改），见`docs/07-工作环境/多lane并行协作.md`第11节：`dev` lane的本机Codex可为自己认领的issue派发云任务，云任务以`[WORKER-OF=dev ISSUE=#n]`标记，不作为lane会话；不得把凭据放进云端、不得改云环境设置。
+另：`main` lane应用户要求拟定了Codex云环境使用方针（工作候选，用户可随时修改），见`docs/07-工作环境/多lane并行协作.md`第11节：`dev` lane的本机Codex可为自己认领的issue派发云任务，云任务以`[WORKER-OF=dev ISSUE=#n]`标记，不作为lane会话；不得把凭据放进云端；2026-11-03用户决定游戏云环境可以改、要做环境适配（D-20261103-18；main理解的范围为安装脚本、启动规则、预装依赖、安装所需的允许域名，访问范围、秘密值与全网访问仍由用户决定，用户可改）。
 
 ## 设计边界
 

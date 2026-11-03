@@ -30,7 +30,9 @@ body.camp-mode main {
   aspect-ratio: 16 / 9;
   transform: translate(-50%, -50%);
   container-type: inline-size;
-  background: url("/assets/camp/base.png") center / 100% 100% no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 
 .camp-badge, .camp-menu {

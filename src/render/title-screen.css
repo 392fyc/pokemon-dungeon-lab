@@ -35,7 +35,8 @@
 
 .title-landscape > span {
   position: absolute;
-  background: #66774c url("/assets/tiles/floor-stone.png") 0 0 / 120px 120px repeat;
+  background: #66774c;
+  background-size: 120px 120px;
   box-shadow: 0 0 0 18px #33412e;
 }
 

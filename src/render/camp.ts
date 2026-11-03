@@ -65,7 +65,7 @@ export function campScene(profile: Profile, ready: boolean, difficulty: string, 
     </button>`;
   }).join('');
   return `<div id="base" class="camp-scene">
-    <div class="camp-map">
+    <div class="camp-map" style="background-image:url(assets/camp/base.png)">
       <button id="depart" class="camp-hotspot camp-gate" aria-label="迷宫入口，出发" data-confirm="true"
         style="${hotspot(CAMP_SPOTS.gate)}" ${ready ? '' : 'disabled'}>
         <span class="camp-spot-label"><strong>迷宫入口</strong></span>

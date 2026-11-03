@@ -93,6 +93,8 @@ lane 状态与工作区只放本机，不进提交，不放凭据。
 
 - **语义依赖**：不改同一个文件也可能互相影响。例如 `save.ts` 用 `ECON.purseMax`、`ECON.price`、`ECON.stock` 校验存档，`main` 一改价格或库存，旧存档就可能在 `dev` 的校验里被拒绝。所以凡是改动存档校验依赖的数值（`ECON`），或改动 `RULE_VERSION`、`CONTENT_VERSION` 的，都必须先开同时带 `lane:main` 与 `lane:dev` 的协调 issue，写明合并顺序和是否需要迁移；其中版本号变更须由用户确认。
 
+- **控制 PR 数量（D-20261103-19）**：每个 PR 都要跑检查和审查，小改动不单独开 PR。同一 issue 的后续修改在原 PR 上追加提交；`main` 的 KB 小改（决策登记、规则措辞、进度行）先攒在一个分支上，随下一个有实质内容的 PR 一起合并；几个相关的小 issue 可以合成一个 PR，PR 正文逐个写明 issue。只有挡住另一条 lane 工作的修复，或用户要求立即生效的改动，才单独开 PR。
+
 - **合并顺序**：两条 lane 的 PR 各自合并；后合并的一方先运行 `git-safe.ps1 sync` 把最新 main 合进来，重新跑相关检查。
 
 ## 7. 跨 lane 消息与协调
@@ -149,7 +151,7 @@ GitHub issue 与 PR 评论仍用于留存决定与审查结论（可追溯的记
 
 | 环境 | 已知事实 | 未核实 |
 | --- | --- | --- |
-| `pokemon-dungeon-lab`（游戏） | 只绑定本仓库，访问范围 Only me，无秘密值；Linux，已验证 Node 24、Playwright 与 Chromium；联网只允许 `registry.npmjs.org`、`pypi.org`、`files.pythonhosted.org`（见 [`cloud/README.md`](../../cloud/README.md)、[REA 与 Codex Cloud](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/07-%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83/REA%E4%B8%8ECodexCloud.md)） | 云端 Shell 能否推送 GitHub、能否自定分支名 |
+| `pokemon-dungeon-lab`（游戏） | 只绑定本仓库，访问范围 Only me，无秘密值；Linux，已验证 Node 24、Playwright 与 Chromium；联网现状只允许 `registry.npmjs.org`、`pypi.org`、`files.pythonhosted.org`（按下文“环境适配”调整，以 `cloud/README.md` 为准）（见 [`cloud/README.md`](../../cloud/README.md)、[REA 与 Codex Cloud](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/07-%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83/REA%E4%B8%8ECodexCloud.md)） | 云端 Shell 能否推送 GitHub、能否自定分支名 |
 | `REA-research-lab`（逆向研究） | 曾用于只读研究，结论在聊天里交付（见[研究范围与双云分工](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/06-%E7%A0%94%E7%A9%B6/%E5%B8%82%E5%9C%BA%E7%A0%94%E7%A9%B6/%E7%A0%94%E7%A9%B6%E8%8C%83%E5%9B%B4%E4%B8%8E%E5%8F%8C%E4%BA%91%E5%88%86%E5%B7%A5.md)） | 绑定哪个仓库、访问范围、联网设置 |
 
 Claude 无法向它们派任务；`dev` lane 的本机 Codex 可以。本节是 `main` lane **应用户要求拟定的方针**（工作候选），用户可以随时修改或收回。
@@ -160,7 +162,7 @@ Claude 无法向它们派任务；`dev` lane 的本机 Codex 可以。本节是 
 
 **适合派到云端的事：**
 
-1. **隔离试验有风险的操作。** 例如首次试装没用过的依赖、运行第三方安装脚本。只限现有允许域名能取到的来源；需要其他来源时先问用户，不改联网设置。云端试验的结果只作参考：确认安全后，本机只安装锁定版本；后续任务不依赖那次云端环境的状态。
+1. **隔离试验有风险的操作。** 例如首次试装没用过的依赖、运行第三方安装脚本。需要现有允许域名之外的来源时，按下文“环境适配”加入，并在 issue 和 `cloud/README.md` 记录。云端试验的结果只作参考：确认安全后，本机只安装锁定版本；后续任务不依赖那次云端环境的状态。
 2. **Linux 交叉检查。** 构建、单元测试、浏览器检查在 Linux 上再跑一遍，发现平台差异。
 3. **长时间或大批量的运行。** 例如多种子长测，避免占住本机。
 4. **同一 issue 内互不重叠的子任务。** 例如一个云任务专门补测试，本机继续写功能，前提是两边不改同一个文件。
@@ -170,9 +172,11 @@ Claude 无法向它们派任务；`dev` lane 的本机 Codex 可以。本节是 
 **不允许的事：**
 
 - 把 `.env`、OpenAI key 或任何凭据放进云端；在云端生成图片（图片只由 `main` 在本机生成，见第 8 节）。
-- 修改云环境的联网域名、访问范围、安装脚本或保存的启动规则；这些是环境设置，交给用户决定。
+- 改动访问范围（保持 Only me）、加入秘密值，或打开全网访问；这些仍由用户决定。
 - 在云端合并 PR、推送 `main`、改 `docs/01-现行规则/`、`docs/03-决策/` 和 `docs/02-进度/计划/`。
 - 用 Linux 结果宣称 Windows 本机运行已通过。
+
+**环境适配。** 用户决定游戏云环境可以改、要做环境适配（D-20261103-18）；以下范围是 `main` 的理解，用户可改。`dev` 的本机 Codex 可以修改 `pokemon-dungeon-lab` 环境的安装脚本、保存的启动规则和预装内容（例如按 `package-lock.json` 安装锁定依赖、预装 Playwright 浏览器），并在允许域名里加入这些安装实际需要的来源（例如 Playwright 浏览器的下载地址）。每次改动后在 [`cloud/README.md`](../../cloud/README.md) 更新环境的现状（允许域名、安装脚本、已验证版本），并在对应 issue 或 PR 写明改了什么。凭据、`.env`、密钥和秘密值仍不放进云端；访问范围与全网访问不在此列。
 
 **怎样交回结果（只限 `pokemon-dungeon-lab`）。** 云端能否推送、能否自定分支名都未核实，所以分两步：
 
@@ -181,7 +185,7 @@ Claude 无法向它们派任务；`dev` lane 的本机 Codex 可以。本节是 
 
 云端交回的结论按“其他代理的结论”处理：本机核对固定提交和实际运行结果后才采用。PR 说明写明云任务链接、运行平台和实际跑过的检查。没有合并的云端分支在 issue 里列出，删除前先经用户确认。
 
-**派发时的任务说明要写清：** `[WORKER-OF=dev ISSUE=#<号>]`、本次范围和不许改的文件、要跑的检查、完成期限（按 AGENTS.md 的等待规则）、交回方式。仓库里的 [`cloud/start-skill.md`](../../cloud/start-skill.md) 仍写着阶段 3—4 的范围，已经过时；以任务说明和本页为准。是否更新环境里保存的启动规则，交给用户决定。
+**派发时的任务说明要写清：** `[WORKER-OF=dev ISSUE=#<号>]`、本次范围和不许改的文件、要跑的检查、完成期限（按 AGENTS.md 的等待规则）、交回方式。仓库里的 [`cloud/start-skill.md`](../../cloud/start-skill.md) 仍写着阶段 3—4 的范围，已经过时；以任务说明和本页为准。环境里保存的启动规则按上文“环境适配”更新，与本页保持一致。
 
 **费用。** 云任务若需要超出现有 ChatGPT 套餐的付费额度，属于新增付费服务，先问用户。
 

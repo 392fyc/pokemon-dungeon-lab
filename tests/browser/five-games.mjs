@@ -2,6 +2,7 @@
 // Hidden cells, enemy data outside revealed cells, and unknown points are not supplied to the planner.
 // Game actions still go through keyboard input, canvas clicks, or visible buttons.
 import assert from 'node:assert/strict';
+import {campControl} from './camp-ui.mjs';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import {inferEvents,newLines} from '../../src/render/animation.ts';
@@ -50,6 +51,7 @@ const click=async id=>{
   assert.ok(await quick.isEnabled(),'the assigned quick slot must be usable while inventory remains');
   await quick.click();await ready();return;
  }
+ id=await campControl(page,id);
  const target=page.locator('#'+id),actions=page.locator('#hud-actions'),actionsOpen=page.locator('#actions-open');
  if(await target.count()&&await actions.count()&&await actions.isHidden()&&await actionsOpen.isVisible()&&await target.evaluate(el=>!!(el.closest('#controls,#hud-actions')||(el.closest('#save')&&!el.closest('#flow'))))){await actionsOpen.click();await ready();}
  await target.click();await ready();

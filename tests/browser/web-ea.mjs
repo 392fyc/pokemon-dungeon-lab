@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {campControl} from './camp-ui.mjs';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
@@ -8,10 +9,13 @@ if(!base)throw Error('Set TRIAL_URL.');
 const browser=await chromium.launch({...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{channel:'msedge'}),headless:true});
 const result={platform:process.platform,url:base,browser:await browser.version(),checks:[]};
 const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
-const p=await context.newPage(),errors=[],failed=[],scriptRequests=[];
+const p=await context.newPage(),errors=[],failed=[],scriptRequests=[],backdrops=[];
 p.on('request',r=>{if(r.resourceType()==='script')scriptRequests.push(r.url());});
 p.on('pageerror',e=>errors.push(e.message));
-p.on('response',r=>{if(r.status()>=400)failed.push(r.url());});
+p.on('response',r=>{
+ if(r.status()>=400)failed.push(r.url());
+ if(/\/assets\/(tiles\/floor-stone|camp\/base)\.png$/.test(r.url()))backdrops.push({url:r.url(),status:r.status(),type:r.headers()['content-type']});
+});
 p.on('requestfailed',r=>failed.push(r.url()));
 p.setDefaultTimeout(15000);
 const raw=()=>p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1'));
@@ -19,6 +23,7 @@ const readyOn=page=>page.waitForFunction(()=>window.trial?.store.status==='ready
 const ready=()=>readyOn(p);
 async function clickUI(page,id){
  if(id==='open-settings'&&await page.locator('#hud-settings').isVisible())id='hud-settings';
+ id=await campControl(page,id);
  const target=page.locator('#'+id),actions=page.locator('#hud-actions'),actionsOpen=page.locator('#actions-open');
  if(await target.count()&&await actions.count()&&await actions.isHidden()&&await actionsOpen.isVisible()&&await target.evaluate(el=>!!(el.closest('#controls,#hud-actions')||(el.closest('#save')&&!el.closest('#flow'))))){await actionsOpen.click();await readyOn(page);}
  await target.click();await readyOn(page);
@@ -52,6 +57,8 @@ try{
  await p.goto(base);await p.locator('#title-new').waitFor();
  await p.waitForLoadState('networkidle');
  await capture('01-title');
+ const backdropUrl=new URL('assets/tiles/floor-stone.png',p.url()).href;
+ assert.ok(backdrops.some(r=>r.url===backdropUrl&&r.status===200&&r.type?.startsWith('image/png')),'the title background loads from the same application path: '+JSON.stringify(backdrops));
  assert.equal(await p.evaluate(()=>performance.getEntriesByType('resource').some(r=>/\/phaser-.*\.js/.test(r.name))),false,'title must not load Phaser');
  assert.equal(scriptRequests.some(url=>/\/game-data-.*\.js/.test(url)),false,'idle title must not request game data');
  assert.ok(scriptRequests.length>0&&scriptRequests.every(url=>/\/index-.*\.js/.test(url)),'idle title requests only the small entry script');
@@ -65,6 +72,9 @@ try{
  await p.locator('#title-new').click();await p.locator('#pick-main-treecko').waitFor();await capture('02-new-game');
  await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
  await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();await ready();
+ await p.waitForLoadState('networkidle');
+ const campBackdropUrl=new URL('assets/camp/base.png',p.url()).href;
+ assert.ok(backdrops.some(r=>r.url===campBackdropUrl&&r.status===200&&r.type?.startsWith('image/png')),'the camp painting loads from the same application path: '+JSON.stringify(backdrops));
  await capture('03-camp');
  assert.ok(await p.evaluate(()=>performance.getEntriesByType('resource').some(r=>/\/phaser-.*\.js/.test(r.name))));
  await p.locator('#depart').click();await ready();

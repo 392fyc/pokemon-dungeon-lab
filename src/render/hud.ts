@@ -557,3 +557,21 @@ export function hudMoveTip(s: World, skill: Skill): string {
     esc(skill) + '">' + esc(hudDamageEstimate(s, s.leader, undefined, skill)) + '</strong></div>' +
     '<p class="hud-tip-description" data-move-description>' + esc(description) + '</p></div></div></section>';
 }
+
+/** The title picker shows the same move data as the dungeon card before there is a live team. */
+export function starterMoveFields(skill: Skill) {
+  const spec = moveOf(skill);
+  const type = moveType(skill);
+  const checksAccuracy = spec?.target === "enemy" || spec?.target === "all";
+  const baseAccuracy = moveEffects(skill)?.acc ?? 100;
+  return {
+    type,
+    category: moveCategoryLabel(skill),
+    power: spec?.power ?? "—",
+    accuracy: checksAccuracy ? formatAccuracy(baseAccuracy) : "不检定",
+    range: compactRange(spec?.range),
+    target: rangeCategory(spec?.range),
+    scope: scopeGrid(spec?.range),
+    description: MOVE_DESCRIPTIONS[skill]?.desc ?? "",
+  };
+}

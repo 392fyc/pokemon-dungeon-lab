@@ -65,7 +65,7 @@ test('D4 each theme: sheet sizes, empty-tile lists, the empty slot, and animatio
   }
   assert.deepEqual(Object.values(DTEF_CONFIG.themes).map((t) => t.set), ['TinyWoods', 'WaterfallCave', 'MagmaCavern2']);
 });
-test('D5 an empty tile reuses the previous variant, variant 0 takes about 80%, and second terrain stays animated', () => {
+test('D5 an empty tile reuses the previous variant, variant 0 takes about 95%, and second terrain stays animated', () => {
   for (const theme of Object.values(DTEF_CONFIG.themes)) {
     const counts = [0, 0, 0]; let n = 0;
     for (let x = 0; x < 100; x++) for (let y = 0; y < 100; y++) for (const kind of [WALL, LIQUID, FLOOR]) {
@@ -74,7 +74,7 @@ test('D5 an empty tile reuses the previous variant, variant 0 takes about 80%, a
       assert.ok(!theme.variants[c.variant].empty.includes(c.id), `${theme.set} ${c.id} variant ${c.variant}`);
       if (kind === FLOOR) { counts[c.variant]++; n++; }
     }
-    if (theme.set === 'TinyWoods') assert.ok(counts[0] / n > 0.75 && counts[0] / n < 0.95, String(counts));
+    if (theme.set === 'TinyWoods') assert.ok(counts[0] / n > 0.92 && counts[0] / n < 0.99, String(counts));
     const liquid = chooseDtefTile(theme, LIQUID, 7, 3, 4, 1, 2);
     assert.ok(liquid.overlays.length > 0, `${theme.set} second terrain is animated`);
   }

@@ -114,9 +114,22 @@
       "tplRevid": 2303138
     },
     "babydolleyes": {
-      "desc": "用圆瞳凝视对手，从而降低其攻击。必定能够先制攻击。",
-      "game": "朱紫",
+      "desc": "降低对手的攻击1级。",
+      "game": "本作",
       "name": "圆瞳",
+      "originalDesc": "用圆瞳凝视对手，从而降低其攻击。必定能够先制攻击。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G4.1",
+          "G5.5"
+        ]
+      },
       "page": "圆瞳（招式）",
       "revid": 2553617,
       "tplRevid": 2561592
@@ -458,9 +471,21 @@
       "tplRevid": 2617330
     },
     "dragondance": {
-      "desc": "激烈地跳起神秘且强有力的舞蹈。从而提高自己的攻击和速度。",
-      "game": "朱紫",
+      "desc": "提高自己的攻击1级。",
+      "game": "本作",
       "name": "龙之舞",
+      "originalDesc": "激烈地跳起神秘且强有力的舞蹈。从而提高自己的攻击和速度。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.5"
+        ]
+      },
       "page": "龙之舞（招式）",
       "revid": 2564139,
       "tplRevid": 2561438
@@ -634,9 +659,21 @@
       "tplRevid": 2561445
     },
     "feintattack": {
-      "desc": "无法使用这个招式。虽然忘记之后就再也想不起来了，但还是建议忘记这个招式。",
-      "game": "朱紫",
+      "desc": "攻击相邻对手，必定命中。",
+      "game": "本作",
       "name": "出奇一击",
+      "originalDesc": "无法使用这个招式。虽然忘记之后就再也想不起来了，但还是建议忘记这个招式。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.1"
+        ]
+      },
       "page": "出奇一击（招式）",
       "revid": 2553519,
       "tplRevid": 2303262
@@ -890,9 +927,21 @@
       "tplRevid": 2617316
     },
     "hyperfang": {
-      "desc": "无法使用这个招式。虽然忘记之后就再也想不起来了，但还是建议忘记这个招式。",
-      "game": "朱紫",
+      "desc": "用锐利的门牙攻击对手，有10%的几率使其畏缩。",
+      "game": "本作",
       "name": "必杀门牙",
+      "originalDesc": "无法使用这个招式。虽然忘记之后就再也想不起来了，但还是建议忘记这个招式。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
       "page": "必杀门牙（招式）",
       "revid": 2523471,
       "tplRevid": 2523627
@@ -1170,9 +1219,21 @@
       "tplRevid": 2561409
     },
     "minimize": {
-      "desc": "蜷缩身体显得很小，从而大幅提高自己的闪避率。",
-      "game": "朱紫",
+      "desc": "提高自己的闪避1级。",
+      "game": "本作",
       "name": "变小",
+      "originalDesc": "蜷缩身体显得很小，从而大幅提高自己的闪避率。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.5"
+        ]
+      },
       "page": "变小（招式）",
       "revid": 2304088,
       "tplRevid": 2561291
@@ -1426,9 +1487,21 @@
       "tplRevid": 2473756
     },
     "pursuit": {
-      "desc": "无法使用这个招式。虽然忘记之后就再也想不起来了，但还是建议忘记这个招式。",
-      "game": "朱紫",
+      "desc": "进入反击状态，持续3个对方行动阶段。相邻对手造成伤害时，反弹等量伤害。",
+      "game": "本作",
       "name": "追打",
+      "originalDesc": "无法使用这个招式。虽然忘记之后就再也想不起来了，但还是建议忘记这个招式。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.7"
+        ]
+      },
       "page": "追打（招式）",
       "revid": 2304208,
       "tplRevid": 2303307
@@ -1450,9 +1523,21 @@
       "tplRevid": 2561535
     },
     "quiverdance": {
-      "desc": "轻巧地跳起神秘而又美丽的舞蹈。提高自己的特攻、特防和速度。",
-      "game": "朱紫",
+      "desc": "提高自己的特攻、特防各1级。",
+      "game": "本作",
       "name": "蝶舞",
+      "originalDesc": "轻巧地跳起神秘而又美丽的舞蹈。提高自己的特攻、特防和速度。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.5"
+        ]
+      },
       "page": "蝶舞（招式）",
       "revid": 2564136,
       "tplRevid": 2561520
@@ -1698,9 +1783,21 @@
       "tplRevid": 2303199
     },
     "smokescreen": {
-      "desc": "向上喷出烟或墨汁等覆盖四周，在烟雾中不会被野生宝可梦发现。",
-      "game": "传说Z-A",
+      "desc": "降低对手的命中1级。",
+      "game": "本作",
       "name": "烟幕",
+      "originalDesc": "向上喷出烟或墨汁等覆盖四周，在烟雾中不会被野生宝可梦发现。",
+      "originalGame": "传说Z-A",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.5"
+        ]
+      },
       "page": "烟幕（招式）",
       "revid": 2554375,
       "tplRevid": 2473640
@@ -1714,9 +1811,22 @@
       "tplRevid": 2561564
     },
     "softboiled": {
-      "desc": "回复自己最大ＨＰ的一半。",
-      "game": "朱紫",
+      "desc": "回复范围内所有存活同行各自最大HP的一半，四舍五入且不超过上限。",
+      "game": "本作",
       "name": "生蛋",
+      "originalDesc": "回复自己最大ＨＰ的一半。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.2",
+          "G5.10"
+        ]
+      },
       "page": "生蛋（招式）",
       "revid": 2610605,
       "tplRevid": 2561301
@@ -1778,9 +1888,21 @@
       "tplRevid": 2618355
     },
     "submission": {
-      "desc": "无法使用这个招式。虽然忘记之后就再也想不起来了，但还是建议忘记这个招式。",
-      "game": "朱紫",
+      "desc": "攻击对手。使用者受到实际造成伤害四分之一的反作用，向下取整、至少1点；未造成伤害时不扣HP。",
+      "game": "本作",
       "name": "地狱翻滚",
+      "originalDesc": "无法使用这个招式。虽然忘记之后就再也想不起来了，但还是建议忘记这个招式。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.10"
+        ]
+      },
       "page": "地狱翻滚（招式）",
       "revid": 2523463,
       "tplRevid": 2523621
@@ -1826,9 +1948,21 @@
       "tplRevid": 2561325
     },
     "sweetscent": {
-      "desc": "用香气大幅降低对手的闪避率。",
-      "game": "朱紫",
+      "desc": "降低范围内所有对手的闪避1级。",
+      "game": "本作",
       "name": "甜甜香气",
+      "originalDesc": "用香气大幅降低对手的闪避率。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.5"
+        ]
+      },
       "page": "甜甜香气（招式）",
       "revid": 2610617,
       "tplRevid": 2561355
@@ -1962,9 +2096,21 @@
       "tplRevid": 2561416
     },
     "toxic": {
-      "desc": "让对手陷入剧毒状态。随着时间的推进，中毒伤害会增加。",
-      "game": "传说Z-A",
+      "desc": "使对手陷入剧毒状态：下一轮末掉血，此后每2轮掉血一次，每次为最大HP的八分之一，向下取整、至少1点。",
+      "game": "本作",
       "name": "剧毒",
+      "originalDesc": "让对手陷入剧毒状态。随着时间的推进，中毒伤害会增加。",
+      "originalGame": "传说Z-A",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
       "page": "剧毒（招式）",
       "revid": 2551349,
       "tplRevid": 2561282
@@ -2143,6 +2289,13 @@
     "date": "2026-11-03",
     "license": "私有构建内使用（D-20261103-05）",
     "method": "action=query 取页面与模板修订号；action=expandtemplates 展开 {{<名>|<版本>}}，取简体变体；版本顺序 ZA（传说Z-A）、SV（朱紫）、SWSH（剑盾）",
+    "overrides": {
+      "file": "tools/data/move-desc-zh-overrides.json",
+      "issue": "https://github.com/392fyc/pokemon-dungeon-lab/issues/191",
+      "method": "按本作现行规则覆盖主系列说明；官方原文与版本另存，保留原页及模板修订号。",
+      "rulesFile": "docs/01-现行规则/游戏规则.md",
+      "spec": "docs/02-进度/计划/8.9招式与道具对齐原版规格.md"
+    },
     "site": "神奇宝贝百科 wiki.52poke.com"
   }
 }

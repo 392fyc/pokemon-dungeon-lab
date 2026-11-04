@@ -1,0 +1,156 @@
+{
+  "source": {
+    "rulesFile": "docs/01-现行规则/游戏规则.md",
+    "spec": "docs/02-进度/计划/8.9招式与道具对齐原版规格.md",
+    "issue": "https://github.com/392fyc/pokemon-dungeon-lab/issues/191",
+    "method": "按本作现行规则覆盖主系列说明；官方原文与版本另存，保留原页及模板修订号。"
+  },
+  "moves": {
+    "submission": {
+      "desc": "攻击对手。使用者受到实际造成伤害四分之一的反作用，向下取整、至少1点；未造成伤害时不扣HP。",
+      "source": {
+        "rules": [
+          "G5.10"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "softboiled": {
+      "desc": "回复范围内所有存活同行各自最大HP的一半，四舍五入且不超过上限。",
+      "source": {
+        "rules": [
+          "G5.2",
+          "G5.10"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "minimize": {
+      "desc": "提高自己的闪避1级。",
+      "source": {
+        "rules": [
+          "G5.5"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "sweetscent": {
+      "desc": "降低范围内所有对手的闪避1级。",
+      "source": {
+        "rules": [
+          "G5.5"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "smokescreen": {
+      "desc": "降低对手的命中1级。",
+      "source": {
+        "rules": [
+          "G5.5"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "dragondance": {
+      "desc": "提高自己的攻击1级。",
+      "source": {
+        "rules": [
+          "G5.5"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "quiverdance": {
+      "desc": "提高自己的特攻、特防各1级。",
+      "source": {
+        "rules": [
+          "G5.5"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "babydolleyes": {
+      "desc": "降低对手的攻击1级。",
+      "source": {
+        "rules": [
+          "G4.1",
+          "G5.5"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "toxic": {
+      "desc": "使对手陷入剧毒状态：下一轮末掉血，此后每2轮掉血一次，每次为最大HP的八分之一，向下取整、至少1点。",
+      "source": {
+        "rules": [
+          "G5.13"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "pursuit": {
+      "desc": "进入反击状态，持续3个对方行动阶段。相邻对手造成伤害时，反弹等量伤害。",
+      "source": {
+        "rules": [
+          "G5.7"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "feintattack": {
+      "desc": "攻击相邻对手，必定命中。",
+      "source": {
+        "rules": [
+          "G5.1"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    },
+    "hyperfang": {
+      "desc": "用锐利的门牙攻击对手，有10%的几率使其畏缩。",
+      "source": {
+        "rules": [
+          "G5.13"
+        ],
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ]
+      }
+    }
+  }
+}

@@ -15,7 +15,9 @@ What it does
      {{招式说明|<属性>|1}}, which calls the template "Template:<名>" once per game version.
      The script expands "{{<名>|ZA}}" (传说Z-A) through action=expandtemplates, and falls back to
      SV (朱紫), then SWSH (剑盾) when the newer game has no text. The game code used is stored.
-  5. Writes src/data/move-desc-zh.json (sorted keys, UTF-8, LF).
+  5. Applies tools/data/move-desc-zh-overrides.json for project-specific effects, preserving
+     the official text/version and attaching the current rule/data sources.
+  6. Writes src/data/move-desc-zh.json (sorted keys, UTF-8, LF).
 
 Cache and offline use
   Every API response is stored under .tmp/move-desc-raw/ (ignored by Git), one file per request,
@@ -102,6 +104,21 @@ def clean(raw):
     return t.strip()
 
 
+def apply_overrides(moves):
+    relative = "tools/data/move-desc-zh-overrides.json"
+    doc = json.loads((REPO / relative).read_text(encoding="utf8"))
+    for move_id, override in doc["moves"].items():
+        if move_id not in moves:
+            raise SystemExit(f"override has no imported source: {move_id}")
+        if not override["desc"].strip() or not override["source"].get("rules"):
+            raise SystemExit(f"override has no description or rule source: {move_id}")
+        row = moves[move_id]
+        row["originalDesc"], row["originalGame"] = row["desc"], row["game"]
+        row["desc"], row["game"] = override["desc"], "本作"
+        row["overrideSource"] = {"file": relative, **override["source"]}
+    return {"file": relative, **doc["source"]}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cache")
@@ -169,12 +186,14 @@ def main():
         else:
             missing[i] = {"name": nm, "reason": "没有说明栏位：说明模板不存在或在 ZA、SV、SWSH 三个版本都没有文字"}
 
+    overrides = apply_overrides(moves)
     out = {
         "source": {
             "site": "神奇宝贝百科 wiki.52poke.com",
             "api": API,
             "date": a.date,
             "license": LICENSE,
+            "overrides": overrides,
             "method": "action=query 取页面与模板修订号；action=expandtemplates 展开 {{<名>|<版本>}}，取简体变体；版本顺序 ZA（传说Z-A）、SV（朱紫）、SWSH（剑盾）",
         },
         "moves": moves,

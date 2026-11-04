@@ -20,7 +20,7 @@ export const TM_MOVES_V3=[...TM_MOVES,'quickguard','reflect','lightscreen'] as c
 export const TM_MOVES_V4=[...TM_MOVES_V3,'calmmind','toxic','bulkup','willowisp','thunderwave','swordsdance'] as const;
 /** All moves which can appear in the warehouse and pass legality checks. */
 export const ALL_TM_MOVES=TM_MOVES_V4;
-/** Missing tmPool preserves old saves: ordinary runs use three, old boss runs six, new marked boss runs nine. */
+/** Missing tmPool preserves old saves: ordinary runs use three, old boss runs six; marked pools 3/4 use nine/fifteen. */
 export const tmPool=(d?:{boss?:boolean;tmPool?:3|4}|null):readonly string[]=>d?.boss?(d.tmPool===4?TM_MOVES_V4:d.tmPool===3?TM_MOVES_V3:TM_MOVES):LEGACY_TM_MOVES;
 export type BossTraits={levelBonus:number;hpMultiplier:number;canMove:boolean;canBeBlownAway:boolean};
 export const BOSS_CONFIG:Record<string,BossTraits>=bosses.bosses;

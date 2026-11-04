@@ -49,6 +49,18 @@ test('M191 primary status applies to any type, keeps tox over psn, and respects 
   r=cast(r,'poisonpowder');assert.ok(r.units.E.status.tox);assert.equal(r.units.E.status.psn,undefined);assert.ok(r.units.E.hp<=hp);
   const p=world({willowisp:4});p.units.E.protect=2;assert.equal(cast(p,'willowisp').units.E.status,undefined);
 });
+test('M191 primary status misses spend PP without applying status, and can affect a boss',()=>{
+  const missed=world({toxic:4});missed.units.A.stages.acc=-3;
+  for(let seed=1;seed<10000;seed++)if(rngStep(seed).value>.99){missed.battleRng=seed;break;}
+  const r=cast(missed,'toxic');assert.equal(r.units.A.pp.toxic,3);assert.equal(r.units.E.status,undefined);assert.ok(r.events.some(e=>e.type==='miss'));
+  const boss=world({toxic:4});boss.units.E.boss=true;
+  const hit=cast(boss,'toxic');assert.ok(hit.units.E.status.tox);assert.equal(hit.units.A.pp.toxic,3);
+});
+test('M191 a partner automatically casts an around status move at its enemy and spends PP',()=>{
+  const s=world();const b=friend('B',2,3,80,{stunspore:4});b.tactic='together';s.units.B=b;s.queue.push('B');
+  const r=play(s,wait);assert.equal(r.units.B.lastMove,'stunspore');assert.equal(r.units.B.pp.stunspore,3);assert.ok(r.units.E.status.par);
+  assert.deepEqual(r.units.B.pos,b.pos);assert.equal(r.units.E.hp,80);assert.ok(!r.log.some(line=>line.includes('动作失效')));
+});
 test('M191 recoil is based on actual HP lost, does not happen after zero damage, and can knock out its user',()=>{
   const s=world({takedown:3});s.units.E.hp=3;
   const r=cast(s,'takedown');assert.equal(r.units.E.hp,0);assert.equal(r.units.A.hp,79,'quarter of actual 3 damage is at least one');
@@ -74,6 +86,7 @@ test('M191 primary room debuffs respect the shared Quick Guard distance rule per
 test('M191 enemy uses status before debuff, then heal, self buff, and always prefers damage',()=>{
   const s=world({}, {calmmind:5,recover:5,leer:5,toxic:5});delete s.units.E.waitOnly;s.units.E.hp=20;
   let r=play(s,wait);assert.equal(r.units.E.lastMove,'toxic');
+  r=play(r,wait);assert.equal(r.units.E.lastMove,'leer');assert.equal(r.units.A.stages.def,-1,'A1 is selected before recovery while its target is not capped');assert.equal(r.units.E.hp,20);
   r.units.A.stages.def=-3;r=play(r,wait);assert.equal(r.units.E.lastMove,'recover');
   r.units.E.hp=r.units.E.maxHp;r=play(r,wait);assert.equal(r.units.E.lastMove,'calmmind');
   const d=world({}, {toxic:5,tackle:5,recover:5});delete d.units.E.waitOnly;d.units.E.hp=20;
@@ -128,4 +141,15 @@ test('M191 the v4 pool preserves v3 and all six new machines can be learned, sav
     const unit=Object.values(store.state.units).find(u=>u.inst==='P1');assert.ok(unit);assert.deepEqual(unit.learned,[move]);
     assert.equal(unit.pp[move],SPECIES[species.id].learnable.find(m=>m.move===move).pp);
   }
+});
+test('M191 displayed descriptions use project effects while retaining official text and rule sources',()=>{
+  const {moves}=JSON.parse(readFileSync(new URL('../../src/data/move-desc-zh.json',import.meta.url),'utf8'));
+  for(const id of ['submission','softboiled','minimize','sweetscent','smokescreen','dragondance','quiverdance','babydolleyes','toxic','pursuit','feintattack','hyperfang']){
+    const row=moves[id];assert.equal(row.game,'本作',id);assert.ok(row.originalDesc&&row.originalGame,id);assert.ok(row.overrideSource.rules.length>0,id);
+    assert.doesNotMatch(row.desc,/无法使用|建议忘记/,id);
+  }
+  assert.match(moves.softboiled.desc,/所有存活同行/);
+  assert.match(moves.minimize.desc,/闪避1级/);assert.match(moves.sweetscent.desc,/闪避1级/);assert.match(moves.smokescreen.desc,/命中1级/);
+  assert.doesNotMatch(moves.dragondance.desc+moves.quiverdance.desc,/速度/);assert.doesNotMatch(moves.babydolleyes.desc,/先制/);
+  assert.match(moves.toxic.desc,/每2轮/);assert.match(moves.toxic.desc,/八分之一/);assert.match(moves.pursuit.desc,/反弹等量伤害/);
 });

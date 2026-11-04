@@ -675,7 +675,7 @@ function supportAction(s:World,id:string,quickguard:ReadonlySet<string>,tactic:T
         const target=moveTargetsInReach(s,id,spec).find(t=>
           (!visibleOnly||visibleOnly.has(t.id))&&tacticalTargetAllowed(s,actor,t,tactic)&&!effectBlocked(s,actor,t,quickguard)&&
           (kind==='status'?(!hasStatus(t,status!)&&!(status==='psn'&&hasStatus(t,'tox'))):stages.some(e=>e.change<0&&stageOf(t,e.stat)>-3)));
-        if(target)return {type:'skill',skill,target:spec.range==='room'||spec.range==='around'?id:target.id};
+        if(target)return {type:'skill',skill,target:spec.range==='room'||spec.range==='user'?id:target.id};
       }else if(kind==='heal'){
         if(spec.effects.includes('heal:1:2')&&actor.hp<actor.maxHp/2)return {type:'skill',skill,target:id};
       }else if(spec.target==='user'&&!['defensecurl','harden'].includes(skill)&&stages.some(e=>e.change>0&&stageOf(actor,e.stat)<3)){

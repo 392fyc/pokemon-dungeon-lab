@@ -626,8 +626,8 @@
         ]
       },
       "pmd": {
-        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sweet%20Scent%20(move)&oldid=4643270",
-        "revision": 4643270
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sweet%20Scent%20(move)&oldid=4659663",
+        "revision": 4659663
       },
       "stageSource": {
         "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sweet%20Scent%20(move)&oldid=4659663",
@@ -646,7 +646,8 @@
       "pmd": {
         "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Synthesis%20(move)&oldid=4643327",
         "revision": 4643327
-      }
+      },
+      "rule": "本作固定回复目标最大HP的一半，四舍五入并封顶，不随天气改变（游戏规则G5.10，8.9规格3.1 A7）。"
     },
     "tailwhip": {
       "showdown": {

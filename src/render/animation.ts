@@ -12,6 +12,7 @@ import {adjacentReachable, floorIndex, rayReachable} from './reach.ts';
 export type Fx = 'strong' | 'line' | null;
 export type AnimEvent =
   | {k:'move'; by:string; id:string; from:Pos; to:Pos}
+  | {k:'airAttack';by:string;actor:string;from:Pos;to:Pos}
   | {k:'swap'; by:string; a:string; b:string; pa:Pos; pb:Pos}
   | {k:'hit'; by:string; attacker:string|null; target:string; from:Pos|null; at:Pos; fx:Fx; amount:number; dead:boolean}
   | {k:'protect'; by:string; target:string; from:Pos; at:Pos}
@@ -34,8 +35,9 @@ const ENEMY_ORDER = 1000;
 export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
   // Only a normal round on the same floor of the same run is played; every other change is shown as the final state.
   if (cmd.type !== 'round' || a.runId !== b.runId || a.round !== b.round + 1 || a.dungeon?.level !== b.dungeon?.level) return [];
+  const airAttacks=(a.events??[]).filter((e):e is Extract<NonNullable<World['events']>[number],{type:'airAttack'}>=>e.type==='airAttack');
   const lines = newLines(b.log, a.log);
-  if (!lines.length) return [];
+  if (!lines.length && !airAttacks.length) return [];
   const ids = Object.keys(a.units).sort((x, y) => y.length - x.length);
   const head = (t:string):{id:string; rest:string}|null => {
     for (const id of ids) if (t.startsWith(id) && t.length > id.length && !/[A-Za-z0-9-]/.test(t[id.length])) return {id, rest:t.slice(id.length)};
@@ -87,7 +89,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     }
   };
   const events:AnimEvent[] = [];
-  const used = new Set<string>();
+  const used = new Set<string>(airAttacks.map(e=>e.actor));
   let enemyCursor = -1;
 
   // Protect's shield log has no position of its own, so place the effect by queue order.
@@ -122,6 +124,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       if(used.has(id))continue;
       if (e) {
         if (e.type === 'basic' && e.target === target)return {id,fx:'strong'};
+        if(e.type==='basicForward'&&pos[target]&&adjacentReachable(floorCells,pos[id]!,pos[target]!))return {id,fx:'strong'};
       } else if (pos[target] && adjacentReachable(floorCells,pos[id]!,pos[target]!)) return {id, fx:'strong'};
     }
     return null;
@@ -189,11 +192,12 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     }
   }
   flush(Infinity);
+  for(const e of airAttacks){if(!vis(e.from))continue;const event:AnimEvent={k:'airAttack',by:e.actor,actor:e.actor,from:e.from,to:e.to};const index=events.findIndex(v=>order(v.by)>order(e.actor));if(index<0)events.push(event);else events.splice(index,0,event);}
   return events;
 }
 
 /** Base duration of each step in ms; the whole round is scaled down together if it would exceed the cap. */
-export const BASE_MS:Record<AnimEvent['k'], number> = {move:180, swap:200, hit:320, protect:240, blowaway:220, heal:260};
+export const BASE_MS:Record<AnimEvent['k'], number> = {airAttack:260, move:180, swap:200, hit:320, protect:240, blowaway:220, heal:260};
 export const ROUND_CAP_MS = 1500;
 /** Below this speed-up the round is not played at all, which keeps pathological rounds from being unreadably fast. */
 export const MIN_SCALE = 0.3;

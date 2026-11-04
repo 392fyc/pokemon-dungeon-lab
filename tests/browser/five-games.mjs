@@ -47,7 +47,7 @@ const click=async id=>{
   await bag.locator('[data-bag-category="all"]').click();await ready();
   const itemButton=bag.locator('[data-bag-item="'+item+'"]');
   assert.equal(await itemButton.count(),1,'the held consumable must appear in the all-items category');
-  const itemName=(await itemButton.locator('span').innerText()).trim();
+  const itemName=(await itemButton.locator('.hud-item-name').innerText()).trim();
   await itemButton.click();await ready();
   const slotLabel=await bag.locator('[data-bag-slot="0"]').getAttribute('aria-label');
   assert.ok(slotLabel?.includes(itemName),'the selected item must appear in the assigned quick slot');
@@ -131,7 +131,7 @@ async function command(c){
  else if(a.type==='skill'){await click('skill-'+a.skill);await cell(a.targetPos);}
  else if(a.type==='wait')await click('wait');
  else if(a.type==='swap'){await click('swap');await click('partner-'+a.target);await click('submit');}
- else if(a.type==='use'){await click('use-'+a.item);await click('item-target-'+a.target);}
+ else if(a.type==='use'){await click('use-'+a.item);await click(a.item==='teamTonic'?'item-use-teamTonic':a.item==='bigBerry'?'item-target-bigBerry-'+a.target:'item-target-'+a.target);}
  else if(a.type==='rest')await click('rest');
  else if(a.type==='interact'){
   if(a.exit){await click('take-exit');await click('exit-confirm');}else await click('take');

@@ -48,7 +48,7 @@ function campStandee(species:string):string {
 export function campScene(profile: Profile, ready: boolean, difficulty: string, message: string): string {
   const team = profile.team.map(id => {
     const member = profile.roster.find(candidate => candidate.id === id)!;
-    return '<span aria-label="' + escape(speciesZh(member.species)) + '">' + campStandee(member.species) + '</span>';
+    return '<span aria-label="' + escape(speciesZh(member.species)) + '">' + portrait(member.species) + '</span>';
   }).join('');
   const panels = Object.keys(CAMP_BUILDINGS) as CampPanel[];
   const buildings = panels.map(id => {

@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import {animKey,facingRow,sheet} from './sprites.ts';
+import {animKey,facingRow,sheet,groundOriginY,UNIT_GROUND_FRACTION} from './sprites.ts';
 import {BASE_MS,type AnimEvent} from './animation.ts';
 import type {Pos} from '../core/engine.ts';
 /** Everything the scene draws for one unit, so a step can move the sprite, its shadow and its labels together. */
@@ -7,12 +7,12 @@ export type UnitView={sprite:Phaser.GameObjects.Sprite;gfx:Phaser.GameObjects.Gr
 export type Stage={scene:Phaser.Scene;views:Map<string,UnitView>;center:(p:Pos)=>{x:number;y:number};cell:number;scale:number;temp:Set<Phaser.GameObjects.GameObject>;f:number};
 const wait=(st:Stage,ms:number)=>new Promise<void>(r=>{st.scene.time.delayedCall(Math.max(1,ms),()=>r());});
 const tween=(st:Stage,cfg:Record<string,unknown>)=>new Promise<void>(r=>{st.scene.tweens.add({...cfg,onComplete:()=>r()} as unknown as Phaser.Types.Tweens.TweenBuilderConfig);});
-const put=(st:Stage,v:UnitView,x:number,y:number)=>{v.sprite.setPosition(x,y+st.cell*.08);v.gfx.setPosition(x,y);v.labels.forEach(l=>l.t.setPosition(x+l.dx,y+l.dy));};
+const put=(st:Stage,v:UnitView,x:number,y:number)=>{v.sprite.setPosition(x,y+st.cell*UNIT_GROUND_FRACTION);v.gfx.setPosition(x,y);v.labels.forEach(l=>l.t.setPosition(x+l.dx,y+l.dy));};
 const slide=(st:Stage,v:UnitView,from:{x:number;y:number},to:{x:number;y:number},ms:number,delay=0)=>tween(st,{targets:{t:0},t:1,duration:Math.max(1,ms),delay,ease:'Sine.easeInOut',onUpdate:(_:unknown,o:{t:number})=>put(st,v,from.x+(to.x-from.x)*o.t,from.y+(to.y-from.y)*o.t)});
 /** Plays one named action of the unit's species; returns false when the sheet or direction is missing (the unit just stays as drawn). */
 function useAnim(st:Stage,v:UnitView,name:string,row:number,ms?:number):boolean{
   const m=sheet(v.dex,name),k=animKey(v.dex,name,row);if(!m||!st.scene.anims.exists(k))return false;
-  v.sprite.setOrigin(.5,name==='Idle'?.6:.5+4/m.h);v.sprite.play(k);
+  v.sprite.setOrigin(.5,groundOriginY(v.dex,name));v.sprite.play(k);
   v.sprite.anims.timeScale=ms?m.durations.reduce((a,b)=>a+b,0)*1000/60/ms:1;return true;
 }
 const idle=(st:Stage,v:UnitView)=>{useAnim(st,v,'Idle',v.row);};
@@ -34,6 +34,7 @@ const hurt=(st:Stage,v:UnitView,ms:number,delay:number)=>wait(st,delay).then(()=
 async function play(st:Stage,ev:AnimEvent):Promise<void>{
   const f=st.f,d=(ms:number)=>ms*f,at=(p:Pos)=>st.center(p),V=(id:string)=>st.views.get(id);
   if(ev.k==='move'){const v=V(ev.id);if(!v)return;face(v,ev.from,ev.to);useAnim(st,v,'Walk',v.row);await slide(st,v,at(ev.from),at(ev.to),d(BASE_MS.move));idle(st,v);}
+  else if(ev.k==='airAttack'){const v=V(ev.actor);if(v){face(v,ev.from,ev.to);useAnim(st,v,'Attack',v.row,d(BASE_MS.airAttack));await wait(st,d(BASE_MS.airAttack));idle(st,v);}}
   else if(ev.k==='swap'){const a=V(ev.a),b=V(ev.b);const ps:Promise<void>[]=[];
     if(a){face(a,ev.pa,ev.pb);useAnim(st,a,'Walk',a.row);ps.push(slide(st,a,at(ev.pa),at(ev.pb),d(BASE_MS.swap)));}
     if(b){face(b,ev.pb,ev.pa);useAnim(st,b,'Walk',b.row);ps.push(slide(st,b,at(ev.pb),at(ev.pa),d(BASE_MS.swap)));}

@@ -11,13 +11,30 @@ const TINT: Record<TerrainThemeKey, readonly [number, number, number]> = {
   ash: [49, 25, 24],
 };
 
-export type DarknessLight = {x: number; y: number; primary: boolean; fire: boolean};
-type Field = {
+export type DarknessLight = {x: number; y: number; primary: boolean; fire: boolean; end?:{x:number;y:number}};
+export type Field = {
   width: number;
   height: number;
   known: ReadonlySet<string>;
   visible: ReadonlySet<string>;
   lights: readonly DarknessLight[];
+};
+
+/** Extend a light across a revealed two-cell corridor, using no hidden floor cells. */
+export function corridorLightEnd(at:{x:number;y:number},floor:ReadonlySet<string>):{x:number;y:number}|undefined {
+ const has=(dx:number,dy:number)=>floor.has((at.x+dx)+','+(at.y+dy));
+ const left=has(-1,0),right=has(1,0),up=has(0,-1),down=has(0,1);
+ if(left&&right&&up!==down)return {x:at.x,y:at.y+(up?-1:1)};
+ if(up&&down&&left!==right)return {x:at.x+(left?-1:1),y:at.y};
+ const adjacent=[...(left?[{x:-1,y:0}]:[]),...(right?[{x:1,y:0}]:[]),...(up?[{x:0,y:-1}]:[]),...(down?[{x:0,y:1}]:[])];
+ if(adjacent.length===2){const dx=adjacent[0].x+adjacent[1].x,dy=adjacent[0].y+adjacent[1].y;if(dx&&dy&&has(dx,dy))return {x:at.x+dx,y:at.y+dy};}
+ return undefined;
+}
+const distanceToLight=(x:number,y:number,light:{x:number;y:number;end?:{x:number;y:number}})=>{
+ if(!light.end)return Math.hypot(x-light.x,y-light.y);
+ const dx=light.end.x-light.x,dy=light.end.y-light.y,length=dx*dx+dy*dy;
+ const t=length?Math.max(0,Math.min(1,((x-light.x)*dx+(y-light.y)*dy)/length)):0;
+ return Math.hypot(x-light.x-t*dx,y-light.y-t*dy);
 };
 
 const smooth = (n: number) => n * n * (3 - 2 * n);
@@ -40,7 +57,7 @@ export function buildDarkness({width, height, known, visible, lights}: Field): U
   const sample = (x: number, y: number) =>
     cells[Math.max(0, Math.min(y, height - 1)) * width + Math.max(0, Math.min(x, width - 1))]!;
   const sources = lights.map(light => ({
-    x: light.x + .5, y: light.y + .5,
+    x: light.x + .5, y: light.y + .5, end:light.end?{x:light.end.x+.5,y:light.end.y+.5}:undefined,
     inner: light.primary ? (light.fire ? 1.3 : .9) : (light.fire ? .95 : .55),
     outer: light.primary ? (light.fire ? 2.8 : 1.95) : (light.fire ? 2.25 : 1.45),
     strength: light.primary ? 1 : light.fire ? .85 : .8,
@@ -53,8 +70,10 @@ export function buildDarkness({width, height, known, visible, lights}: Field): U
     const tx = smooth(x - .5 - gx), ty = smooth(y - .5 - gy);
     let alpha = mix(mix(sample(gx, gy), sample(gx + 1, gy), tx),
       mix(sample(gx, gy + 1), sample(gx + 1, gy + 1), tx), ty);
-    if (known.has(Math.floor(x) + ',' + Math.floor(y))) for (const light of sources) {
-      const distance = Math.hypot(x - light.x, y - light.y);
+    const isKnown=known.has(Math.floor(x) + ',' + Math.floor(y));
+    if(!isKnown)alpha=UNKNOWN_DARKNESS;
+    else for (const light of sources) {
+      const distance = distanceToLight(x,y,light);
       const edge = Math.max(0, Math.min(1, (distance - light.inner) / (light.outer - light.inner)));
       alpha *= 1 - light.strength * (1 - smooth(edge));
     }
@@ -101,6 +120,8 @@ export class DungeonDarkness {
       this.image = this.scene.add.image(0, 0, textureKey).setOrigin(0).setDepth(7)
         .setDisplaySize(width * cellSize, height * cellSize);
     }
+    // Canvas resizing may change cell size without changing this floor or its opacity samples.
+    this.image?.setDisplaySize(width * cellSize, height * cellSize);
     if (animate && this.target?.every((a, i) => a === next[i])) return;
     const now = this.scene.time.now;
     this.update(now);

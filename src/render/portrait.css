@@ -1,0 +1,48 @@
+.sprite-portrait {
+  position: relative;
+  display: inline-block;
+  container-type: size;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.sprite-portrait-frame {
+  --portrait-unit: min(
+    calc(100cqw / var(--portrait-visible-w)),
+    calc(100cqh / var(--portrait-visible-h))
+  );
+  position: absolute;
+  display: block;
+  left: calc(50% - var(--portrait-visible-center-x) * var(--portrait-unit));
+  top: calc(50% - var(--portrait-visible-center-y) * var(--portrait-unit));
+  width: calc(var(--portrait-frame-w) * var(--portrait-unit));
+  height: calc(var(--portrait-frame-h) * var(--portrait-unit));
+  background-image: var(--portrait-sheet);
+  background-repeat: no-repeat;
+  background-size:
+    calc(var(--portrait-frame-w) * var(--portrait-frame-count) * var(--portrait-unit))
+    calc(var(--portrait-frame-h) * 8 * var(--portrait-unit));
+  background-position:
+    calc(-1 * var(--portrait-frame) * var(--portrait-frame-w) * var(--portrait-unit))
+    0;
+  image-rendering: pixelated;
+}
+
+.sprite-portrait[data-portrait-fallback] {
+  display: inline-grid;
+  place-items: center;
+  padding: 4px;
+  box-sizing: border-box;
+  background: #24332d;
+  color: #f4eedb;
+  text-align: center;
+  font: 600 11px/1.2 system-ui, sans-serif;
+}
+
+.sprite-portrait[data-portrait-fallback] .sprite-portrait-frame {
+  display: none;
+}
+
+.sprite-portrait[data-portrait-fallback]::after {
+  content: attr(data-portrait-fallback);
+}

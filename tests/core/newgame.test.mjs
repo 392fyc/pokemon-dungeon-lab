@@ -7,7 +7,7 @@ import {newGameProfile,squadOf,profileProblem,settleRun} from '../../src/core/ba
 import {TrialStore,decode,SAVE_KEY} from '../../src/core/save.ts';
 import {SPECIES,STARTER_IDS,ALL_TM_MOVES} from '../../src/core/roster.ts';
 import {speciesZh,moveZh,typeZh,tmZh,itemZh,NAME_TABLE} from '../../src/core/names.ts';
-import {enemyInfo,localizeLog,orderLine,stepRows} from '../../src/core/describe.ts';
+import {enemyInfo,localizeLog,orderLine,stepRows,unitName} from '../../src/core/describe.ts';
 import {createScenario} from '../../src/core/scenarios.ts';
 // Stage 7.1 tests: the nine-starter roster, the Chinese name table, the new-game profile and the new-game save path.
 
@@ -113,14 +113,14 @@ test('N9 traceRound lists each member in queue order with default behavior marke
  assert.deepEqual(steps.map(t=>[t.id,t.explicit]),[['A',true],['B',true],['C',false]]);
  assert.equal(JSON.stringify(s),before,'the state is untouched');
  assert.deepEqual([steps[2].action.type,steps[2].action.skill,steps[2].action.target],['skill','tackle','H'],'C stands next to H: tackle (9 damage) beats a basic attack (6) and quick attack, so the default is tackle');
- assert.match(orderLine(s,steps),/^A.*→.*B.*→.*C.*→ 敌方$/);
+ assert.equal(orderLine(s,steps),[...s.queue.map(id=>unitName(s.units[id])),'敌方'].join(' → '));
  assert.ok(stepRows(s,steps)[2].text.includes('默认行为'));
  assert.equal(traceRound(s,{type:'round',action:{type:'move',to:{x:9,y:9}}}),null,'an illegal draft has no preview');
 });
 
 test('N10 localizeLog names units and species in Chinese without touching other letters',()=>{
  const e=createExpedition('r',5,2,squadOf(newGameProfile('mudkip','torchic').profile));
- assert.equal(localizeLog(e,'A受到6伤害，HP 14'),'A 水跃鱼受到6伤害，HP 14');
+ assert.equal(localizeLog(e,'A受到6伤害，HP 14'),'水跃鱼受到6伤害，HP 14');
  assert.equal(localizeLog(e,'rattata被击败，没有发出邀请'),'小拉达被击败，没有发出邀请');
- assert.equal(localizeLog(e,'A取得招式机：protect'),'A 水跃鱼取得招式机：守住');
+ assert.equal(localizeLog(e,'A取得招式机：protect'),'水跃鱼取得招式机：守住');
 });

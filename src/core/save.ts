@@ -515,6 +515,12 @@ export function decode(raw:string):Envelope {
 function campFromLegacy(raw:string):Envelope {
   const parsed=parseJson(raw);
   if(object(parsed)&&parsed.format===2){
+    if(parsed.rules===RULE_VERSION&&parsed.content==='trial-content-5'){
+      // 8.9a changes content, not the camp shape. Reuse the strict current decoder after replacing only the known version.
+      const migrated=decode(JSON.stringify({...parsed,content:CONTENT_VERSION}));
+      migrated.sequence=Math.min(migrated.sequence+1,Number.MAX_SAFE_INTEGER);
+      return migrated;
+    }
     if(parsed.rules===LEGACY_RULES_4&&parsed.content===LEGACY_CONTENT_4)return migrateV4Camp(raw);
     if(parsed.rules===LEGACY_RULES_3&&parsed.content===LEGACY_CONTENT_3)return migrateV3Camp(raw);
     throw Error('存档版本不兼容；原记录已保留');
@@ -635,7 +641,7 @@ export class TrialStore {
     if(this.status!=='ready'||!this.atBase||!this.record||purse!==0)return false;
     if(purseProblem(this.record.profile,purse)!==null)return false;
     const profile=clone(this.record.profile);
-    try{this.world=createExpedition(runId,seed,3,squadOf(profile),0,undefined,3,profile.difficulty);}
+    try{this.world=createExpedition(runId,seed,3,squadOf(profile),0,undefined,4,profile.difficulty);}
     catch{this.world=null;return false;}
     this.activeProfile=profile;this.activeKind='expedition';this.savedSettlement=null;return true;
   }

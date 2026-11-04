@@ -9,7 +9,19 @@
  },
  "moves": {
   "absorb": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "absorb",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "acid": {
    "acc": 88,
@@ -20,10 +32,36 @@
       "spd": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "acid",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "acidarmor": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "acidarmor",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    }
+   }
   },
   "acidspray": {
    "acc": 75,
@@ -34,13 +72,50 @@
       "spd": -2
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "acidspray",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "75%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "aerialace": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "aerialace",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "—%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "aircutter": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "aircutter",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "90%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "airslash": {
    "acc": 88,
@@ -49,7 +124,53 @@
      "chance": 30,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "airslash",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "amnesia": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "amnesia",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "amnesia",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Amnesia%20(move)&oldid=4646667",
+      "revision": 4646667
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Amnesia%20(move)&oldid=4646667",
+      "revision": 4646667
+     }
+    }
+   }
   },
   "ancientpower": {
    "acc": 88,
@@ -64,13 +185,50 @@
       "spe": 1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "ancientpower",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "aquajet": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "aquajet",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "18",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "aquatail": {
-   "acc": 80
+   "acc": 80,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "aquatail",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "11",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "astonish": {
    "acc": 88,
@@ -79,10 +237,35 @@
      "chance": 30,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "astonish",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "aurasphere": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "aurasphere",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "aurorabeam": {
    "acc": 61.75,
@@ -93,13 +276,84 @@
       "atk": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "aurorabeam",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "61.75%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "babydolleyes": {
+   "acc": 85,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "babydolleyes",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "85%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "babydolleyes",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Baby-Doll%20Eyes%20(move)&oldid=4622934",
+      "revision": 4622934
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Baby-Doll%20Eyes%20(move)&oldid=4622934",
+      "revision": 4622934
+     }
+    }
+   }
   },
   "belch": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "belch",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "90%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "bind": {
-   "acc": 78
+   "acc": 78,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bind",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "78%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "bite": {
    "acc": 90,
@@ -108,7 +362,20 @@
      "chance": 30,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bite",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "19",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "blazekick": {
    "acc": 88,
@@ -118,7 +385,20 @@
      "chance": 10,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "blazekick",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "blizzard": {
    "acc": 67.2,
@@ -127,7 +407,20 @@
      "chance": 10,
      "status": "frz"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "blizzard",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "7",
+     "accuracy": "67.2%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "bodyslam": {
    "acc": 85,
@@ -136,13 +429,83 @@
      "chance": 30,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bodyslam",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "85%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "bravebird": {
+   "acc": 88,
+   "recoil": [
+    33,
+    100
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bravebird",
+    "fields": [
+     "accuracy",
+     "recoil"
+    ],
+    "pmd": {
+     "basePp": "6",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "bravebird",
+      "fields": [
+       "recoil"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Brave%20Bird%20(move)&oldid=4645387",
+      "revision": 4645387
+     }
+    }
+   }
   },
   "brickbreak": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "brickbreak",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "brine": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "brine",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "bubblebeam": {
    "acc": 83.6,
@@ -153,10 +516,35 @@
       "spe": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bubblebeam",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "83.6%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "bugbite": {
-   "acc": 100
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bugbite",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "bugbuzz": {
    "acc": 77.44,
@@ -167,10 +555,36 @@
       "spd": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bugbuzz",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "77.44%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "bulkup": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bulkup",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    }
+   }
   },
   "bulldoze": {
    "acc": 60,
@@ -181,10 +595,68 @@
       "spe": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bulldoze",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "60%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "bulletpunch": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "bulletpunch",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "calmmind": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "calmmind",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "19",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "calmmind",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Calm%20Mind%20(move)&oldid=4635977",
+      "revision": 4635977
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Calm%20Mind%20(move)&oldid=4635977",
+      "revision": 4635977
+     }
+    }
+   }
   },
   "chargebeam": {
    "acc": 88,
@@ -195,19 +667,198 @@
       "spa": 1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "chargebeam",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "charm": {
+   "acc": 75,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "charm",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "75%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "charm",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Charm%20(move)&oldid=4639922",
+      "revision": 4639922
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Charm%20(move)&oldid=4639922",
+      "revision": 4639922
+     },
+     "exception": "独立倍率不进入本作；各取Showdown阶段-2。"
+    }
+   }
   },
   "circlethrow": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "circlethrow",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "clearsmog": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "clearsmog",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "—%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "closecombat": {
    "acc": 80,
    "cost": {
     "def": -1,
     "spd": -1
+   },
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "closecombat",
+    "fields": [
+     "accuracy",
+     "self"
+    ],
+    "pmd": {
+     "basePp": "7",
+     "accuracy": "80%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "coil": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "coil",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "coil",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Coil%20(move)&oldid=4634751",
+      "revision": 4634751
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Coil%20(move)&oldid=4634751",
+      "revision": 4634751
+     }
+    }
+   }
+  },
+  "confide": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "confide",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "20",
+     "accuracy": "—%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "confide",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Confide%20(move)&oldid=4403428",
+      "revision": 4403428
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Confide%20(move)&oldid=4403428",
+      "revision": 4403428
+     }
+    }
+   }
+  },
+  "confuseray": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "confuseray",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "confuseray",
+      "fields": [
+       "volatileStatus"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Confuse%20Ray%20(move)&oldid=4651065",
+      "revision": 4651065
+     }
+    }
    }
   },
   "confusion": {
@@ -217,16 +868,98 @@
      "chance": 10,
      "status": "confusion"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "confusion",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "85%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "cosmicpower": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "cosmicpower",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "14",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "cosmicpower",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Cosmic%20Power%20(move)&oldid=4632967",
+      "revision": 4632967
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Cosmic%20Power%20(move)&oldid=4632967",
+      "revision": 4632967
+     }
+    }
+   }
   },
   "covet": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "covet",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "27",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "crabhammer": {
-   "acc": 77.44
+   "acc": 77.44,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "crabhammer",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "77.44%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "crosschop": {
-   "acc": 84
+   "acc": 84,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "crosschop",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "84%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "crosspoison": {
    "acc": 88,
@@ -235,7 +968,20 @@
      "chance": 10,
      "status": "psn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "crosspoison",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "crunch": {
    "acc": 88,
@@ -246,7 +992,20 @@
       "def": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "crunch",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "crushclaw": {
    "acc": 90,
@@ -257,7 +1016,20 @@
       "def": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "crushclaw",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "darkpulse": {
    "acc": 73.92,
@@ -266,16 +1038,67 @@
      "chance": 20,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "darkpulse",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "73.92%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "dazzlinggleam": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "dazzlinggleam",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "90%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "defensecurl": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "defensecurl",
+    "fields": [
+     "accuracy",
+     "boosts",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    }
+   }
   },
   "disarmingvoice": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "disarmingvoice",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "discharge": {
    "acc": 70,
@@ -284,12 +1107,104 @@
      "chance": 30,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "discharge",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "70%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "doubleedge": {
+   "acc": 100,
+   "recoil": [
+    33,
+    100
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "doubleedge",
+    "fields": [
+     "accuracy",
+     "recoil"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "doubleedge",
+      "fields": [
+       "recoil"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Double-Edge%20(move)&oldid=4637918",
+      "revision": 4637918
+     }
+    }
+   }
+  },
+  "doubleteam": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "doubleteam",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "doubleteam",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Double%20Team%20(move)&oldid=4651117",
+      "revision": 4651117
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Double%20Team%20(move)&oldid=4651117",
+      "revision": 4651117
+     }
+    }
+   }
   },
   "dracometeor": {
    "acc": 80,
    "cost": {
     "spa": -2
+   },
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "dracometeor",
+    "fields": [
+     "accuracy",
+     "self"
+    ],
+    "pmd": {
+     "basePp": "5",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    }
    }
   },
   "dragonbreath": {
@@ -299,13 +1214,83 @@
      "chance": 30,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "dragonbreath",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "83.6%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "dragonclaw": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "dragonclaw",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "dragondance": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "dragondance",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "dragondance",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Dragon%20Dance%20(move)&oldid=4635986",
+      "revision": 4635986
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Dragon%20Dance%20(move)&oldid=4635986",
+      "revision": 4635986
+     }
+    }
+   }
   },
   "dragonpulse": {
-   "acc": 80
+   "acc": 80,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "dragonpulse",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "dragonrush": {
    "acc": 80,
@@ -314,22 +1299,95 @@
      "chance": 20,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "dragonrush",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "80%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "dragontail": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "dragontail",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "drainingkiss": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "drainingkiss",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "drainpunch": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "drainpunch",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "drillpeck": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "drillpeck",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "drillrun": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "drillrun",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "dynamicpunch": {
    "acc": 78,
@@ -338,7 +1396,20 @@
      "chance": 100,
      "status": "confusion"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "dynamicpunch",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "78%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "earthpower": {
    "acc": 88,
@@ -349,7 +1420,53 @@
       "spd": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "earthpower",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "eerieimpulse": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "eerieimpulse",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "eerieimpulse",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Eerie%20Impulse%20(move)&oldid=4628132",
+      "revision": 4628132
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Eerie%20Impulse%20(move)&oldid=4628132",
+      "revision": 4628132
+     }
+    }
+   }
   },
   "electroweb": {
    "acc": 60,
@@ -360,7 +1477,20 @@
       "spe": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "electroweb",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "60%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "ember": {
    "acc": 88,
@@ -370,7 +1500,20 @@
      "chance": 10,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "ember",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "energyball": {
    "acc": 88,
@@ -381,7 +1524,20 @@
       "spd": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "energyball",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "11",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "extrasensory": {
    "acc": 88,
@@ -390,13 +1546,50 @@
      "chance": 10,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "extrasensory",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "extremespeed": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "extremespeed",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "facade": {
-   "acc": 84
+   "acc": 84,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "facade",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "84%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "fakeout": {
    "acc": 80,
@@ -405,19 +1598,146 @@
      "chance": 100,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "fakeout",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "faketears": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "faketears",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "faketears",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Fake%20Tears%20(move)&oldid=4643725",
+      "revision": 4643725
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Fake%20Tears%20(move)&oldid=4643725",
+      "revision": 4643725
+     }
+    }
+   }
   },
   "falseswipe": {
-   "acc": 100
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "falseswipe",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "featherdance": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "featherdance",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "featherdance",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Feather%20Dance%20(move)&oldid=4632495",
+      "revision": 4632495
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Feather%20Dance%20(move)&oldid=4632495",
+      "revision": 4632495
+     }
+    }
+   }
   },
   "feint": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "feint",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "feintattack": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "feintattack",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "25",
+     "accuracy": "%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "fellstinger": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "fellstinger",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "20",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "fireblast": {
    "acc": 88,
@@ -427,7 +1747,20 @@
      "chance": 10,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "fireblast",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "9",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "firefang": {
    "acc": 88,
@@ -441,7 +1774,20 @@
      "chance": 10,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "firefang",
+    "fields": [
+     "accuracy",
+     "secondaries"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "firepunch": {
    "acc": 78,
@@ -451,11 +1797,37 @@
      "chance": 10,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "firepunch",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "78%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "firespin": {
    "acc": 73,
-   "thaw": true
+   "thaw": true,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "firespin",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "19",
+     "accuracy": "73%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "flamecharge": {
    "acc": 95,
@@ -467,7 +1839,20 @@
       "spe": 1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "flamecharge",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "flamethrower": {
    "acc": 83.6,
@@ -477,7 +1862,20 @@
      "chance": 10,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "flamethrower",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "83.6%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "flamewheel": {
    "acc": 88,
@@ -487,7 +1885,61 @@
      "chance": 10,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "flamewheel",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "11",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "flareblitz": {
+   "acc": 88,
+   "thaw": true,
+   "fx": [
+    {
+     "chance": 10,
+     "status": "brn"
+    }
+   ],
+   "recoil": [
+    33,
+    100
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "flareblitz",
+    "fields": [
+     "accuracy",
+     "recoil",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "6",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "flareblitz",
+      "fields": [
+       "recoil"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Flare%20Blitz%20(move)&oldid=4646913",
+      "revision": 4646913
+     }
+    }
+   }
   },
   "flashcannon": {
    "acc": 88,
@@ -498,7 +1950,20 @@
       "spd": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "flashcannon",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "11",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "focusblast": {
    "acc": 80,
@@ -509,10 +1974,35 @@
       "spd": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "focusblast",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "6",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "focuspunch": {
-   "acc": 100
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "focuspunch",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "forcepalm": {
    "acc": 88,
@@ -521,10 +2011,35 @@
      "chance": 30,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "forcepalm",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "foulplay": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "foulplay",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "freezedry": {
    "acc": 95,
@@ -533,10 +2048,97 @@
      "chance": 10,
      "status": "frz"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "freezedry",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "gigadrain": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "gigadrain",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "glare": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "glare",
+    "fields": [
+     "accuracy",
+     "status"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "glare",
+      "fields": [
+       "status"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Glare%20(move)&oldid=4646494",
+      "revision": 4646494
+     }
+    }
+   }
+  },
+  "growl": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "growl",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "20",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "growl",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Growl%20(move)&oldid=4642534",
+      "revision": 4642534
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Growl%20(move)&oldid=4642534",
+      "revision": 4642534
+     }
+    }
+   }
   },
   "gunkshot": {
    "acc": 80,
@@ -545,19 +2147,70 @@
      "chance": 30,
      "status": "psn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "gunkshot",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "6",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "gust": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "gust",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "19",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "hammerarm": {
    "acc": 80,
    "cost": {
     "spe": -1
+   },
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "hammerarm",
+    "fields": [
+     "accuracy",
+     "self"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "80%",
+     "cutsCorners": "No"
+    }
    }
   },
   "harden": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "harden",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    }
+   }
   },
   "headbutt": {
    "acc": 90,
@@ -566,7 +2219,53 @@
      "chance": 30,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "headbutt",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "headsmash": {
+   "acc": 80,
+   "recoil": [
+    1,
+    2
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "headsmash",
+    "fields": [
+     "accuracy",
+     "recoil"
+    ],
+    "pmd": {
+     "basePp": "5",
+     "accuracy": "80%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "headsmash",
+      "fields": [
+       "recoil"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Head%20Smash%20(move)&oldid=4628293",
+      "revision": 4628293
+     }
+    }
+   }
   },
   "heatwave": {
    "acc": 80,
@@ -576,16 +2275,99 @@
      "chance": 10,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "heatwave",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "helpinghand": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "helpinghand",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "highhorsepower": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "highhorsepower",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "honeclaws": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "honeclaws",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "honeclaws",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Hone%20Claws%20(move)&oldid=4622973",
+      "revision": 4622973
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Hone%20Claws%20(move)&oldid=4622973",
+      "revision": 4622973
+     }
+    }
+   }
   },
   "hornattack": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "hornattack",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "18",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "hurricane": {
    "acc": 75,
@@ -594,10 +2376,35 @@
      "chance": 30,
      "status": "confusion"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "hurricane",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "75%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "hydropump": {
-   "acc": 79.8
+   "acc": 79.8,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "hydropump",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "79.8%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "hyperfang": {
    "acc": 88,
@@ -606,10 +2413,35 @@
      "chance": 10,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "hyperfang",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "hypervoice": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "hypervoice",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "90%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "icebeam": {
    "acc": 83.6,
@@ -618,7 +2450,20 @@
      "chance": 10,
      "status": "frz"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "icebeam",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "83.6%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "icefang": {
    "acc": 88,
@@ -631,7 +2476,20 @@
      "chance": 10,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "icefang",
+    "fields": [
+     "accuracy",
+     "secondaries"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "icepunch": {
    "acc": 88,
@@ -640,10 +2498,35 @@
      "chance": 10,
      "status": "frz"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "icepunch",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "iceshard": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "iceshard",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "iciclecrash": {
    "acc": 85,
@@ -652,7 +2535,20 @@
      "chance": 30,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "iciclecrash",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "85%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "icywind": {
    "acc": 79.8,
@@ -663,11 +2559,36 @@
       "spe": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "icywind",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "79.8%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "incinerate": {
    "acc": 95,
-   "thaw": true
+   "thaw": true,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "incinerate",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "95%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "inferno": {
    "acc": 50,
@@ -677,13 +2598,52 @@
      "chance": 100,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "inferno",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "50%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "infestation": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "infestation",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "irondefense": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "irondefense",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    }
+   }
   },
   "ironhead": {
    "acc": 80,
@@ -692,7 +2652,20 @@
      "chance": 30,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "ironhead",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "80%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "irontail": {
    "acc": 78,
@@ -703,10 +2676,68 @@
       "def": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "irontail",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "78%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "kinesis": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "kinesis",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "kinesis",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Kinesis%20(move)&oldid=4646666",
+      "revision": 4646666
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Kinesis%20(move)&oldid=4646666",
+      "revision": 4646666
+     }
+    }
+   }
   },
   "lastresort": {
-   "acc": 80
+   "acc": 80,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "lastresort",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "7",
+     "accuracy": "80%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "lavaplume": {
    "acc": 70.4,
@@ -716,22 +2747,113 @@
      "chance": 30,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "lavaplume",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "70.4%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "leafage": {
-   "acc": 100
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "leafage",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": null
+   }
   },
   "leafblade": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "leafblade",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "leafstorm": {
    "acc": 80,
    "cost": {
     "spa": -2
+   },
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "leafstorm",
+    "fields": [
+     "accuracy",
+     "self"
+    ],
+    "pmd": {
+     "basePp": "5",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    }
    }
   },
   "leechlife": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "leechlife",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "19",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "leer": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "leer",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "27",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "leer",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Leer%20(move)&oldid=4623919",
+      "revision": 4623919
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Leer%20(move)&oldid=4623919",
+      "revision": 4623919
+     }
+    }
+   }
   },
   "lick": {
    "acc": 100,
@@ -740,10 +2862,35 @@
      "chance": 30,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "lick",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "20",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "lightscreen": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "lightscreen",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "liquidation": {
    "acc": 95,
@@ -754,7 +2901,20 @@
       "def": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "liquidation",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "lowsweep": {
    "acc": 70,
@@ -765,25 +2925,110 @@
       "spe": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "lowsweep",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "70%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "machpunch": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "machpunch",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "90%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "magicalleaf": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "magicalleaf",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "megadrain": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "megadrain",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "megahorn": {
-   "acc": 84
+   "acc": 84,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "megahorn",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "7",
+     "accuracy": "84%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "megakick": {
-   "acc": 84
+   "acc": 84,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "megakick",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "84%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "megapunch": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "megapunch",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "metalclaw": {
    "acc": 90,
@@ -794,7 +3039,56 @@
       "atk": 1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "metalclaw",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "metalsound": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "metalsound",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "metalsound",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Metal%20Sound%20(move)&oldid=4632656",
+      "revision": 4632656
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Metal%20Sound%20(move)&oldid=4632656",
+      "revision": 4632656
+     },
+     "stageRule": {
+      "spd": -3
+     }
+    }
+   }
   },
   "meteormash": {
    "acc": 83.6,
@@ -805,7 +3099,58 @@
       "atk": 1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "meteormash",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "9",
+     "accuracy": "83.6%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "minimize": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "minimize",
+    "fields": [
+     "accuracy",
+     "boosts",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "27",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "minimize",
+      "fields": [
+       "volatileStatus",
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Minimize%20(move)&oldid=4650411",
+      "revision": 4650411
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Minimize%20(move)&oldid=4650411",
+      "revision": 4650411
+     },
+     "stageRule": {
+      "eva": 1
+     }
+    }
+   }
   },
   "moonblast": {
    "acc": 95,
@@ -816,7 +3161,20 @@
       "spa": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "moonblast",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "muddywater": {
    "acc": 84,
@@ -827,7 +3185,20 @@
       "acc": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "muddywater",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "84%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "mudshot": {
    "acc": 65,
@@ -838,7 +3209,20 @@
       "spe": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "mudshot",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "65%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "mudslap": {
    "acc": 84,
@@ -849,7 +3233,20 @@
       "acc": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "mudslap",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "84%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "mysticalfire": {
    "acc": 70,
@@ -861,10 +3258,68 @@
       "spa": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "mysticalfire",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "70%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "nastyplot": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "nastyplot",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "20",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "nastyplot",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Nasty%20Plot%20(move)&oldid=4628357",
+      "revision": 4628357
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Nasty%20Plot%20(move)&oldid=4628357",
+      "revision": 4628357
+     }
+    }
+   }
   },
   "nightslash": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "nightslash",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "nuzzle": {
    "acc": 50,
@@ -873,23 +3328,118 @@
      "chance": 100,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "nuzzle",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "50%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "overheat": {
    "acc": 84,
    "thaw": true,
    "cost": {
     "spa": -2
+   },
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "overheat",
+    "fields": [
+     "accuracy",
+     "self"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "84%",
+     "cutsCorners": "Yes"
+    }
    }
   },
   "payday": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "payday",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "peck": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "peck",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "26",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "petalblizzard": {
-   "acc": 85
+   "acc": 85,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "petalblizzard",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "85%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "playnice": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "playnice",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "20",
+     "accuracy": "—%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "playnice",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Play%20Nice%20(move)&oldid=4621670",
+      "revision": 4621670
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Play%20Nice%20(move)&oldid=4621670",
+      "revision": 4621670
+     }
+    }
+   }
   },
   "playrough": {
    "acc": 90,
@@ -900,10 +3450,35 @@
       "atk": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "playrough",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "pluck": {
-   "acc": 100
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "pluck",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "poisonfang": {
    "acc": 73.92,
@@ -912,7 +3487,49 @@
      "chance": 50,
      "status": "tox"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "poisonfang",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "73.92%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "poisongas": {
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "poisongas",
+    "fields": [
+     "accuracy",
+     "status"
+    ],
+    "pmd": {
+     "basePp": "27",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "poisongas",
+      "fields": [
+       "status"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Poison%20Gas%20(move)&oldid=4649058",
+      "revision": 4649058
+     }
+    }
+   }
   },
   "poisonjab": {
    "acc": 88,
@@ -921,7 +3538,49 @@
      "chance": 30,
      "status": "psn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "poisonjab",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "14",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "poisonpowder": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "poisonpowder",
+    "fields": [
+     "accuracy",
+     "status"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "poisonpowder",
+      "fields": [
+       "status"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Poison%20Powder%20(move)&oldid=4625922",
+      "revision": 4625922
+     }
+    }
+   }
   },
   "poisonsting": {
    "acc": 73,
@@ -930,7 +3589,20 @@
      "chance": 30,
      "status": "psn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "poisonsting",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "19",
+     "accuracy": "73%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "poisontail": {
    "acc": 88,
@@ -939,10 +3611,35 @@
      "chance": 10,
      "status": "psn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "poisontail",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "pound": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "pound",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "27",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "powdersnow": {
    "acc": 90,
@@ -951,16 +3648,66 @@
      "chance": 10,
      "status": "frz"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "powdersnow",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "90%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "powergem": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "powergem",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "powerwhip": {
-   "acc": 80
+   "acc": 80,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "powerwhip",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "80%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "protect": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "protect",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "75%",
+     "cutsCorners": "-"
+    }
+   }
   },
   "psybeam": {
    "acc": 79.8,
@@ -969,7 +3716,20 @@
      "chance": 10,
      "status": "confusion"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "psybeam",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "79.8%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "psychic": {
    "acc": 88,
@@ -980,25 +3740,143 @@
       "spd": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "psychic",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "psychocut": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "psychocut",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "14",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "psyshock": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "psyshock",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "psystrike": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "psystrike",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "pursuit": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "pursuit",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "quickattack": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "quickattack",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "quickguard": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "quickguard",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "quiverdance": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "quiverdance",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "quiverdance",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Quiver%20Dance%20(move)&oldid=4620860",
+      "revision": 4620860
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Quiver%20Dance%20(move)&oldid=4620860",
+      "revision": 4620860
+     }
+    }
+   }
   },
   "rapidspin": {
    "acc": 90,
@@ -1009,10 +3887,35 @@
       "spe": 1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "rapidspin",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "razorleaf": {
-   "acc": 79.8
+   "acc": 79.8,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "razorleaf",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "79.8%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "razorshell": {
    "acc": 90,
@@ -1023,16 +3926,94 @@
       "def": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "razorshell",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "recover": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "recover",
+    "fields": [
+     "accuracy",
+     "heal"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "recover",
+      "fields": [
+       "heal"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Recover%20(move)&oldid=4651090",
+      "revision": 4651090
+     }
+    }
+   }
   },
   "reflect": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "reflect",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "retaliate": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "retaliate",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "roar": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "roar",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "14",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "rockslide": {
    "acc": 90,
@@ -1041,10 +4022,35 @@
      "chance": 30,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "rockslide",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "rockthrow": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "rockthrow",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "rocktomb": {
    "acc": 60,
@@ -1055,10 +4061,69 @@
       "spe": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "rocktomb",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "60%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "sandattack": {
+   "acc": 80,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sandattack",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "20",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "sandattack",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sand%20Attack%20(move)&oldid=4622929",
+      "revision": 4622929
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sand%20Attack%20(move)&oldid=4622929",
+      "revision": 4622929
+     }
+    }
+   }
   },
   "sandtomb": {
-   "acc": 73
+   "acc": 73,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sandtomb",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "73%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "scald": {
    "acc": 80,
@@ -1068,13 +4133,84 @@
      "chance": 30,
      "status": "brn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "scald",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "80%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "scratch": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "scratch",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "28",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "screech": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "screech",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "screech",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Screech%20(move)&oldid=4653013",
+      "revision": 4653013
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Screech%20(move)&oldid=4653013",
+      "revision": 4653013
+     },
+     "exception": "独立倍率不进入本作；各取Showdown阶段-2。"
+    }
+   }
   },
   "seedbomb": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "seedbomb",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "11",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "shadowball": {
    "acc": 83.6,
@@ -1085,25 +4221,139 @@
       "spd": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "shadowball",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "83.6%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "shadowclaw": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "shadowclaw",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "shadowpunch": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "shadowpunch",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "—%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "shadowsneak": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "shadowsneak",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "shockwave": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "shockwave",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "slackoff": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "slackoff",
+    "fields": [
+     "accuracy",
+     "heal"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "slackoff",
+      "fields": [
+       "heal"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Slack%20Off%20(move)&oldid=4632542",
+      "revision": 4632542
+     }
+    }
+   }
   },
   "slam": {
-   "acc": 78
+   "acc": 78,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "slam",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "78%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "slash": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "slash",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "11",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "sludge": {
    "acc": 88,
@@ -1112,7 +4362,20 @@
      "chance": 30,
      "status": "psn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sludge",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "sludgebomb": {
    "acc": 79.8,
@@ -1121,7 +4384,20 @@
      "chance": 30,
      "status": "psn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sludgebomb",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "79.8%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "sludgewave": {
    "acc": 85,
@@ -1130,13 +4406,51 @@
      "chance": 10,
      "status": "psn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sludgewave",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "85%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "smackdown": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "smackdown",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "smartstrike": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "smartstrike",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "—%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "smog": {
    "acc": 73,
@@ -1145,7 +4459,54 @@
      "chance": 40,
      "status": "psn"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "smog",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "73%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "smokescreen": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "smokescreen",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "smokescreen",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Smokescreen%20(move)&oldid=4649460",
+      "revision": 4649460
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Smokescreen%20(move)&oldid=4649460",
+      "revision": 4649460
+     },
+     "exception": "效果取SMD命中阶段-1，探险队的必定落空状态不进入本作；射程与PP保持所选原版行。"
+    }
+   }
   },
   "snarl": {
    "acc": 85,
@@ -1156,7 +4517,50 @@
       "spa": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "snarl",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "85%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "softboiled": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "softboiled",
+    "fields": [
+     "accuracy",
+     "heal"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "softboiled",
+      "fields": [
+       "heal"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Soft-Boiled%20(move)&oldid=4646495",
+      "revision": 4646495
+     },
+     "rule": "沿用原版room/party，每个目标回复各自一半最大HP，四舍五入且封顶。"
+    }
+   }
   },
   "spark": {
    "acc": 88,
@@ -1165,7 +4569,20 @@
      "chance": 30,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "spark",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "steelwing": {
    "acc": 88,
@@ -1176,7 +4593,20 @@
       "def": 1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "steelwing",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "stomp": {
    "acc": 90,
@@ -1185,13 +4615,50 @@
      "chance": 30,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "stomp",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "stoneedge": {
-   "acc": 80
+   "acc": 80,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "stoneedge",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "7",
+     "accuracy": "80%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "stormthrow": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "stormthrow",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "strugglebug": {
    "acc": 75,
@@ -1202,35 +4669,396 @@
       "spa": -1
      }
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "strugglebug",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "75%",
+     "cutsCorners": "Yes"
+    }
+   }
+  },
+  "stunspore": {
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "stunspore",
+    "fields": [
+     "accuracy",
+     "status"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "stunspore",
+      "fields": [
+       "status"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Stun%20Spore%20(move)&oldid=4626046",
+      "revision": 4626046
+     }
+    }
+   }
+  },
+  "submission": {
+   "acc": 84,
+   "recoil": [
+    1,
+    4
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "submission",
+    "fields": [
+     "accuracy",
+     "recoil"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "84%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "submission",
+      "fields": [
+       "recoil"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Submission%20(move)&oldid=4623051",
+      "revision": 4623051
+     }
+    }
+   }
   },
   "suckerpunch": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "suckerpunch",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "7",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "superpower": {
    "acc": 90,
    "cost": {
     "atk": -1,
     "def": -1
+   },
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "superpower",
+    "fields": [
+     "accuracy",
+     "self"
+    ],
+    "pmd": {
+     "basePp": "11",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "supersonic": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "supersonic",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "supersonic",
+      "fields": [
+       "volatileStatus"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Supersonic%20(move)&oldid=4540966",
+      "revision": 4540966
+     }
+    }
    }
   },
   "surf": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "surf",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "11",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "sweetkiss": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sweetkiss",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "sweetkiss",
+      "fields": [
+       "volatileStatus"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sweet%20Kiss%20(move)&oldid=4638911",
+      "revision": 4638911
+     }
+    }
+   }
+  },
+  "sweetscent": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sweetscent",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "sweetscent",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sweet%20Scent%20(move)&oldid=4659663",
+      "revision": 4659663
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sweet%20Scent%20(move)&oldid=4659663",
+      "revision": 4659663
+     },
+     "stageRule": {
+      "eva": -1
+     }
+    }
+   }
   },
   "swift": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "swift",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "—%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "swordsdance": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "swordsdance",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "7",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    }
+   }
+  },
+  "synthesis": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "synthesis",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "synthesis",
+      "fields": []
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Synthesis%20(move)&oldid=4643327",
+      "revision": 4643327
+     },
+     "rule": "本作固定回复目标最大HP的一半，四舍五入并封顶，不随天气改变（游戏规则G5.10，8.9规格3.1 A7）。"
+    }
+   }
   },
   "tackle": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "tackle",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "30",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "tailwhip": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "tailwhip",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "tailwhip",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Tail%20Whip%20(move)&oldid=4623025",
+      "revision": 4623025
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Tail%20Whip%20(move)&oldid=4623025",
+      "revision": 4623025
+     }
+    }
+   }
+  },
+  "takedown": {
+   "acc": 88,
+   "recoil": [
+    1,
+    4
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "takedown",
+    "fields": [
+     "accuracy",
+     "recoil"
+    ],
+    "pmd": {
+     "basePp": "19",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "takedown",
+      "fields": [
+       "recoil"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Take%20Down%20(move)&oldid=4645447",
+      "revision": 4645447
+     }
+    }
+   }
   },
   "thief": {
-   "acc": 100
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "thief",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "20",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "throatchop": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "throatchop",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "thunder": {
    "acc": 73,
@@ -1239,7 +5067,20 @@
      "chance": 30,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "thunder",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "7",
+     "accuracy": "73%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "thunderbolt": {
    "acc": 73.92,
@@ -1248,7 +5089,20 @@
      "chance": 10,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "thunderbolt",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "73.92%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "thunderfang": {
    "acc": 88,
@@ -1261,7 +5115,20 @@
      "chance": 10,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "thunderfang",
+    "fields": [
+     "accuracy",
+     "secondaries"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "thunderpunch": {
    "acc": 88,
@@ -1270,7 +5137,20 @@
      "chance": 10,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "thunderpunch",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "thundershock": {
    "acc": 88,
@@ -1279,10 +5159,127 @@
      "chance": 10,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "thundershock",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "thunderwave": {
+   "acc": 65,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "thunderwave",
+    "fields": [
+     "accuracy",
+     "status"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "65%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "thunderwave",
+      "fields": [
+       "status"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Thunder%20Wave%20(move)&oldid=4628621",
+      "revision": 4628621
+     }
+    }
+   }
+  },
+  "tickle": {
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "tickle",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "tickle",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Tickle%20(move)&oldid=4632980",
+      "revision": 4632980
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Tickle%20(move)&oldid=4632980",
+      "revision": 4632980
+     }
+    }
+   }
+  },
+  "toxic": {
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "toxic",
+    "fields": [
+     "accuracy",
+     "status"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "toxic",
+      "fields": [
+       "status"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Toxic%20(move)&oldid=4631298",
+      "revision": 4631298
+     }
+    }
+   }
   },
   "triattack": {
-   "acc": 100
+   "acc": 100,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "triattack",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "twister": {
    "acc": 90,
@@ -1291,19 +5288,80 @@
      "chance": 20,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "twister",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "vacuumwave": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "vacuumwave",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "14",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "venoshock": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "venoshock",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "vinewhip": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "vinewhip",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "visegrip": {
-   "acc": 90
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "visegrip",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "22",
+     "accuracy": "90%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "waterfall": {
    "acc": 88,
@@ -1312,10 +5370,35 @@
      "chance": 20,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "waterfall",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "watergun": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "watergun",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "88%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "waterpulse": {
    "acc": 83.6,
@@ -1324,25 +5407,241 @@
      "chance": 20,
      "status": "confusion"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "waterpulse",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "83.6%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "weatherball": {
-   "acc": 85.5
+   "acc": 85.5,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "weatherball",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "85.5%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "whirlpool": {
-   "acc": 78
+   "acc": 78,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "whirlpool",
+    "fields": [
+     "accuracy",
+     "volatileStatus"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "78%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "whirlwind": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "whirlwind",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "27",
+     "accuracy": "100%",
+     "cutsCorners": "No"
+    }
+   }
+  },
+  "wildcharge": {
+   "acc": 95,
+   "recoil": [
+    1,
+    4
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "wildcharge",
+    "fields": [
+     "accuracy",
+     "recoil"
+    ],
+    "pmd": {
+     "basePp": "15",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "wildcharge",
+      "fields": [
+       "recoil"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Wild%20Charge%20(move)&oldid=4628630",
+      "revision": 4628630
+     }
+    }
+   }
+  },
+  "willowisp": {
+   "acc": 100,
+   "thaw": true,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "willowisp",
+    "fields": [
+     "accuracy",
+     "status"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "willowisp",
+      "fields": [
+       "status"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Will-O-Wisp%20(move)&oldid=4651264",
+      "revision": 4651264
+     }
+    }
+   }
   },
   "wingattack": {
-   "acc": 95
+   "acc": 95,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "wingattack",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "20",
+     "accuracy": "95%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "withdraw": {
-   "acc": null
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "withdraw",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    }
+   }
+  },
+  "woodhammer": {
+   "acc": 100,
+   "recoil": [
+    33,
+    100
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "woodhammer",
+    "fields": [
+     "accuracy",
+     "recoil"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "100%",
+     "cutsCorners": "Yes"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "woodhammer",
+      "fields": [
+       "recoil"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Wood%20Hammer%20(move)&oldid=4628421",
+      "revision": 4628421
+     }
+    }
+   }
+  },
+  "workup": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "workup",
+    "fields": [
+     "accuracy",
+     "boosts"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "—%",
+     "cutsCorners": "-"
+    },
+    "template": {
+     "showdown": {
+      "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+      "id": "workup",
+      "fields": [
+       "boosts"
+      ]
+     },
+     "pmd": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Work%20Up%20(move)&oldid=4621595",
+      "revision": 4621595
+     },
+     "stageSource": {
+      "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Work%20Up%20(move)&oldid=4621595",
+      "revision": 4621595
+     }
+    }
+   }
   },
   "xscissor": {
-   "acc": 88
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "xscissor",
+    "fields": [
+     "accuracy"
+    ],
+    "pmd": {
+     "basePp": "10",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   },
   "zapcannon": {
    "acc": 61.75,
@@ -1351,7 +5650,20 @@
      "chance": 100,
      "status": "par"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "zapcannon",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "9",
+     "accuracy": "61.75%",
+     "cutsCorners": "Yes"
+    }
+   }
   },
   "zenheadbutt": {
    "acc": 88,
@@ -1360,7 +5672,20 @@
      "chance": 20,
      "status": "flinch"
     }
-   ]
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "zenheadbutt",
+    "fields": [
+     "accuracy",
+     "secondary"
+    ],
+    "pmd": {
+     "basePp": "9",
+     "accuracy": "88%",
+     "cutsCorners": "No"
+    }
+   }
   }
  }
 }

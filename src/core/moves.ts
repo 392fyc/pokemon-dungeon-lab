@@ -35,7 +35,7 @@ export type StageKey='atk'|'def'|'spa'|'spd'|'spe'|'acc'|'eva';
 export type StageChange=Partial<Record<StageKey,number>>;
 export type StatusId='psn'|'tox'|'brn'|'par'|'frz'|'confusion'|'flinch';
 export type MoveFx={chance:number;status?:StatusId;foe?:StageChange;self?:StageChange};
-export type MoveEffects={acc:number|null;fx?:MoveFx[];cost?:StageChange;thaw?:true};
+export type MoveEffects={acc:number|null;fx?:MoveFx[];cost?:StageChange;thaw?:true;recoil?:[number,number]};
 const effects:Record<string,MoveEffects>=(effectSource as unknown as {moves:Record<string,MoveEffects>}).moves;
 /** Undefined for ids with no data (the removed Tera Blast, and test-injected moves). */
 export function moveEffects(id:string):MoveEffects|undefined {

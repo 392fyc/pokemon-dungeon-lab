@@ -730,10 +730,18 @@
     "terablast": "太晶爆发",
     "quickguard": "快速防守",
     "reflect": "反射壁",
-    "lightscreen": "光墙"
+    "lightscreen": "光墙",
+    "calmmind": "冥想",
+    "toxic": "剧毒",
+    "bulkup": "健美",
+    "willowisp": "鬼火",
+    "thunderwave": "电磁波",
+    "swordsdance": "剑舞"
   },
   "items": {
     "berry": "橙橙果",
-    "tonic": "PP多项小补剂"
+    "tonic": "PP多项小补剂",
+    "violentSeed": "暴力种子",
+    "maxElixir": "单人满 PP 补剂"
   }
 }

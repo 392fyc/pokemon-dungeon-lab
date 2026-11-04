@@ -29,7 +29,7 @@ test('S77 pmd-moves.json covers every current kit and machine move and retains a
  for(const id of used)assert.ok(Object.hasOwn(data.moves,id),`missing current move ${id}`);
  for(const id of ALL_TM_MOVES)assert.ok(Object.hasOwn(names.tms,id),`missing current TM label ${id}`);
  for(const id of ['quickguard','reflect','lightscreen'])assert.ok(ALL_TM_MOVES.includes(id),`${id} must be available to the current move-machine UI`);
- assert.deepEqual(ALL_TM_MOVES,[...TM_MOVES,'quickguard','reflect','lightscreen']);
+ assert.deepEqual(ALL_TM_MOVES,[...TM_MOVES,'quickguard','reflect','lightscreen','calmmind','toxic','bulkup','willowisp','thunderwave','swordsdance']);
  for(const id of Object.keys(SPEC))assert.ok(Object.hasOwn(data.moves,id),`missing first-batch move ${id}`);
 });
 

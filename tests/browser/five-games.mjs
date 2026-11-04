@@ -18,8 +18,13 @@ const base=process.env.TRIAL_URL;
 if(!base)throw Error('Set TRIAL_URL.');
 const routes=JSON.parse(fs.readFileSync(new URL('./five-game-routes.json',import.meta.url),'utf8'));
 const browser=await chromium.launch({...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{channel:'msedge'}),headless:true,timeout:15000});
-const report={platform:process.platform,browser:await browser.version(),url:base,visibleInfoOnly:true,games:[],status:'FAIL'};
-const deadline=setTimeout(()=>void browser.close(),20*60*1000);
+const suiteStarted=performance.now();
+const report={platform:process.platform,browser:await browser.version(),url:base,visibleInfoOnly:true,startedAt:new Date().toISOString(),games:[],status:'FAIL'};
+let gameTiming=null;
+// Linux exceeded 20 minutes after three games; the paired Windows run took
+// 294.3 s on main and 299.5 s on the candidate. Only the wall-clock budget grows:
+// the five seeds, per-game action cap and all real-input/save assertions stay.
+const deadline=setTimeout(()=>{report.deadlineReached=true;console.error('Five-game browser check exceeded its 40-minute deadline');void browser.close();},40*60*1000);
 const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
 await context.addInitScript(()=>{window.__trialNoAnim=true;});
 const page=await context.newPage(),errors=[];
@@ -497,6 +502,7 @@ try{
  assert.equal(routes.games.length,5);
  assert.equal(new Set(routes.games.map(g=>g.seed)).size,5,'five games must use five distinct seeds');
  for(const [index,route] of routes.games.entries()){
+  gameTiming={game:index+1,seed:route.seed,startedAt:new Date().toISOString(),started:performance.now()};
   // The developer URL fixes only generation seed and preserves the freshly-created save.
   const before=await envelope();await page.goto(base+'?dev=1&seed='+route.seed);await ready();
   assert.deepEqual(await envelope(),before,'selecting a seed must not replace the player save');
@@ -544,7 +550,8 @@ try{
   }
   await roundTrip('game '+(index+1)+' base');
   assert.equal(await state(),null);assert.equal(await page.locator('#depart').isEnabled(),true);
-  report.games.push({game:index+1,seed:route.seed,runId:s.runId,rounds:s.round,outcome:s.end.outcome,bossDefeated:s.end.boss===true,replacements:replacementsInRun,effective:s.end.effective,terminalAndBaseRoundTrip:true,readyToDepart:true});
+  report.games.push({game:index+1,seed:route.seed,runId:s.runId,rounds:s.round,outcome:s.end.outcome,bossDefeated:s.end.boss===true,replacements:replacementsInRun,effective:s.end.effective,terminalAndBaseRoundTrip:true,readyToDepart:true,startedAt:gameTiming.startedAt,durationMs:performance.now()-gameTiming.started});
+  gameTiming=null;
   console.log('PASS fresh-save game',index+1,JSON.stringify(report.games.at(-1)));
  }
  assert.ok(report.games.some(g=>g.outcome==='won'&&g.bossDefeated),'the five real-input games must include a boss victory');
@@ -553,4 +560,4 @@ try{
  await page.screenshot({path:artifactDir+'/five-games-base.png',fullPage:true});
  Object.assign(report,{accepted,learned,carriedIntoRun,pageErrors:errors,status:'PASS'});
 }catch(e){report.error=String(e.stack??e);await page.screenshot({path:artifactDir+'/five-games-failure.png',fullPage:true}).catch(()=>{});throw e;}
-finally{clearTimeout(deadline);fs.writeFileSync(artifactDir+'/five-games-results.json',JSON.stringify(report,null,2));await context.close();await browser.close();}
+finally{clearTimeout(deadline);report.durationMs=performance.now()-suiteStarted;if(gameTiming)report.interruptedGame={game:gameTiming.game,seed:gameTiming.seed,startedAt:gameTiming.startedAt,durationMs:performance.now()-gameTiming.started};fs.writeFileSync(artifactDir+'/five-games-results.json',JSON.stringify(report,null,2));await context.close();await browser.close();}

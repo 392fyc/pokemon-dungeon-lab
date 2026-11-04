@@ -1,7 +1,7 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
-import {SKILL_CN,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
+import {SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
 import {SPECIES} from './roster.ts';
-import {MOVE_DEFS,moveOf,type MoveRange} from './moves.ts';
+import {MOVE_DEFS,moveOf,moveEffects,type StageKey,type StatusId,type MoveRange} from './moves.ts';
 import {adventureRoomMark,adventureRoomStateZh,adventureRoomTypeZh,speciesZh,moveZh,typeZh,itemZh,type AdventureRoomType} from './names.ts';
 import {TACTIC_LABELS,isTactic,type Tactic} from './tactics.ts';
 
@@ -26,13 +26,16 @@ export function moveEffectLabel(id:string,context?:DamageSummaryContext):string{
   for(const effect of spec.effects){
     if(effect==='damage')parts.push(spec.power===null?'造成伤害':context?`造成${damageEstimateText(context.s,context.sourceId,context.targetId,id)}`:`造成${6+Math.ceil(spec.power/2)}点基础伤害`);
     else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
+    else if(effect==='recoil'){const r=moveEffects(id)?.recoil;if(r)parts.push(`承受实际伤害的${r[0]}/${r[1]}反作用（向下取整，至少1；未造成伤害时不扣HP）`);}
+    else if(effect==='heal:1:2')parts.push(`${spec.target==='party'?'同房间全队':'自身'}回复各自最大HP的一半（四舍五入，不超过上限）`);
+    else if(effect.startsWith('status:'))parts.push(`命中后施加${STATUS_NAMES[effect.slice(7) as StatusId]}`);
     else if(effect==='protect')parts.push('自身受到敌方攻击伤害为0（3个敌方阶段）');
     else if(effect==='counter')parts.push('反击相邻敌人的有效伤害（3个敌方阶段）');
     else if(effect==='quickguard')parts.push('使用时范围内全队在本回合挡下距离大于1格的敌方攻击；与守住不能连续使用');
     else if(effect==='reflect')parts.push('使用时范围内全队受到的物理攻击伤害减半（10个敌方阶段）');
     else if(effect==='lightscreen')parts.push('使用时范围内全队受到的特殊攻击伤害减半（10个敌方阶段）');
     else if(effect==='blowaway')parts.push(spec.effects.includes('damage')?'伤害后沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害':'沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害');
-    else {const stage=/^stage:(atk|def):([+-]\d+)$/.exec(effect);if(stage){const who=spec.range==='room'&&spec.target==='teammates'?'同房间队友':spec.range==='user'?'自身':'目标';parts.push(`${who}${stage[1]==='atk'?'攻击':'防御'}${stage[2]}（上限±3）`);}}
+    else {const stage=/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/.exec(effect);if(stage){const who=spec.range==='room'&&spec.target==='teammates'?'同房间队友':spec.range==='user'?'自身':'目标';parts.push(`${who}${STAGE_NAMES[stage[1] as StageKey]}${stage[2]}（上限±3）`);}}
   }
   return parts.join('；')||'无效果说明';
 }

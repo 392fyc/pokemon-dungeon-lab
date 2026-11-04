@@ -1,0 +1,1717 @@
+{
+  "sourceCommit": "ce2ca4f690c7cc5801e5f285ed0cc3aac8c70f01",
+  "kits": {
+    "bulbasaur": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "seedbomb",
+        "pp": 11
+      }
+    ],
+    "charmander": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "ember",
+        "pp": 15
+      }
+    ],
+    "squirtle": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "pidgey": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "gust",
+        "pp": 19
+      }
+    ],
+    "rattata": [
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "spearow": [
+      {
+        "move": "pursuit",
+        "pp": 17
+      }
+    ],
+    "pikachu": [
+      {
+        "move": "quickattack",
+        "pp": 13
+      },
+      {
+        "move": "thundershock",
+        "pp": 17
+      }
+    ],
+    "zubat": [
+      {
+        "move": "absorb",
+        "pp": 15
+      },
+      {
+        "move": "poisonfang",
+        "pp": 15
+      }
+    ],
+    "geodude": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "defensecurl",
+        "pp": 16
+      }
+    ],
+    "chikorita": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "magicalleaf",
+        "pp": 8
+      }
+    ],
+    "cyndaquil": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "ember",
+        "pp": 15
+      }
+    ],
+    "totodile": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "treecko": [
+      {
+        "move": "pound",
+        "pp": 27
+      },
+      {
+        "move": "leafage",
+        "pp": 40
+      }
+    ],
+    "torchic": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "ember",
+        "pp": 15
+      }
+    ],
+    "mudkip": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "sandshrew": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "defensecurl",
+        "pp": 16
+      }
+    ],
+    "growlithe": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "bite",
+        "pp": 19
+      }
+    ],
+    "magnemite": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "thundershock",
+        "pp": 17
+      }
+    ],
+    "onix": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "harden",
+        "pp": 16
+      }
+    ],
+    "dratini": [
+      {
+        "move": "dragontail",
+        "pp": 13
+      },
+      {
+        "move": "slam",
+        "pp": 12
+      }
+    ],
+    "wooper": [
+      {
+        "move": "watergun",
+        "pp": 17
+      },
+      {
+        "move": "slam",
+        "pp": 12
+      }
+    ],
+    "houndour": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "roar",
+        "pp": 14
+      }
+    ],
+    "makuhita": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "whirlwind",
+        "pp": 27
+      }
+    ],
+    "ivysaur": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "vinewhip",
+        "pp": 15
+      }
+    ],
+    "venusaur": [
+      {
+        "move": "petalblizzard",
+        "pp": 12
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "charmeleon": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "scratch",
+        "pp": 28
+      }
+    ],
+    "charizard": [
+      {
+        "move": "airslash",
+        "pp": 15
+      },
+      {
+        "move": "dragonclaw",
+        "pp": 10
+      }
+    ],
+    "wartortle": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "blastoise": [
+      {
+        "move": "flashcannon",
+        "pp": 11
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "caterpie": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "bugbite",
+        "pp": 12
+      }
+    ],
+    "metapod": [
+      {
+        "move": "harden",
+        "pp": 16
+      }
+    ],
+    "butterfree": [
+      {
+        "move": "gust",
+        "pp": 19
+      },
+      {
+        "move": "bugbite",
+        "pp": 12
+      }
+    ],
+    "weedle": [
+      {
+        "move": "poisonsting",
+        "pp": 19
+      },
+      {
+        "move": "bugbite",
+        "pp": 12
+      }
+    ],
+    "kakuna": [
+      {
+        "move": "harden",
+        "pp": 16
+      }
+    ],
+    "beedrill": [
+      {
+        "move": "pursuit",
+        "pp": 17
+      },
+      {
+        "move": "venoshock",
+        "pp": 16
+      }
+    ],
+    "pidgeotto": [
+      {
+        "move": "gust",
+        "pp": 19
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "pidgeot": [
+      {
+        "move": "gust",
+        "pp": 19
+      },
+      {
+        "move": "hurricane",
+        "pp": 13
+      }
+    ],
+    "raticate": [
+      {
+        "move": "quickattack",
+        "pp": 13
+      },
+      {
+        "move": "swordsdance",
+        "pp": 7
+      }
+    ],
+    "fearow": [
+      {
+        "move": "drillrun",
+        "pp": 13
+      },
+      {
+        "move": "peck",
+        "pp": 26
+      }
+    ],
+    "ekans": [
+      {
+        "move": "poisonsting",
+        "pp": 19
+      },
+      {
+        "move": "bite",
+        "pp": 19
+      }
+    ],
+    "arbok": [
+      {
+        "move": "crunch",
+        "pp": 13
+      },
+      {
+        "move": "bite",
+        "pp": 19
+      }
+    ],
+    "raichu": [
+      {
+        "move": "thunderpunch",
+        "pp": 17
+      },
+      {
+        "move": "discharge",
+        "pp": 8
+      }
+    ],
+    "sandslash": [
+      {
+        "move": "crushclaw",
+        "pp": 15
+      },
+      {
+        "move": "defensecurl",
+        "pp": 16
+      }
+    ],
+    "nidoranf": [
+      {
+        "move": "poisonsting",
+        "pp": 19
+      },
+      {
+        "move": "scratch",
+        "pp": 28
+      }
+    ],
+    "nidorina": [
+      {
+        "move": "poisonsting",
+        "pp": 19
+      },
+      {
+        "move": "scratch",
+        "pp": 28
+      }
+    ],
+    "nidoqueen": [
+      {
+        "move": "superpower",
+        "pp": 11
+      },
+      {
+        "move": "bite",
+        "pp": 19
+      }
+    ],
+    "nidoranm": [
+      {
+        "move": "poisonsting",
+        "pp": 19
+      },
+      {
+        "move": "peck",
+        "pp": 26
+      }
+    ],
+    "nidorino": [
+      {
+        "move": "peck",
+        "pp": 26
+      },
+      {
+        "move": "poisonsting",
+        "pp": 19
+      }
+    ],
+    "nidoking": [
+      {
+        "move": "megahorn",
+        "pp": 7
+      },
+      {
+        "move": "earthpower",
+        "pp": 8
+      }
+    ],
+    "clefairy": [
+      {
+        "move": "defensecurl",
+        "pp": 16
+      },
+      {
+        "move": "disarmingvoice",
+        "pp": 15
+      }
+    ],
+    "clefable": [
+      {
+        "move": "defensecurl",
+        "pp": 16
+      },
+      {
+        "move": "disarmingvoice",
+        "pp": 15
+      }
+    ],
+    "vulpix": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "quickattack",
+        "pp": 13
+      }
+    ],
+    "ninetales": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "extrasensory",
+        "pp": 12
+      }
+    ],
+    "jigglypuff": [
+      {
+        "move": "defensecurl",
+        "pp": 16
+      },
+      {
+        "move": "disarmingvoice",
+        "pp": 15
+      }
+    ],
+    "wigglytuff": [
+      {
+        "move": "bodyslam",
+        "pp": 17
+      },
+      {
+        "move": "covet",
+        "pp": 27
+      }
+    ],
+    "golbat": [
+      {
+        "move": "absorb",
+        "pp": 15
+      },
+      {
+        "move": "astonish",
+        "pp": 17
+      }
+    ],
+    "oddish": [
+      {
+        "move": "absorb",
+        "pp": 15
+      },
+      {
+        "move": "acid",
+        "pp": 17
+      }
+    ],
+    "gloom": [
+      {
+        "move": "absorb",
+        "pp": 15
+      },
+      {
+        "move": "acid",
+        "pp": 17
+      }
+    ],
+    "vileplume": [
+      {
+        "move": "petalblizzard",
+        "pp": 12
+      },
+      {
+        "move": "absorb",
+        "pp": 15
+      }
+    ],
+    "paras": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "absorb",
+        "pp": 15
+      }
+    ],
+    "parasect": [
+      {
+        "move": "absorb",
+        "pp": 15
+      },
+      {
+        "move": "crosspoison",
+        "pp": 12
+      }
+    ],
+    "venonat": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "confusion",
+        "pp": 22
+      }
+    ],
+    "venomoth": [
+      {
+        "move": "airslash",
+        "pp": 15
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "diglett": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "astonish",
+        "pp": 17
+      }
+    ],
+    "dugtrio": [
+      {
+        "move": "sandtomb",
+        "pp": 17
+      },
+      {
+        "move": "astonish",
+        "pp": 17
+      }
+    ],
+    "meowth": [
+      {
+        "move": "fakeout",
+        "pp": 12
+      },
+      {
+        "move": "feint",
+        "pp": 12
+      }
+    ],
+    "persian": [
+      {
+        "move": "powergem",
+        "pp": 15
+      },
+      {
+        "move": "fakeout",
+        "pp": 12
+      }
+    ],
+    "psyduck": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "golduck": [
+      {
+        "move": "aquajet",
+        "pp": 18
+      },
+      {
+        "move": "confusion",
+        "pp": 22
+      }
+    ],
+    "mankey": [
+      {
+        "move": "covet",
+        "pp": 27
+      },
+      {
+        "move": "scratch",
+        "pp": 28
+      }
+    ],
+    "primeape": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "crosschop",
+        "pp": 10
+      }
+    ],
+    "arcanine": [
+      {
+        "move": "extremespeed",
+        "pp": 12
+      },
+      {
+        "move": "bite",
+        "pp": 19
+      }
+    ],
+    "poliwag": [
+      {
+        "move": "watergun",
+        "pp": 17
+      },
+      {
+        "move": "pound",
+        "pp": 27
+      }
+    ],
+    "poliwhirl": [
+      {
+        "move": "mudshot",
+        "pp": 13
+      },
+      {
+        "move": "pound",
+        "pp": 27
+      }
+    ],
+    "poliwrath": [
+      {
+        "move": "dynamicpunch",
+        "pp": 13
+      },
+      {
+        "move": "bodyslam",
+        "pp": 17
+      }
+    ],
+    "abra": [],
+    "kadabra": [
+      {
+        "move": "confusion",
+        "pp": 22
+      },
+      {
+        "move": "psybeam",
+        "pp": 17
+      }
+    ],
+    "alakazam": [
+      {
+        "move": "confusion",
+        "pp": 22
+      },
+      {
+        "move": "psybeam",
+        "pp": 17
+      }
+    ],
+    "machop": [
+      {
+        "move": "lowsweep",
+        "pp": 17
+      },
+      {
+        "move": "bulkup",
+        "pp": 16
+      }
+    ],
+    "machoke": [
+      {
+        "move": "lowsweep",
+        "pp": 17
+      },
+      {
+        "move": "bulkup",
+        "pp": 16
+      }
+    ],
+    "machamp": [
+      {
+        "move": "lowsweep",
+        "pp": 17
+      },
+      {
+        "move": "bulkup",
+        "pp": 16
+      }
+    ],
+    "bellsprout": [
+      {
+        "move": "vinewhip",
+        "pp": 15
+      },
+      {
+        "move": "acid",
+        "pp": 17
+      }
+    ],
+    "weepinbell": [
+      {
+        "move": "vinewhip",
+        "pp": 15
+      },
+      {
+        "move": "acid",
+        "pp": 17
+      }
+    ],
+    "victreebel": [
+      {
+        "move": "leafstorm",
+        "pp": 5
+      },
+      {
+        "move": "powerwhip",
+        "pp": 8
+      }
+    ],
+    "tentacool": [
+      {
+        "move": "poisonsting",
+        "pp": 19
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "tentacruel": [
+      {
+        "move": "acid",
+        "pp": 17
+      },
+      {
+        "move": "poisonsting",
+        "pp": 19
+      }
+    ],
+    "graveler": [
+      {
+        "move": "defensecurl",
+        "pp": 16
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "golem": [
+      {
+        "move": "defensecurl",
+        "pp": 16
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "ponyta": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "ember",
+        "pp": 15
+      }
+    ],
+    "rapidash": [
+      {
+        "move": "smartstrike",
+        "pp": 15
+      },
+      {
+        "move": "ember",
+        "pp": 15
+      }
+    ],
+    "slowpoke": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "slowbro": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "magneton": [
+      {
+        "move": "triattack",
+        "pp": 17
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "farfetchd": [
+      {
+        "move": "peck",
+        "pp": 26
+      },
+      {
+        "move": "aerialace",
+        "pp": 8
+      }
+    ],
+    "doduo": [
+      {
+        "move": "peck",
+        "pp": 26
+      },
+      {
+        "move": "quickattack",
+        "pp": 13
+      }
+    ],
+    "dodrio": [
+      {
+        "move": "triattack",
+        "pp": 17
+      },
+      {
+        "move": "peck",
+        "pp": 26
+      }
+    ],
+    "seel": [
+      {
+        "move": "headbutt",
+        "pp": 17
+      },
+      {
+        "move": "icywind",
+        "pp": 13
+      }
+    ],
+    "dewgong": [
+      {
+        "move": "headbutt",
+        "pp": 17
+      },
+      {
+        "move": "icywind",
+        "pp": 13
+      }
+    ],
+    "grimer": [
+      {
+        "move": "pound",
+        "pp": 27
+      },
+      {
+        "move": "harden",
+        "pp": 16
+      }
+    ],
+    "muk": [
+      {
+        "move": "harden",
+        "pp": 16
+      },
+      {
+        "move": "mudslap",
+        "pp": 16
+      }
+    ],
+    "shellder": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "cloyster": [
+      {
+        "move": "aurorabeam",
+        "pp": 17
+      },
+      {
+        "move": "hydropump",
+        "pp": 8
+      }
+    ],
+    "gastly": [
+      {
+        "move": "lick",
+        "pp": 20
+      },
+      {
+        "move": "suckerpunch",
+        "pp": 7
+      }
+    ],
+    "haunter": [
+      {
+        "move": "shadowpunch",
+        "pp": 8
+      },
+      {
+        "move": "lick",
+        "pp": 20
+      }
+    ],
+    "gengar": [
+      {
+        "move": "lick",
+        "pp": 20
+      },
+      {
+        "move": "shadowpunch",
+        "pp": 8
+      }
+    ],
+    "drowzee": [
+      {
+        "move": "pound",
+        "pp": 27
+      },
+      {
+        "move": "confusion",
+        "pp": 22
+      }
+    ],
+    "hypno": [
+      {
+        "move": "confusion",
+        "pp": 22
+      },
+      {
+        "move": "pound",
+        "pp": 27
+      }
+    ],
+    "krabby": [
+      {
+        "move": "watergun",
+        "pp": 17
+      },
+      {
+        "move": "harden",
+        "pp": 16
+      }
+    ],
+    "kingler": [
+      {
+        "move": "hammerarm",
+        "pp": 16
+      },
+      {
+        "move": "harden",
+        "pp": 16
+      }
+    ],
+    "voltorb": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "thundershock",
+        "pp": 17
+      }
+    ],
+    "electrode": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "thundershock",
+        "pp": 17
+      }
+    ],
+    "exeggcute": [
+      {
+        "move": "absorb",
+        "pp": 15
+      },
+      {
+        "move": "reflect",
+        "pp": 15
+      }
+    ],
+    "exeggutor": [
+      {
+        "move": "stomp",
+        "pp": 17
+      },
+      {
+        "move": "absorb",
+        "pp": 15
+      }
+    ],
+    "cubone": [
+      {
+        "move": "mudslap",
+        "pp": 16
+      },
+      {
+        "move": "falseswipe",
+        "pp": 15
+      }
+    ],
+    "marowak": [
+      {
+        "move": "falseswipe",
+        "pp": 15
+      },
+      {
+        "move": "mudslap",
+        "pp": 16
+      }
+    ],
+    "hitmonlee": [
+      {
+        "move": "brickbreak",
+        "pp": 12
+      },
+      {
+        "move": "fakeout",
+        "pp": 12
+      }
+    ],
+    "hitmonchan": [
+      {
+        "move": "drainpunch",
+        "pp": 8
+      },
+      {
+        "move": "fakeout",
+        "pp": 12
+      }
+    ],
+    "lickitung": [
+      {
+        "move": "defensecurl",
+        "pp": 16
+      },
+      {
+        "move": "lick",
+        "pp": 20
+      }
+    ],
+    "koffing": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "smog",
+        "pp": 17
+      }
+    ],
+    "weezing": [
+      {
+        "move": "heatwave",
+        "pp": 8
+      },
+      {
+        "move": "smog",
+        "pp": 17
+      }
+    ],
+    "rhyhorn": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "smackdown",
+        "pp": 15
+      }
+    ],
+    "rhydon": [
+      {
+        "move": "hammerarm",
+        "pp": 16
+      },
+      {
+        "move": "bulldoze",
+        "pp": 17
+      }
+    ],
+    "chansey": [
+      {
+        "move": "covet",
+        "pp": 27
+      },
+      {
+        "move": "defensecurl",
+        "pp": 16
+      }
+    ],
+    "tangela": [
+      {
+        "move": "absorb",
+        "pp": 15
+      },
+      {
+        "move": "bind",
+        "pp": 17
+      }
+    ],
+    "kangaskhan": [
+      {
+        "move": "pound",
+        "pp": 27
+      },
+      {
+        "move": "fakeout",
+        "pp": 12
+      }
+    ],
+    "horsea": [
+      {
+        "move": "watergun",
+        "pp": 17
+      },
+      {
+        "move": "twister",
+        "pp": 15
+      }
+    ],
+    "seadra": [
+      {
+        "move": "twister",
+        "pp": 15
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "goldeen": [
+      {
+        "move": "peck",
+        "pp": 26
+      },
+      {
+        "move": "waterpulse",
+        "pp": 12
+      }
+    ],
+    "seaking": [
+      {
+        "move": "peck",
+        "pp": 26
+      },
+      {
+        "move": "waterpulse",
+        "pp": 12
+      }
+    ],
+    "staryu": [
+      {
+        "move": "harden",
+        "pp": 16
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "starmie": [
+      {
+        "move": "brine",
+        "pp": 8
+      },
+      {
+        "move": "harden",
+        "pp": 16
+      }
+    ],
+    "mrmime": [
+      {
+        "move": "pound",
+        "pp": 27
+      },
+      {
+        "move": "quickguard",
+        "pp": 13
+      }
+    ],
+    "scyther": [
+      {
+        "move": "quickattack",
+        "pp": 13
+      },
+      {
+        "move": "falseswipe",
+        "pp": 15
+      }
+    ],
+    "jynx": [
+      {
+        "move": "lick",
+        "pp": 20
+      },
+      {
+        "move": "pound",
+        "pp": 27
+      }
+    ],
+    "electabuzz": [
+      {
+        "move": "quickattack",
+        "pp": 13
+      },
+      {
+        "move": "thundershock",
+        "pp": 17
+      }
+    ],
+    "magmar": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "smog",
+        "pp": 17
+      }
+    ],
+    "pinsir": [
+      {
+        "move": "harden",
+        "pp": 16
+      },
+      {
+        "move": "visegrip",
+        "pp": 22
+      }
+    ],
+    "tauros": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "hornattack",
+        "pp": 18
+      }
+    ],
+    "magikarp": [
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "gyarados": [
+      {
+        "move": "bite",
+        "pp": 19
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "lapras": [
+      {
+        "move": "watergun",
+        "pp": 17
+      },
+      {
+        "move": "iceshard",
+        "pp": 16
+      }
+    ],
+    "ditto": [],
+    "eevee": [
+      {
+        "move": "covet",
+        "pp": 27
+      },
+      {
+        "move": "helpinghand",
+        "pp": 16
+      }
+    ],
+    "vaporeon": [
+      {
+        "move": "watergun",
+        "pp": 17
+      },
+      {
+        "move": "bite",
+        "pp": 19
+      }
+    ],
+    "jolteon": [
+      {
+        "move": "thundershock",
+        "pp": 17
+      },
+      {
+        "move": "bite",
+        "pp": 19
+      }
+    ],
+    "flareon": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "covet",
+        "pp": 27
+      }
+    ],
+    "porygon": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "thundershock",
+        "pp": 17
+      }
+    ],
+    "omanyte": [
+      {
+        "move": "bind",
+        "pp": 17
+      },
+      {
+        "move": "withdraw",
+        "pp": 16
+      }
+    ],
+    "omastar": [
+      {
+        "move": "crunch",
+        "pp": 13
+      },
+      {
+        "move": "bind",
+        "pp": 17
+      }
+    ],
+    "kabuto": [
+      {
+        "move": "absorb",
+        "pp": 15
+      },
+      {
+        "move": "harden",
+        "pp": 16
+      }
+    ],
+    "kabutops": [
+      {
+        "move": "slash",
+        "pp": 11
+      },
+      {
+        "move": "absorb",
+        "pp": 15
+      }
+    ],
+    "aerodactyl": [
+      {
+        "move": "ancientpower",
+        "pp": 12
+      },
+      {
+        "move": "bite",
+        "pp": 19
+      }
+    ],
+    "snorlax": [
+      {
+        "move": "covet",
+        "pp": 27
+      },
+      {
+        "move": "defensecurl",
+        "pp": 16
+      }
+    ],
+    "articuno": [
+      {
+        "move": "gust",
+        "pp": 19
+      },
+      {
+        "move": "powdersnow",
+        "pp": 10
+      }
+    ],
+    "zapdos": [
+      {
+        "move": "peck",
+        "pp": 26
+      },
+      {
+        "move": "thundershock",
+        "pp": 17
+      }
+    ],
+    "moltres": [
+      {
+        "move": "gust",
+        "pp": 19
+      },
+      {
+        "move": "ember",
+        "pp": 15
+      }
+    ],
+    "dragonair": [
+      {
+        "move": "twister",
+        "pp": 15
+      },
+      {
+        "move": "dragontail",
+        "pp": 13
+      }
+    ],
+    "dragonite": [
+      {
+        "move": "hurricane",
+        "pp": 13
+      },
+      {
+        "move": "extremespeed",
+        "pp": 12
+      }
+    ],
+    "mewtwo": [
+      {
+        "move": "confusion",
+        "pp": 22
+      },
+      {
+        "move": "swift",
+        "pp": 8
+      }
+    ],
+    "mew": [
+      {
+        "move": "pound",
+        "pp": 27
+      },
+      {
+        "move": "ancientpower",
+        "pp": 12
+      }
+    ],
+    "bayleef": [
+      {
+        "move": "razorleaf",
+        "pp": 12
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "meganium": [
+      {
+        "move": "petalblizzard",
+        "pp": 12
+      },
+      {
+        "move": "razorleaf",
+        "pp": 12
+      }
+    ],
+    "quilava": [
+      {
+        "move": "tackle",
+        "pp": 30
+      },
+      {
+        "move": "ember",
+        "pp": 15
+      }
+    ],
+    "typhlosion": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "croconaw": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "feraligatr": [
+      {
+        "move": "scratch",
+        "pp": 28
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "grovyle": [
+      {
+        "move": "energyball",
+        "pp": 11
+      },
+      {
+        "move": "falseswipe",
+        "pp": 15
+      }
+    ],
+    "sceptile": [
+      {
+        "move": "leafblade",
+        "pp": 12
+      },
+      {
+        "move": "energyball",
+        "pp": 11
+      }
+    ],
+    "combusken": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "flamethrower",
+        "pp": 12
+      }
+    ],
+    "blaziken": [
+      {
+        "move": "blazekick",
+        "pp": 13
+      },
+      {
+        "move": "ember",
+        "pp": 15
+      }
+    ],
+    "marshtomp": [
+      {
+        "move": "mudshot",
+        "pp": 13
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ],
+    "swampert": [
+      {
+        "move": "hammerarm",
+        "pp": 16
+      },
+      {
+        "move": "mudshot",
+        "pp": 13
+      }
+    ],
+    "quagsire": [
+      {
+        "move": "mudshot",
+        "pp": 13
+      },
+      {
+        "move": "watergun",
+        "pp": 17
+      }
+    ],
+    "houndoom": [
+      {
+        "move": "ember",
+        "pp": 15
+      },
+      {
+        "move": "smog",
+        "pp": 17
+      }
+    ],
+    "hariyama": [
+      {
+        "move": "brine",
+        "pp": 8
+      },
+      {
+        "move": "tackle",
+        "pp": 30
+      }
+    ]
+  }
+}

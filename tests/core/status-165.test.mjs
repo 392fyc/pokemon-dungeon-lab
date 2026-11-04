@@ -300,7 +300,7 @@ test('P1 maximum PP is the official basePp for every move of every species; Tera
     const official=defs[m.move].official?.basePp;assert.equal(m.pp,official?Number(official):40,`${sp.id}/${m.move}`);assert.notEqual(m.move,'terablast');
   }
   assert.equal(SPECIES.treecko.kit.find(k=>k.move==='leafage').pp,40);
-  assert.equal(TM_MOVES.length,6);assert.equal(TM_MOVES_V3.length,9);assert.equal(ALL_TM_MOVES.length,9);assert.ok(!ALL_TM_MOVES.includes('terablast'));
+  assert.equal(TM_MOVES.length,6);assert.equal(TM_MOVES_V3.length,9);assert.equal(ALL_TM_MOVES.length,15);assert.ok(!ALL_TM_MOVES.includes('terablast'));
   assert.equal(learnableMove('geodude','terablast'),undefined);
   const u=recruitUnit('N1','pidgey',6);assert.deepEqual(u.pp,u.maxPp);assert.equal(u.hp,Math.max(1,Math.floor(u.maxHp/2)));
 });

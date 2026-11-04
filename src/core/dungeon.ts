@@ -21,7 +21,8 @@ export type EnemySpec={id:string;species:string;level:number;hp:number;pos:Cell;
 export type Room={x:number;y:number;w:number;h:number};
 export type AdventureRoomType='challenge'|'commission'|'blessing'|'item';
 export type AdventureRoomState='idle'|'sealed'|'cleared'|'done';
-export type AdventureItemId='bigBerry'|'teamTonic';
+type LegacyAdventureItemId='bigBerry'|'teamTonic';
+export type AdventureItemId=LegacyAdventureItemId|'violentSeed'|'maxElixir';
 export type ChallengeRewardType='currency'|'item'|'invite'|'tm'|'blessing';
 export type AdventureRoom={room:number;type:AdventureRoomType;state:AdventureRoomState;interaction:Cell;doors:Cell[];sealedCells:Cell[];
   enemyIds:string[];reward:ChallengeRewardType|null;rewardCurrency:number|null;item:AdventureItemId|null;rewardItem:AdventureItemId|null;rewardMove:string|null};
@@ -105,7 +106,7 @@ export function serviceRoll(seed:number,floors:number):ServiceRoll {
   return {shop:shopOn?{level:shopLevel,tmDraw}:null,exchange:exOn?{level:exLevel}:null};
 }
 type Rooms83Data={roomTypeWeights:Record<AdventureRoomType,number>;challengeRewardWeights:Record<ChallengeRewardType,number>;
-  itemWeights:Record<AdventureItemId,number>;challengeCurrencyAmount:number;
+  itemWeights:Record<LegacyAdventureItemId,number>;roomItemWeights:Record<AdventureItemId,number>;challengeCurrencyAmount:number;
 };
 const ROOMS_83=rooms83 as Rooms83Data;
 const ADVENTURE_STREAMS={roomItem:0x4C957F2D,challengeCount:0x165667B1,challengeSpecies:0x9E3779B9,
@@ -153,11 +154,11 @@ function makeAdventureRooms(seed:number,level:number,layout:AdventureLayout):Adv
       const outside={x:c.x+d.x,y:c.y+d.y};return !inRoom(outside,room)&&walkable.has(k(outside));
     })).map(c=>({x:c.x,y:c.y}));
     return {room:roomIndex,type,state:'idle',interaction:{x:interaction.x,y:interaction.y},doors,sealedCells:[],enemyIds:[],reward:null,rewardCurrency:null,
-      item:type==='item'?drawWeighted(ROOMS_83.itemWeights,itemRandom):null,rewardItem:null,rewardMove:null};
+      item:type==='item'?drawWeighted(ROOMS_83.roomItemWeights,itemRandom):null,rewardItem:null,rewardMove:null};
   });
 }
 /** Pre-draw a challenge fight and its reward from streams independent of map, ordinary enemies, and expedition recruitment. */
-export function generateChallengeEncounter(seed:number,level:number,difficulty:Difficulty,bossEnabled:boolean,tmPoolVersion?:3):ChallengeEncounter {
+export function generateChallengeEncounter(seed:number,level:number,difficulty:Difficulty,bossEnabled:boolean,tmPoolVersion?:3|4):ChallengeEncounter {
   const countRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeCount));
   const speciesRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeSpecies));
   const levelRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeLevel));

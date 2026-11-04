@@ -25,18 +25,21 @@
   "aerialace": "Physical",
   "aircutter": "Special",
   "airslash": "Special",
+  "amnesia": "Status",
   "ancientpower": "Special",
   "aquajet": "Physical",
   "aquatail": "Physical",
   "astonish": "Physical",
   "aurasphere": "Special",
   "aurorabeam": "Special",
+  "babydolleyes": "Status",
   "belch": "Special",
   "bind": "Physical",
   "bite": "Physical",
   "blazekick": "Physical",
   "blizzard": "Special",
   "bodyslam": "Physical",
+  "bravebird": "Physical",
   "brickbreak": "Physical",
   "brine": "Special",
   "bubblebeam": "Special",
@@ -45,11 +48,17 @@
   "bulkup": "Status",
   "bulldoze": "Physical",
   "bulletpunch": "Physical",
+  "calmmind": "Status",
   "chargebeam": "Special",
+  "charm": "Status",
   "circlethrow": "Physical",
   "clearsmog": "Special",
   "closecombat": "Physical",
+  "coil": "Status",
+  "confide": "Status",
+  "confuseray": "Status",
   "confusion": "Special",
+  "cosmicpower": "Status",
   "covet": "Physical",
   "crabhammer": "Physical",
   "crosschop": "Physical",
@@ -61,9 +70,12 @@
   "defensecurl": "Status",
   "disarmingvoice": "Special",
   "discharge": "Special",
+  "doubleedge": "Physical",
+  "doubleteam": "Status",
   "dracometeor": "Special",
   "dragonbreath": "Special",
   "dragonclaw": "Physical",
+  "dragondance": "Status",
   "dragonpulse": "Special",
   "dragonrush": "Physical",
   "dragontail": "Physical",
@@ -73,6 +85,7 @@
   "drillrun": "Physical",
   "dynamicpunch": "Physical",
   "earthpower": "Special",
+  "eerieimpulse": "Status",
   "electroweb": "Special",
   "ember": "Special",
   "energyball": "Special",
@@ -80,7 +93,9 @@
   "extremespeed": "Physical",
   "facade": "Physical",
   "fakeout": "Physical",
+  "faketears": "Status",
   "falseswipe": "Physical",
+  "featherdance": "Status",
   "feint": "Physical",
   "feintattack": "Physical",
   "fellstinger": "Physical",
@@ -91,6 +106,7 @@
   "flamecharge": "Physical",
   "flamethrower": "Special",
   "flamewheel": "Physical",
+  "flareblitz": "Physical",
   "flashcannon": "Special",
   "focusblast": "Special",
   "focuspunch": "Physical",
@@ -98,14 +114,18 @@
   "foulplay": "Physical",
   "freezedry": "Special",
   "gigadrain": "Special",
+  "glare": "Status",
+  "growl": "Status",
   "gunkshot": "Physical",
   "gust": "Special",
   "hammerarm": "Physical",
   "harden": "Status",
   "headbutt": "Physical",
+  "headsmash": "Physical",
   "heatwave": "Special",
   "helpinghand": "Status",
   "highhorsepower": "Physical",
+  "honeclaws": "Status",
   "hornattack": "Physical",
   "hurricane": "Special",
   "hydropump": "Special",
@@ -123,12 +143,14 @@
   "irondefense": "Status",
   "ironhead": "Physical",
   "irontail": "Physical",
+  "kinesis": "Status",
   "lastresort": "Physical",
   "lavaplume": "Special",
   "leafage": "Physical",
   "leafblade": "Physical",
   "leafstorm": "Special",
   "leechlife": "Physical",
+  "leer": "Status",
   "lick": "Physical",
   "lightscreen": "Status",
   "liquidation": "Physical",
@@ -140,22 +162,28 @@
   "megakick": "Physical",
   "megapunch": "Physical",
   "metalclaw": "Physical",
+  "metalsound": "Status",
   "meteormash": "Physical",
+  "minimize": "Status",
   "moonblast": "Special",
   "muddywater": "Special",
   "mudshot": "Special",
   "mudslap": "Special",
   "mysticalfire": "Special",
+  "nastyplot": "Status",
   "nightslash": "Physical",
   "nuzzle": "Physical",
   "overheat": "Special",
   "payday": "Physical",
   "peck": "Physical",
   "petalblizzard": "Physical",
+  "playnice": "Status",
   "playrough": "Physical",
   "pluck": "Physical",
   "poisonfang": "Physical",
+  "poisongas": "Status",
   "poisonjab": "Physical",
+  "poisonpowder": "Status",
   "poisonsting": "Physical",
   "poisontail": "Physical",
   "pound": "Physical",
@@ -171,24 +199,29 @@
   "pursuit": "Physical",
   "quickattack": "Physical",
   "quickguard": "Status",
+  "quiverdance": "Status",
   "rapidspin": "Physical",
   "razorleaf": "Physical",
   "razorshell": "Physical",
+  "recover": "Status",
   "reflect": "Status",
   "retaliate": "Physical",
   "roar": "Status",
   "rockslide": "Physical",
   "rockthrow": "Physical",
   "rocktomb": "Physical",
+  "sandattack": "Status",
   "sandtomb": "Physical",
   "scald": "Special",
   "scratch": "Physical",
+  "screech": "Status",
   "seedbomb": "Physical",
   "shadowball": "Special",
   "shadowclaw": "Physical",
   "shadowpunch": "Physical",
   "shadowsneak": "Physical",
   "shockwave": "Special",
+  "slackoff": "Status",
   "slam": "Physical",
   "slash": "Physical",
   "sludge": "Special",
@@ -197,19 +230,29 @@
   "smackdown": "Physical",
   "smartstrike": "Physical",
   "smog": "Special",
+  "smokescreen": "Status",
   "snarl": "Special",
+  "softboiled": "Status",
   "spark": "Physical",
   "steelwing": "Physical",
   "stomp": "Physical",
   "stoneedge": "Physical",
   "stormthrow": "Physical",
   "strugglebug": "Special",
+  "stunspore": "Status",
+  "submission": "Physical",
   "suckerpunch": "Physical",
   "superpower": "Physical",
+  "supersonic": "Status",
   "surf": "Special",
+  "sweetkiss": "Status",
+  "sweetscent": "Status",
   "swift": "Special",
   "swordsdance": "Status",
+  "synthesis": "Status",
   "tackle": "Physical",
+  "tailwhip": "Status",
+  "takedown": "Physical",
   "terablast": "Special",
   "thief": "Physical",
   "throatchop": "Physical",
@@ -218,6 +261,9 @@
   "thunderfang": "Physical",
   "thunderpunch": "Physical",
   "thundershock": "Special",
+  "thunderwave": "Status",
+  "tickle": "Status",
+  "toxic": "Status",
   "triattack": "Special",
   "twister": "Special",
   "vacuumwave": "Special",
@@ -230,8 +276,12 @@
   "weatherball": "Special",
   "whirlpool": "Special",
   "whirlwind": "Status",
+  "wildcharge": "Physical",
+  "willowisp": "Status",
   "wingattack": "Physical",
   "withdraw": "Status",
+  "woodhammer": "Physical",
+  "workup": "Status",
   "xscissor": "Physical",
   "zapcannon": "Special",
   "zenheadbutt": "Physical"
@@ -357,6 +407,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "amnesia": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:spd:+2"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "ancientpower": {
    "range": "front",
    "target": "enemy",
@@ -459,6 +526,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "babydolleyes": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "SMD",
+   "gameName": "超不可思议的迷宫",
+   "official": {
+    "basePp": "15",
+    "accuracy": "85%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:atk:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "belch": {
    "range": "front",
    "target": "enemy",
@@ -560,6 +644,24 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "bravebird": {
+   "range": "front",
+   "target": "enemy",
+   "power": 42,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "6",
+    "accuracy": "88%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "damage",
+    "recoil"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
   },
   "brickbreak": {
    "range": "front",
@@ -698,6 +800,24 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "calmmind": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "19",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:spa:+1",
+    "stage:spd:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "chargebeam": {
    "range": "front",
    "target": "enemy",
@@ -714,6 +834,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "charm": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "75%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:atk:-2"
+   ],
+   "source": "Bulbapedia",
+   "note": "探险队使用独立倍率，本作没有该系统；依作品优先级仍无可对应阶段的效果，改取 Showdown 阶段 −2（#191）。"
   },
   "circlethrow": {
    "range": "front",
@@ -767,6 +904,59 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "coil": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDGtI",
+   "gameName": "无限之迷宫",
+   "official": {
+    "basePp": "15",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:atk:+1",
+    "stage:def:+1",
+    "stage:acc:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "confide": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "SMD",
+   "gameName": "超不可思议的迷宫",
+   "official": {
+    "basePp": "20",
+    "accuracy": "—%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:spa:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "confuseray": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "13",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "status:confusion"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "confusion": {
    "range": "front",
    "target": "enemy",
@@ -783,6 +973,24 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "cosmicpower": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "14",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:def:+1",
+    "stage:spd:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
   },
   "covet": {
    "range": "front",
@@ -971,6 +1179,41 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "doubleedge": {
+   "range": "front",
+   "target": "enemy",
+   "power": 20,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "12",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage",
+    "recoil"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "doubleteam": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:eva:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "dracometeor": {
    "range": "room",
    "target": "enemy",
@@ -1021,6 +1264,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "dragondance": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:atk:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": "忽略速度部分"
   },
   "dragonpulse": {
    "range": "front",
@@ -1178,6 +1438,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "eerieimpulse": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "SMD",
+   "gameName": "超不可思议的迷宫",
+   "official": {
+    "basePp": "17",
+    "accuracy": "100%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "stage:spa:-2"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "electroweb": {
    "range": "front",
    "target": "enemy",
@@ -1297,6 +1574,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "faketears": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:spd:-2"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "falseswipe": {
    "range": "front",
    "target": "enemy",
@@ -1313,6 +1607,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "featherdance": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:atk:-2"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
   },
   "feint": {
    "range": "front",
@@ -1484,6 +1795,24 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "flareblitz": {
+   "range": "front",
+   "target": "enemy",
+   "power": 32,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "6",
+    "accuracy": "88%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage",
+    "recoil"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "flashcannon": {
    "range": "front",
    "target": "enemy",
@@ -1604,6 +1933,40 @@
    "source": "Bulbapedia",
    "note": ""
   },
+  "glare": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "status:par"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "growl": {
+   "range": "room",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "20",
+    "accuracy": "100%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "stage:atk:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "gunkshot": {
    "range": "line10",
    "target": "all",
@@ -1689,6 +2052,24 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "headsmash": {
+   "range": "front",
+   "target": "enemy",
+   "power": 50,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "5",
+    "accuracy": "80%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage",
+    "recoil"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "heatwave": {
    "range": "room",
    "target": "enemy",
@@ -1739,6 +2120,24 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "honeclaws": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDGtI",
+   "gameName": "无限之迷宫",
+   "official": {
+    "basePp": "15",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:atk:+1",
+    "stage:acc:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
   },
   "hornattack": {
    "range": "front",
@@ -2029,6 +2428,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "kinesis": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:acc:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "lastresort": {
    "range": "front",
    "target": "enemy",
@@ -2124,6 +2540,23 @@
    "effects": [
     "damage",
     "drain"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "leer": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "27",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:def:-1"
    ],
    "source": "Bulbapedia",
    "note": ""
@@ -2316,6 +2749,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "metalsound": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "100%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "stage:spd:-3"
+   ],
+   "source": "Bulbapedia",
+   "note": "能力级数取 Bulbapedia 探险队段落，覆盖 Showdown 的主系列级数。"
+  },
   "meteormash": {
    "range": "line10",
    "target": "all",
@@ -2332,6 +2782,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "minimize": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "27",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:eva:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": "能力级数取 Bulbapedia 探险队段落，覆盖 Showdown 的主系列级数。"
   },
   "moonblast": {
    "range": "front",
@@ -2417,6 +2884,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "nastyplot": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "20",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:spa:+2"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
   },
   "nightslash": {
    "range": "front",
@@ -2520,6 +3004,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "playnice": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "SMD",
+   "gameName": "超不可思议的迷宫",
+   "official": {
+    "basePp": "20",
+    "accuracy": "—%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:atk:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "playrough": {
    "range": "front",
    "target": "enemy",
@@ -2571,6 +3072,23 @@
    "source": "Bulbapedia",
    "note": "省略剧毒"
   },
+  "poisongas": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "27",
+    "accuracy": "88%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "status:psn"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "poisonjab": {
    "range": "front",
    "target": "enemy",
@@ -2587,6 +3105,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "poisonpowder": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "status:psn"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
   },
   "poisonsting": {
    "range": "front",
@@ -2843,6 +3378,24 @@
    "source": "Bulbapedia",
    "note": "固定取无限迷宫（GTI）同房间全队版；官方持续1回合，本作仅持续至本回合敌方阶段结束。"
   },
+  "quiverdance": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDGtI",
+   "gameName": "无限之迷宫",
+   "official": {
+    "basePp": "13",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:spa:+1",
+    "stage:spd:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": "忽略速度部分"
+  },
   "rapidspin": {
    "range": "front",
    "target": "enemy",
@@ -2893,6 +3446,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "recover": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "12",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "heal:1:2"
+   ],
+   "source": "Bulbapedia",
+   "note": "回复各目标一半最大HP；生蛋沿用原版房间全队，光合作用不随天气。"
   },
   "reflect": {
    "range": "room",
@@ -2996,6 +3566,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "sandattack": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "20",
+    "accuracy": "80%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "stage:acc:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "sandtomb": {
    "range": "front",
    "target": "enemy",
@@ -3046,6 +3633,23 @@
    ],
    "source": "Bulbapedia",
    "note": ""
+  },
+  "screech": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "100%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "stage:def:-2"
+   ],
+   "source": "Bulbapedia",
+   "note": "探险队使用独立倍率，本作没有该系统；依作品优先级仍无可对应阶段的效果，改取 Showdown 阶段 −2（#191）。"
   },
   "seedbomb": {
    "range": "front",
@@ -3148,6 +3752,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "slackoff": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "heal:1:2"
+   ],
+   "source": "Bulbapedia",
+   "note": "回复各目标一半最大HP；生蛋沿用原版房间全队，光合作用不随天气。"
   },
   "slam": {
    "range": "front",
@@ -3285,6 +3906,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "smokescreen": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "10",
+    "accuracy": "100%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "stage:acc:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": "探险队使用必定落空状态，本作没有该状态；效果取后作超不可思议的迷宫的命中阶段 −1（#191），射程与PP仍按所选原版数据。"
+  },
   "snarl": {
    "range": "around",
    "target": "enemy",
@@ -3301,6 +3939,23 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "softboiled": {
+   "range": "room",
+   "target": "party",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "15",
+    "accuracy": "—%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "heal:1:2"
+   ],
+   "source": "Bulbapedia",
+   "note": "回复各目标一半最大HP；生蛋沿用原版房间全队，光合作用不随天气。"
   },
   "spark": {
    "range": "front",
@@ -3404,6 +4059,41 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "stunspore": {
+   "range": "around",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "88%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "status:par"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "submission": {
+   "range": "front",
+   "target": "enemy",
+   "power": 15,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "84%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage",
+    "recoil"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "suckerpunch": {
    "range": "front2",
    "target": "enemy",
@@ -3438,6 +4128,23 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "supersonic": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "10",
+    "accuracy": "100%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "status:confusion"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "surf": {
    "range": "front",
    "target": "enemy",
@@ -3454,6 +4161,40 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "sweetkiss": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "15",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "status:confusion"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "sweetscent": {
+   "range": "room",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "100%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "stage:eva:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": "能力级数取 Bulbapedia 探险队段落，覆盖 Showdown 的主系列级数。"
   },
   "swift": {
    "range": "front",
@@ -3489,6 +4230,23 @@
    "source": "Bulbapedia",
    "note": ""
   },
+  "synthesis": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "12",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "heal:1:2"
+   ],
+   "source": "Bulbapedia",
+   "note": "回复各目标一半最大HP；生蛋沿用原版房间全队，光合作用不随天气。"
+  },
   "tackle": {
    "range": "front",
    "target": "enemy",
@@ -3502,6 +4260,41 @@
    },
    "effects": [
     "damage"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "tailwhip": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "22",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:def:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "takedown": {
+   "range": "front",
+   "target": "enemy",
+   "power": 8,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "19",
+    "accuracy": "88%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage",
+    "recoil"
    ],
    "source": "Bulbapedia",
    "note": ""
@@ -3637,6 +4430,58 @@
    ],
    "source": "Bulbapedia",
    "note": "省略麻痹"
+  },
+  "thunderwave": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "65%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "status:par"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "tickle": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "100%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "stage:atk:-1",
+    "stage:def:-1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "toxic": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "12",
+    "accuracy": "88%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "status:tox"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
   },
   "triattack": {
    "range": "front",
@@ -3842,6 +4687,41 @@
    "source": "Bulbapedia",
    "note": ""
   },
+  "wildcharge": {
+   "range": "front",
+   "target": "enemy",
+   "power": 20,
+   "game": "MDGtI",
+   "gameName": "无限之迷宫",
+   "official": {
+    "basePp": "15",
+    "accuracy": "95%",
+    "cutsCorners": "No"
+   },
+   "effects": [
+    "damage",
+    "recoil"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "willowisp": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "100%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "status:brn"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
   "wingattack": {
    "range": "front",
    "target": "enemy",
@@ -3872,6 +4752,42 @@
    },
    "effects": [
     "stage:def:+1"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "woodhammer": {
+   "range": "front",
+   "target": "enemy",
+   "power": 36,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "10",
+    "accuracy": "100%",
+    "cutsCorners": "Yes"
+   },
+   "effects": [
+    "damage",
+    "recoil"
+   ],
+   "source": "Bulbapedia",
+   "note": ""
+  },
+  "workup": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDGtI",
+   "gameName": "无限之迷宫",
+   "official": {
+    "basePp": "17",
+    "accuracy": "—%",
+    "cutsCorners": "-"
+   },
+   "effects": [
+    "stage:atk:+1",
+    "stage:spa:+1"
    ],
    "source": "Bulbapedia",
    "note": ""

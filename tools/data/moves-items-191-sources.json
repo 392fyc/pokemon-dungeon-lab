@@ -1,0 +1,828 @@
+{
+  "retrieved": "2026-11-04",
+  "scope": "8.9a (#191), private build",
+  "showdownCommit": "ccfaa20f32af363569cd21a9d501b2bc1ded26b1",
+  "moves": {
+    "amnesia": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "amnesia",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Amnesia%20(move)&oldid=4646667",
+        "revision": 4646667
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Amnesia%20(move)&oldid=4646667",
+        "revision": 4646667
+      }
+    },
+    "babydolleyes": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "babydolleyes",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Baby-Doll%20Eyes%20(move)&oldid=4622934",
+        "revision": 4622934
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Baby-Doll%20Eyes%20(move)&oldid=4622934",
+        "revision": 4622934
+      }
+    },
+    "bravebird": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "bravebird",
+        "fields": [
+          "recoil"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Brave%20Bird%20(move)&oldid=4645387",
+        "revision": 4645387
+      }
+    },
+    "calmmind": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "calmmind",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Calm%20Mind%20(move)&oldid=4635977",
+        "revision": 4635977
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Calm%20Mind%20(move)&oldid=4635977",
+        "revision": 4635977
+      }
+    },
+    "charm": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "charm",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Charm%20(move)&oldid=4639922",
+        "revision": 4639922
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Charm%20(move)&oldid=4639922",
+        "revision": 4639922
+      },
+      "exception": "独立倍率不进入本作；各取Showdown阶段-2。"
+    },
+    "coil": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "coil",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Coil%20(move)&oldid=4634751",
+        "revision": 4634751
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Coil%20(move)&oldid=4634751",
+        "revision": 4634751
+      }
+    },
+    "confide": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "confide",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Confide%20(move)&oldid=4403428",
+        "revision": 4403428
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Confide%20(move)&oldid=4403428",
+        "revision": 4403428
+      }
+    },
+    "confuseray": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "confuseray",
+        "fields": [
+          "volatileStatus"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Confuse%20Ray%20(move)&oldid=4651065",
+        "revision": 4651065
+      }
+    },
+    "cosmicpower": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "cosmicpower",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Cosmic%20Power%20(move)&oldid=4632967",
+        "revision": 4632967
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Cosmic%20Power%20(move)&oldid=4632967",
+        "revision": 4632967
+      }
+    },
+    "doubleedge": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "doubleedge",
+        "fields": [
+          "recoil"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Double-Edge%20(move)&oldid=4637918",
+        "revision": 4637918
+      }
+    },
+    "doubleteam": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "doubleteam",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Double%20Team%20(move)&oldid=4651117",
+        "revision": 4651117
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Double%20Team%20(move)&oldid=4651117",
+        "revision": 4651117
+      }
+    },
+    "dragondance": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "dragondance",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Dragon%20Dance%20(move)&oldid=4635986",
+        "revision": 4635986
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Dragon%20Dance%20(move)&oldid=4635986",
+        "revision": 4635986
+      }
+    },
+    "eerieimpulse": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "eerieimpulse",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Eerie%20Impulse%20(move)&oldid=4628132",
+        "revision": 4628132
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Eerie%20Impulse%20(move)&oldid=4628132",
+        "revision": 4628132
+      }
+    },
+    "faketears": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "faketears",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Fake%20Tears%20(move)&oldid=4643725",
+        "revision": 4643725
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Fake%20Tears%20(move)&oldid=4643725",
+        "revision": 4643725
+      }
+    },
+    "featherdance": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "featherdance",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Feather%20Dance%20(move)&oldid=4632495",
+        "revision": 4632495
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Feather%20Dance%20(move)&oldid=4632495",
+        "revision": 4632495
+      }
+    },
+    "flareblitz": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "flareblitz",
+        "fields": [
+          "recoil"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Flare%20Blitz%20(move)&oldid=4646913",
+        "revision": 4646913
+      }
+    },
+    "glare": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "glare",
+        "fields": [
+          "status"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Glare%20(move)&oldid=4646494",
+        "revision": 4646494
+      }
+    },
+    "growl": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "growl",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Growl%20(move)&oldid=4642534",
+        "revision": 4642534
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Growl%20(move)&oldid=4642534",
+        "revision": 4642534
+      }
+    },
+    "headsmash": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "headsmash",
+        "fields": [
+          "recoil"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Head%20Smash%20(move)&oldid=4628293",
+        "revision": 4628293
+      }
+    },
+    "honeclaws": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "honeclaws",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Hone%20Claws%20(move)&oldid=4622973",
+        "revision": 4622973
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Hone%20Claws%20(move)&oldid=4622973",
+        "revision": 4622973
+      }
+    },
+    "kinesis": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "kinesis",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Kinesis%20(move)&oldid=4646666",
+        "revision": 4646666
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Kinesis%20(move)&oldid=4646666",
+        "revision": 4646666
+      }
+    },
+    "leer": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "leer",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Leer%20(move)&oldid=4623919",
+        "revision": 4623919
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Leer%20(move)&oldid=4623919",
+        "revision": 4623919
+      }
+    },
+    "metalsound": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "metalsound",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Metal%20Sound%20(move)&oldid=4632656",
+        "revision": 4632656
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Metal%20Sound%20(move)&oldid=4632656",
+        "revision": 4632656
+      },
+      "stageRule": {
+        "spd": -3
+      }
+    },
+    "minimize": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "minimize",
+        "fields": [
+          "volatileStatus",
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Minimize%20(move)&oldid=4650411",
+        "revision": 4650411
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Minimize%20(move)&oldid=4650411",
+        "revision": 4650411
+      },
+      "stageRule": {
+        "eva": 1
+      }
+    },
+    "nastyplot": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "nastyplot",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Nasty%20Plot%20(move)&oldid=4628357",
+        "revision": 4628357
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Nasty%20Plot%20(move)&oldid=4628357",
+        "revision": 4628357
+      }
+    },
+    "playnice": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "playnice",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Play%20Nice%20(move)&oldid=4621670",
+        "revision": 4621670
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Play%20Nice%20(move)&oldid=4621670",
+        "revision": 4621670
+      }
+    },
+    "poisongas": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "poisongas",
+        "fields": [
+          "status"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Poison%20Gas%20(move)&oldid=4649058",
+        "revision": 4649058
+      }
+    },
+    "poisonpowder": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "poisonpowder",
+        "fields": [
+          "status"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Poison%20Powder%20(move)&oldid=4625922",
+        "revision": 4625922
+      }
+    },
+    "quiverdance": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "quiverdance",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Quiver%20Dance%20(move)&oldid=4620860",
+        "revision": 4620860
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Quiver%20Dance%20(move)&oldid=4620860",
+        "revision": 4620860
+      }
+    },
+    "recover": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "recover",
+        "fields": [
+          "heal"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Recover%20(move)&oldid=4651090",
+        "revision": 4651090
+      }
+    },
+    "sandattack": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "sandattack",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sand%20Attack%20(move)&oldid=4622929",
+        "revision": 4622929
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sand%20Attack%20(move)&oldid=4622929",
+        "revision": 4622929
+      }
+    },
+    "screech": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "screech",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Screech%20(move)&oldid=4653013",
+        "revision": 4653013
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Screech%20(move)&oldid=4653013",
+        "revision": 4653013
+      },
+      "exception": "独立倍率不进入本作；各取Showdown阶段-2。"
+    },
+    "slackoff": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "slackoff",
+        "fields": [
+          "heal"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Slack%20Off%20(move)&oldid=4632542",
+        "revision": 4632542
+      }
+    },
+    "smokescreen": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "smokescreen",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Smokescreen%20(move)&oldid=4649460",
+        "revision": 4649460
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Smokescreen%20(move)&oldid=4649460",
+        "revision": 4649460
+      },
+      "exception": "效果取SMD命中阶段-1，探险队的必定落空状态不进入本作；射程与PP保持所选原版行。"
+    },
+    "softboiled": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "softboiled",
+        "fields": [
+          "heal"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Soft-Boiled%20(move)&oldid=4646495",
+        "revision": 4646495
+      },
+      "rule": "沿用原版room/party，每个目标回复各自一半最大HP，四舍五入且封顶。"
+    },
+    "stunspore": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "stunspore",
+        "fields": [
+          "status"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Stun%20Spore%20(move)&oldid=4626046",
+        "revision": 4626046
+      }
+    },
+    "submission": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "submission",
+        "fields": [
+          "recoil"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Submission%20(move)&oldid=4623051",
+        "revision": 4623051
+      }
+    },
+    "supersonic": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "supersonic",
+        "fields": [
+          "volatileStatus"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Supersonic%20(move)&oldid=4540966",
+        "revision": 4540966
+      }
+    },
+    "sweetkiss": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "sweetkiss",
+        "fields": [
+          "volatileStatus"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sweet%20Kiss%20(move)&oldid=4638911",
+        "revision": 4638911
+      }
+    },
+    "sweetscent": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "sweetscent",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sweet%20Scent%20(move)&oldid=4643270",
+        "revision": 4643270
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Sweet%20Scent%20(move)&oldid=4659663",
+        "revision": 4659663
+      },
+      "stageRule": {
+        "eva": -1
+      }
+    },
+    "synthesis": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "synthesis",
+        "fields": []
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Synthesis%20(move)&oldid=4643327",
+        "revision": 4643327
+      }
+    },
+    "tailwhip": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "tailwhip",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Tail%20Whip%20(move)&oldid=4623025",
+        "revision": 4623025
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Tail%20Whip%20(move)&oldid=4623025",
+        "revision": 4623025
+      }
+    },
+    "takedown": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "takedown",
+        "fields": [
+          "recoil"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Take%20Down%20(move)&oldid=4645447",
+        "revision": 4645447
+      }
+    },
+    "thunderwave": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "thunderwave",
+        "fields": [
+          "status"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Thunder%20Wave%20(move)&oldid=4628621",
+        "revision": 4628621
+      }
+    },
+    "tickle": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "tickle",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Tickle%20(move)&oldid=4632980",
+        "revision": 4632980
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Tickle%20(move)&oldid=4632980",
+        "revision": 4632980
+      }
+    },
+    "toxic": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "toxic",
+        "fields": [
+          "status"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Toxic%20(move)&oldid=4631298",
+        "revision": 4631298
+      }
+    },
+    "wildcharge": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "wildcharge",
+        "fields": [
+          "recoil"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Wild%20Charge%20(move)&oldid=4628630",
+        "revision": 4628630
+      }
+    },
+    "willowisp": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "willowisp",
+        "fields": [
+          "status"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Will-O-Wisp%20(move)&oldid=4651264",
+        "revision": 4651264
+      }
+    },
+    "woodhammer": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "woodhammer",
+        "fields": [
+          "recoil"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Wood%20Hammer%20(move)&oldid=4628421",
+        "revision": 4628421
+      }
+    },
+    "workup": {
+      "showdown": {
+        "url": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+        "id": "workup",
+        "fields": [
+          "boosts"
+        ]
+      },
+      "pmd": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Work%20Up%20(move)&oldid=4621595",
+        "revision": 4621595
+      },
+      "stageSource": {
+        "url": "https://bulbapedia.bulbagarden.net/w/index.php?title=Work%20Up%20(move)&oldid=4621595",
+        "revision": 4621595
+      }
+    }
+  },
+  "tmAdditions": {
+    "calmmind": {
+      "source": "https://bulbapedia.bulbagarden.net/wiki/List_of_TM_and_HM_locations_in_the_Pok%C3%A9mon_Mystery_Dungeon_series#Explorers_of_Time,_Darkness,_and_Sky",
+      "row": "TM04",
+      "game": "Explorers of Sky"
+    },
+    "toxic": {
+      "source": "https://bulbapedia.bulbagarden.net/wiki/List_of_TM_and_HM_locations_in_the_Pok%C3%A9mon_Mystery_Dungeon_series#Explorers_of_Time,_Darkness,_and_Sky",
+      "row": "TM06",
+      "game": "Explorers of Sky"
+    },
+    "bulkup": {
+      "source": "https://bulbapedia.bulbagarden.net/wiki/List_of_TM_and_HM_locations_in_the_Pok%C3%A9mon_Mystery_Dungeon_series#Explorers_of_Time,_Darkness,_and_Sky",
+      "row": "TM08",
+      "game": "Explorers of Sky"
+    },
+    "willowisp": {
+      "source": "https://bulbapedia.bulbagarden.net/wiki/List_of_TM_and_HM_locations_in_the_Pok%C3%A9mon_Mystery_Dungeon_series#Explorers_of_Time,_Darkness,_and_Sky",
+      "row": "TM61",
+      "game": "Explorers of Sky"
+    },
+    "thunderwave": {
+      "source": "https://bulbapedia.bulbagarden.net/wiki/List_of_TM_and_HM_locations_in_the_Pok%C3%A9mon_Mystery_Dungeon_series#Explorers_of_Time,_Darkness,_and_Sky",
+      "row": "TM73",
+      "game": "Explorers of Sky"
+    },
+    "swordsdance": {
+      "source": "https://bulbapedia.bulbagarden.net/wiki/List_of_TM_and_HM_locations_in_the_Pok%C3%A9mon_Mystery_Dungeon_series#Explorers_of_Time,_Darkness,_and_Sky",
+      "row": "TM75",
+      "game": "Explorers of Sky"
+    }
+  },
+  "items": {
+    "violentSeed": {
+      "source": "https://bulbapedia.bulbagarden.net/wiki/Seed#Violent_Seed",
+      "game": "Explorers of Sky",
+      "effect": "攻击和特攻升至最高，本作设为+3。"
+    },
+    "maxElixir": {
+      "source": "https://bulbapedia.bulbagarden.net/wiki/Max_Elixir#Pok%C3%A9mon_Mystery_Dungeon_series",
+      "effect": "单个成员全部招式的PP回满。"
+    }
+  },
+  "interpretation": {
+    "issue": "https://github.com/392fyc/pokemon-dungeon-lab/issues/191#issuecomment-6622895284",
+    "rule": "按作品优先级选择可对应现行阶段的效果；没有对应系统时依次查后作，仍不适用则取Showdown级数，逐招列例外。"
+  }
+}

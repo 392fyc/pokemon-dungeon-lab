@@ -1438,9 +1438,9 @@ await test('7.7b 仓库：三招可见、学习、配招，新远征使用新版
   assert.deepEqual(prepared.roster[1].carry,['reflect','lightscreen']);
   await p.screenshot({path:artifact+'windows-team-guard-warehouse.png',fullPage:true});
   await p.reload();await ready(p);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),prepared);const campBytes=await raw(p);
-  await click(p,'depart');const s=await state(p);assert.equal(await raw(p),campBytes,'departure does not save the expedition world');assert.equal(s.dungeon.tmPool,3);
+  await click(p,'depart');const s=await state(p);assert.equal(await raw(p),campBytes,'departure does not save the expedition world');assert.equal(s.dungeon.tmPool,4);
   assert.ok(s.units.A.learned.includes('quickguard'));assert.deepEqual(s.units.B.learned,['reflect','lightscreen']);
-  assert.deepEqual(errors,[]);return {injectedCampInventory:true,learnedAndEquipped:true,newPool:3,expeditionMemoryOnly:true};
+  assert.deepEqual(errors,[]);return {injectedCampInventory:true,learnedAndEquipped:true,newPool:4,expeditionMemoryOnly:true};
  }finally{await context.close();}
 });
 
@@ -1501,10 +1501,11 @@ await test('8.3 挑战房：真实按钮开始、封门战斗、清场开门与�
    fixtureBoundary:'生成地图的开发者内存夹具：初始小队放到石碑，主控200HP并携带暴风雪，原普通敌人等待；开始后只用真实按钮和画布输入。不代表自然探索通关或挑战难度。'};
  }finally{await context.close();}
 });
-await test('8.3 道具房：实际拾取大树果与全员PP补剂，背包使用与完成标记',async()=>{
+await test('8.9a 道具房：实际拾取四种道具、分类分配、使用与完成标记',async()=>{
  const {context,page:p,errors}=await setup();try{
   const {createExpedition}=await import('../../src/core/engine.ts');const checks=[];
-  for(const [seed,item] of [[7,'bigBerry'],[15,'teamTonic']]){
+  await p.setViewportSize({width:1280,height:720});
+  for(const [seed,item] of [[7,'bigBerry'],[10,'teamTonic'],[24,'violentSeed'],[17,'maxElixir']]){
    await p.reload();await emptyReady(p);
    const fixture=createExpedition('browser-rooms83-item-'+seed,seed,3,{members:[
     {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'},
@@ -1529,10 +1530,22 @@ await test('8.3 道具房：实际拾取大树果与全员PP补剂，背包使�
     assert.match(await p.locator('[data-bag-slot="2"]').getAttribute('aria-label'),/空快捷格/,'the backpack also shows the duplicate slot as empty');
     assert.deepEqual(await state(p),beforeAssign,'assigning a collected item does not advance or mutate the run');
     await click(p,'bag-close');await p.locator('[data-hud-quick="4"]').click();await ready(p);await click(p,'item-target-bigBerry-A');
-   }else await click(p,'use-'+item);
+   }else if(item==='teamTonic')await click(p,'use-'+item);
+   else{
+    const category=item==='maxElixir'?'drink':'other',beforeAssign=await state(p);
+    await click(p,'bag-open');await p.locator('[data-bag-slot="5"]').click();await p.locator('[data-bag-category="'+category+'"]').click();
+    assert.equal(await p.locator('[data-bag-item="'+item+'"]').count(),1,'the collected new item appears in its actual category');
+    await p.locator('[data-bag-item="'+item+'"]').click();await ready(p);
+    assert.equal(await p.locator('#hud-bottom [data-hud-quick]').count(),6);
+    assert.deepEqual(await state(p),beforeAssign,'category and quick assignment do not spend an action');
+    await p.screenshot({path:artifact+'windows-rooms191-'+item+'-bag.png',fullPage:false});
+    await click(p,'bag-close');await p.locator('[data-hud-quick="5"]').click();await ready(p);await click(p,'item-target-A');
+   }
    s=await state(p);assert.equal(s.prog.items[item],0);
    if(item==='bigBerry')assert.equal(s.units.A.hp,s.units.A.maxHp);
-   else{assert.equal(s.units.A.pp.tackle,6);assert.equal(s.units.B.pp.tackle,7);}
+   else if(item==='teamTonic'){assert.equal(s.units.A.pp.tackle,6);assert.equal(s.units.B.pp.tackle,7);}
+   else if(item==='violentSeed'){assert.equal(s.units.A.stages.atk,3);assert.equal(s.units.A.stages.spa,3);}
+   else{assert.equal(s.units.A.pp.tackle,s.units.A.maxPp.tackle);assert.equal(s.units.B.pp.tackle,2,'single-member elixir leaves the other member PP alone');}
    await p.screenshot({path:artifact+'windows-rooms83-'+item+'.png',fullPage:true});checks.push({seed,item,pickedAndUsed:true,...(item==='bigBerry'?{assignedToQuickSlot:4,duplicateSlotCleared:true,assignedSlotUsed:true}:{})});
   }
   assert.deepEqual(errors,[]);return {checks,fixtureBoundary:'地图生成后初始主控摆在道具格，预设受伤及PP不足；拾取和使用均为实际UI输入，不代表自然探索路线。'};

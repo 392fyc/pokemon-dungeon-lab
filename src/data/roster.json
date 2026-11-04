@@ -52,6 +52,14 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "energyball",
      "pp": 11
     },
@@ -68,6 +76,10 @@
      "pp": 10
     },
     {
+     "move": "growl",
+     "pp": 20
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -78,6 +90,10 @@
     {
      "move": "magicalleaf",
      "pp": 8
+    },
+    {
+     "move": "poisonpowder",
+     "pp": 22
     },
     {
      "move": "powerwhip",
@@ -100,12 +116,28 @@
      "pp": 10
     },
     {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
     },
     {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -185,6 +217,10 @@
      "pp": 10
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -233,12 +269,20 @@
      "pp": 12
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "focusblast",
      "pp": 6
     },
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "heatwave",
@@ -293,6 +337,10 @@
      "pp": 11
     },
     {
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -301,12 +349,20 @@
      "pp": 7
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunderpunch",
      "pp": 17
     },
     {
      "move": "weatherball",
      "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[charmander]; learnsets.json[charmander] 第9世代; moves.json",
@@ -367,6 +423,10 @@
     },
     {
      "move": "brickbreak",
+     "pp": 12
+    },
+    {
+     "move": "doubleedge",
      "pp": 12
     },
     {
@@ -432,6 +492,14 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "watergun",
@@ -508,8 +576,24 @@
      "pp": 15
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
+     "move": "confide",
+     "pp": 20
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
     },
     {
      "move": "feintattack",
@@ -544,6 +628,10 @@
      "pp": 13
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "steelwing",
      "pp": 10
     },
@@ -556,6 +644,10 @@
      "pp": 20
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "twister",
      "pp": 15
     },
@@ -566,6 +658,10 @@
     {
      "move": "wingattack",
      "pp": 20
+    },
+    {
+     "move": "workup",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[pidgey]; learnsets.json[pidgey] 第7世代; moves.json",
@@ -613,12 +709,24 @@
      "pp": 12
     },
     {
+     "move": "confide",
+     "pp": 20
+    },
+    {
      "move": "covet",
      "pp": 27
     },
     {
      "move": "crunch",
      "pp": 13
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
     },
     {
      "move": "facade",
@@ -665,6 +773,10 @@
      "pp": 13
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -681,6 +793,10 @@
      "pp": 30
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -691,6 +807,22 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "workup",
+     "pp": 17
     },
     {
      "move": "zenheadbutt",
@@ -739,6 +871,14 @@
      "pp": 17
     },
     {
+     "move": "confide",
+     "pp": 20
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "drillpeck",
      "pp": 13
     },
@@ -755,12 +895,24 @@
      "pp": 15
     },
     {
+     "move": "featherdance",
+     "pp": 22
+    },
+    {
      "move": "feintattack",
      "pp": 25
     },
     {
+     "move": "growl",
+     "pp": 20
+    },
+    {
      "move": "heatwave",
      "pp": 8
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "mudslap",
@@ -791,12 +943,20 @@
      "pp": 20
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "triattack",
      "pp": 17
     },
     {
      "move": "whirlwind",
      "pp": 27
+    },
+    {
+     "move": "workup",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[spearow]; learnsets.json[spearow] 第7世代; moves.json",
@@ -848,6 +1008,10 @@
      "pp": 12
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "disarmingvoice",
      "pp": 15
     },
@@ -856,8 +1020,16 @@
      "pp": 8
     },
     {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "drainingkiss",
      "pp": 13
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
     },
     {
      "move": "electroweb",
@@ -868,12 +1040,20 @@
      "pp": 12
     },
     {
+     "move": "faketears",
+     "pp": 22
+    },
+    {
      "move": "feint",
      "pp": 12
     },
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -888,8 +1068,16 @@
      "pp": 15
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "nuzzle",
      "pp": 15
+    },
+    {
+     "move": "playnice",
+     "pp": 20
     },
     {
      "move": "playrough",
@@ -916,8 +1104,20 @@
      "pp": 11
     },
     {
+     "move": "sweetkiss",
+     "pp": 15
+    },
+    {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -938,6 +1138,14 @@
     {
      "move": "thundershock",
      "pp": 17
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[pikachu]; learnsets.json[pikachu] 第9世代; moves.json",
@@ -998,6 +1206,14 @@
      "pp": 19
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "crunch",
      "pp": 13
     },
@@ -1020,6 +1236,10 @@
     {
      "move": "leechlife",
      "pp": 19
+    },
+    {
+     "move": "nastyplot",
+     "pp": 20
     },
     {
      "move": "poisonfang",
@@ -1047,6 +1267,10 @@
     },
     {
      "move": "steelwing",
+     "pp": 10
+    },
+    {
+     "move": "supersonic",
      "pp": 10
     },
     {
@@ -1126,6 +1350,10 @@
     {
      "move": "defensecurl",
      "pp": 16
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "dynamicpunch",
@@ -1208,6 +1436,10 @@
      "pp": 30
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunderpunch",
      "pp": 17
     }
@@ -1257,6 +1489,14 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "energyball",
      "pp": 11
     },
@@ -1265,8 +1505,16 @@
      "pp": 12
     },
     {
+     "move": "faketears",
+     "pp": 22
+    },
+    {
      "move": "gigadrain",
      "pp": 10
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -1289,6 +1537,10 @@
      "pp": 16
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -1305,12 +1557,24 @@
      "pp": 11
     },
     {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
     },
     {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "vinewhip",
@@ -1370,6 +1634,10 @@
      "pp": 16
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
@@ -1406,6 +1674,10 @@
      "pp": 11
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
@@ -1420,6 +1692,10 @@
     {
      "move": "lavaplume",
      "pp": 10
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "overheat",
@@ -1442,12 +1718,28 @@
      "pp": 14
     },
     {
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
      "move": "swift",
      "pp": 8
     },
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     },
     {
      "move": "zenheadbutt",
@@ -1523,12 +1815,24 @@
      "pp": 13
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dragonclaw",
      "pp": 10
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "focuspunch",
@@ -1553,6 +1857,10 @@
     {
      "move": "icywind",
      "pp": 13
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "liquidation",
@@ -1587,6 +1895,10 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shadowclaw",
      "pp": 10
     },
@@ -1605,6 +1917,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -1680,6 +1996,10 @@
      "pp": 13
     },
     {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "dragonbreath",
      "pp": 12
     },
@@ -1714,6 +2034,10 @@
     {
      "move": "leafstorm",
      "pp": 5
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "magicalleaf",
@@ -1752,6 +2076,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -1770,6 +2098,14 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -1829,12 +2165,20 @@
      "pp": 15
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
     },
     {
      "move": "feint",
@@ -1855,6 +2199,14 @@
     {
      "move": "flamethrower",
      "pp": 12
+    },
+    {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "heatwave",
@@ -1897,6 +2249,10 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -1915,6 +2271,14 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[torchic]; learnsets.json[torchic] 第9世代; moves.json",
@@ -1954,6 +2318,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "ancientpower",
      "pp": 12
     },
@@ -1970,12 +2338,20 @@
      "pp": 17
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "earthpower",
      "pp": 8
     },
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "hydropump",
@@ -2026,6 +2402,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "sludge",
      "pp": 15
     },
@@ -2038,12 +2418,20 @@
      "pp": 17
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "surf",
      "pp": 11
     },
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "waterfall",
@@ -2103,6 +2491,10 @@
      "pp": 8
     },
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "bodyslam",
      "pp": 17
     },
@@ -2117,6 +2509,10 @@
     {
      "move": "defensecurl",
      "pp": 16
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "earthpower",
@@ -2137,6 +2533,10 @@
     {
      "move": "highhorsepower",
      "pp": 10
+    },
+    {
+     "move": "honeclaws",
+     "pp": 15
     },
     {
      "move": "leechlife",
@@ -2183,6 +2583,10 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "sandtomb",
      "pp": 17
     },
@@ -2213,6 +2617,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -2272,6 +2680,10 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "closecombat",
      "pp": 7
     },
@@ -2282,6 +2694,10 @@
     {
      "move": "crunch",
      "pp": 13
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "ember",
@@ -2316,12 +2732,20 @@
      "pp": 11
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "overheat",
@@ -2352,12 +2776,24 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
     {
      "move": "thunderfang",
      "pp": 15
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[growlithe]; learnsets.json[growlithe] 第9世代; moves.json",
@@ -2402,8 +2838,16 @@
      "pp": 12
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "discharge",
      "pp": 8
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
     },
     {
      "move": "electroweb",
@@ -2434,6 +2878,10 @@
      "pp": 15
     },
     {
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -2442,8 +2890,16 @@
      "pp": 15
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "spark",
      "pp": 15
+    },
+    {
+     "move": "supersonic",
+     "pp": 10
     },
     {
      "move": "swift",
@@ -2452,6 +2908,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thunder",
@@ -2464,6 +2924,14 @@
     {
      "move": "thundershock",
      "pp": 17
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     },
     {
      "move": "zapcannon",
@@ -2524,8 +2992,16 @@
      "pp": 16
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dragonbreath",
      "pp": 12
+    },
+    {
+     "move": "dragondance",
+     "pp": 22
     },
     {
      "move": "dragonpulse",
@@ -2554,6 +3030,10 @@
     {
      "move": "harden",
      "pp": 16
+    },
+    {
+     "move": "headsmash",
+     "pp": 5
     },
     {
      "move": "highhorsepower",
@@ -2586,6 +3066,10 @@
     {
      "move": "sandtomb",
      "pp": 17
+    },
+    {
+     "move": "screech",
+     "pp": 22
     },
     {
      "move": "slam",
@@ -2662,6 +3146,10 @@
      "pp": 12
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -2714,6 +3202,10 @@
      "pp": 12
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "lightscreen",
      "pp": 15
     },
@@ -2726,6 +3218,10 @@
      "pp": 12
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -2734,12 +3230,20 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunder",
      "pp": 7
     },
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
     },
     {
      "move": "twister",
@@ -2796,6 +3300,10 @@
      "pp": 17
     },
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "ancientpower",
      "pp": 12
     },
@@ -2814,6 +3322,10 @@
     {
      "move": "bulldoze",
      "pp": 17
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "earthpower",
@@ -2860,6 +3372,10 @@
      "pp": 10
     },
     {
+     "move": "recover",
+     "pp": 12
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -2886,6 +3402,18 @@
     {
      "move": "surf",
      "pp": 11
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "waterfall",
@@ -2958,6 +3486,10 @@
      "pp": 10
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
@@ -2990,6 +3522,10 @@
      "pp": 12
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "foulplay",
      "pp": 17
     },
@@ -3014,12 +3550,20 @@
      "pp": 15
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "mudshot",
      "pp": 13
     },
     {
      "move": "mudslap",
      "pp": 16
+    },
+    {
+     "move": "nastyplot",
+     "pp": 20
     },
     {
      "move": "overheat",
@@ -3054,12 +3598,24 @@
      "pp": 7
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
     {
      "move": "thunderfang",
      "pp": 15
+    },
+    {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[houndour]; learnsets.json[houndour] 第9世代; moves.json",
@@ -3125,6 +3681,10 @@
     {
      "move": "crosschop",
      "pp": 10
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "drainpunch",
@@ -3199,6 +3759,10 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "smackdown",
      "pp": 15
     },
@@ -3217,6 +3781,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -3285,6 +3853,14 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "energyball",
      "pp": 11
     },
@@ -3301,6 +3877,10 @@
      "pp": 10
     },
     {
+     "move": "growl",
+     "pp": 20
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -3311,6 +3891,10 @@
     {
      "move": "magicalleaf",
      "pp": 8
+    },
+    {
+     "move": "poisonpowder",
+     "pp": 22
     },
     {
      "move": "powerwhip",
@@ -3337,12 +3921,28 @@
      "pp": 10
     },
     {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
     },
     {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -3400,12 +4000,24 @@
      "pp": 17
     },
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "bodyslam",
      "pp": 17
     },
     {
      "move": "bulldoze",
      "pp": 17
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "earthpower",
@@ -3428,6 +4040,10 @@
      "pp": 10
     },
     {
+     "move": "growl",
+     "pp": 20
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -3446,6 +4062,10 @@
     {
      "move": "poisonjab",
      "pp": 14
+    },
+    {
+     "move": "poisonpowder",
+     "pp": 22
     },
     {
      "move": "powerwhip",
@@ -3472,12 +4092,28 @@
      "pp": 10
     },
     {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
     },
     {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -3547,6 +4183,10 @@
      "pp": 10
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -3591,12 +4231,20 @@
      "pp": 12
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "focusblast",
      "pp": 6
     },
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "heatwave",
@@ -3643,6 +4291,10 @@
      "pp": 11
     },
     {
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -3651,12 +4303,20 @@
      "pp": 7
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunderpunch",
      "pp": 17
     },
     {
      "move": "weatherball",
      "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[charmeleon]; learnsets.json[charmeleon] 第9世代; moves.json",
@@ -3726,12 +4386,20 @@
      "pp": 13
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dragonbreath",
      "pp": 12
     },
     {
      "move": "dragonclaw",
      "pp": 10
+    },
+    {
+     "move": "dragondance",
+     "pp": 22
     },
     {
      "move": "dragonpulse",
@@ -3774,12 +4442,20 @@
      "pp": 12
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "focusblast",
      "pp": 6
     },
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "heatwave",
@@ -3830,6 +4506,10 @@
      "pp": 11
     },
     {
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -3838,12 +4518,20 @@
      "pp": 7
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunderpunch",
      "pp": 17
     },
     {
      "move": "weatherball",
      "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[charizard]; learnsets.json[charizard] 第9世代; moves.json",
@@ -3898,6 +4586,10 @@
     },
     {
      "move": "brickbreak",
+     "pp": 12
+    },
+    {
+     "move": "doubleedge",
      "pp": 12
     },
     {
@@ -3959,6 +4651,14 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "watergun",
@@ -4055,6 +4755,10 @@
      "pp": 10
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -4141,6 +4845,14 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "watergun",
@@ -4351,6 +5063,10 @@
      "pp": 16
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -4363,7 +5079,19 @@
      "pp": 10
     },
     {
+     "move": "quiverdance",
+     "pp": 13
+    },
+    {
      "move": "shadowball",
+     "pp": 10
+    },
+    {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "move": "supersonic",
      "pp": 10
     },
     {
@@ -4537,6 +5265,14 @@
      "pp": 12
     },
     {
+     "move": "confide",
+     "pp": 20
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "drillrun",
      "pp": 13
     },
@@ -4593,6 +5329,10 @@
      "pp": 15
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "venoshock",
      "pp": 16
     },
@@ -4645,8 +5385,20 @@
      "pp": 15
     },
     {
+     "move": "confide",
+     "pp": 20
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
     },
     {
      "move": "gust",
@@ -4669,6 +5421,10 @@
      "pp": 13
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "steelwing",
      "pp": 10
     },
@@ -4681,6 +5437,10 @@
      "pp": 20
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "twister",
      "pp": 15
     },
@@ -4691,6 +5451,10 @@
     {
      "move": "wingattack",
      "pp": 20
+    },
+    {
+     "move": "workup",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[pidgeotto]; learnsets.json[pidgeotto] 第7世代; moves.json",
@@ -4740,8 +5504,20 @@
      "pp": 15
     },
     {
+     "move": "confide",
+     "pp": 20
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
     },
     {
      "move": "gust",
@@ -4764,6 +5540,10 @@
      "pp": 13
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "steelwing",
      "pp": 10
     },
@@ -4776,6 +5556,10 @@
      "pp": 20
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "twister",
      "pp": 15
     },
@@ -4786,6 +5570,10 @@
     {
      "move": "wingattack",
      "pp": 20
+    },
+    {
+     "move": "workup",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[pidgeot]; learnsets.json[pidgeot] 第7世代; moves.json",
@@ -4835,12 +5623,24 @@
      "pp": 12
     },
     {
+     "move": "confide",
+     "pp": 20
+    },
+    {
      "move": "covet",
      "pp": 27
     },
     {
      "move": "crunch",
      "pp": 13
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
     },
     {
      "move": "facade",
@@ -4903,6 +5703,10 @@
      "pp": 30
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -4917,6 +5721,22 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "workup",
+     "pp": 17
     },
     {
      "move": "zenheadbutt",
@@ -4963,6 +5783,14 @@
      "pp": 8
     },
     {
+     "move": "confide",
+     "pp": 20
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "drillpeck",
      "pp": 13
     },
@@ -4979,8 +5807,16 @@
      "pp": 15
     },
     {
+     "move": "growl",
+     "pp": 20
+    },
+    {
      "move": "heatwave",
      "pp": 8
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "peck",
@@ -5009,6 +5845,14 @@
     {
      "move": "throatchop",
      "pp": 15
+    },
+    {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "move": "workup",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[fearow]; learnsets.json[fearow] 第7世代; moves.json",
@@ -5062,12 +5906,20 @@
      "pp": 19
     },
     {
+     "move": "coil",
+     "pp": 15
+    },
+    {
      "move": "crunch",
      "pp": 13
     },
     {
      "move": "darkpulse",
      "pp": 10
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "facade",
@@ -5082,12 +5934,20 @@
      "pp": 10
     },
     {
+     "move": "glare",
+     "pp": 22
+    },
+    {
      "move": "gunkshot",
      "pp": 6
     },
     {
      "move": "leechlife",
      "pp": 19
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "mudshot",
@@ -5126,6 +5986,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -5146,8 +6010,16 @@
      "pp": 7
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -5215,12 +6087,20 @@
      "pp": 17
     },
     {
+     "move": "coil",
+     "pp": 15
+    },
+    {
      "move": "crunch",
      "pp": 13
     },
     {
      "move": "darkpulse",
      "pp": 10
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "dragontail",
@@ -5239,6 +6119,10 @@
      "pp": 10
     },
     {
+     "move": "glare",
+     "pp": 22
+    },
+    {
      "move": "gunkshot",
      "pp": 6
     },
@@ -5249,6 +6133,10 @@
     {
      "move": "leechlife",
      "pp": 19
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "mudshot",
@@ -5283,6 +6171,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -5299,6 +6191,10 @@
      "pp": 15
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -5309,6 +6205,10 @@
     {
      "move": "thunderfang",
      "pp": 15
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -5362,6 +6262,10 @@
      "pp": 12
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "disarmingvoice",
      "pp": 15
     },
@@ -5370,8 +6274,16 @@
      "pp": 8
     },
     {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "drainingkiss",
      "pp": 13
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
     },
     {
      "move": "electroweb",
@@ -5380,6 +6292,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "feint",
@@ -5394,6 +6310,10 @@
      "pp": 8
     },
     {
+     "move": "growl",
+     "pp": 20
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -5406,8 +6326,16 @@
      "pp": 15
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "nuzzle",
      "pp": 15
+    },
+    {
+     "move": "playnice",
+     "pp": 20
     },
     {
      "move": "playrough",
@@ -5434,8 +6362,20 @@
      "pp": 11
     },
     {
+     "move": "sweetkiss",
+     "pp": 15
+    },
+    {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -5456,6 +6396,14 @@
     {
      "move": "thundershock",
      "pp": 17
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[raichu]; learnsets.json[raichu] 第9世代; moves.json",
@@ -5497,6 +6445,10 @@
      "pp": 8
     },
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "bodyslam",
      "pp": 17
     },
@@ -5515,6 +6467,10 @@
     {
      "move": "defensecurl",
      "pp": 16
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "drillrun",
@@ -5589,6 +6545,10 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "sandtomb",
      "pp": 17
     },
@@ -5619,6 +6579,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -5680,6 +6644,10 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "crunch",
      "pp": 13
     },
@@ -5690,6 +6658,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -5736,6 +6708,18 @@
      "pp": 10
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -5746,6 +6730,10 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -5801,6 +6789,10 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "crunch",
      "pp": 13
     },
@@ -5811,6 +6803,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -5849,6 +6845,10 @@
      "pp": 10
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -5859,6 +6859,10 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -5924,6 +6928,10 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "crunch",
      "pp": 13
     },
@@ -5958,6 +6966,10 @@
     {
      "move": "focusblast",
      "pp": 6
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -6056,6 +7068,10 @@
      "pp": 11
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -6074,6 +7090,10 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -6119,6 +7139,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -6143,6 +7167,10 @@
      "pp": 12
     },
     {
+     "move": "headsmash",
+     "pp": 5
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -6157,6 +7185,10 @@
     {
      "move": "irontail",
      "pp": 10
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "peck",
@@ -6195,6 +7227,14 @@
      "pp": 7
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -6205,6 +7245,10 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -6248,6 +7292,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -6282,6 +7330,10 @@
     {
      "move": "irontail",
      "pp": 10
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "peck",
@@ -6322,6 +7374,10 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -6366,6 +7422,10 @@
     }
    ],
    "learnable": [
+    {
+     "move": "amnesia",
+     "pp": 22
+    },
     {
      "move": "blizzard",
      "pp": 7
@@ -6441,6 +7501,10 @@
     {
      "move": "irontail",
      "pp": 10
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "megahorn",
@@ -6543,6 +7607,10 @@
      "pp": 17
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "venoshock",
      "pp": 16
     },
@@ -6586,6 +7654,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -6598,8 +7670,20 @@
      "pp": 12
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
      "move": "chargebeam",
      "pp": 12
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "cosmicpower",
+     "pp": 14
     },
     {
      "move": "dazzlinggleam",
@@ -6614,6 +7698,10 @@
      "pp": 15
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drainingkiss",
      "pp": 13
     },
@@ -6624,6 +7712,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "fireblast",
@@ -6640,6 +7732,10 @@
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -6710,8 +7806,16 @@
      "pp": 10
     },
     {
+     "move": "sweetkiss",
+     "pp": 15
+    },
+    {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -6727,6 +7831,10 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "thunderwave",
      "pp": 17
     },
     {
@@ -6775,6 +7883,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -6787,8 +7899,20 @@
      "pp": 12
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
      "move": "chargebeam",
      "pp": 12
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "cosmicpower",
+     "pp": 14
     },
     {
      "move": "dazzlinggleam",
@@ -6803,6 +7927,10 @@
      "pp": 15
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drainingkiss",
      "pp": 13
     },
@@ -6813,6 +7941,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "fireblast",
@@ -6833,6 +7965,10 @@
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -6903,8 +8039,16 @@
      "pp": 10
     },
     {
+     "move": "sweetkiss",
+     "pp": 15
+    },
+    {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -6920,6 +8064,10 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "thunderwave",
      "pp": 17
     },
     {
@@ -6966,12 +8114,28 @@
    ],
    "learnable": [
     {
+     "move": "babydolleyes",
+     "pp": 15
+    },
+    {
      "move": "bodyslam",
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "darkpulse",
      "pp": 10
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "ember",
@@ -7006,6 +8170,10 @@
      "pp": 12
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "foulplay",
      "pp": 17
     },
@@ -7024,6 +8192,10 @@
     {
      "move": "inferno",
      "pp": 15
+    },
+    {
+     "move": "nastyplot",
+     "pp": 20
     },
     {
      "move": "overheat",
@@ -7050,8 +8222,20 @@
      "pp": 8
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "weatherball",
      "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     },
     {
      "move": "zenheadbutt",
@@ -7099,8 +8283,24 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "darkpulse",
      "pp": 10
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "ember",
@@ -7119,6 +8319,10 @@
      "pp": 12
     },
     {
+     "move": "faketears",
+     "pp": 22
+    },
+    {
      "move": "fireblast",
      "pp": 9
     },
@@ -7133,6 +8337,10 @@
     {
      "move": "flamethrower",
      "pp": 12
+    },
+    {
+     "move": "flareblitz",
+     "pp": 6
     },
     {
      "move": "foulplay",
@@ -7153,6 +8361,10 @@
     {
      "move": "inferno",
      "pp": 15
+    },
+    {
+     "move": "nastyplot",
+     "pp": 20
     },
     {
      "move": "overheat",
@@ -7187,8 +8399,20 @@
      "pp": 8
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "weatherball",
      "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     },
     {
      "move": "zenheadbutt",
@@ -7231,6 +8455,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -7241,6 +8469,14 @@
     {
      "move": "brickbreak",
      "pp": 12
+    },
+    {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
     },
     {
      "move": "covet",
@@ -7263,6 +8499,10 @@
      "pp": 15
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drainingkiss",
      "pp": 13
     },
@@ -7277,6 +8517,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "fireblast",
@@ -7323,6 +8567,10 @@
      "pp": 8
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "playrough",
      "pp": 13
     },
@@ -7351,8 +8599,16 @@
      "pp": 10
     },
     {
+     "move": "sweetkiss",
+     "pp": 15
+    },
+    {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -7371,8 +8627,16 @@
      "pp": 17
     },
     {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
      "move": "waterpulse",
      "pp": 12
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     },
     {
      "move": "zenheadbutt",
@@ -7417,6 +8681,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -7427,6 +8695,14 @@
     {
      "move": "brickbreak",
      "pp": 12
+    },
+    {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
     },
     {
      "move": "covet",
@@ -7449,6 +8725,10 @@
      "pp": 15
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drainingkiss",
      "pp": 13
     },
@@ -7463,6 +8743,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "fireblast",
@@ -7513,6 +8797,10 @@
      "pp": 8
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "playrough",
      "pp": 13
     },
@@ -7541,8 +8829,16 @@
      "pp": 10
     },
     {
+     "move": "sweetkiss",
+     "pp": 15
+    },
+    {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -7561,8 +8857,16 @@
      "pp": 17
     },
     {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
      "move": "waterpulse",
      "pp": 12
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     },
     {
      "move": "zenheadbutt",
@@ -7625,6 +8929,14 @@
      "pp": 19
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "crunch",
      "pp": 13
     },
@@ -7645,6 +8957,10 @@
      "pp": 19
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "poisonfang",
      "pp": 15
     },
@@ -7657,6 +8973,10 @@
      "pp": 13
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -7666,6 +8986,10 @@
     },
     {
      "move": "steelwing",
+     "pp": 10
+    },
+    {
+     "move": "supersonic",
      "pp": 10
     },
     {
@@ -7733,6 +9057,10 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "energyball",
      "pp": 11
     },
@@ -7765,6 +9093,10 @@
      "pp": 15
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -7781,8 +9113,28 @@
      "pp": 10
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "move": "tickle",
+     "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -7839,6 +9191,10 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "energyball",
      "pp": 11
     },
@@ -7875,6 +9231,10 @@
      "pp": 12
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -7887,8 +9247,20 @@
      "pp": 10
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -7950,6 +9322,10 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "dazzlinggleam",
      "pp": 15
     },
@@ -7990,6 +9366,10 @@
      "pp": 12
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -8006,8 +9386,20 @@
      "pp": 13
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -8070,8 +9462,16 @@
      "pp": 12
     },
     {
+     "move": "confide",
+     "pp": 20
+    },
+    {
      "move": "crosspoison",
      "pp": 12
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
     },
     {
      "move": "energyball",
@@ -8106,6 +9506,10 @@
      "pp": 15
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -8122,6 +9526,10 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -8134,12 +9542,28 @@
      "pp": 10
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
     },
     {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -8204,8 +9628,16 @@
      "pp": 12
     },
     {
+     "move": "confide",
+     "pp": 20
+    },
+    {
      "move": "crosspoison",
      "pp": 12
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
     },
     {
      "move": "energyball",
@@ -8232,6 +9664,10 @@
      "pp": 15
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -8252,8 +9688,16 @@
      "pp": 10
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "synthesis",
+     "pp": 12
     },
     {
      "move": "thief",
@@ -8262,6 +9706,10 @@
     {
      "move": "throatchop",
      "pp": 15
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -8320,6 +9768,10 @@
      "pp": 10
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "confusion",
      "pp": 22
     },
@@ -8344,6 +9796,10 @@
      "pp": 15
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -8356,12 +9812,24 @@
      "pp": 10
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
     },
     {
      "move": "strugglebug",
      "pp": 17
+    },
+    {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "move": "supersonic",
+     "pp": 10
     },
     {
      "move": "swift",
@@ -8372,8 +9840,16 @@
      "pp": 30
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -8442,8 +9918,16 @@
      "pp": 10
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "confusion",
      "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "energyball",
@@ -8466,6 +9950,10 @@
      "pp": 15
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -8476,6 +9964,10 @@
     {
      "move": "psychic",
      "pp": 10
+    },
+    {
+     "move": "quiverdance",
+     "pp": 13
     },
     {
      "move": "sludgebomb",
@@ -8490,6 +9982,14 @@
      "pp": 17
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -8498,8 +9998,16 @@
      "pp": 30
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -8561,6 +10069,14 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "earthpower",
      "pp": 8
     },
@@ -8573,12 +10089,20 @@
      "pp": 17
     },
     {
+     "move": "growl",
+     "pp": 20
+    },
+    {
      "move": "headbutt",
      "pp": 17
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "honeclaws",
+     "pp": 15
     },
     {
      "move": "mudshot",
@@ -8599,6 +10123,10 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sandattack",
+     "pp": 20
     },
     {
      "move": "sandtomb",
@@ -8635,6 +10163,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -8694,6 +10226,14 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "earthpower",
      "pp": 8
     },
@@ -8704,6 +10244,10 @@
     {
      "move": "foulplay",
      "pp": 17
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -8732,6 +10276,10 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sandattack",
+     "pp": 20
     },
     {
      "move": "sandtomb",
@@ -8772,6 +10320,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -8825,12 +10377,20 @@
      "pp": 8
     },
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "bite",
      "pp": 19
     },
     {
      "move": "bodyslam",
      "pp": 17
+    },
+    {
+     "move": "charm",
+     "pp": 22
     },
     {
      "move": "covet",
@@ -8841,12 +10401,20 @@
      "pp": 10
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "facade",
      "pp": 12
     },
     {
      "move": "fakeout",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "falseswipe",
@@ -8859,6 +10427,10 @@
     {
      "move": "foulplay",
      "pp": 17
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "gunkshot",
@@ -8885,6 +10457,10 @@
      "pp": 15
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "payday",
      "pp": 16
     },
@@ -8903,6 +10479,10 @@
     {
      "move": "scratch",
      "pp": 28
+    },
+    {
+     "move": "screech",
+     "pp": 22
     },
     {
      "move": "seedbomb",
@@ -8929,6 +10509,14 @@
      "pp": 8
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -8943,6 +10531,10 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[meowth]; learnsets.json[meowth] 第9世代; moves.json",
@@ -8986,6 +10578,10 @@
      "pp": 8
     },
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "bite",
      "pp": 19
     },
@@ -8994,8 +10590,16 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "darkpulse",
      "pp": 10
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "facade",
@@ -9004,6 +10608,10 @@
     {
      "move": "fakeout",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "falseswipe",
@@ -9016,6 +10624,10 @@
     {
      "move": "foulplay",
      "pp": 17
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "gunkshot",
@@ -9036,6 +10648,10 @@
     {
      "move": "metalclaw",
      "pp": 15
+    },
+    {
+     "move": "nastyplot",
+     "pp": 20
     },
     {
      "move": "payday",
@@ -9062,6 +10678,10 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -9086,6 +10706,10 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -9100,6 +10724,10 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[persian]; learnsets.json[persian] 第9世代; moves.json",
@@ -9137,6 +10765,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "aquatail",
      "pp": 11
     },
@@ -9153,8 +10785,16 @@
      "pp": 12
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
      "move": "clearsmog",
      "pp": 15
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
     },
     {
      "move": "confusion",
@@ -9163,6 +10803,10 @@
     {
      "move": "crosschop",
      "pp": 10
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "facade",
@@ -9213,6 +10857,10 @@
      "pp": 13
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -9233,6 +10881,10 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shadowclaw",
      "pp": 10
     },
@@ -9243,6 +10895,14 @@
     {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -9310,6 +10970,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "aquajet",
      "pp": 18
     },
@@ -9330,8 +10994,20 @@
      "pp": 12
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "confusion",
      "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "facade",
@@ -9386,6 +11062,10 @@
      "pp": 13
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "powergem",
      "pp": 15
     },
@@ -9410,6 +11090,10 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shadowclaw",
      "pp": 10
     },
@@ -9420,6 +11104,14 @@
     {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -9513,6 +11205,10 @@
      "pp": 10
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drainpunch",
      "pp": 8
     },
@@ -9543,6 +11239,10 @@
     {
      "move": "icepunch",
      "pp": 12
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "lowsweep",
@@ -9577,6 +11277,10 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -9591,6 +11295,10 @@
     {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -9670,6 +11378,10 @@
      "pp": 10
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drainpunch",
      "pp": 8
     },
@@ -9702,6 +11414,10 @@
      "pp": 12
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "lowsweep",
      "pp": 17
     },
@@ -9730,6 +11446,10 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -9748,6 +11468,10 @@
     {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -9825,12 +11549,20 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "closecombat",
      "pp": 7
     },
     {
      "move": "crunch",
      "pp": 13
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "dragonpulse",
@@ -9873,6 +11605,10 @@
      "pp": 11
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
@@ -9887,6 +11623,10 @@
     {
      "move": "ironhead",
      "pp": 12
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "overheat",
@@ -9917,12 +11657,24 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
     {
      "move": "thunderfang",
      "pp": 15
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[arcanine]; learnsets.json[arcanine] 第9世代; moves.json",
@@ -9960,6 +11712,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -9974,6 +11730,10 @@
     {
      "move": "bulldoze",
      "pp": 17
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "earthpower",
@@ -10040,6 +11800,10 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -10101,6 +11865,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -10119,6 +11887,10 @@
     {
      "move": "bulldoze",
      "pp": 17
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "earthpower",
@@ -10193,6 +11965,10 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -10256,6 +12032,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -10286,6 +12066,10 @@
     {
      "move": "closecombat",
      "pp": 7
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "drainpunch",
@@ -10388,6 +12172,10 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -10450,6 +12238,10 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
      "move": "confusion",
      "pp": 22
     },
@@ -10527,6 +12319,10 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "thunderwave",
      "pp": 17
     },
     {
@@ -10580,6 +12376,10 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
      "move": "confusion",
      "pp": 22
     },
@@ -10616,6 +12416,10 @@
      "pp": 10
     },
     {
+     "move": "kinesis",
+     "pp": 17
+    },
+    {
      "move": "lightscreen",
      "pp": 15
     },
@@ -10648,6 +12452,10 @@
      "pp": 13
     },
     {
+     "move": "recover",
+     "pp": 12
+    },
+    {
      "move": "reflect",
      "pp": 15
     },
@@ -10665,6 +12473,10 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "thunderwave",
      "pp": 17
     },
     {
@@ -10718,6 +12530,10 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
      "move": "confusion",
      "pp": 22
     },
@@ -10758,6 +12574,10 @@
      "pp": 10
     },
     {
+     "move": "kinesis",
+     "pp": 17
+    },
+    {
      "move": "lightscreen",
      "pp": 15
     },
@@ -10768,6 +12588,10 @@
     {
      "move": "megapunch",
      "pp": 12
+    },
+    {
+     "move": "nastyplot",
+     "pp": 20
     },
     {
      "move": "protect",
@@ -10790,6 +12614,10 @@
      "pp": 13
     },
     {
+     "move": "recover",
+     "pp": 12
+    },
+    {
      "move": "reflect",
      "pp": 15
     },
@@ -10807,6 +12635,10 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "thunderwave",
      "pp": 17
     },
     {
@@ -10881,6 +12713,10 @@
      "pp": 10
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dynamicpunch",
      "pp": 13
     },
@@ -10911,6 +12747,10 @@
     {
      "move": "icepunch",
      "pp": 12
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "lightscreen",
@@ -10953,6 +12793,10 @@
      "pp": 12
     },
     {
+     "move": "submission",
+     "pp": 17
+    },
+    {
      "move": "superpower",
      "pp": 11
     },
@@ -10962,6 +12806,14 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "tickle",
+     "pp": 17
+    },
+    {
+     "move": "workup",
      "pp": 17
     }
    ],
@@ -11026,6 +12878,10 @@
      "pp": 10
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dynamicpunch",
      "pp": 13
     },
@@ -11056,6 +12912,10 @@
     {
      "move": "icepunch",
      "pp": 12
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "lightscreen",
@@ -11103,6 +12963,10 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "workup",
      "pp": 17
     }
    ],
@@ -11172,6 +13036,10 @@
      "pp": 12
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dynamicpunch",
      "pp": 13
     },
@@ -11206,6 +13074,10 @@
     {
      "move": "icepunch",
      "pp": 12
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "lightscreen",
@@ -11261,6 +13133,10 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "workup",
      "pp": 17
     }
    ],
@@ -11340,6 +13216,10 @@
      "pp": 14
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "powerwhip",
      "pp": 8
     },
@@ -11372,16 +13252,36 @@
      "pp": 13
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
      "move": "suckerpunch",
      "pp": 7
+    },
+    {
+     "move": "sweetscent",
+     "pp": 22
     },
     {
      "move": "swordsdance",
      "pp": 7
     },
     {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "tickle",
+     "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -11478,6 +13378,10 @@
      "pp": 14
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "powerwhip",
      "pp": 8
     },
@@ -11510,6 +13414,14 @@
      "pp": 13
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -11520,6 +13432,10 @@
     {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -11645,6 +13561,10 @@
      "pp": 13
     },
     {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -11655,6 +13575,10 @@
     {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -11729,6 +13653,10 @@
      "pp": 10
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "dazzlinggleam",
      "pp": 15
     },
@@ -11785,12 +13713,20 @@
      "pp": 17
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
     },
     {
      "move": "sludgewave",
      "pp": 13
+    },
+    {
+     "move": "supersonic",
+     "pp": 10
     },
     {
      "move": "surf",
@@ -11811,6 +13747,14 @@
     {
      "move": "throatchop",
      "pp": 15
+    },
+    {
+     "move": "tickle",
+     "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -11887,6 +13831,10 @@
      "pp": 10
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "dazzlinggleam",
      "pp": 15
     },
@@ -11939,12 +13887,20 @@
      "pp": 10
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
     },
     {
      "move": "sludgewave",
      "pp": 13
+    },
+    {
+     "move": "supersonic",
+     "pp": 10
     },
     {
      "move": "surf",
@@ -11965,6 +13921,10 @@
     {
      "move": "throatchop",
      "pp": 15
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -12037,6 +13997,10 @@
     {
      "move": "defensecurl",
      "pp": 16
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "earthpower",
@@ -12115,6 +14079,10 @@
      "pp": 30
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunderpunch",
      "pp": 17
     }
@@ -12172,6 +14140,10 @@
     {
      "move": "defensecurl",
      "pp": 16
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "earthpower",
@@ -12254,6 +14226,10 @@
      "pp": 30
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunderpunch",
      "pp": 17
     }
@@ -12297,6 +14273,14 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
@@ -12323,6 +14307,14 @@
     {
      "move": "flamewheel",
      "pp": 11
+    },
+    {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "heatwave",
@@ -12367,6 +14359,22 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[ponyta]; learnsets.json[ponyta] 第8世代; moves.json",
@@ -12410,6 +14418,10 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "drillrun",
      "pp": 13
     },
@@ -12440,6 +14452,14 @@
     {
      "move": "flamewheel",
      "pp": 11
+    },
+    {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "heatwave",
@@ -12510,8 +14530,24 @@
      "pp": 30
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "throatchop",
      "pp": 15
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[rapidash]; learnsets.json[rapidash] 第8世代; moves.json",
@@ -12550,6 +14586,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "belch",
      "pp": 15
     },
@@ -12564,6 +14604,10 @@
     {
      "move": "bulldoze",
      "pp": 17
+    },
+    {
+     "move": "calmmind",
+     "pp": 19
     },
     {
      "move": "confusion",
@@ -12584,6 +14628,10 @@
     {
      "move": "foulplay",
      "pp": 17
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "headbutt",
@@ -12638,6 +14686,10 @@
      "pp": 10
     },
     {
+     "move": "slackoff",
+     "pp": 17
+    },
+    {
      "move": "stomp",
      "pp": 17
     },
@@ -12652,6 +14704,14 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
     },
     {
      "move": "waterfall",
@@ -12716,6 +14776,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -12730,6 +14794,10 @@
     {
      "move": "bulldoze",
      "pp": 17
+    },
+    {
+     "move": "calmmind",
+     "pp": 19
     },
     {
      "move": "confusion",
@@ -12762,6 +14830,10 @@
     {
      "move": "foulplay",
      "pp": 17
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "headbutt",
@@ -12808,6 +14880,10 @@
      "pp": 13
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -12832,6 +14908,10 @@
      "pp": 10
     },
     {
+     "move": "slackoff",
+     "pp": 17
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -12842,6 +14922,14 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
     },
     {
      "move": "waterfall",
@@ -12912,8 +15000,16 @@
      "pp": 12
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "discharge",
      "pp": 8
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
     },
     {
      "move": "electroweb",
@@ -12944,6 +15040,10 @@
      "pp": 15
     },
     {
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -12952,8 +15052,16 @@
      "pp": 15
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "spark",
      "pp": 15
+    },
+    {
+     "move": "supersonic",
+     "pp": 10
     },
     {
      "move": "swift",
@@ -12962,6 +15070,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thunder",
@@ -12976,8 +15088,16 @@
      "pp": 17
     },
     {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
      "move": "triattack",
      "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     },
     {
      "move": "zapcannon",
@@ -13036,6 +15156,10 @@
      "pp": 17
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
      "move": "closecombat",
      "pp": 7
     },
@@ -13050,6 +15174,10 @@
     {
      "move": "falseswipe",
      "pp": 15
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
     },
     {
      "move": "feint",
@@ -13076,6 +15204,10 @@
      "pp": 12
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "nightslash",
      "pp": 12
     },
@@ -13100,6 +15232,10 @@
      "pp": 10
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "slash",
      "pp": 11
     },
@@ -13122,6 +15258,10 @@
     {
      "move": "throatchop",
      "pp": 15
+    },
+    {
+     "move": "workup",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[farfetchd]; learnsets.json[farfetchd] 第8世代; moves.json",
@@ -13167,12 +15307,28 @@
      "pp": 17
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drillpeck",
      "pp": 13
     },
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -13205,6 +15361,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -13265,6 +15425,14 @@
      "pp": 17
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drillpeck",
      "pp": 13
     },
@@ -13275,6 +15443,14 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -13307,6 +15483,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -13384,6 +15564,14 @@
      "pp": 8
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drillrun",
      "pp": 13
     },
@@ -13394,6 +15582,10 @@
     {
      "move": "fakeout",
      "pp": 12
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "headbutt",
@@ -13438,6 +15630,10 @@
     {
      "move": "surf",
      "pp": 11
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -13522,12 +15718,24 @@
      "pp": 8
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drillrun",
      "pp": 13
     },
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "headbutt",
@@ -13576,6 +15784,10 @@
     {
      "move": "surf",
      "pp": 11
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -13649,6 +15861,10 @@
      "pp": 17
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "drainpunch",
      "pp": 8
     },
@@ -13689,12 +15905,20 @@
      "pp": 12
     },
     {
+     "move": "minimize",
+     "pp": 27
+    },
+    {
      "move": "mudshot",
      "pp": 13
     },
     {
      "move": "mudslap",
      "pp": 16
+    },
+    {
+     "move": "poisongas",
+     "pp": 27
     },
     {
      "move": "poisonjab",
@@ -13715,6 +15939,10 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "screech",
+     "pp": 22
     },
     {
      "move": "shadowball",
@@ -13741,6 +15969,10 @@
      "pp": 13
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -13755,6 +15987,10 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -13822,6 +16058,10 @@
      "pp": 12
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "darkpulse",
      "pp": 10
     },
@@ -13874,12 +16114,20 @@
      "pp": 12
     },
     {
+     "move": "minimize",
+     "pp": 27
+    },
+    {
      "move": "mudshot",
      "pp": 13
     },
     {
      "move": "mudslap",
      "pp": 16
+    },
+    {
+     "move": "poisongas",
+     "pp": 27
     },
     {
      "move": "poisonjab",
@@ -13902,6 +16150,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -13922,6 +16174,10 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -13936,6 +16192,10 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "venoshock",
@@ -14021,6 +16281,10 @@
      "pp": 16
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "liquidation",
      "pp": 10
     },
@@ -14037,6 +16301,10 @@
      "pp": 15
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -14047,6 +16315,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "waterfall",
@@ -14155,6 +16427,10 @@
      "pp": 16
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "lightscreen",
      "pp": 15
     },
@@ -14183,6 +16459,10 @@
      "pp": 15
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -14193,6 +16473,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "waterfall",
@@ -14267,6 +16551,10 @@
      "pp": 15
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "darkpulse",
      "pp": 10
     },
@@ -14308,6 +16596,10 @@
     },
     {
      "move": "lick",
+     "pp": 20
+    },
+    {
+     "move": "nastyplot",
      "pp": 20
     },
     {
@@ -14359,8 +16651,16 @@
      "pp": 17
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "venoshock",
      "pp": 16
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[gastly]; learnsets.json[gastly] 第9世代; moves.json",
@@ -14403,6 +16703,10 @@
     {
      "move": "acidspray",
      "pp": 17
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
     },
     {
      "move": "darkpulse",
@@ -14450,6 +16754,10 @@
     },
     {
      "move": "lick",
+     "pp": 20
+    },
+    {
+     "move": "nastyplot",
      "pp": 20
     },
     {
@@ -14505,8 +16813,16 @@
      "pp": 17
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "venoshock",
      "pp": 16
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[haunter]; learnsets.json[haunter] 第9世代; moves.json",
@@ -14560,6 +16876,10 @@
      "pp": 12
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "darkpulse",
      "pp": 10
     },
@@ -14616,6 +16936,10 @@
      "pp": 20
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "poisonjab",
      "pp": 14
     },
@@ -14668,8 +16992,20 @@
      "pp": 17
     },
     {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "venoshock",
      "pp": 16
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[gengar]; learnsets.json[gengar] 第9世代; moves.json",
@@ -14715,12 +17051,20 @@
      "pp": 12
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
      "move": "confusion",
      "pp": 22
     },
     {
      "move": "dazzlinggleam",
      "pp": 15
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "drainingkiss",
@@ -14771,6 +17115,14 @@
      "pp": 17
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
+     "move": "poisongas",
+     "pp": 27
+    },
+    {
      "move": "pound",
      "pp": 27
     },
@@ -14807,12 +17159,24 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
     {
      "move": "thunderpunch",
      "pp": 17
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "zenheadbutt",
@@ -14864,12 +17228,24 @@
      "pp": 12
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "confusion",
      "pp": 22
     },
     {
      "move": "dazzlinggleam",
      "pp": 15
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "drainingkiss",
@@ -14920,6 +17296,14 @@
      "pp": 17
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
+     "move": "poisongas",
+     "pp": 27
+    },
+    {
      "move": "pound",
      "pp": 27
     },
@@ -14952,12 +17336,24 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
     {
      "move": "thunderpunch",
      "pp": 17
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "zenheadbutt",
@@ -14998,6 +17394,10 @@
     }
    ],
    "learnable": [
+    {
+     "move": "amnesia",
+     "pp": 22
+    },
     {
      "move": "ancientpower",
      "pp": 12
@@ -15053,6 +17453,10 @@
     {
      "move": "irondefense",
      "pp": 16
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "liquidation",
@@ -15168,6 +17572,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -15226,6 +17634,10 @@
     {
      "move": "irondefense",
      "pp": 16
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "liquidation",
@@ -15339,6 +17751,14 @@
      "pp": 8
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
+    },
+    {
      "move": "electroweb",
      "pp": 15
     },
@@ -15359,8 +17779,16 @@
      "pp": 15
     },
     {
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
      "move": "protect",
      "pp": 10
+    },
+    {
+     "move": "screech",
+     "pp": 22
     },
     {
      "move": "spark",
@@ -15373,6 +17801,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -15389,6 +17821,14 @@
     {
      "move": "thundershock",
      "pp": 17
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[voltorb]; learnsets.json[voltorb] 第9世代; moves.json",
@@ -15436,6 +17876,14 @@
      "pp": 8
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
+    },
+    {
      "move": "electroweb",
      "pp": 15
     },
@@ -15456,8 +17904,16 @@
      "pp": 15
     },
     {
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
      "move": "protect",
      "pp": 10
+    },
+    {
+     "move": "screech",
+     "pp": 22
     },
     {
      "move": "spark",
@@ -15470,6 +17926,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -15486,6 +17946,14 @@
     {
      "move": "thundershock",
      "pp": 17
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[electrode]; learnsets.json[electrode] 第9世代; moves.json",
@@ -15568,6 +18036,10 @@
      "pp": 17
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -15596,8 +18068,16 @@
      "pp": 10
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "synthesis",
+     "pp": 12
     },
     {
      "move": "thief",
@@ -15658,8 +18138,16 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
      "move": "confusion",
      "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "energyball",
@@ -15734,8 +18222,20 @@
      "pp": 7
     },
     {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "woodhammer",
+     "pp": 10
     },
     {
      "move": "zenheadbutt",
@@ -15797,6 +18297,10 @@
      "pp": 17
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "earthpower",
      "pp": 8
     },
@@ -15821,6 +18325,10 @@
      "pp": 12
     },
     {
+     "move": "growl",
+     "pp": 20
+    },
+    {
      "move": "headbutt",
      "pp": 17
     },
@@ -15843,6 +18351,10 @@
     {
      "move": "irontail",
      "pp": 10
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "megakick",
@@ -15873,12 +18385,20 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "swift",
      "pp": 8
     },
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
     },
     {
      "move": "thief",
@@ -15942,6 +18462,10 @@
      "pp": 17
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "earthpower",
      "pp": 8
     },
@@ -15968,6 +18492,10 @@
     {
      "move": "focusblast",
      "pp": 6
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "headbutt",
@@ -16022,6 +18550,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "stoneedge",
      "pp": 7
     },
@@ -16032,6 +18564,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
     },
     {
      "move": "thief",
@@ -16109,6 +18645,10 @@
      "pp": 7
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "facade",
      "pp": 12
     },
@@ -16175,6 +18715,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -16249,6 +18793,10 @@
     {
      "move": "closecombat",
      "pp": 7
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "drainpunch",
@@ -16339,6 +18887,10 @@
      "pp": 30
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -16388,6 +18940,10 @@
     }
    ],
    "learnable": [
+    {
+     "move": "amnesia",
+     "pp": 22
+    },
     {
      "move": "belch",
      "pp": 15
@@ -16493,6 +19049,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -16503,6 +19063,10 @@
     {
      "move": "stomp",
      "pp": 17
+    },
+    {
+     "move": "supersonic",
+     "pp": 10
     },
     {
      "move": "surf",
@@ -16530,6 +19094,10 @@
     },
     {
      "move": "whirlpool",
+     "pp": 17
+    },
+    {
+     "move": "workup",
      "pp": 17
     },
     {
@@ -16607,6 +19175,10 @@
      "pp": 6
     },
     {
+     "move": "poisongas",
+     "pp": 27
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -16635,8 +19207,16 @@
      "pp": 17
     },
     {
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -16651,8 +19231,16 @@
      "pp": 10
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "venoshock",
      "pp": 16
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[koffing]; learnsets.json[koffing] 第9世代; moves.json",
@@ -16732,6 +19320,10 @@
      "pp": 8
     },
     {
+     "move": "poisongas",
+     "pp": 27
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -16760,8 +19352,16 @@
      "pp": 17
     },
     {
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -16776,8 +19376,16 @@
      "pp": 10
     },
     {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "venoshock",
      "pp": 16
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[weezing]; learnsets.json[weezing] 第9世代; moves.json",
@@ -16830,6 +19438,10 @@
     {
      "move": "crunch",
      "pp": 13
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "dragonpulse",
@@ -16940,6 +19552,14 @@
      "pp": 30
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -17012,6 +19632,10 @@
     {
      "move": "crunch",
      "pp": 13
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "dragonpulse",
@@ -17158,6 +19782,14 @@
      "pp": 30
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -17229,6 +19861,14 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "covet",
      "pp": 27
     },
@@ -17243,6 +19883,10 @@
     {
      "move": "disarmingvoice",
      "pp": 15
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "drainpunch",
@@ -17321,8 +19965,24 @@
      "pp": 10
     },
     {
+     "move": "softboiled",
+     "pp": 15
+    },
+    {
+     "move": "sweetkiss",
+     "pp": 15
+    },
+    {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -17341,8 +20001,16 @@
      "pp": 17
     },
     {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
      "move": "waterpulse",
      "pp": 12
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     },
     {
      "move": "zenheadbutt",
@@ -17387,6 +20055,10 @@
      "pp": 15
     },
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "ancientpower",
      "pp": 12
     },
@@ -17423,6 +20095,10 @@
      "pp": 17
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "powerwhip",
      "pp": 8
     },
@@ -17447,12 +20123,20 @@
      "pp": 10
     },
     {
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
      "move": "swordsdance",
      "pp": 7
     },
     {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "tickle",
+     "pp": 17
     },
     {
      "move": "vinewhip",
@@ -17521,6 +20205,10 @@
      "pp": 13
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drainpunch",
      "pp": 8
     },
@@ -17547,6 +20235,10 @@
     {
      "move": "focusblast",
      "pp": 6
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "hammerarm",
@@ -17633,6 +20325,10 @@
      "pp": 11
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -17650,6 +20346,10 @@
     },
     {
      "move": "whirlpool",
+     "pp": 17
+    },
+    {
+     "move": "workup",
      "pp": 17
     }
    ],
@@ -17707,6 +20407,10 @@
      "pp": 12
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -17731,6 +20435,10 @@
      "pp": 13
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "liquidation",
      "pp": 10
     },
@@ -17740,6 +20448,10 @@
     },
     {
      "move": "protect",
+     "pp": 10
+    },
+    {
+     "move": "smokescreen",
      "pp": 10
     },
     {
@@ -17824,6 +20536,10 @@
      "pp": 12
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -17848,6 +20564,10 @@
      "pp": 13
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "liquidation",
      "pp": 10
     },
@@ -17857,6 +20577,10 @@
     },
     {
      "move": "protect",
+     "pp": 10
+    },
+    {
+     "move": "smokescreen",
      "pp": 10
     },
     {
@@ -18003,6 +20727,10 @@
      "pp": 15
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -18013,6 +20741,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
     },
     {
      "move": "throatchop",
@@ -18132,6 +20864,10 @@
      "pp": 15
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -18142,6 +20878,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
     },
     {
      "move": "throatchop",
@@ -18203,6 +20943,14 @@
      "pp": 8
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
+     "move": "cosmicpower",
+     "pp": 14
+    },
+    {
      "move": "dazzlinggleam",
      "pp": 15
     },
@@ -18235,6 +20983,10 @@
      "pp": 15
     },
     {
+     "move": "minimize",
+     "pp": 27
+    },
+    {
      "move": "powergem",
      "pp": 15
     },
@@ -18253,6 +21005,10 @@
     {
      "move": "rapidspin",
      "pp": 17
+    },
+    {
+     "move": "recover",
+     "pp": 12
     },
     {
      "move": "reflect",
@@ -18281,6 +21037,10 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
     },
     {
      "move": "triattack",
@@ -18345,6 +21105,14 @@
      "pp": 8
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
+     "move": "cosmicpower",
+     "pp": 14
+    },
+    {
      "move": "dazzlinggleam",
      "pp": 15
     },
@@ -18377,6 +21145,10 @@
      "pp": 15
     },
     {
+     "move": "minimize",
+     "pp": 27
+    },
+    {
      "move": "powergem",
      "pp": 15
     },
@@ -18405,6 +21177,10 @@
      "pp": 17
     },
     {
+     "move": "recover",
+     "pp": 12
+    },
+    {
      "move": "reflect",
      "pp": 15
     },
@@ -18431,6 +21207,10 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
     },
     {
      "move": "triattack",
@@ -18491,6 +21271,18 @@
     {
      "move": "brickbreak",
      "pp": 12
+    },
+    {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
     },
     {
      "move": "confusion",
@@ -18565,6 +21357,10 @@
      "pp": 17
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "pound",
      "pp": 27
     },
@@ -18614,6 +21410,14 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "tickle",
      "pp": 17
     },
     {
@@ -18684,6 +21488,10 @@
      "pp": 7
     },
     {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "facade",
      "pp": 12
     },
@@ -18698,6 +21506,10 @@
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "lightscreen",
@@ -18734,6 +21546,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -18799,6 +21615,14 @@
      "pp": 12
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "confusion",
      "pp": 22
     },
@@ -18821,6 +21645,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "focusblast",
@@ -18863,6 +21691,10 @@
      "pp": 12
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "pound",
      "pp": 27
     },
@@ -18893,6 +21725,10 @@
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sweetkiss",
+     "pp": 15
     },
     {
      "move": "thief",
@@ -18957,6 +21793,14 @@
      "pp": 8
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
+    },
+    {
      "move": "electroweb",
      "pp": 15
     },
@@ -18985,11 +21829,19 @@
      "pp": 12
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "lightscreen",
      "pp": 15
     },
     {
      "move": "lowsweep",
+     "pp": 17
+    },
+    {
+     "move": "metalsound",
      "pp": 17
     },
     {
@@ -19005,12 +21857,20 @@
      "pp": 13
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shockwave",
      "pp": 8
     },
     {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -19031,6 +21891,14 @@
     {
      "move": "thundershock",
      "pp": 17
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[electabuzz]; learnsets.json[electabuzz] 第9世代; moves.json",
@@ -19083,6 +21951,14 @@
      "pp": 15
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
@@ -19115,6 +21991,10 @@
      "pp": 11
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "focusblast",
      "pp": 6
     },
@@ -19133,6 +22013,10 @@
     {
      "move": "lavaplume",
      "pp": 10
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "lowsweep",
@@ -19163,11 +22047,23 @@
      "pp": 17
     },
     {
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "willowisp",
      "pp": 17
     }
    ],
@@ -19289,6 +22185,10 @@
      "pp": 17
     },
     {
+     "move": "submission",
+     "pp": 17
+    },
+    {
      "move": "superpower",
      "pp": 11
     },
@@ -19363,6 +22263,10 @@
      "pp": 7
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "facade",
      "pp": 12
     },
@@ -19431,6 +22335,14 @@
      "pp": 30
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -19445,6 +22357,14 @@
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "workup",
+     "pp": 17
     },
     {
      "move": "zenheadbutt",
@@ -19556,6 +22476,14 @@
      "pp": 10
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -19604,6 +22532,10 @@
      "pp": 12
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "muddywater",
      "pp": 10
     },
@@ -19632,12 +22564,20 @@
      "pp": 30
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunder",
      "pp": 7
     },
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
     },
     {
      "move": "twister",
@@ -19712,8 +22652,24 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "disarmingvoice",
      "pp": 15
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "dragondance",
+     "pp": 22
     },
     {
      "move": "dragonpulse",
@@ -19730,6 +22686,10 @@
     {
      "move": "freezedry",
      "pp": 13
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -19788,12 +22748,20 @@
      "pp": 11
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunder",
      "pp": 7
     },
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "tickle",
+     "pp": 17
     },
     {
      "move": "waterfall",
@@ -19879,6 +22847,10 @@
    ],
    "learnable": [
     {
+     "move": "babydolleyes",
+     "pp": 15
+    },
+    {
      "move": "bite",
      "pp": 19
     },
@@ -19887,12 +22859,32 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "covet",
      "pp": 27
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -19923,6 +22915,10 @@
      "pp": 14
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -19933,6 +22929,18 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "tickle",
+     "pp": 17
     },
     {
      "move": "weatherball",
@@ -19986,6 +22994,10 @@
      "pp": 17
     },
     {
+     "move": "babydolleyes",
+     "pp": 15
+    },
+    {
      "move": "bite",
      "pp": 19
     },
@@ -19998,12 +23010,32 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "covet",
      "pp": 27
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -20054,6 +23086,10 @@
      "pp": 14
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "scald",
      "pp": 15
     },
@@ -20072,6 +23108,14 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "waterfall",
@@ -20129,12 +23173,24 @@
    ],
    "learnable": [
     {
+     "move": "babydolleyes",
+     "pp": 15
+    },
+    {
      "move": "bite",
      "pp": 19
     },
     {
      "move": "bodyslam",
      "pp": 17
+    },
+    {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
     },
     {
      "move": "covet",
@@ -20145,6 +23201,14 @@
      "pp": 8
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
+    },
+    {
      "move": "electroweb",
      "pp": 15
     },
@@ -20153,8 +23217,16 @@
      "pp": 12
     },
     {
+     "move": "faketears",
+     "pp": 22
+    },
+    {
      "move": "falseswipe",
      "pp": 15
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -20173,6 +23245,10 @@
      "pp": 15
     },
     {
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
      "move": "mudslap",
      "pp": 16
     },
@@ -20189,6 +23265,10 @@
      "pp": 14
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -20199,6 +23279,14 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thunder",
@@ -20217,7 +23305,15 @@
      "pp": 17
     },
     {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
      "move": "weatherball",
+     "pp": 15
+    },
+    {
+     "move": "wildcharge",
      "pp": 15
     }
    ],
@@ -20256,6 +23352,10 @@
    ],
    "learnable": [
     {
+     "move": "babydolleyes",
+     "pp": 15
+    },
+    {
      "move": "bite",
      "pp": 19
     },
@@ -20264,8 +23364,20 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "covet",
      "pp": 27
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "ember",
@@ -20274,6 +23386,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "fireblast",
@@ -20294,6 +23410,14 @@
     {
      "move": "flamethrower",
      "pp": 12
+    },
+    {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "heatwave",
@@ -20336,6 +23460,10 @@
      "pp": 14
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -20352,8 +23480,20 @@
      "pp": 30
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "weatherball",
      "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[flareon]; learnsets.json[flareon] 第9世代; moves.json",
@@ -20403,6 +23543,14 @@
      "pp": 8
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
+    },
+    {
      "move": "electroweb",
      "pp": 15
     },
@@ -20439,6 +23587,10 @@
      "pp": 13
     },
     {
+     "move": "recover",
+     "pp": 12
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -20449,6 +23601,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -20464,6 +23620,10 @@
     },
     {
      "move": "thundershock",
+     "pp": 17
+    },
+    {
+     "move": "thunderwave",
      "pp": 17
     },
     {
@@ -20570,6 +23730,10 @@
      "pp": 16
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "muddywater",
      "pp": 10
     },
@@ -20590,6 +23754,10 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "scald",
      "pp": 15
     },
@@ -20598,12 +23766,20 @@
      "pp": 12
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "surf",
      "pp": 11
     },
     {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "tickle",
+     "pp": 17
     },
     {
      "move": "waterfall",
@@ -20712,6 +23888,10 @@
      "pp": 16
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "liquidation",
      "pp": 10
     },
@@ -20734,6 +23914,10 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sandattack",
+     "pp": 20
     },
     {
      "move": "scald",
@@ -20836,6 +24020,10 @@
      "pp": 10
     },
     {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "earthpower",
      "pp": 8
     },
@@ -20872,11 +24060,19 @@
      "pp": 19
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "liquidation",
      "pp": 10
     },
     {
      "move": "megadrain",
+     "pp": 17
+    },
+    {
+     "move": "metalsound",
      "pp": 17
     },
     {
@@ -20900,6 +24096,10 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "scald",
      "pp": 15
     },
@@ -20908,12 +24108,20 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "stoneedge",
      "pp": 7
     },
     {
      "move": "surf",
      "pp": 11
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -21038,12 +24246,20 @@
      "pp": 19
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "liquidation",
      "pp": 10
     },
     {
      "move": "megakick",
      "pp": 12
+    },
+    {
+     "move": "metalsound",
+     "pp": 17
     },
     {
      "move": "mudshot",
@@ -21074,12 +24290,20 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "scald",
      "pp": 15
     },
     {
      "move": "scratch",
      "pp": 28
+    },
+    {
+     "move": "screech",
+     "pp": 22
     },
     {
      "move": "slash",
@@ -21178,6 +24402,10 @@
      "pp": 10
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -21246,8 +24474,16 @@
      "pp": 7
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -21300,6 +24536,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "belch",
      "pp": 15
     },
@@ -21324,6 +24564,10 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "covet",
      "pp": 27
     },
@@ -21334,6 +24578,10 @@
     {
      "move": "defensecurl",
      "pp": 16
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "facade",
@@ -21420,6 +24668,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -21440,6 +24692,10 @@
      "pp": 30
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunder",
      "pp": 7
     },
@@ -21450,6 +24706,10 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
     },
     {
      "move": "zenheadbutt",
@@ -21511,8 +24771,20 @@
      "pp": 7
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
     },
     {
      "move": "freezedry",
@@ -21565,6 +24837,10 @@
     {
      "move": "swift",
      "pp": 8
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "waterpulse",
@@ -21622,12 +24898,20 @@
      "pp": 12
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
      "move": "discharge",
      "pp": 8
     },
     {
      "move": "drillpeck",
      "pp": 13
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
     },
     {
      "move": "facade",
@@ -21650,6 +24934,10 @@
      "pp": 15
     },
     {
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
      "move": "peck",
      "pp": 26
     },
@@ -21666,6 +24954,10 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunder",
      "pp": 7
     },
@@ -21678,7 +24970,15 @@
      "pp": 17
     },
     {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
      "move": "weatherball",
+     "pp": 15
+    },
+    {
+     "move": "wildcharge",
      "pp": 15
     },
     {
@@ -21737,6 +25037,14 @@
      "pp": 12
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
@@ -21761,6 +25069,10 @@
      "pp": 12
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "gust",
      "pp": 19
     },
@@ -21781,6 +25093,10 @@
      "pp": 15
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "overheat",
      "pp": 10
     },
@@ -21797,8 +25113,16 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "weatherball",
      "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     },
     {
      "move": "wingattack",
@@ -21855,6 +25179,10 @@
      "pp": 5
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -21903,6 +25231,10 @@
      "pp": 12
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "lightscreen",
      "pp": 15
     },
@@ -21923,12 +25255,20 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunder",
      "pp": 7
     },
     {
      "move": "thunderbolt",
      "pp": 10
+    },
+    {
+     "move": "thunderwave",
+     "pp": 17
     },
     {
      "move": "twister",
@@ -22026,6 +25366,10 @@
      "pp": 10
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "dragonpulse",
      "pp": 10
     },
@@ -22102,6 +25446,10 @@
      "pp": 12
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "lightscreen",
      "pp": 15
     },
@@ -22138,6 +25486,10 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunder",
      "pp": 7
     },
@@ -22147,6 +25499,10 @@
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "thunderwave",
      "pp": 17
     },
     {
@@ -22205,6 +25561,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "ancientpower",
      "pp": 12
     },
@@ -22233,12 +25593,24 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
      "move": "confusion",
      "pp": 22
     },
     {
      "move": "darkpulse",
      "pp": 10
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "drainpunch",
@@ -22309,6 +25681,10 @@
      "pp": 17
     },
     {
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
      "move": "poisonjab",
      "pp": 14
     },
@@ -22341,6 +25717,10 @@
      "pp": 15
     },
     {
+     "move": "recover",
+     "pp": 12
+    },
+    {
      "move": "reflect",
      "pp": 15
     },
@@ -22365,6 +25745,10 @@
      "pp": 8
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thunder",
      "pp": 7
     },
@@ -22377,8 +25761,16 @@
      "pp": 17
     },
     {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
      "move": "weatherball",
      "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     },
     {
      "move": "zenheadbutt",
@@ -22435,6 +25827,10 @@
      "pp": 15
     },
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "ancientpower",
      "pp": 12
     },
@@ -22449,6 +25845,10 @@
     {
      "move": "bodyslam",
      "pp": 17
+    },
+    {
+     "move": "bravebird",
+     "pp": 6
     },
     {
      "move": "brickbreak",
@@ -22471,12 +25871,24 @@
      "pp": 17
     },
     {
+     "move": "calmmind",
+     "pp": 19
+    },
+    {
      "move": "chargebeam",
      "pp": 12
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
      "move": "closecombat",
      "pp": 7
+    },
+    {
+     "move": "confuseray",
+     "pp": 13
     },
     {
      "move": "crunch",
@@ -22495,12 +25907,20 @@
      "pp": 15
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dracometeor",
      "pp": 5
     },
     {
      "move": "dragonclaw",
      "pp": 10
+    },
+    {
+     "move": "dragondance",
+     "pp": 22
     },
     {
      "move": "dragonpulse",
@@ -22527,6 +25947,10 @@
      "pp": 8
     },
     {
+     "move": "eerieimpulse",
+     "pp": 17
+    },
+    {
      "move": "electroweb",
      "pp": 15
     },
@@ -22539,8 +25963,16 @@
      "pp": 12
     },
     {
+     "move": "faketears",
+     "pp": 22
+    },
+    {
      "move": "falseswipe",
      "pp": 15
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
     },
     {
      "move": "fireblast",
@@ -22565,6 +25997,10 @@
     {
      "move": "flamethrower",
      "pp": 12
+    },
+    {
+     "move": "flareblitz",
+     "pp": 6
     },
     {
      "move": "flashcannon",
@@ -22667,6 +26103,10 @@
      "pp": 15
     },
     {
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
      "move": "muddywater",
      "pp": 10
     },
@@ -22677,6 +26117,10 @@
     {
      "move": "mudslap",
      "pp": 16
+    },
+    {
+     "move": "nastyplot",
+     "pp": 20
     },
     {
      "move": "overheat",
@@ -22799,6 +26243,10 @@
      "pp": 7
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -22823,6 +26271,14 @@
      "pp": 17
     },
     {
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
      "move": "vacuumwave",
      "pp": 14
     },
@@ -22844,6 +26300,14 @@
     },
     {
      "move": "whirlpool",
+     "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "willowisp",
      "pp": 17
     },
     {
@@ -22893,6 +26357,14 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "energyball",
      "pp": 11
     },
@@ -22901,8 +26373,16 @@
      "pp": 12
     },
     {
+     "move": "faketears",
+     "pp": 22
+    },
+    {
      "move": "gigadrain",
      "pp": 10
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -22925,6 +26405,10 @@
      "pp": 16
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -22941,12 +26425,24 @@
      "pp": 11
     },
     {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
     },
     {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     }
    ],
    "source": "pokedex.json[bayleef]; learnsets.json[bayleef] 第9世代; moves.json",
@@ -22995,6 +26491,14 @@
      "pp": 17
     },
     {
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dragontail",
      "pp": 13
     },
@@ -23007,8 +26511,16 @@
      "pp": 12
     },
     {
+     "move": "faketears",
+     "pp": 22
+    },
+    {
      "move": "gigadrain",
      "pp": 10
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -23035,6 +26547,10 @@
      "pp": 12
     },
     {
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
      "move": "protect",
      "pp": 10
     },
@@ -23051,12 +26567,24 @@
      "pp": 11
     },
     {
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
      "move": "swordsdance",
      "pp": 7
     },
     {
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "weatherball",
@@ -23118,6 +26646,10 @@
      "pp": 16
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
@@ -23150,6 +26682,10 @@
      "pp": 11
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
@@ -23164,6 +26700,10 @@
     {
      "move": "lavaplume",
      "pp": 10
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "overheat",
@@ -23186,12 +26726,28 @@
      "pp": 14
     },
     {
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
      "move": "swift",
      "pp": 8
     },
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     },
     {
      "move": "zenheadbutt",
@@ -23256,6 +26812,10 @@
      "pp": 16
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
@@ -23292,6 +26852,10 @@
      "pp": 11
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "focusblast",
      "pp": 6
     },
@@ -23318,6 +26882,10 @@
     {
      "move": "lavaplume",
      "pp": 10
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "overheat",
@@ -23356,6 +26924,10 @@
      "pp": 10
     },
     {
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -23364,11 +26936,23 @@
      "pp": 30
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "throatchop",
      "pp": 15
     },
     {
      "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "move": "wildcharge",
+     "pp": 15
+    },
+    {
+     "move": "willowisp",
      "pp": 17
     },
     {
@@ -23435,12 +27019,24 @@
      "pp": 13
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dragonclaw",
      "pp": 10
     },
     {
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "focuspunch",
@@ -23465,6 +27061,10 @@
     {
      "move": "icywind",
      "pp": 13
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "liquidation",
@@ -23503,6 +27103,10 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shadowclaw",
      "pp": 10
     },
@@ -23521,6 +27125,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -23613,8 +27221,16 @@
      "pp": 13
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "dragonclaw",
      "pp": 10
+    },
+    {
+     "move": "dragondance",
+     "pp": 22
     },
     {
      "move": "dragontail",
@@ -23623,6 +27239,10 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "faketears",
+     "pp": 22
     },
     {
      "move": "focusblast",
@@ -23655,6 +27275,10 @@
     {
      "move": "icywind",
      "pp": 13
+    },
+    {
+     "move": "leer",
+     "pp": 27
     },
     {
      "move": "liquidation",
@@ -23693,6 +27317,10 @@
      "pp": 28
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "shadowclaw",
      "pp": 10
     },
@@ -23715,6 +27343,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -23784,6 +27416,10 @@
      "pp": 13
     },
     {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "dragontail",
      "pp": 13
     },
@@ -23828,6 +27464,10 @@
      "pp": 5
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "lowsweep",
      "pp": 17
     },
@@ -23864,6 +27504,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -23878,6 +27522,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -23954,8 +27602,20 @@
      "pp": 13
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
      "move": "dragonclaw",
      "pp": 10
+    },
+    {
+     "move": "dragondance",
+     "pp": 22
     },
     {
      "move": "dragonpulse",
@@ -24010,6 +27670,10 @@
      "pp": 5
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "lowsweep",
      "pp": 17
     },
@@ -24050,6 +27714,10 @@
      "pp": 12
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -24064,6 +27732,10 @@
     {
      "move": "swordsdance",
      "pp": 7
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",
@@ -24146,12 +27818,20 @@
      "pp": 7
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
     },
     {
      "move": "fireblast",
@@ -24174,12 +27854,20 @@
      "pp": 12
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "focusblast",
      "pp": 6
     },
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "heatwave",
@@ -24218,6 +27906,10 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -24238,6 +27930,10 @@
      "pp": 7
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -24248,6 +27944,10 @@
     {
      "move": "vacuumwave",
      "pp": 14
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[combusken]; learnsets.json[combusken] 第9世代; moves.json",
@@ -24305,6 +28005,10 @@
      "pp": 17
     },
     {
+     "move": "bravebird",
+     "pp": 6
+    },
+    {
      "move": "brickbreak",
      "pp": 12
     },
@@ -24321,12 +28025,20 @@
      "pp": 7
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "featherdance",
+     "pp": 22
     },
     {
      "move": "fireblast",
@@ -24349,12 +28061,20 @@
      "pp": 12
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "focusblast",
      "pp": 6
     },
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "heatwave",
@@ -24401,6 +28121,10 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -24425,6 +28149,10 @@
      "pp": 7
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -24435,6 +28163,10 @@
     {
      "move": "vacuumwave",
      "pp": 14
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[blaziken]; learnsets.json[blaziken] 第9世代; moves.json",
@@ -24473,6 +28205,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -24489,6 +28225,10 @@
      "pp": 17
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "earthpower",
      "pp": 8
     },
@@ -24499,6 +28239,10 @@
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "helpinghand",
@@ -24561,8 +28305,16 @@
      "pp": 17
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "sludgewave",
      "pp": 13
+    },
+    {
+     "move": "supersonic",
+     "pp": 10
     },
     {
      "move": "surf",
@@ -24571,6 +28323,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "waterfall",
@@ -24628,6 +28384,10 @@
    ],
    "learnable": [
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -24648,6 +28408,10 @@
      "pp": 17
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "earthpower",
      "pp": 8
     },
@@ -24662,6 +28426,10 @@
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "growl",
+     "pp": 20
     },
     {
      "move": "hammerarm",
@@ -24736,6 +28504,10 @@
      "pp": 17
     },
     {
+     "move": "screech",
+     "pp": 22
+    },
+    {
      "move": "sludgewave",
      "pp": 13
     },
@@ -24748,12 +28520,20 @@
      "pp": 7
     },
     {
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
      "move": "surf",
      "pp": 11
     },
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "waterfall",
@@ -24816,6 +28596,10 @@
      "pp": 17
     },
     {
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
      "move": "aquatail",
      "pp": 11
     },
@@ -24836,12 +28620,20 @@
      "pp": 17
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "drainpunch",
      "pp": 8
     },
     {
      "move": "earthpower",
      "pp": 8
+    },
+    {
+     "move": "eerieimpulse",
+     "pp": 17
     },
     {
      "move": "facade",
@@ -24928,8 +28720,20 @@
      "pp": 11
     },
     {
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
+    },
+    {
+     "move": "toxic",
+     "pp": 12
     },
     {
      "move": "waterfall",
@@ -25000,6 +28804,10 @@
      "pp": 10
     },
     {
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
      "move": "ember",
      "pp": 15
     },
@@ -25028,6 +28836,10 @@
      "pp": 12
     },
     {
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
      "move": "foulplay",
      "pp": 17
     },
@@ -25052,12 +28864,20 @@
      "pp": 15
     },
     {
+     "move": "leer",
+     "pp": 27
+    },
+    {
      "move": "mudshot",
      "pp": 13
     },
     {
      "move": "mudslap",
      "pp": 16
+    },
+    {
+     "move": "nastyplot",
+     "pp": 20
     },
     {
      "move": "overheat",
@@ -25088,6 +28908,10 @@
      "pp": 15
     },
     {
+     "move": "takedown",
+     "pp": 19
+    },
+    {
      "move": "thief",
      "pp": 20
     },
@@ -25098,6 +28922,14 @@
     {
      "move": "thunderfang",
      "pp": 15
+    },
+    {
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "move": "willowisp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[houndoom]; learnsets.json[houndoom] 第9世代; moves.json",
@@ -25157,6 +28989,10 @@
     {
      "move": "closecombat",
      "pp": 7
+    },
+    {
+     "move": "doubleedge",
+     "pp": 12
     },
     {
      "move": "drainpunch",
@@ -25227,6 +29063,10 @@
      "pp": 12
     },
     {
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
      "move": "smackdown",
      "pp": 15
     },
@@ -25245,6 +29085,10 @@
     {
      "move": "tackle",
      "pp": 30
+    },
+    {
+     "move": "takedown",
+     "pp": 19
     },
     {
      "move": "thief",

@@ -50,13 +50,13 @@ export type ExitRequest = {actor:string;pos:Pos;locked:boolean;to?:number};
 export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'healSeed'|'rest'|'shop'|'exchange';
 export type ShopItem='berry'|'tonic'|'tm'|'pechaBerry'|'healSeed';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
-export type Item='berry'|'tonic'|'bigBerry'|'teamTonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'healSeed';
+export type Item='berry'|'tonic'|'bigBerry'|'teamTonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'healSeed'|'violentSeed'|'maxElixir';
 /** 8.8 (#165, G9.1): items lying on the floor, picked up by walking onto them. */
 export type PickupKind=Extract<PointKind,Item>;
 export const PICKUP_KINDS:readonly PickupKind[]=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','healSeed'];
 export const isPickupKind=(kind:string):kind is PickupKind=>(PICKUP_KINDS as readonly string[]).includes(kind);
 export const SKILL_CN:Record<Skill,string>=(names as unknown as {moves:Record<string,string>}).moves;
-export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂',pechaBerry:'桃桃果',rawstBerry:'木子果',cheriBerry:'零余果',healSeed:'治愈之种'};
+export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂',pechaBerry:'桃桃果',rawstBerry:'木子果',cheriBerry:'零余果',healSeed:'治愈之种',violentSeed:'暴力种子',maxElixir:'单人满 PP 补剂'};
 /** 8.8 (#165, G9.1): which status conditions each cure item removes (Heal Seed: all of them). */
 export const ITEM_CURES:Partial<Record<Item,readonly StatusId[]>>={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],healSeed:['psn','tox','brn','par','frz','confusion','flinch']};
 export const STATUS_NAMES:Record<StatusId,string>={psn:'中毒',tox:'剧毒',brn:'灼伤',par:'麻痹',frz:'冰冻',confusion:'混乱',flinch:'畏缩'};
@@ -78,7 +78,7 @@ export type Rect={x:number;y:number;w:number;h:number};
  * `rng` is the recruit-draw state (a 32-bit integer, separate from `dungeon.seed`); `kills` holds defeated enemies of the current round
  * until the round-end settlement and is empty at every checkpoint; `made` counts recruits created so far (ids N1, N2...).
  */
-export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number;pechaBerry?:number;rawstBerry?:number;cheriBerry?:number;healSeed?:number}};
+export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number;pechaBerry?:number;rawstBerry?:number;cheriBerry?:number;healSeed?:number;violentSeed?:number;maxElixir?:number}};
 /** Cumulative experience thresholds: reaching Lv L costs the sum of levels 5 through L-1. */
 const expThreshold=(level:number)=>level<=INITIAL_LEVEL?0:level*(level-1)/2-((INITIAL_LEVEL-1)*INITIAL_LEVEL)/2;
 export const PROG={recruitChance:0.3,thresholds:Array.from({length:101},(_,level)=>expThreshold(level)),initialLevel:INITIAL_LEVEL,maxLevel:100,hpPerLevel:1,damagePerLevel:1,damageEveryLevels:4,expMultiplier:2,goalExp:0,bossExp:0,berryHeal:8,tonicPp:10,teamTonicPp:5,restPp:5,bagLimit:null as number|null};
@@ -91,7 +91,7 @@ export type StoredFloor={floor:Pos[];liquid?:string[];arrival?:Pos;seen:string[]
 /** `base` (6.5): true for a run started from the base; only those runs get the floor-2 rest point (older generated runs keep their exact floors). */
 /** `services` (7.2): true for a run that may hold a shop and an exchanger (decided by `serviceRoll` from the seed). Older runs never get them. */
 /** `boss` (7.3): themed floors and a regional boss on the last floor. `roguelike` marks the new one-way rules; absent means a legacy run. */
-export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true;tmPool?:3;roguelike?:true};
+export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true;tmPool?:3|4;roguelike?:true};
 /** A technique machine obtained in this run; `sent` remains a possible in-run fate, while final rogue fate is decided by win or wipe. */
 export type TmItem={move:string;source:'target'|'shop'|'boss'|'challenge';fate:'held'|'brought'|'sent'|'lost'};
 /** 7.2 the shop of this run: fixed stock decided at the start, and every sale so far. `tm` is null once sold. */
@@ -131,7 +131,7 @@ export type RoundEvent=
   |{type:'pickup';actor:string;item:Item;ok:boolean};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
 export const RULE_VERSION='trial-rules-5';
-export const CONTENT_VERSION='trial-content-5';
+export const CONTENT_VERSION='trial-content-6';
 export const SPEC_SOURCE='5f3547889b30e59f6cdfebc5af8c91e46cba4ee4';
 export const key=(p:Pos)=>`${p.x},${p.y}`;
 export const same=(a:Pos|null,b:Pos|null)=>!!a&&!!b&&a.x===b.x&&a.y===b.y;
@@ -659,8 +659,30 @@ function sameRoomUnits(s:World,id:string):Unit[] {
   const room=roomAt(s,actor.pos);if(!room)return [];
   return sideIds(s,actor.side).map(i=>s.units[i]).filter(u=>alive(u)&&inRect(u.pos!,room));
 }
-function supportAction(s:World,id:string,quickguard:ReadonlySet<string>):Action|null {
+function supportAction(s:World,id:string,quickguard:ReadonlySet<string>,tactic:Tactic='together',visibleOnly?:ReadonlySet<string>):Action|null {
   const actor=s.units[id];if(!alive(actor))return null;
+  // 8.9a: the caller has already preferred any usable damage combination.
+  for(const kind of ['status','foeStages','heal','selfStages'] as const){
+    for(const skill of actor.learned){
+      if(!legalSupportTarget(s,id,skill))continue;
+      const spec=moveOf(skill)!;
+      if(spec.effects.includes('damage')||spec.effects.includes('blowaway'))continue;
+      const stages=spec.effects.map(stageEffect).filter(v=>v!==null);
+      if(kind==='status'||kind==='foeStages'){
+        if(tactic==='avoid'||spec.target!=='enemy')continue;
+        const status=spec.effects.find(e=>e.startsWith('status:'))?.slice(7) as StatusId|undefined;
+        if(kind==='status'?!status:!stages.some(e=>e.change<0))continue;
+        const target=moveTargetsInReach(s,id,spec).find(t=>
+          (!visibleOnly||visibleOnly.has(t.id))&&tacticalTargetAllowed(s,actor,t,tactic)&&!effectBlocked(s,actor,t,quickguard)&&
+          (kind==='status'?(!hasStatus(t,status!)&&!(status==='psn'&&hasStatus(t,'tox'))):stages.some(e=>e.change<0&&stageOf(t,e.stat)>-3)));
+        if(target)return {type:'skill',skill,target:spec.range==='room'||spec.range==='around'?id:target.id};
+      }else if(kind==='heal'){
+        if(spec.effects.includes('heal:1:2')&&actor.hp<actor.maxHp/2)return {type:'skill',skill,target:id};
+      }else if(spec.target==='user'&&!['defensecurl','harden'].includes(skill)&&stages.some(e=>e.change>0&&stageOf(actor,e.stat)<3)){
+        return {type:'skill',skill,target:id};
+      }
+    }
+  }
   if(actor.protect===0&&threatenedByOpponent(s,id,quickguard)&&legalSupportTarget(s,id,'protect'))return {type:'skill',skill:'protect',target:id};
   if(actor.stages.def<1){const defMove=actor.learned.find(k=>moveOf(k)?.effects.includes('stage:def:+1')&&legalSupportTarget(s,id,k));if(defMove){const spec=moveOf(defMove)!;return {type:'skill',skill:defMove,target:spec.range==='user'||spec.range==='room'?id:moveTargetsInReach(s,id,spec)[0].id};}}
   const helpTargets=moveTargetsInReach(s,id,moveOf('helpinghand')!).filter(u=>u.stages.atk<2);
@@ -684,7 +706,7 @@ function chooseAllyAction(s:World,id:string,blockingGuard:ReadonlySet<string>=ne
   const quickguard=new Set([...blockingGuard,...createdGuard]);
   if(tactic!=='nomoves'){
     const damage=pickDamageAction(s,id,tactic,quickguard,visible);if(damage)return damage;
-    const support=supportAction(s,id,quickguard);if(support)return support;
+    const support=supportAction(s,id,quickguard,tactic,visible);if(support)return support;
   }
   const basic=legalBasicTarget(s,id,tactic,visible);if(basic)return {type:'basic',target:basic.id};
   if(tactic==='wait')return {type:'wait'};
@@ -717,7 +739,7 @@ function chooseEnemyAction(s:World,id:string,blockingGuard:ReadonlySet<string>,c
     actor.targetMemory=clone(ordered[0].pos!);actor.lostSightTurns=0;
     const quickguard=new Set([...blockingGuard,...createdGuard]);
     const damage=pickDamageAction(s,id,'gofoes',quickguard,visibleIds);if(damage)return damage;
-    const support=supportAction(s,id,quickguard);if(support)return support;
+    const support=supportAction(s,id,quickguard,'gofoes',visibleIds);if(support)return support;
     const basic=legalBasicTarget(s,id,'gofoes',visibleIds);if(basic)return {type:'basic',target:basic.id};
     if(actor.boss&&BOSS_CONFIG[actor.species??'']?.canMove===false)return {type:'wait'};
     const target=ordered[0];
@@ -858,6 +880,12 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
       return null;
     }
     if(a.item==='teamTonic')return null;
+    if(a.item==='violentSeed'){
+      const w=s.units[a.target];
+      if(!alive(w)||w.side!=='friend'||!s.queue.includes(w.id))return '物品只能对存活同行使用';
+      if(w.id!==id&&!adjacent(s,u.pos,w.pos))return '物品只能对自己或相邻同行使用';
+      return stageOf(w,'atk')>=3&&stageOf(w,'spa')>=3?'攻击和特攻阶段已满，暴力种子不会有效果':null;
+    }
     const cures=ITEM_CURES[a.item];
     if(cures){
       const w=s.units[a.target];
@@ -1016,6 +1044,13 @@ function blowAway(s:World,actor:Unit,target:Unit):void {
   if(wall)collide(s,target.id);
   else if(blocker){collide(s,target.id);collide(s,blocker.id);}
 }
+const stageEffect=(effect:string):{stat:StageKey;change:number}|null=>{
+  const m=effect.match(/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/);
+  return m?{stat:m[1] as StageKey,change:Number(m[2])}:null;
+};
+function effectBlocked(s:World,actor:Unit,target:Unit,guard:ReadonlySet<string>):boolean {
+  return target.side!==actor.side&&(target.protect>0||(guard.has(target.id)&&!!actor.pos&&!!target.pos&&chebyshev(actor.pos,target.pos)>1));
+}
 function changeStage(s:World,targetId:string,stat:StageKey,change:number):void {
   if(stat==='spe')return; // the game has no speed: speed changes do not take effect (8.8, 4)
   const target=s.units[targetId],before=stageOf(target,stat);
@@ -1055,8 +1090,19 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
   });
   let dealt=0;
   for(const effect of spec.effects){
-    const stage=effect.match(/^stage:(atk|def):([+-]\d+)$/);
-    if(stage){for(const target of landed)if(alive(target))changeStage(s,target.id,stage[1] as 'atk'|'def',Number(stage[2]));continue;}
+    const stage=stageEffect(effect);
+    if(stage){for(const target of landed)if(alive(target)&&!effectBlocked(s,actor,target,blockingGuard))changeStage(s,target.id,stage.stat,stage.change);continue;}
+    if(effect.startsWith('status:')){
+      for(const target of landed)if(alive(target)&&!effectBlocked(s,actor,target,blockingGuard))applyStatus(s,target.id,effect.slice(7) as StatusId);
+      continue;
+    }
+    if(effect==='heal:1:2'){
+      for(const target of landed)if(alive(target)){
+        const before=target.hp;target.hp=Math.min(target.maxHp,target.hp+Math.round(target.maxHp/2));
+        note(s,`${target.id}回复HP ${before}→${target.hp}`);
+      }
+      continue;
+    }
     if(effect==='protect'){actor.protect=3;note(s,`${id}进入守住状态`);continue;}
     if(effect==='counter'){actor.counter=3;note(s,`${id}进入反击状态`);continue;}
     if(effect==='quickguard'){
@@ -1085,6 +1131,10 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
   if(spec.effects.includes('drain')&&dealt>0&&actor.hp>0){
     const before=actor.hp,heal=Math.max(1,Math.floor(dealt/2));actor.hp=Math.min(actor.maxHp,actor.hp+heal);
     note(s,`${id}吸取生命，HP ${before}→${actor.hp}`);
+  }
+  if(fx?.recoil&&dealt>0&&actor.hp>0){
+    const amount=Math.max(1,Math.floor(dealt*fx.recoil[0]/fx.recoil[1]));
+    hit(s,id,amount,'反作用');
   }
   // 8.8 (G5.15): side effects, one independent chance per target that was hit and is still standing; a guarded target (Protect, Quick Guard) is untouched.
   let connected=false;
@@ -1139,6 +1189,12 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     }else if(a.item==='berry'){
       const before=t.hp,boost=(s.blessings??[]).includes('berryBoost')?(BLESSINGS.berryBoost.berryHealBonus??0):0;
       const raw=PROG.berryHeal+boost+(s.talents?.supplies??0),heal=activeCommission(s,'guardian')?Math.floor(raw/2):raw;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
+    }else if(a.item==='violentSeed'){
+      changeStage(s,t.id,'atk',3-stageOf(t,'atk'));changeStage(s,t.id,'spa',3-stageOf(t,'spa'));
+      note(s,`${id}对${t.id}使用${ITEM_NAMES.violentSeed}，攻击和特攻升到最高`);
+    }else if(a.item==='maxElixir'){
+      for(const k of t.learned)t.pp[k]=t.maxPp[k]??0;
+      note(s,`${id}对${t.id}使用${ITEM_NAMES.maxElixir}，所有招式PP回满`);
     }else if(ITEM_CURES[a.item]){
       const cured=cureStatuses(s,t,ITEM_CURES[a.item]!);
       note(s,`${id}对${t.id}使用${ITEM_NAMES[a.item]}，治好了${cured.map(k=>STATUS_NAMES[k]).join('、')}`);
@@ -1789,9 +1845,9 @@ export function carriedUnit(id:string,m:SquadMember,vitality=0):Unit {
     learned:m.carry.map(k=>k.move),species:m.species,entrySpecies:m.species,level:INITIAL_LEVEL,tactic:m.tactic??'together',inst:m.inst,moves:m.carry.map(k=>k.move),...freshCombatState(),reflect:0,lightscreen:0,...(m.protected?{protected:true as const}:{})};
 }
 /** `boss` defaults to true for a base run of 3 floors. New expeditions start as one-way roguelike runs. */
-export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number;talents?:ExpeditionTalents},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3,difficulty:Difficulty='normal'):World {
+export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number;talents?:ExpeditionTalents},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3|4,difficulty:Difficulty='normal'):World {
   const selectedDifficulty=isDifficulty(difficulty)?difficulty:'normal';
-  const d:Dungeon={seed:seed>>>0,width:36,height:24,floors,level:1,stored:{},roguelike:true,...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...(tmPoolVersion===3&&squad&&boss?{tmPool:3 as const}:{})};
+  const d:Dungeon={seed:seed>>>0,width:36,height:24,floors,level:1,stored:{},roguelike:true,...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...((tmPoolVersion===3||tmPoolVersion===4)&&squad&&boss?{tmPool:tmPoolVersion}:{})};
   const f=freshFloor(d,1,true,selectedDifficulty);
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,liquid:f.liquid,arrival:f.arrival,seen:[],
     units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m,squad.talents?.vitality??0)])):{A:speciesUnit('A','charmander',INITIAL_LEVEL),B:speciesUnit('B','squirtle',INITIAL_LEVEL),C:speciesUnit('C','bulbasaur',INITIAL_LEVEL)}),...f.units},

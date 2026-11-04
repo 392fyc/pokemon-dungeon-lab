@@ -16,5 +16,11 @@
     "bigBerry": 50,
     "teamTonic": 50
   },
+  "roomItemWeights": {
+    "bigBerry": 35,
+    "teamTonic": 35,
+    "violentSeed": 15,
+    "maxElixir": 15
+  },
   "challengeCurrencyAmount": 40
 }

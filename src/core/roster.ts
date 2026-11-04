@@ -16,10 +16,12 @@ export const LEGACY_TM_MOVES=['protect','whirlwind','roar'] as const;
 export const TM_MOVES=['protect','whirlwind','roar','dragontail','helpinghand','mudslap'] as const;
 /** The 7.7b boss pool; only a new departure marked with tmPool:3 draws from these nine moves (8.8: Tera Blast removed). */
 export const TM_MOVES_V3=[...TM_MOVES,'quickguard','reflect','lightscreen'] as const;
+/** 8.9a: supported first-step templates intersected with the Explorers of Sky TM table, plus the existing nine. */
+export const TM_MOVES_V4=[...TM_MOVES_V3,'calmmind','toxic','bulkup','willowisp','thunderwave','swordsdance'] as const;
 /** All moves which can appear in the warehouse and pass legality checks. */
-export const ALL_TM_MOVES=TM_MOVES_V3;
+export const ALL_TM_MOVES=TM_MOVES_V4;
 /** Missing tmPool preserves old saves: ordinary runs use three, old boss runs six, new marked boss runs nine. */
-export const tmPool=(d?:{boss?:boolean;tmPool?:3}|null):readonly string[]=>d?.boss?(d.tmPool===3?TM_MOVES_V3:TM_MOVES):LEGACY_TM_MOVES;
+export const tmPool=(d?:{boss?:boolean;tmPool?:3|4}|null):readonly string[]=>d?.boss?(d.tmPool===4?TM_MOVES_V4:d.tmPool===3?TM_MOVES_V3:TM_MOVES):LEGACY_TM_MOVES;
 export type BossTraits={levelBonus:number;hpMultiplier:number;canMove:boolean;canBeBlownAway:boolean};
 export const BOSS_CONFIG:Record<string,BossTraits>=bosses.bosses;
 /** Bosses share the ordinary roster; recruited partners do not inherit boss traits. */

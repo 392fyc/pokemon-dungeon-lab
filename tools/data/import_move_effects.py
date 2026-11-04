@@ -67,6 +67,7 @@ def official_accuracy(official):
 
 def build(showdown, pmd):
     result = {}
+    template_sources = json.loads((REPO / "tools/data/moves-items-191-sources.json").read_text(encoding="utf-8"))["moves"]
     for move_id, spec in sorted(pmd["moves"].items()):
         if move_id in SKIPPED:
             continue
@@ -113,6 +114,19 @@ def build(showdown, pmd):
         cost = (sd.get("self") or {}).get("boosts")
         if cost:
             row["cost"] = stages(cost, move_id)
+        if "recoil" in spec.get("effects", []):
+            recoil = sd.get("recoil")
+            if not isinstance(recoil, list) or len(recoil) != 2 or not all(isinstance(v, int) and v > 0 for v in recoil):
+                sys.exit(f"{move_id} 的反作用比例无效：{recoil!r}")
+            row["recoil"] = recoil
+        row["source"] = {
+            "showdown": f"https://github.com/smogon/pokemon-showdown/blob/{SOURCE_COMMIT}/data/moves.ts",
+            "id": move_id,
+            "fields": [key for key in ("accuracy", "boosts", "status", "volatileStatus", "recoil", "heal", "secondary", "secondaries", "self") if key in sd],
+            "pmd": spec.get("official", {}),
+        }
+        if move_id in template_sources:
+            row["source"]["template"] = template_sources[move_id]
         result[move_id] = row
     return result
 

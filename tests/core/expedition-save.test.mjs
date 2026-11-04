@@ -74,7 +74,7 @@ for(const [name,mutate] of activeWorldMutations)test(`E4 old active World is dis
  assert.deepEqual(store.profile,initialProfile());
  assert.deepEqual(Object.keys(store.envelope).sort(),['format','rules','content','build','sequence','profile'].sort());
  assert.equal(store.envelope.format,2);assert.equal(store.envelope.rules,'trial-rules-5');
- assert.equal(store.envelope.content,'trial-content-5');assert.equal(storage.writes(),1);
+ assert.equal(store.envelope.content,'trial-content-6');assert.equal(storage.writes(),1);
  assert.deepEqual(JSON.parse(storage.raw()),store.envelope);
 });
 

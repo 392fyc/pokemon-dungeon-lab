@@ -49,7 +49,7 @@ test('R4 learnable mapping of specific moves',()=>{
  assert.deepEqual(find('charmander','dragontail'),{move:'dragontail',pp:13});
  assert.deepEqual(find('pidgey','whirlwind'),{move:'whirlwind',pp:27});
  assert.deepEqual(find('pikachu','thundershock'),{move:'thundershock',pp:17});
- assert.equal(find('bulbasaur','growl'),undefined); // Status move outside the override tables is unmapped
+ assert.deepEqual(find('bulbasaur','growl'),{move:'growl',pp:20}); // 8.9a primary enemy-stage template; the starting kit stays frozen
  assert.equal(find('rattata','superfang'),undefined); // basePower 0
 });
 

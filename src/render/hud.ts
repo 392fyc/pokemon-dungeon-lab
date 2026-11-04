@@ -38,6 +38,8 @@ const ITEM_CATEGORIES: Record<Item, string> = {
   rawstBerry: "berry",
   cheriBerry: "berry",
   healSeed: "other",
+  violentSeed: "other",
+  maxElixir: "drink",
 };
 const CATEGORY_TABS = [
   ["all", "全部"],
@@ -128,6 +130,8 @@ const QUICK_ITEM_NAMES: Record<Item, string> = {
   rawstBerry: "木子果",
   cheriBerry: "零余果",
   healSeed: "治愈种",
+  violentSeed: "暴力种",
+  maxElixir: "满PP剂",
 };
 
 function quickSlotMarkup(world: World, item: Item | null, index: number, disabled: boolean): string {

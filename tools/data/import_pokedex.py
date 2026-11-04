@@ -77,6 +77,7 @@ TEAM_PROTECTION_NOTES = {
     "lightscreen": "固定取无限迷宫（GTI）同房间全队版；本作持续10个敌方阶段，官方无限迷宫起为21回合。",
 }
 TEAM_PROTECTION_EFFECTS = {move_id: move_id for move_id in TEAM_PROTECTION_MOVE_IDS}
+TM_89_MOVE_IDS = ("calmmind", "toxic", "bulkup", "willowisp", "thunderwave", "swordsdance")
 
 GAME_PRIORITY = ("TDS", "S", "TD", "GTI", "SMD", "RTDX")
 GAME_OUTPUT = {
@@ -87,7 +88,7 @@ GAME_OUTPUT = {
     "SMD": ("SMD", "超不可思议的迷宫"),
     "RTDX": ("RTDX", "救助队 DX"),
 }
-ADMISSION_KEYS = ("existingMoveRule", "blowaway", "drain", "pureDamage", "selfStages", "teamProtection")
+ADMISSION_KEYS = ("existingMoveRule", "blowaway", "drain", "pureDamage", "selfStages", "teamProtection", "foeStages", "status", "recoil", "heal")
 EXCLUSION_KEYS = (
     "nonstandard", "noOfficialData", "unsupportedRange", "unsupportedTarget",
     "selfCostOrCondition", "ohko", "fixedDamage", "multihit", "recoil",
@@ -495,7 +496,7 @@ def attack_special_reason(move: dict) -> str | None:
     return None
 
 
-def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_move_specs: dict):
+def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_move_specs: dict, expanded=True):
     specs, result, admission_counts, exclusions, unavailable_power = {}, {}, {"existingMoveRule": 0}, {}, {}
     for move_id in sorted(union):
         if move_id in old_move_specs:
@@ -520,7 +521,7 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
                     reason = target_reason
                 elif self_cost(move_id, move):
                     reason = "自身代价／使用条件"
-                elif move.get("category") in ("Physical", "Special") and attack_special_reason(move):
+                elif move.get("category") in ("Physical", "Special") and attack_special_reason(move) and not (expanded and attack_special_reason(move) == "反作用"):
                     reason = attack_special_reason(move)
                 elif move.get("category") in ("Physical", "Special") and as_power(row["pow"]) is None:
                     reason = "官方威力不可用"
@@ -542,9 +543,28 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
                         kind = "blowaway"
                     elif category in ("Physical", "Special") and move.get("drain"):
                         effects, kind = ["damage", "drain"], "drain"
+                    elif expanded and category in ("Physical", "Special") and move.get("recoil"):
+                        effects, kind = ["damage", "recoil"], "recoil"
                     elif category in ("Physical", "Special"):
                         effects, note, kind = ["damage"], "省略次要效果", "pureDamage"
-                    elif category == "Status" and move.get("target") == "self" and isinstance(move.get("boosts"), dict):
+                    elif expanded and category == "Status":
+                        stage_keys = {"atk": "atk", "def": "def", "spa": "spa", "spd": "spd", "accuracy": "acc", "evasion": "eva"}
+                        boosts = move.get("boosts") or {}
+                        supported = {stage_keys[k]: v for k, v in boosts.items() if k in stage_keys}
+                        valid = supported and all(isinstance(v, int) and v != 0 for v in boosts.values())
+                        if move_id in {"recover", "synthesis", "slackoff", "softboiled"}:
+                            effects, kind = ["heal:1:2"], "heal"
+                        elif move.get("target") == "self" and valid and all(v > 0 for v in boosts.values()) and move_id not in {"growth", "charge"}:
+                            effects = [f"stage:{k}:{v:+d}" for k, v in supported.items()]
+                            note = "忽略速度部分" if "spe" in boosts else ""
+                            kind = "selfStages"
+                        elif target_value == "enemy" and valid and set(boosts).issubset(stage_keys) and all(v < 0 for v in boosts.values()) and not move.get("status") and not move.get("volatileStatus"):
+                            effects = [f"stage:{k}:{v:+d}" for k, v in supported.items()]
+                            kind = "foeStages"
+                        elif target_value == "enemy" and not boosts and not move.get("self") and (move.get("status") in {"psn", "tox", "brn", "par"} or move.get("volatileStatus") == "confusion"):
+                            effects = ["status:" + (move.get("status") or move["volatileStatus"])]
+                            kind = "status"
+                    elif not expanded and category == "Status" and move.get("target") == "self" and isinstance(move.get("boosts"), dict):
                         boosts = move["boosts"]
                         if boosts and set(boosts).issubset({"atk", "def"}) and all(isinstance(v, (int, float)) and v != 0 for v in boosts.values()):
                             for stat in ("atk", "def"):
@@ -557,6 +577,19 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
                     if not kind:
                         reason = "变化招式暂无模板"
                     else:
+                        # Stage differences explicitly documented in the Explorers sections, rather than the modern core-series values.
+                        pmd_stages = {"minimize": ["stage:eva:+1"], "sweetscent": ["stage:eva:-1"], "metalsound": ["stage:spd:-3"]}
+                        if expanded and move_id in pmd_stages:
+                            effects = pmd_stages[move_id]
+                            note = "能力级数取 Bulbapedia 探险队段落，覆盖 Showdown 的主系列级数。"
+                        if expanded and kind == "heal":
+                            if move_id != "softboiled":
+                                range_value, target_value = "user", "user"
+                            note = "回复各目标一半最大HP；生蛋沿用原版房间全队，光合作用不随天气。"
+                        if expanded and move_id in {"screech", "charm"}:
+                            note = "探险队使用独立倍率，本作没有该系统；依作品优先级仍无可对应阶段的效果，改取 Showdown 阶段 −2（#191）。"
+                        if expanded and move_id == "smokescreen":
+                            note = "探险队使用必定落空状态，本作没有该状态；效果取后作超不可思议的迷宫的命中阶段 −1（#191），射程与PP仍按所选原版数据。"
                         game_id, game_name = GAME_OUTPUT[row["game"]]
                         power = as_power(row["pow"])
                         specs[move_id] = {
@@ -718,7 +751,7 @@ def evolution_fields(data: dict, all_species: list[dict]) -> dict[str, dict]:
 
 
 def generate_roster(data: dict, all_species: list[dict], learnsets: dict, union: set[str],
-                    admission: dict, move_specs: dict, legacy_species: list[dict], showdown_moves: dict):
+                    admission: dict, move_specs: dict, legacy_species: list[dict], showdown_moves: dict, kit_permitted=None):
     legacy_by_id = {sp["id"]: sp for sp in legacy_species}
     species_evolution = evolution_fields(data, all_species)
     permitted = {mid for mid, row in admission.items() if row["admitted"]} - set(REMOVED_MOVE_IDS)
@@ -740,7 +773,7 @@ def generate_roster(data: dict, all_species: list[dict], learnsets: dict, union:
             max_hp = 12 + entry["baseStats"]["hp"] // 5
             levelups = []
             for mid, methods in selected.items():
-                if mid not in permitted:
+                if mid not in (kit_permitted if kit_permitted is not None else permitted):
                     continue
                 for method, level in methods:
                     if method == "L" and level is not None:
@@ -828,8 +861,11 @@ def validate_existing_species(current_species: list[dict] | None, generated_spec
         if generated is None:
             fail(f"当前 roster.json 含固定名单以外物种：{species_id}")
         # 8.8（#165）：PP 与太晶爆发的去除是有意的改动，kit/learnable 只比较招式 id。
-        old_fields = {key: frozen_view(value) for key, value in current.items() if key not in EVOLUTION_FIELDS}
-        generated_old_fields = {key: frozen_view(value) for key, value in generated.items() if key not in EVOLUTION_FIELDS}
+        old_fields = {key: frozen_view(value) for key, value in current.items() if key not in EVOLUTION_FIELDS and key != "learnable"}
+        generated_old_fields = {key: frozen_view(value) for key, value in generated.items() if key not in EVOLUTION_FIELDS and key != "learnable"}
+        old_learnable = {m["move"] for m in current.get("learnable", [])}
+        if not old_learnable.issubset({m["move"] for m in generated["learnable"]}):
+            fail(f"既有可学招式丢失：{species_id}")
         if old_fields != generated_old_fields:
             changed = sorted(set(old_fields) | set(generated_old_fields))
             changed = [key for key in changed if old_fields.get(key) != generated_old_fields.get(key)]
@@ -1095,9 +1131,14 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
     admitted_count = sum(1 for result in admission.values() if result["admitted"])
     all_move_specs = dict(old_pmd["moves"])
     all_move_specs.update(new_specs)
+    _, old_admission, _, _, _ = classify_moves(union, data["moves"], data["pmd"], old_pmd["moves"], expanded=False)
+    kit_permitted = {mid for mid, row in old_admission.items() if row["admitted"]}
     roster, unavailable = generate_roster(
-        data, all_species, roster_learnsets, union, admission, all_move_specs, old_species, data["moves"],
+        data, all_species, roster_learnsets, union, admission, all_move_specs, old_species, data["moves"], kit_permitted,
     )
+    frozen_kits = json.loads((REPO / "tools/data/starting-kits-191.json").read_text(encoding="utf-8"))["kits"]
+    if {sp["id"]: sp["kit"] for sp in roster} != frozen_kits:
+        fail("8.9a 的175种初始招式与固定基线不同")
     validate_existing_species(checked.get("currentRosterSpecies"), roster)
     frozen_ids = tuple(sp["id"] for sp in roster if sp["id"] in LEGACY_SPECIES_IDS)
     if frozen_ids != LEGACY_SPECIES_IDS:
@@ -1135,7 +1176,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "species": roster,
     }
     tm_names = dict(baseline_names["tms"])
-    for move_id in TEAM_PROTECTION_MOVE_IDS:
+    for move_id in (*TEAM_PROTECTION_MOVE_IDS, *TM_89_MOVE_IDS):
         if not move_names.get(move_id):
             fail(f"招式机名称缺失：{move_id}")
         tm_names[move_id] = move_names[move_id]
@@ -1145,7 +1186,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "types": baseline_names["types"],
         "moves": dict(sorted(move_names.items())),
         "tms": tm_names,
-        "items": baseline_names["items"],
+        "items": {**baseline_names["items"], "violentSeed": "暴力种子", "maxElixir": "单人满 PP 补剂"},
     }
     pmd_bytes = serialize_pmd(old_pmd, new_specs, baseline_snippets, data["moves"])
 
@@ -1228,6 +1269,8 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "src/data/roster.json": roster_bytes,
         "src/data/pmd-moves.json": pmd_bytes,
         "src/data/names-zh.json": names_bytes,
+        "src/render/move-types.json": (json.dumps({"source": "fixed Showdown moves.json", "sha256": checked["hashes"]["showdown/moves.json"],
+            "types": {mid: data["moves"][mid]["type"] for mid in sorted(all_move_specs)}}, ensure_ascii=False, indent=2) + "\n").encode("utf-8"),
         ".artifacts/pokedex/exceptions.md": exceptions.encode("utf-8"),
         ".artifacts/pokedex/summary.json": summary_bytes,
         "summary": summary,

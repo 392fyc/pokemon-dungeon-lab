@@ -70,6 +70,7 @@ async function setup(fixture,mode='pass',animate=false,source='painter'){
   };
  },{mode});
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ if(animate)await page.clock.install();
  await page.goto(base+(fixture?'?fixture='+fixture:'?dev=1'));await page.locator('#start').waitFor();
  return {context,page,errors};
 }
@@ -597,6 +598,9 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
 await test('6.4 动画：演出期间世界不推进、输入不积压，结束后新输入生效；关闭开关不演出',async()=>{
  const on=await setup('K1','pass',true),off=await setup('K1');
  try{const p=on.page;await start(p);assert.equal(await p.evaluate(()=>window.trial.animationEnabled()),true);
+  // Hold presentation time before starting the round: real input must land while
+  // the animation is active, even when browser round trips outlast its ~700 ms.
+  await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));
   const s0=await state(p);await p.keyboard.press('.'); // wait: the melee enemy H hits back, so a hit step is played
   assert.equal(await p.evaluate(()=>window.trial.animating()),true,'animation is playing right after the round');
   const s1=await state(p);assert.equal(s1.round,s0.round+1);
@@ -606,7 +610,12 @@ await test('6.4 动画：演出期间世界不推进、输入不积压，结束�
   assert.equal(await p.locator('#hud-bottom [data-hud-skill]').first().isDisabled(),true,'the visible HUD move controls are unavailable during animation');
   const during=await p.evaluate(()=>({animating:window.trial.animating(),round:window.trial.getState().round}));
   assert.equal(during.animating,true);assert.equal(during.round,s1.round,'inputs during the animation do not advance the world');
-  if(await p.evaluate(()=>window.trial.animating())){const box=await p.locator('canvas').boundingBox();await p.mouse.click(box.x+box.width/2,box.y+box.height/2);assert.equal((await state(p)).round,s1.round,'a board click during the animation does not advance the world');}
+  const box=await p.locator('canvas').boundingBox();
+  await p.evaluate(()=>{window.__animationClick=null;document.querySelector('canvas').addEventListener('pointerdown',()=>{window.__animationClick={animating:window.trial.animating(),round:window.trial.getState().round};},{capture:true,once:true});});
+  await p.mouse.click(box.x+box.width/2,box.y+box.height/2);
+  assert.deepEqual(await p.evaluate(()=>window.__animationClick),{animating:true,round:s1.round},'the real canvas input arrived during the animation');
+  assert.equal((await state(p)).round,s1.round,'a board click during the animation does not advance the world');
+  await p.clock.resume();
   await p.waitForFunction(()=>!window.trial.animating());await p.waitForTimeout(500);
   assert.deepEqual(await state(p),s1,'nothing was queued while animating');
   await p.keyboard.press('.');await ready(p);assert.equal((await state(p)).round,s1.round+1,'a new input after the animation takes effect');

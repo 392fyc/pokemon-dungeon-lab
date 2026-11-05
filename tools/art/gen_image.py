@@ -1,6 +1,6 @@
 """Generate one image from a prompt card with gpt-image, under a hard spending ledger.
 
-Usage: python tools/art/gen_image.py cards/<card>.json --batch <tag> --stage <stage6|stage7|v01> [--quality low] [--model gpt-image-2.5-flare]
+Usage: python tools/art/gen_image.py cards/<card>.json --batch <tag> --stage <stage6|stage7|v01> [--quality low] [--model gpt-image-2.6-flare]
 
 The project's OpenAI credit was 50 USD (user, 2026-10-30); on 2026-11-01 the account showed 52.83 USD, expiring 2026-11-14.
 Stage 6 may spend at most 15 USD, stage 7 at most 20 USD, v0.1 at most 30 USD (user, 2026-11-01), and one batch at most 2 USD. --stage is required and must be a registered stage. Each call is estimated before it is sent and refused if a cap would be exceeded; the
@@ -14,10 +14,11 @@ from common import RAW, openai_key
 
 HERE = Path(__file__).resolve().parent
 LEDGER = HERE / 'usage-ledger.json'
-PRICE = {'image_out': 30e-6, 'image_in': 8e-6, 'text_in': 5e-6}  # USD per token, official model pages 2026-10-30
+DEFAULT_MODEL = 'gpt-image-2.6-flare'
+PRICE = {'image_out': 30e-6, 'image_in': 8e-6, 'text_in': 5e-6}  # USD per token, official 2.5 and 2.6 model pages, rechecked 2026-11-05
 CAPS = {'project': 52.83, 'batch': 2.0, 'stages': {'stage6': 15.0, 'stage7': 20.0, 'v01': 30.0}}
-# Conservative output-token guesses per call, used only for the pre-call check.
-GUESS = {'low': 400, 'medium': 2000, 'high': 7000, 'xhigh': 12000, 'max': 20000, 'auto': 7000}
+# Conservative output-token guesses per call, used only for the pre-call check. 2.6 flare low returned 824 output tokens (2026-11-05).
+GUESS = {'low': 1000, 'medium': 2000, 'high': 7000, 'xhigh': 12000, 'max': 20000, 'auto': 7000}
 
 
 def cost(usage: dict) -> float:
@@ -64,7 +65,7 @@ def main() -> None:
     ap.add_argument('--stage', required=True, choices=sorted(CAPS['stages']), help='registered stage; each has its own cap')
     a = ap.parse_args()
     card = json.loads(Path(a.card).read_text(encoding='utf-8'))
-    model = a.model or card.get('model', 'gpt-image-2.5-flare')
+    model = a.model or DEFAULT_MODEL  # a card's own 'model' only records what made the existing asset
     quality = a.quality or card.get('quality', 'low')
     size = card.get('size', '1024x1024')
     ledger = json.loads(LEDGER.read_text(encoding='utf-8')) if LEDGER.exists() else {'caps': CAPS, 'entries': []}

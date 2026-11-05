@@ -626,7 +626,7 @@ class BoardScene extends Phaser.Scene {
  private dtefLayer!:DtefTerrainLayer;private painterLayer!:PainterTerrainLayer;private darkness!:DungeonDarkness;private lightWorld:World|null=null;
  update(time:number){this.dtefLayer?.update(time);this.followSprites();this.darkness?.update(time,this.partyLights());}
  private followSprites(){
-  for(const view of this.views.values()){const hp=view.labels[0];if(hp){placeHp(view.sprite,hp.t);hp.dx=hp.t.x-view.gfx.x;hp.dy=hp.t.y-view.gfx.y;}}
+  for(const view of this.views.values()){const hp=view.labels[0];if(hp){placeHp(view.sprite,hp.t,this.lastGeometry?.cell??48);hp.dx=hp.t.x-view.gfx.x;hp.dy=hp.t.y-view.gfx.y;}}
   if(this.lastGeometry?.dungeon&&this.lightWorld){const sprite=this.views.get(this.lightWorld.leader)?.sprite;if(sprite)this.cameras.main.setRoundPixels(true).setScroll(Math.round(sprite.x-this.scale.width/2),Math.round(sprite.y-this.scale.height/2));}
  }
  private partyLights(){
@@ -707,7 +707,7 @@ class BoardScene extends Phaser.Scene {
   sp.setVisible(true).setAlpha(1).setPosition(c.x,c.y+g.cell*UNIT_GROUND_FRACTION).setScale(scale*(u.boss?1.5:1)).setOrigin(.5,groundOriginY(dex,'Idle'));sp.anims.timeScale=1;if(sp.anims.currentAnim?.key!==anim)sp.play(anim);
   const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:Math.max(10,Math.round(g.cell*.12)),color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
   // Only HP sits beside the model; species names remain in the HUD and information cards.
-  const hp=ut(0,0,`${u.hp}`,'#73ff7a');hp.t.setStyle({fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(16,Math.round(g.cell*.22))});placeHp(sp,hp.t);hp.dx=hp.t.x-c.x;hp.dy=hp.t.y-c.y;
+  const hp=ut(0,0,`${u.hp}`,'#73ff7a');hp.t.setStyle({fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(16,Math.round(g.cell*.22))});placeHp(sp,hp.t,g.cell);hp.dx=hp.t.x-c.x;hp.dy=hp.t.y-c.y;
   this.views.set(id,{sprite:sp,gfx:ug,labels:[hp,...(u.boss?[ut(0,-g.cell*.78,'首领','#ffd37a')]:[])],dex,row});}
  this.sprites.forEach((sp,id)=>{if(!shown.has(id))sp.setVisible(false);});this.lastGeometry=g;
  if(g.dungeon)this.followSprites();else this.cameras.main.setScroll(0,0);

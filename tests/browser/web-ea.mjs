@@ -65,7 +65,7 @@ try{
  await p.locator('#title-settings').click();await p.locator('#anim-toggle').uncheck();
  assert.ok(scriptRequests.some(url=>/\/game-data-.*\.js/.test(url)),'entering settings loads the existing save validator and game data');
  assert.match(await p.locator('#settings').innerText(),/设置与存档/);
- await p.locator('#settings summary').click();assert.match(await p.locator('#settings').innerText(),/方向键移动/);
+ await p.locator('#settings summary').click();const help=await p.locator('#settings').innerText();assert.match(help,/按住方向键连续移动/);assert.match(help,/碰墙只转身/);assert.match(help,/F 朝前普攻，打空也占一轮/);
  await p.locator('#settings-close').click();await p.reload();await p.locator('#title-settings').click();
  assert.equal(await p.locator('#anim-toggle').isChecked(),false);await p.locator('#settings-close').click();
  result.checks.push('静止标题只请求入口脚本、不请求 Phaser 或数据块；主动打开设置才加载存档校验；动画偏好重载保留，设置含按键说明');

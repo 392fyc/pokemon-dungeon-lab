@@ -26,6 +26,8 @@ export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; p
   asleep?:boolean; wakeSkip?:boolean; targetMemory?:Pos|null; lostSightTurns?:number; roamTarget?:Pos|null; direction?:Pos|null;
   waitOnly?:true; recruit?:Unit; species?:string;
   deferredEvolutionLevel?:number;
+  /** Facing is learned from the unit's last movement or attack; old worlds omit it. */
+  facing?:Pos;
   /** 6.5: base-roster instance this unit was made from, and the names of its carried moves (aligned with `learned`). Absent for recruits made in the run and for fixtures. */
   inst?:string; moves?:string[];
   /** 7.2: true for a founding member of the base profile (the initial two, or the three starters of an old profile); never goes missing in a wipe. */
@@ -35,12 +37,12 @@ export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; p
 // Precondition: generated expedition enemies never carry `recruit`; expedition invitations come only from the
 // round-end draw. A preset `recruit` would issue a species-less invitation that save.ts rejects.
 export type Action = {type:'move';to:Pos}|{type:'basic';target:string}|{type:'skill';skill:Skill;target:string}
-  |{type:'wait'}|{type:'swap';target:string}|{type:'interact';exit:boolean}|{type:'use';item:Item;target:string}
+  |{type:'basicForward'}|{type:'wait'}|{type:'swap';target:string}|{type:'interact';exit:boolean}|{type:'use';item:Item;target:string}
   /** 7.2 exchanger: send one living non-leader companion home, with up to two held technique machines (indexes into `World.tms`). Occupies the leader's action. */
   |{type:'exchange';target:string;cargo:number[]};
 export type Command = {type:'switch';actor:string}|{type:'round';action:Action;override?:{actor:string;action:Action}}
-  |{type:'tactic';actor:string;tactic:Tactic}|{type:'evolve';species:string|null}
-  |{type:'invite';choice:'accept'|'reject';outgoing?:string}|{type:'finishExit'}|{type:'finishTransit'}
+  |{type:'tactic';actor:string;tactic:Tactic}|{type:'face';direction:Pos}|{type:'evolve';species:string|null}
+  |{type:'invite';choice:'accept'|'reject'|'camp';outgoing?:string}|{type:'finishExit'}|{type:'finishTransit'}
   |{type:'commissionChoice';choice:'accept'|'reject'}|{type:'blessingChoice';blessing:BlessingId|null}|{type:'tmChoice';move:string}
   /** 7.2 shop purchase: needs the leader on the shop cell; takes no round. */
   |{type:'buy';item:ShopItem};
@@ -118,7 +120,7 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   talents?:ExpeditionTalents;completedCommissions?:number;
   /** 8.8 (#165): state of the separate battle random stream (hits, secondary effects, status durations, confusion). Derived from the dungeon seed on first use; never saved. */
   battleRng?:number;
-  /** 8.8 (#165): what happened in the latest round command (misses, status changes, status damage, pickups), for the interface. Absent when nothing happened; reset by every round command. */
+  /** 8.8 (#165): latest round events (misses, air swings, status changes, status damage, pickups) for the interface; reset by each round command. */
   events?:RoundEvent[];
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
   pendingEvolutions?:{actor:string;choices:string[]}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
@@ -126,6 +128,7 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   purse?:number;tms?:TmItem[];shop?:Shop;exchange?:Exchange};
 export type RoundEvent=
   |{type:'miss';actor:string;target:string;skill:string|null}
+  |{type:'airAttack';actor:string;from:Pos;to:Pos}
   |{type:'status';target:string;status:StatusId;change:'apply'|'refresh'|'cure'|'expire'|'unchanged'}
   |{type:'statusDamage';target:string;status:'psn'|'tox'|'brn';amount:number}
   |{type:'pickup';actor:string;item:Item;ok:boolean};
@@ -141,6 +144,16 @@ export const DIRS:Pos[]=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 export const DIRS8:Pos[]=[...DIRS,{x:1,y:1},{x:-1,y:1},{x:-1,y:-1},{x:1,y:-1}];
 export const plus=(a:Pos,b:Pos):Pos=>({x:a.x+b.x,y:a.y+b.y});
 export const clone=<T>(v:T):T=>structuredClone(v);
+const isDirection=(value:unknown):value is Pos=>!!value&&typeof value==='object'&&Number.isInteger((value as Pos).x)&&Number.isInteger((value as Pos).y)&&DIRS8.some(d=>d.x===(value as Pos).x&&d.y===(value as Pos).y);
+/** A unit's saved facing, or the legacy default when it has never moved or attacked. */
+export function facingOf(unit:Pick<Unit,'side'|'facing'>):Pos {
+  if(isDirection(unit.facing))return {x:unit.facing.x,y:unit.facing.y};
+  return unit.side==='friend'?{x:1,y:0}:{x:-1,y:0};
+}
+function faceToward(unit:Unit,from:Pos,to:Pos):void {
+  const direction={x:Math.sign(to.x-from.x),y:Math.sign(to.y-from.y)};
+  if(isDirection(direction))unit.facing=direction;
+}
 const freshCombatState=()=>({stages:{atk:0,def:0} as Unit['stages'],protect:0,counter:0,lastMove:null as string|null});
 export function friend(id:string,x:number,y:number,hp=20,pp:Unit['pp']={}):Unit {
   return {id,side:'friend',hp,maxHp:20,pos:hp>0?{x,y}:null,pp:{...pp},maxPp:Object.fromEntries(Object.keys(pp).map(k=>[k,2])),learned:Object.keys(pp),...freshCombatState(),reflect:0,lightscreen:0,tactic:'together',level:INITIAL_LEVEL};
@@ -541,7 +554,7 @@ function applyBlessing(s:World,id:BlessingId):void {
 function updateLevelsAfterCommissionReward(s:World):boolean {
   const p=s.prog;if(!p)return false;
   let changed=false;while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level+1]){
-    p.level++;changed=true;refreshPartyLevel(s);note(s,`本局等级升到Lv${p.level}：基础生命上限增加1点，攻击等级加成${levelDamageBonus(p.level)}`);
+    p.level++;changed=true;refreshPartyLevel(s);note(s,`升到 Lv${p.level}`);
   }
   if(!changed)return false;
   const pending=findEvolutions(s);if(!pending.length)return false;
@@ -797,6 +810,7 @@ function allyAt(s:World,id:string,p:Pos):Unit|undefined {
 function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set()):string|null {
   const u=s.units[id];if(!alive(u))return `${id}已倒下，不能行动`;
   if(a.type==='wait')return null;
+  if(a.type==='basicForward')return null;
   if(a.type==='move'){
     const cell=`(${a.to.x},${a.to.y})`;
     if(chebyshev(u.pos,a.to)!==1)return `${id}只能移动到相邻格（含斜向相邻格）`;
@@ -1063,6 +1077,7 @@ const DIR_NAMES:Record<string,string>={'1,0':'右','0,1':'下','-1,0':'左','0,-
 /** 8.8 (G5.14): the first unit a confused attacker's random-direction strike meets within `range` cells, whatever its side; undefined when the line is empty or blocked. */
 function confusedStrike(s:World,actor:Unit&{pos:Pos},range:number):Unit|undefined {
   const dir=DIRS8[Math.floor(battleRandom(s)*8)];
+  actor.facing=clone(dir);
   note(s,`${actor.id}因混乱朝${DIR_NAMES[key(dir)]}出手`);
   let at=actor.pos;
   for(let i=0;i<range;i++){
@@ -1077,10 +1092,19 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
   note(s,`${id}使用${SKILL_CN[a.skill]??a.skill}`);
   let targets=spec.range==='room'||spec.range==='around'?moveTargetsInReach(s,id,spec):[s.units[a.target]];
   if(spec.range==='user')targets=[actor];
+  let confusedDirection=false;
+  const attackTarget=spec.target==='enemy'||(spec.target==='all'&&spec.effects.includes('damage'));
   if(hasStatus(actor,'confusion')&&alive(actor)&&(spec.range==='front'||spec.range==='front2'||spec.range==='line10')){
+    confusedDirection=true;
     const found=confusedStrike(s,actor,RANGE_CELLS[spec.range]);
     targets=found?[found]:[];
     if(!found)note(s,`${id}的招式没有打到任何单位`);
+  }
+  if(!confusedDirection&&attackTarget&&actor.pos){
+    const aimed=s.units[a.target];if(alive(aimed)&&aimed.id!==id)faceToward(actor,actor.pos,aimed.pos);
+  }
+  if((attackTarget||confusedDirection)&&actor.pos){
+    for(const target of targets)if(alive(target)&&target.id!==id)faceToward(target,target.pos,actor.pos);
   }
   // 8.8 (G5.1): every target is judged separately; a miss takes no damage and no side effect, and the PP stays spent.
   const landed=targets.filter(t=>{
@@ -1169,17 +1193,34 @@ function sendHome(s:World,a:Extract<Action,{type:'exchange'}>):void {
 function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>):void {
   const u=s.units[id],level=u.side==='friend'?(s.prog?.level??u.level??INITIAL_LEVEL):(u.level??INITIAL_LEVEL),bonus=levelDamageBonus(level);
   if(a.type!=='skill')u.lastMove=null;
-  if(a.type==='move'){const from=clone(u.pos!),mate=allyAt(s,id,a.to);u.pos=clone(a.to);if(mate)mate.pos=clone(from);
+  if(a.type==='move'){const from=clone(u.pos!),mate=allyAt(s,id,a.to);faceToward(u,from,a.to);if(mate)faceToward(mate,a.to,from);u.pos=clone(a.to);if(mate)mate.pos=clone(from);
     if(u.side==='friend'){onRoomEntry(s,from,a.to);if(mate)onRoomEntry(s,a.to,from);}
     reveal(s);note(s,mate?`${id}与${mate.id}换位`:`${id}移动到${key(a.to)}`);
     if(u.side==='friend'){tryPickup(s,id);if(mate)tryPickup(s,mate.id);}}
   else if(a.type==='basic'){
     // 8.8 (G5.1): a basic attack always hits unless its user's accuracy stage is lowered; a confused attacker strikes a random direction.
     let target:string|undefined=a.target;
-    if(hasStatus(u,'confusion')){const found=confusedStrike(s,u as Unit&{pos:Pos},1);target=found?.id;if(!found)note(s,`${id}的普攻没有打到任何单位`);}
+    const confused=hasStatus(u,'confusion');
+    if(confused){const found=confusedStrike(s,u as Unit&{pos:Pos},1);target=found?.id;if(!found)note(s,`${id}的普攻没有打到任何单位`);}
     if(target!==undefined){
+      const victim=s.units[target];
+      if(alive(victim)&&u.pos){if(!confused)faceToward(u,u.pos,victim.pos);if(victim.id!==id)faceToward(victim,victim.pos,u.pos);}
       if(rollHit(s,id,target))resolveDamage(s,id,target,6+bonus,basicCategory(u),blockingGuard);
       else{note(s,`${id}的普攻没打中${target}`);emit(s,{type:'miss',actor:id,target,skill:null});}
+    }
+  }
+  else if(a.type==='basicForward'){
+    const from=clone(u.pos!),confused=hasStatus(u,'confusion');
+    const direction=confused?DIRS8[Math.floor(battleRandom(s)*8)]:facingOf(u);
+    u.facing=clone(direction);
+    if(confused)note(s,`${id}因混乱朝${DIR_NAMES[key(direction)]}出手`);
+    const to=plus(from,direction),target=walk(s,to)&&s.seen.includes(key(to))&&stepOk(s,from,to)?active(s).find(v=>v.id!==id&&same(v.pos,to)):undefined;
+    if(target&&target.pos&&target.side!==u.side){
+      faceToward(target,target.pos,from);
+      if(rollHit(s,id,target.id))resolveDamage(s,id,target.id,6+bonus,basicCategory(u),blockingGuard);
+      else{note(s,`${id}的普攻没打中${target.id}`);emit(s,{type:'miss',actor:id,target:target.id,skill:null});}
+    }else{
+      emit(s,{type:'airAttack',actor:id,from,to});note(s,`${id}向${key(to)}挥空`);
     }
   }
   else if(a.type==='use'){
@@ -1348,8 +1389,8 @@ function wakeAdjacentEnemies(s:World):void {
 function statusBlock(u:Unit,a:Action):string|null {
   if(a.type==='wait')return null;
   if(hasStatus(u,'frz'))return '冰冻中，无法行动';
-  if((a.type==='skill'||a.type==='basic')&&hasStatus(u,'par'))return '麻痹中，无法使用招式和普攻';
-  if((a.type==='skill'||a.type==='basic')&&hasStatus(u,'flinch'))return '畏缩中，无法使用招式和普攻';
+  if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'par'))return '麻痹中，无法使用招式和普攻';
+  if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'flinch'))return '畏缩中，无法使用招式和普攻';
   return null;
 }
 /** 8.8 (G5.14): a confused member's chosen step is replaced by a random one of the eight directions; a step that cannot be taken leaves it standing (the action is still used). */
@@ -1384,7 +1425,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
         if(blockedBy){s.units[lead].lastMove=null;note(s,`${lead}${blockedBy}，换位落空，未扣PP`);trace?.push({id:lead,action:cmd.action,explicit:true,failed:true});continue;}
         if(hasStatus(s.units[lead],'confusion')){const step=confusedMove(s,lead,{type:'move',to:s.units[swap].pos!});
           const mate2=step.type==='move'?allyAt(s,lead,step.to):undefined;execute(s,lead,step,blockingFromEnemies,friendGuard);if(step.type==='move')moved.add(lead);trace?.push({id:lead,action:step,explicit:true,failed:false,...(mate2?{swapWith:mate2.id}:{})});continue;}
-        const p=s.units[lead].pos,q=s.units[swap].pos;if(p&&q){onRoomEntry(s,p,q);onRoomEntry(s,q,p);}
+        const p=s.units[lead].pos,q=s.units[swap].pos;if(p&&q){faceToward(s.units[lead],p,q);faceToward(s.units[swap],q,p);onRoomEntry(s,p,q);onRoomEntry(s,q,p);}
         s.units[lead].pos=q;s.units[swap].pos=p;s.units[lead].lastMove=null;s.units[swap].lastMove=null;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);tryPickup(s,lead);tryPickup(s,swap);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
     const explicit=id===lead?cmd.action:cmd.override?.actor===id?cmd.override.action:null;
     let a=explicit??defaultAction(s,id,blockingFromEnemies,friendGuard);const err=invalid(s,id,a,moved);
@@ -1412,7 +1453,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
       if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)){note(s,`${id}无路可走，等待`);continue;}
       const previous=clone(e.pos);execute(s,id,action,friendGuard,enemyGuard);e.direction={x:Math.sign(action.to.x-previous.x),y:Math.sign(action.to.y-previous.y)};
       if(e.roamTarget&&same(action.to,e.roamTarget))e.roamTarget=null;
-    }else if(action.type==='skill'||action.type==='basic')execute(s,id,action,friendGuard,enemyGuard);
+    }else if(action.type==='skill'||action.type==='basic'||action.type==='basicForward')execute(s,id,action,friendGuard,enemyGuard);
     else note(s,`${id}等待`);
     }finally{endOwnTurn(s,id);}
   }
@@ -1517,7 +1558,7 @@ function drawRecruitmentAndBossTm(s:World):void {
     if(!speciesOf(sp))continue;
     const r=rngStep(p.rng);p.rng=r.state;
     const recruitChance=(s.blessings??[]).includes('rally')?(BLESSINGS.rally.recruitChance??PROG.recruitChance):PROG.recruitChance;
-    if(r.value>=recruitChance){note(s,`${sp}被击败，没有发出邀请`);continue;}
+    if(r.value>=recruitChance)continue;
     do p.made++;while(s.units[`N${p.made}`]||s.invitations.some(i=>i.unit.id===`N${p.made}`));
     const unit=recruitUnit(`N${p.made}`,sp,p.level,s.talents?.vitality??0);
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});
@@ -1612,7 +1653,7 @@ function afterRound(s:World):void {
   const p=s.prog,kills=p?[...p.kills]:[];if(p){p.kills=[];}
   const bossDrop=!!s.dungeon?.boss&&bossDefeated(s)&&!(s.tms??[]).some(t=>t.source==='boss');
   if(p){while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level+1]){
-      p.level++;refreshPartyLevel(s);note(s,`本局等级升到Lv${p.level}：基础生命上限增加1点，攻击等级加成${levelDamageBonus(p.level)}`);
+      p.level++;refreshPartyLevel(s);note(s,`升到 Lv${p.level}`);
     }}
   s.pendingSettlement={bossDrop,kills};
   s.pendingEvolutions=findEvolutions(s);
@@ -1711,6 +1752,12 @@ export function applyCommand(original:World,cmd:Command):Result {
     if(!isTactic(cmd.tactic))return fail('未知的作战方针');
     const s=clone(original);s.units[cmd.actor].tactic=cmd.tactic;return {ok:true,state:s};
   }
+  if(cmd.type==='face'){
+    const leader=original.leader,unit=original.units[leader];
+    if(original.phase!=='playing'||!original.queue.includes(leader)||!alive(unit))return fail('只有存活的当前主控能转向');
+    if(!isDirection(cmd.direction))return fail('朝向必须是八个相邻方向之一');
+    const s=clone(original);s.units[leader].facing=clone(cmd.direction);return {ok:true,state:s};
+  }
   if(cmd.type==='evolve'){
     if(original.phase!=='evolution'||!original.pendingEvolutions?.length)return fail('当前没有待处理的进化选择');
     const s=clone(original),pending=s.pendingEvolutions![0],unit=s.units[pending.actor];
@@ -1740,10 +1787,16 @@ export function applyCommand(original:World,cmd:Command):Result {
     const s=clone(original);end(s,'normal');return {ok:true,state:s};
   }
   if(original.phase!=='invitation')return fail('当前没有待处理邀请');
+  const pending=original.invitations.find(i=>i.status==='pending');if(!pending)return fail('当前没有待处理邀请');
+  if(cmd.choice==='camp'&&original.queue.length<3)return fail('只有队伍满员时才能让新人回营');
+  if(cmd.choice==='camp'&&cmd.outgoing!==undefined)return fail('让新人回营时不能同时指定回营伙伴');
   const preview=cmd.choice==='accept'?previewInvitation(original,cmd.outgoing):null;
   if(preview&&!preview.ok)return fail(preview.error);
   const s=clone(original),invite=s.invitations.find(i=>i.status==='pending')!;
-  if(cmd.choice==='accept'&&preview?.ok){
+  if(cmd.choice==='camp'){
+    const unit=clone(invite.unit);unit.pos=null;s.units[unit.id]=unit;s.camp.push(unit.id);invite.status='accepted';
+    note(s,`${unit.id}回营，本局不会同行`);
+  }else if(cmd.choice==='accept'&&preview?.ok){
     if(cmd.outgoing){s.camp.push(cmd.outgoing);s.units[cmd.outgoing].pos=null;}
     const unit=clone(invite.unit);unit.pos=preview.pos;s.units[unit.id]=unit;s.queue=preview.queue;s.leader=preview.leader;invite.status='accepted';reveal(s);
     note(s,`${unit.id}加入，${cmd.outgoing??'空名额'}回营；下轮才行动`);

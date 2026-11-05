@@ -105,7 +105,7 @@ test('P4 3 exp plus a Lv3 kill is 9 exp = Lv6: every member +1 max HP, current H
  assert.deepEqual([s.prog.level,s.prog.exp],[6,9]);
  assert.deepEqual(s.queue.map(i=>[s.units[i].hp,s.units[i].maxHp,s.units[i].level]),[[19,20,6],[20,21,6],[21,22,6]]);
  assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,21,{tackle:30,gust:19},{tackle:30,gust:19}));
- const up=s.log.findIndex(t=>/升到Lv6/.test(t)),inv=s.log.findIndex(t=>/发出邀请/.test(t));
+ const up=s.log.findIndex(t=>t==='升到 Lv6'),inv=s.log.findIndex(t=>/发出邀请/.test(t));
  assert.ok(up>=0&&inv>up,'level-up is settled before the invitation appears');
 });
 test('P4b below the threshold nothing changes: a Lv2 kill gives 4 exp (the 5th is missing); one more exp point then crosses it',()=>{

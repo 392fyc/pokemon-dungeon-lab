@@ -19,6 +19,10 @@ export function facingRow(dx:number, dy:number):number {
 }
 /** Sheet metadata (frame size and per-frame durations in 1/60 s), or undefined when a species lacks that action. */
 export const sheet = (dex:string, name:string):AnimMeta|undefined => CHARACTERS[dex]?.[name];
+/** SpriteCollab's idle ground baseline is four source pixels below the frame centre; actions keep their authored motion around it. */
+export const groundOriginY=(dex:string,name:string):number=>{const meta=sheet(dex,name);return meta?.h ? .5+4/meta.h : .5;};
+/** Sprites, their ground shadow and the leader ring share this cell-relative anchor. */
+export const UNIT_GROUND_FRACTION=.3;
 export const animKey = (dex:string, name:string, row:number) => `${dex}-${name}-${row}`;
 export function preloadArt(scene:Phaser.Scene):void {
   const base = 'assets/'; // relative to the page, so the private build works from any folder

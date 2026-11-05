@@ -117,7 +117,6 @@ body.camp-mode main {
 }
 
 .camp-squad, .camp-keeper {
-  --sprite-scale: 0.18cqw;
   position: absolute;
   transform: translate(-50%, -100%);
   display: flex;
@@ -126,17 +125,11 @@ body.camp-mode main {
 }
 
 .camp-squad { gap: 1.2cqw; }
-.camp-keeper { pointer-events: auto; }
+.camp-keeper { --sprite-scale: 0.18cqw; pointer-events: auto; }
 
 .camp-squad .portrait-box {
   width: 5cqw;
   height: 5cqw;
-}
-
-.camp-squad .portrait {
-  flex: none;
-  transform: translateY(calc(var(--portrait-height) * .8px)) scale(.65);
-  transform-origin: bottom center;
 }
 
 .camp-dialog {
@@ -165,9 +158,7 @@ body.camp-mode main {
   color: #e0d4a5;
 }
 
-.camp-dialog-keeper .portrait-box { width: 100%; height: 108px; align-items: flex-start; }
-.camp-dialog-keeper .portrait { flex: none; transform: scale(calc(46 / var(--portrait-height))); transform-origin: top center; }
-
+.camp-dialog-keeper .portrait-box { width: 100%; height: 108px; }
 .camp-dialog-heading {
   display: flex;
   align-items: center;
@@ -198,9 +189,7 @@ body.camp-mode main {
 
 .camp-party-slot.is-leader { border: 2px solid #ecd78d; }
 .camp-party-slot.is-empty { border-style: dashed; opacity: .7; }
-.camp-party-slot .portrait-box { width: 100%; height: 55px; align-items: flex-start; }
-.camp-party-slot .portrait { flex: none; transform: scale(calc(26 / var(--portrait-height))); transform-origin: top center; }
-
+.camp-party-slot .portrait-box { width: 100%; height: 55px; }
 #camp-roster {
   margin: 6px 0 0;
   padding: 8px 0 0;
@@ -266,6 +255,6 @@ body.camp-mode main {
 
 @media (max-width: 570px), (max-height: 480px) {
   .camp-dialog-layout { gap: 9px; }
-  .camp-dialog-keeper .portrait { transform: scale(.55); }
+
   .camp-badge span { margin-left: 3px; }
 }

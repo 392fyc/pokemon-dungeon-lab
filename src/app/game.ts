@@ -2,28 +2,32 @@ import type Phaser from 'phaser';
 import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate} from '../render/hud.ts';
 import '../render/hud.css';
 import {CAMP_BUILDINGS,campScene,campPanelMarkup,type CampPanel} from '../render/camp.ts';
-import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,skillTargets,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
+import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
 import {moveOf} from '../core/moves.ts';
-import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,teammateInfo,localizeLog,moveSummary,damageEstimateText,adventureRoomMarkers} from '../core/describe.ts';
+import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,moveSummary,damageEstimateText,adventureRoomMarkers} from '../core/describe.ts';
 import {renderTitle,renderNewGame,portrait,portraitTick,type NewGameState} from '../ui/title.ts';
 import {learnTm,newGameProfile,initialProfile,squadOf,MAX_TEAM,TALENTS,rankLevel,rankThreshold,availableTalentPoints,type BaseAction,type Profile,type TalentId} from '../core/base.ts';
 import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
 import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from '../core/save.ts';
 import {createScenario,scenarioProfile,SCENARIOS,SCENARIO_LABEL,type ScenarioId} from '../core/scenarios.ts';
 import {THEME_FLOORS,themeOfLevel,ARENA_TILE,isDifficulty,type Difficulty} from '../core/dungeon.ts';
-import {preloadArt,createAnims,createTerrainArt,exportTerrainArt,skinFor,facingRow,animKey,TILE} from '../render/sprites.ts';
+import {preloadArt,createAnims,createTerrainArt,exportTerrainArt,skinFor,facingRow,animKey,groundOriginY,UNIT_GROUND_FRACTION,TILE} from '../render/sprites.ts';
 import {terrainSource} from '../render/dtef.ts';
-import {paintDtef,type DtefAnimator} from '../render/dtef-scene.ts';
+import {DtefTerrainLayer} from '../render/dtef-scene.ts';
+import {PainterTerrainLayer} from '../render/painter-scene.ts';
 import {BOARD_BACKGROUND,darknessBackground,DungeonDarkness} from '../render/darkness.ts';
-import {prepareTerrainMap,maskAt,frameOf,terrainVariant,selectDecorations,type TerrainThemeKey,type TerrainLayer} from '../render/terrain.ts';
+import {prepareTerrainMap,type TerrainThemeKey,type TerrainLayer} from '../render/terrain.ts';
 import {inferEvents,plan,newLines,type AnimEvent} from '../render/animation.ts';
-import {selfOrAdjacentReachable} from '../render/reach.ts';
+import {selfOrAdjacentReachable,adjacentReachable,floorIndex} from '../render/reach.ts';
+import {POINT_VISUALS,dungeonCellSize} from '../render/point-visuals.ts';
+import {itemDescription} from '../core/item-descriptions.ts';
 import {playEvents,type Stage,type UnitView} from '../render/playback.ts';
-/** #178: dungeon cell size in canvas pixels, an exact 2x of the 24 px DTEF tile (D-20261103). */
-const DUNGEON_CELL=TILE*2;
+import {placeHp} from '../render/unit-labels.ts';
+/** Integer multiples of the 24 px source keep terrain and actors aligned at every viewport size. */
+// The cell size is chosen from the actual canvas height in BoardScene.geometry.
 const DIFFICULTY_LABEL:Record<Difficulty,string>={easy:'简单',normal:'普通',hard:'困难'};
 const specName=(u:Unit)=>u.species?speciesZh(u.species):'';
 const tmName=(m:string)=>tmZh(m);
@@ -33,9 +37,9 @@ const tacticSelect=(id:string,value:unknown,disabled:boolean)=>`<label for="${es
 const experienceProgress=(s:World)=>{
  const p=s.prog;if(!p)return '';
  const level=Math.min(p.level,PROG.maxLevel),currentThreshold=PROG.thresholds[level]??0,nextThreshold=PROG.thresholds[level+1];
- if(nextThreshold===undefined)return `本局等级 Lv${level} · 升级经验已满（累计 ${p.exp}）`;
+ if(nextThreshold===undefined)return `Lv${level} · 升级经验已满（累计 ${p.exp}）`;
  const required=nextThreshold-currentThreshold,progress=Math.max(0,Math.min(required,p.exp-currentThreshold));
- return `本局等级 Lv${level} · 升级经验 ${progress}/${required}（升到下一级需当前等级经验；击倒敌人获得其等级×${PROG.expMultiplier}的经验）`;
+ return `Lv${level} · 升级经验 ${progress}/${required}（升到下一级需当前等级经验；击倒敌人获得其等级×${PROG.expMultiplier}的经验）`;
 };
 const FATE:Record<TmItem['fate'],string>={held:'持有中',brought:'已带回',sent:'已由伙伴运送',lost:'已取得、未带出'};
 const SRC:Record<TmItem['source'],string>={target:'成果 T',shop:'商店',boss:'区域首领',challenge:'挑战奖励'};
@@ -45,7 +49,7 @@ const params=new URLSearchParams(location.search);
 /** Developer mode (stage 7.1): `?dev=1` or `?fixture=`. Only here do the fixed map, the no-invitation control, fixtures, `?seed=` and coordinates exist; the title screen is skipped. */
 const dev=params.get('dev')==='1'||(params.get('fixture')!==null&&(SCENARIOS as readonly string[]).includes(params.get('fixture')!));
 const app=document.querySelector<HTMLDivElement>('#app')!;
-app.innerHTML=`<header><div class="brand">宝可梦地牢探索</div><div class="build">版本 ${BUILD_ID.replace(/^trial-/,'')} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'使用开发者菜单检查固定场景或三层首领战，结果只在本页内存中。':'逐层探索迷宫、招募伙伴，击败第三层的首领。伙伴始终归营，招式机胜利后带回。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未出发</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标</span><span>T 成果</span><span>下 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><p class="muted">在队友卡片上更改作战方针，不占回合；悬停成员可查看当前方针。</p><div id="party"></div></section><section id="controls"></section>${dev?`<details id="developer-tools"><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button><p>运行时地形图集（每层含 47 种形状及 4 个变体）</p><label>主题 <select id="terrain-theme"><option value="moss">苔石洞</option><option value="wet">潮湿水窟</option><option value="ash">灰烬裂谷</option></select></label><label>图层 <select id="terrain-layer"><option value="floor">连续地面</option><option value="edge">地面边缘</option><option value="liquid">水面／岩浆</option><option value="wall">墙体</option></select></label><button id="export-terrain">导出地形图集 PNG</button></details>`:''}<footer>无需账号，进度保存在此浏览器</footer></aside></main><div id="title-screen" class="screen" hidden></div><dialog id="settings" aria-labelledby="settings-heading"><h2 id="settings-heading">设置与存档</h2><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label><p>营地档案保存在此浏览器、此网页来源。远征途中只有内存状态；击败首领或全队倒下时自动结算保存。</p><button id="save-export">导出存档文件</button><button id="save-import">导入存档文件</button><input id="save-file" type="file" accept=".json,application/json" hidden><p id="transfer-message" role="status" aria-live="polite"></p><details><summary>操作说明</summary><p>方向键移动；点相邻敌人普攻；句点等待。每做一个动作，就推进完整一轮（你、伙伴、敌人各行动一次）。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑操控者动作并提交。没有安排时，伙伴按各自方针选择默认行动；在队友卡片上可以更改方针，不占回合。倒下退图但仍占名额。</p><p>下楼梯也占一轮，敌人仍会行动。击败首领或全队倒下时自动结算并保存；在此之前关闭或刷新会回到出发前的基地存档。</p><p>远征为随机三层迷宫，第三层有区域首领。楼梯只能向下，途中没有撤离出口。货币只在局内使用，伙伴无论胜负都回营；招式机击败首领才带回，全灭则丢失。</p></details><button id="camp-title" hidden>返回标题</button><button id="settings-close">关闭设置</button></dialog>`;
+app.innerHTML=`<header><div class="brand">宝可梦地牢探索</div><div class="build">版本 ${BUILD_ID.replace(/^trial-/,'')} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'使用开发者菜单检查固定场景或三层首领战，结果只在本页内存中。':'逐层探索迷宫、招募伙伴，击败第三层的首领。伙伴始终归营，招式机胜利后带回。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未出发</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标</span><span>T 成果</span><span>下 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><p class="muted">在队友卡片上更改作战方针，不占回合；点击详情可查看招式与当前方针。</p><div id="party"></div></section><section id="controls"></section>${dev?`<details id="developer-tools"><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button><p>运行时地形图集（每层含 47 种形状及 4 个变体）</p><label>主题 <select id="terrain-theme"><option value="moss">苔石洞</option><option value="wet">潮湿水窟</option><option value="ash">灰烬裂谷</option></select></label><label>图层 <select id="terrain-layer"><option value="floor">连续地面</option><option value="edge">地面边缘</option><option value="liquid">水面／岩浆</option><option value="wall">墙体</option></select></label><button id="export-terrain">导出地形图集 PNG</button></details>`:''}<footer>无需账号，进度保存在此浏览器</footer></aside></main><div id="title-screen" class="screen" hidden></div><dialog id="settings" aria-labelledby="settings-heading"><h2 id="settings-heading">设置与存档</h2><label><input type="checkbox" id="anim-toggle"> 动作动画（按住 Shift 跳过）</label><p>营地档案保存在此浏览器、此网页来源。远征途中只有内存状态；击败首领或全队倒下时自动结算保存。</p><button id="save-export">导出存档文件</button><button id="save-import">导入存档文件</button><input id="save-file" type="file" accept=".json,application/json" hidden><p id="transfer-message" role="status" aria-live="polite"></p><details><summary>操作说明</summary><p>按住方向键连续移动；碰墙只转身；F 朝前普攻，打空也占一轮；点相邻敌人普攻；句点等待。每做一个动作，就推进完整一轮（你、伙伴、敌人各行动一次）。技能先选招再点目标。</p><p>先安排一名伙伴，再编辑操控者动作并提交。没有安排时，伙伴按各自方针选择默认行动；在队友卡片上可以更改方针，不占回合。倒下退图但仍占名额。</p><p>下楼梯也占一轮，敌人仍会行动。击败首领或全队倒下时自动结算并保存；在此之前关闭或刷新会回到出发前的基地存档。</p><p>远征为随机三层迷宫，第三层有区域首领。楼梯只能向下，途中没有撤离出口。货币只在局内使用，伙伴无论胜负都回营；招式机击败首领才带回，全灭则丢失。</p></details><button id="camp-title" hidden>返回标题</button><button id="settings-close">关闭设置</button></dialog>`;
 const fixture=params.get('fixture') as ScenarioId|null;
 const checkMode=fixture!==null&&SCENARIOS.includes(fixture);
 const legend=document.querySelector<HTMLElement>('.legend')!;
@@ -53,11 +57,12 @@ legend.innerHTML='<span><i class="friend"></i>同行</span><span><i class="enemy
 const activityStatusRoot=document.createElement('section');activityStatusRoot.id='activity-status';activityStatusRoot.setAttribute('aria-live','polite');document.getElementById('save')!.after(activityStatusRoot);
 // Stateful panels return to their original positions at camp.
 const dungeonLayout=document.createElement('div');dungeonLayout.id='dungeon-layout';dungeonLayout.hidden=true;
-dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="shortcut-card"><span>WASD</span><span>移动</span><span>W+D 等</span><span>斜向移动</span><span>1—4</span><span>招式</span><span>5—0</span><span>快捷物品</span><span>Tab</span><span>切换操控</span><span>B</span><span>背包</span><span>.</span><span>等待</span></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div></div>`;
+dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="shortcut-card"><span>WASD</span><span>移动</span><span>W+D 等</span><span>斜向移动</span><span>1—4</span><span>招式</span><span>5—0</span><span>快捷物品</span><span>Tab</span><span>切换操控</span><span>B</span><span>背包</span><span>F</span><span>朝前普攻</span><span>.</span><span>等待</span></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div></div>`;
 app.append(dungeonLayout);
 const panelHomes=new Map<HTMLElement,Comment>();
 for(const id of ['board','party','activity-status','recent-events','message','inspect','controls','flow','save',...(dev?['developer-tools']:[])]){const el=document.getElementById(id)!;const home=document.createComment(id);el.before(home);panelHomes.set(el,home);}
 let actionsOpen=false,bagOpen=false,bagCategory='all',bagSlot=0;
+let bagSelectedItem:Item|null=null;
 let quickItems:(Item|null)[]=Array.from({length:6},()=>null);
 function dungeonMode(){return screen==='play'&&!!live();}
 function syncDungeonLayout(){
@@ -92,7 +97,7 @@ let boardLoading:Promise<void>|null=null;
 let screen:'title'|'newgame'|'play'=dev?'play':'title';
 let ng:NewGameState={step:1,main:null,deputy:null,overwrite:false};
 let askOverwrite=false,exportedOriginal=false,ngError='',showCoords=false;
-let hoverId:string|null=null,pinnedId:string|null=null,partyHoverId:string|null=null;
+let hoverId:string|null=null,pinnedId:string|null=null;
 /** Who hit whom this round (inferred by the same code that drives the animation) and how many log lines the last command added. */
 let attrib=new Map<string,string>(),freshCount=0;
 /** Stage 6.4: `active` is true while a round's animation plays; every world-changing input is dropped (not queued) meanwhile. */
@@ -114,19 +119,19 @@ const combatStatus=(u:Unit):string=>[
  u.stages.atk?`攻击${u.stages.atk>0?'+':''}${u.stages.atk}`:'',
  u.stages.def?`防御${u.stages.def>0?'+':''}${u.stages.def}`:'',
 ].filter(Boolean).join(' · ');
-const resources=(s:World,id:string)=>{const u=s.units[id];return `${id} ${u.hp}/${u.maxHp}HP · ${u.learned.map(k=>`${skillLabel(u,k)}（${moveSummary(k)}） ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普攻'}`;};
+const resources=(s:World,id:string)=>{const u=s.units[id];return `${unitLabel(u,id)} ${u.hp}/${u.maxHp}HP · ${u.learned.map(k=>`${skillLabel(u,k)}（${moveSummary(k)}） ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普攻'}`;};
 function bind(id:string,fn:()=>void){const el=document.getElementById(id);if(el)el.addEventListener('click',fn);}
-function clear(){cancelMoveInput();actionsOpen=false;exTarget=null;exCargo=[];draft=null;selectedSkill=null;choosingItem=null;choosingPartner=false;choosingSwap=false;confirmExit=false;partyHoverId=null;}
+function clear(keepMovement=false){if(!keepMovement)cancelMoveInput();actionsOpen=false;exTarget=null;exCargo=[];draft=null;selectedSkill=null;choosingItem=null;choosingPartner=false;choosingSwap=false;confirmExit=false;}
 /** A saved pending exit or pending crossing is completed once, automatically, after the save succeeded. */
 const finishing=():Parameters<typeof applyCommand>[1]|null=>{const p=store.state?.phase;return store.status!=='ready'?null:p==='exit'?{type:'finishExit'}:p==='transit'?{type:'finishTransit'}:null;};
 async function transition(p:Promise<unknown>,clearDraft=true){if(clearDraft)clear();render();await p;render();const next=finishing();if(next){const done=store.dispatch(next);render();await done;render();}}
-async function send(command:Parameters<typeof applyCommand>[1]){cancelMoveInput();if(anim.active)return;if(store.status!=='ready'){notice='保存未完成，当前只可查看或重试；本轮未执行。';render();return;}const predicted=applyCommand(live()!,command);if(!predicted.ok){notice=predicted.error;render();return;}const cancelledCombination=command.type==='switch'&&draft!==null;const before=clone(live()!);const pending=store.dispatch(command);
+async function send(command:Parameters<typeof applyCommand>[1],keepMovement=false){if(!keepMovement)cancelMoveInput();if(anim.active)return;if(store.status!=='ready'){notice='保存未完成，当前只可查看或重试；本轮未执行。';render();return;}const predicted=applyCommand(live()!,command);if(!predicted.ok){notice=predicted.error;render();return;}const cancelledCombination=command.type==='switch'&&draft!==null;const before=clone(live()!);const pending=store.dispatch(command);
  let playing:Promise<void>|null=null;{const after=live();
   // Animation is presentation only: any failure here must leave the input lock released and the real state drawn.
   try{if(after){freshCount=newLines(before.log,after.log).length;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshCount=0;}
   try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){anim.active=true;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;render();});}}
   catch{anim.active=false;playing=null;render();}}
- clear();notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;inviteReject=false;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));}
+ clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;inviteReject=false;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
 async function setTactic(actor:string,value:string){
  if(anim.active||store.status!=='ready'||!live()||live()!.phase!=='playing'||!isTactic(value))return;
  const pending=store.dispatch({type:'tactic',actor,tactic:value});
@@ -162,7 +167,7 @@ function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'
  if(target&&s.enemies.includes(target))act({type:'basic',target});else act({type:'move',to:p});
 }
 const itemName=(id:Item)=>id==='teamTonic'?itemZh(id):ITEM_NAMES[id];
-function actionLabel(a:Action|null,actor?:string){if(!a)return '尚未选择';if(a.type==='move')return `移动到(${a.to.x},${a.to.y})`;if(a.type==='skill')return `${moveZh(a.skill)} → ${actor&&a.target===actor?'自身':a.target}`;if(a.type==='basic')return `普攻 → ${a.target}`;if(a.type==='swap')return `与${a.target}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${a.target}`;if(a.type==='interact')return a.exit?'交互并请求跨层':'取得并继续';return '等待';}
+function actionLabel(a:Action|null,actor?:string){const target=(id:string)=>id===actor?'自身':unitLabel(live()?.units[id],id);if(!a)return '尚未选择';if(a.type==='move')return '移动';if(a.type==='skill')return `${moveZh(a.skill)} → ${target(a.target)}`;if(a.type==='basic')return `普攻 → ${target(a.target)}`;if(a.type==='basicForward')return '朝前普攻';if(a.type==='swap')return `与${target(a.target)}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${target(a.target)}`;if(a.type==='interact')return a.exit?'交互并请求跨层':'取得并继续';return '等待';}
 type AdventureRoom=NonNullable<World['adventureRooms']>[number];
 const challengeRewardPool=()=>[
  `${challengeRewardZh('currency')}（30%）`,
@@ -207,7 +212,6 @@ function chooseHudItem(item:Item){
  cancelMoveInput();const s=live();if(!s||s.phase!=='playing'||store.status!=='ready'||anim.active)return;
  if((s.prog?.items[item]??0)<1){notice=`背包里没有${itemName(item)}；本轮未执行`;render();return;}
  bagOpen=false;actionsOpen=false;selectedSkill=null;
- if(item==='teamTonic'){act({type:'use',item,target:draft?.editor??s.leader});return;}
  choosingItem=choosingItem===item?null:item;render();
 }
 function showMoveTip(skill:Skill,actor:string){
@@ -216,18 +220,15 @@ function showMoveTip(skill:Skill,actor:string){
 function placeInspectBelowParty(){if(!dungeonMode())return;const party=$('party');$('inspect').style.top=(party.offsetTop+party.offsetHeight+8)+'px';}
 function renderDungeonHud(){
  if(!dungeonMode())return;
- const s=live()!,disabled=anim.active||store.status!=='ready'||s.phase!=='playing';
- $('party').innerHTML=hudParty(s,disabled);
+ const s=live()!,unavailable=store.status!=='ready'||s.phase!=='playing',disabled=anim.active||unavailable;
+ $('party').innerHTML=hudParty(s,unavailable);
  placeInspectBelowParty();
- $('hud-bottom').innerHTML=hudBottom(s,quickItems,disabled,draft&&draft.editor!==s.leader?null:selectedSkill);
+ $('hud-bottom').innerHTML=hudBottom(s,quickItems,unavailable,draft&&draft.editor!==s.leader?null:selectedSkill,choosingItem);
  $('hud-map').innerHTML=hudMinimap(s);
  $('activity-status').innerHTML=hudTracking(s);$('activity-status').hidden=!s.dungeon?.roguelike;
  $('hud-tooltip').hidden=true;$('hud-tooltip').innerHTML='';
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-leader]'))b.onclick=()=>{actionsOpen=false;void send({type:'switch',actor:b.dataset.hudLeader!});};
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-details]'))b.onclick=()=>{const id=b.dataset.hudDetails!;const close=actionsOpen&&detailsId===id;detailsId=close?null:id;actionsOpen=!close;render();};
- for(const card of document.querySelectorAll<HTMLElement>('#party [id^="unit-card-"]')){
-  const id=card.id.slice('unit-card-'.length);card.onmouseenter=()=>{partyHoverId=id;hoverId=null;updateInspect();};card.onmouseleave=()=>{partyHoverId=null;updateInspect();};
- }
  // The old action editor retains its transactional draft, service and confirmation handlers.
  // Its move/item controls are replaced by the actual HUD controls, so no duplicate IDs remain.
  $('controls').querySelectorAll(':scope > h2,:scope > p.muted,.items').forEach(el=>el.remove());
@@ -241,11 +242,12 @@ function renderDungeonHud(){
  const targetBox=$('hud-item-targets');targetBox.hidden=!choosingItem;targetBox.innerHTML='';
  if(choosingItem){
   const item=choosingItem,actor=draft?.editor??s.leader;
-  targetBox.innerHTML=`<strong>${esc(itemName(item))}</strong><div>${s.queue.filter(id=>{const u=s.units[id],a=s.units[actor];return u.hp>0&&u.pos&&a.pos&&(selfOrAdjacentReachable(s.floor,a.pos,u.pos));}).map(id=>button(item==='bigBerry'?`item-target-bigBerry-${id}`:`item-target-${id}`,esc(specName(s.units[id])||id),disabled,`data-hud-item-target="${esc(id)}"`)).join('')}</div>`;
+  const targets=item==='teamTonic'?button('item-use-teamTonic','使用（全队）',disabled,`data-hud-item-target="${esc(actor)}"`):s.queue.filter(id=>{const u=s.units[id],a=s.units[actor];return u.hp>0&&u.pos&&a.pos&&(selfOrAdjacentReachable(s.floor,a.pos,u.pos));}).map(id=>button(item==='bigBerry'?`item-target-bigBerry-${id}`:`item-target-${id}`,esc(unitLabel(s.units[id],id)),disabled,`data-hud-item-target="${esc(id)}"`)).join('');
+   targetBox.innerHTML=`<strong>${esc(itemName(item))}</strong><p data-selected-item-description>${esc(itemDescription(item))}</p><div>${targets}</div>`;
   targetBox.querySelectorAll<HTMLButtonElement>('[data-hud-item-target]').forEach(b=>b.onclick=()=>act({type:'use',item,target:b.dataset.hudItemTarget!}));
  }
  if(detailsId&&s.units[detailsId]){
-  const u=s.units[detailsId];$('controls').insertAdjacentHTML('beforeend',`<section class="hud-member-options"><h3>${esc(specName(u)||detailsId)}</h3>${tacticSelect('hud-tactic',u.tactic,disabled)}<p>普攻 <span id="basic-damage-preview">${esc(damageEstimateText(s,detailsId,visibleHoverTarget(s)))}</span></p></section>`);
+  const u=s.units[detailsId];$('controls').insertAdjacentHTML('beforeend',`<section class="hud-member-options"><h3>${esc(unitLabel(u,detailsId))}</h3>${tacticSelect('hud-tactic',u.tactic,disabled)}<p>普攻 <span id="basic-damage-preview">${esc(damageEstimateText(s,detailsId,visibleHoverTarget(s)))}</span></p></section>`);
   ($('hud-tactic') as HTMLSelectElement).onchange=e=>void setTactic(detailsId!,(e.target as HTMLSelectElement).value);
  }
  $('hud-actions').hidden=store.status==='ready'&&!actionsOpen;
@@ -255,7 +257,7 @@ function renderDungeonHud(){
  if(s.phase==='playing'&&!confirmExit)$('flow').hidden=true;
  if(s.phase==='ended'&&store.status==='failed'){$('flow').prepend($('save'));$('hud-actions').hidden=true;}
  $('hud-bag').hidden=!bagOpen;
- $('hud-bag').innerHTML=bagOpen?hudBag(s,quickItems,bagCategory,bagSlot):'';
+ $('hud-bag').innerHTML=bagOpen?hudBag(s,quickItems,bagCategory,bagSlot,bagSelectedItem):'';
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-skill]')){
   const skill=b.dataset.hudSkill!;b.onclick=()=>{if(draft)draft.editor=s.leader;chooseHudSkill(skill);};
   const show=()=>showMoveTip(skill,s.leader);
@@ -265,10 +267,10 @@ function renderDungeonHud(){
  bind('bag-open',()=>{bagOpen=!bagOpen;choosingItem=null;render();});bind('bag-close',()=>{bagOpen=false;render();});
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-slot]'))b.onclick=()=>{bagSlot=Number(b.dataset.bagSlot);render();};
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-category]'))b.onclick=()=>{bagCategory=b.dataset.bagCategory!;render();};
- for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-item]'))b.onclick=()=>{const item=b.dataset.bagItem as Item;quickItems=quickItems.map((v,i)=>i===bagSlot?item:v===item?null:v);bagSlot=(bagSlot+1)%6;render();};
+ for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-item]'))b.onclick=()=>{const item=b.dataset.bagItem as Item;bagSelectedItem=item;quickItems=quickItems.map((v,i)=>i===bagSlot?item:v===item?null:v);bagSlot=(bagSlot+1)%6;render();};
  document.querySelector<HTMLButtonElement>('[data-bag-clear]')?.addEventListener('click',()=>{quickItems[bagSlot]=null;render();});
  $('actions-open').onclick=()=>{actionsOpen=!actionsOpen;detailsId=null;render();};$('hud-settings').onclick=openSettings;
- if(anim.active)document.querySelectorAll<HTMLButtonElement|HTMLSelectElement>('#controls button,#controls select,#party button').forEach(el=>{el.disabled=true;});
+ if(anim.active)document.querySelectorAll<HTMLButtonElement|HTMLSelectElement>('#controls button,#controls select,#party button,#hud-bottom button').forEach(el=>{if(!unavailable&&!el.disabled&&el.matches('[data-hud-leader],[data-hud-details],[data-hud-skill],[data-hud-quick],#bag-open'))el.dataset.animationLocked='true';el.disabled=true;});
  $('recent-events').querySelector('h2')?.remove();
  const rows=Array.from($('recent-events').querySelectorAll('li'));rows.slice(0,-3).forEach(el=>el.remove());
  // Runtime details and source IDs stay in developer diagnostics, not in the player's messages.
@@ -277,7 +279,7 @@ function renderDungeonHud(){
 
 function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend-items').hidden=!s?.prog||roguelike;$('legend-items-roguelike').hidden=!s?.prog||!roguelike;$('legend-goal').hidden=roguelike;$('legend-adventures').hidden=!roguelike||!s?.adventureRooms?.length;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 轮 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'尚未出发');const runSummary=s?`${roguelike?'':`目标 ${s.goal?'已完成':'未完成'} · `}背包 ${s.bag}${s.prog?` · ${experienceProgress(s)} · 橙橙果×${s.prog.items.berry} PP多项小补剂×${s.prog.items.tonic}${roguelike?` · ${ITEM_NAMES.bigBerry}×${s.prog.items.bigBerry??0} · ${itemName('teamTonic')}×${s.prog.items.teamTonic??0}`:''}${s.dungeon?.base?` · 钱袋 ${s.purse??0}`:''}`:''}`:'';$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:runSummary;
  const activityMarkup=s?activityStatus(s):'',activityRoot=$('activity-status');activityRoot.innerHTML=activityMarkup;activityRoot.hidden=!activityMarkup;
- $('message').textContent=notice.replaceAll('主控','操控者');
+ $('message').textContent=(s?localizeLog(s,notice):notice).replaceAll('主控','操控者');
  const expeditionMemory=s?.scenario==='expedition'&&s.phase!=='ended';
  const saveText=store.status==='failed'&&s?.phase==='ended'?'终局已结算，但未保存；重试成功后才能回营地':store.status==='failed'?'基地改动未保存；可以重试':store.status==='ready'&&expeditionMemory?(store.envelope?'基地档案已保存；本次远征仅在内存中':'开发者远征只在内存中；未创建营地档案'):store.status==='ready'&&s?.phase==='ended'?(store.envelope?'终局结算已保存':'开发者场景只在内存中'): {empty:'尚无可恢复记录',ready:'基地档案已保存',saving:'正在保存基地档案',failed:'基地改动未保存；可以重试',blocked:'记录无法载入，原字节已保留'}[store.status];
  $('save').innerHTML=`<div class="save-state ${store.status}">${saveText}</div><small>${esc(store.lastSaved?.replace(/^[^·]+ · /,'').replace('playing','营地状态').replace('invitation','待邀请').replace('ended','终局结算').replace('exit','待撤离').replace('transit','待跨层')??(expeditionMemory?(store.envelope?'营地存档保持出发前内容':'没有持久营地存档'):'尚无成功保存点'))}</small>${store.error?`<p class="error">${esc(store.error)}</p>`:''}${store.status==='failed'?button('retry','重试保存'):''}${store.status==='blocked'?button('export','导出原记录')+button('reset','导出后明确重置'):''}`;
@@ -288,16 +290,15 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  if(!s&&store.atBase){renderBase();return;}
  if(!s){$('party').innerHTML='<p class="muted">出发后在这里显示队伍。</p>';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>还没有存档。请返回标题开始新游戏。</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>开发者场景只在本次页面内存中运行，不会写入玩家营地存档。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（三层首领战，仅在内存）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(checkMode?store.start(createScenario(fixture!,newId()),scenarioProfile(fixture!)):store.start(begin(selectedConfig),selectedConfig==='expedition'?initialProfile():undefined));});return;}
  const ready=store.status==='ready',playing=s.phase==='playing',editable=ready||store.status==='saving';
- $('party').innerHTML=s.queue.map((id,i)=>{const u=s.units[id];const down=u.hp===0,level=u.level??s.prog?.level;return `<article class="unit ${id===s.leader?'leader':''}" id="unit-card-${esc(id)}"><div><strong>${esc(id)}</strong><span>${down?'倒下 · 仍占名额':id===s.leader?'操控者':'同行'}${u.protected?' · 初始成员':''} · ${u.hp}/${u.maxHp}${u.species?` · ${esc(specName(u))}`:''}${level===undefined?'':` · Lv${level}`}</span></div><div class="hp"><i style="width:${u.hp/u.maxHp*100}%"></i></div><p class="muted" data-unit-status="${esc(id)}" ${combatStatus(u)?'':'hidden'}>${esc(combatStatus(u))}</p><p>${u.learned.map(k=>`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普攻，不耗PP'}</p>${tacticSelect(`tactic-run-${id}`,u.tactic??'together',!ready||!playing)}${button('leader-'+i,'设为操控者',!ready||!playing||down||s.leader===id)}${button('detail-'+i,'详情')}</article>`;}).join('')+(s.camp.length?`<p class="muted">此前已回营：${s.camp.map(id=>esc(resources(s,id))).join('；')}（本局不可调回）</p>`:'');
+ $('party').innerHTML=s.queue.map((id,i)=>{const u=s.units[id];const down=u.hp===0,level=u.level??s.prog?.level;return `<article class="unit ${id===s.leader?'leader':''}" id="unit-card-${esc(id)}"><div><strong>${esc(unitLabel(u,id))}</strong><span>${down?'倒下 · 仍占名额':id===s.leader?'操控者':'同行'}${u.protected?' · 初始成员':''} · ${u.hp}/${u.maxHp}${u.species?` · ${esc(specName(u))}`:''}${level===undefined?'':` · Lv${level}`}</span></div><div class="hp"><i style="width:${u.hp/u.maxHp*100}%"></i></div><p class="muted" data-unit-status="${esc(id)}" ${combatStatus(u)?'':'hidden'}>${esc(combatStatus(u))}</p><p>${u.learned.map(k=>`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普攻，不耗PP'}</p>${tacticSelect(`tactic-run-${id}`,u.tactic??'together',!ready||!playing)}${button('leader-'+i,'设为操控者',!ready||!playing||down||s.leader===id)}${button('detail-'+i,'详情')}</article>`;}).join('')+(s.camp.length?`<p class="muted">此前已回营：${s.camp.map(id=>esc(resources(s,id))).join('；')}（本局不可调回）</p>`:'');
   s.queue.forEach((id,i)=>{bind('leader-'+i,()=>{void send({type:'switch',actor:id});});bind('detail-'+i,()=>{detailsId=detailsId===id?null:id;render();});
-   const card=$(`unit-card-${id}`);card.addEventListener('mouseenter',()=>{partyHoverId=id;hoverId=null;pinnedId=null;updateInspect();});card.addEventListener('mouseleave',()=>{if(partyHoverId===id)partyHoverId=null;updateInspect();});
    const select=$(`tactic-run-${id}`) as HTMLSelectElement;select.addEventListener('change',()=>{if(isTactic(select.value))void setTactic(id,select.value);});
   });
- if(detailsId&&s.units[detailsId]){$('party').insertAdjacentHTML('beforeend',`<p class="detail">${esc(detailsId)} 已学：${s.units[detailsId].learned.map(k=>`${esc(skillLabel(s.units[detailsId!],k))}（<span data-detail-move-preview="${esc(k)}">${esc(moveSummary(k,{s,sourceId:detailsId!,targetId:visibleHoverTarget(s)}))}</span>）`).join('；')||'无特殊招式'}。普攻造成<span id="basic-damage-preview">${esc(damageEstimateText(s,detailsId,visibleHoverTarget(s)))}</span>；选中招式后可查看射程与效果。详情不改变草稿。</p>`);}
+ if(detailsId&&s.units[detailsId]){$('party').insertAdjacentHTML('beforeend',`<p class="detail">${esc(unitLabel(s.units[detailsId],detailsId))} 已学：${s.units[detailsId].learned.map(k=>`${esc(skillLabel(s.units[detailsId!],k))}（<span data-detail-move-preview="${esc(k)}">${esc(moveSummary(k,{s,sourceId:detailsId!,targetId:visibleHoverTarget(s)}))}</span>）`).join('；')||'无特殊招式'}。普攻造成<span id="basic-damage-preview">${esc(damageEstimateText(s,detailsId,visibleHoverTarget(s)))}</span>；选中招式后可查看射程与效果。详情不改变草稿。</p>`);}
  if(s.phase==='ended'){
   const end=s.end!;$('controls').innerHTML='';const persistentRun=s.scenario==='expedition'&&!!store.envelope;
   const resultSummary=s.dungeon?.roguelike?`<p>讨伐首领：${end.boss?'成功':'未击败'}</p>`:`<p>目标${end.goal?'已完成':'未完成'} · 已取得 ${end.acquired} · 正常带出 ${end.brought}${end.boss===undefined?'':` · 讨伐首领：${end.boss?'成功':'未挑战'}`}</p>`;
-  $('flow').innerHTML=`<div class="result"><small>本局结果</small><h2>${end.outcome==='won'?'击败首领':end.outcome==='normal'?'正常撤离':'全队倒下'}${s.difficulty&&s.difficulty!=='normal'?`（${DIFFICULTY_LABEL[s.difficulty]}）`:''}</h2>${resultSummary}<p>${end.team.map(id=>`${esc(resources(s,id))}，${s.dungeon?.roguelike?'伙伴归营':end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。远征中已学的永久招式保留，回营后可以整备再出发。</p>${resultDetails(s)}${persistentRun?button('to-base','回到基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}<p class="muted">${persistentRun?(ready?'终局已结算并自动保存。':'终局已结算，保存失败；重试成功前不能回营地。'):'这是内存开发场景；结算不会写入营地存档。'} 终局ID ${esc(end.id)}</p></div>`;
+  $('flow').innerHTML=`<div class="result"><small>本局结果</small><h2>${end.outcome==='won'?'击败首领':end.outcome==='normal'?'正常撤离':'全队倒下'}${s.difficulty&&s.difficulty!=='normal'?`（${DIFFICULTY_LABEL[s.difficulty]}）`:''}</h2>${resultSummary}<p>${end.team.map(id=>`${esc(resources(s,id))}，${s.dungeon?.roguelike?'伙伴归营':end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。远征中已学的永久招式保留，回营后可以整备再出发。</p>${resultDetails(s)}${persistentRun?button('to-base','回到基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}<p class="muted">${persistentRun?(ready?'终局已结算并自动保存。':'终局已结算，保存失败；重试成功前不能回营地。'):'这是内存开发场景；结算不会写入营地存档。'}</p></div>`;
   bind('to-base',()=>{if(anim.active)return;clear();notice='';const report='<h3>上一局 · '+(end.outcome==='won'?'击败首领':'全队倒下')+'</h3>'+resultDetails(s);void transition(store.returnToBase().then(ok=>{if(ok){lastCampReport=report;campPanel=null;}return ok;}));});
   bind('new',()=>{const next=checkMode?createScenario(fixture!,newId()):begin(s.scenario==='main-invite'||s.scenario==='expedition'?s.scenario:'main-none');void transition(store.newTrial(next));});return;
  }
@@ -323,14 +324,15 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  }
   if(s.phase==='evolution'){
    $('controls').innerHTML='';const pending=s.pendingEvolutions?.[0],unit=pending?s.units[pending.actor]:undefined;
-   $('flow').innerHTML=pending?`<div class="result" id="evolution-choice" role="dialog" aria-labelledby="evolution-heading"><small>升级后进化</small><h2 id="evolution-heading">${esc(unit?.species?spName(unit.species):pending.actor)}可以进化</h2><p>请选择下一形态。关闭选择会暂不进化，并在下次升级时再询问。</p><div>${pending.choices.map(choice=>button(`evolve-${choice}`,spName(choice),!ready,'class="primary"')).join('')}</div>${button('evolution-close','暂不进化（下次升级时再问）',!ready)}</div>`:'<p class="error">进化阶段缺少待处理选择。</p>';
+   $('flow').innerHTML=pending?`<div class="result" id="evolution-choice" role="dialog" aria-labelledby="evolution-heading"><small>升级后进化</small><h2 id="evolution-heading">${esc(unitLabel(unit,pending.actor))}可以进化</h2><p>请选择下一形态。关闭选择会暂不进化，并在下次升级时再询问。</p><div>${pending.choices.map(choice=>button(`evolve-${choice}`,spName(choice),!ready,'class="primary"')).join('')}</div>${button('evolution-close','暂不进化（下次升级时再问）',!ready)}</div>`:'<p class="error">进化阶段缺少待处理选择。</p>';
    if(pending){for(const choice of pending.choices)bind(`evolve-${choice}`,()=>void send({type:'evolve',species:choice}));bind('evolution-close',()=>void send({type:'evolve',species:null}));}
    return;
   }
  if(s.phase==='invitation'){
-  $('controls').innerHTML='';const pending=s.invitations.find(i=>i.status==='pending')!;const preview=previewInvitation(s,inviteChoice);const old=inviteChoice?s.units[inviteChoice]:null;
-  $('flow').innerHTML=`<h2>${esc(pending.unit.id)}想加入</h2><p>邀请处理暂停世界；新人下一轮才行动。${s.request?.locked?'本轮撤离请求已成立，先处理这份邀请。':''}</p><div class="compare"><div><strong>新人 ${esc(pending.unit.id)}${pending.unit.species?` · ${esc(specName(pending.unit))}${s.prog?` Lv${s.prog.level}`:''}`:''}</strong><p>${pending.unit.hp}/${pending.unit.maxHp}HP</p><p>${pending.unit.learned.map(k=>`${skillLabel(pending.unit,k)} ${pending.unit.pp[k]}/${pending.unit.maxPp[k]}`).join(' · ')}</p></div><div><strong>回营 ${esc(inviteChoice??'尚未选择')}</strong><p>${old?`${old.hp}/${old.maxHp}HP`:'满员需要选一名同行者'}</p><p>${old?old.learned.map(k=>`${skillLabel(old,k)} ${old.pp[k]}/${old.maxPp[k]}`).join(' · '):''}</p></div></div><div class="button-row">${s.queue.map((id,i)=>button('out-'+i,`${id}回营`,!ready,inviteChoice===id?'class="selected"':'')).join('')}${s.queue.length<3?button('out-none','补空位',!ready):''}</div><p>${preview.ok?`入场 (${preview.pos.x},${preview.pos.y}) · 队列 ${preview.queue.join(' → ')} · 操控者 ${preview.leader}`:esc(preview.error)}</p><p class="muted">旧人保留培养，本局不可调回；共用背包不运输，其他人不恢复。</p>${inviteReject?`<p>将拒绝这份邀请，不会生成伙伴。</p>${button('reject-confirm','确认拒绝',!ready,'data-confirm="true"')}${button('back','返回比较')}`:button('accept','确认接受并回营',!ready||!preview.ok,'data-confirm="true" class="primary"')+button('reject','选择拒绝',!ready)}`;
-  s.queue.forEach((id,i)=>bind('out-'+i,()=>{inviteChoice=id;inviteReject=false;render();}));bind('out-none',()=>{inviteChoice=undefined;render();});bind('accept',()=>void send({type:'invite',choice:'accept',outgoing:inviteChoice}));bind('reject',()=>{inviteReject=true;render();});bind('reject-confirm',()=>void send({type:'invite',choice:'reject'}));bind('back',()=>{inviteReject=false;render();});return;
+  $('controls').innerHTML='';const pending=s.invitations.find(i=>i.status==='pending')!,preview=previewInvitation(s,inviteChoice),old=inviteChoice?s.units[inviteChoice]:null,full=s.queue.length>=3;
+  const incoming=unitLabel(pending.unit,pending.unit.id);
+  $('flow').innerHTML=`<h2>${esc(incoming)}想加入</h2><p>同行的新伙伴下一轮才行动。</p><div class="compare"><div><strong>新人 ${esc(incoming)}</strong><p>${pending.unit.hp}/${pending.unit.maxHp}HP</p><p>${pending.unit.learned.map(k=>skillLabel(pending.unit,k)+' '+pending.unit.pp[k]+'/'+pending.unit.maxPp[k]).map(esc).join(' · ')}</p></div><div><strong>${old?'回营 '+esc(unitLabel(old,inviteChoice!)):'同行名额'}</strong><p>${old?old.hp+'/'+old.maxHp+'HP':full?'选择一名同行回营，或让新人直接回营。':'可以补入空位。'}</p><p>${old?old.learned.map(k=>skillLabel(old,k)+' '+old.pp[k]+'/'+old.maxPp[k]).map(esc).join(' · '):''}</p></div></div><div class="button-row">${s.queue.map((id,i)=>button('out-'+i,unitLabel(s.units[id],id)+'回营',!ready,inviteChoice===id?'class="selected"':'')).join('')}${!full?button('out-none','补空位',!ready):''}</div><p>${preview.ok?'接受后加入本局同行。':esc(preview.error)}</p>${inviteReject?'<p>将拒绝这份邀请，不会生成伙伴。</p>'+button('reject-confirm','确认拒绝',!ready,'data-confirm="true"')+button('back','返回比较'):button('accept',full?'接受并替换同行':'接受同行',!ready||!preview.ok,'data-confirm="true" class="primary"')+(full?button('invite-to-camp','新人直接回营',!ready||anim.active)+'<p data-camp-invite-help>新人本局不入场，结算时加入营地名册。</p>':'')+button('reject','选择拒绝',!ready)}`;
+  s.queue.forEach((id,i)=>bind('out-'+i,()=>{inviteChoice=id;inviteReject=false;render();}));bind('out-none',()=>{inviteChoice=undefined;render();});bind('accept',()=>void send({type:'invite',choice:'accept',outgoing:inviteChoice}));bind('invite-to-camp',()=>void send({type:'invite',choice:'camp'}));bind('reject',()=>{inviteReject=true;render();});bind('reject-confirm',()=>void send({type:'invite',choice:'reject'}));bind('back',()=>{inviteReject=false;render();});return;
  }
  if(s.phase==='exit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮撤离请求已成立；正在完成终局处理。</p>';return;}
  if(s.phase==='transit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮跨层请求已成立；正在切换楼层。</p>';return;}
@@ -340,9 +342,9 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  const editor=draft?.editor??s.leader;const u=s.units[editor];
  const point=s.points.find(p=>same(p.pos,u.pos));const stairKind=point?.kind==='down'||point?.kind==='up';const restPoint=point?.kind==='rest';const serviceCell=point?.kind==='shop'||point?.kind==='exchange';const canCollect=!!point&&!point.used&&point.kind!=='exit'&&!stairKind&&!restPoint&&!serviceCell;const pickup=point?.kind==='berry'||point?.kind==='tonic';
  let draftText='';if(draft){const valid=draft.main&&(draft.swap||draft.action)?applyCommand(s,{type:'round',action:draft.main,...(!draft.swap?{override:{actor:draft.partner,action:draft.action!}}:{})}):null;
- draftText=`<div class="draft"><strong>本轮草稿中 · 正在编辑 ${esc(editor)}</strong><p>${button('edit-main',`${s.leader}：${actionLabel(draft.main,s.leader)}`,draft.swap)}${button('edit-partner',`${draft.partner}：${draft.swap?'换位（双方行动）':actionLabel(draft.action,draft.partner)}`,draft.swap)}</p><p>之后：敌方阶段</p>${draftOrder(s,draft)}${valid&&!valid.ok?`<p class="error">${esc(valid.error)}</p>`:''}${button('submit',draft.main?.type==='interact'&&draft.main.exit?'提交整轮并交互':'提交整轮',!ready||!valid?.ok,'data-confirm="true" class="primary"')}${button('cancel-draft','取消组合')}</div>`;
+ draftText=`<div class="draft"><strong>本轮草稿中 · 正在编辑 ${esc(unitLabel(s.units[editor],editor))}</strong><p>${button('edit-main',`${unitLabel(s.units[s.leader],s.leader)}：${actionLabel(draft.main,s.leader)}`,draft.swap)}${button('edit-partner',`${unitLabel(s.units[draft.partner],draft.partner)}：${draft.swap?'换位（双方行动）':actionLabel(draft.action,draft.partner)}`,draft.swap)}</p><p>之后：敌方阶段</p>${draftOrder(s,draft)}${valid&&!valid.ok?`<p class="error">${esc(valid.error)}</p>`:''}${button('submit',draft.main?.type==='interact'&&draft.main.exit?'提交整轮并交互':'提交整轮',!ready||!valid?.ok,'data-confirm="true" class="primary"')}${button('cancel-draft','取消组合')}</div>`;
  }
- $('controls').innerHTML=`<h2>${draft?'组合安排':'操控者行动'} <small>${esc(editor)}</small></h2>${draftText}<div class="button-row">${button('wait','等待（.）',!editable||(!ready&&!draft)||!!draft?.swap)}${button('arrange','安排伙伴',!editable||!!draft)}${button('swap','换位',!editable||!!draft)}</div>${choosingPartner||choosingSwap?`<p>选择另一名伙伴：</p>${s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0).map(id=>button('partner-'+id,id,!editable)).join('')}`:''}<div class="skills">${u.learned.map(k=>button('skill-'+k,`${esc(skillLabel(u,k))} ${u.pp[k]??0}/${u.maxPp[k]??0}<small data-move-preview="${esc(k)}" style="display:block">${esc(moveSummary(k,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</small>`,!editable||(!ready&&!draft)||!!draft?.swap||(u.pp[k]??0)<1,selectedSkill===k?'class="selected"':'')).join('')}</div>${s.prog?`<div class="items"><p class="muted">背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）。占该成员一次行动，对自己或相邻同行。</p>${(['berry','tonic'] as Item[]).map(k=>button('use-'+k,`使用${ITEM_NAMES[k]}`,!editable||(!ready&&!draft)||!!draft?.swap,choosingItem===k?'class="selected"':'')).join('')}${choosingItem&&u.pos?`<p>对谁使用${ITEM_NAMES[choosingItem]}？</p>${s.queue.filter(id=>s.units[id].hp>0&&s.units[id].pos&&(selfOrAdjacentReachable(s.floor,u.pos!,s.units[id].pos!))).map(id=>button('item-target-'+id,id===editor?`${id}（自己）`:id,!editable)).join('')}`:''}</div>`:''}<p class="muted">${selectedSkill?`已选${esc(skillLabel(u,selectedSkill))}：<span id="selected-move-preview">${esc(moveSummary(selectedSkill,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</span>。消耗1PP；金圈标出合法目标${moveOf(selectedSkill)?.range==='user'||moveOf(selectedSkill)?.range==='room'?'（自身）':''}。`:draft?'点地图或方向键只编辑动作，尚未执行。':'方向键移动；点相邻敌人普攻；K选招式。'}</p>${point&&editor===s.leader&&restPoint?button('rest',point.used?'休整点已使用':`整理招式补给（休整点，每招恢复${PROG.restPp} PP，每局一次）`,!editable||(!ready&&!draft)||!!draft?.swap||point.used):''}${point&&editor===s.leader&&!restPoint&&!serviceCell?(canCollect?button('take',pickup?`拾取${ITEM_NAMES[point!.kind as Item]}`:'取得并继续',!editable||(!ready&&!draft)||!!draft?.swap):'')+(pickup||(s.dungeon?.roguelike&&!stairKind)?'':button('take-exit',stairKind?(point!.kind==='down'?'走下楼梯（请求跨层）':'走上楼梯（请求跨层）'):canCollect?'取得／请求撤离':'请求撤离',!editable||(!ready&&!draft)||!!draft?.swap)):''}`;
+ $('controls').innerHTML=`<h2>${draft?'组合安排':'操控者行动'} <small>${esc(unitLabel(s.units[editor],editor))}</small></h2>${draftText}<div class="button-row">${button('wait','等待（.）',!editable||(!ready&&!draft)||!!draft?.swap)}${button('arrange','安排伙伴',!editable||!!draft)}${button('swap','换位',!editable||!!draft)}</div>${choosingPartner||choosingSwap?`<p>选择另一名伙伴：</p>${s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0).map(id=>button('partner-'+id,unitLabel(s.units[id],id),!editable)).join('')}`:''}<div class="skills">${u.learned.map(k=>button('skill-'+k,`${esc(skillLabel(u,k))} ${u.pp[k]??0}/${u.maxPp[k]??0}<small data-move-preview="${esc(k)}" style="display:block">${esc(moveSummary(k,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</small>`,!editable||(!ready&&!draft)||!!draft?.swap||(u.pp[k]??0)<1,selectedSkill===k?'class="selected"':'')).join('')}</div>${s.prog?`<div class="items"><p class="muted">背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）。占该成员一次行动，对自己或相邻同行。</p>${(['berry','tonic'] as Item[]).map(k=>button('use-'+k,`使用${ITEM_NAMES[k]}`,!editable||(!ready&&!draft)||!!draft?.swap,choosingItem===k?'class="selected"':'')).join('')}${choosingItem&&u.pos?`<p>对谁使用${ITEM_NAMES[choosingItem]}？</p>${s.queue.filter(id=>s.units[id].hp>0&&s.units[id].pos&&(selfOrAdjacentReachable(s.floor,u.pos!,s.units[id].pos!))).map(id=>button('item-target-'+id,id===editor?`${id}（自己）`:id,!editable)).join('')}`:''}</div>`:''}<p class="muted">${selectedSkill?`已选${esc(skillLabel(u,selectedSkill))}：<span id="selected-move-preview">${esc(moveSummary(selectedSkill,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</span>。消耗1PP；金圈标出合法目标${moveOf(selectedSkill)?.range==='user'||moveOf(selectedSkill)?.range==='room'?'（自身）':''}。`:draft?'点地图或方向键只编辑动作，尚未执行。':'方向键移动；点相邻敌人普攻；K选招式。'}</p>${point&&editor===s.leader&&restPoint?button('rest',point.used?'休整点已使用':`整理招式补给（休整点，每招恢复${PROG.restPp} PP，每局一次）`,!editable||(!ready&&!draft)||!!draft?.swap||point.used):''}${point&&editor===s.leader&&!restPoint&&!serviceCell?(canCollect?button('take',pickup?`拾取${ITEM_NAMES[point!.kind as Item]}`:'取得并继续',!editable||(!ready&&!draft)||!!draft?.swap):'')+(pickup||(s.dungeon?.roguelike&&!stairKind)?'':button('take-exit',stairKind?(point!.kind==='down'?'走下楼梯（请求跨层）':'走上楼梯（请求跨层）'):canCollect?'取得／请求撤离':'请求撤离',!editable||(!ready&&!draft)||!!draft?.swap)):''}`;
  if(choosingItem==='bigBerry')document.querySelectorAll<HTMLElement>('#controls [id^="item-target-"]').forEach(el=>{const id=el.id.slice('item-target-'.length);el.id=`item-target-bigBerry-${id}`;el.dataset.action=`item-target-bigBerry-${id}`;});
  const backpack=$('controls').querySelector<HTMLElement>('.items');
  if(backpack&&s.prog&&s.dungeon?.roguelike){
@@ -556,11 +558,20 @@ async function startNewGame(){
  quickItems=Array.from({length:6},()=>null);bagSlot=0;bagCategory='all';bagOpen=false;campPanel=null;lastCampReport='';
  clear();notice='';tmPick=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
 }
-/** Log lines the player may see: lines about an enemy on an unrevealed cell are dropped. */
-function visibleLog(s:World):string[]{
+/** View-only event rows; the engine log remains intact for animation and saving. */
+let displayedLogRun="",displayedLogRows:string[]=[];
+function visibleLogEntries(s:World):{t:string;fromEnd:number}[]{
+ const run=s.runId+"|"+(s.dungeon?.level??0);if(displayedLogRun!==run){displayedLogRun=run;displayedLogRows=[];}
  const hidden=s.enemies.filter(id=>{const u=s.units[id];return u.pos&&!s.seen.includes(key(u.pos));});
- return s.log.filter(t=>!hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??' ')));
+ // Match the raw note format independently of the current floor's actor dictionary.
+ const routine=/^[A-Za-z0-9_:-]+(?:移动到-?\d+,-?\d+|与[A-Za-z0-9_:-]+换位|(?:无路可走，)?等待)$/;
+ // Floor enemies use w<level><a-f> or challenge c<level><a-d>; removed-floor rows cannot be localized safely.
+ const retiredEnemy=(t:string)=>[...t.matchAll(/(?:^|[^A-Za-z0-9_:-])(w\d+[a-f]|c\d+[a-d])(?=$|[^A-Za-z0-9_:-])/g)].some(m=>!s.units[m[1]]);
+ const rows=s.log.map((t,i)=>({t,fromEnd:s.log.length-i})).filter(({t})=>!hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??" "))&&!routine.test(t)&&!retiredEnemy(t));
+ if(rows.length){displayedLogRows=rows.map(r=>r.t);return rows;}
+ return displayedLogRows.map(t=>({t,fromEnd:Infinity}));
 }
+function visibleLog(s:World):string[]{return visibleLogEntries(s).map(r=>r.t);}
 function renderExtras(){
  const s=live();
  const toTitle=document.getElementById('to-title');if(toTitle)toTitle.hidden=screen!=='play';
@@ -568,9 +579,7 @@ function renderExtras(){
  const box=$('recent-events');
  if(!s)box.innerHTML='';
  else{
-  const shown=new Set(visibleLog(s));
-  const tail=s.log.slice(-6);const total=tail.length;
-  const rows=tail.map((t,i)=>({t,fromEnd:total-i})).filter(r=>shown.has(r.t)).map(({t,fromEnd})=>{
+  const rows=visibleLogEntries(s).slice(-6).map(({t,fromEnd})=>{
    let extra='';const m=/^([^\s受]+)受到(\d+)伤害/.exec(t);
    if(m&&fromEnd<=freshCount){const a=attrib.get(`${m[1]}|${m[2]}`);
     if(a){const u=s.units[a];extra=u&&u.pos&&s.seen.includes(key(u.pos))?` ← ${unitLabel(u,a)}（推断）`:' ← 视野外的敌人';}}
@@ -585,9 +594,8 @@ function enemyAt(p:Pos):string|null{const s=live();if(!s)return null;return s.en
 function updateInspect(){
  const box=$('inspect');const s=live();
  if(!s){box.innerHTML='';return;}
- const pick=hoverId??pinnedId,info=pick?enemyInfo(s,pick):null,ally=info?null:partyHoverId?teammateInfo(s,partyHoverId,visibleHoverTarget(s)):null;
- if(info)box.innerHTML=`<div class="inspect-card" id="enemy-info"><strong>${esc(info.name)}</strong>${info.types?`<span>${esc(info.types)}属性</span>`:''}<p>${info.level===null?'等级未知':`等级 Lv${info.level}`} · 生命 ${info.hp}/${info.maxHp}</p><p>作战方针：${esc(info.tactic)}</p><p>招式：${info.moves.map(esc).join('；')||'无招式'}</p>${info.note?`<p class="muted">${esc(info.note)}</p>`:''}</div>`;
- else if(ally)box.innerHTML=`<div class="inspect-card" id="unit-info"><strong>${esc(ally.name)}</strong><p>${ally.level===null?'等级未知':`本局等级 Lv${ally.level}`} · 作战方针：${esc(TACTIC_LABELS[ally.tactic])}</p><p>招式：${ally.moves.map(esc).join('；')||'普攻'}</p></div>`;
+ const pick=hoverId??pinnedId,info=pick?enemyInfo(s,pick):null;
+ if(info)box.innerHTML=`<div class="inspect-card" id="enemy-info"><strong>${esc(info.name)}</strong>${info.types?`<span>${esc(info.types)}属性</span>`:''}<p>${info.level===null?'等级未知':`Lv${info.level}`} · 生命 ${info.hp}/${info.maxHp}</p><p>作战方针：${esc(info.tactic)}</p><ul class="enemy-move-list">${info.moveRows.map(move=>`<li><details><summary><span>${esc(move.name)}</span> <span>${esc(move.type)}</span> <span>PP ${move.pp}/${move.maxPp}</span></summary><p>${esc(move.detail)}</p></details></li>`).join('')||'<li>无招式</li>'}</ul>${info.note?`<p class="muted">${esc(info.note)}</p>`:''}</div>`;
  else box.innerHTML='';
  refreshDamagePreviews(s);
 }
@@ -619,19 +627,41 @@ function draftOrder(s:World,d:NonNullable<typeof draft>):string{
 function download(raw:string,filename='trial-save-original.json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function makeBoardScene(Phaser:typeof import('phaser')){
 class BoardScene extends Phaser.Scene {
- private graphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;
+ private graphics!:Phaser.GameObjects.Graphics;private pointGraphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;
  constructor(){super('board');}
  preload(){preloadArt(this);}
- private dtefAnim:DtefAnimator|null=null;private darkness!:DungeonDarkness;
- update(time:number){this.dtefAnim?.update(time);this.darkness?.update(time);}
- create(){createAnims(this);this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.events.once('shutdown',()=>this.darkness.clear());this.graphics=this.add.graphics().setDepth(0);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
+ private dtefLayer!:DtefTerrainLayer;private painterLayer!:PainterTerrainLayer;private darkness!:DungeonDarkness;private lightWorld:World|null=null;
+ update(time:number){this.dtefLayer?.update(time);this.followSprites();this.darkness?.update(time,this.partyLights());}
+ private followSprites(){
+  for(const view of this.views.values()){const hp=view.labels[0];if(hp){placeHp(view.sprite,hp.t,this.lastGeometry?.cell??48,view.gfx.y);hp.dx=hp.t.x-view.gfx.x;hp.dy=hp.t.y-view.gfx.y;}}
+  if(this.lastGeometry?.dungeon&&this.lightWorld){const sprite=this.views.get(this.lightWorld.leader)?.sprite;if(sprite)this.cameras.main.setRoundPixels(true).setScroll(Math.round(sprite.x-this.scale.width/2),Math.round(sprite.y-this.scale.height/2));}
+ }
+ private partyLights(){
+  const s=this.lightWorld,g=this.lastGeometry;if(!s||!g)return [];
+  return s.queue.flatMap(id=>{const u=s.units[id],v=this.views.get(id);return u?.hp>0&&u.pos&&v?.sprite.visible?[{x:(v.sprite.x-g.ox)/g.cell+g.minX-.5,y:(v.sprite.y-g.oy)/g.cell+g.minY-.5,primary:id===s.leader,fire:!!(u.species&&SPECIES[u.species]?.types?.includes('Fire'))}]:[];});
+ }
+ private showDarkness(s:World,durationMs=0){
+  if(!s.dungeon||!this.lastGeometry)return;const g=this.lastGeometry,theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),map=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.seen,seenWalls:s.seenWalls,onlyRevealed:true});
+  const wallColor=terrainSource()==='dtef'?this.dtefLayer.wallColor():this.painterLayer.wallColor();const staticLights=s.points.filter(p=>(p.kind==='down'||p.kind==='up')&&s.seen.includes(key(p.pos))).map(p=>({...p.pos,inner:.3,outer:1.25,strength:.45}));
+  if(theme==='ash')for(const cell of s.liquid??[]){const pos=typeof cell==='string'?{x:Number(cell.split(',')[0]),y:Number(cell.split(',')[1])}:cell;if(map.known.has(key(pos)))staticLights.push({...pos,inner:.4,outer:1.7,strength:.55});}
+  this.darkness.show([s.runId,s.dungeon.level,theme,map.width,map.height].join(':'),theme,g.cell,{width:map.width,height:map.height,known:map.known,visible:playerVisibleCells(s),lights:this.partyLights(),seed:s.dungeon.seed,wallColor,staticLights},durationMs>0,durationMs);
+  this.cameras.main.setBackgroundColor(darknessBackground(theme,wallColor));
+ }
+ create(){createAnims(this);this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.dtefLayer=new DtefTerrainLayer(this);this.painterLayer=new PainterTerrainLayer(this);this.events.once('shutdown',()=>{this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();});this.graphics=this.add.graphics().setDepth(0);this.pointGraphics=this.add.graphics().setDepth(2);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
   // worldX/worldY already include the camera scroll, so clicks stay correct while the camera follows the leader.
   const x=Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX;const y=Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY;pinnedId=enemyAt({x,y});updateInspect();clickCell({x,y});});
   this.input.on('pointermove',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);const id=enemyAt({x:Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX,y:Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY});if(id!==hoverId){hoverId=id;updateInspect();}});scene=this;this.scale.on('resize',()=>{if(!anim.active)this.paint(live());});this.paint(live());}
- geometry(s:World){if(s.dungeon){const d=s.dungeon;return {minX:0,minY:0,cell:DUNGEON_CELL,ox:0,oy:0,dungeon:true,w:d.width*DUNGEON_CELL,h:d.height*DUNGEON_CELL};}
+ private showTerrain(s:World,g:ReturnType<BoardScene['geometry']>){
+  if(!s.dungeon)return;const theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),scale=g.cell/TILE,dungeonMap=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.dungeon.roguelike?s.seen:[],seenWalls:s.dungeon.roguelike?s.seenWalls:[],onlyRevealed:true}),center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});
+    const dtef=terrainSource()==='dtef',seed=s.dungeon!.seed,level=s.dungeon!.level,map=dungeonMap!,floorKey=[s.runId,level,theme,seed,dtef?'dtef':'painter'].join(':');
+  if(dtef){this.painterLayer.clear();this.dtefLayer.show(floorKey,{map,theme,seed,level,scale,frozen:!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim,center});}
+  else{this.dtefLayer.clear();createTerrainArt(this,theme);const excluded=[...s.points.map(p=>p.pos),...(s.adventureRooms??[]).map(r=>r.interaction),...(s.rooms??[]).flatMap((r,i)=>i===s.bossRoom?Array.from({length:r.h},(_,dy)=>Array.from({length:r.w},(_,dx)=>({x:r.x+dx,y:r.y+dy}))).flat():[])];if(s.arrival)excluded.push(s.arrival);this.painterLayer.show(floorKey,{map,theme,seed,level,scale,excluded,center});}
+
+ }
+ geometry(s:World){if(s.dungeon){const d=s.dungeon,cell=dungeonCellSize(this.scale.height);return {minX:0,minY:0,cell,ox:0,oy:0,dungeon:true,w:d.width*cell,h:d.height*cell};}
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,(this.scale.width-80)/(maxX-minX+1),(this.scale.height-80)/(maxY-minY+1));return {minX,minY,cell,ox:(this.scale.width-(maxX-minX+1)*cell)/2,oy:(this.scale.height-(maxY-minY+1)*cell)/2,dungeon:false,w:this.scale.width,h:this.scale.height};}
- paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());});this.views.clear();this.graphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.dtefAnim=null;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
- this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
+ paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
+ this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
  const g=this.geometry(s);const fog=g.dungeon;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
  // 7.3 floor themes: boss-marked runs use the theme tiles of the floor (moss: the original stone). A missing texture falls back to the stone tile with a theme tint.
@@ -643,30 +673,32 @@ class BoardScene extends Phaser.Scene {
  const inArena=(p:Pos)=>!!arena&&p.x>=arena.x&&p.x<arena.x+arena.w&&p.y>=arena.y&&p.y<arena.y+arena.h;
  const terrain=!!s.dungeon?.roguelike;
  const dungeonMap=s.dungeon?prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.seen,seenWalls:s.seenWalls,onlyRevealed:true}):null;
- if(terrain){
-  const dtef=terrainSource()==='dtef';
-  if(!dtef)createTerrainArt(this,theme);
-  const map=dungeonMap!;
-  const seed=s.dungeon!.seed,level=s.dungeon!.level;
-  const terrainImage=(x:number,y:number,layer:TerrainLayer|'floor')=>{
-   const c=center({x,y}),frame=layer==='floor'?`${((x%16)+16)%16},${((y%16)+16)%16}`:`v${terrainVariant(x,y,layer,seed,level,theme)}-f${frameOf(maskAt(map,x,y,layer))}`;
-   this.tiles.push(this.add.image(c.x,c.y,`terrain-${theme}-${layer}`,frame).setScale(scale).setDepth(layer==='floor'?1:layer==='edge'?1.1:layer==='liquid'?1.2:1.3));
-  };
-  this.dtefAnim=dtef?paintDtef(this,{map,theme,seed,level,scale,frozen:!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim,center,push:im=>this.tiles.push(im)}):null;
-  if(!dtef)for(const cell of map.known){const [x,y]=cell.split(',').map(Number);if(map.floor.has(cell)){terrainImage(x,y,'floor');terrainImage(x,y,'edge');}else terrainImage(x,y,map.liquid.has(cell)?'liquid':'wall');}
-  const decoKey=`deco-${theme}`,atlas=this.textures.exists(decoKey)?{frames:this.textures.get(decoKey).getFrameNames()}:null;
-  const excluded=[...s.points.map(p=>p.pos),...(s.adventureRooms??[]).map(r=>r.interaction),...(s.rooms??[]).flatMap((r,i)=>i===s.bossRoom?Array.from({length:r.h},(_,dy)=>Array.from({length:r.w},(_,dx)=>({x:r.x+dx,y:r.y+dy}))).flat():[])];
-  // Arrival is kept separately from the current leader so exploring never moves decorations.
-  if(s.arrival)excluded.push(s.arrival);
-  // #178: the default DTEF route draws no 8.5b decorations (D-20261103: removed); decorations are purely visual here (point and room markers are separate overlay objects), so no game information is lost. The painter route keeps them.
-  if(!dtef)for(const deco of selectDecorations({map,theme,seed,level,excluded,atlas})){
-   const c=center(deco);this.tiles.push(this.add.image(c.x,c.y+g.cell/2,decoKey,deco.frame).setOrigin(.5,1).setScale(scale).setDepth(1.5));
-  }
- }else{
- const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();if(!fog)for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){walls.add(key(q));tileImg('wall',wallName,center(q),s.seen.includes(key(p))?.85:.3);}}
+ if(terrain)this.showTerrain(s,g);else{if(fog)this.showTerrain(s,g);else{this.dtefLayer.clear();this.painterLayer.clear();}
+  const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();if(!fog)for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){walls.add(key(q));tileImg('wall',wallName,center(q),s.seen.includes(key(p))?.85:.3);}}
  for(const wall of s.seenWalls??[]){if(floorKeys.has(wall)||walls.has(wall))continue;const [x,y]=wall.split(',').map(Number);tileImg('wall',wallName,center({x,y}),.85);walls.add(wall);}
  }
- for(const p of s.floor){const c=center(p),seen=s.seen.includes(key(p));if(fog&&!seen)continue;if(!terrain)tileImg('floor',inArena(p)?ARENA_TILE:floorName,c,seen?1:.28);if(seen){const point=s.points.find(q=>same(p,q.pos));if(point&&point.kind==='rest'){this.overlay.fillStyle(0x6ec3ff,point.used?.18:.4);this.overlay.fillCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(2,0x9fdcff,point.used?.3:1);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);text(c.x,c.y,'休','#e4f4ff',16);}else if(point&&(point.kind==='shop'||point.kind==='exchange')){const col=point.kind==='shop'?0xf2b84b:0xc58bff;this.overlay.fillStyle(col,point.used?.2:.4);this.overlay.fillCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(2,col,point.used?.3:1);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);text(c.x,c.y,point.kind==='shop'?'商':'换','#fff4dc',16);}else if(point&&(point.kind==='berry'||point.kind==='tonic')){img(point.kind==='berry'?'item-berry':'item-tonic',c,point.used?.3:1,2,.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='berry'?'果':'剂','#e4efb0',11);}else if(point){const stairs=point.kind==='down'||point.kind==='up';img(point.kind==='goal'?'goal':point.kind==='item'?'item':point.kind==='down'?'stairs-down':point.kind==='up'?'stairs-up':'exit',c,point.used?.45:1,2,point.kind==='exit'||stairs?1:.8);text(c.x+g.cell*.32,c.y+g.cell*.32,point.kind==='goal'?'G':point.kind==='item'?'T':point.kind==='down'?'下':point.kind==='up'?'上':'出口','#e4efb0',11);}}if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,`${p.x},${p.y}`,'#8fa89c',9);}
+  for(const p of s.floor){
+  const c=center(p),seen=s.seen.includes(key(p));if(fog&&!seen)continue;
+  if(!terrain)tileImg('floor',inArena(p)?ARENA_TILE:floorName,c,seen?1:.28);
+  const point=seen?s.points.find(q=>same(p,q.pos)):undefined;
+  if(point){
+   const visual=POINT_VISUALS[point.kind],alpha=point.used?.3:1,pg=this.pointGraphics;
+   if(visual.icon==='berry'){
+    pg.fillStyle(visual.color,alpha);pg.fillEllipse(c.x-g.cell*.07,c.y,g.cell*.29,g.cell*.31);pg.fillEllipse(c.x+g.cell*.07,c.y,g.cell*.29,g.cell*.31);
+    pg.lineStyle(1,0x3b2b25,alpha);pg.strokeEllipse(c.x,c.y,g.cell*.42,g.cell*.34);
+    pg.fillStyle(0x75a450,alpha);pg.fillTriangle(c.x,c.y-g.cell*.12,c.x+g.cell*.2,c.y-g.cell*.25,c.x+g.cell*.12,c.y-g.cell*.08);
+   }else if(visual.icon==='seed'){
+    pg.fillStyle(visual.color,alpha);pg.fillEllipse(c.x,c.y,g.cell*.27,g.cell*.4);pg.lineStyle(2,0x7b6338,alpha);pg.lineBetween(c.x-g.cell*.02,c.y-g.cell*.15,c.x+g.cell*.04,c.y+g.cell*.14);
+   }else if(visual.icon==='rest'||visual.icon==='shop'||visual.icon==='exchange'){
+    pg.fillStyle(visual.color,alpha*.4);pg.fillCircle(c.x,c.y,g.cell*.28);pg.lineStyle(2,visual.color,alpha);pg.strokeCircle(c.x,c.y,g.cell*.28);
+    text(c.x,c.y,visual.icon==='rest'?'休':visual.icon==='shop'?'商':'换','#edf7f4',Math.min(20,g.cell*.3)).setAlpha(alpha);
+   }else{
+    const texture=visual.icon==='tonic'?'item-tonic':visual.icon;img(texture,c,alpha,2,visual.icon==='exit'||visual.icon.startsWith('stairs')?1:.8);
+   }
+   text(c.x,c.y+g.cell*.38,visual.name,'#e4efb0',Math.max(10,Math.min(13,g.cell/6))).setAlpha(alpha).setWordWrapWidth(g.cell*1.6,true);
+  }
+  if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,p.x+','+p.y,'#8fa89c',9);
+ }
  for(const marker of roomMarkers){const c=center(marker.at),color=marker.dimmed?'#84918a':marker.state==='sealed'?'#ffb7a7':marker.roomType==='challenge'?'#f4d58d':marker.roomType==='commission'?'#a4d8e8':marker.roomType==='blessing'?'#d7b3ff':'#c4e89a';
   if(marker.kind==='interaction'){const hex=marker.roomType==='challenge'?0xf4d58d:marker.roomType==='commission'?0xa4d8e8:marker.roomType==='blessing'?0xd7b3ff:0xc4e89a;this.overlay.fillStyle(hex,marker.dimmed?0.12:0.28);this.overlay.fillCircle(c.x,c.y,g.cell*.3);this.overlay.lineStyle(2,hex,marker.dimmed?0.3:0.9);this.overlay.strokeCircle(c.x,c.y,g.cell*.3);}
   const labelAt=marker.kind==='interaction'?{x:c.x+g.cell*.27,y:c.y-g.cell*.27}:c;
@@ -676,28 +708,17 @@ class BoardScene extends Phaser.Scene {
  for(const id of [...s.enemies,...s.queue]){const u=visible(id);if(!u||!u.pos)continue;shown.add(id);const c=center(u.pos);
   // Shadow and leader ring live in a per-unit Graphics (local origin = cell centre, depth 3: above floor tiles and props, below sprites, highlights and labels) so animation can move them with the sprite.
   const ug=this.add.graphics().setDepth(3).setPosition(c.x,c.y);  // above floor tiles (1-2), below sprites (4)
- ug.fillStyle(0x000000,.35);ug.fillEllipse(0,g.cell*.3,g.cell*.55,g.cell*.2);if(id===s.leader){ug.lineStyle(3,0xf3d997);ug.strokeEllipse(0,g.cell*.3,g.cell*.86,g.cell*.34);}
-  const foes=(u.side==='enemy'?s.queue:s.enemies).map(visible).filter((v):v is NonNullable<typeof v>=>!!v&&!!v.pos);const near=foes.sort((a,b)=>Math.abs(a.pos!.x-u.pos!.x)+Math.abs(a.pos!.y-u.pos!.y)-Math.abs(b.pos!.x-u.pos!.x)-Math.abs(b.pos!.y-u.pos!.y))[0];
-  const row=near?facingRow(near.pos!.x-u.pos.x,near.pos!.y-u.pos.y):u.side==='enemy'?6:2;const dex=skinFor(id,u.side,u.species);const anim=animKey(dex,'Idle',row);
+ ug.fillStyle(0x000000,.35);ug.fillEllipse(0,g.cell*UNIT_GROUND_FRACTION,g.cell*.55,g.cell*.2);if(id===s.leader){ug.lineStyle(3,0xf3d997);ug.strokeEllipse(0,g.cell*UNIT_GROUND_FRACTION,g.cell*.86,g.cell*.34);}
+  const direction=facingOf(u),row=facingRow(direction.x,direction.y),dex=skinFor(id,u.side,u.species),anim=animKey(dex,'Idle',row);
   let sp=this.sprites.get(id);if(!sp){sp=this.add.sprite(c.x,c.y,`${dex}-Idle`).setDepth(4);this.sprites.set(id,sp);}
-  sp.setVisible(true).setAlpha(1).setPosition(c.x,c.y+g.cell*.08).setScale(scale*(u.boss?1.5:1)).setOrigin(.5,.6);sp.anims.timeScale=1;if(sp.anims.currentAnim?.key!==anim)sp.play(anim);
-  const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:10,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
-  // Labels sit on the shadow line at the cell's foot, clear of the sprite's head and of the corner point marks.
-  this.views.set(id,{sprite:sp,gfx:ug,labels:[ut(-g.cell*.3,g.cell*.46,id,u.side==='enemy'?'#ffb4a6':'#cdeccf'),ut(g.cell*.3,g.cell*.46,`${u.hp}`,'#f0e8d0'),...(u.boss?[ut(0,-g.cell*.78,'首领','#ffd37a')]:[])],dex,row});}
+  sp.setVisible(true).setAlpha(1).setPosition(c.x,c.y+g.cell*UNIT_GROUND_FRACTION).setScale(scale*(u.boss?1.5:1)).setOrigin(.5,groundOriginY(dex,'Idle'));sp.anims.timeScale=1;if(sp.anims.currentAnim?.key!==anim)sp.play(anim);
+  const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:Math.max(10,Math.round(g.cell*.12)),color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
+  // Only HP sits beside the model; species names remain in the HUD and information cards.
+  const hp=ut(0,0,`${u.hp}`,'#73ff7a');hp.t.setStyle({fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(16,Math.round(g.cell*.22))});placeHp(sp,hp.t,g.cell,c.y);hp.dx=hp.t.x-c.x;hp.dy=hp.t.y-c.y;
+  this.views.set(id,{sprite:sp,gfx:ug,labels:[hp,...(u.boss?[ut(0,-g.cell*.78,'首领','#ffd37a')]:[])],dex,row});}
  this.sprites.forEach((sp,id)=>{if(!shown.has(id))sp.setVisible(false);});this.lastGeometry=g;
- {const cam=this.cameras.main,lead=s.units[s.leader]?.pos;
-  // Keep nearby targets clear of the HUD, including at the map boundary.
-  if(g.dungeon){const c=lead?center(lead):{x:g.w/2,y:g.h/2};cam.setScroll(c.x-this.scale.width/2,c.y-this.scale.height/2);}else cam.setScroll(0,0);}
- if(dungeonMap){
-  const lights=s.queue.flatMap(id=>{
-   const unit=s.units[id];
-   if(!unit?.pos||unit.hp<=0)return [];
-   return [{...unit.pos,primary:id===s.leader,fire:!!(unit.species&&SPECIES[unit.species]?.types?.includes('Fire'))}];
-  });
-  this.darkness.show([s.runId,s.dungeon!.level,theme,dungeonMap.width,dungeonMap.height].join(':'),theme,g.cell,{
-   width:dungeonMap.width,height:dungeonMap.height,known:dungeonMap.known,visible:playerVisibleCells(s),lights,
-  },animationEnabled());
- }
+ if(g.dungeon)this.followSprites();else this.cameras.main.setScroll(0,0);
+ if(dungeonMap)this.showDarkness(s);
  if(selectedSkill&&s.phase==='playing'&&!draft?.swap){const editor=draft?.editor??s.leader;for(const target of skillTargets(s,editor,selectedSkill)){const u=s.units[target];if(!u?.pos||!s.seen.includes(key(u.pos)))continue;const c=center(u.pos);this.overlay.lineStyle(2,0xf1d88e);this.overlay.strokeCircle(c.x,c.y,g.cell*.46);}}
  if(s.phase==='invitation'&&inviteChoice){const p=previewInvitation(s,inviteChoice);if(p.ok){const c=center(p.pos);this.overlay.lineStyle(3,0xf1d88e);this.overlay.strokeRect(c.x-g.cell/2+3,c.y-g.cell/2+3,g.cell-6,g.cell-6);}}
  }
@@ -706,9 +727,11 @@ class BoardScene extends Phaser.Scene {
   const p=plan(events);this.paint(before,true);const g=this.lastGeometry;
   if(!p||!g)return Promise.resolve();
   const center=(q:Pos)=>({x:g.ox+(q.x-g.minX+.5)*g.cell,y:g.oy+(q.y-g.minY+.5)*g.cell});
-  const st:Stage={scene:this,views:this.views,center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale};
+  this.lightWorld=after;let revealed=false,movingFog=false;
+  const st:Stage={scene:this,views:this.views,center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,onMovementStart:duration=>{if(revealed)return;revealed=true;movingFog=true;this.darkness.setMovementProgress(0);this.showTerrain(after,g);this.showDarkness(after,duration);},onMovementProgress:progress=>{if(!movingFog)return;this.darkness.setMovementProgress(progress);if(progress>=1)movingFog=false;}};
+  if(!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway')){this.showTerrain(after,g);this.showDarkness(after);}
   return new Promise<void>(resolve=>{
-   let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();try{this.paint(live(),true);}finally{resolve();}};
+   let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.darkness.setMovementProgress(undefined);this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();try{this.paint(live(),true);}finally{resolve();}};
    const timer=setTimeout(finish,3000); // safety net, e.g. a hidden tab where Phaser's clock is paused
    this.skipNow=finish;
    void playEvents(st,events).then(finish,finish);
@@ -717,7 +740,7 @@ class BoardScene extends Phaser.Scene {
  exportTerrain(theme:TerrainThemeKey,layer:TerrainLayer|'floor'){exportTerrainArt(this,theme,layer);}
  skip(){this.skipNow?.();}
  /** Read-only view of what is drawn, for the browser checks: the tile textures in use, and the boss sprite's scale next to a normal unit's, with its labels. */
- debug(){const unit=(id:string)=>{const v=this.views.get(id);return v?{scale:Number(v.sprite.scaleX.toFixed(3)),labels:v.labels.map(l=>l.t.text)}:null;};const worldView=this.cameras.main.worldView;return {tiles:[...new Set(this.tiles.map(t=>t.texture.key))].sort(),terrain:this.tiles.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:this.tiles.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},boss:unit('boss'),leader:unit(live()?.leader??'')};}
+ debug(){const terrainImages=[...this.tiles,...this.dtefLayer.images,...this.painterLayer.images];const unit=(id:string)=>{const v=this.views.get(id);return v?{scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{centerY:v.gfx.y,y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text),labelPositions:v.labels.map(l=>({text:l.t.text,x:l.t.x,y:l.t.y,width:l.t.width,height:l.t.height,originX:l.t.originX,originY:l.t.originY}))}:null;};const worldView=this.cameras.main.worldView;return {terrainCache:terrainSource()==='dtef'?this.dtefLayer.debug():this.painterLayer.debug(),darkness:this.darkness.debug(),tiles:[...new Set(terrainImages.map(t=>t.texture.key))].sort(),terrain:terrainImages.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:terrainImages.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
 }
 return BoardScene;
 }
@@ -788,22 +811,45 @@ setInterval(()=>{if(screen!=='play'||store.atBase)portraitTick(performance.now()
 bind('export-terrain',()=>{const theme=($('terrain-theme') as HTMLSelectElement).value as TerrainThemeKey,layer=($('terrain-layer') as HTMLSelectElement).value as TerrainLayer|'floor';scene?.exportTerrain(theme,layer);});
 bind('open-fixture',()=>{const id=(document.getElementById('fixture') as HTMLSelectElement).value;window.open(`?fixture=${encodeURIComponent(id)}`,'_blank','noopener');});
 
-const heldDirections=new Set<string>();let moveTimer:ReturnType<typeof setTimeout>|null=null;
-function cancelMoveInput(){heldDirections.clear();if(moveTimer!==null)clearTimeout(moveTimer);moveTimer=null;}
-function flushMoveInput(){
- if(moveTimer!==null)clearTimeout(moveTimer);moveTimer=null;
- const s=live();if(!s||s.phase!=='playing'||anim.active||bagOpen||settings.open||screen!=='play')return;
- const dx=Number(heldDirections.has('d')||heldDirections.has('ArrowRight'))-Number(heldDirections.has('a')||heldDirections.has('ArrowLeft'));
- const dy=Number(heldDirections.has('s')||heldDirections.has('ArrowDown'))-Number(heldDirections.has('w')||heldDirections.has('ArrowUp'));
- const u=s.units[draft?.editor??s.leader];if((dx||dy)&&u.pos)act({type:'move',to:plus(u.pos,{x:dx,y:dy})});
+const heldDirections=new Set<string>();let moveTimer:ReturnType<typeof setTimeout>|null=null,moveFrame:number|null=null,moveInFlight=false,moveCollecting=false,moveTap:Pos|null=null;
+function cancelMoveInput(){heldDirections.clear();if(moveTimer!==null)clearTimeout(moveTimer);if(moveFrame!==null)cancelAnimationFrame(moveFrame);moveTimer=null;moveFrame=null;moveCollecting=false;moveTap=null;}
+function movementEnemies(s:World):Set<string>{const cells=playerVisibleCells(s);return new Set(s.enemies.filter(id=>{const u=s.units[id];return u.hp>0&&u.pos&&cells.has(key(u.pos));}));}
+function queueHeldMove(){moveFrame=requestAnimationFrame(()=>{moveFrame=null;if(!heldDirections.size)return;void flushMoveInput();});}
+async function flushMoveInput(tapDirection?:Pos){
+ const tap=tapDirection??moveTap;moveTap=null;
+ if(moveTimer!==null)clearTimeout(moveTimer);if(moveFrame!==null)cancelAnimationFrame(moveFrame);moveTimer=null;moveFrame=null;moveCollecting=false;if(moveInFlight)return;
+ const s=live();if(!s||s.phase!=='playing'||anim.active||bagOpen||settings.open||screen!=='play'||store.status!=='ready'){cancelMoveInput();return;}
+ const dx=tap?.x??(Number(heldDirections.has('d')||heldDirections.has('ArrowRight'))-Number(heldDirections.has('a')||heldDirections.has('ArrowLeft')));
+ const dy=tap?.y??(Number(heldDirections.has('s')||heldDirections.has('ArrowDown'))-Number(heldDirections.has('w')||heldDirections.has('ArrowUp')));
+ const u=s.units[draft?.editor??s.leader];if(!(dx||dy)||!u.pos)return;
+ const direction={x:dx,y:dy},to=plus(u.pos,direction);
+ if(draft){act({type:'move',to});return;}
+ const blocked=!s.seen.includes(key(to))||!adjacentReachable(floorIndex(s.floor),u.pos,to)||s.enemies.some(id=>{const e=s.units[id];return e.hp>0&&same(e.pos,to);});
+ if(blocked){cancelMoveInput();await send({type:'face',direction});return;}
+ const beforeEnemies=movementEnemies(s),round=s.round,run=s.runId,level=s.dungeon?.level;
+ moveInFlight=true;let played=false;
+ try{played=!!(await send({type:'round',action:{type:'move',to}},true));}
+ finally{moveInFlight=false;}
+ const after=live();if(!after||after.runId!==run||after.dungeon?.level!==level||after.round===round||after.phase!=='playing'||store.status!=='ready'||bagOpen||settings.open){cancelMoveInput();return;}
+ if([...movementEnemies(after)].some(id=>!beforeEnemies.has(id))){cancelMoveInput();return;}
+ if(heldDirections.size){if(played)void flushMoveInput();else queueHeldMove();}
 }
-document.addEventListener('keyup',e=>{if(e.key==='Shift')anim.shift=false;const k=e.key.length===1?e.key.toLowerCase():e.key;if(heldDirections.has(k)){if(moveTimer!==null)flushMoveInput();heldDirections.delete(k);}});
+document.addEventListener('keyup',e=>{
+ if(e.key==='Shift')anim.shift=false;const k=e.key.length===1?e.key.toLowerCase():e.key;if(!heldDirections.has(k))return;
+ const dx=Number(heldDirections.has('d')||heldDirections.has('ArrowRight'))-Number(heldDirections.has('a')||heldDirections.has('ArrowLeft')),dy=Number(heldDirections.has('s')||heldDirections.has('ArrowDown'))-Number(heldDirections.has('w')||heldDirections.has('ArrowUp'));
+ if(moveCollecting){
+  // Release a quick chord as one gesture; don't block its remaining keyup with a whole round's render.
+  if(!moveTap&&(dx||dy))moveTap={x:dx,y:dy};heldDirections.delete(k);
+  if(!heldDirections.size){const tap=moveTap;cancelMoveInput();if(tap)void flushMoveInput(tap);}return;
+ }
+ const opposed=!(dx||dy);heldDirections.delete(k);if(!heldDirections.size)cancelMoveInput();else if(opposed&&!moveInFlight&&!anim.active&&moveTimer===null&&moveFrame===null)void flushMoveInput();
+});
 document.addEventListener('click',e=>{if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, label:has(#anim-toggle), summary')){e.stopPropagation();e.preventDefault();}},true);
 document.addEventListener('keydown',e=>{
  if(settings.open||screen!=='play'||store.atBase)return;
  if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}
  if(e.repeat){e.preventDefault();return;}
- if(anim.active){if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}
+ if(anim.active){const direction=e.key.length===1?e.key.toLowerCase():e.key;if(heldDirections.size&&['w','a','s','d','ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(direction)&&!(e.target as HTMLElement).matches('input,select,textarea'))heldDirections.add(direction);if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}
  const target=e.target as HTMLElement;if(target.matches('input,select,textarea'))return;
  if(e.key==='Enter'){if(target.matches('button[data-confirm]')&&!target.hasAttribute('disabled')){e.preventDefault();target.click();}else e.preventDefault();return;}
  if(e.key==='Escape'){
@@ -820,10 +866,12 @@ document.addEventListener('keydown',e=>{
  if(['5','6','7','8','9','0'].includes(e.key)){e.preventDefault();const item=quickItems[['5','6','7','8','9','0'].indexOf(e.key)];if(item)chooseHudItem(item);return;}
  const directionKey=e.key.length===1?k:e.key;
  if(['w','a','s','d','ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(directionKey)){
-  e.preventDefault();heldDirections.add(directionKey);
-  // Briefly collect the second direction; keyup flushes an ordinary tap immediately.
-  if(moveTimer===null)moveTimer=setTimeout(flushMoveInput,40);return;
+  e.preventDefault();const first=heldDirections.size===0;heldDirections.add(directionKey);
+  // Only a fresh press collects a chord; held movement changes direction at the next step.
+  if(moveCollecting)moveTap=null;
+  if(first){moveCollecting=true;moveTimer=setTimeout(()=>void flushMoveInput(),40);}else if(!moveCollecting&&!moveInFlight)void flushMoveInput();return;
  }
+ if(k==='f'){e.preventDefault();act({type:'basicForward'});return;}
  if(e.key==='.')act({type:'wait'});
  if(k==='k'){const skill=s.units[draft?.editor??s.leader].learned[0];if(skill)chooseHudSkill(skill);}
 });

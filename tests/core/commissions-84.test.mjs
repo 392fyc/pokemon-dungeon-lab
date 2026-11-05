@@ -499,6 +499,8 @@ test('C15: a same-round downstairs completion levels the team before the resulti
   assert.equal(result.ok,true,result.error);s=result.state;
   assert.equal(s.request.locked,true);assert.equal(s.phase,'invitation');assert.equal(s.commissions.length,0);
   assert.equal(s.prog.exp,32);assert.equal(s.prog.level,9);
+  assert.deepEqual(s.log.filter(t=>t.includes('升到')),['升到 Lv6','升到 Lv7','升到 Lv8','升到 Lv9'],'commission and battle level-ups share the short message');
+  assert.doesNotMatch(s.log.join('\n'),/本局等级升到|基础生命上限增加|攻击等级加成/);
   const invite=s.invitations.find(i=>i.status==='pending');assert.ok(invite);
   assert.equal(invite.unit.level,s.prog.level,'the invite snapshot uses the level after the stair commission reward');
 });

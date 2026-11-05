@@ -624,6 +624,13 @@ body.dungeon-mode .hud-skill:disabled {
   cursor: default;
 }
 
+/* Playback locks input without changing the brightness of otherwise available controls. */
+body.dungeon-mode .hud-party-main:disabled[data-animation-locked],
+body.dungeon-mode .hud-party-details:disabled[data-animation-locked],
+body.dungeon-mode .hud-skill:disabled[data-animation-locked] {
+  opacity: 1;
+}
+
 body.dungeon-mode .hud-skills > .hud-skill.is-empty:disabled {
   border: 1px dashed #657466;
   background: rgba(12, 24, 18, 0.46);

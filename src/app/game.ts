@@ -220,10 +220,10 @@ function showMoveTip(skill:Skill,actor:string){
 function placeInspectBelowParty(){if(!dungeonMode())return;const party=$('party');$('inspect').style.top=(party.offsetTop+party.offsetHeight+8)+'px';}
 function renderDungeonHud(){
  if(!dungeonMode())return;
- const s=live()!,disabled=anim.active||store.status!=='ready'||s.phase!=='playing';
- $('party').innerHTML=hudParty(s,disabled);
+ const s=live()!,unavailable=store.status!=='ready'||s.phase!=='playing',disabled=anim.active||unavailable;
+ $('party').innerHTML=hudParty(s,unavailable);
  placeInspectBelowParty();
- $('hud-bottom').innerHTML=hudBottom(s,quickItems,disabled,draft&&draft.editor!==s.leader?null:selectedSkill,choosingItem);
+ $('hud-bottom').innerHTML=hudBottom(s,quickItems,unavailable,draft&&draft.editor!==s.leader?null:selectedSkill,choosingItem);
  $('hud-map').innerHTML=hudMinimap(s);
  $('activity-status').innerHTML=hudTracking(s);$('activity-status').hidden=!s.dungeon?.roguelike;
  $('hud-tooltip').hidden=true;$('hud-tooltip').innerHTML='';
@@ -270,7 +270,7 @@ function renderDungeonHud(){
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-item]'))b.onclick=()=>{const item=b.dataset.bagItem as Item;bagSelectedItem=item;quickItems=quickItems.map((v,i)=>i===bagSlot?item:v===item?null:v);bagSlot=(bagSlot+1)%6;render();};
  document.querySelector<HTMLButtonElement>('[data-bag-clear]')?.addEventListener('click',()=>{quickItems[bagSlot]=null;render();});
  $('actions-open').onclick=()=>{actionsOpen=!actionsOpen;detailsId=null;render();};$('hud-settings').onclick=openSettings;
- if(anim.active)document.querySelectorAll<HTMLButtonElement|HTMLSelectElement>('#controls button,#controls select,#party button').forEach(el=>{el.disabled=true;});
+ if(anim.active)document.querySelectorAll<HTMLButtonElement|HTMLSelectElement>('#controls button,#controls select,#party button,#hud-bottom button').forEach(el=>{if(!unavailable&&!el.disabled&&el.matches('[data-hud-leader],[data-hud-details],[data-hud-skill]'))el.dataset.animationLocked='true';el.disabled=true;});
  $('recent-events').querySelector('h2')?.remove();
  const rows=Array.from($('recent-events').querySelectorAll('li'));rows.slice(0,-3).forEach(el=>el.remove());
  // Runtime details and source IDs stay in developer diagnostics, not in the player's messages.
@@ -558,11 +558,17 @@ async function startNewGame(){
  quickItems=Array.from({length:6},()=>null);bagSlot=0;bagCategory='all';bagOpen=false;campPanel=null;lastCampReport='';
  clear();notice='';tmPick=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
 }
-/** Log lines the player may see: lines about an enemy on an unrevealed cell are dropped. */
-function visibleLog(s:World):string[]{
- const hidden=s.enemies.filter(id=>{const u=s.units[id];return u.pos&&!s.seen.includes(key(u.pos));});
- return s.log.filter(t=>!hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??' ')));
+/** View-only event rows; the engine log remains intact for animation and saving. */
+let displayedLogRun="",displayedLogRows:string[]=[];
+function visibleLogEntries(s:World):{t:string;fromEnd:number}[]{
+ const run=s.runId+"|"+(s.dungeon?.level??0);if(displayedLogRun!==run){displayedLogRun=run;displayedLogRows=[];}
+ const hidden=s.enemies.filter(id=>{const u=s.units[id];return u.pos&&!s.seen.includes(key(u.pos));}),actors=Object.keys(s.units);
+ const routine=(t:string)=>actors.some(id=>t.startsWith(id)&&/^(?:移动到-?\d+,-?\d+|与.+换位|等待)$/.test(t.slice(id.length)));
+ const rows=s.log.map((t,i)=>({t,fromEnd:s.log.length-i})).filter(({t})=>!hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??" "))&&!routine(t));
+ if(rows.length){displayedLogRows=rows.map(r=>r.t);return rows;}
+ return displayedLogRows.map(t=>({t,fromEnd:Infinity}));
 }
+function visibleLog(s:World):string[]{return visibleLogEntries(s).map(r=>r.t);}
 function renderExtras(){
  const s=live();
  const toTitle=document.getElementById('to-title');if(toTitle)toTitle.hidden=screen!=='play';
@@ -570,9 +576,7 @@ function renderExtras(){
  const box=$('recent-events');
  if(!s)box.innerHTML='';
  else{
-  const shown=new Set(visibleLog(s));
-  const tail=s.log.slice(-6);const total=tail.length;
-  const rows=tail.map((t,i)=>({t,fromEnd:total-i})).filter(r=>shown.has(r.t)).map(({t,fromEnd})=>{
+  const rows=visibleLogEntries(s).slice(-6).map(({t,fromEnd})=>{
    let extra='';const m=/^([^\s受]+)受到(\d+)伤害/.exec(t);
    if(m&&fromEnd<=freshCount){const a=attrib.get(`${m[1]}|${m[2]}`);
     if(a){const u=s.units[a];extra=u&&u.pos&&s.seen.includes(key(u.pos))?` ← ${unitLabel(u,a)}（推断）`:' ← 视野外的敌人';}}

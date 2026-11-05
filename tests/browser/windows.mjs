@@ -1,4 +1,5 @@
 import {fog350Checks} from './fog350.mjs';
+import {review357Checks} from './review357.mjs';
 import assert from 'node:assert/strict';
 import {campControl,openCampPanel,openCampRoster} from './camp-ui.mjs';
 import fs from 'node:fs';
@@ -2148,6 +2149,8 @@ await test('#194 头像按可见像素居中：七种素材、实际进化、营
 });
 
 await test('#194 #350 墙心底层、未知地形保密、连续移动与精灵同步光圈',()=>fog350Checks({browser,base,startMemory,artifact,setup}));
+
+await test('#194 #357 消息过滤、日志保留与行走中 HUD 亮度及输入锁',()=>review357Checks({setup,startMemory,state,ready,artifact}));
 
 await browser.close();
 clearTimeout(browserDeadline);

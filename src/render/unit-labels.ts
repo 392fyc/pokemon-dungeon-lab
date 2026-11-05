@@ -12,9 +12,10 @@ function visibleBox(frame:Phaser.Textures.Frame):VisibleBox {
  for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++)if(rgba[(y*canvas.width+x)*4+3]){right=Math.max(right,x+1);bottom=Math.max(bottom,y+1);}
  const box={right:right||frame.cutWidth,bottom:bottom||frame.cutHeight};bounds.set(frame,box);return box;
 }
-/** Keep the HP number at its model's lower-right edge, contained in its own cell. */
-export function placeHp(sprite:Phaser.GameObjects.Sprite,label:Phaser.GameObjects.Text,cell:number):void {
+/** Keep the HP right and bottom edges inside the owner's cell. */
+export function placeHp(sprite:Phaser.GameObjects.Sprite,label:Phaser.GameObjects.Text,cell:number,cellY:number):void {
  const box=visibleBox(sprite.frame);
  const right=sprite.x+(box.right-sprite.originX*sprite.frame.cutWidth)*sprite.scaleX+1;
- label.setOrigin(1,1).setPosition(Math.round(Math.min(right,sprite.x+cell/2-1)),Math.round(sprite.y+(box.bottom-sprite.originY*sprite.frame.cutHeight)*sprite.scaleY+1));
+ const bottom=sprite.y+(box.bottom-sprite.originY*sprite.frame.cutHeight)*sprite.scaleY+1;
+ label.setOrigin(1,1).setPosition(Math.round(Math.min(right,sprite.x+cell/2-1)),Math.round(Math.min(bottom,cellY+cell/2-1)));
 }

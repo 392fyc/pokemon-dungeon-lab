@@ -627,7 +627,9 @@ body.dungeon-mode .hud-skill:disabled {
 /* Playback locks input without changing the brightness of otherwise available controls. */
 body.dungeon-mode .hud-party-main:disabled[data-animation-locked],
 body.dungeon-mode .hud-party-details:disabled[data-animation-locked],
-body.dungeon-mode .hud-skill:disabled[data-animation-locked] {
+body.dungeon-mode .hud-skill:disabled[data-animation-locked],
+body.dungeon-mode .hud-quick-slot:disabled[data-animation-locked]:not(.is-empty),
+body.dungeon-mode #bag-open:disabled[data-animation-locked] {
   opacity: 1;
 }
 

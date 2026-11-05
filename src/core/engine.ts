@@ -554,7 +554,7 @@ function applyBlessing(s:World,id:BlessingId):void {
 function updateLevelsAfterCommissionReward(s:World):boolean {
   const p=s.prog;if(!p)return false;
   let changed=false;while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level+1]){
-    p.level++;changed=true;refreshPartyLevel(s);note(s,`本局等级升到Lv${p.level}：基础生命上限增加1点，攻击等级加成${levelDamageBonus(p.level)}`);
+    p.level++;changed=true;refreshPartyLevel(s);note(s,`升到 Lv${p.level}`);
   }
   if(!changed)return false;
   const pending=findEvolutions(s);if(!pending.length)return false;

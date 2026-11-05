@@ -1,5 +1,6 @@
 import {fog350Checks} from './fog350.mjs';
 import {review357Checks} from './review357.mjs';
+import {review360FloorChecks} from './review360.mjs';
 import assert from 'node:assert/strict';
 import {campControl,openCampPanel,openCampRoster} from './camp-ui.mjs';
 import fs from 'node:fs';
@@ -2074,18 +2075,26 @@ await test('#194 水跃鱼、木守宫与进化形态的脚底贴住阴影，移
   const w=createExpedition('ground-194',194,3,squadOf(initialProfile()),0,true,3);w.enemies=[];w.leader='A';w.log=[];
   for(const [i,species] of ['mudkip','treecko','venusaur'].entries()){const unit=w.units[w.queue[i]];unit.species=species;unit.entrySpecies=species;unit.tactic='wait';}
   await p.setViewportSize({width:1280,height:720});await startMemory(p,w);
-  const probe=async(ids,feet)=>p.evaluate(async({metadata,ids,feet})=>{
+  const probe=async(ids,feet,boundsOnly=false)=>p.evaluate(async({metadata,ids,feet,boundsOnly})=>{
    const view=window.trial.view(),out=[];
-   for(const id of ids){const v=view.units[id],[dex,name]=v.animation.split('-'),meta=metadata[dex][name],idle=metadata[dex].Idle,image=new Image(),shadow=new Image(),idleShadow=new Image();
-    image.src='assets/'+meta.file;shadow.src='assets/'+meta.file.replace('-Anim.png','-Shadow.png');idleShadow.src='assets/'+idle.file.replace('-Anim.png','-Shadow.png');await Promise.all([image.decode(),shadow.decode(),idleShadow.decode()]);
-    const canvas=document.createElement('canvas');canvas.width=v.frame.w;canvas.height=v.frame.h;const ctx=canvas.getContext('2d');
+   for(const id of ids){const v=view.units[id],[dex,name]=v.animation.split('-'),meta=metadata[dex][name],idle=metadata[dex].Idle,image=new Image();image.src='assets/'+meta.file;await image.decode();
+    const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
     const bounds=(img,frame=v.frame)=>{canvas.width=frame.w;canvas.height=frame.h;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,frame.x,frame.y,frame.w,frame.h,0,0,frame.w,frame.h);const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let top=Infinity,bottom=-1,right=0,allBottom=-1;for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){const alpha=data[(y*canvas.width+x)*4+3];if(alpha){right=Math.max(right,x+1);allBottom=Math.max(allBottom,y);}if(alpha>32){top=Math.min(top,y);bottom=Math.max(bottom,y);}}return {top,bottom,right,allBottom};};
-    const opaque=bounds(image),marker=bounds(shadow),hp=v.labelPositions[0],reference=bounds(idleShadow,{x:0,y:v.row*idle.h,w:idle.w,h:idle.h}),offset=(reference.top+reference.bottom+1)/2-idle.h/2,top=v.y-v.originY*v.frame.h*v.scale;
-    out.push({id,animation:v.animation,row:v.row,scale:v.scale,baselineGap:top+(v.frame.h/2+offset)*v.scale-v.ground.y,markerGap:top+(marker.top+marker.bottom+1)/2*v.scale-v.ground.y,feetGap:v.ground.top-(top+(opaque.bottom+1)*v.scale),feet,labels:v.labels,hp,ownerX:v.x,cell:view.geometry.cell,hpGapX:hp.x+(1-hp.originX)*hp.width-(v.x+(opaque.right-v.frame.w*.5)*v.scale),hpGapY:hp.y+(1-hp.originY)*hp.height-(top+(opaque.allBottom+1)*v.scale)});
+    const opaque=bounds(image),hp=v.labelPositions[0],top=v.y-v.originY*v.frame.h*v.scale;
+    const row={id,species:window.trial.getState().units[id].species,frame:v.frame,animation:v.animation,row:v.row,scale:v.scale,feet,labels:v.labels,hp,ownerX:v.x,ownerY:v.ground.centerY,cell:view.geometry.cell,hpGapX:hp.x+(1-hp.originX)*hp.width-(v.x+(opaque.right-v.frame.w*.5)*v.scale),hpGapY:hp.y+(1-hp.originY)*hp.height-(top+(opaque.allBottom+1)*v.scale)};
+    if(!boundsOnly){const shadow=new Image(),idleShadow=new Image();shadow.src='assets/'+meta.file.replace('-Anim.png','-Shadow.png');idleShadow.src='assets/'+idle.file.replace('-Anim.png','-Shadow.png');await Promise.all([shadow.decode(),idleShadow.decode()]);const marker=bounds(shadow),reference=bounds(idleShadow,{x:0,y:v.row*idle.h,w:idle.w,h:idle.h}),offset=(reference.top+reference.bottom+1)/2-idle.h/2;Object.assign(row,{baselineGap:top+(v.frame.h/2+offset)*v.scale-v.ground.y,markerGap:top+(marker.top+marker.bottom+1)/2*v.scale-v.ground.y,feetGap:v.ground.top-(top+(opaque.bottom+1)*v.scale)});}
+    out.push(row);
    }return out;
-  },{metadata,ids,feet});
+  },{metadata,ids,feet,boundsOnly});
   const observations=[];
-   const hpFits=row=>{assert.equal(row.labels.length,1,'models show only HP, without a name below');assert.match(row.labels[0],/^\d+$/);const right=row.hp.x+(1-row.hp.originX)*row.hp.width,cellGap=row.ownerX+row.cell/2-right;assert.ok(row.hpGapX<=1.51&&(row.hpGapX>=.49||(cellGap>=.49&&cellGap<=1.51))&&row.hpGapY>=.49&&row.hpGapY<=1.51,'the actual HP right/bottom edges touch its own model or its cell boundary: '+JSON.stringify(row));assert.ok(cellGap>=.49,'the entire HP number stays out of the right neighbour cell: '+JSON.stringify(row));assert.ok(Math.abs(row.hp.x+(.5-row.hp.originX)*row.hp.width-row.ownerX)<=row.cell/2,'the HP centre remains in its owner cell: '+JSON.stringify(row));};
+  const hpFits=row=>{
+   assert.equal(row.labels.length,1,'models show only HP, without a name below');assert.match(row.labels[0],/^\d+$/);
+   const right=row.hp.x+(1-row.hp.originX)*row.hp.width,bottom=row.hp.y+(1-row.hp.originY)*row.hp.height,rightGap=row.ownerX+row.cell/2-right,bottomGap=row.ownerY+row.cell/2-bottom;
+   const attached=(gap,edgeGap)=>gap<=1.51&&(gap>=.49||(edgeGap>=.49&&edgeGap<=1.51));
+   assert.ok(attached(row.hpGapX,rightGap)&&attached(row.hpGapY,bottomGap),'HP right/bottom edges touch the model or their corresponding cell limits: '+JSON.stringify(row));
+   assert.ok(rightGap>=.49&&bottomGap>=.49,'HP stays out of the right and lower neighbour cells: '+JSON.stringify(row));
+   assert.ok(Math.abs(row.hp.x+(.5-row.hp.originX)*row.hp.width-row.ownerX)<=row.cell/2,'the HP centre remains in its owner column: '+JSON.stringify(row));
+  };
   for(const direction of [{x:0,y:1},{x:1,y:1},{x:1,y:0},{x:1,y:-1},{x:0,y:-1},{x:-1,y:-1},{x:-1,y:0},{x:-1,y:1}]){
    await p.evaluate(async direction=>{for(const actor of window.trial.getState().queue){await window.trial.store.dispatch({type:'switch',actor});await window.trial.store.dispatch({type:'face',direction});}await window.trial.store.dispatch({type:'switch',actor:'A'});window.dispatchEvent(new Event('blur'));},direction);
    const rows=await probe(w.queue,true);for(const row of rows){hpFits(row);assert.ok(Math.abs(row.markerGap)<=row.scale,'source shadow marker and runtime ground agree: '+JSON.stringify(row));assert.ok(row.feetGap<=1.5*row.scale,'idle opaque feet touch the ground shadow instead of floating: '+JSON.stringify(row));}observations.push(...rows);
@@ -2100,7 +2109,19 @@ await test('#194 水跃鱼、木守宫与进化形态的脚底贴住阴影，移
   await p.screenshot({path:artifact+'playtest194-ground-walk.png'});await p.clock.resume();await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:5000});
   await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));await p.keyboard.press('f');await p.clock.runFor(20);assert.match(await p.evaluate(()=>window.trial.view().leader.animation),/-Attack-/);
   for(const row of await probe([current.leader],false)){hpFits(row);assert.ok(Math.abs(row.baselineGap)<=row.scale,'attacking sprite keeps the source ground baseline while retaining authored frame motion: '+JSON.stringify(row));}
-  await p.clock.resume();await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:5000});assert.deepEqual(errors,[]);return {species:['mudkip','treecko','venusaur'],idleDirections:8,sourceMarkerAligned:true,walkAligned:true,attackAligned:true,observations};
+  await p.clock.resume();await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:5000});
+  await p.setViewportSize({width:1280,height:480});await p.waitForFunction(()=>window.trial.view()?.geometry.cell===48);
+  await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));
+  const {SPECIES}=await import('../../src/core/roster.ts'),allSpecies=Object.keys(SPECIES),minimumRows=[];
+  for(let offset=0;offset<allSpecies.length;offset+=w.queue.length){const species=allSpecies.slice(offset,offset+w.queue.length),actors=w.queue.slice(0,species.length);
+   await p.evaluate(async({species,actors})=>{for(const [i,id] of actors.entries()){const u=window.trial.store.world.units[id];u.species=species[i];u.entrySpecies=species[i];}for(const direction of [{x:0,y:-1},{x:0,y:1}]){for(const actor of actors){await window.trial.store.dispatch({type:'switch',actor});await window.trial.store.dispatch({type:'face',direction});}await window.trial.store.dispatch({type:'switch',actor:'A'});window.dispatchEvent(new Event('blur'));}},{species,actors});
+   const rows=await probe(actors,false,true);for(const row of rows){assert.equal(row.cell,48);assert.equal(row.row,0);assert.equal(row.frame.x,0);assert.equal(row.frame.y,0);assert.ok(row.animation.startsWith(SPECIES[row.species].dex+'-Idle-'));hpFits(row);row.unclampedBottomOverflow=row.hp.y+(1-row.hp.originY)*row.hp.height-row.hpGapY+1-(row.ownerY+row.cell/2-1);}minimumRows.push(...rows);
+  }
+  assert.equal(minimumRows.length,allSpecies.length);assert.ok(minimumRows.some(r=>r.unclampedBottomOverflow>.51),'the runtime check includes models that would cross the lower cell edge without the clamp');
+  const worst=minimumRows.slice().sort((a,b)=>b.unclampedBottomOverflow-a.unclampedBottomOverflow)[0];
+  await p.evaluate(species=>{const u=window.trial.store.world.units.A;u.species=species;u.entrySpecies=species;window.dispatchEvent(new Event('blur'));},worst.species);await p.clock.resume();await p.waitForTimeout(50);const pictured=await probe(['A'],false,true);pictured.forEach(hpFits);await p.screenshot({path:artifact+'review360-hp-48.png'});
+  const minimumCell={cell:48,count:minimumRows.length,clampedModels:minimumRows.filter(r=>r.unclampedBottomOverflow>.51).length,maxUnclampedBottomOverflow:worst.unclampedBottomOverflow,pictured,rows:minimumRows};fs.writeFileSync(artifact+'review360-hp-48-results.json',JSON.stringify(minimumCell,null,2));
+  assert.deepEqual(errors,[]);return {species:['mudkip','treecko','venusaur'],idleDirections:8,observations,minimumCell};
  }finally{await context.close();}
 });
 
@@ -2151,6 +2172,8 @@ await test('#194 头像按可见像素居中：七种素材、实际进化、营
 await test('#194 #350 墙心底层、未知地形保密、连续移动与精灵同步光圈',()=>fog350Checks({browser,base,startMemory,artifact,setup}));
 
 await test('#194 #357 消息过滤、日志保留与行走中 HUD 亮度及输入锁',()=>review357Checks({setup,startMemory,state,ready,artifact}));
+
+await test('#194 #360 真实敌人换层后例行日志与旧敌人编号保持隐藏',()=>review360FloorChecks({setup,startMemory,state,ready,viaStairs,artifact}));
 
 await browser.close();
 clearTimeout(browserDeadline);

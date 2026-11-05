@@ -131,6 +131,7 @@
   "hydropump": "Special",
   "hyperfang": "Physical",
   "hypervoice": "Special",
+  "hypnosis": "Status",
   "icebeam": "Special",
   "icefang": "Physical",
   "icepunch": "Physical",
@@ -154,6 +155,7 @@
   "lick": "Physical",
   "lightscreen": "Status",
   "liquidation": "Physical",
+  "lovelykiss": "Status",
   "lowsweep": "Physical",
   "machpunch": "Physical",
   "magicalleaf": "Special",
@@ -205,6 +207,7 @@
   "razorshell": "Physical",
   "recover": "Status",
   "reflect": "Status",
+  "rest": "Status",
   "retaliate": "Physical",
   "roar": "Status",
   "rockslide": "Physical",
@@ -221,9 +224,12 @@
   "shadowpunch": "Physical",
   "shadowsneak": "Physical",
   "shockwave": "Special",
+  "sing": "Status",
   "slackoff": "Status",
   "slam": "Physical",
   "slash": "Physical",
+  "sleeppowder": "Status",
+  "sleeptalk": "Status",
   "sludge": "Special",
   "sludgebomb": "Special",
   "sludgewave": "Special",
@@ -232,8 +238,10 @@
   "smog": "Special",
   "smokescreen": "Status",
   "snarl": "Special",
+  "snore": "Special",
   "softboiled": "Status",
   "spark": "Physical",
+  "spore": "Status",
   "steelwing": "Physical",
   "stomp": "Physical",
   "stoneedge": "Physical",
@@ -2224,6 +2232,25 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "hypnosis": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "13",
+    "accuracy": "88%",
+    "cutsCorners": "Yes",
+    "range": "Front",
+    "target": "Enemy"
+   },
+   "effects": [
+    "status:slp"
+   ],
+   "source": "Bulbapedia",
+   "note": "8.9b：施加睡眠；命中与PP取固定探险队行。"
+  },
   "icebeam": {
    "range": "line10",
    "target": "all",
@@ -2611,6 +2638,25 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "lovelykiss": {
+   "range": "around",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "11",
+    "accuracy": "88%",
+    "cutsCorners": "Yes",
+    "range": "1 tile around user",
+    "target": "Enemy"
+   },
+   "effects": [
+    "status:slp"
+   ],
+   "source": "Bulbapedia",
+   "note": "8.9b：施加睡眠；命中与PP取固定探险队行。"
   },
   "lowsweep": {
    "range": "front",
@@ -3481,6 +3527,25 @@
    "source": "Bulbapedia",
    "note": "固定取无限迷宫（GTI）同房间全队版；本作持续10个敌方阶段，官方无限迷宫起为21回合。"
   },
+  "rest": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "8",
+    "accuracy": "—%",
+    "cutsCorners": "-",
+    "range": "User",
+    "target": "User"
+   },
+   "effects": [
+    "rest"
+   ],
+   "source": "Bulbapedia",
+   "note": "8.9b：手动使用进入打盹；持续时间与回复由本作规格决定。"
+  },
   "retaliate": {
    "range": "front",
    "target": "enemy",
@@ -3753,6 +3818,25 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "sing": {
+   "range": "front",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "13",
+    "accuracy": "87%",
+    "cutsCorners": "Yes",
+    "range": "Front",
+    "target": "Enemy"
+   },
+   "effects": [
+    "status:slp"
+   ],
+   "source": "Bulbapedia",
+   "note": "8.9b：施加睡眠；命中与PP取固定探险队行。"
+  },
   "slackoff": {
    "range": "user",
    "target": "user",
@@ -3803,6 +3887,44 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "sleeppowder": {
+   "range": "around",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "13",
+    "accuracy": "80%",
+    "cutsCorners": "Yes",
+    "range": "1 tile around user",
+    "target": "Enemy"
+   },
+   "effects": [
+    "status:slp"
+   ],
+   "source": "Bulbapedia",
+   "note": "8.9b：施加睡眠；保留 Showdown powder 标记供草系免疫；命中与PP取固定探险队行。"
+  },
+  "sleeptalk": {
+   "range": "user",
+   "target": "user",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "17",
+    "accuracy": "—%",
+    "cutsCorners": "Varies",
+    "range": "Varies",
+    "target": "Varies"
+   },
+   "effects": [
+    "sleeptalk"
+   ],
+   "source": "Bulbapedia",
+   "note": "8.9b：手动使用无效；被动选招按本作规格执行；官方目标与射程随调用招式变化。"
   },
   "sludge": {
    "range": "front",
@@ -3940,6 +4062,25 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "snore": {
+   "range": "front",
+   "target": "enemy",
+   "power": 4,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "16",
+    "accuracy": "95%",
+    "cutsCorners": "No",
+    "range": "Front",
+    "target": "Enemy"
+   },
+   "effects": [
+    "snore"
+   ],
+   "source": "Bulbapedia",
+   "note": "8.9b：手动使用无效；睡眠受击反应使用探险队威力、PP与命中数据。"
+  },
   "softboiled": {
    "range": "room",
    "target": "party",
@@ -3973,6 +4114,25 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "spore": {
+   "range": "room",
+   "target": "enemy",
+   "power": null,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "12",
+    "accuracy": "88%",
+    "cutsCorners": "Yes",
+    "range": "Entire room",
+    "target": "Enemy"
+   },
+   "effects": [
+    "status:slp"
+   ],
+   "source": "Bulbapedia",
+   "note": "8.9b：施加睡眠；保留 Showdown powder 标记供草系免疫；命中与PP取固定探险队行。"
   },
   "steelwing": {
    "range": "front",

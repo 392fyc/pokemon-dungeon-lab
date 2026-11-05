@@ -6,6 +6,7 @@ import {
   ITEM_NAMES,
   PROG,
   stageOf,
+  sleeping,
   STATUS_NAMES,
   STAGE_NAMES,
   type BlessingId,
@@ -25,7 +26,7 @@ import { itemDescription } from "../core/item-descriptions.ts";
 import { skinFor } from "./sprites.ts";
 import { portraitMarkup } from "./portrait.ts";
 import "./portrait.css";
-import moveTypeSnapshot from "./move-types.json" with { type: "json" };
+import moveTypeSnapshot from "../data/move-types.json" with { type: "json" };
 import moveDescriptionSnapshot from "../data/move-desc-zh.json" with { type: "json" };
 
 const MOVE_TYPES = (moveTypeSnapshot as unknown as { types: Record<string, string> }).types;
@@ -40,6 +41,7 @@ const ITEM_CATEGORIES: Record<Item, string> = {
   pechaBerry: "berry",
   rawstBerry: "berry",
   cheriBerry: "berry",
+  chestoBerry: "berry",
   healSeed: "other",
   violentSeed: "other",
   maxElixir: "drink",
@@ -123,8 +125,9 @@ const QUICK_ITEM_NAMES: Record<Item, string> = {
   tonic: "PP剂",
   teamTonic: "全员PP剂",
   pechaBerry: "桃桃果",
-  rawstBerry: "木子果",
-  cheriBerry: "零余果",
+  rawstBerry: "莓莓果",
+  cheriBerry: "樱子果",
+  chestoBerry: "零余果",
   healSeed: "治愈种",
   violentSeed: "暴力种",
   maxElixir: "满PP剂",
@@ -324,7 +327,7 @@ export function hudBottom(
     quickSlotMarkup(s, quick[index] ?? null, index, disabled, selectedQuickItem),
   ).join("");
 
-  return '<div class="hud-bottom-grid">' +
+  return (sleeping(leader)?'<p id="hud-sleep-status" role="status">'+(leader.status?.nap?'打盹中':'睡眠中')+'</p>':'')+'<div class="hud-bottom-grid">' +
     '<section class="hud-current-unit" aria-label="当前操控队员">' +
     experienceMarkup(s) +
     '<div class="hud-current-member">' + spriteMarkup(leader, name) +

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {createExpedition,applyCommand,jumpToFloor,rngStep,closeOut,key,PROG,speciesUnit} from '../../src/core/engine.ts';
+import {createExpedition,applyCommand,jumpToFloor,rngStep,closeOut,key,PROG,speciesUnit,defaultLearningCommand} from '../../src/core/engine.ts';
 import {initialProfile,newGameProfile,squadOf,settleRun} from '../../src/core/base.ts';
 import {TrialStore,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 import {generateFloor,THEME_FLOORS,themeOfLevel,eligibleSpecies,WILD_SPECIES,BOSS,serviceRoll} from '../../src/core/dungeon.ts';
@@ -86,7 +86,7 @@ test('T3 without the boss mark the shop machine is always one of the legacy thre
  for(let seed=1;seed<=200;seed++){const w=createExpedition('t3',seed,2,base(),0);if(w.shop){shops++;assert.ok(['protect','whirlwind','roar'].includes(w.shop.stock.tm),`seed ${seed}`);}}
  assert.ok(shops>40,'the check really covered shops: '+shops);
  assert.equal(createExpedition('t3',2,2,base(),0).shop.stock.tm,'whirlwind');   // 7.2 value, also asserted in rescue.test R14
- assert.equal(createExpedition('t3',2,3,base(),0).shop.stock.tm,'dragontail'); // same seed, boss mark: tmDraw 0.556 gives index floor(0.556*6)=3, the fourth of the six machines (8.8: dragontail)
+ assert.equal(createExpedition('t3',2,3,base(),0).shop.stock.tm,'calmmind'); // same seed, current boss pool 5: floor(0.556*17)=9 selects Calm Mind
 });
 function atItem(w){const it=w.points.find(p=>p.kind==='item');w.units[w.leader].pos={...it.pos};return w;}
 test('T3b without the boss mark target T also draws from the legacy three (seeds 1-40)',()=>{
@@ -94,13 +94,13 @@ test('T3b without the boss mark target T also draws from the legacy three (seeds
   const r=applyCommand(w,{type:'round',action:{type:'interact',exit:false}});assert.equal(r.ok,true,r.error);
   assert.ok(['protect','whirlwind','roar'].includes(r.state.tms[0].move),`seed ${seed}: ${r.state.tms[0].move}`);}
 });
-test('T4 with the boss mark, T and the shop reach the three new machines (fixed seeds searched in advance; 8.8: Tera Blast removed)',()=>{
+test('T4 current boss expeditions draw target and shop machines from the seventeen-entry pool 5',()=>{
  const t=seed=>{const w=atItem(jumpToFloor(createExpedition('t4',seed,3,base(),0),3));const r=applyCommand(w,{type:'round',action:{type:'interact',exit:false}});assert.equal(r.ok,true,r.error);return r.state.tms;};
- assert.deepEqual(t(5),[{move:'dragontail',source:'target',fate:'held'}]);
- assert.deepEqual(t(3),[{move:'helpinghand',source:'target',fate:'held'}]);
- assert.deepEqual(t(1),[{move:'mudslap',source:'target',fate:'held'}]);
- assert.deepEqual([[2,1,'dragontail'],[6,1,'helpinghand'],[38,2,'mudslap']].map(([seed])=>{const s=createExpedition('t4s',seed,3,base(),0).shop;return [seed,s.level,s.stock.tm];}),
-  [[2,1,'dragontail'],[6,1,'helpinghand'],[38,2,'mudslap']]);
+ assert.deepEqual(t(5),[{move:'calmmind',source:'target',fate:'held'}]);
+ assert.deepEqual(t(3),[{move:'willowisp',source:'target',fate:'held'}]);
+ assert.deepEqual(t(1),[{move:'sleeptalk',source:'target',fate:'held'}]);
+ assert.deepEqual([[2,1,'calmmind'],[6,1,'bulkup'],[38,2,'sleeptalk']].map(([seed])=>{const s=createExpedition('t4s',seed,3,base(),0).shop;return [seed,s.level,s.stock.tm];}),
+  [[2,1,'calmmind'],[6,1,'bulkup'],[38,2,'sleeptalk']]);
 });
 
 /* ---------- L: floors and themes ---------- */
@@ -259,6 +259,8 @@ async function walk(store){
   for(const id of store.world.enemies)store.world.units[id].waitOnly=true;
   const s=store.state;
   if(s.phase==='ended')return {s,reached:s.end?.outcome==='won'};
+  if(s.phase==='learning'){await store.dispatch(defaultLearningCommand(s));continue;}
+  if(s.phase==='evolution'){await store.dispatch({type:'evolve',species:null});continue;}
   if(s.phase==='invitation'){await store.dispatch({type:'invite',choice:'reject'});continue;}
   if(s.phase==='transit'){await store.dispatch({type:'finishTransit'});continue;}
   // This route checks the one-way terminal flow; hostiles stay still so the fixed seed does not become a combat balance test.

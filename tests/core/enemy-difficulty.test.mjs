@@ -27,7 +27,7 @@ test('difficulty: a rounded enemy hit never drops below 1 (basic 6 -> 2, minus d
 });
 
 test('difficulty: the player is not multiplied (basic 6, tackle 9)',()=>{
- const dummy=()=>{const e=foeOf('E','geodude',4,1,40);e.waitOnly=true;return e;};
+ const dummy=()=>{const e=foeOf('E','geodude',4,1,40);delete e.species;delete e.entrySpecies;e.waitOnly=true;return e;};
  let s=round(W({A:mate('A',3,1),E:dummy()}),{type:'basic',target:'E'});
  assert.equal(s.units.E.hp,34,'40 - 6, not 40 - round(6 x 0.4) = 2');
  s=round(W({A:mate('A',3,1),E:dummy()}),{type:'skill',skill:'tackle',target:'E'});

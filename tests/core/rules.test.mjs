@@ -4,6 +4,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMain,applyCommand,previewInvitation,clone} from '../../src/core/engine.ts';
 import {createScenario} from '../../src/core/scenarios.ts';
+import {sureHit} from './sure-hit.mjs';
+function currentScenario(id,run){const s=sureHit(createScenario(id,run));if(id==='V13'){s.units.E.hp=5;s.units.E.maxHp=5;}return s;}
 import {TrialStore} from '../../src/core/save.ts';
 const move=x=>({type:'move',to:{x,y:1}}), basic=target=>({type:'basic',target}), skill=(skill,target)=>({type:'skill',skill,target}), wait={type:'wait'}, interact=exit=>({type:'interact',exit});
 function command(s,c){const r=applyCommand(s,c);assert.equal(r.ok,true,r.error);return r.state;}
@@ -25,9 +27,9 @@ test('M1/M2 and no-invitation routes preserve terminal resources',()=>{
  }});
 test('M5/M6 B damage belongs to B, both plans 13 rounds',()=>{
  for(const accept of [false,true]){let s=prefix();s=command(s,{type:'invite',choice:accept?'accept':'reject',...(accept?{outgoing:'C'}:{})});s=command(s,{type:'switch',actor:'B'});const p=accept?'N':'C';s=round(s,{type:'swap',target:p});assert.deepEqual(positions(s),[1,3,2]);
-  // B waits beside the approaching R: its tackle (4 after the 0.4 multiplier) lands on B only, then B's basic attack kills it.
-  s=round(s,wait);assert.equal(s.units.B.hp,16);assert.equal(s.units.A.hp,20);assert.equal(s.units[p].hp,accept?10:8);s=round(s,basic('R'));assert.equal(s.units.R.hp,0);
-  for(const a of [move(4),interact(false),move(5),move(6),move(7),interact(true)])s=round(s,a);s=finish(s);assert.equal(s.round,13);assert.deepEqual(positions(s),[5,7,6]);assert.equal(s.units.B.hp,16);assert.equal(s.units[p].hp,accept?10:8);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(s.camp,accept?['C']:[]);}
+  // B waits beside the approaching R: its Tackle (6 after the 0.4 multiplier and Normal STAB) lands on B only, then B's basic attack kills it.
+  s=round(s,wait);assert.equal(s.units.B.hp,14);assert.equal(s.units.A.hp,20);assert.equal(s.units[p].hp,accept?10:8);s=round(s,basic('R'));assert.equal(s.units.R.hp,0);
+  for(const a of [move(4),interact(false),move(5),move(6),move(7),interact(true)])s=round(s,a);s=finish(s);assert.equal(s.round,13);assert.deepEqual(positions(s),[5,7,6]);assert.equal(s.units.B.hp,14);assert.equal(s.units[p].hp,accept?10:8);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(s.camp,accept?['C']:[]);}
 });
 test('V1/V2 refusal is immutable and explicit waiting fixes known conflict',()=>{
  const s=createScenario('V1','v1'),before=JSON.stringify(s);const r=applyCommand(s,{type:'round',action:move(7)});assert.equal(r.ok,false);assert.strictEqual(r.state,s);assert.equal(JSON.stringify(s),before);
@@ -41,7 +43,7 @@ test('M4 B already on exit; no extra return damage',()=>{
 test('V3/V4 follow and V5/V6/V7 down membership',()=>{
  let s=legacyV(3);s=round(s,move(0));assert.deepEqual(positions(s),[3,2,0]);assert.equal(finish(round(s,interact(true))).phase,'ended');
  s=createScenario('V4','v4');s=round(s,wait,{actor:'C',action:{type:'move',to:{x:2,y:2}}});s=round(s,wait);assert.deepEqual(s.units.B.pos,{x:2,y:1});assert.deepEqual(s.units.C.pos,{x:2,y:2});   // 8.8: C at (2,2) is already diagonally next to the leader at (3,1), so it stays
- s=createScenario('V5','v5');s=round(s,move(2));assert.equal(s.units.B.hp,4);   // E is a real growlithe; ember base 10 x 0.4 rounds to 4 against a species-less fixture, so 8-4=4.
+ s=currentScenario('V5','v5');s=round(s,move(2));assert.equal(s.units.B.hp,2);   // Growlithe Ember: round(10 × 0.4 × 1.5 STAB)=6; the species-less target has neutral defence.
  assert.equal(s.units.C.pos.x,1);s=round(s,basic('E'));assert.equal(s.units.C.pos.x,1);assert.equal(s.queue.length,3);
  s=round(createScenario('V6','v6'),move(2));assert.equal(s.leader,'C');assert.equal(s.units.B.pos,null);
  s=finish(round(legacyV(7),interact(true)));assert.equal(s.units.A.hp,0);assert.equal(s.end.outcome,'normal');
@@ -54,13 +56,13 @@ test('V8/V9/V10 admission preview and batch anchor',()=>{
 test('V11/V12/V13 full-round transition and wipe priority',()=>{
  let s=round(createScenario('V11','v11'),interact(true));assert.equal(s.units.B.hp,0);assert.equal(s.bag,1);assert.equal(s.request,null);assert.equal(s.phase,'playing');
  s=round(createScenario('V12','v12'),interact(true));assert.equal(s.end.outcome,'wipe');assert.equal(s.end.acquired,1);assert.equal(s.end.brought,0);assert.deepEqual(s.end.camp,['C']);
- s=round(createScenario('V13','v13'),interact(true));assert.equal(s.phase,'invitation');assert.equal(s.request.locked,true);s=command(s,{type:'invite',choice:'accept',outgoing:'B'});assert.deepEqual(s.queue,['A','C','N']);s=finish(s);assert.equal(s.end.outcome,'normal');assert.equal(s.round,1);
+ s=round(currentScenario('V13','v13'),interact(true));assert.equal(s.phase,'invitation');assert.equal(s.request.locked,true);s=command(s,{type:'invite',choice:'accept',outgoing:'B'});assert.deepEqual(s.queue,['A','C','N']);s=finish(s);assert.equal(s.end.outcome,'normal');assert.equal(s.round,1);
 });
 test('K1 rejects protecting another unit and tackle uses move power',()=>{
  let s=createScenario('K1','k1');
  const refused=applyCommand(s,{type:'round',action:skill('tackle','H'),override:{actor:'B',action:skill('protect','A')}});
  assert.equal(refused.ok,false);assert.deepEqual(refused.state,s);
- s=round(s,skill('tackle','H'),{actor:'B',action:skill('protect','B')});assert.equal(s.units.H.hp,6);assert.equal(s.units.A.hp,8);   // A and C each deal base 9; H's 10-damage ember or bite hits species-less A for round(10 x 0.4)=4, leaving 8 HP.
+ s=round(s,skill('tackle','H'),{actor:'B',action:skill('protect','B')});assert.equal(s.units.H.hp,6);assert.equal(s.units.A.hp,6);   // A and C each deal base 9; H uses Ember for round(10 × 0.4 × 1.5 STAB)=6.
  assert.equal(s.units.B.pp.protect,0);
  s=round(s,skill('tackle','H'));assert.equal(s.units.H.hp,0);
 });
@@ -79,7 +81,7 @@ test('K4/K5 quickattack retains obstruction and two-cell range limits',()=>{
 class Memory {raw=null;writes=0;fail=false;getItem(){return this.raw;}setItem(_k,v){this.writes++;if(this.fail)throw Error('quota');this.raw=v;}}
 test('S2/S3/S4/S5 process invitations and exit in memory, then developer restart leaves storage unchanged',async()=>{
  const port=new Memory(),store=new TrialStore(port,'test');
- assert.equal(await store.start(createScenario('V13','save')),true);
+ assert.equal(await store.start(currentScenario('V13','save')),true);
  const started=store.state;assert.equal(started.phase,'playing');assert.equal(store.envelope,null);
  assert.equal((await store.dispatch({type:'round',action:interact(true)})).ok,true);assert.equal(store.state.phase,'invitation');
  assert.equal((await store.dispatch({type:'invite',choice:'accept',outgoing:'B'})).ok,true);assert.equal(store.state.phase,'exit');

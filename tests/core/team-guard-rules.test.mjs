@@ -9,8 +9,9 @@ import {enemy,foeOf,bossOf} from './foe-fixture.mjs';
 import {sureHit} from './sure-hit.mjs';   // 8.8 (#165): guard tests fix damage numbers, so the accuracy roll is taken out
 
 function withGuardMoves(run){for(const id of ['quickguard','reflect','lightscreen'])assert.ok(moveOf(id),`正式数据必须包含${id}`);return run();}
-// Enemies attack only with roster moves. Against species-less friends, level-5 damage after the confirmed 0.4 enemy multiplier is: tackle 9 -> 4; quickattack 8 -> 3; bubblebeam 9 -> 4; bite 10 -> 4. Defence stages and screens apply after this rounded enemy hit.
-const shooter=(id,x,y,hp,move)=>foeOf(id,'pidgey',x,y,hp,{[move]:5});
+// These shooters are species-less so their roster moves test only the 0.4 enemy multiplier: tackle 9 -> 4; quickattack 8 -> 3; bubblebeam 9 -> 4; bite 10 -> 4. Defence stages and screens apply after this rounded enemy hit.
+const withoutSpecies=u=>{delete u.species;delete u.entrySpecies;return u;};
+const shooter=(id,x,y,hp,move)=>withoutSpecies(foeOf(id,'pidgey',x,y,hp,{[move]:5}));
 
 const row=(from,to,y=1)=>Array.from({length:to-from+1},(_,i)=>({x:from+i,y}));
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));
@@ -139,12 +140,12 @@ test('7.7b状态初始为零，并在跨层与远征结束时清除',()=>{
   for(const id of ended.state.queue){const u=ended.state.units[id];assert.equal(u.reflect,0);assert.equal(u.lightscreen,0);}
 });
 
-test('7.7b TM pool 只由显式版本3的首领队伍远征启用',()=>{
+test('7.7b 首领队伍默认使用 TM pool 5，显式版本3仍可使用 pool 3',()=>{
   const squad={leader:0,members:[0,1,2].map(i=>({inst:`I${i}`,species:'charmander',carry:[{move:'tackle',pp:3}]}))};
   const legacy=createExpedition('pool-old',42,3,squad,0);
   const v3=createExpedition('pool-v3',42,3,squad,0,undefined,3);
   const noBoss=createExpedition('pool-not-boss',42,2,squad,0,undefined,3);
   const noSquad=createExpedition('pool-no-squad',42,3,undefined,0,true,3);
-  assert.equal(legacy.dungeon.tmPool,undefined);assert.equal(v3.dungeon.tmPool,3);
+  assert.equal(legacy.dungeon.tmPool,5);assert.equal(v3.dungeon.tmPool,3);
   assert.equal(noBoss.dungeon.tmPool,undefined);assert.equal(noSquad.dungeon.tmPool,undefined);
 });

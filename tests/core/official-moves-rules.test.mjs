@@ -4,9 +4,15 @@ import {
   applyCommand, createExpedition, createMain, friend, speciesUnit, jumpToFloor, key, newcomer,
   skillTargets,
 } from '../../src/core/engine.ts';
-import {enemy,foeOf,bossOf} from './foe-fixture.mjs';
+import {enemy as baseEnemy,foeOf as baseFoeOf,bossOf as baseBossOf} from './foe-fixture.mjs';
 import {MOVE_DEFS,moveOf} from '../../src/core/moves.ts';
 import {sureHit} from './sure-hit.mjs';   // 8.8 (#165): these tests check damage and effects, not the accuracy roll
+
+// This file tests move mechanics, not type matchups; neutral targets keep those original checks independent.
+const withoutSpecies=u=>{delete u.species;delete u.entrySpecies;return u;};
+const enemy=(...args)=>withoutSpecies(baseEnemy(...args));
+const foeOf=(...args)=>withoutSpecies(baseFoeOf(...args));
+const bossOf=(...args)=>baseBossOf(...args);
 
 const row=(from,to,y=1)=>Array.from({length:to-from+1},(_,i)=>({x:from+i,y}));
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));

@@ -1682,3 +1682,30 @@ body.dungeon-mode :focus-visible {
     bottom: 144px;
   }
 }
+
+/* 8.9b: the sleep notice stays next to the bottom HUD; move choices share one size. */
+body.dungeon-mode #hud-sleep-status {
+  position: absolute;
+  left: 14px;
+  bottom: calc(100% + 8px);
+  margin: 0;
+  padding: 6px 14px;
+  border: 1px solid #e8d48a;
+  border-radius: 8px;
+  background: rgba(12, 18, 15, .94);
+  color: #f2eee0;
+  font-weight: 700;
+}
+body.dungeon-mode .learning-new,
+body.dungeon-mode .learning-move {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 10px;
+}
+body.dungeon-mode .learning-new { border: 1px solid #e8d48a; border-radius: 8px; }
+body.dungeon-mode .learning-moves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+body.dungeon-mode .learning-move strong { overflow-wrap: anywhere; }

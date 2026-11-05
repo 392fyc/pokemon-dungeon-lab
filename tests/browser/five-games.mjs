@@ -6,8 +6,10 @@ import {campControl} from './camp-ui.mjs';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import {inferEvents,newLines} from '../../src/render/animation.ts';
-import {applyCommand,createExpedition,rngStep} from '../../src/core/engine.ts';
+import {applyCommand,createExpedition,rngStep,defaultLearningCommand,sleeping} from '../../src/core/engine.ts';
 import {moveOf} from '../../src/core/moves.ts';
+import {SPECIES} from '../../src/core/roster.ts';
+import {typeEffectiveness} from '../../src/core/type-chart.ts';
 import {floorIndex,adjacentReachable,rayReachable} from '../../src/render/reach.ts';
 
 const artifactDir='.artifacts/trial';
@@ -27,7 +29,7 @@ let gameTiming=null;
 const deadline=setTimeout(()=>{report.deadlineReached=true;console.error('Five-game browser check exceeded its 40-minute deadline');void browser.close();},40*60*1000);
 const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
 await context.addInitScript(()=>{
- window.__trialNoAnim=true;window.__movementInputTrace=[];
+ window.__trialNoAnim=true;window.__trialNoAutoSleep=true;window.__movementInputTrace=[];
  for(const type of ['keydown','keyup'])addEventListener(type,event=>{if(!['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;const s=window.trial?.getState(),entry={type,key:event.key,at:event.timeStamp,round:s?.round};window.__movementInputTrace.push(entry);if(window.__movementInputTrace.length>64)window.__movementInputTrace.shift();queueMicrotask(()=>{entry.afterRound=window.trial?.getState()?.round;});},true);
 });
 const page=await context.newPage(),errors=[];
@@ -93,12 +95,12 @@ function visibleView(s){
  const team=s.queue.map(id=>{
   const u=s.units[id],status={};
   for(const key of ['frz','confusion'])if(u?.status?.[key]!==undefined)status[key]={...u.status[key]};
-  return {id,hp:u?.hp??0,maxHp:u?.maxHp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null,learned:[...(u?.learned??[])],pp:{...(u?.pp??{})},maxPp:{...(u?.maxPp??{})},...(Object.keys(status).length?{status}:{})};
+  return {id,...(u?.species?{species:u.species}:{}),hp:u?.hp??0,maxHp:u?.maxHp??0,pos:u?.pos?{x:u.pos.x,y:u.pos.y}:null,learned:[...(u?.learned??[])],pp:{...(u?.pp??{})},maxPp:{...(u?.maxPp??{})},...(Object.keys(status).length?{status}:{})};
  });
  const enemies=s.enemies.map(id=>{
   const u=s.units[id];
   if(!u||!u.pos||!seen.has(u.pos.x+','+u.pos.y)||u.hp<=0)return null;
-  return {id,pos:{x:u.pos.x,y:u.pos.y},hp:u.hp,asleep:!!u.asleep};
+  return {id,...(u.species?{species:u.species}:{}),pos:{x:u.pos.x,y:u.pos.y},hp:u.hp,asleep:!!u.asleep};
  }).filter(Boolean);
  const points=s.points.filter(p=>seen.has(p.pos.x+','+p.pos.y))
   .map(p=>({kind:p.kind,pos:{x:p.pos.x,y:p.pos.y},used:!!p.used}));
@@ -311,8 +313,8 @@ function planVisibleDamage(view,requirePp=true){
  const actor=view.team.find(unit=>unit.id===view.leaderId);if(!actor||actor.hp<=0||!actor.pos)return null;
  const candidates=[];
  for(const skill of actor.learned??[]){
-  const spec=moveOf(skill);if(!spec||!spec.effects.includes('damage')||spec.target!=='enemy'||(requirePp&&(actor.pp[skill]??0)<1))continue;
-  for(const target of view.enemies)if(visibleDamageTarget(view,actor,target,spec))candidates.push({skill,target,power:spec.power??0});
+  const spec=moveOf(skill);if(['snore','sleeptalk'].includes(skill)||!spec||!spec.effects.includes('damage')||spec.target!=='enemy'||(requirePp&&(actor.pp[skill]??0)<1))continue;
+  for(const target of view.enemies)if(typeEffectiveness(skill,SPECIES[target.species]?.types??[])>0&&visibleDamageTarget(view,actor,target,spec))candidates.push({skill,target,power:spec.power??0});
  }
  candidates.sort((a,b)=>b.power-a.power||a.target.hp-b.target.hp||a.target.pos.y-b.target.pos.y||a.target.pos.x-b.target.pos.x||a.skill.localeCompare(b.skill));
  const best=candidates[0];return best?{type:'skill',skill:best.skill,target:best.target.id,targetPos:{x:best.target.pos.x,y:best.target.pos.y}}:null;
@@ -374,8 +376,10 @@ async function playRun(index,route){
    if(decision.outgoing)replacementsInRun++;
    continue;
   }
+  if(s.phase==='learning'){const cmd=defaultLearningCommand(s);assert.ok(cmd);await click(cmd.replace?'learn-replace-'+cmd.replace:'learn-skip');continue;}
   if(s.phase==='evolution'){await click('evolution-close');continue;}
   assert.equal(s.phase,'playing','game must remain playable while routing');
+  if(sleeping(s.units[s.leader])){await page.keyboard.press('.');await ready();roundActions++;continue;}
   if(floorLevel!==s.dungeon.level){memory.known.clear();memory.tried.clear();floorLevel=s.dungeon.level;}
   const view=visibleView(s);
   refreshScoutMemory(view,memory);

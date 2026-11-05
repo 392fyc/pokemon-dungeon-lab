@@ -954,6 +954,26 @@
       "revid": 2564094,
       "tplRevid": 2617325
     },
+    "hypnosis": {
+      "desc": "使目标陷入睡眠，持续3—6次自身行动机会。受到对手直接攻击并实际损失HP时，有25%概率醒来。",
+      "game": "本作",
+      "name": "催眠术",
+      "originalDesc": "施以诱导睡意的暗示，让对手陷入瞌睡状态。",
+      "originalGame": "传说Z-A",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
+      "page": "催眠术（招式）",
+      "revid": 2551331,
+      "tplRevid": 2561285
+    },
     "icebeam": {
       "desc": "发射冰冻光束进行攻击。有时也会让对手陷入冰冻状态。",
       "game": "传说Z-A",
@@ -999,7 +1019,7 @@
       "game": "传说Z-A",
       "name": "冰冻之风",
       "page": "冰冻之风（招式）",
-      "revid": 2606617,
+      "revid": 2644416,
       "tplRevid": 2561333
     },
     "incinerate": {
@@ -1137,6 +1157,26 @@
       "page": "水流裂破（招式）",
       "revid": 2602234,
       "tplRevid": 2561621
+    },
+    "lovelykiss": {
+      "desc": "使目标陷入睡眠，持续3—6次自身行动机会。受到对手直接攻击并实际损失HP时，有25%概率醒来。",
+      "game": "本作",
+      "name": "恶魔之吻",
+      "originalDesc": "用恐怖的脸强吻对手。让对手陷入睡眠状态。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
+      "page": "恶魔之吻（招式）",
+      "revid": 2606254,
+      "tplRevid": 2303218
     },
     "lowsweep": {
       "desc": "以敏捷的动作瞄准对手的脚进行攻击。会在一小段时间内使对手的动作变得迟缓。",
@@ -1582,6 +1622,26 @@
       "revid": 2577340,
       "tplRevid": 2561295
     },
+    "rest": {
+      "desc": "使自己进入打盹，持续2—3次自身行动机会；结束时回满HP并解除全部异常。受伤不会醒来，换层会中止且不回复。HP已满且没有坏异常时不能使用。",
+      "game": "本作",
+      "name": "睡觉",
+      "originalDesc": "连续睡上２回合。回复自己的全部ＨＰ以及治愈所有异常状态。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
+      "page": "睡觉（招式）",
+      "revid": 2614453,
+      "tplRevid": 2561311
+    },
     "retaliate": {
       "desc": "为倒下的同伴报仇。如果上一回合有同伴倒下，威力就会提高。",
       "game": "朱紫",
@@ -1710,6 +1770,26 @@
       "revid": 2554415,
       "tplRevid": 2303431
     },
+    "sing": {
+      "desc": "使目标陷入睡眠，持续3—6次自身行动机会。受到对手直接攻击并实际损失HP时，有25%概率醒来。",
+      "game": "本作",
+      "name": "唱歌",
+      "originalDesc": "让对手听舒适、美妙的歌声，令其陷入瞌睡状态。",
+      "originalGame": "传说Z-A",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
+      "page": "唱歌（招式）",
+      "revid": 2622600,
+      "tplRevid": 2561252
+    },
     "slackoff": {
       "desc": "偷懒休息。回复自己最大ＨＰ的一半。",
       "game": "朱紫",
@@ -1733,6 +1813,46 @@
       "page": "劈开（招式）",
       "revid": 2618506,
       "tplRevid": 2618360
+    },
+    "sleeppowder": {
+      "desc": "使目标陷入睡眠，持续3—6次自身行动机会。受到对手直接攻击并实际损失HP时，有25%概率醒来。草系不受粉末影响。",
+      "game": "本作",
+      "name": "催眠粉",
+      "originalDesc": "撒出大量的催眠粉，从而让对手陷入瞌睡状态。",
+      "originalGame": "传说Z-A",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
+      "page": "催眠粉（招式）",
+      "revid": 2480684,
+      "tplRevid": 2618356
+    },
+    "sleeptalk": {
+      "desc": "睡眠或打盹中受到对手直接攻击后仍未醒时，随机发动其他可用招式，不受射程限制。排除睡觉、打鼾、梦话、无PP与队友或全队招式；只消耗梦话的PP，不能主动使用。",
+      "game": "本作",
+      "name": "梦话",
+      "originalDesc": "从自己已学会的招式中任意使出１个。只能在自己睡觉时使用。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
+      "page": "梦话（招式）",
+      "revid": 2614445,
+      "tplRevid": 2561347
     },
     "sludge": {
       "desc": "用污泥投掷对手进行攻击。有时会让对手陷入中毒状态。",
@@ -1810,6 +1930,26 @@
       "revid": 2564092,
       "tplRevid": 2561564
     },
+    "snore": {
+      "desc": "睡眠或打盹时，受到对手直接攻击并实际损失HP，仍未醒且存活时自动攻击出手者。不受射程限制，不造成畏缩，不能主动使用。与梦话同时携带时只用打鼾；PP为0时不发动。",
+      "game": "本作",
+      "name": "打鼾",
+      "originalDesc": "在自己睡觉时，发出噪音进行攻击。有时会使对手畏缩。",
+      "originalGame": "朱紫",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
+      "page": "打鼾（招式）",
+      "revid": 2614444,
+      "tplRevid": 2561317
+    },
     "softboiled": {
       "desc": "回复范围内所有存活同行各自最大HP的一半，四舍五入且不超过上限。",
       "game": "本作",
@@ -1838,6 +1978,26 @@
       "page": "电光（招式）",
       "revid": 2480509,
       "tplRevid": 2473673
+    },
+    "spore": {
+      "desc": "使目标陷入睡眠，持续3—6次自身行动机会。受到对手直接攻击并实际损失HP时，有25%概率醒来。草系不受粉末影响。",
+      "game": "本作",
+      "name": "蘑菇孢子",
+      "originalDesc": "在自己周围沙沙沙地撒满具有催眠效果的孢子，从而让对手陷入瞌睡状态。",
+      "originalGame": "传说Z-A",
+      "overrideSource": {
+        "data": [
+          "src/data/pmd-moves.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.13"
+        ]
+      },
+      "page": "蘑菇孢子（招式）",
+      "revid": 2631139,
+      "tplRevid": 2618359
     },
     "steelwing": {
       "desc": "用坚硬的翅膀敲打进行攻击。有时也会提高自己的防御。",
@@ -2286,15 +2446,19 @@
   },
   "source": {
     "api": "https://wiki.52poke.com/api.php",
-    "date": "2026-11-03",
+    "date": "2026-11-06",
     "license": "私有构建内使用（D-20261103-05）",
     "method": "action=query 取页面与模板修订号；action=expandtemplates 展开 {{<名>|<版本>}}，取简体变体；版本顺序 ZA（传说Z-A）、SV（朱紫）、SWSH（剑盾）",
     "overrides": {
       "file": "tools/data/move-desc-zh-overrides.json",
       "issue": "https://github.com/392fyc/pokemon-dungeon-lab/issues/191",
+      "issues": [
+        "https://github.com/392fyc/pokemon-dungeon-lab/issues/191",
+        "https://github.com/392fyc/pokemon-dungeon-lab/issues/193"
+      ],
       "method": "按本作现行规则覆盖主系列说明；官方原文与版本另存，保留原页及模板修订号。",
       "rulesFile": "docs/01-现行规则/游戏规则.md",
-      "spec": "docs/02-进度/计划/8.9招式与道具对齐原版规格.md"
+      "spec": "https://github.com/392fyc/pokemon-dungeon-lab/blob/282e2df25cfe5906c5f1887f1ba5f55c83f80426/docs/02-%E8%BF%9B%E5%BA%A6/%E8%AE%A1%E5%88%92/8.9b%E5%B1%9E%E6%80%A7%E7%9D%A1%E7%9C%A0%E4%B8%8E%E5%8D%87%E7%BA%A7%E5%AD%A6%E6%8B%9B%E8%A7%84%E6%A0%BC.md"
     },
     "site": "神奇宝贝百科 wiki.52poke.com"
   }

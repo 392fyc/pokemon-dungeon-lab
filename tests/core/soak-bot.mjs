@@ -1,15 +1,17 @@
 import assert from 'node:assert/strict';
-import {createMain,PROG,bossDefeated,applyCommand,skillTargets,estimateAttackDamage,COMMISSIONS,BLESSINGS} from '../../src/core/engine.ts';
+import {createMain,PROG,bossDefeated,applyCommand,skillTargets,estimateAttackDamage,COMMISSIONS,BLESSINGS,defaultLearningCommand,sleeping} from '../../src/core/engine.ts';
 import {newGameProfile,profileProblem,rankLevel} from '../../src/core/base.ts';
 import {TrialStore} from '../../src/core/save.ts';
 import {ECON} from '../../src/core/economy.ts';
 import {moveOf} from '../../src/core/moves.ts';
+import {SPECIES} from '../../src/core/roster.ts';
+import {typeEffectiveness} from '../../src/core/type-chart.ts';
 // 8.8 (#165): floor items other than the orange berry and the PP tonic are the cure berries and the heal seed; walking onto one picks it up.
-const FLOOR_ITEMS=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','healSeed'];
-const CURES={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],healSeed:['psn','tox','brn','par','frz','confusion','flinch']};
-const STATUS_KEYS=['psn','tox','brn','par','frz','confusion','flinch'];
-const damageMoves=u=>u.learned.filter(k=>(u.pp[k]??0)>0&&moveOf(k)?.effects.includes('damage'));
-const hitMoves=(s,u,e)=>damageMoves(u).filter(k=>skillTargets(s,u.id,k).includes(e.id));
+const FLOOR_ITEMS=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed'];
+const CURES={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],chestoBerry:['slp'],healSeed:['psn','tox','brn','par','frz','confusion','flinch','slp']};
+const STATUS_KEYS=['psn','tox','brn','par','frz','confusion','flinch','slp','nap'];
+const damageMoves=u=>u.learned.filter(k=>!['snore','sleeptalk'].includes(k)&&(u.pp[k]??0)>0&&moveOf(k)?.effects.includes('damage'));
+const hitMoves=(s,u,e)=>damageMoves(u).filter(k=>typeEffectiveness(k,SPECIES[e.species]?.types??[])>0&&skillTargets(s,u.id,k).includes(e.id));
 const rangedMoves=u=>damageMoves(u).filter(k=>['front2','line10'].includes(moveOf(k).range));
 
 /*
@@ -493,7 +495,7 @@ function backpackCommands(s,memo){
  const low=u=>u.hp/u.maxHp;
  const reachable=members.filter(m=>m.id===L.id||(m.pos&&adj(s,m.pos,L.pos)));
  // 8.8: status conditions. Use a cure item on a reachable member that has a condition it cures (the heal seed last, it cures everything). A frozen or paralysed leader simply keeps playing: the engine accepts the command and the action is lost.
- if(!memo.reckless)for(const item of ['pechaBerry','rawstBerry','cheriBerry','healSeed']){
+ if(!memo.reckless)for(const item of ['pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed']){
   if((s.prog.items[item]??0)<1)continue;
   const sick=reachable.find(m=>CURES[item].some(k=>m.status?.[k]!==undefined));
   if(sick){act({type:'use',item,target:sick.id});break;}
@@ -649,6 +651,8 @@ function candidates(s,memo){
 /** One policy entry point for both live play and focused fixtures. */
 export function botCommands(source,memo){
  const s=visibleView(source);
+ if(s.phase==='learning'){const cmd=defaultLearningCommand(s);return cmd?[cmd]:[];}
+ if(s.phase==='playing'&&sleeping(s.units[s.leader]))return [{type:'round',action:{type:'wait'}}];
  if(s.phase==='commission'){
   const pending=s.pendingChoices?.[0];
   return pending?.type==='commission'?[{type:'commissionChoice',choice:commissionDecisionKnown(s,memo,pending.commission)?'accept':'reject'}]:[];
@@ -869,7 +873,7 @@ async function send(port,store,cmd,st,where){
 /** Commands that must be refused in the current phase. Each one is checked to change nothing. */
 async function probe(port,store,st,where){
  const s=store.state;st.probes++;
- const bad=s.phase==='playing'?[{type:'finishExit'},{type:'finishTransit'},{type:'invite',choice:'reject'},{type:'round',action:{type:'move',to:{x:-5,y:-5}}},{type:'round',action:{type:'interact',exit:true},override:{actor:s.leader,action:{type:'wait'}}}]
+ const bad=s.phase==='playing'?[{type:'finishExit'},{type:'finishTransit'},{type:'invite',choice:'reject'},...(!sleeping(s.units[s.leader])?[{type:'round',action:{type:'move',to:{x:-5,y:-5}}}]:[]),{type:'round',action:{type:'interact',exit:true},override:{actor:s.leader,action:{type:'wait'}}}]
   :s.phase==='invitation'?[{type:'round',action:{type:'wait'}},{type:'finishExit'},{type:'switch',actor:s.leader}]
   :s.phase==='ended'?[{type:'round',action:{type:'wait'}},{type:'invite',choice:'reject'},{type:'finishExit'},{type:'finishTransit'}]
   :[{type:'round',action:{type:'wait'}}];

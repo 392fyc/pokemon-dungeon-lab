@@ -67,7 +67,7 @@ test('P3 a defeated wild enemy invites when the draw is under 0.3: R07 half snap
  const s=round(run({rng:7}),basic('w'));          // first draw from state 7 is 0.0117
  assert.equal(s.phase,'invitation');assert.equal(s.invitations.length,1);
  // rattata roster HP 18 -> Lv6 max 19 (18+1), half 9; 8.8 (G8.2): a partner arrives with full PP (tackle 30), only HP is halved
- assert.deepEqual(s.invitations[0].unit,recruit('N1','rattata',9,19,{tackle:30},{tackle:30}));
+ assert.deepEqual(s.invitations[0].unit,recruit('N1','rattata',9,19,{tackle:30,quickattack:13},{tackle:30,quickattack:13}));
  assert.deepEqual(s.prog,{level:6,exp:10,rng:1831565820,made:1,kills:[],items:{berry:0,tonic:0}});
 });
 test('P3b no invitation when the draw is 0.3 or more; the draw is still spent',()=>{
@@ -75,9 +75,9 @@ test('P3b no invitation when the draw is 0.3 or more; the draw is still spent',(
  assert.equal(s.phase,'playing');assert.deepEqual(s.invitations,[]);
  assert.deepEqual(s.prog,{level:6,exp:10,rng:1831565814,made:0,kills:[],items:{berry:0,tonic:0}});
 });
-test('P3c a wild species with two moves arrives with full PP (8.8): pidgey Lv6 21 HP gives 10 HP, tackle 30 and gust 19 stay full',()=>{
+test('P3c Lv6 Pidgey joins with its latest eligible level-up moves and kit fallback at full PP',()=>{
  const s=round(run({rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));
- assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,21,{tackle:30,gust:19},{tackle:30,gust:19}));
+ assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,21,{tackle:30,gust:19,sandattack:20},{tackle:30,gust:19,sandattack:20}));
 });
 test('P3d geodude keeps its guard move (8.8): full PP, defense curl 16 and tackle 30, Lv6 21 HP gives 10',()=>{
  const s=round(run({rng:7,enemies:[wild('w',3,6,'geodude')]}),basic('w'));
@@ -104,7 +104,7 @@ test('P4 3 exp plus a Lv3 kill is 9 exp = Lv6: every member +1 max HP, current H
  const s=round(run({exp:3,rng:7,enemies:[wild('w',3,6,'pidgey',3)]}),basic('w'));   // a Lv3 kill is 3 x 2 = 6 exp: 3+6=9
  assert.deepEqual([s.prog.level,s.prog.exp],[6,9]);
  assert.deepEqual(s.queue.map(i=>[s.units[i].hp,s.units[i].maxHp,s.units[i].level]),[[19,20,6],[20,21,6],[21,22,6]]);
- assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,21,{tackle:30,gust:19},{tackle:30,gust:19}));
+ assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,21,{tackle:30,gust:19,sandattack:20},{tackle:30,gust:19,sandattack:20}));
  const up=s.log.findIndex(t=>t==='升到 Lv6'),inv=s.log.findIndex(t=>/发出邀请/.test(t));
  assert.ok(up>=0&&inv>up,'level-up is settled before the invitation appears');
 });
@@ -243,8 +243,8 @@ test('P8e a berry picked up on one floor is still taken, and not given again, af
  assert.ok(s.points.some(p=>p.kind==='exit'),'the fixed historical exit remains on floor 1');
  assert.deepEqual([s.dungeon.width,s.dungeon.height],[20,14]);
 });
-test('P8f floor item points (8.8): 2-4 per floor drawn from the five floor items, floor 2 also holds exactly one tonic',()=>{
- const FLOOR_ITEMS=new Set(['berry','pechaBerry','rawstBerry','cheriBerry','healSeed']),counts=new Set(),kinds=new Set();
+test('P8f floor item points (8.8): 2-4 per floor drawn from the six floor items, floor 2 also holds exactly one tonic',()=>{
+ const FLOOR_ITEMS=new Set(['berry','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed']),counts=new Set(),kinds=new Set();
  for(let seed=0;seed<300;seed++){
   const g1=generateFloor(seed,1),g2=generateFloor(seed,2),k=p=>(p.pos?p.pos:p).x+','+(p.pos?p.pos:p).y;
   const items1=g1.pickups.map(p=>p.kind),items2=g2.pickups.filter(p=>p.kind!=='tonic').map(p=>p.kind);

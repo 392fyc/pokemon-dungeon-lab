@@ -105,10 +105,10 @@ test('M191 violent seed maximizes both attack stages; full elixir fills every mo
   r=play(r,{type:'use',item:'maxElixir',target:'B'});assert.deepEqual(r.units.B.pp,r.units.B.maxPp);assert.equal(r.units.A.pp.tackle,5);assert.equal(r.prog.items.maxElixir,0);
   const invalid=applyCommand(r,{type:'round',action:{type:'use',item:'maxElixir',target:'B'}});assert.equal(invalid.ok,false);
 });
-test('M191 camp content-5 migrates strictly and writes content-6; malformed old profiles keep original bytes',async()=>{
+test('M191 camp content-5 migrates strictly and writes content-7; malformed old profiles keep original bytes',async()=>{
   const make=raw=>{const port={value:raw,getItem(){return this.value;},setItem(k,v){this.value=v;},removeItem(){this.value=null;}};return {port,store:new TrialStore(port)};};
   const old={format:2,rules:'trial-rules-5',content:'trial-content-5',build:BUILD_ID,sequence:9,profile:initialProfile()};
-  const {port,store}=make(JSON.stringify(old));await store.whenReady;assert.equal(store.status,'ready');assert.equal(CONTENT_VERSION,'trial-content-6');
+  const {port,store}=make(JSON.stringify(old));await store.whenReady;assert.equal(store.status,'ready');assert.equal(CONTENT_VERSION,'trial-content-7');
   const saved=JSON.parse(port.value);assert.equal(saved.content,CONTENT_VERSION);assert.equal(saved.sequence,10);assert.deepEqual(saved.profile,old.profile);
   const bad=JSON.stringify({...old,profile:{...old.profile,unknown:true}}),failed=make(bad);await failed.store.whenReady;
   assert.equal(failed.store.status,'blocked');assert.equal(failed.port.value,bad);
@@ -137,7 +137,7 @@ test('M191 the v4 pool preserves v3 and all six new machines can be learned, sav
     assert.equal(await store.beginNewGame(p,false),true,store.error);assert.equal((await store.baseAction({type:'learn',inst:'P1',move})).ok,true);
     assert.equal((await store.baseAction({type:'carry',inst:'P1',moves:[move]})).ok,true);
     store=new TrialStore(port);assert.equal(store.status,'ready',store.error);assert.equal(store.profile.vault[move],undefined);
-    assert.equal(await store.depart('tm191-'+move,38),true,store.error);assert.equal(store.state.dungeon.tmPool,4);
+    assert.equal(await store.depart('tm191-'+move,38),true,store.error);assert.equal(store.state.dungeon.tmPool,5);
     const unit=Object.values(store.state.units).find(u=>u.inst==='P1');assert.ok(unit);assert.deepEqual(unit.learned,[move]);
     assert.equal(unit.pp[move],SPECIES[species.id].learnable.find(m=>m.move===move).pp);
   }

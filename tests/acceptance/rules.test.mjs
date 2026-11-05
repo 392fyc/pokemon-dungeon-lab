@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMain} from '../../src/core/engine.ts';
 import {sureHit} from '../core/sure-hit.mjs';   // 8.8 (#165): these journeys count exact HP, so the accuracy roll is taken out
-import {roguelikeArena,pos,row,friend,enemy,world,doCmd,reject as rejectRaw,move,wait,basic,skill,interact,round,switchTo,refuse,accept,finish,coords,hp,pp,preview,V,K as KFixture,K5 as K5Fixture} from './fixtures.mjs';
+import {roguelikeArena,pos,row,friend,enemy,world,doCmd,reject as rejectRaw,move,wait,basic,skill,interact,round,switchTo,refuse,accept,finish,coords,hp,pp,preview,V as VFixture,K as KFixture,K5 as K5Fixture} from './fixtures.mjs';
 // 8.8 (#165): the K journeys count exact HP, so the accuracy roll is taken out of them here (the shipped-scenario comparison keeps the literal fixtures).
 const K=d=>sureHit(KFixture(d)),K5=()=>sureHit(K5Fixture());
+// V5 isolates the full-round sequence from hit RNG. V13 needs one Tackle hit: 9 × Normal→Rock/Ground 0.5 rounds to 5.
+const V=id=>{const s=VFixture(id);if(id===5||id===13)sureHit(s);if(id===13){s.units.E.hp=5;s.units.E.maxHp=5;}return s;};
 // 拒绝必须明确说明没有执行整轮；底层helper已比较完整世界不变。
 function reject(s,command){const r=rejectRaw(s,command);assert.match(r.error,/本轮未执行/);return r;}
 const U=[{tackle:2},{protect:2},{tackle:2,quickattack:2}];
@@ -58,13 +60,13 @@ test('M4 hurt (by the real E hits) then return',()=>{let s=round(scout(),move(6)
 for(const recruit of [false,true])test(recruit?'M6 same B plan replace C':'M5 same B plan keep C',()=>{
  let s=prefix(true,recruit?'accept':'reject'),p=recruit?'N':'C';s=switchTo(s,'B');s=round(s,{type:'swap',target:p});
  assert.deepEqual(coords(s),[pos(1),pos(3),pos(2)]);assert.deepEqual(hp(s),[20,20,recruit?10:8]);assert.deepEqual(s.units.R.pos,pos(4));
- // B now stands in front at 3 with R adjacent. B waits one round on purpose: R's tackle (4) must land on B and on nobody else.
- s=round(s,wait);assert.deepEqual(hp(s),[20,16,recruit?10:8]);assert.deepEqual(coords(s),[pos(1),pos(3),pos(2)]);assert.ok(s.log.includes('B受到4伤害，HP 16'));
- s=round(s,basic('R'));assert.equal(s.units.R.hp,0);assert.deepEqual(hp(s),[20,16,recruit?10:8]);
+ // B now stands in front at 3 with R adjacent. B waits one round on purpose: R's STAB Tackle (round(9 × 0.4 × 1.5)=6) must land on B and on nobody else.
+ s=round(s,wait);assert.deepEqual(hp(s),[20,14,recruit?10:8]);assert.deepEqual(coords(s),[pos(1),pos(3),pos(2)]);assert.ok(s.log.includes('B受到6伤害，HP 14'));
+ s=round(s,basic('R'));assert.equal(s.units.R.hp,0);assert.deepEqual(hp(s),[20,14,recruit?10:8]);
  const actions=[move(4),interact(false),move(5),move(6),move(7),interact(true)];
  const ps=[[1,4,3],[2,4,3],[2,5,4],[3,6,5],[4,7,6],[5,7,6]];
- for(let i=0;i<actions.length;i++){s=round(s,actions[i]);assert.deepEqual(coords(s),ps[i].map(x=>pos(x)));assert.equal(s.units.B.hp,16);}
- s=normal(s);assert.equal(s.round,13);assert.deepEqual(hp(s),[20,16,recruit?10:8]);assert.equal(s.units.R.hp,0);assert.equal(s.end.brought,1);
+ for(let i=0;i<actions.length;i++){s=round(s,actions[i]);assert.deepEqual(coords(s),ps[i].map(x=>pos(x)));assert.equal(s.units.B.hp,14);}
+ s=normal(s);assert.equal(s.round,13);assert.deepEqual(hp(s),[20,14,recruit?10:8]);assert.equal(s.units.R.hp,0);assert.equal(s.end.brought,1);
  if(recruit){assert.deepEqual(s.camp,['C']);assert.equal(s.units.C.hp,8);assert.deepEqual(s.units.C.pp,{tackle:2,quickattack:2});assert.deepEqual(pp(s),[{tackle:2},{protect:2},{tackle:1,roar:1}]);}
  else assert.deepEqual(pp(s),U);
 });
@@ -74,7 +76,7 @@ test('V1 preflight no partial member execution',()=>{const s=scout();const r=rej
 test('V2 core combo and free switch (UI draft checks separately)',()=>{let s=scout();s=switchTo(s,'B');assert.equal(s.round,9);s=switchTo(s,'C');s=round(s,move(4),'B',wait);assert.equal(s.round,10);assert.deepEqual(coords(s),[pos(2),pos(3),pos(4)]);});
 test('V3 reverse without swap',()=>{let s=round(V(3),move(0));assert.deepEqual(coords(s),[pos(3),pos(2),pos(0)]);s=normal(round(s,interact(true)));assert.equal(s.round,2);});
 test('V4 side path',()=>{let s=round(V(4),wait,'C',{type:'move',to:pos(2,2)});assert.deepEqual(coords(s),[pos(3),pos(1),pos(2,2)]);s=round(s,wait);assert.deepEqual(coords(s),[pos(3),pos(2),pos(2,2)]);});
-test('V5 down body does not block; finish whole round after kill',()=>{let s=round(V(5),move(2));assert.deepEqual(coords(s),[null,pos(2),pos(1)]);assert.deepEqual(hp(s),[0,4,8]);s=round(s,basic('E'));assert.deepEqual(hp(s),[0,4,8]);assert.equal(s.units.E.hp,0);assert.deepEqual(coords(s),[null,pos(2),pos(1)]);assert.equal(s.queue.length,3);});
+test('V5 down body does not block; finish whole round after kill',()=>{let s=round(V(5),move(2));assert.deepEqual(coords(s),[null,pos(2),pos(1)]);assert.deepEqual(hp(s),[0,2,8]);s=round(s,basic('E'));assert.deepEqual(hp(s),[0,2,8]);assert.equal(s.units.E.hp,0);assert.deepEqual(coords(s),[null,pos(2),pos(1)]);assert.equal(s.queue.length,3);});
 test('V6 leader succeeds without added action',()=>{const s=round(V(6),move(2));assert.deepEqual(coords(s),[null,null,pos(1)]);assert.equal(s.leader,'C');assert.equal(s.round,1);assert.deepEqual(s.queue,['A','B','C']);});
 test('V7 normal exit includes down member no healing',()=>{const s=normal(round(V(7),interact(true)));assert.deepEqual(hp(s),[0,8,8]);assert.deepEqual(s.end.team,['A','B','C']);});
 test('V8 no slot; actual outgoing removal preview',()=>{const s=V(8);assert.equal(preview(s,'C').ok,false);reject(s,{type:'invite',choice:'accept',outgoing:'C'});assert.deepEqual(preview(s,'B').pos,pos(1,2));assert.deepEqual(preview(s,'A').pos,pos(2,2));assert.equal(refuse(s).invitations[0].status,'rejected');});
@@ -106,7 +108,7 @@ test('PR5 unrevealed refusal names missing knowledge',()=>{
  const s=main(false);s.seen=s.seen.filter(k=>k!=='3,1');
  const r=reject(s,{type:'round',action:move(3)});assert.match(r.error,/未揭示|尚未发现|未发现/);assert.doesNotMatch(r.error,/前序成员可能/);
 });
-test('K1 self-target protect spends PP while tackle uses move power',()=>{let s=round(K(),skill('tackle','H'),'B',skill('protect','B'));assert.deepEqual(hp(s),[8,12,10]);assert.equal(s.units.H.hp,6);assert.deepEqual(pp(s),[{tackle:1},{protect:0},{tackle:1,quickattack:1}]);s=round(s,skill('tackle','H'));assert.equal(s.units.H.hp,0);assert.equal(s.units.A.hp,8);assert.equal(s.units.A.pp.tackle,0);});
+test('K1 self-target protect spends PP while tackle uses move power',()=>{let s=round(K(),skill('tackle','H'),'B',skill('protect','B'));assert.deepEqual(hp(s),[6,12,10]);assert.equal(s.units.H.hp,6);assert.deepEqual(pp(s),[{tackle:1},{protect:0},{tackle:1,quickattack:1}]);s=round(s,skill('tackle','H'));assert.equal(s.units.H.hp,0);assert.equal(s.units.A.hp,6);assert.equal(s.units.A.pp.tackle,0);});
 test('K1 protect blocks a real enemy attack on its user',()=>{
  const s=K();s.units.A.pos=pos(1,2);s.units.A.learned=['quickattack'];s.units.A.pp={quickattack:1};s.units.A.maxPp={quickattack:1};
  s.units.B.pos=pos(3,1);s.units.C.hp=0;s.units.C.pos=null;
@@ -114,16 +116,17 @@ test('K1 protect blocks a real enemy attack on its user',()=>{
  assert.equal(after.units.H.hp,16);assert.equal(after.units.A.hp,12);assert.equal(after.units.B.hp,12);assert.equal(after.units.B.protect,2);
  assert.ok(after.log.includes('B受到0伤害，HP 12'));
 });
-test('K2 roar collision deals five damage and preserves the support move',()=>{let s=round(K(true),skill('tackle','H'),'D',skill('roar','H'));assert.deepEqual(s.units.H.pos,pos(3,1));assert.equal(s.units.H.hp,10);assert.deepEqual(hp(s),[8,12,4]);assert.deepEqual(pp(s),[{tackle:1},{protect:1},{tackle:1,roar:0}]);s=round(s,skill('tackle','H'));assert.equal(s.units.H.hp,1);assert.deepEqual(hp(s),[4,12,4]);   // 8.8: H on (3,1) is diagonal to A, so A (not D) tackles it and H bites A back
- s=round(s,basic('H'));assert.equal(s.units.H.hp,0);assert.deepEqual(hp(s),[4,12,4]);assert.equal(s.units.B.pp.protect,1);assert.equal(s.units.D.pp.tackle,1);});
-for(const blocker of ['wall','unit'])test('K3 blowaway collision '+blocker,()=>{const s=K(true);if(blocker==='wall')s.floor=s.floor.filter(p=>p.x!==3||p.y!==1);else{s.units.X=enemy('X',3,1,20,'melee',{waitOnly:true});s.enemies.push('X');}const after=round(s,skill('tackle','H'),'D',skill('roar','H'));assert.equal(after.units.H.hp,10);assert.deepEqual(after.units.H.pos,pos(3,2));assert.equal(after.units.D.pp.roar,0);assert.equal(after.units.A.hp,8);if(blocker==='unit')assert.equal(after.units.X.hp,15);});
+test('K2 roar collision deals five damage and preserves the support move',()=>{const initial=K(true);initial.units.A.hp=initial.units.A.maxHp=20;let s=round(initial,skill('tackle','H'),'D',skill('roar','H')); // Two STAB Ember hits are 6 each; keep this collision fixture alive for its third action.
+assert.deepEqual(s.units.H.pos,pos(3,1));assert.equal(s.units.H.hp,10);assert.deepEqual(hp(s),[14,12,4]);assert.deepEqual(pp(s),[{tackle:1},{protect:1},{tackle:1,roar:0}]);s=round(s,skill('tackle','H'));assert.equal(s.units.H.hp,1);assert.deepEqual(hp(s),[8,12,4]);   // 8.8: H on (3,1) is diagonal to A, so A (not D) tackles it and H bites A back
+ s=round(s,basic('H'));assert.equal(s.units.H.hp,0);assert.deepEqual(hp(s),[8,12,4]);assert.equal(s.units.B.pp.protect,1);assert.equal(s.units.D.pp.tackle,1);});
+for(const blocker of ['wall','unit'])test('K3 blowaway collision '+blocker,()=>{const s=K(true);if(blocker==='wall')s.floor=s.floor.filter(p=>p.x!==3||p.y!==1);else{s.units.X=enemy('X',3,1,20,'melee',{waitOnly:true});s.enemies.push('X');}const after=round(s,skill('tackle','H'),'D',skill('roar','H'));assert.equal(after.units.H.hp,10);assert.deepEqual(after.units.H.pos,pos(3,2));assert.equal(after.units.D.pp.roar,0);assert.equal(after.units.A.hp,6);if(blocker==='unit')assert.equal(after.units.X.hp,15);});
 
 test('K4 friendly unit blocks ray at a valid target distance',()=>{const s=world({A:friend('A',2,1,20,{quickattack:1}),B:friend('B',3,1),C:friend('C',0,1,0),R:enemy('R',4,1,6,'ranged',6,3)},{floor:row(5),enemies:['R']});const r=reject(s,{type:'round',action:skill('quickattack','R')});assert.match(r.error,/被B挡住/);});
 test('K5 refusing keeps quickattack PP but cannot reach a target three cells away',()=>{const s=refuse(K5());reject(s,{type:'round',action:skill('quickattack','R')});assert.equal(s.round,0);assert.equal(s.units.C.pp.quickattack,1);assert.equal(s.units.R.hp,6);});
 
-test('K5 replacing C cannot protect the newcomer with another member',()=>{let s=switchTo(accept(K5(),'C'),'Q');reject(s,{type:'round',action:move(3),override:{actor:'B',action:skill('protect','Q')}});// R is a roster pidgey: it walks up (no damage on its move turn), then tackles for round(9*0.4)=4 under ENEMY_DIFFICULTY 0.4 (base 6+ceil(6/2)=9).
- s=round(s,move(3));assert.equal(s.units.Q.hp,10);s=round(s,wait);assert.equal(s.units.Q.hp,6);s=round(s,wait);assert.equal(s.units.Q.hp,2);s=round(s,wait);assert.equal(s.units.Q.hp,0);assert.equal(s.round,4);assert.equal(s.units.B.pp.protect,1);assert.equal(s.units.C.hp,2);assert.equal(s.units.C.pp.quickattack,1);});
-for(const outgoing of ['A','B'])test('K5 keep C and replace '+outgoing,()=>{let s=accept(K5(),outgoing);assert.deepEqual(s.units.Q.pos,pos(3));assert.equal(s.units[outgoing].hp,12);assert.equal(s.units[outgoing].maxHp,20);s=switchTo(s,'Q');s=round(s,move(4));assert.equal(s.units.Q.hp,6);assert.deepEqual(s.units.C.pos,pos(2));s=round(s,basic('R'));assert.equal(s.round,2);assert.equal(s.units.R.hp,0);assert.deepEqual(s.units.C.pos,pos(3));assert.equal(s.units.C.hp,2);assert.equal(s.units.C.pp.quickattack,1);assert.equal(s.units.B.pp.protect,1);assert.equal(s.units.A.hp,12);assert.equal(s.units.B.hp,12);assert.equal(s.units.Q.hp,6);});
+test('K5 replacing C cannot protect the newcomer with another member',()=>{let s=switchTo(accept(K5(),'C'),'Q');reject(s,{type:'round',action:move(3),override:{actor:'B',action:skill('protect','Q')}});// R is a roster pidgey: it walks up (no damage on its move turn), then tackles for round(9*0.4*1.5 STAB)=6 under ENEMY_DIFFICULTY 0.4 (base 6+ceil(6/2)=9).
+ s=round(s,move(3));assert.equal(s.units.Q.hp,10);s=round(s,wait);assert.equal(s.units.Q.hp,4);s=round(s,wait);assert.equal(s.units.Q.hp,0);assert.equal(s.round,3);assert.equal(s.units.B.pp.protect,1);assert.equal(s.units.C.hp,2);assert.equal(s.units.C.pp.quickattack,1);});
+for(const outgoing of ['A','B'])test('K5 keep C and replace '+outgoing,()=>{let s=accept(K5(),outgoing);assert.deepEqual(s.units.Q.pos,pos(3));assert.equal(s.units[outgoing].hp,12);assert.equal(s.units[outgoing].maxHp,20);s=switchTo(s,'Q');s=round(s,move(4));assert.equal(s.units.Q.hp,4);assert.deepEqual(s.units.C.pos,pos(2));s=round(s,basic('R'));assert.equal(s.round,2);assert.equal(s.units.R.hp,0);assert.deepEqual(s.units.C.pos,pos(3));assert.equal(s.units.C.hp,2);assert.equal(s.units.C.pp.quickattack,1);assert.equal(s.units.B.pp.protect,1);assert.equal(s.units.A.hp,12);assert.equal(s.units.B.hp,12);assert.equal(s.units.Q.hp,4);});
 
 // 8.1 current rules; historical fixed maps above continue to cover old input sequences.
 test('8.1 the boss defeat ends automatically after rewards, with every machine brought and money cleared',()=>{

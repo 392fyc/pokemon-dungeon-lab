@@ -1,4 +1,4 @@
-/** Player-facing descriptions for the ten current expedition items. */
+/** Player-facing descriptions for the current expedition items. */
 import { PROG, type Item } from "./engine.ts";
 
 export const ITEM_DESCRIPTIONS: Readonly<Record<Item, string>> = Object.freeze({
@@ -9,7 +9,8 @@ export const ITEM_DESCRIPTIONS: Readonly<Record<Item, string>> = Object.freeze({
   pechaBerry: "解除中毒和剧毒。",
   rawstBerry: "解除灼伤。",
   cheriBerry: "解除麻痹。",
-  healSeed: "解除全部异常状态：中毒、剧毒、灼伤、麻痹、冰冻、混乱和畏缩。",
+  chestoBerry: "解除睡眠；不解除打盹。",
+  healSeed: "解除全部异常状态：中毒、剧毒、灼伤、麻痹、冰冻、混乱、畏缩和睡眠；不解除打盹。",
   violentSeed: "将目标的攻击和特攻能力阶段提升到 +3。",
   maxElixir: "将目标所有已学招式的 PP 恢复至上限。",
 });

@@ -2,26 +2,29 @@
 import data from '../data/roster.json' with {type:'json'};
 import bosses from '../data/boss.json' with {type:'json'};
 export type KitMove={move:string;pp:number};
-export type Species={id:string;dex:string;name:string;learnsetGen:number;starter?:boolean;types?:string[];baseStats?:{hp:number;atk:number;def:number;spa:number;spd:number;spe:number};maxHp:number;kit:KitMove[];learnable:KitMove[];availability?:'暂不出场';evoLevel:number;prevo?:string;evos?:string[];legendary:boolean};
+export type LevelUpMove={level:number;move:string;pp:number};
+export type Species={id:string;dex:string;name:string;learnsetGen:number;starter?:boolean;types?:string[];baseStats?:{hp:number;atk:number;def:number;spa:number;spd:number;spe:number};maxHp:number;kit:KitMove[];learnable:KitMove[];levelUp:LevelUpMove[];availability?:'暂不出场';evoLevel:number;prevo?:string;evos?:string[];legendary:boolean};
 export const SPECIES:Record<string,Species>=Object.fromEntries((data.species as Species[]).map(s=>[s.id,s]));
 /** The species the player may pick as the main character (stage 7.1: generation 1-3 starters), in roster order. */
 export const STARTER_IDS:string[]=(data.species as Species[]).filter(s=>s.starter).map(s=>s.id);
 export const speciesOf=(id:string):Species|undefined=>Object.prototype.hasOwnProperty.call(SPECIES,id)?SPECIES[id]:undefined;
 /**
- * 6.5 technique machines (workable candidates): the three moves that fill the "pin" and "reposition" gaps found in 6.2. A machine teaches one move to a compatible species.
- * 7.3 adds four more (dragontail, helpinghand, mudslap, terablast); 8.8 (#165) removes terablast again (the game has no terastallization), leaving three. `LEGACY_TM_MOVES` is what runs without the boss mark still draw from; `TM_MOVES` is the
- * six-entry boss pool. Draws are `floor(r * length)`, so lengthening either old list would change what an old save's seed means.
+ * 6.5 technique machines: the three candidates which fill the pin and reposition gaps.
+ * 7.3 added four; 8.8 removed terablast, leaving six in the old boss pool. Pool versions
+ * 3/4/5 keep their historical draw order; an unmarked save keeps its original pool.
  */
 export const LEGACY_TM_MOVES=['protect','whirlwind','roar'] as const;
 export const TM_MOVES=['protect','whirlwind','roar','dragontail','helpinghand','mudslap'] as const;
-/** The 7.7b boss pool; only a new departure marked with tmPool:3 draws from these nine moves (8.8: Tera Blast removed). */
+/** 7.7b: the nine-move boss pool. */
 export const TM_MOVES_V3=[...TM_MOVES,'quickguard','reflect','lightscreen'] as const;
-/** 8.9a: supported first-step templates intersected with the Explorers of Sky TM table, plus the existing nine. */
+/** 8.9a: add six supported TM moves. */
 export const TM_MOVES_V4=[...TM_MOVES_V3,'calmmind','toxic','bulkup','willowisp','thunderwave','swordsdance'] as const;
+/** 8.9b: add Rest and Sleep Talk; Snore remains level-up only. */
+export const TM_MOVES_V5=[...TM_MOVES_V4,'rest','sleeptalk'] as const;
 /** All moves which can appear in the warehouse and pass legality checks. */
-export const ALL_TM_MOVES=TM_MOVES_V4;
-/** Missing tmPool preserves old saves: ordinary runs use three, old boss runs six; marked pools 3/4 use nine/fifteen. */
-export const tmPool=(d?:{boss?:boolean;tmPool?:3|4}|null):readonly string[]=>d?.boss?(d.tmPool===4?TM_MOVES_V4:d.tmPool===3?TM_MOVES_V3:TM_MOVES):LEGACY_TM_MOVES;
+export const ALL_TM_MOVES=TM_MOVES_V5;
+/** Missing tmPool preserves old saves: ordinary runs use three, old boss runs six; marked pools 3/4/5 use nine/fifteen/seventeen. */
+export const tmPool=(d?:{boss?:boolean;tmPool?:3|4|5}|null):readonly string[]=>d?.boss?(d.tmPool===5?TM_MOVES_V5:d.tmPool===4?TM_MOVES_V4:d.tmPool===3?TM_MOVES_V3:TM_MOVES):LEGACY_TM_MOVES;
 export type BossTraits={levelBonus:number;hpMultiplier:number;canMove:boolean;canBeBlownAway:boolean};
 export const BOSS_CONFIG:Record<string,BossTraits>=bosses.bosses;
 /** Bosses share the ordinary roster; recruited partners do not inherit boss traits. */
@@ -31,4 +34,27 @@ export const speciesMaxHp=(id:string,level:number,multiplier=1)=>Math.max(1,Math
 export function learnableMove(speciesId:string,move:string):KitMove|undefined {
   const sp=speciesOf(speciesId);
   const m=sp?.learnable.find(l=>l.move===move);return m?{move:m.move,pp:m.pp}:undefined;
+}
+
+
+/** 8.9b enemy and recruited-unit moves: take the latest four distinct learned moves, then prepend kit moves to fill empty slots. */
+export function movesAtLevel(speciesId:string,level:number):KitMove[] {
+  const sp=speciesOf(speciesId);
+  if(!sp)return [];
+  const learned=(sp.levelUp??[]).filter(entry=>entry.level<=level).slice().sort((a,b)=>a.level-b.level||(a.move<b.move?-1:a.move>b.move?1:0));
+  const recent:KitMove[]=[];
+  const seen=new Set<string>();
+  for(let i=learned.length-1;i>=0&&recent.length<4;i--){
+    const entry=learned[i];
+    if(seen.has(entry.move))continue;
+    seen.add(entry.move);recent.push({move:entry.move,pp:entry.pp});
+  }
+  recent.reverse();
+  const fill:KitMove[]=[];
+  for(const entry of sp.kit){
+    if(recent.length+fill.length>=4)break;
+    if(seen.has(entry.move))continue;
+    seen.add(entry.move);fill.push({move:entry.move,pp:entry.pp});
+  }
+  return [...fill,...recent];
 }

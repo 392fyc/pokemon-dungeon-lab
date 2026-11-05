@@ -5,7 +5,7 @@ import {
   applyCommand, createExpedition, createMain, jumpToFloor, friend, key, rngStep, hitChance, accuracyMultiplier, stageOf, bagFull, PROG, ITEM_CURES, recruitUnit, RULE_VERSION, CONTENT_VERSION,
 } from '../../src/core/engine.ts';
 import {moveEffects,moveOf} from '../../src/core/moves.ts';
-import {ALL_TM_MOVES,SPECIES,TM_MOVES,TM_MOVES_V3,learnableMove} from '../../src/core/roster.ts';
+import {ALL_TM_MOVES,SPECIES,TM_MOVES,TM_MOVES_V3,TM_MOVES_V5,learnableMove} from '../../src/core/roster.ts';
 import {initialProfile,migrateProfilePp,profileProblem,squadOf} from '../../src/core/base.ts';
 import {TrialStore,decode,BUILD_ID} from '../../src/core/save.ts';
 import {foeOf} from './foe-fixture.mjs';
@@ -24,7 +24,8 @@ function world({floor=rect(0,8,0,8),friends=[friend('A',1,1,60,{tackle:5})],enem
   delete s.rooms;delete s.dungeon;delete s.prog;delete s.tms;delete s.shop;delete s.exchange;s.purse=0;
   return hit?sureHit(s):s;
 }
-const still=(id,species,x,y,hp,moves)=>{const e=foeOf(id,species,x,y,hp,moves);e.waitOnly=true;return e;};
+const withoutSpecies=u=>{delete u.species;delete u.entrySpecies;return u;};
+const still=(id,species,x,y,hp,moves)=>{const e=withoutSpecies(foeOf(id,species,x,y,hp,moves));e.waitOnly=true;return e;};
 function equip(u,id,pp=5){if(!u.learned.includes(id))u.learned.push(id);u.pp[id]=pp;u.maxPp[id]=pp;}
 const cmd=(s,action,override)=>applyCommand(s,{type:'round',action,...(override?{override}:{})});
 function play(s,action,override){const r=cmd(s,action,override);assert.equal(r.ok,true,r.ok?'':r.error);return r.state;}
@@ -87,7 +88,7 @@ test('H6 an attack with target "all" (a line that can catch a companion) is judg
 /* ---------- status conditions ---------- */
 test('S1 paralysis: applied by a 100% side effect, lasts 2-3 of the victim\'s own action opportunities, blocks moves and basic attacks but not walking',()=>{
   const a=friend('A',1,1,60);equip(a,'nuzzle',3);
-  const e=foeOf('E','geodude',2,1,60,{tackle:5});const s=world({friends:[a],enemies:[e]});s.battleRng=LOW;
+  const e=withoutSpecies(foeOf('E','geodude',2,1,60,{tackle:5}));const s=world({friends:[a],enemies:[e]});s.battleRng=LOW;
   const expected=2+Math.floor(rngStep(LOW).value*2);   // the world is sure-hit (no hit roll) and a 100% side effect draws nothing, so the first draw is the duration
   const r=skill(s,'A','nuzzle','E');
   // E acts in the same round's enemy phase: it is paralysed, so its tackle is lost and the PP is kept; the opportunity counts down.
@@ -202,7 +203,7 @@ test('I1 cure items: each cures its own conditions, is refused (and kept) when n
     assert.ok(r.events.some(v=>v.type==='status'&&v.status===st&&v.change==='cure'));
   }
   const wrong=bagWorld({rawstBerry:1});wrong.units.A.status={par:{left:2}};
-  const bad=cmd(wrong,{type:'use',item:'rawstBerry',target:'A'});assert.equal(bad.ok,false);assert.match(bad.error,/没有木子果能治好的状态/);assert.deepEqual(bad.state,wrong);
+  const bad=cmd(wrong,{type:'use',item:'rawstBerry',target:'A'});assert.equal(bad.ok,false);assert.match(bad.error,/没有莓莓果能治好的状态/);assert.deepEqual(bad.state,wrong);
   const none=bagWorld({healSeed:1});assert.equal(cmd(none,{type:'use',item:'healSeed',target:'A'}).ok,false);
   const mate=bagWorld({cheriBerry:1});mate.units.B.status={par:{left:3}};
   const m=play(mate,{type:'use',item:'cheriBerry',target:'B'});assert.equal(m.units.B.status,undefined);
@@ -300,21 +301,24 @@ test('P1 maximum PP is the official basePp for every move of every species; Tera
     const official=defs[m.move].official?.basePp;assert.equal(m.pp,official?Number(official):40,`${sp.id}/${m.move}`);assert.notEqual(m.move,'terablast');
   }
   assert.equal(SPECIES.treecko.kit.find(k=>k.move==='leafage').pp,40);
-  assert.equal(TM_MOVES.length,6);assert.equal(TM_MOVES_V3.length,9);assert.equal(ALL_TM_MOVES.length,15);assert.ok(!ALL_TM_MOVES.includes('terablast'));
+  assert.equal(TM_MOVES.length,6);assert.equal(TM_MOVES_V3.length,9);assert.equal(TM_MOVES_V5.length,17);assert.equal(ALL_TM_MOVES.length,17);assert.ok(TM_MOVES_V5.includes('rest'));assert.ok(TM_MOVES_V5.includes('sleeptalk'));assert.ok(!ALL_TM_MOVES.includes('terablast'));
   assert.equal(learnableMove('geodude','terablast'),undefined);
   const u=recruitUnit('N1','pidgey',6);assert.deepEqual(u.pp,u.maxPp);assert.equal(u.hp,Math.max(1,Math.floor(u.maxHp/2)));
 });
-function oldCamp(){
-  // a trial-rules-5 record written before 8.8: old frozen PP values, a Tera Blast on a learned list, in the carry list and in the vault
+function oldCamp(rules=RULE_VERSION,content=CONTENT_VERSION){
+  // Old frozen PP values, plus Tera Blast on a learned list, in the carry list and in the vault.
   const p=initialProfile();
   p.roster[0].learned=[{move:'scratch',pp:3},{move:'ember',pp:2},{move:'terablast',pp:1},{move:'protect',pp:1}];p.roster[0].carry=['ember','terablast'];
   p.roster[1].learned=[{move:'tackle',pp:3},{move:'watergun',pp:2}];
   p.vault={terablast:2,protect:1};
   p.rescue=[{inst:{id:'P9',species:'pidgey',learned:[{move:'tackle',pp:3},{move:'gust',pp:3},{move:'terablast',pp:1}],carry:['gust','terablast'],protected:false,tactic:'together'},paid:false,left:2}];p.next=10;
-  return {format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:4,profile:p};
+  return {format:2,rules,content,build:BUILD_ID,sequence:4,profile:p};
 }
-test('P2 an old rules-5 camp record is migrated on load: official PP, no Tera Blast anywhere, everything else kept',()=>{
-  const env=decode(JSON.stringify(oldCamp()));
+test('P2 an old rules-5 camp record is migrated through TrialStore: official PP, no Tera Blast anywhere, everything else kept',async()=>{
+  const m=new Map([['dungeon-trial.player.v1',JSON.stringify(oldCamp('trial-rules-5','trial-content-6'))]]);
+  const port={getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);}};
+  const store=new TrialStore(port);assert.equal(await store.whenReady,true,store.error);
+  const env=store.envelope;assert.ok(env);
   const [a,b]=env.profile.roster;
   assert.deepEqual(a.learned,[{move:'scratch',pp:28},{move:'ember',pp:15},{move:'protect',pp:10}]);assert.deepEqual(a.carry,['ember']);
   assert.deepEqual(b.learned,[{move:'tackle',pp:30},{move:'watergun',pp:17}]);
@@ -322,16 +326,16 @@ test('P2 an old rules-5 camp record is migrated on load: official PP, no Tera Bl
   assert.deepEqual(env.profile.rescue[0].inst.learned,[{move:'tackle',pp:30},{move:'gust',pp:19}]);assert.deepEqual(env.profile.rescue[0].inst.carry,['gust']);
   assert.equal(profileProblem(env.profile),null);
   assert.deepEqual(decode(JSON.stringify(env)),env,'idempotent: a migrated record decodes to itself');
-  assert.equal(env.sequence,4);assert.equal(env.rules,RULE_VERSION);
+  assert.equal(env.sequence,5);assert.equal(env.rules,RULE_VERSION);
 });
 test('P3 loading an old record through the store migrates it and the next camp write saves the new values; a bad record is still refused', async()=>{
-  const m=new Map([['dungeon-trial.player.v1',JSON.stringify(oldCamp())]]);const port={getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);}};
+  const m=new Map([['dungeon-trial.player.v1',JSON.stringify(oldCamp('trial-rules-5','trial-content-6'))]]);const port={getItem:k=>m.get(k)??null,setItem:(k,v)=>{m.set(k,v);}};
   const store=new TrialStore(port);assert.equal(await store.whenReady,true,store.error);assert.equal(store.status,'ready');
   assert.deepEqual(store.profile.roster[0].learned.map(l=>l.pp),[28,15,10]);
   const saved=await store.baseAction({type:'tactic',inst:'P1',tactic:'wait'});assert.equal(saved.ok,true);
   const reread=decode(m.get('dungeon-trial.player.v1'));assert.deepEqual(reread.profile.roster[0].learned.map(l=>l.pp),[28,15,10]);assert.ok(!JSON.stringify(reread).includes('terablast'));
-  const bad=oldCamp();bad.profile.roster[0].learned.push({move:'hyperbeam',pp:5});assert.throws(()=>decode(JSON.stringify(bad)),/存档结构损坏/);
-  const wrongMove=oldCamp();wrongMove.profile.roster[0].carry=['scratch','ember','protect'];assert.throws(()=>decode(JSON.stringify(wrongMove)),/存档结构损坏/);
+  const bad=oldCamp();bad.profile.roster[0].learned.push({move:'not-a-move',pp:5});assert.throws(()=>decode(JSON.stringify(bad)),/存档结构损坏/);
+  const wrongMove=oldCamp();wrongMove.profile.roster[0].carry=['tackle'];assert.throws(()=>decode(JSON.stringify(wrongMove)),/存档结构损坏/);
   const prof=oldCamp().profile;migrateProfilePp(prof);migrateProfilePp(prof);assert.equal(profileProblem(prof),null);
 });
 test('P4 an old format-1 ended run that holds a Tera Blast machine is migrated: the machine is dropped from the run and its end record, PP maxima follow the new data, and the record still validates', async()=>{

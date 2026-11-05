@@ -32,7 +32,7 @@ SOURCE_COMMIT = "ccfaa20f32af363569cd21a9d501b2bc1ded26b1"
 # 本作没有太晶化，不生成它的数据（pmd-moves.json 仍保留数据行以便读取旧档）。
 SKIPPED = {"terablast"}
 STAGE_KEYS = {"atk": "atk", "def": "def", "spa": "spa", "spd": "spd", "spe": "spe", "accuracy": "acc", "evasion": "eva"}
-STATUS_KEYS = {"brn", "frz", "par", "psn", "tox"}
+STATUS_KEYS = {"brn", "frz", "par", "psn", "slp", "tox"}
 VOLATILE_KEYS = {"confusion": "confusion", "flinch": "flinch"}
 
 
@@ -109,6 +109,8 @@ def build(showdown, pmd):
         row = {"acc": acc}
         if sd.get("type") == "Fire" or sd.get("thawsTarget"):
             row["thaw"] = True
+        if (sd.get("flags") or {}).get("powder"):
+            row["powder"] = True
         if fx:
             row["fx"] = fx
         cost = (sd.get("self") or {}).get("boosts")
@@ -122,7 +124,7 @@ def build(showdown, pmd):
         row["source"] = {
             "showdown": f"https://github.com/smogon/pokemon-showdown/blob/{SOURCE_COMMIT}/data/moves.ts",
             "id": move_id,
-            "fields": [key for key in ("accuracy", "boosts", "status", "volatileStatus", "recoil", "heal", "secondary", "secondaries", "self") if key in sd],
+            "fields": [key for key in ("accuracy", "boosts", "status", "volatileStatus", "recoil", "heal", "secondary", "secondaries", "self", "flags") if key in sd],
             "pmd": spec.get("official", {}),
         }
         if move_id in template_sources:

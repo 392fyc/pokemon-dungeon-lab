@@ -26,7 +26,10 @@ let gameTiming=null;
 // the five seeds, per-game action cap and all real-input/save assertions stay.
 const deadline=setTimeout(()=>{report.deadlineReached=true;console.error('Five-game browser check exceeded its 40-minute deadline');void browser.close();},40*60*1000);
 const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
-await context.addInitScript(()=>{window.__trialNoAnim=true;});
+await context.addInitScript(()=>{
+ window.__trialNoAnim=true;window.__movementInputTrace=[];
+ for(const type of ['keydown','keyup'])addEventListener(type,event=>{if(!['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;const s=window.trial?.getState(),entry={type,key:event.key,at:event.timeStamp,round:s?.round};window.__movementInputTrace.push(entry);if(window.__movementInputTrace.length>64)window.__movementInputTrace.shift();queueMicrotask(()=>{entry.afterRound=window.trial?.getState()?.round;});},true);
+});
 const page=await context.newPage(),errors=[];
 page.setDefaultTimeout(15000);
 page.on('pageerror',e=>errors.push(e.message));
@@ -47,7 +50,7 @@ const click=async id=>{
   await bag.locator('[data-bag-category="all"]').click();await ready();
   const itemButton=bag.locator('[data-bag-item="'+item+'"]');
   assert.equal(await itemButton.count(),1,'the held consumable must appear in the all-items category');
-  const itemName=(await itemButton.locator('span').innerText()).trim();
+  const itemName=(await itemButton.locator('.hud-item-name').innerText()).trim();
   await itemButton.click();await ready();
   const slotLabel=await bag.locator('[data-bag-slot="0"]').getAttribute('aria-label');
   assert.ok(slotLabel?.includes(itemName),'the selected item must appear in the assigned quick slot');
@@ -131,7 +134,7 @@ async function command(c){
  else if(a.type==='skill'){await click('skill-'+a.skill);await cell(a.targetPos);}
  else if(a.type==='wait')await click('wait');
  else if(a.type==='swap'){await click('swap');await click('partner-'+a.target);await click('submit');}
- else if(a.type==='use'){await click('use-'+a.item);await click('item-target-'+a.target);}
+ else if(a.type==='use'){await click('use-'+a.item);await click(a.item==='teamTonic'?'item-use-teamTonic':a.item==='bigBerry'?'item-target-bigBerry-'+a.target:'item-target-'+a.target);}
  else if(a.type==='rest')await click('rest');
  else if(a.type==='interact'){
   if(a.exit){await click('take-exit');await click('exit-confirm');}else await click('take');
@@ -140,7 +143,7 @@ async function command(c){
  assert.ok(after.round>c.beforeRound,'UI action must advance a complete round; action: '+JSON.stringify(a)+'; notice: '+await page.locator('#message').innerText()+'; visible state: '+JSON.stringify(visibleView(after)));
  if(a.type==='move'){
   const id=movementBefore.leader,pos=movementBefore.units[id].pos,to={x:pos.x+a.dx,y:pos.y+a.dy};
-  assertMovementOutcome(movementBefore,after,to);
+  try{assertMovementOutcome(movementBefore,after,to);}catch(error){fs.writeFileSync(artifactDir+'/five-games-input-failure.json',JSON.stringify({keys:a.keys,before:{round:movementBefore.round,pos:movementBefore.units[id].pos},after:{round:after.round,pos:after.units[id].pos},trace:await page.evaluate(()=>window.__movementInputTrace)},null,2));throw error;}
  }
 }
 function movementEventsFor(events,id){

@@ -3,29 +3,22 @@ import {SPECIES,STARTER_IDS} from '../core/roster.ts';
 import {speciesZh,moveZh,typeZh} from '../core/names.ts';
 import {starterMoveFields} from '../render/hud.ts';
 import '../render/starter-picker.css';
-import {sheet} from '../render/sprites.ts';
-import {starterStandee} from './title-shell.ts';
+import {portraitMarkup,tickPortraits} from '../render/portrait.ts';
+import '../render/portrait.css';
+
 
 export type NewGameState={step:1|2;main:string|null;deputy:string|null;overwrite:boolean};
 export {renderTitle} from './title-shell.ts';
 const esc=(s:unknown)=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-const SCALE=3;
+
 
 /** A standing sprite drawn from the species' Idle sheet (row 0 faces down). Frames advance in `portraitTick`. */
 export function portrait(speciesId:string):string {
-  const dex=SPECIES[speciesId]?.dex??'';const m=sheet(dex,'Idle');
-  if(!m)return `<span class="portrait-missing">${esc(speciesZh(speciesId))}</span>`;
-  const n=m.durations.length;
-  return `<span class="portrait-box"><span class="portrait" data-w="${m.w}" data-h="${m.h}" data-d="${m.durations.join(',')}" style="--portrait-height:${m.h};width:${m.w*SCALE}px;height:${m.h*SCALE}px;background-image:url(assets/${m.file});background-size:${m.w*n*SCALE}px ${m.h*8*SCALE}px;background-position:0 0"></span></span>`;
+  const dex=SPECIES[speciesId]?.dex??'';
+  return portraitMarkup(dex,{boxClass:'portrait-box',spriteClass:'portrait',label:speciesZh(speciesId),animated:true});
 }
-/** Moves the frame window of every visible portrait. `animated` false keeps the first frame (animation switch off). */
 export function portraitTick(nowMs:number,animated:boolean):void {
-  document.querySelectorAll<HTMLElement>('.portrait').forEach(el=>{
-    const d=(el.dataset.d??'').split(',').map(Number);const w=Number(el.dataset.w);if(!d.length||!w)return;
-    let frame=0;
-    if(animated){const total=d.reduce((a,b)=>a+b,0)*1000/60;let t=nowMs%total;for(let i=0;i<d.length;i++){const len=d[i]*1000/60;if(t<len){frame=i;break;}t-=len;}}
-    el.style.backgroundPosition=`${-frame*w*SCALE}px 0`;
-  });
+  tickPortraits(nowMs,animated);
 }
 const AXES = [
   ['hp','HP','#68ce72'], ['atk','攻击','#e5a457'], ['def','防御','#e8d361'],
@@ -82,7 +75,7 @@ export function renderNewGame(g: NewGameState, error = ''): string {
   const preview = selected ?? options[0];
   const species = SPECIES[preview];
   const choices = options.map(id => `<button class="starter-option" id="pick-${first ? 'main' : 'deputy'}-${id}"
-    aria-pressed="${selected === id}"><span class="starter-icon">${starterStandee(SPECIES[id].dex)}</span><span>${esc(speciesZh(id))}</span></button>`).join('');
+    aria-pressed="${selected === id}"><span class="starter-icon">${portrait(id)}</span><span>${esc(speciesZh(id))}</span></button>`).join('');
   const types = (species.types ?? []).map(type => `<span data-move-type="${esc(type)}">${esc(typeZh(type))}</span>`).join('');
   return `<div class="screen-inner starter-picker">
     <div class="starter-picker-nav">

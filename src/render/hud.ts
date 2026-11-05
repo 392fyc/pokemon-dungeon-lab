@@ -21,7 +21,10 @@ import { moveCategory, moveEffects, moveOf, type MoveRange } from "../core/moves
 import { THEME_FLOORS, themeOfLevel } from "../core/dungeon.ts";
 import { itemZh, moveZh, speciesZh, tmZh, typeZh } from "../core/names.ts";
 import { damageEstimateText, moveRangeLabel } from "../core/describe.ts";
-import { sheet, skinFor } from "./sprites.ts";
+import { itemDescription } from "../core/item-descriptions.ts";
+import { skinFor } from "./sprites.ts";
+import { portraitMarkup } from "./portrait.ts";
+import "./portrait.css";
 import moveTypeSnapshot from "./move-types.json" with { type: "json" };
 import moveDescriptionSnapshot from "../data/move-desc-zh.json" with { type: "json" };
 
@@ -61,7 +64,7 @@ function esc(value: unknown): string {
 }
 
 function unitName(unit: Unit): string {
-  return unit.species ? speciesZh(unit.species) : unit.id;
+  return unit.species ? speciesZh(unit.species) : unit.side === "enemy" ? "敌人" : "队员";
 }
 
 function hpPercent(unit: Unit): number {
@@ -69,21 +72,14 @@ function hpPercent(unit: Unit): number {
   return Math.max(0, Math.min(100, (unit.hp / unit.maxHp) * 100));
 }
 
-function spriteMarkup(unit: Unit, boxSize: number, label: string): string {
+function spriteMarkup(unit: Unit, label: string): string {
   const dex = skinFor(unit.id, unit.side, unit.species);
-  const metadata = sheet(dex, "Idle");
-  if (!metadata) {
-    return '<span class="hud-avatar hud-avatar-fallback" aria-hidden="true">•</span>';
-  }
-  const scale = Math.min(boxSize / metadata.w, boxSize / metadata.h) * 1.75;
-  const width = metadata.w * scale;
-  const height = metadata.h * scale;
-  const sheetWidth = metadata.w * metadata.durations.length * scale;
-  const sheetHeight = metadata.h * 8 * scale;
-  return '<span class="hud-avatar" role="img" aria-label="' + esc(label) + '">' +
-    '<span class="hud-avatar-sprite" style="width:' + width + 'px;height:' + height +
-    'px;background-image:url(assets/' + esc(metadata.file) + ');background-size:' +
-    sheetWidth + 'px ' + sheetHeight + 'px;background-position:0 0"></span></span>';
+  return portraitMarkup(dex, {
+    boxClass: "hud-avatar",
+    spriteClass: "hud-avatar-sprite",
+    label,
+    animated: false,
+  });
 }
 
 function stageBadge(label: string, stage: number): string {
@@ -134,18 +130,20 @@ const QUICK_ITEM_NAMES: Record<Item, string> = {
   maxElixir: "满PP剂",
 };
 
-function quickSlotMarkup(world: World, item: Item | null, index: number, disabled: boolean): string {
+function quickSlotMarkup(world: World, item: Item | null, index: number, disabled: boolean, selectedItem: Item | null): string {
   const amount = item ? itemCount(world, item) : 0;
   if (!item || amount < 1) {
     return '<button type="button" class="hud-quick-slot is-empty" data-hud-quick="' + index +
       '" aria-label="空快捷格" disabled><span aria-hidden="true"></span></button>';
   }
   const name = itemTitle(item);
+  const description = itemDescription(item);
+  const selected = item === selectedItem;
   const unavailable = disabled;
-  return '<button type="button" class="hud-quick-slot" data-hud-quick="' + index +
-    '" aria-label="' + esc(name + " ×" + amount) + '"' + (unavailable ? " disabled" : "") + ">" +
+  return '<button type="button" class="hud-quick-slot' + (selected ? " is-selected" : "") + '" data-hud-quick="' + index +
+    '" aria-pressed="' + selected + '" aria-label="' + esc(name + " ×" + amount + "。" + description) + '"' + (unavailable ? " disabled" : "") + ">" +
     '<span class="hud-quick-name">' + esc(QUICK_ITEM_NAMES[item]) + '</span><span class="hud-quick-count">×' +
-    amount + "</span></button>";
+    amount + '</span><span class="hud-item-description">' + esc(description) + "</span></button>";
 }
 
 function experienceMarkup(world: World): string {
@@ -277,7 +275,7 @@ export function hudParty(s: World, disabled: boolean): string {
       '<button type="button" class="hud-party-main" id="leader-' + index + '" data-hud-leader="' +
       esc(id) + '" aria-pressed="' + chosen + '" aria-label="切换操控到' + esc(name) + '"' +
       (disabled ? " disabled" : "") + ">" +
-      spriteMarkup(unit, 44, name) +
+      spriteMarkup(unit, name) +
       '<span class="hud-party-info"><span class="hud-party-name-row"><strong class="hud-party-name">' +
       esc(name) + '</strong><span class="hud-party-hp">' + unit.hp + "/" + unit.maxHp +
       '</span></span><span class="hud-hp-track"><span class="hud-hp-fill' +
@@ -295,6 +293,7 @@ export function hudBottom(
   quick: (Item | null)[],
   disabled: boolean,
   selectedSkill: Skill | null,
+  selectedQuickItem: Item | null = null,
 ): string {
   const leader = s.units[s.leader];
   if (!leader) return "";
@@ -322,13 +321,13 @@ export function hudBottom(
   }).join("");
 
   const quickMarkup = Array.from({ length: 6 }, (_, index) =>
-    quickSlotMarkup(s, quick[index] ?? null, index, disabled),
+    quickSlotMarkup(s, quick[index] ?? null, index, disabled, selectedQuickItem),
   ).join("");
 
   return '<div class="hud-bottom-grid">' +
     '<section class="hud-current-unit" aria-label="当前操控队员">' +
     experienceMarkup(s) +
-    '<div class="hud-current-member">' + spriteMarkup(leader, 68, name) +
+    '<div class="hud-current-member">' + spriteMarkup(leader, name) +
     '<span class="hud-current-info"><strong>' + esc(name) + '</strong><span class="hud-hp-track hud-hp-track-large">' +
     '<span class="hud-hp-fill' + (leader.hp <= 0 ? " is-empty" : "") +
     '" style="width:' + percent.toFixed(2) + '%"></span></span><span class="hud-current-hp">HP ' +
@@ -454,27 +453,37 @@ export function hudBag(
   quick: (Item | null)[],
   category: string,
   selectedSlot: number,
+  selectedItem: Item | null = null,
 ): string {
   const activeCategory = CATEGORY_SET.has(category) ? category : "all";
   const selected = Number.isInteger(selectedSlot) && selectedSlot >= 0 && selectedSlot < 6;
+  const selectedBagItem = selectedItem ?? (selected ? quick[selectedSlot] ?? null : null);
   const quickMarkup = Array.from({ length: 6 }, (_, index) => {
     const item = quick[index] ?? null;
     const amount = item ? itemCount(s, item) : 0;
     const occupied = !!item && amount > 0;
-    const label = occupied ? itemTitle(item!) + " ×" + amount : "空快捷格";
+    const description = occupied ? itemDescription(item!) : "";
+    const label = occupied ? itemTitle(item!) + " ×" + amount + "。" + description : "空快捷格";
+    const isSelectedSlot = selected && selectedSlot === index;
     return '<button type="button" class="hud-bag-slot' + (occupied ? "" : " is-empty") +
-      '" data-bag-slot="' + index + '" aria-pressed="' + (selected && selectedSlot === index) +
+      (isSelectedSlot ? " is-selected" : "") + '" data-bag-slot="' + index + '" aria-pressed="' + isSelectedSlot +
       '" aria-label="快捷格 ' + (index + 1) + "：" + esc(label) + '">' +
-      (occupied ? '<span>' + esc(QUICK_ITEM_NAMES[item!]) + '</span><small>×' + amount + "</small>" : "") +
+      (occupied ? '<span>' + esc(QUICK_ITEM_NAMES[item!]) + '</span><small>×' + amount +
+        '</small><span class="hud-item-description">' + esc(description) + "</span>" : "") +
       "</button>";
   }).join("");
 
-  const consumables = consumableList(s).map((entry) => ({
-    category: entry.category,
-    markup: '<button type="button" class="hud-bag-item" data-bag-item="' + entry.item +
-      '" aria-label="' + esc(itemTitle(entry.item) + " ×" + entry.amount) + '">' +
-      '<span>' + esc(itemTitle(entry.item)) + '</span><small>×' + entry.amount + "</small></button>",
-  }));
+  const consumables = consumableList(s).map((entry) => {
+    const description = itemDescription(entry.item);
+    const selectedClass = entry.item === selectedBagItem ? " is-selected" : "";
+    return {
+      category: entry.category,
+      markup: '<button type="button" class="hud-bag-item' + selectedClass + '" data-bag-item="' + entry.item +
+        '" aria-label="' + esc(itemTitle(entry.item) + " ×" + entry.amount + "。" + description) + '">' +
+        '<span class="hud-item-name">' + esc(itemTitle(entry.item)) + '</span><small>×' + entry.amount +
+        '</small><span class="hud-item-description">' + esc(description) + "</span></button>",
+    };
+  });
   const machines = heldTmList(s).map((entry) => ({
     category: "tm",
     markup: '<div class="hud-bag-item is-readonly" role="group" aria-label="' +
@@ -487,6 +496,9 @@ export function hudBag(
   const itemMarkup = filtered.length
     ? filtered.map((entry) => entry.markup).join("")
     : '<div class="hud-bag-empty">无物品</div>';
+  const selectedDescription = selectedBagItem
+    ? '<p class="hud-bag-selected-description" aria-live="polite"><strong>' + esc(itemTitle(selectedBagItem)) + '：</strong>' + esc(itemDescription(selectedBagItem)) + '</p>'
+    : '<p class="hud-bag-selected-description" aria-live="polite">悬停、聚焦或点选道具查看效果说明。</p>';
   const tabs = CATEGORY_TABS.map(([id, label]) =>
     '<button type="button" role="tab" class="hud-bag-tab' + (activeCategory === id ? " is-active" : "") +
     '" data-bag-category="' + id + '" aria-selected="' + (activeCategory === id) + '">' +
@@ -502,7 +514,7 @@ export function hudBag(
     (selected ? "" : " disabled") + '>清空所选快捷格</button></div>' +
     '<div class="hud-bag-quick-grid" aria-label="快捷格">' + quickMarkup + "</div>" +
     '<div class="hud-bag-tabs" role="tablist" aria-label="物品分类">' + tabs + "</div>" +
-    '<div class="hud-bag-item-grid" aria-label="背包物品">' + itemMarkup + "</div></section>";
+    '<div class="hud-bag-item-grid" aria-label="背包物品">' + itemMarkup + "</div>" + selectedDescription + "</section>";
 }
 
 export function hudDamageEstimate(s: World, actor: string, targetId?: string, skill?: Skill): string {

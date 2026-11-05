@@ -51,16 +51,8 @@
 .starter-featured > .portrait-box {
   width: min(100%, 184px);
   height: min(24vh, 184px);
-  align-items: flex-start;
-  overflow: hidden;
   background: #1b29217a;
   border-radius: 16px;
-}
-
-.starter-featured .portrait {
-  flex: none;
-  transform: translateY(10px) scale(calc(72 / var(--portrait-height)));
-  transform-origin: top center;
 }
 
 .starter-featured h2 {
@@ -207,12 +199,16 @@
 }
 
 .starter-icon {
-  --sprite-scale: min(2px, 0.44vw, 0.28vh);
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: center;
   width: 100%;
   height: clamp(28px, 9vh, 68px);
+}
+
+.starter-icon > .portrait-box {
+  width: 100%;
+  height: 100%;
 }
 
 @media (max-width: 750px) {
@@ -229,10 +225,6 @@
     gap: 5px;
     padding: 6px;
   }
-}
-
-@media (max-height: 650px) {
-  .starter-featured .portrait { transform: translateY(5px) scale(calc(50 / var(--portrait-height))); }
 }
 
 @media (max-width: 500px) {

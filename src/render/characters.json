@@ -8,7 +8,13 @@
     40,
     6,
     6
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 2,
+    "w": 19,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0001/Walk-Anim.png",
@@ -61,7 +67,13 @@
     12,
     12,
     12
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 2,
+    "w": 21,
+    "h": 22
+   }
   },
   "Walk": {
    "file": "characters/0002/Walk-Anim.png",
@@ -110,7 +122,13 @@
     16,
     12,
     16
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 1,
+    "w": 27,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0003/Walk-Anim.png",
@@ -161,7 +179,13 @@
     8,
     8,
     8
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 1,
+    "w": 19,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0004/Walk-Anim.png",
@@ -214,7 +238,13 @@
     3,
     3,
     2
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 3,
+    "w": 22,
+    "h": 31
+   }
   },
   "Walk": {
    "file": "characters/0005/Walk-Anim.png",
@@ -268,7 +298,13 @@
     15,
     15,
     15
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 3,
+    "w": 29,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0006/Walk-Anim.png",
@@ -326,7 +362,13 @@
     4,
     2,
     2
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 0,
+    "w": 17,
+    "h": 21
+   }
   },
   "Walk": {
    "file": "characters/0007/Walk-Anim.png",
@@ -376,7 +418,13 @@
     2,
     2,
     2
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 3,
+    "w": 22,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0008/Walk-Anim.png",
@@ -431,7 +479,13 @@
     4,
     4,
     8
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 1,
+    "w": 29,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0009/Walk-Anim.png",
@@ -490,7 +544,13 @@
     4,
     10,
     4
-   ]
+   ],
+   "visible": {
+    "x": 10,
+    "y": 3,
+    "w": 12,
+    "h": 20
+   }
   },
   "Walk": {
    "file": "characters/0010/Walk-Anim.png",
@@ -540,7 +600,13 @@
     14,
     10,
     14
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 5,
+    "w": 19,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0011/Walk-Anim.png",
@@ -596,7 +662,13 @@
     8,
     8,
     8
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 3,
+    "w": 28,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0012/Walk-Anim.png",
@@ -658,7 +730,13 @@
     8,
     8,
     8
-   ]
+   ],
+   "visible": {
+    "x": 10,
+    "y": 6,
+    "w": 11,
+    "h": 19
+   }
   },
   "Walk": {
    "file": "characters/0013/Walk-Anim.png",
@@ -710,7 +788,13 @@
     4,
     1,
     1
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 0,
+    "w": 14,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0014/Walk-Anim.png",
@@ -765,7 +849,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 3,
+    "w": 25,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0015/Walk-Anim.png",
@@ -824,7 +914,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 5,
+    "w": 13,
+    "h": 22
+   }
   },
   "Walk": {
    "file": "characters/0016/Walk-Anim.png",
@@ -879,7 +975,13 @@
     2,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 5,
+    "w": 17,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0017/Walk-Anim.png",
@@ -933,7 +1035,13 @@
     2,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 3,
+    "w": 17,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0018/Walk-Anim.png",
@@ -991,7 +1099,13 @@
     2,
     2,
     2
-   ]
+   ],
+   "visible": {
+    "x": 8,
+    "y": 0,
+    "w": 16,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0019/Walk-Anim.png",
@@ -1046,7 +1160,13 @@
     4,
     3,
     6
-   ]
+   ],
+   "visible": {
+    "x": 8,
+    "y": 6,
+    "w": 16,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0020/Walk-Anim.png",
@@ -1103,7 +1223,13 @@
     4,
     3,
     2
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 4,
+    "w": 15,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0021/Walk-Anim.png",
@@ -1164,7 +1290,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 6,
+    "w": 30,
+    "h": 38
+   }
   },
   "Walk": {
    "file": "characters/0022/Walk-Anim.png",
@@ -1219,7 +1351,13 @@
    "durations": [
     16,
     16
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 6,
+    "w": 18,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0023/Walk-Anim.png",
@@ -1270,7 +1408,13 @@
    "durations": [
     32,
     14
-   ]
+   ],
+   "visible": {
+    "x": 0,
+    "y": 4,
+    "w": 29,
+    "h": 32
+   }
   },
   "Walk": {
    "file": "characters/0024/Walk-Anim.png",
@@ -1324,7 +1468,13 @@
     3,
     3,
     2
-   ]
+   ],
+   "visible": {
+    "x": 11,
+    "y": 3,
+    "w": 20,
+    "h": 30
+   }
   },
   "Walk": {
    "file": "characters/0025/Walk-Anim.png",
@@ -1376,7 +1526,13 @@
     4,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 4,
+    "w": 29,
+    "h": 30
+   }
   },
   "Walk": {
    "file": "characters/0026/Walk-Anim.png",
@@ -1426,7 +1582,13 @@
     2,
     2,
     2
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 5,
+    "w": 17,
+    "h": 21
+   }
   },
   "Walk": {
    "file": "characters/0027/Walk-Anim.png",
@@ -1477,7 +1639,13 @@
     10,
     25,
     10
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 2,
+    "w": 23,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0028/Walk-Anim.png",
@@ -1529,7 +1697,13 @@
     6,
     6,
     6
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 3,
+    "w": 17,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0029/Walk-Anim.png",
@@ -1582,7 +1756,13 @@
     2,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 5,
+    "w": 19,
+    "h": 22
+   }
   },
   "Walk": {
    "file": "characters/0030/Walk-Anim.png",
@@ -1633,7 +1813,13 @@
     6,
     6,
     12
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 2,
+    "w": 25,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0031/Walk-Anim.png",
@@ -1683,7 +1869,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 5,
+    "w": 21,
+    "h": 30
+   }
   },
   "Walk": {
    "file": "characters/0032/Walk-Anim.png",
@@ -1741,7 +1933,13 @@
     2,
     2,
     6
-   ]
+   ],
+   "visible": {
+    "x": 8,
+    "y": 2,
+    "w": 23,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0033/Walk-Anim.png",
@@ -1790,7 +1988,13 @@
    "durations": [
     35,
     12
-   ]
+   ],
+   "visible": {
+    "x": 0,
+    "y": 2,
+    "w": 32,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0034/Walk-Anim.png",
@@ -1845,7 +2049,13 @@
     5,
     4,
     3
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 3,
+    "w": 25,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0035/Walk-Anim.png",
@@ -1901,7 +2111,13 @@
     6,
     6,
     6
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 4,
+    "w": 30,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0036/Walk-Anim.png",
@@ -1955,7 +2171,13 @@
     12,
     20,
     12
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 3,
+    "w": 19,
+    "h": 21
+   }
   },
   "Walk": {
    "file": "characters/0037/Walk-Anim.png",
@@ -2017,7 +2239,13 @@
     2,
     2,
     10
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 1,
+    "w": 29,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0038/Walk-Anim.png",
@@ -2067,7 +2295,13 @@
     15,
     8,
     15
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 1,
+    "w": 17,
+    "h": 21
+   }
   },
   "Walk": {
    "file": "characters/0039/Walk-Anim.png",
@@ -2121,7 +2355,13 @@
     4,
     6,
     4
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 5,
+    "w": 26,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0040/Walk-Anim.png",
@@ -2175,7 +2415,13 @@
     6,
     6,
     8
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 7,
+    "w": 25,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0041/Walk-Anim.png",
@@ -2230,7 +2476,13 @@
     6,
     6,
     6
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 2,
+    "w": 29,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0042/Walk-Anim.png",
@@ -2286,7 +2538,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 4,
+    "w": 16,
+    "h": 22
+   }
   },
   "Walk": {
    "file": "characters/0043/Walk-Anim.png",
@@ -2346,7 +2604,13 @@
     8,
     8,
     8
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 0,
+    "w": 26,
+    "h": 22
+   }
   },
   "Walk": {
    "file": "characters/0044/Walk-Anim.png",
@@ -2409,7 +2673,13 @@
     8,
     3,
     3
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 1,
+    "w": 27,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0045/Walk-Anim.png",
@@ -2464,7 +2734,13 @@
     6,
     6,
     6
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 4,
+    "w": 18,
+    "h": 17
+   }
   },
   "Walk": {
    "file": "characters/0046/Walk-Anim.png",
@@ -2516,7 +2792,13 @@
     40,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 0,
+    "w": 24,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0047/Walk-Anim.png",
@@ -2573,7 +2855,13 @@
    "durations": [
     16,
     16
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 2,
+    "w": 19,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0048/Walk-Anim.png",
@@ -2632,7 +2920,13 @@
     12,
     12,
     12
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 5,
+    "w": 29,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0049/Walk-Anim.png",
@@ -2692,7 +2986,13 @@
    "durations": [
     16,
     16
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 5,
+    "w": 22,
+    "h": 16
+   }
   },
   "Walk": {
    "file": "characters/0050/Walk-Anim.png",
@@ -2738,7 +3038,13 @@
    "durations": [
     12,
     16
-   ]
+   ],
+   "visible": {
+    "x": 0,
+    "y": 1,
+    "w": 31,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0051/Walk-Anim.png",
@@ -2786,7 +3092,13 @@
     12,
     12,
     12
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 1,
+    "w": 25,
+    "h": 21
+   }
   },
   "Walk": {
    "file": "characters/0052/Walk-Anim.png",
@@ -2833,7 +3145,13 @@
    "h": 48,
    "durations": [
     8
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 7,
+    "w": 17,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0053/Walk-Anim.png",
@@ -2889,7 +3207,13 @@
     20,
     16,
     20
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 2,
+    "w": 21,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0054/Walk-Anim.png",
@@ -2940,7 +3264,13 @@
     20,
     40,
     20
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 0,
+    "w": 27,
+    "h": 28
+   }
   },
   "Walk": {
    "file": "characters/0055/Walk-Anim.png",
@@ -2994,7 +3324,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 3,
+    "w": 24,
+    "h": 30
+   }
   },
   "Walk": {
    "file": "characters/0056/Walk-Anim.png",
@@ -3057,7 +3393,13 @@
     4,
     6,
     4
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 7,
+    "w": 28,
+    "h": 28
+   }
   },
   "Walk": {
    "file": "characters/0057/Walk-Anim.png",
@@ -3110,7 +3452,13 @@
     40,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 12,
+    "y": 6,
+    "w": 16,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0058/Walk-Anim.png",
@@ -3160,7 +3508,13 @@
    "h": 48,
    "durations": [
     8
-   ]
+   ],
+   "visible": {
+    "x": 9,
+    "y": 1,
+    "w": 22,
+    "h": 30
+   }
   },
   "Walk": {
    "file": "characters/0059/Walk-Anim.png",
@@ -3217,7 +3571,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 12,
+    "y": 0,
+    "w": 16,
+    "h": 30
+   }
   },
   "Walk": {
    "file": "characters/0060/Walk-Anim.png",
@@ -3270,7 +3630,13 @@
     4,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 2,
+    "w": 27,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0061/Walk-Anim.png",
@@ -3320,7 +3686,13 @@
     2,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 3,
+    "w": 31,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0062/Walk-Anim.png",
@@ -3372,7 +3744,13 @@
     24,
     8,
     8
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 3,
+    "w": 21,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0063/Walk-Anim.png",
@@ -3432,7 +3810,13 @@
     6,
     6,
     4
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 1,
+    "w": 30,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0064/Walk-Anim.png",
@@ -3486,7 +3870,13 @@
     6,
     6,
     6
-   ]
+   ],
+   "visible": {
+    "x": 0,
+    "y": 4,
+    "w": 31,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0065/Walk-Anim.png",
@@ -3536,7 +3926,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 2,
+    "w": 19,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0066/Walk-Anim.png",
@@ -3586,7 +3982,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 1,
+    "w": 25,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0067/Walk-Anim.png",
@@ -3646,7 +4048,13 @@
     2,
     2,
     12
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 1,
+    "w": 32,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0068/Walk-Anim.png",
@@ -3697,7 +4105,13 @@
    "durations": [
     20,
     22
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 4,
+    "w": 19,
+    "h": 18
+   }
   },
   "Walk": {
    "file": "characters/0069/Walk-Anim.png",
@@ -3747,7 +4161,13 @@
     8,
     16,
     8
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 1,
+    "w": 25,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0070/Walk-Anim.png",
@@ -3802,7 +4222,13 @@
     3,
     3,
     3
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 1,
+    "w": 29,
+    "h": 32
+   }
   },
   "Walk": {
    "file": "characters/0071/Walk-Anim.png",
@@ -3855,7 +4281,13 @@
     8,
     8,
     8
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 2,
+    "w": 19,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0072/Walk-Anim.png",
@@ -3912,7 +4344,13 @@
     10,
     10,
     10
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 3,
+    "w": 23,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0073/Walk-Anim.png",
@@ -3966,7 +4404,13 @@
     12,
     8,
     12
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 1,
+    "w": 26,
+    "h": 19
+   }
   },
   "Walk": {
    "file": "characters/0074/Walk-Anim.png",
@@ -4030,7 +4474,13 @@
     2,
     2,
     10
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 6,
+    "w": 24,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0075/Walk-Anim.png",
@@ -4078,7 +4528,13 @@
    "durations": [
     30,
     25
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 3,
+    "w": 28,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0076/Walk-Anim.png",
@@ -4143,7 +4599,13 @@
     2,
     2,
     10
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 2,
+    "w": 16,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0077/Walk-Anim.png",
@@ -4203,7 +4665,13 @@
     2,
     2,
     10
-   ]
+   ],
+   "visible": {
+    "x": 9,
+    "y": 5,
+    "w": 21,
+    "h": 33
+   }
   },
   "Walk": {
    "file": "characters/0078/Walk-Anim.png",
@@ -4253,7 +4721,13 @@
     8,
     8,
     8
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 2,
+    "w": 20,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0079/Walk-Anim.png",
@@ -4301,7 +4775,13 @@
    "durations": [
     30,
     30
-   ]
+   ],
+   "visible": {
+    "x": 9,
+    "y": 1,
+    "w": 22,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0080/Walk-Anim.png",
@@ -4359,7 +4839,13 @@
     14,
     10,
     14
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 2,
+    "w": 21,
+    "h": 17
+   }
   },
   "Walk": {
    "file": "characters/0081/Walk-Anim.png",
@@ -4420,7 +4906,13 @@
     10,
     14,
     10
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 0,
+    "w": 25,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0082/Walk-Anim.png",
@@ -4474,7 +4966,13 @@
     12,
     30,
     12
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 2,
+    "w": 17,
+    "h": 22
+   }
   },
   "Walk": {
    "file": "characters/0083/Walk-Anim.png",
@@ -4524,7 +5022,13 @@
     6,
     12,
     6
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 5,
+    "w": 23,
+    "h": 22
+   }
   },
   "Walk": {
    "file": "characters/0084/Walk-Anim.png",
@@ -4580,7 +5084,13 @@
     10,
     16,
     10
-   ]
+   ],
+   "visible": {
+    "x": 8,
+    "y": 1,
+    "w": 25,
+    "h": 31
+   }
   },
   "Walk": {
    "file": "characters/0085/Walk-Anim.png",
@@ -4632,7 +5142,13 @@
    "durations": [
     30,
     20
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 2,
+    "w": 25,
+    "h": 20
+   }
   },
   "Walk": {
    "file": "characters/0086/Walk-Anim.png",
@@ -4689,7 +5205,13 @@
     12,
     8,
     12
-   ]
+   ],
+   "visible": {
+    "x": 11,
+    "y": 2,
+    "w": 25,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0087/Walk-Anim.png",
@@ -4742,7 +5264,13 @@
     8,
     30,
     8
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 2,
+    "w": 22,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0088/Walk-Anim.png",
@@ -4797,7 +5325,13 @@
     8,
     30,
     8
-   ]
+   ],
+   "visible": {
+    "x": 8,
+    "y": 4,
+    "w": 27,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0089/Walk-Anim.png",
@@ -4850,7 +5384,13 @@
     40,
     14,
     30
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 4,
+    "w": 19,
+    "h": 21
+   }
   },
   "Walk": {
    "file": "characters/0090/Walk-Anim.png",
@@ -4904,7 +5444,13 @@
     14,
     12,
     12
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 4,
+    "w": 27,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0091/Walk-Anim.png",
@@ -4961,7 +5507,13 @@
     10,
     10,
     10
-   ]
+   ],
+   "visible": {
+    "x": 9,
+    "y": 0,
+    "w": 29,
+    "h": 31
+   }
   },
   "Walk": {
    "file": "characters/0092/Walk-Anim.png",
@@ -5022,7 +5574,13 @@
     8,
     14,
     8
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 6,
+    "w": 24,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0093/Walk-Anim.png",
@@ -5084,7 +5642,13 @@
     3,
     3,
     4
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 4,
+    "w": 26,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0094/Walk-Anim.png",
@@ -5135,7 +5699,13 @@
     16,
     16,
     16
-   ]
+   ],
+   "visible": {
+    "x": 36,
+    "y": 4,
+    "w": 25,
+    "h": 53
+   }
   },
   "Walk": {
    "file": "characters/0095/Walk-Anim.png",
@@ -5186,7 +5756,13 @@
     10,
     6,
     10
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 4,
+    "w": 25,
+    "h": 22
+   }
   },
   "Walk": {
    "file": "characters/0096/Walk-Anim.png",
@@ -5242,7 +5818,13 @@
     3,
     2,
     1
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 2,
+    "w": 27,
+    "h": 28
+   }
   },
   "Walk": {
    "file": "characters/0097/Walk-Anim.png",
@@ -5290,7 +5872,13 @@
    "durations": [
     30,
     30
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 5,
+    "w": 18,
+    "h": 20
+   }
   },
   "Walk": {
    "file": "characters/0098/Walk-Anim.png",
@@ -5344,7 +5932,13 @@
    "durations": [
     30,
     30
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 4,
+    "w": 28,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0099/Walk-Anim.png",
@@ -5401,7 +5995,13 @@
     2,
     6,
     6
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 2,
+    "w": 16,
+    "h": 19
+   }
   },
   "Walk": {
    "file": "characters/0100/Walk-Anim.png",
@@ -5459,7 +6059,13 @@
     18,
     10,
     18
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 2,
+    "w": 19,
+    "h": 21
+   }
   },
   "Walk": {
    "file": "characters/0101/Walk-Anim.png",
@@ -5517,7 +6123,13 @@
     4,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 2,
+    "w": 25,
+    "h": 28
+   }
   },
   "Walk": {
    "file": "characters/0102/Walk-Anim.png",
@@ -5567,7 +6179,13 @@
     12,
     8,
     12
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 3,
+    "w": 33,
+    "h": 31
+   }
   },
   "Walk": {
    "file": "characters/0103/Walk-Anim.png",
@@ -5620,7 +6238,13 @@
     3,
     2,
     1
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 3,
+    "w": 21,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0104/Walk-Anim.png",
@@ -5670,7 +6294,13 @@
     6,
     16,
     6
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 7,
+    "w": 24,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0105/Walk-Anim.png",
@@ -5717,7 +6347,13 @@
    "durations": [
     40,
     20
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 6,
+    "w": 29,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0106/Walk-Anim.png",
@@ -5767,7 +6403,13 @@
     6,
     8,
     6
-   ]
+   ],
+   "visible": {
+    "x": 12,
+    "y": 8,
+    "w": 22,
+    "h": 33
+   }
   },
   "Walk": {
    "file": "characters/0107/Walk-Anim.png",
@@ -5820,7 +6462,13 @@
     12,
     10,
     12
-   ]
+   ],
+   "visible": {
+    "x": 10,
+    "y": 6,
+    "w": 28,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0108/Walk-Anim.png",
@@ -5872,7 +6520,13 @@
     10,
     10,
     8
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 3,
+    "w": 30,
+    "h": 28
+   }
   },
   "Walk": {
    "file": "characters/0109/Walk-Anim.png",
@@ -5940,7 +6594,13 @@
     12,
     12,
     12
-   ]
+   ],
+   "visible": {
+    "x": 0,
+    "y": 2,
+    "w": 32,
+    "h": 37
+   }
   },
   "Walk": {
    "file": "characters/0110/Walk-Anim.png",
@@ -5993,7 +6653,13 @@
     40,
     20,
     15
-   ]
+   ],
+   "visible": {
+    "x": 9,
+    "y": 0,
+    "w": 22,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0111/Walk-Anim.png",
@@ -6041,7 +6707,13 @@
    "durations": [
     40,
     26
-   ]
+   ],
+   "visible": {
+    "x": 8,
+    "y": 2,
+    "w": 31,
+    "h": 28
+   }
   },
   "Walk": {
    "file": "characters/0112/Walk-Anim.png",
@@ -6093,7 +6765,13 @@
     4,
     3,
     2
-   ]
+   ],
+   "visible": {
+    "x": 0,
+    "y": 1,
+    "w": 24,
+    "h": 25
+   }
   },
   "Walk": {
    "file": "characters/0113/Walk-Anim.png",
@@ -6143,7 +6821,13 @@
     6,
     6,
     6
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 1,
+    "w": 25,
+    "h": 30
+   }
   },
   "Walk": {
    "file": "characters/0114/Walk-Anim.png",
@@ -6197,7 +6881,13 @@
     4,
     3,
     20
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 3,
+    "w": 32,
+    "h": 32
+   }
   },
   "Walk": {
    "file": "characters/0115/Walk-Anim.png",
@@ -6250,7 +6940,13 @@
     16,
     8,
     16
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 3,
+    "w": 19,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0116/Walk-Anim.png",
@@ -6304,7 +7000,13 @@
     8,
     8,
     8
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 3,
+    "w": 27,
+    "h": 31
+   }
   },
   "Walk": {
    "file": "characters/0117/Walk-Anim.png",
@@ -6366,7 +7068,13 @@
     10,
     16,
     10
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 5,
+    "w": 23,
+    "h": 21
+   }
   },
   "Walk": {
    "file": "characters/0118/Walk-Anim.png",
@@ -6431,7 +7139,13 @@
     10,
     16,
     10
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 2,
+    "w": 25,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0119/Walk-Anim.png",
@@ -6481,7 +7195,13 @@
     10,
     6,
     10
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 2,
+    "w": 21,
+    "h": 19
+   }
   },
   "Walk": {
    "file": "characters/0120/Walk-Anim.png",
@@ -6540,7 +7260,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 1,
+    "w": 21,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0121/Walk-Anim.png",
@@ -6593,7 +7319,13 @@
    "durations": [
     20,
     12
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 6,
+    "w": 22,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0122/Walk-Anim.png",
@@ -6644,7 +7376,13 @@
     10,
     14,
     10
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 4,
+    "w": 27,
+    "h": 28
+   }
   },
   "Walk": {
    "file": "characters/0123/Walk-Anim.png",
@@ -6694,7 +7432,13 @@
     14,
     30,
     14
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 2,
+    "w": 26,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0124/Walk-Anim.png",
@@ -6744,7 +7488,13 @@
     18,
     28,
     18
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 6,
+    "w": 27,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0125/Walk-Anim.png",
@@ -6794,7 +7544,13 @@
     6,
     12,
     6
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 4,
+    "w": 26,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0126/Walk-Anim.png",
@@ -6845,7 +7601,13 @@
     6,
     3,
     2
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 2,
+    "w": 25,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0127/Walk-Anim.png",
@@ -6896,7 +7658,13 @@
     6,
     3,
     2
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 9,
+    "w": 19,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0128/Walk-Anim.png",
@@ -6951,7 +7719,13 @@
     10,
     10,
     12
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 5,
+    "w": 22,
+    "h": 22
+   }
   },
   "Walk": {
    "file": "characters/0129/Walk-Anim.png",
@@ -7009,7 +7783,13 @@
     8,
     18,
     8
-   ]
+   ],
+   "visible": {
+    "x": 18,
+    "y": 8,
+    "w": 37,
+    "h": 57
+   }
   },
   "Walk": {
    "file": "characters/0130/Walk-Anim.png",
@@ -7059,7 +7839,13 @@
     12,
     16,
     12
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 4,
+    "w": 43,
+    "h": 34
+   }
   },
   "Walk": {
    "file": "characters/0131/Walk-Anim.png",
@@ -7109,7 +7895,13 @@
    "durations": [
     16,
     16
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 4,
+    "w": 20,
+    "h": 19
+   }
   },
   "Walk": {
    "file": "characters/0132/Walk-Anim.png",
@@ -7158,7 +7950,13 @@
    "durations": [
     16,
     16
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 4,
+    "w": 19,
+    "h": 18
+   }
   },
   "Walk": {
    "file": "characters/0133/Walk-Anim.png",
@@ -7210,7 +8008,13 @@
    "durations": [
     60,
     16
-   ]
+   ],
+   "visible": {
+    "x": 8,
+    "y": 7,
+    "w": 23,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0134/Walk-Anim.png",
@@ -7258,7 +8062,13 @@
    "durations": [
     60,
     16
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 1,
+    "w": 21,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0135/Walk-Anim.png",
@@ -7308,7 +8118,13 @@
     16,
     12,
     16
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 3,
+    "w": 21,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0136/Walk-Anim.png",
@@ -7359,7 +8175,13 @@
     8,
     12,
     8
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 3,
+    "w": 18,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0137/Walk-Anim.png",
@@ -7407,7 +8229,13 @@
    "durations": [
     30,
     12
-   ]
+   ],
+   "visible": {
+    "x": 8,
+    "y": 3,
+    "w": 17,
+    "h": 20
+   }
   },
   "Walk": {
    "file": "characters/0138/Walk-Anim.png",
@@ -7455,7 +8283,13 @@
    "durations": [
     30,
     20
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 3,
+    "w": 25,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0139/Walk-Anim.png",
@@ -7504,7 +8338,13 @@
     40,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 5,
+    "w": 20,
+    "h": 14
+   }
   },
   "Walk": {
    "file": "characters/0140/Walk-Anim.png",
@@ -7555,7 +8395,13 @@
     10,
     20,
     10
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 4,
+    "w": 27,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0141/Walk-Anim.png",
@@ -7614,7 +8460,13 @@
     8,
     8,
     8
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 6,
+    "w": 30,
+    "h": 31
+   }
   },
   "Walk": {
    "file": "characters/0142/Walk-Anim.png",
@@ -7669,7 +8521,13 @@
     4,
     3,
     1
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 7,
+    "w": 30,
+    "h": 31
+   }
   },
   "Walk": {
    "file": "characters/0143/Walk-Anim.png",
@@ -7719,7 +8577,13 @@
     10,
     8,
     16
-   ]
+   ],
+   "visible": {
+    "x": 13,
+    "y": 6,
+    "w": 63,
+    "h": 50
+   }
   },
   "Walk": {
    "file": "characters/0144/Walk-Anim.png",
@@ -7769,7 +8633,13 @@
     10,
     8,
     10
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 3,
+    "w": 45,
+    "h": 47
+   }
   },
   "Walk": {
    "file": "characters/0145/Walk-Anim.png",
@@ -7820,7 +8690,13 @@
     12,
     8,
     12
-   ]
+   ],
+   "visible": {
+    "x": 0,
+    "y": 0,
+    "w": 79,
+    "h": 65
+   }
   },
   "Walk": {
    "file": "characters/0146/Walk-Anim.png",
@@ -7874,7 +8750,13 @@
     20,
     10,
     20
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 4,
+    "w": 24,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0147/Walk-Anim.png",
@@ -7928,7 +8810,13 @@
     6,
     6,
     6
-   ]
+   ],
+   "visible": {
+    "x": 12,
+    "y": 2,
+    "w": 26,
+    "h": 39
+   }
   },
   "Walk": {
    "file": "characters/0148/Walk-Anim.png",
@@ -7984,7 +8872,13 @@
     3,
     2,
     2
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 2,
+    "w": 27,
+    "h": 36
+   }
   },
   "Walk": {
    "file": "characters/0149/Walk-Anim.png",
@@ -8041,7 +8935,13 @@
     6,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 0,
+    "y": 3,
+    "w": 31,
+    "h": 35
+   }
   },
   "Walk": {
    "file": "characters/0150/Walk-Anim.png",
@@ -8094,7 +8994,13 @@
     8,
     12,
     8
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 1,
+    "w": 21,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0151/Walk-Anim.png",
@@ -8152,7 +9058,13 @@
     3,
     1,
     1
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 3,
+    "w": 15,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0152/Walk-Anim.png",
@@ -8202,7 +9114,13 @@
     14,
     20,
     14
-   ]
+   ],
+   "visible": {
+    "x": 10,
+    "y": 5,
+    "w": 20,
+    "h": 32
+   }
   },
   "Walk": {
    "file": "characters/0153/Walk-Anim.png",
@@ -8251,7 +9169,13 @@
     14,
     20,
     14
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 6,
+    "w": 21,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0154/Walk-Anim.png",
@@ -8302,7 +9226,13 @@
    "durations": [
     40,
     16
-   ]
+   ],
+   "visible": {
+    "x": 4,
+    "y": 3,
+    "w": 15,
+    "h": 17
+   }
   },
   "Walk": {
    "file": "characters/0155/Walk-Anim.png",
@@ -8353,7 +9283,13 @@
     4,
     8,
     4
-   ]
+   ],
+   "visible": {
+    "x": 8,
+    "y": 1,
+    "w": 15,
+    "h": 21
+   }
   },
   "Walk": {
    "file": "characters/0156/Walk-Anim.png",
@@ -8409,7 +9345,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 3,
+    "w": 20,
+    "h": 30
+   }
   },
   "Walk": {
    "file": "characters/0157/Walk-Anim.png",
@@ -8466,7 +9408,13 @@
     3,
     2,
     3
-   ]
+   ],
+   "visible": {
+    "x": 6,
+    "y": 1,
+    "w": 20,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0158/Walk-Anim.png",
@@ -8514,7 +9462,13 @@
    "durations": [
     40,
     25
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 3,
+    "w": 23,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0159/Walk-Anim.png",
@@ -8567,7 +9521,13 @@
     2,
     2,
     16
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 3,
+    "w": 30,
+    "h": 31
+   }
   },
   "Walk": {
    "file": "characters/0160/Walk-Anim.png",
@@ -8617,7 +9577,13 @@
    "durations": [
     24,
     16
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 2,
+    "w": 24,
+    "h": 20
+   }
   },
   "Walk": {
    "file": "characters/0194/Walk-Anim.png",
@@ -8674,7 +9640,13 @@
     6,
     4,
     36
-   ]
+   ],
+   "visible": {
+    "x": 14,
+    "y": 3,
+    "w": 20,
+    "h": 30
+   }
   },
   "Walk": {
    "file": "characters/0195/Walk-Anim.png",
@@ -8734,7 +9706,13 @@
     2,
     2,
     10
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 7,
+    "w": 17,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0228/Walk-Anim.png",
@@ -8794,7 +9772,13 @@
     2,
     2,
     10
-   ]
+   ],
+   "visible": {
+    "x": 10,
+    "y": 10,
+    "w": 18,
+    "h": 32
+   }
   },
   "Walk": {
    "file": "characters/0229/Walk-Anim.png",
@@ -8843,7 +9827,13 @@
     40,
     4,
     2
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 2,
+    "w": 21,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0252/Walk-Anim.png",
@@ -8891,7 +9881,13 @@
    "durations": [
     18,
     12
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 0,
+    "w": 26,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0253/Walk-Anim.png",
@@ -8941,7 +9937,13 @@
    "durations": [
     40,
     30
-   ]
+   ],
+   "visible": {
+    "x": 7,
+    "y": 2,
+    "w": 27,
+    "h": 24
+   }
   },
   "Walk": {
    "file": "characters/0254/Walk-Anim.png",
@@ -8992,7 +9994,13 @@
     4,
     3,
     3
-   ]
+   ],
+   "visible": {
+    "x": 5,
+    "y": 0,
+    "w": 13,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0255/Walk-Anim.png",
@@ -9044,7 +10052,13 @@
     6,
     6,
     4
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 2,
+    "w": 21,
+    "h": 27
+   }
   },
   "Walk": {
    "file": "characters/0256/Walk-Anim.png",
@@ -9092,7 +10106,13 @@
    "durations": [
     30,
     30
-   ]
+   ],
+   "visible": {
+    "x": 2,
+    "y": 5,
+    "w": 27,
+    "h": 29
+   }
   },
   "Walk": {
    "file": "characters/0257/Walk-Anim.png",
@@ -9144,7 +10164,13 @@
     3,
     3,
     2
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 3,
+    "w": 17,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0258/Walk-Anim.png",
@@ -9196,7 +10222,13 @@
     16,
     36,
     16
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 1,
+    "w": 19,
+    "h": 23
+   }
   },
   "Walk": {
    "file": "characters/0259/Walk-Anim.png",
@@ -9248,7 +10280,13 @@
     4,
     2,
     2
-   ]
+   ],
+   "visible": {
+    "x": 0,
+    "y": 6,
+    "w": 32,
+    "h": 32
+   }
   },
   "Walk": {
    "file": "characters/0260/Walk-Anim.png",
@@ -9313,7 +10351,13 @@
     4,
     4,
     4
-   ]
+   ],
+   "visible": {
+    "x": 1,
+    "y": 4,
+    "w": 30,
+    "h": 26
+   }
   },
   "Walk": {
    "file": "characters/0296/Walk-Anim.png",
@@ -9374,7 +10418,13 @@
     4,
     2,
     1
-   ]
+   ],
+   "visible": {
+    "x": 3,
+    "y": 3,
+    "w": 32,
+    "h": 34
+   }
   },
   "Walk": {
    "file": "characters/0297/Walk-Anim.png",

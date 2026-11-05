@@ -4,11 +4,13 @@ import {SPECIES} from './roster.ts';
 import {MOVE_DEFS,moveOf,moveEffects,type StageKey,type StatusId,type MoveRange} from './moves.ts';
 import {adventureRoomMark,adventureRoomStateZh,adventureRoomTypeZh,speciesZh,moveZh,typeZh,itemZh,type AdventureRoomType} from './names.ts';
 import {TACTIC_LABELS,isTactic,type Tactic} from './tactics.ts';
+import moveTypeSnapshot from '../render/move-types.json' with {type:'json'};
+const MOVE_TYPES=(moveTypeSnapshot as unknown as {types:Record<string,string>}).types;
 
-/** Chinese species name, or the unit id when the unit has no species (fixed-map fixtures). */
-export const unitName=(u:Unit|undefined,fallback=''):string=>u?.species?speciesZh(u.species):fallback;
-/** "A 小火龙": the id players see on the board plus the species. */
-export const unitLabel=(u:Unit|undefined,id:string):string=>{const n=unitName(u);return n?`${id} ${n}`:id;};
+/** Species name, or a readable side-based fallback for species-less fixtures. */
+export const unitName=(u:Unit|undefined,fallback=''):string=>u?.species?speciesZh(u.species):fallback||(u?.side==='enemy'?'敌人':u?'队员':'单位');
+/** Visible labels contain a species name or readable fallback, never an internal world id. */
+export const unitLabel=(u:Unit|undefined,_id:string):string=>unitName(u);
 /** A skill is a move id, so its label is the move's Chinese name with no behavior suffix. */
 export const skillLabel=(_u:Unit|undefined,skill:Skill):string=>SKILL_CN[skill]??moveZh(skill);
 const RANGE_CN:Record<MoveRange,string>={front:'相邻1格（含斜向，斜向不穿墙角）',front2:'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角',line10:'同排、同列或斜线至多10格，命中首个单位（队友也会被命中），斜向不穿墙角',around:'使用者周围8格（斜向不穿墙角）',room:'同房间；走廊或无房间数据时周围2格',user:'自身'};
@@ -64,6 +66,7 @@ export function actionText(s:World,actor:string,a:Action):string {
   switch(a.type){
     case 'move':return `移动到(${a.to.x},${a.to.y})`;
     case 'basic':return `普攻 ${who(a.target)}`;
+    case 'basicForward':return '朝前普攻';
     case 'skill':return `${skillLabel(s.units[actor],a.skill)} → ${a.target===actor?'自身':who(a.target)}`;
     case 'swap':return `与${who(a.target)}换位`;
     case 'use':return a.item==='teamTonic'?`使用${itemZh(a.item)}恢复在场同行的PP`:`使用${itemZh(a.item)} → ${who(a.target)}`;
@@ -72,7 +75,7 @@ export function actionText(s:World,actor:string,a:Action):string {
     default:return '等待';
   }
 }
-/** The turn order of a combination draft, as one line: "A 小火龙 → B 杰尼龟 → 敌方". */
+/** The turn order of a combination draft, using species names and then the enemy phase. */
 export function orderLine(s:World,steps:TraceStep[]):string {
   return [...steps.map(t=>unitLabel(s.units[t.id],t.id)),'敌方'].join(' → ');
 }
@@ -81,34 +84,43 @@ export function stepRows(s:World,steps:TraceStep[]):{id:string;text:string}[] {
   return steps.map(t=>({id:t.id,text:`${unitLabel(s.units[t.id],t.id)}：${t.failed?`原定“${actionText(s,t.id,t.action)}”已不成立，改为等待`:actionText(s,t.id,t.action)}${t.explicit?'':'（默认行为）'}`}));
 }
 
-export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];note:string};
+export type EnemyMoveRow={id:string;name:string;type:string;pp:number;maxPp:number;detail:string};
+export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];moveRows:EnemyMoveRow[];note:string};
 export type TeammateInfo={id:string;name:string;level:number|null;tactic:Tactic;moves:string[]};
 const tacticFor=(u:Unit):Tactic=>isTactic(u.tactic)?u.tactic:u.side==='enemy'?'gofoes':'together';
-const moveRows=(u:Unit,context?:DamageSummaryContext):string[]=>u.learned.map(m=>`${moveZh(m)}（${moveSummary(m,context)}） PP ${u.pp[m]??0}/${u.maxPp[m]??u.pp[m]??0}`);
+const moveRows=(u:Unit,context?:DamageSummaryContext):EnemyMoveRow[]=>u.learned.map(id=>{
+  const pp=u.pp[id]??0,maxPp=u.maxPp[id]??pp,type=MOVE_TYPES[id];
+  return {id,name:moveZh(id),type:type?typeZh(type):'—',pp,maxPp,detail:moveZh(id)+'（'+moveSummary(id,context)+'） PP '+pp+'/'+maxPp};
+});
 /** What a revealed enemy shows. Returns null for anything the player cannot see yet (unrevealed cell, fallen, or not an enemy). */
 export function enemyInfo(s:World,id:string):EnemyInfo|null {
   const u=s.units[id];
   if(!u||u.side!=='enemy'||u.hp<=0||!u.pos||!s.seen.includes(key(u.pos)))return null;
   const sp=u.species?SPECIES[u.species]:undefined;
   const tactic=tacticFor(u),note=u.boss?'区域首领；击败后有概率发出加入邀请，入队的是普通形态。':u.species?'击败后有概率发出加入邀请。':'';
-  return {id,name:u.boss?`${unitName(u)}（首领）`:unitLabel(u,id),types:sp?(sp.types??[]).map(typeZh).join('／'):'',hp:u.hp,maxHp:u.maxHp,
-    level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:moveRows(u),note};
+  const rows=moveRows(u);
+  return {id,name:u.boss?`${unitName(u,'敌人')}（首领）`:unitName(u,'敌人'),types:sp?(sp.types??[]).map(typeZh).join('／'):'',hp:u.hp,maxHp:u.maxHp,
+    level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:rows.map(row=>row.detail),moveRows:rows,note};
 }
-/** Read-only detail for a teammate card while it is hovered. */
+/** Read-only detail for a teammate card when the player explicitly opens it. */
 export function teammateInfo(s:World,id:string,targetId?:string):TeammateInfo|null {
   const u=s.units[id];if(!u||u.side!=='friend')return null;
-  return {id,name:unitLabel(u,id),level:typeof u.level==='number'?u.level:null,tactic:tacticFor(u),moves:moveRows(u,{s,sourceId:id,targetId})};
+  const rows=moveRows(u,{s,sourceId:id,targetId});
+  return {id,name:unitName(u,'队员'),level:typeof u.level==='number'?u.level:null,tactic:tacticFor(u),moves:rows.map(row=>row.detail)};
 }
 
 const escapeRe=(t:string)=>t.replace(/[.*+?^$|()[\]{}\\]/g,'\\$&');
-/** Turns ids in a log line into readable names: unit ids get their species, species ids and machine moves are translated. */
+/** Turns unit, species and move ids in a log line into readable player-facing names. */
 export function localizeLog(s:World,line:string):string {
-  const ids=Object.keys(s.units).sort((a,b)=>b.length-a.length);
+  const units:Record<string,Unit>={...s.units};
+  for(const invitation of s.invitations??[])units[invitation.unit.id]=invitation.unit;
+  for(const id of s.camp??[]){const u=s.units[id];if(u)units[id]=u;}
+  const ids=Object.keys(units).sort((a,b)=>b.length-a.length);
   const edge='[A-Za-z0-9-]';
   let out=line;
   const swaps:[string,string][]=[];
   const guard=(from:string,to:string)=>{const token=`@@${swaps.length}@@`;swaps.push([token,to]);out=out.replace(new RegExp(`(?<!${edge})${escapeRe(from)}(?!${edge})`,'g'),token);};
-  for(const id of ids){const u=s.units[id];const n=unitName(u);if(n)guard(id,`${id} ${n}`);}
+  for(const id of ids){const u=units[id];guard(id,unitName(u));}
   for(const id of Object.keys(SPECIES))guard(id,speciesZh(id));
   for(const move of Object.keys(MOVE_DEFS))guard(move,moveZh(move));
   for(const [token,to] of swaps)out=out.split(token).join(to);

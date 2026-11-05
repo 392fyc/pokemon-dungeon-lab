@@ -16,14 +16,16 @@ import {createScenario,scenarioProfile,SCENARIOS,SCENARIO_LABEL,type ScenarioId}
 import {THEME_FLOORS,themeOfLevel,ARENA_TILE,isDifficulty,type Difficulty} from '../core/dungeon.ts';
 import {preloadArt,createAnims,createTerrainArt,exportTerrainArt,skinFor,facingRow,animKey,groundOriginY,UNIT_GROUND_FRACTION,TILE} from '../render/sprites.ts';
 import {terrainSource} from '../render/dtef.ts';
-import {paintDtef,type DtefAnimator} from '../render/dtef-scene.ts';
-import {BOARD_BACKGROUND,darknessBackground,DungeonDarkness,corridorLightEnd} from '../render/darkness.ts';
-import {prepareTerrainMap,maskAt,frameOf,terrainVariant,selectDecorations,type TerrainThemeKey,type TerrainLayer} from '../render/terrain.ts';
+import {DtefTerrainLayer} from '../render/dtef-scene.ts';
+import {PainterTerrainLayer} from '../render/painter-scene.ts';
+import {BOARD_BACKGROUND,darknessBackground,DungeonDarkness} from '../render/darkness.ts';
+import {prepareTerrainMap,type TerrainThemeKey,type TerrainLayer} from '../render/terrain.ts';
 import {inferEvents,plan,newLines,type AnimEvent} from '../render/animation.ts';
 import {selfOrAdjacentReachable,adjacentReachable,floorIndex} from '../render/reach.ts';
 import {POINT_VISUALS,dungeonCellSize} from '../render/point-visuals.ts';
 import {itemDescription} from '../core/item-descriptions.ts';
 import {playEvents,type Stage,type UnitView} from '../render/playback.ts';
+import {placeHp} from '../render/unit-labels.ts';
 /** Integer multiples of the 24 px source keep terrain and actors aligned at every viewport size. */
 // The cell size is chosen from the actual canvas height in BoardScene.geometry.
 const DIFFICULTY_LABEL:Record<Difficulty,string>={easy:'简单',normal:'普通',hard:'困难'};
@@ -129,7 +131,7 @@ async function send(command:Parameters<typeof applyCommand>[1],keepMovement=fals
   try{if(after){freshCount=newLines(before.log,after.log).length;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshCount=0;}
   try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){anim.active=true;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;render();});}}
   catch{anim.active=false;playing=null;render();}}
- clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;inviteReject=false;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));}
+ clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;inviteReject=false;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
 async function setTactic(actor:string,value:string){
  if(anim.active||store.status!=='ready'||!live()||live()!.phase!=='playing'||!isTactic(value))return;
  const pending=store.dispatch({type:'tactic',actor,tactic:value});
@@ -621,16 +623,38 @@ class BoardScene extends Phaser.Scene {
  private graphics!:Phaser.GameObjects.Graphics;private pointGraphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;
  constructor(){super('board');}
  preload(){preloadArt(this);}
- private dtefAnim:DtefAnimator|null=null;private darkness!:DungeonDarkness;
- update(time:number){this.dtefAnim?.update(time);this.darkness?.update(time);}
- create(){createAnims(this);this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.events.once('shutdown',()=>this.darkness.clear());this.graphics=this.add.graphics().setDepth(0);this.pointGraphics=this.add.graphics().setDepth(2);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
+ private dtefLayer!:DtefTerrainLayer;private painterLayer!:PainterTerrainLayer;private darkness!:DungeonDarkness;private lightWorld:World|null=null;
+ update(time:number){this.dtefLayer?.update(time);this.followSprites();this.darkness?.update(time,this.partyLights());}
+ private followSprites(){
+  for(const view of this.views.values()){const hp=view.labels[0];if(hp){placeHp(view.sprite,hp.t);hp.dx=hp.t.x-view.gfx.x;hp.dy=hp.t.y-view.gfx.y;}}
+  if(this.lastGeometry?.dungeon&&this.lightWorld){const sprite=this.views.get(this.lightWorld.leader)?.sprite;if(sprite)this.cameras.main.setRoundPixels(true).setScroll(Math.round(sprite.x-this.scale.width/2),Math.round(sprite.y-this.scale.height/2));}
+ }
+ private partyLights(){
+  const s=this.lightWorld,g=this.lastGeometry;if(!s||!g)return [];
+  return s.queue.flatMap(id=>{const u=s.units[id],v=this.views.get(id);return u?.hp>0&&u.pos&&v?.sprite.visible?[{x:(v.sprite.x-g.ox)/g.cell+g.minX-.5,y:(v.sprite.y-g.oy)/g.cell+g.minY-.5,primary:id===s.leader,fire:!!(u.species&&SPECIES[u.species]?.types?.includes('Fire'))}]:[];});
+ }
+ private showDarkness(s:World,durationMs=0){
+  if(!s.dungeon||!this.lastGeometry)return;const g=this.lastGeometry,theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),map=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.seen,seenWalls:s.seenWalls,onlyRevealed:true});
+  const wallColor=terrainSource()==='dtef'?this.dtefLayer.wallColor():this.painterLayer.wallColor();const staticLights=s.points.filter(p=>(p.kind==='down'||p.kind==='up')&&s.seen.includes(key(p.pos))).map(p=>({...p.pos,inner:.3,outer:1.25,strength:.45}));
+  if(theme==='ash')for(const cell of s.liquid??[]){const pos=typeof cell==='string'?{x:Number(cell.split(',')[0]),y:Number(cell.split(',')[1])}:cell;if(map.known.has(key(pos)))staticLights.push({...pos,inner:.4,outer:1.7,strength:.55});}
+  this.darkness.show([s.runId,s.dungeon.level,theme,map.width,map.height].join(':'),theme,g.cell,{width:map.width,height:map.height,known:map.known,visible:playerVisibleCells(s),lights:this.partyLights(),seed:s.dungeon.seed,wallColor,staticLights},durationMs>0,durationMs);
+  this.cameras.main.setBackgroundColor(darknessBackground(theme,wallColor));
+ }
+ create(){createAnims(this);this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.dtefLayer=new DtefTerrainLayer(this);this.painterLayer=new PainterTerrainLayer(this);this.events.once('shutdown',()=>{this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();});this.graphics=this.add.graphics().setDepth(0);this.pointGraphics=this.add.graphics().setDepth(2);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
   // worldX/worldY already include the camera scroll, so clicks stay correct while the camera follows the leader.
   const x=Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX;const y=Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY;pinnedId=enemyAt({x,y});updateInspect();clickCell({x,y});});
   this.input.on('pointermove',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);const id=enemyAt({x:Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX,y:Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY});if(id!==hoverId){hoverId=id;updateInspect();}});scene=this;this.scale.on('resize',()=>{if(!anim.active)this.paint(live());});this.paint(live());}
+ private showTerrain(s:World,g:ReturnType<BoardScene['geometry']>){
+  if(!s.dungeon)return;const theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),scale=g.cell/TILE,dungeonMap=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.dungeon.roguelike?s.seen:[],seenWalls:s.dungeon.roguelike?s.seenWalls:[],onlyRevealed:true}),center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});
+    const dtef=terrainSource()==='dtef',seed=s.dungeon!.seed,level=s.dungeon!.level,map=dungeonMap!,floorKey=[s.runId,level,theme,seed,dtef?'dtef':'painter'].join(':');
+  if(dtef){this.painterLayer.clear();this.dtefLayer.show(floorKey,{map,theme,seed,level,scale,frozen:!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim,center});}
+  else{this.dtefLayer.clear();createTerrainArt(this,theme);const excluded=[...s.points.map(p=>p.pos),...(s.adventureRooms??[]).map(r=>r.interaction),...(s.rooms??[]).flatMap((r,i)=>i===s.bossRoom?Array.from({length:r.h},(_,dy)=>Array.from({length:r.w},(_,dx)=>({x:r.x+dx,y:r.y+dy}))).flat():[])];if(s.arrival)excluded.push(s.arrival);this.painterLayer.show(floorKey,{map,theme,seed,level,scale,excluded,center});}
+
+ }
  geometry(s:World){if(s.dungeon){const d=s.dungeon,cell=dungeonCellSize(this.scale.height);return {minX:0,minY:0,cell,ox:0,oy:0,dungeon:true,w:d.width*cell,h:d.height*cell};}
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,(this.scale.width-80)/(maxX-minX+1),(this.scale.height-80)/(maxY-minY+1));return {minX,minY,cell,ox:(this.scale.width-(maxX-minX+1)*cell)/2,oy:(this.scale.height-(maxY-minY+1)*cell)/2,dungeon:false,w:this.scale.width,h:this.scale.height};}
- paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.dtefAnim=null;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
- this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
+ paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
+ this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
  const g=this.geometry(s);const fog=g.dungeon;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
  // 7.3 floor themes: boss-marked runs use the theme tiles of the floor (moss: the original stone). A missing texture falls back to the stone tile with a theme tint.
@@ -642,27 +666,8 @@ class BoardScene extends Phaser.Scene {
  const inArena=(p:Pos)=>!!arena&&p.x>=arena.x&&p.x<arena.x+arena.w&&p.y>=arena.y&&p.y<arena.y+arena.h;
  const terrain=!!s.dungeon?.roguelike;
  const dungeonMap=s.dungeon?prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.seen,seenWalls:s.seenWalls,onlyRevealed:true}):null;
- if(terrain){
-  const dtef=terrainSource()==='dtef';
-  if(!dtef)createTerrainArt(this,theme);
-  const map=dungeonMap!;
-  const seed=s.dungeon!.seed,level=s.dungeon!.level;
-  const terrainImage=(x:number,y:number,layer:TerrainLayer|'floor')=>{
-   const c=center({x,y}),frame=layer==='floor'?`${((x%16)+16)%16},${((y%16)+16)%16}`:`v${terrainVariant(x,y,layer,seed,level,theme)}-f${frameOf(maskAt(map,x,y,layer))}`;
-   this.tiles.push(this.add.image(c.x,c.y,`terrain-${theme}-${layer}`,frame).setScale(scale).setDepth(layer==='floor'?1:layer==='edge'?1.1:layer==='liquid'?1.2:1.3));
-  };
-  this.dtefAnim=dtef?paintDtef(this,{map,theme,seed,level,scale,frozen:!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim,center,push:im=>this.tiles.push(im)}):null;
-  if(!dtef)for(const cell of map.known){const [x,y]=cell.split(',').map(Number);if(map.floor.has(cell)){terrainImage(x,y,'floor');terrainImage(x,y,'edge');}else terrainImage(x,y,map.liquid.has(cell)?'liquid':'wall');}
-  const decoKey=`deco-${theme}`,atlas=this.textures.exists(decoKey)?{frames:this.textures.get(decoKey).getFrameNames()}:null;
-  const excluded=[...s.points.map(p=>p.pos),...(s.adventureRooms??[]).map(r=>r.interaction),...(s.rooms??[]).flatMap((r,i)=>i===s.bossRoom?Array.from({length:r.h},(_,dy)=>Array.from({length:r.w},(_,dx)=>({x:r.x+dx,y:r.y+dy}))).flat():[])];
-  // Arrival is kept separately from the current leader so exploring never moves decorations.
-  if(s.arrival)excluded.push(s.arrival);
-  // #178: the default DTEF route draws no 8.5b decorations (D-20261103: removed); decorations are purely visual here (point and room markers are separate overlay objects), so no game information is lost. The painter route keeps them.
-  if(!dtef)for(const deco of selectDecorations({map,theme,seed,level,excluded,atlas})){
-   const c=center(deco);this.tiles.push(this.add.image(c.x,c.y+g.cell/2,decoKey,deco.frame).setOrigin(.5,1).setScale(scale).setDepth(1.5));
-  }
- }else{
- const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();if(!fog)for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){walls.add(key(q));tileImg('wall',wallName,center(q),s.seen.includes(key(p))?.85:.3);}}
+ if(terrain)this.showTerrain(s,g);else{if(fog)this.showTerrain(s,g);else{this.dtefLayer.clear();this.painterLayer.clear();}
+  const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();if(!fog)for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){walls.add(key(q));tileImg('wall',wallName,center(q),s.seen.includes(key(p))?.85:.3);}}
  for(const wall of s.seenWalls??[]){if(floorKeys.has(wall)||walls.has(wall))continue;const [x,y]=wall.split(',').map(Number);tileImg('wall',wallName,center({x,y}),.85);walls.add(wall);}
  }
   for(const p of s.floor){
@@ -701,24 +706,12 @@ class BoardScene extends Phaser.Scene {
   let sp=this.sprites.get(id);if(!sp){sp=this.add.sprite(c.x,c.y,`${dex}-Idle`).setDepth(4);this.sprites.set(id,sp);}
   sp.setVisible(true).setAlpha(1).setPosition(c.x,c.y+g.cell*UNIT_GROUND_FRACTION).setScale(scale*(u.boss?1.5:1)).setOrigin(.5,groundOriginY(dex,'Idle'));sp.anims.timeScale=1;if(sp.anims.currentAnim?.key!==anim)sp.play(anim);
   const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:Math.max(10,Math.round(g.cell*.12)),color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
-  // Labels sit on the shadow line at the cell's foot, clear of the sprite's head and of the corner point marks.
-  this.views.set(id,{sprite:sp,gfx:ug,labels:[ut(0,g.cell*.49,unitLabel(u,id),u.side==='enemy'?'#ffb4a6':'#cdeccf'),ut(0,g.cell*.7,`${u.hp}`,'#f0e8d0'),...(u.boss?[ut(0,-g.cell*.78,'首领','#ffd37a')]:[])],dex,row});}
+  // Only HP sits beside the model; species names remain in the HUD and information cards.
+  const hp=ut(0,0,`${u.hp}`,'#f0e8d0');placeHp(sp,hp.t);hp.dx=hp.t.x-c.x;hp.dy=hp.t.y-c.y;
+  this.views.set(id,{sprite:sp,gfx:ug,labels:[hp,...(u.boss?[ut(0,-g.cell*.78,'首领','#ffd37a')]:[])],dex,row});}
  this.sprites.forEach((sp,id)=>{if(!shown.has(id))sp.setVisible(false);});this.lastGeometry=g;
- {const cam=this.cameras.main,lead=s.units[s.leader]?.pos;
-  // Keep nearby targets clear of the HUD, including at the map boundary.
-  if(g.dungeon){const c=lead?center(lead):{x:g.w/2,y:g.h/2};cam.setRoundPixels(true).setScroll(Math.round(c.x-this.scale.width/2),Math.round(c.y-this.scale.height/2));}else cam.setScroll(0,0);}
- if(dungeonMap){
-  const lights=s.queue.flatMap(id=>{
-   const unit=s.units[id];
-   if(!unit?.pos||unit.hp<=0)return [];
-   const inRoom=s.rooms?.some(r=>unit.pos!.x>=r.x&&unit.pos!.x<r.x+r.w&&unit.pos!.y>=r.y&&unit.pos!.y<r.y+r.h);
-   const end=inRoom?undefined:corridorLightEnd(unit.pos,dungeonMap.floor);
-   return [{...unit.pos,primary:id===s.leader,fire:!!(unit.species&&SPECIES[unit.species]?.types?.includes('Fire')),end}];
-  });
-  this.darkness.show([s.runId,s.dungeon!.level,theme,dungeonMap.width,dungeonMap.height].join(':'),theme,g.cell,{
-   width:dungeonMap.width,height:dungeonMap.height,known:dungeonMap.known,visible:playerVisibleCells(s),lights,
-  },animationEnabled());
- }
+ if(g.dungeon)this.followSprites();else this.cameras.main.setScroll(0,0);
+ if(dungeonMap)this.showDarkness(s);
  if(selectedSkill&&s.phase==='playing'&&!draft?.swap){const editor=draft?.editor??s.leader;for(const target of skillTargets(s,editor,selectedSkill)){const u=s.units[target];if(!u?.pos||!s.seen.includes(key(u.pos)))continue;const c=center(u.pos);this.overlay.lineStyle(2,0xf1d88e);this.overlay.strokeCircle(c.x,c.y,g.cell*.46);}}
  if(s.phase==='invitation'&&inviteChoice){const p=previewInvitation(s,inviteChoice);if(p.ok){const c=center(p.pos);this.overlay.lineStyle(3,0xf1d88e);this.overlay.strokeRect(c.x-g.cell/2+3,c.y-g.cell/2+3,g.cell-6,g.cell-6);}}
  }
@@ -727,9 +720,11 @@ class BoardScene extends Phaser.Scene {
   const p=plan(events);this.paint(before,true);const g=this.lastGeometry;
   if(!p||!g)return Promise.resolve();
   const center=(q:Pos)=>({x:g.ox+(q.x-g.minX+.5)*g.cell,y:g.oy+(q.y-g.minY+.5)*g.cell});
-  const st:Stage={scene:this,views:this.views,center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale};
+  this.lightWorld=after;let revealed=false,movingFog=false;
+  const st:Stage={scene:this,views:this.views,center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,onMovementStart:duration=>{if(revealed)return;revealed=true;movingFog=true;this.darkness.setMovementProgress(0);this.showTerrain(after,g);this.showDarkness(after,duration);},onMovementProgress:progress=>{if(!movingFog)return;this.darkness.setMovementProgress(progress);if(progress>=1)movingFog=false;}};
+  if(!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway')){this.showTerrain(after,g);this.showDarkness(after);}
   return new Promise<void>(resolve=>{
-   let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();try{this.paint(live(),true);}finally{resolve();}};
+   let done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.darkness.setMovementProgress(undefined);this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();try{this.paint(live(),true);}finally{resolve();}};
    const timer=setTimeout(finish,3000); // safety net, e.g. a hidden tab where Phaser's clock is paused
    this.skipNow=finish;
    void playEvents(st,events).then(finish,finish);
@@ -738,7 +733,7 @@ class BoardScene extends Phaser.Scene {
  exportTerrain(theme:TerrainThemeKey,layer:TerrainLayer|'floor'){exportTerrainArt(this,theme,layer);}
  skip(){this.skipNow?.();}
  /** Read-only view of what is drawn, for the browser checks: the tile textures in use, and the boss sprite's scale next to a normal unit's, with its labels. */
- debug(){const unit=(id:string)=>{const v=this.views.get(id);return v?{scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text)}:null;};const worldView=this.cameras.main.worldView;return {tiles:[...new Set(this.tiles.map(t=>t.texture.key))].sort(),terrain:this.tiles.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:this.tiles.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
+ debug(){const terrainImages=[...this.tiles,...this.dtefLayer.images,...this.painterLayer.images];const unit=(id:string)=>{const v=this.views.get(id);return v?{scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text),labelPositions:v.labels.map(l=>({text:l.t.text,x:l.t.x,y:l.t.y,width:l.t.width,height:l.t.height,originX:l.t.originX,originY:l.t.originY}))}:null;};const worldView=this.cameras.main.worldView;return {terrainCache:terrainSource()==='dtef'?this.dtefLayer.debug():this.painterLayer.debug(),darkness:this.darkness.debug(),tiles:[...new Set(terrainImages.map(t=>t.texture.key))].sort(),terrain:terrainImages.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:terrainImages.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
 }
 return BoardScene;
 }
@@ -809,34 +804,45 @@ setInterval(()=>{if(screen!=='play'||store.atBase)portraitTick(performance.now()
 bind('export-terrain',()=>{const theme=($('terrain-theme') as HTMLSelectElement).value as TerrainThemeKey,layer=($('terrain-layer') as HTMLSelectElement).value as TerrainLayer|'floor';scene?.exportTerrain(theme,layer);});
 bind('open-fixture',()=>{const id=(document.getElementById('fixture') as HTMLSelectElement).value;window.open(`?fixture=${encodeURIComponent(id)}`,'_blank','noopener');});
 
-const heldDirections=new Set<string>();let moveTimer:ReturnType<typeof setTimeout>|null=null,moveInFlight=false,moveCollecting=false;
-function cancelMoveInput(){heldDirections.clear();if(moveTimer!==null)clearTimeout(moveTimer);moveTimer=null;moveCollecting=false;}
+const heldDirections=new Set<string>();let moveTimer:ReturnType<typeof setTimeout>|null=null,moveFrame:number|null=null,moveInFlight=false,moveCollecting=false,moveTap:Pos|null=null;
+function cancelMoveInput(){heldDirections.clear();if(moveTimer!==null)clearTimeout(moveTimer);if(moveFrame!==null)cancelAnimationFrame(moveFrame);moveTimer=null;moveFrame=null;moveCollecting=false;moveTap=null;}
 function movementEnemies(s:World):Set<string>{const cells=playerVisibleCells(s);return new Set(s.enemies.filter(id=>{const u=s.units[id];return u.hp>0&&u.pos&&cells.has(key(u.pos));}));}
-async function flushMoveInput(){
- if(moveTimer!==null)clearTimeout(moveTimer);moveTimer=null;moveCollecting=false;if(moveInFlight)return;
+function queueHeldMove(){moveFrame=requestAnimationFrame(()=>{moveFrame=null;if(!heldDirections.size)return;void flushMoveInput();});}
+async function flushMoveInput(tapDirection?:Pos){
+ const tap=tapDirection??moveTap;moveTap=null;
+ if(moveTimer!==null)clearTimeout(moveTimer);if(moveFrame!==null)cancelAnimationFrame(moveFrame);moveTimer=null;moveFrame=null;moveCollecting=false;if(moveInFlight)return;
  const s=live();if(!s||s.phase!=='playing'||anim.active||bagOpen||settings.open||screen!=='play'||store.status!=='ready'){cancelMoveInput();return;}
- const dx=Number(heldDirections.has('d')||heldDirections.has('ArrowRight'))-Number(heldDirections.has('a')||heldDirections.has('ArrowLeft'));
- const dy=Number(heldDirections.has('s')||heldDirections.has('ArrowDown'))-Number(heldDirections.has('w')||heldDirections.has('ArrowUp'));
+ const dx=tap?.x??(Number(heldDirections.has('d')||heldDirections.has('ArrowRight'))-Number(heldDirections.has('a')||heldDirections.has('ArrowLeft')));
+ const dy=tap?.y??(Number(heldDirections.has('s')||heldDirections.has('ArrowDown'))-Number(heldDirections.has('w')||heldDirections.has('ArrowUp')));
  const u=s.units[draft?.editor??s.leader];if(!(dx||dy)||!u.pos)return;
  const direction={x:dx,y:dy},to=plus(u.pos,direction);
  if(draft){act({type:'move',to});return;}
  const blocked=!s.seen.includes(key(to))||!adjacentReachable(floorIndex(s.floor),u.pos,to)||s.enemies.some(id=>{const e=s.units[id];return e.hp>0&&same(e.pos,to);});
  if(blocked){cancelMoveInput();await send({type:'face',direction});return;}
  const beforeEnemies=movementEnemies(s),round=s.round,run=s.runId,level=s.dungeon?.level;
- moveInFlight=true;
- try{await send({type:'round',action:{type:'move',to}},true);}
+ moveInFlight=true;let played=false;
+ try{played=!!(await send({type:'round',action:{type:'move',to}},true));}
  finally{moveInFlight=false;}
  const after=live();if(!after||after.runId!==run||after.dungeon?.level!==level||after.round===round||after.phase!=='playing'||store.status!=='ready'||bagOpen||settings.open){cancelMoveInput();return;}
  if([...movementEnemies(after)].some(id=>!beforeEnemies.has(id))){cancelMoveInput();return;}
- if(heldDirections.size)moveTimer=setTimeout(()=>void flushMoveInput(),100);
+ if(heldDirections.size){if(played)void flushMoveInput();else queueHeldMove();}
 }
-document.addEventListener('keyup',e=>{if(e.key==='Shift')anim.shift=false;const k=e.key.length===1?e.key.toLowerCase():e.key;if(heldDirections.has(k)){if(moveCollecting)void flushMoveInput();heldDirections.delete(k);if(!heldDirections.size&&moveTimer!==null){clearTimeout(moveTimer);moveTimer=null;}else if(heldDirections.size&&!moveInFlight&&!anim.active&&moveTimer===null){moveCollecting=true;moveTimer=setTimeout(()=>void flushMoveInput(),40);}}});
+document.addEventListener('keyup',e=>{
+ if(e.key==='Shift')anim.shift=false;const k=e.key.length===1?e.key.toLowerCase():e.key;if(!heldDirections.has(k))return;
+ const dx=Number(heldDirections.has('d')||heldDirections.has('ArrowRight'))-Number(heldDirections.has('a')||heldDirections.has('ArrowLeft')),dy=Number(heldDirections.has('s')||heldDirections.has('ArrowDown'))-Number(heldDirections.has('w')||heldDirections.has('ArrowUp'));
+ if(moveCollecting){
+  // Release a quick chord as one gesture; don't block its remaining keyup with a whole round's render.
+  if(!moveTap&&(dx||dy))moveTap={x:dx,y:dy};heldDirections.delete(k);
+  if(!heldDirections.size){const tap=moveTap;cancelMoveInput();if(tap)void flushMoveInput(tap);}return;
+ }
+ const opposed=!(dx||dy);heldDirections.delete(k);if(!heldDirections.size)cancelMoveInput();else if(opposed&&!moveInFlight&&!anim.active&&moveTimer===null&&moveFrame===null)void flushMoveInput();
+});
 document.addEventListener('click',e=>{if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, label:has(#anim-toggle), summary')){e.stopPropagation();e.preventDefault();}},true);
 document.addEventListener('keydown',e=>{
  if(settings.open||screen!=='play'||store.atBase)return;
  if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}
  if(e.repeat){e.preventDefault();return;}
- if(anim.active){if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}
+ if(anim.active){const direction=e.key.length===1?e.key.toLowerCase():e.key;if(heldDirections.size&&['w','a','s','d','ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(direction)&&!(e.target as HTMLElement).matches('input,select,textarea'))heldDirections.add(direction);if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}
  const target=e.target as HTMLElement;if(target.matches('input,select,textarea'))return;
  if(e.key==='Enter'){if(target.matches('button[data-confirm]')&&!target.hasAttribute('disabled')){e.preventDefault();target.click();}else e.preventDefault();return;}
  if(e.key==='Escape'){
@@ -853,9 +859,10 @@ document.addEventListener('keydown',e=>{
  if(['5','6','7','8','9','0'].includes(e.key)){e.preventDefault();const item=quickItems[['5','6','7','8','9','0'].indexOf(e.key)];if(item)chooseHudItem(item);return;}
  const directionKey=e.key.length===1?k:e.key;
  if(['w','a','s','d','ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(directionKey)){
-  e.preventDefault();heldDirections.add(directionKey);
-  // Briefly collect the second direction; keyup flushes an ordinary tap immediately.
-  if(moveTimer===null){moveCollecting=true;moveTimer=setTimeout(()=>void flushMoveInput(),40);}return;
+  e.preventDefault();const first=heldDirections.size===0;heldDirections.add(directionKey);
+  // Only a fresh press collects a chord; held movement changes direction at the next step.
+  if(moveCollecting)moveTap=null;
+  if(first){moveCollecting=true;moveTimer=setTimeout(()=>void flushMoveInput(),40);}else if(!moveCollecting&&!moveInFlight)void flushMoveInput();return;
  }
  if(k==='f'){e.preventDefault();act({type:'basicForward'});return;}
  if(e.key==='.')act({type:'wait'});

@@ -1,3 +1,4 @@
+import {fog350Checks} from './fog350.mjs';
 import assert from 'node:assert/strict';
 import {campControl,openCampPanel,openCampRoster} from './camp-ui.mjs';
 import fs from 'node:fs';
@@ -134,7 +135,7 @@ async function click(p,id,settle=true){
 }
 function expectedCamera(view,pos){
  const g=view.geometry,v=view.cameraView,cx=g.ox+(pos.x-g.minX+.5)*g.cell,cy=g.oy+(pos.y-g.minY+.5)*g.cell;
- return {x:Math.round(cx-v.width/2),y:Math.round(cy-v.height/2)};
+ return {x:Math.round(cx-v.width/2),y:Math.round(cy+g.cell*.3-v.height/2)};
 }
 async function cell(p,x,y){
  const canvas=p.locator('canvas'),s=await state(p);assert.ok(s,'a live world is required for a map click');
@@ -2077,15 +2078,16 @@ await test('#194 水跃鱼、木守宫与进化形态的脚底贴住阴影，移
    for(const id of ids){const v=view.units[id],[dex,name]=v.animation.split('-'),meta=metadata[dex][name],idle=metadata[dex].Idle,image=new Image(),shadow=new Image(),idleShadow=new Image();
     image.src='assets/'+meta.file;shadow.src='assets/'+meta.file.replace('-Anim.png','-Shadow.png');idleShadow.src='assets/'+idle.file.replace('-Anim.png','-Shadow.png');await Promise.all([image.decode(),shadow.decode(),idleShadow.decode()]);
     const canvas=document.createElement('canvas');canvas.width=v.frame.w;canvas.height=v.frame.h;const ctx=canvas.getContext('2d');
-    const bounds=(img,frame=v.frame)=>{canvas.width=frame.w;canvas.height=frame.h;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,frame.x,frame.y,frame.w,frame.h,0,0,frame.w,frame.h);const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let top=Infinity,bottom=-1;for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++)if(data[(y*canvas.width+x)*4+3]>32){top=Math.min(top,y);bottom=Math.max(bottom,y);}return {top,bottom};};
-    const opaque=bounds(image),marker=bounds(shadow),reference=bounds(idleShadow,{x:0,y:v.row*idle.h,w:idle.w,h:idle.h}),offset=(reference.top+reference.bottom+1)/2-idle.h/2,top=v.y-v.originY*v.frame.h*v.scale;
-    out.push({id,animation:v.animation,row:v.row,scale:v.scale,baselineGap:top+(v.frame.h/2+offset)*v.scale-v.ground.y,markerGap:top+(marker.top+marker.bottom+1)/2*v.scale-v.ground.y,feetGap:v.ground.top-(top+(opaque.bottom+1)*v.scale),feet});
+    const bounds=(img,frame=v.frame)=>{canvas.width=frame.w;canvas.height=frame.h;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,frame.x,frame.y,frame.w,frame.h,0,0,frame.w,frame.h);const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;let top=Infinity,bottom=-1,right=0,allBottom=-1;for(let y=0;y<canvas.height;y++)for(let x=0;x<canvas.width;x++){const alpha=data[(y*canvas.width+x)*4+3];if(alpha){right=Math.max(right,x+1);allBottom=Math.max(allBottom,y);}if(alpha>32){top=Math.min(top,y);bottom=Math.max(bottom,y);}}return {top,bottom,right,allBottom};};
+    const opaque=bounds(image),marker=bounds(shadow),hp=v.labelPositions[0],reference=bounds(idleShadow,{x:0,y:v.row*idle.h,w:idle.w,h:idle.h}),offset=(reference.top+reference.bottom+1)/2-idle.h/2,top=v.y-v.originY*v.frame.h*v.scale;
+    out.push({id,animation:v.animation,row:v.row,scale:v.scale,baselineGap:top+(v.frame.h/2+offset)*v.scale-v.ground.y,markerGap:top+(marker.top+marker.bottom+1)/2*v.scale-v.ground.y,feetGap:v.ground.top-(top+(opaque.bottom+1)*v.scale),feet,labels:v.labels,hp,hpGapX:hp.x-(v.x+(opaque.right-v.frame.w*.5)*v.scale),hpGapY:hp.y-(top+(opaque.allBottom+1)*v.scale)});
    }return out;
   },{metadata,ids,feet});
   const observations=[];
+   const hpFits=row=>{assert.equal(row.labels.length,1,'models show only HP, without a name below');assert.match(row.labels[0],/^\d+$/);assert.equal(row.hp.originX,0);assert.equal(row.hp.originY,1);assert.ok(row.hpGapX>=.49&&row.hpGapX<=1.51&&row.hpGapY>=.49&&row.hpGapY<=1.51,'HP touches the source lower-right alpha bounds: '+JSON.stringify(row));};
   for(const direction of [{x:0,y:1},{x:1,y:1},{x:1,y:0},{x:1,y:-1},{x:0,y:-1},{x:-1,y:-1},{x:-1,y:0},{x:-1,y:1}]){
    await p.evaluate(async direction=>{for(const actor of window.trial.getState().queue){await window.trial.store.dispatch({type:'switch',actor});await window.trial.store.dispatch({type:'face',direction});}await window.trial.store.dispatch({type:'switch',actor:'A'});window.dispatchEvent(new Event('blur'));},direction);
-   const rows=await probe(w.queue,true);for(const row of rows){assert.ok(Math.abs(row.markerGap)<=row.scale,'source shadow marker and runtime ground agree: '+JSON.stringify(row));assert.ok(row.feetGap<=1.5*row.scale,'idle opaque feet touch the ground shadow instead of floating: '+JSON.stringify(row));}observations.push(...rows);
+   const rows=await probe(w.queue,true);for(const row of rows){hpFits(row);assert.ok(Math.abs(row.markerGap)<=row.scale,'source shadow marker and runtime ground agree: '+JSON.stringify(row));assert.ok(row.feetGap<=1.5*row.scale,'idle opaque feet touch the ground shadow instead of floating: '+JSON.stringify(row));}observations.push(...rows);
   }
   await p.screenshot({path:artifact+'playtest194-ground-1280x720.png'});
   const drawn=await p.evaluate(()=>({v:window.trial.view(),cam:window.trial.camera()})),canvasBounds=await p.locator('canvas').boundingBox(),all=Object.values(drawn.v.units),xs=all.map(v=>canvasBounds.x+v.x-drawn.cam.x),ys=all.map(v=>canvasBounds.y+v.ground.y-drawn.cam.y),cellSize=drawn.v.geometry.cell;
@@ -2093,10 +2095,10 @@ await test('#194 水跃鱼、木守宫与进化形态的脚底贴住阴影，移
   const current=await state(p),leader=current.units[current.leader],dirs=[{x:1,y:0,key:'d'},{x:0,y:1,key:'s'},{x:-1,y:0,key:'a'},{x:0,y:-1,key:'w'}],step=dirs.find(d=>current.floor.some(q=>q.x===leader.pos.x+d.x&&q.y===leader.pos.y+d.y)&&!current.queue.some(id=>current.units[id].pos?.x===leader.pos.x+d.x&&current.units[id].pos?.y===leader.pos.y+d.y));assert.ok(step);
   await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));await p.keyboard.press(step.key);await p.clock.runFor(90);
   assert.equal(await p.evaluate(()=>window.trial.animating()),true);assert.match(await p.evaluate(()=>window.trial.view().leader.animation),/-Walk-/);
-  for(const row of await probe([current.leader],false))assert.ok(Math.abs(row.baselineGap)<=row.scale,'moving sprite and shadow share the idle ground baseline while retaining authored frame motion: '+JSON.stringify(row));
+  for(const row of await probe([current.leader],false)){hpFits(row);assert.ok(Math.abs(row.baselineGap)<=row.scale,'moving sprite and shadow share the idle ground baseline while retaining authored frame motion: '+JSON.stringify(row));}
   await p.screenshot({path:artifact+'playtest194-ground-walk.png'});await p.clock.resume();await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:5000});
-  await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));await p.keyboard.press('f');assert.match(await p.evaluate(()=>window.trial.view().leader.animation),/-Attack-/);
-  for(const row of await probe([current.leader],false))assert.ok(Math.abs(row.baselineGap)<=row.scale,'attacking sprite keeps the source ground baseline while retaining authored frame motion: '+JSON.stringify(row));
+  await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));await p.keyboard.press('f');await p.clock.runFor(20);assert.match(await p.evaluate(()=>window.trial.view().leader.animation),/-Attack-/);
+  for(const row of await probe([current.leader],false)){hpFits(row);assert.ok(Math.abs(row.baselineGap)<=row.scale,'attacking sprite keeps the source ground baseline while retaining authored frame motion: '+JSON.stringify(row));}
   await p.clock.resume();await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:5000});assert.deepEqual(errors,[]);return {species:['mudkip','treecko','venusaur'],idleDirections:8,sourceMarkerAligned:true,walkAligned:true,attackAligned:true,observations};
  }finally{await context.close();}
 });
@@ -2144,6 +2146,8 @@ await test('#194 头像按可见像素居中：七种素材、实际进化、营
   assert.deepEqual(errors,[]);return {requestedDex:['0001','0002','0003','0005','0009','0130','0156'],measured:observed.length,sourceAlphaUnion:true,centerTolerancePx:1,actualEvolution:true,campContexts:3,starterFeatured:true,observations:observed};
  }finally{await context.close();}
 });
+
+await test('#194 #350 墙心底层、未知地形保密、连续移动与精灵同步光圈',()=>fog350Checks({browser,base,startMemory,artifact,setup}));
 
 await browser.close();
 clearTimeout(browserDeadline);

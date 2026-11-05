@@ -201,8 +201,30 @@ export const BASE_MS:Record<AnimEvent['k'], number> = {airAttack:260, move:180, 
 export const ROUND_CAP_MS = 1500;
 /** Below this speed-up the round is not played at all, which keeps pathological rounds from being unreadably fast. */
 export const MIN_SCALE = 0.3;
+
+const isMovementEvent = (event:AnimEvent) => event.k === 'move' || event.k === 'swap';
+/** Groups every ordinary move and swap at the position of the round's first one; other events keep their order. */
+export function animationBatches(events:AnimEvent[]):AnimEvent[][] {
+  const movement = events.filter(isMovementEvent);
+  const batches:AnimEvent[][] = [];
+  let placedMovement = false;
+  for (const event of events) {
+    if (isMovementEvent(event)) {
+      if (!placedMovement) { batches.push(movement); placedMovement = true; }
+    } else batches.push([event]);
+  }
+  return batches;
+}
+
+/** Actual duration of the concurrent move/swap batch, including the round plan's speed scale. */
+export function movementDuration(events:AnimEvent[], scale=1):number {
+  const base = events.reduce((longest,event) => isMovementEvent(event) ? Math.max(longest,BASE_MS[event.k]) : longest,0);
+  return base ? base * scale : 0;
+}
+
 export function plan(events:AnimEvent[]):{scale:number; total:number}|null {
-  const total = events.reduce((n, e) => n + BASE_MS[e.k], 0);
+  const total = animationBatches(events).reduce((sum,batch) =>
+    sum + batch.reduce((longest,event) => Math.max(longest,BASE_MS[event.k]),0),0);
   if (!total) return null;
   const scale = Math.min(1, ROUND_CAP_MS / total);
   return scale < MIN_SCALE ? null : {scale, total:total * scale};

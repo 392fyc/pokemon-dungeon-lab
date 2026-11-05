@@ -26,7 +26,10 @@ let gameTiming=null;
 // the five seeds, per-game action cap and all real-input/save assertions stay.
 const deadline=setTimeout(()=>{report.deadlineReached=true;console.error('Five-game browser check exceeded its 40-minute deadline');void browser.close();},40*60*1000);
 const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
-await context.addInitScript(()=>{window.__trialNoAnim=true;});
+await context.addInitScript(()=>{
+ window.__trialNoAnim=true;window.__movementInputTrace=[];
+ for(const type of ['keydown','keyup'])addEventListener(type,event=>{if(!['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;const s=window.trial?.getState(),entry={type,key:event.key,at:event.timeStamp,round:s?.round};window.__movementInputTrace.push(entry);if(window.__movementInputTrace.length>64)window.__movementInputTrace.shift();queueMicrotask(()=>{entry.afterRound=window.trial?.getState()?.round;});},true);
+});
 const page=await context.newPage(),errors=[];
 page.setDefaultTimeout(15000);
 page.on('pageerror',e=>errors.push(e.message));
@@ -140,7 +143,7 @@ async function command(c){
  assert.ok(after.round>c.beforeRound,'UI action must advance a complete round; action: '+JSON.stringify(a)+'; notice: '+await page.locator('#message').innerText()+'; visible state: '+JSON.stringify(visibleView(after)));
  if(a.type==='move'){
   const id=movementBefore.leader,pos=movementBefore.units[id].pos,to={x:pos.x+a.dx,y:pos.y+a.dy};
-  assertMovementOutcome(movementBefore,after,to);
+  try{assertMovementOutcome(movementBefore,after,to);}catch(error){fs.writeFileSync(artifactDir+'/five-games-input-failure.json',JSON.stringify({keys:a.keys,before:{round:movementBefore.round,pos:movementBefore.units[id].pos},after:{round:after.round,pos:after.units[id].pos},trace:await page.evaluate(()=>window.__movementInputTrace)},null,2));throw error;}
  }
 }
 function movementEventsFor(events,id){

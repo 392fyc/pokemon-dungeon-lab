@@ -565,8 +565,8 @@ function visibleLogEntries(s:World):{t:string;fromEnd:number}[]{
  const hidden=s.enemies.filter(id=>{const u=s.units[id];return u.pos&&!s.seen.includes(key(u.pos));});
  // Match the raw note format independently of the current floor's actor dictionary.
  const routine=/^[A-Za-z0-9_:-]+(?:移动到-?\d+,-?\d+|与[A-Za-z0-9_:-]+换位|(?:无路可走，)?等待)$/;
- // generateFloor names ordinary enemies w<level><a-f>; removed-floor rows cannot be localized safely.
- const retiredEnemy=(t:string)=>[...t.matchAll(/(?:^|[^A-Za-z0-9_:-])(w\d+[a-f])(?=$|[^A-Za-z0-9_:-])/g)].some(m=>!s.units[m[1]]);
+ // Floor enemies use w<level><a-f> or challenge c<level><a-d>; removed-floor rows cannot be localized safely.
+ const retiredEnemy=(t:string)=>[...t.matchAll(/(?:^|[^A-Za-z0-9_:-])(w\d+[a-f]|c\d+[a-d])(?=$|[^A-Za-z0-9_:-])/g)].some(m=>!s.units[m[1]]);
  const rows=s.log.map((t,i)=>({t,fromEnd:s.log.length-i})).filter(({t})=>!hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??" "))&&!routine.test(t)&&!retiredEnemy(t));
  if(rows.length){displayedLogRows=rows.map(r=>r.t);return rows;}
  return displayedLogRows.map(t=>({t,fromEnd:Infinity}));

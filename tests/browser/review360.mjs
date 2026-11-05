@@ -30,6 +30,34 @@ export async function review360FloorChecks({setup,startMemory,state,ready,viaSta
   const format=structuredClone(w),actor=format.leader;format.runId='review360-formats';format.log=[actor+'无路可走，等待',actor+'动作失效，等待，未扣PP',actor+'向13,8挥空'];
   await p.reload();await p.locator('#start').waitFor();await startMemory(p,format);
   const formatted=await p.locator('#recent-events,#history,#message').allTextContents();assert.ok(formatted.every(text=>!text.includes('无路可走，等待')));assert.ok(formatted.some(text=>text.includes('动作失效，等待，未扣PP')));assert.ok(formatted.some(text=>text.includes('向13,8挥空')),'air-swing coordinates remain outside this change');assert.deepEqual((await state(p)).log,format.log);
-  await p.screenshot({path:artifact+'review360-wait-filter.png'});report.formatFixture={raw:format.log,shown:formatted};report.pageErrors=errors;assert.deepEqual(errors,[]);fs.writeFileSync(artifact+'review360-floor-results.json',JSON.stringify(report,null,2));return report;
+  await p.screenshot({path:artifact+'review360-wait-filter.png'});report.formatFixture={raw:format.log,shown:formatted};
+  let challenge=createExpedition('review363-challenge',4,3,{members:[
+   {inst:'P1',species:'mudkip',carry:[{move:'blizzard',pp:20}],tactic:'wait'},
+   {inst:'P2',species:'chikorita',carry:[{move:'tackle',pp:20}],tactic:'wait'}],leader:0},0,true,3);
+  const room=challenge.adventureRooms.find(r=>r.type==='challenge');assert.ok(room);
+  challenge.units.A.pos={...room.interaction};challenge.units.A.hp=challenge.units.A.maxHp=200;challenge.units.A.stages={...challenge.units.A.stages,acc:3};
+  for(const id of challenge.enemies)challenge.units[id].waitOnly=true;
+  const commands=[],command=cmd=>{const result=applyCommand(challenge,cmd);assert.equal(result.ok,true,result.error);challenge=result.state;commands.push(cmd);};
+  command({type:'round',action:{type:'interact',exit:false}});
+  const challengeIds=challenge.adventureRooms.find(r=>r.room===room.room).enemyIds.filter(id=>/^c1[a-d]$/.test(id));assert.ok(challengeIds.length>=3);
+  let steps=0;while(challenge.adventureRooms.find(r=>r.room===room.room).state!=='cleared'||challenge.phase!=='playing'){
+   assert.ok(++steps<=32,'real challenge battle and prompts finish within the fixture limit');
+   if(challenge.phase==='invitation')command({type:'invite',choice:'reject'});
+   else if(challenge.phase==='evolution')command({type:'evolve',species:null});
+   else{assert.equal(challenge.phase,'playing');command({type:'round',action:{type:'skill',skill:'blizzard',target:challenge.leader}});}
+  }
+  assert.ok(challengeIds.every(id=>challenge.units[id].hp<=0),'real combat defeats all generated challenge enemies');
+  const stairs=challenge.points.find(point=>point.kind==='down'),taken=new Set(challenge.enemies.filter(id=>challenge.units[id].hp>0&&challenge.units[id].pos).map(id=>key(challenge.units[id].pos)));
+  assert.ok(stairs&&!taken.has(key(stairs.pos)));challenge.units[challenge.leader].pos={...stairs.pos};taken.add(key(stairs.pos));
+  for(const id of challenge.queue){if(id===challenge.leader)continue;const at=challenge.floor.find(q=>Math.max(Math.abs(q.x-stairs.pos.x),Math.abs(q.y-stairs.pos.y))<=1&&!taken.has(key(q)));assert.ok(at);challenge.units[id].pos={...at};taken.add(key(at));}reveal(challenge);
+  await p.reload();await p.locator('#start').waitFor();await startMemory(p,challenge);await p.screenshot({path:artifact+'review363-challenge-before.png'});
+  await viaStairs(p);await p.waitForFunction(()=>window.trial.getState()?.dungeon?.level===2);await ready(p);
+  const crossed=await state(p),retainedChallenge=crossed.log.filter(text=>challengeIds.some(id=>text.includes(id))),challengeShown=await p.locator('#recent-events,#history,#message').allTextContents();
+  assert.ok(challengeIds.every(id=>!crossed.units[id]));assert.ok(retainedChallenge.some(text=>/c1[a-d]倒下退图/.test(text)),'the original log retains real defeated challenge IDs after crossing');
+  report.challenge={seed:4,fixtureBoundary:'Generated challenge; party starts at the stone with 200HP/Blizzard/accuracy +3 and ordinary enemies wait. Real engine start/combat/reject commands; party then placed at stairs; real browser stair buttons. No full natural route or difficulty claim.',commands,challengeIds,retainedChallenge,rawLogAfterCrossing:crossed.log,shown:challengeShown};
+  await p.screenshot({path:artifact+'review363-challenge-after.png'});fs.writeFileSync(artifact+'review363-challenge-results.json',JSON.stringify(report.challenge,null,2));
+  for(const id of challengeIds)assert.ok(challengeShown.every(text=>!text.includes(id)),'removed challenge enemy ID stays out of browser messages: '+id+' '+JSON.stringify(challengeShown));
+  assert.ok(challengeShown.some(text=>text.includes('同行抵达第2层')));
+  report.pageErrors=errors;assert.deepEqual(errors,[]);fs.writeFileSync(artifact+'review360-floor-results.json',JSON.stringify(report,null,2));return report;
  }finally{await context.close();}
 }

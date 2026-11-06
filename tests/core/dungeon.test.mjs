@@ -24,7 +24,7 @@ test('D2 same seed and level give identical floors, whatever was generated befor
 });
 test('D3 pinned regression values for seed 12345 (observed once, then frozen)',()=>{
  const g=generateFloor(12345,1);
- assert.equal(g.floor.length,319);assert.equal(g.rooms.length,9);
+ assert.equal(g.floor.length,317);assert.equal(g.rooms.length,9);
  assert.deepEqual(g.points,[{pos:{x:5,y:9},kind:'down',used:false}]);
  assert.deepEqual(g.goalAnchor,{x:31,y:22});
  assert.deepEqual(g.enemies.map(e=>[e.id,e.species,e.pos.x,e.pos.y,e.post?`${e.post.x},${e.post.y}`:null]),[

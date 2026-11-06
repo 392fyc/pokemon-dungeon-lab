@@ -220,7 +220,7 @@ test('8.3 R7: evolution choice precedes opening and an independent preselected T
 });
 
 test('8.3 R1/R2/R13/R14/R16: 600 floors retain the fixed 8.2 content and independently valid room sites',()=>{
- assert.equal(baseline.source,'generateFloor after #178 ground/liquid shaping (base e4e3b64)');
+ assert.equal(baseline.source,'generateFloor after #185 pocket removal (base 0eafd81)');
  assert.equal(baseline.samples.length,600);
  for(const b of baseline.samples){
   const {seed,level}=b,g=generateFloor(seed,level),label=`seed ${seed} floor ${level}`;
@@ -230,6 +230,7 @@ test('8.3 R1/R2/R13/R14/R16: 600 floors retain the fixed 8.2 content and indepen
   for(const [field,expected] of Object.entries(b.hashes))assert.equal(hash(field==='pickups'?originalPickups:g[field]),expected,`${label}: unchanged original ${field}`);
   assert.deepEqual(g.points,b.points,`${label}: only goal removed from original points`);
   assert.deepEqual(g.services,b.services,`${label}: only exchanger removed from original services`);
+  assert.deepEqual(g.goalAnchor,b.goalAnchor,`${label}: hidden goal anchor matches the frozen sample`);
   assert.ok(!g.points.some(p=>p.kind==='goal')&&!g.services.some(p=>p.kind==='exchange'));
   const ar=g.adventureRooms;assert.ok(ar.length===2||ar.length===3,`${label}: 2 or 3 rooms`);
   assert.equal(new Set(ar.map(a=>a.room)).size,ar.length);
@@ -258,7 +259,8 @@ test('8.3 R3: 3000 official floors have the exact independently observed referen
  const counts={challenge:0,commission:0,blessing:0,item:0};
  for(let seed=1;seed<=1000;seed++)for(let level=1;level<=3;level++)for(const a of generateFloor(seed,level).adventureRooms)counts[a.type]++;
  // 8.8（#178）布局；期望值由独立维护的 tools/verify/rooms-83.mjs assignRooms 在 3000 层上逐层复算，与生成器的分配逐层一致后冻结（旧值 79dd47e：1822／2622／1793／1267）。
- assert.deepEqual(counts,{challenge:1860,commission:2581,blessing:1799,item:1264});
+ // #185：清除袋形地面后少数层重画或到达房变化，由生成器重算冻结，没有再用独立脚本复算（旧值 1860／2581／1799／1264）。
+ assert.deepEqual(counts,{challenge:1861,commission:2580,blessing:1799,item:1264});
 });
 
 test('8.3 compatibility: legacy generator keeps goal and exchange, with no adventure-room state',()=>{

@@ -156,6 +156,26 @@ test('T178-4: connectivity, corridor width, dead ends, loops, room layout, and e
         .filter(side => side.some(k => F.has(k))).length;
       assert.notEqual(exits, 1, `${label}: dead-end corridor block at ${x},${y}`);
     }
+    // #185: ground off every route must be a real second way through, opening in at least two separate places; anything else is a pocket.
+    const routeGround = new Set(roomSet);
+    for (const r of g.corridors) for (const p of r.path) for (const k of block(p.x, p.y)) routeGround.add(k);
+    const pieceSeen = new Set();
+    for (const c of g.floor) {
+      if (routeGround.has(ck(c)) || pieceSeen.has(ck(c))) continue;
+      const piece = [c], contact = [];pieceSeen.add(ck(c));
+      for (let i = 0; i < piece.length; i++) for (const [dx, dy] of DIRS) {
+        const n = {x: piece[i].x + dx, y: piece[i].y + dy};
+        if (routeGround.has(ck(n))) { if (!contact.some(q => ck(q) === ck(n))) contact.push(n); }
+        else if (F.has(ck(n)) && !pieceSeen.has(ck(n))) { pieceSeen.add(ck(n)); piece.push(n); }
+      }
+      const joined = new Set();let openings = 0;
+      for (const start of contact) {
+        if (joined.has(ck(start))) continue;
+        openings++;joined.add(ck(start));const edge = [start];
+        for (let i = 0; i < edge.length; i++) for (const q of contact) if (!joined.has(ck(q)) && Math.max(Math.abs(q.x - edge[i].x), Math.abs(q.y - edge[i].y)) === 1) { joined.add(ck(q)); edge.push(q); }
+      }
+      assert.ok(openings >= 2, `${label}: pocket at ${ck(c)} opens in ${openings} place(s)`);
+    }
     assert.equal(g.corridors.length, g.rooms.length + 1, `${label}: room tree plus two loops (${g.rooms.length} rooms, ${g.corridors.length} routes)`);
     const roomGraph = new Map(g.rooms.map((r, i) => [i, new Set()]));
     for (const r of g.corridors) { roomGraph.get(r.fromRoom).add(r.toRoom); roomGraph.get(r.toRoom).add(r.fromRoom); }

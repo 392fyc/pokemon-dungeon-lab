@@ -2,7 +2,7 @@
 tags:
   - 工作环境
   - 项目/协作
-updated: 2026-11-03
+updated: 2026-11-06
 ---
 # 多 lane 并行协作：Claude 与 Codex
 
@@ -139,10 +139,7 @@ GitHub issue 与 PR 评论仍用于留存决定与审查结论（可追溯的记
 - **审查**：`dev` 交 PR 前自行安排 Linux 复核（可用 Codex 云，见第 11 节）与视觉对照，结论写进 PR 并附完整 SHA；`main` 的 PR 需要 Linux 交叉检查、代码核验或视觉审核时，`main` 经 lane bus 请 `dev` 做（D-20261103-14；Claude 云会话已停用）。再由本机 `main` 做最终审查（只读 `mercury-reviewer`），在 PR 上写明结论和**审查通过的那个提交的完整 SHA**。`main` 只按这个 SHA 合并；之后再有任何新提交，都要重新审查。合并后由 `main` 清理该任务的 worktree 与分支。`main` 自己的 PR 照旧由只读审查子代理审查。规则、权限或存档的改动必须有独立审查。
 - **游戏检查与长测（D-20261101-21）**：需要大量重复运行的校验由 `dev` 执行——按改动选择 `npm run check`、`npm test`、`npm run test:acceptance`、`npm run build`、`npm run test:browser`（先启动 `vite preview`，用完关掉端口），以及 `tools/soak/balance.mjs` 长测；PR 描述写命令、原始输出位置与汇总表。`main` 不重复整套复跑，只做基线判断与抽查复现（单个测试文件或单个种子）。只说实际跑过的检查；Linux 上的结果不代替 Windows。
 - **界面样式（D-20261101-20）**：由 `dev` 与用户在 Codex 直接商议，PR 描述写商定要点与用户原话出处；`main` 只在审查时做最后审核。试玩中的意见（8.7 与之前的里程碑试玩包）例外：用户全部先交给 `main`，由 `main` 整理成 issue 再交 `dev`（D-20261102-08）。
-- **本月手工 CI**：GitHub Actions 因账户付费问题停用到下个月。合并前在本机做 `.github/workflows/mercury-verify.yml` 的两步：
-  1. 把 Mercury 克隆到 `.tmp/lane-<lane>/` 下的临时目录（Mercury 仓库位置从用户的 `~/.claude/mercury-roots.local.json` 的 `mercury_root` 读取），把克隆的 `origin` 指向 `https://github.com/392fyc/Mercury.git`，`git fetch origin` 后检出 `origin/master`，使检查用的是 GitHub 上的最新 `master`，和工作流一致。
-  2. 在 PR 的 worktree 里运行 `python -B <克隆>/tools/mercury.py check --target . --source <克隆>` 和 `python -B <克隆>/tools/mercury_update.py verify --target . --mercury <克隆> --base main --head-ref <分支>`。对不是 `mercury/update-*` 的分支，第二步直接返回、不做实质检查，真正起作用的是第一步。
-  PR 说明里写明“手工检查”及结果。`dev` 可先自查，并在 PR 写明所用 Mercury `master` 的 SHA；`main` 合并前核对它等于当前 `origin/master`，不一致（或 `dev` 被权限拒绝而没做）就由 `main` 补做。
+- **CI**：`Mercury verify` 由 GitHub Actions 自动运行，合并前确认它在 PR 头提交上通过。
 - **lane 工具本身**：试用 lane 脚本时先用 `--dry-run`。
 
 ## 11. Codex 云环境的使用（`dev` lane）

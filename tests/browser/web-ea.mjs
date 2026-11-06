@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {confirmDeparture} from './camp-ui.mjs';
 import {campControl} from './camp-ui.mjs';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
@@ -79,7 +80,7 @@ try{
  assert.ok(backdrops.some(r=>r.url===campBackdropUrl&&r.status===200&&r.type?.startsWith('image/png')),'the camp painting loads from the same application path: '+JSON.stringify(backdrops));
  await capture('03-camp');
  assert.ok(await p.evaluate(()=>performance.getEntriesByType('resource').some(r=>/\/phaser-.*\.js/.test(r.name))));
- await p.locator('#depart').click();await ready();
+ await confirmDeparture(p);await ready();
  await capture('04-departure');
  const before=await raw();
  await clickUI(p,'open-settings');await p.keyboard.press('ArrowRight');assert.equal(await raw(),before,'settings keys must not advance the world');
@@ -92,7 +93,7 @@ try{
  await capture('06-refresh-title');
  await p.locator('#title-continue').click();await ready();assert.equal(await p.evaluate(()=>window.trial.getState()),null);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),camp);
  await capture('07-continue-camp');
- await p.locator('#depart').click();await ready();assert.equal(await raw(),before,'a new departure again leaves the camp record unchanged');
+ await confirmDeparture(p);await ready();assert.equal(await raw(),before,'a new departure again leaves the camp record unchanged');
  // New expeditions have no early exit. Refresh discards the in-memory run; camp export/import follows.
  assert.equal(await p.locator('#take-exit').count(),0);
  assert.equal(await p.evaluate(()=>window.trial.getState().points.some(p=>p.kind==='exit'||p.kind==='up')),false);

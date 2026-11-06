@@ -98,3 +98,15 @@ test('player logs preserve the acting side and sleep transition meanings',()=>{
  const invalidWorld=textBattle('describe-relative-target-error');invalidWorld.units.B=friend('B',1,2,20,{});invalidWorld.queue.push('B');invalidWorld.units.A.learned=['ember'];invalidWorld.units.A.pp={ember:15};invalidWorld.units.A.maxPp={ember:15};
  const invalidTarget=applyCommand(invalidWorld,{type:'round',action:{type:'skill',skill:'ember',target:'B'}});assert.equal(invalidTarget.ok,false);assert.equal(invalidTarget.error,'该招式只能指定与使用者不同阵营的目标；本轮未执行');assert.deepEqual(invalidTarget.state,invalidWorld);
 });
+
+
+test('friendly reflect log counts enemy action phases',()=>{
+ const s=textBattle('describe-friendly-screen-counterexample');
+ s.units.A.learned=['reflect'];s.units.A.pp={reflect:15};s.units.A.maxPp={reflect:15};
+ const result=applyCommand(s,{type:'round',action:{type:'skill',skill:'reflect',target:'A'}});
+ assert.equal(result.ok,true,result.ok?'':result.error);
+ const line=result.state.log.map(t=>localizeLog(result.state,t)).find(t=>t.includes('受到反射壁保护'));
+ assert.ok(line,result.state.log.join('\n'));
+ assert.match(line,/持续10个敌方行动阶段/);
+ assert.equal(result.state.units.A.reflect,9,'the enemy action phase immediately after casting consumes the first phase');
+});

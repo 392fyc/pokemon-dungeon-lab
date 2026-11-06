@@ -3,7 +3,7 @@ import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccur
 import '../render/hud.css';
 import {unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
 import '../render/panels194.css';
-import {CAMP_BUILDINGS,campScene,campPanelMarkup,type CampPanel} from '../render/camp.ts';
+import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
 import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
@@ -11,7 +11,7 @@ import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomSta
 import {moveOf} from '../core/moves.ts';
 import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,playerText,moveSummary,adventureRoomMarkers} from '../core/describe.ts';
 import {renderTitle,renderNewGame,portrait,portraitTick,type NewGameState} from '../ui/title.ts';
-import {learnTm,newGameProfile,initialProfile,squadOf,MAX_TEAM,TALENTS,rankLevel,rankThreshold,availableTalentPoints,type BaseAction,type Profile,type TalentId} from '../core/base.ts';
+import {newGameProfile,initialProfile,squadOf,TALENTS,rankLevel,rankThreshold,availableTalentPoints,type BaseAction,type Profile,type TalentId} from '../core/base.ts';
 import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
 import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from '../core/save.ts';
 import {createScenario,scenarioProfile,SCENARIOS,SCENARIO_LABEL,type ScenarioId} from '../core/scenarios.ts';
@@ -87,9 +87,11 @@ let draft:{partner:string;action:Action|null;main:Action|null;editor:string;swap
 let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
 let inviteChoice:string|undefined,inviteReject=false,notice='',detailsId:string|null=null,detailsOpenerId:string|null=null;
-let tmPick:string|null=null;
+let campSelected:string|null=null,departureOpen=false;
+let vaultState:VaultState={tab:'tm',by:'type',filter:'all',move:null,learner:null,shard:null};
 let campPanel:CampPanel|null=null;
-let lastCampReport='';
+let campWindowCycle=0;
+let lastCampReport:CampReport|null=null;
 /** 7.2: the purse chosen at the base, and the exchanger choices (companion to send, indexes of the machines to carry) before they are confirmed. */
 let exTarget:string|null=null,exCargo:number[]=[];
 type BoardScene=InstanceType<ReturnType<typeof makeBoardScene>>;
@@ -337,10 +339,10 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   const previousResult=$('flow').querySelector<HTMLElement>('.settlement194'),sameResult=previousResult?.dataset.runId===s.runId;
   const resultScroll=sameResult?['rank-breakdown','partner-loot-scroll','tm-list'].map(id=>{const el=document.getElementById(id);return {id,top:el?.scrollTop??0,left:el?.scrollLeft??0};}):[],flowScroll=sameResult?$('flow').scrollTop:0,resultFocus=sameResult&&$('flow').contains(document.activeElement)?(document.activeElement as HTMLElement).id:null;
   $('flow').innerHTML=s.dungeon?.roguelike?settlement(s,store.settlementSummary,ready,persistentRun):`<div class="result"><small>本局结果</small><h2>${end.outcome==='won'?'击败首领':end.outcome==='normal'?'正常撤离':'全队倒下'}${s.difficulty&&s.difficulty!=='normal'?`（${DIFFICULTY_LABEL[s.difficulty]}）`:''}</h2>${resultSummary}<p>${end.team.map(id=>`${esc(resources(s,id))}，${s.dungeon?.roguelike?'伙伴归营':end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。远征中已学的永久招式保留，回营后可以整备再出发。</p>${resultDetails(s)}${persistentRun?button('to-base','返回基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}<p class="muted">${persistentRun?(ready?'终局已结算并自动保存。':'终局已结算，保存失败；重试成功前不能回营地。'):'这是内存开发场景；结算不会写入营地存档。'}</p></div>`;
-  for(const pos of resultScroll){const el=document.getElementById(pos.id);if(el){el.scrollTop=pos.top;el.scrollLeft=pos.left;}}$('flow').scrollTop=flowScroll;if(resultFocus)document.getElementById(resultFocus)?.focus({preventScroll:true});
+  for(const pos of resultScroll){const el=document.getElementById(pos.id);if(el){el.scrollTop=pos.top;el.scrollLeft=pos.left;}}if(sameResult)$('flow').scrollTop=flowScroll;if(resultFocus)document.getElementById(resultFocus)?.focus({preventScroll:true});
   const tally=document.getElementById('rank-breakdown');if(tally)tally.onscroll=refreshSettlementOverflow;requestAnimationFrame(refreshSettlementOverflow);
   bind('result-settings',openSettings);
-  bind('to-base',()=>{if(anim.active)return;clear();notice='';const report='<h3>上一局 · '+(end.outcome==='won'?'击败首领':'全队倒下')+'</h3>'+resultDetails(s);void transition(store.returnToBase().then(ok=>{if(ok){lastCampReport=report;campPanel=null;}return ok;}));});
+  bind('to-base',()=>{if(anim.active)return;clear();notice='';const report:CampReport={world:clone(s),summary:store.settlementSummary?clone(store.settlementSummary):null};void transition(store.returnToBase().then(ok=>{if(ok){lastCampReport=report;campPanel=null;}return ok;}));});
   bind('new',()=>{const next=checkMode?createScenario(fixture!,newId()):begin(s.scenario==='main-invite'||s.scenario==='expedition'?s.scenario:'main-none');void transition(store.newTrial(next));});return;
  }
  if(s.phase==='commission'){
@@ -425,79 +427,69 @@ function rankPanel(p:Profile,ready:boolean):string{
   <div id="talent-tree">${rows}</div>
   ${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0))}</section>`;
 }
-function campParty(p:Profile,ready:boolean,rosterOpen:boolean):string {
- const slots=Array.from({length:MAX_TEAM},(_,index)=>{
-  const id=p.team[index];
-  const member=p.roster.find(item=>item.id===id);
-  return member
-   ? `<div class="camp-party-slot ${id===p.leader?'is-leader':''}" data-member="${esc(id)}" data-leader="${id===p.leader}">${portrait(member.species)}${esc(spName(member.species))}</div>`
-   : '<div class="camp-party-slot is-empty" aria-label="空位">＋</div>';
- }).join('');
- const roster=p.roster.map(member=>{
-  const id=member.id,position=p.team.indexOf(id);
-  return `<article class="unit camp-roster-entry" id="inst-${esc(id)}">
-   <div class="camp-roster-member"><strong>${esc(spName(member.species))}</strong><span>${position<0?'留守':id===p.leader?'操控者':'同行'}</span></div>
-   <div class="camp-roster-actions">${tacticSelect(`tactic-base-${id}`,member.tactic,!ready)}
-   ${button(`team-${id}`,position<0?'加入队伍':'移出队伍',!ready)}
-   ${button(`lead-${id}`,'设为操控者',!ready||position<0||id===p.leader)}</div>
-   <div class="camp-move-controls">${member.learned.map(l=>button(`carry-${id}-${l.move}`,
-    `${member.carry.includes(l.move)?'卸下':'携带'} ${esc(moveZh(l.move))}`,!ready,
-    `aria-pressed="${member.carry.includes(l.move)}" class="${member.carry.includes(l.move)?'selected':''}" title="${esc(moveSummary(l.move))}"`)).join('')}</div></article>`;
- }).join('');
- return '<h3>出发阵容</h3><div class="camp-party-strip" id="squad">'+slots+'</div><details id="camp-roster"'+(rosterOpen?' open':'')+'><summary>名册</summary>'+roster+'</details>';
-}
-function campVault(p:Profile,ready:boolean):string {
- const vault=ALL_TM_MOVES.map(m=>button(`tm-${m}`,`${esc(tmName(m))}招式机 ×${p.vault[m]??0}`,
-  !ready||(p.vault[m]??0)<1,tmPick===m?'class="selected"':'')).join('');
- const learnRows=tmPick?p.roster.map(i=>{
-  const r=learnTm(p,i.id,tmPick!);
-  return button(`learn-${i.id}`,`${esc(spName(i.species))} · ${r.ok?'可学习':esc(r.error.split('；')[0])}`,!ready);
- }).join(''):'';
- const shards=Object.entries(p.shards).map(([species,count])=>`${esc(spName(species))} ×${count}`).join('、');
- return `<h3>招式机</h3><div>${vault}</div>${learnRows?'<div class="camp-learn-targets">'+learnRows+'</div>':''}
-  <h3>伙伴碎片</h3><p id="camp-shards">${shards||'暂无伙伴碎片'}</p>`;
-}
 function renderBase(){
  const p=store.profile;
  if(!p){$('flow').innerHTML='<p class="error">基地档案缺失。</p>';return;}
  const ready=store.status==='ready';
+ vaultState=normalizeVault194(p,vaultState);
+ if(!p.roster.some(i=>i.id===campSelected))campSelected=p.team[0]??p.roster[0]?.id??null;
  const retry=store.status==='failed'?button('camp-retry','重试保存'):'';
- const feedback=notice||retry?`<div class="camp-feedback" role="status">${esc(notice.replaceAll('主控','操控者'))}${retry}</div>`:'';
- const difficulties=(['easy','normal','hard'] as Difficulty[]).map(d=>button(`difficulty-${d}`,DIFFICULTY_LABEL[d],!ready,
-  `aria-pressed="${p.difficulty===d}"`)).join('');
- const difficultyPicker='<div class="camp-difficulty" id="difficulty-picker" role="group" aria-label="远征难度">'+difficulties+'</div>';
- const rosterOpen=(document.getElementById('camp-roster') as HTMLDetailsElement|null)?.open??false;
- const contents=campPanel==='party'?campParty(p,ready,rosterOpen):campPanel==='vault'?campVault(p,ready):campPanel==='talents'?rankPanel(p,ready):
-  '<p>完成远征 '+p.expeditions+' 次</p>'+(lastCampReport||'<p>暂无战报</p>');
- const focusId=(document.activeElement as HTMLElement|null)?.id;
- const scrollTop=document.getElementById('camp-dialog')?.scrollTop??0;
+ const feedback=notice||retry?`<div class="camp-feedback" role="status">${esc(playerText(notice).replaceAll('主控','操控者'))}${retry}</div>`:'';
+ const difficultyPicker='<div class="camp-difficulty" id="difficulty-picker" role="group" aria-label="远征难度">'+(['easy','normal','hard'] as Difficulty[]).map(d=>button('difficulty-'+d,DIFFICULTY_LABEL[d],!ready,'aria-pressed="'+(p.difficulty===d)+'"')).join('')+'</div>';
+ const oldDialog=document.querySelector<HTMLDialogElement>('#camp-dialog,#camp-departure');
+ const samePanel=oldDialog?.dataset.campPanel===(departureOpen?'departure':campPanel);
+ const focusId=samePanel?(document.activeElement as HTMLElement|null)?.id:null;
+ const positions=samePanel&&oldDialog?[oldDialog,...oldDialog.querySelectorAll<HTMLElement>('[data-camp-scroll]')].map(el=>({id:el.id,top:el.scrollTop,left:el.scrollLeft})):[];
+ const content=campPanel==='party'?campParty194(p,ready,campSelected!):campPanel==='vault'?campVault194(p,ready,vaultState):campPanel==='talents'?rankPanel(p,ready):campRecords194(p,lastCampReport);
  $('party').innerHTML='';$('controls').innerHTML='';
- $('flow').innerHTML=campScene(p,ready,difficultyPicker,campPanel?'':feedback)+(campPanel?campPanelMarkup(campPanel,contents,feedback):'');
- for(const section of Object.keys(CAMP_BUILDINGS) as CampPanel[])bind('camp-open-'+section,()=>{campPanel=section;notice='';render();});
- const dialog=document.getElementById('camp-dialog') as HTMLDialogElement|null;
+ $('flow').innerHTML=campScene(p,ready,'',campPanel||departureOpen?'':feedback)+(departureOpen?campDeparture194(p,ready,difficultyPicker):campPanel?campPanelMarkup(campPanel,content,feedback):'');
+ const close=()=>{const panel=campPanel,wasDeparture=departureOpen;campWindowCycle++;campPanel=null;departureOpen=false;notice='';render();$(wasDeparture?'depart':'camp-open-'+panel).focus();};
+ for(const panel of Object.keys(CAMP_BUILDINGS) as CampPanel[])bind('camp-open-'+panel,()=>{campWindowCycle++;campPanel=panel;departureOpen=false;notice='';render();});
+ const dialog=document.querySelector<HTMLDialogElement>('#camp-dialog,#camp-departure');
  if(dialog){
-  const close=()=>{const panel=campPanel;campPanel=null;tmPick=null;render();if(panel)$('camp-open-'+panel).focus();};
   dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
-  bind('camp-close',close);
-  dialog.showModal();dialog.scrollTop=scrollTop;
+  bind('camp-close',close);bind('depart-cancel',close);dialog.showModal();
+  for(const pos of positions){const el=document.getElementById(pos.id);if(el){el.scrollTop=pos.top;el.scrollLeft=pos.left;}}
   if(focusId&&dialog.contains(document.getElementById(focusId)))document.getElementById(focusId)?.focus({preventScroll:true});
  }
- bind('camp-menu',openSettings);
- bind('camp-retry',()=>{notice='';void transition(store.retry());});
- const edit=async(a:BaseAction,after?:()=>void)=>{if(anim.active||store.status!=='ready')return;const pending=store.baseAction(a);render();const r=await pending;notice=r.ok?(r.saved?'':'这次改动尚未保存；请重试保存'):r.error;if(r.ok&&r.saved)after?.();render();};
- for(const talent of ['vitality','offense','supplies'] as TalentId[])bind(`talent-add-${talent}`,()=>void edit({type:'talent',talent}));
+ bind('camp-menu',openSettings);bind('camp-retry',()=>{notice='';void transition(store.retry());});
+ const edit=async(a:BaseAction,after?:()=>void)=>{
+  if(anim.active||store.status!=='ready')return;
+  const originFocus=(document.activeElement as HTMLElement|null)?.id,originPanel=campPanel,originDeparture=departureOpen,originCycle=campWindowCycle;
+  const pending=store.baseAction(a);render();const r=await pending;
+  notice=r.ok?(r.saved?'':'这次改动尚未保存；请重试保存'):r.error;if(r.ok&&r.saved)after?.();render();
+  const currentFocus=(document.activeElement as HTMLElement|null)?.id;
+  if(originFocus&&campWindowCycle===originCycle&&campPanel===originPanel&&departureOpen===originDeparture&&['camp-close','depart-cancel',originFocus].includes(currentFocus??'')){
+   const target=document.getElementById(originFocus),openDialog=document.querySelector('dialog#camp-dialog[open],dialog#camp-departure[open]');
+   if(target&&openDialog?.contains(target))target.focus({preventScroll:true});
+  }
+ };
+ for(const talent of ['vitality','offense','supplies'] as TalentId[])bind('talent-add-'+talent,()=>void edit({type:'talent',talent}));
  bind('talent-reset',()=>void edit({type:'resetTalents'}));
+ for(const el of document.querySelectorAll<HTMLButtonElement>('[data-camp-member]'))el.onclick=()=>{campSelected=el.dataset.campMember!;notice='';render();};
+ for(const el of document.querySelectorAll<HTMLButtonElement>('[data-camp-tactic]'))el.onclick=()=>{const tactic=el.dataset.campTactic;if(campSelected&&isTactic(tactic))void edit({type:'tactic',inst:campSelected,tactic});};
  for(const i of p.roster){
-   const tactic=document.getElementById(`tactic-base-${i.id}`) as HTMLSelectElement|null;tactic?.addEventListener('change',()=>{if(isTactic(tactic.value))void edit({type:'tactic',inst:i.id,tactic:tactic.value});});
-  for(const l of i.learned)bind(`carry-${i.id}-${l.move}`,()=>void edit({type:'carry',inst:i.id,moves:i.carry.includes(l.move)?i.carry.filter(n=>n!==l.move):[...i.carry,l.move]}));
-  bind(`team-${i.id}`,()=>{const pos=p.team.indexOf(i.id);const team=pos>=0?p.team.filter(t=>t!==i.id):[...p.team,i.id];
-   void edit({type:'team',team,leader:team.includes(p.leader)?p.leader:team[0]??p.leader});});
-  bind(`lead-${i.id}`,()=>void edit({type:'team',team:p.team,leader:i.id}));
-  bind(`learn-${i.id}`,()=>{const m=tmPick;if(m)void edit({type:'learn',inst:i.id,move:m},()=>{tmPick=null;});});
+  for(const l of i.learned)bind('carry-'+i.id+'-'+l.move,()=>void edit({type:'carry',inst:i.id,moves:i.carry.includes(l.move)?i.carry.filter(n=>n!==l.move):[...i.carry,l.move]}));
+  bind('team-'+i.id,()=>{const team=p.team.includes(i.id)?p.team.filter(t=>t!==i.id):[...p.team,i.id];void edit({type:'team',team,leader:team.includes(p.leader)?p.leader:team[0]??p.leader});});
+  bind('lead-'+i.id,()=>void edit({type:'team',team:p.team,leader:i.id}));
+  bind('learn-'+i.id,()=>{const move=vaultState.move;if(move)void edit({type:'learn',inst:i.id,move});});
  }
- for(const difficulty of ['easy','normal','hard'])if(isDifficulty(difficulty))bind(`difficulty-${difficulty}`,()=>void edit({type:'difficulty',difficulty}));
- for(const m of ALL_TM_MOVES)bind(`tm-${m}`,()=>{tmPick=tmPick===m?null:m;notice='';render();});
- bind('depart',()=>{if(anim.active||store.status!=='ready')return;clear();tmPick=null;notice='';const pending=store.depart(newId(),newSeed(),0);render();void pending.then(()=>{render();});});
+ for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-tab]'))el.onclick=()=>{vaultState.tab=el.dataset.vaultTab==='shards'?'shards':'tm';notice='';render();};
+ for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-by]'))el.onclick=()=>{vaultState.by=el.dataset.vaultBy==='category'?'category':'type';vaultState.filter='all';vaultState.move=null;vaultState.learner=null;render();};
+ for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-filter]'))el.onclick=()=>{vaultState.filter=el.dataset.vaultFilter!;vaultState.move=null;vaultState.learner=null;render();};
+ for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-learner]'))el.onclick=()=>{vaultState.learner=el.dataset.vaultLearner!;notice='';render();};
+ for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-shard]'))el.onclick=()=>{vaultState.shard=el.dataset.vaultShard!;render();};
+ for(const m of ALL_TM_MOVES)bind('tm-'+m,()=>{vaultState.move=m;vaultState.learner=null;notice='';render();});
+ for(const difficulty of ['easy','normal','hard'])if(isDifficulty(difficulty))bind('difficulty-'+difficulty,()=>void edit({type:'difficulty',difficulty}));
+ for(const el of document.querySelectorAll<HTMLButtonElement>('[data-camp-move]')){
+  const show=()=>{const tip=document.getElementById('camp-move-tooltip');if(tip){tip.innerHTML=campMoveTooltip194(el.dataset.campMove!);tip.hidden=false;}};
+  const hide=()=>{const active=dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus')??dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:hover');const tip=document.getElementById('camp-move-tooltip');if(tip){if(active){tip.innerHTML=campMoveTooltip194(active.dataset.campMove!);tip.hidden=false;}else tip.hidden=true;}};
+  el.onmouseenter=show;el.onfocus=show;el.onmouseleave=hide;el.onblur=hide;
+ }
+ const focusedMove=dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus'),focusedTip=document.getElementById('camp-move-tooltip');
+ if(focusedMove&&focusedTip){focusedTip.innerHTML=campMoveTooltip194(focusedMove.dataset.campMove!);focusedTip.hidden=false;}
+ bind('depart',()=>{if(anim.active||store.status!=='ready')return;campWindowCycle++;departureOpen=true;campPanel=null;notice='';render();});
+ bind('depart-confirm',()=>{if(anim.active||store.status!=='ready')return;clear();departureOpen=false;notice='';const pending=store.depart(newId(),newSeed(),0);render();void pending.then(()=>render());});
 }
 
 /* ---------- stage 7.2: result details, shop and exchanger panels ---------- */
@@ -602,8 +594,8 @@ async function startNewGame(){
  const made=newGameProfile(ng.main,ng.deputy);if(!made.ok){ngError=made.error;render();return;}
  const ok=await store.beginNewGame(made.profile,ng.overwrite);
  if(!ok){ngError=store.error?`没有写入新存档：${store.error}。原存档保持不变。`:'没有写入新存档；原存档保持不变。';render();return;}
- quickItems=Array.from({length:6},()=>null);bagSlot=0;bagCategory='all';bagOpen=false;campPanel=null;lastCampReport='';
- clear();notice='';tmPick=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
+ quickItems=Array.from({length:6},()=>null);bagSlot=0;bagCategory='all';bagOpen=false;campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;
+ clear();notice='';vaultState.move=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
 }
 /** View-only event rows; the engine log remains intact for animation and saving. */
 let displayedLogRun="",displayedLogRows:string[]=[];
@@ -845,7 +837,7 @@ $('save-file').addEventListener('change',async()=>{
   }
   const pending=store.importRecord(raw,true);render();
   const ok=await pending;
-  if(ok){clear();campPanel=null;lastCampReport='';inviteChoice=undefined;inviteReject=false;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
+  if(ok){clear();campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;inviteChoice=undefined;inviteReject=false;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
    $('transfer-message').textContent='存档已导入并保存，关闭设置后可继续游戏。';
   }else $('transfer-message').textContent=store.importError;
   render();
@@ -853,7 +845,7 @@ $('save-file').addEventListener('change',async()=>{
  }catch{$('transfer-message').textContent='无法读取所选文件，请重新选择。当前存档没有改动。';}
  finally{transferBusy=false;refreshTransfer();}
 });
-function returnToTitle(){if(anim.active||transferBusy)return;clear();campPanel=null;askOverwrite=false;if(settings.open)settings.close();screen='title';render();}
+function returnToTitle(){if(anim.active||transferBusy)return;clear();campPanel=null;departureOpen=false;askOverwrite=false;if(settings.open)settings.close();screen='title';render();}
 bind('to-title',returnToTitle);
 bind('camp-title',returnToTitle);
 {const box=document.getElementById('coords-toggle') as HTMLInputElement|null;box?.addEventListener('change',()=>{showCoords=box.checked;scene?.paint(live());});}

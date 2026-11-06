@@ -94,11 +94,32 @@ export async function panels194Checks({setup,startMemory,state,ready,cell,artifa
    await p.locator('#rank-breakdown').hover();await p.mouse.wheel(0,-700);await p.locator('#rank-more').waitFor({state:'visible'});
    assert.equal(await p.locator('#tm-list').evaluate(el=>el.scrollWidth>el.clientWidth),true,'actual acquired machines overflow horizontally');
    await p.locator('#tm-list').hover();await p.mouse.wheel(900,0);await p.waitForFunction(()=>document.querySelector('#tm-list').scrollLeft>0);
+   const machineGeometry=await p.locator('#tm-list').evaluate(row=>{
+    const bounds=el=>{const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height};};
+    const rowBox=bounds(row);
+    return {row:rowBox,tiles:[...row.querySelectorAll('.loot-tile')].map(tile=>{
+     const disc=tile.querySelector(':scope > .tm-disc'),name=disc?.nextElementSibling,source=name?.nextElementSibling;
+     return {tile:bounds(tile),disc:disc?bounds(disc):null,name:name?bounds(name):null,source:source?bounds(source):null,
+      nameText:name?.textContent??'',sourceText:source?.textContent??''};
+    })};
+   });
+   assert.equal(machineGeometry.tiles.length,current.end.tms.length,'every earned TM has one visible tile');
+   assert.ok(machineGeometry.tiles.length>0,'the layout fixture contains real earned machines');
+   for(const [index,item] of machineGeometry.tiles.entries()){
+    assert.ok(item.disc&&item.name&&item.source,'each machine tile contains its disc, move name and source');
+    for(const [part,box] of [['tile',item.tile],['disc',item.disc],['name',item.name],['source',item.source]]){
+     assert.ok(box.top>=machineGeometry.row.top-1&&box.bottom<=machineGeometry.row.bottom+1,
+      `900x520 TM ${index} ${part} stays inside the harvest scroll row: ${JSON.stringify({row:machineGeometry.row,item})}`);
+    }
+    assert.ok(item.name.top>=item.disc.bottom-1,'move text starts after the TM disc');
+    assert.ok(item.source.top>=item.name.bottom-1,'source text starts after the move name');
+    assert.ok(item.nameText.trim().length>0&&item.sourceText.trim().length>0,'move name and source remain readable');
+   }
    const savedScroll=await p.locator('#rank-breakdown,#partner-loot-scroll,#tm-list').evaluateAll(els=>els.map(el=>({id:el.id,top:el.scrollTop,left:el.scrollLeft})));
    await p.evaluate(()=>window.dispatchEvent(new Event('blur')));await p.keyboard.press('Escape');
    assert.deepEqual(await p.locator('#rank-breakdown,#partner-loot-scroll,#tm-list').evaluateAll(els=>els.map(el=>({id:el.id,top:el.scrollTop,left:el.scrollLeft}))),savedScroll,'blur and Escape preserve XP and loot scroll positions');
    await p.screenshot({path:artifact+'panels194-'+width+'-settlement-overflow.png'});
-   report.overflow={actualRows:5,halfway,halfwayCue:"还有 1 项",onlyListScrolled:true,summaryFixed:true,lootScrolled:true};
+   report.overflow={actualRows:5,halfway,halfwayCue:"还有 1 项",onlyListScrolled:true,summaryFixed:true,lootScrolled:true,machineGeometry};
   }else{
    assert.equal(await p.locator('#flow').evaluate(el=>el.scrollWidth<=el.clientWidth+1),true,'narrow settlement retains vertical scrolling without horizontal page overflow');
    await p.locator('#rank-gain').scrollIntoViewIfNeeded();await p.screenshot({path:artifact+'panels194-'+width+'-settlement-xp.png'});

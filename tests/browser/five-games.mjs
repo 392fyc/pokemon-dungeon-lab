@@ -2,6 +2,7 @@
 // Hidden cells, enemy data outside revealed cells, and unknown points are not supplied to the planner.
 // Game actions still go through keyboard input, canvas clicks, or visible buttons.
 import assert from 'node:assert/strict';
+import {confirmDeparture} from './camp-ui.mjs';
 import {campControl} from './camp-ui.mjs';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
@@ -515,7 +516,7 @@ try{
   const before=await envelope();await page.goto(base+'?dev=1&seed='+route.seed);await ready();
   assert.deepEqual(await envelope(),before,'selecting a seed must not replace the player save');
   assert.deepEqual(Object.keys(before).sort(),['build','content','format','profile','rules','sequence']);assert.equal(before.profile.expeditions,index);
-  assert.equal(await page.locator('#depart').isEnabled(),true);const campBytes=await raw();await click('depart');assert.equal(await raw(),campBytes,'departure retains the exact camp bytes');assert.deepEqual(await envelope(),before);
+  assert.equal(await page.locator('#depart').isEnabled(),true);const campBytes=await raw();await confirmDeparture(page);assert.equal(await raw(),campBytes,'departure retains the exact camp bytes');assert.deepEqual(await envelope(),before);
   let s=await state();assert.equal(s.dungeon.seed,route.seed);assert.ok(!runIds.has(s.runId));runIds.add(s.runId);
   if(learned){const u=Object.values(s.units).find(u=>u.inst===trainedInst);assert.ok(u?.learned.includes(trainedMove),'the next expedition actually carries the trained move');carriedIntoRun=true;}
   try{accepted+=await playRun(index,route);}
@@ -534,9 +535,15 @@ try{
     for(const move of moves){
      await click('tm-'+move);
      for(const inst of squad){
-      const learn=page.locator('#learn-'+inst);
-      // An incompatible button is clickable so the game can explain why it rejects the action.
-      if((await learn.innerText()).trim().endsWith(' · 可学习')){choice={move,inst};break;}
+      const learner=page.locator('[data-vault-learner="'+inst+'"]');
+      assert.equal(await learner.count(),1,'every departing member has a visible learning candidate');
+      if(await learner.isEnabled()){
+       assert.match((await learner.innerText()).trim(),/可学习$/);
+       await learner.click();await ready();
+       const learn=page.locator('#learn-'+inst);
+       assert.equal(await learn.count(),1);assert.equal(await learn.isEnabled(),true,'the selected compatible partner can confirm learning');
+       choice={move,inst};break;
+      }
      }
      if(choice)break;
     }

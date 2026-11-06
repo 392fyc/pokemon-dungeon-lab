@@ -4,7 +4,8 @@ import {review357Checks} from './review357.mjs';
 import {review360FloorChecks} from './review360.mjs';
 import {step193Checks} from './step193.mjs';
 import assert from 'node:assert/strict';
-import {campControl,openCampPanel,openCampRoster} from './camp-ui.mjs';
+import {campControl,confirmDeparture,openCampPanel,openCampRoster} from './camp-ui.mjs';
+import {camp194Checks} from './camp194.mjs';
 import fs from 'node:fs';
 import {createRequire} from 'node:module';
 import {BOSS} from '../../src/core/dungeon.ts';
@@ -683,30 +684,41 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
    await p.goto(base+'?dev=1&seed=4243');await p.locator('#start').waitFor();
    assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),profile),true);await p.reload();await ready(p);
    let s=await state(p);assert.equal(s,null);
-  await openCampRoster(p);
-  const baseMoves=await p.locator('.camp-move-controls button').evaluateAll(items=>items.map(item=>item.title).join(' '));assert.match(baseMoves,/相邻1格（含斜向/);assert.match(baseMoves,/基础伤害/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
+  await openCampRoster(p,'P3');
+  await p.locator('[data-camp-move]').first().focus();await p.locator('#camp-move-tooltip').waitFor({state:'visible'});
+  const baseMoves=await p.locator('#camp-move-tooltip').innerText();assert.match(baseMoves,/射程\s*1格/);assert.match(baseMoves,/威力\s*6/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
+  assert.equal(await p.locator('#camp-move-tooltip .hud-range-cell.is-active').count(),1);
+  assert.equal(await p.locator('#camp-move-tooltip .hud-range-cell.is-active,#camp-move-tooltip .hud-range-cell.is-direction').count(),8,'the front move diagram retains all eight adjacent directions');
   const prof=()=>p.evaluate(()=>window.trial.profile());
   let pr=await prof();assert.deepEqual(pr.vault,{protect:1});assert.equal(pr.expeditions,1);assert.deepEqual(pr.roster.map(i=>i.species),['charmander','squirtle','bulbasaur']);
   const rosterLayout=await campPanelFits(p);
-  assert.equal(await p.locator('#squad .camp-party-slot:not(.is-empty)').count(),3);
-  assert.equal(await p.locator('#camp-roster article').count(),3);
-  assert.doesNotMatch(await p.locator('#camp-roster').innerText(),/\bP[123]\b/,'roster shows species and role without internal IDs');
+  assert.equal(await p.locator('.camp-squad > span').count(),3,'the camp painting shows the selected three-member team');
+  assert.equal(await p.locator('#camp-dialog .camp194-roster-select[data-camp-member]').count(),3);
+  assert.deepEqual(await p.locator('.camp194-team-slot[data-camp-member]').evaluateAll(nodes=>nodes.map(node=>node.dataset.campMember)),['P1','P2','P3']);
+  assert.equal(await p.locator('.camp194-team-slot.is-leader').getAttribute('data-camp-member'),'P3');
+  assert.doesNotMatch(await p.locator('#camp-dialog').innerText(),/\bP[123]\b/,'the hut shows species and role without internal IDs');
   await p.screenshot({path:artifact+'windows-camp-roster-three-1280.png'});
   await p.screenshot({path:artifact+'windows-base-1.png',fullPage:true});
   // learning
   await click(p,'tm-protect');await click(p,'learn-P3');pr=await prof();
   assert.deepEqual(pr.vault,{});assert.deepEqual(pr.roster[2].learned.map(l=>l.move),['tackle','seedbomb',...extraCarry.map(m=>m.move),'protect']);
-  assert.equal(await p.locator('#tm-protect').isDisabled(),true,'no machine left to use twice');
+  const exhaustedBytes=await raw(p);await p.locator('#tm-protect').click();
+  assert.equal(await p.locator('[data-vault-learner]').count(),3);
+  assert.deepEqual(await p.locator('[data-vault-learner]').evaluateAll(nodes=>nodes.map(node=>node.disabled)),[true,true,true],'zero inventory disables every learning candidate');
+  assert.equal(await p.locator('.camp194-learn-button').isDisabled(),true,'an exhausted machine can be viewed but cannot be learned');
+  await p.locator('.camp194-learn-button').evaluate(el=>el.click());assert.equal(await raw(p),exhaustedBytes,'attempting to confirm an exhausted machine preserves the exact save');
   // Carry four real learned moves, reject a fifth without writing, then swap seedbomb for protect.
   for(const m of extraCarry)await click(p,'carry-P3-'+m.move);assert.equal((await prof()).roster[2].carry.length,4);
-  const before=await raw(p);await click(p,'carry-P3-protect');
-  assert.match(await p.locator('#message').innerText(),/最多携带4招/);assert.equal(await raw(p),before);
+  const before=await raw(p),fifthMove=p.locator('#carry-P3-protect');
+  assert.equal(await fifthMove.isDisabled(),true,'four carried moves disable the fifth choice');
+  await fifthMove.evaluate(el=>el.click());await ready(p);assert.equal(await raw(p),before,'a disabled fifth move cannot write a different carry list');
   for(const m of extraCarry)await click(p,'carry-P3-'+m.move);await click(p,'carry-P3-seedbomb');await click(p,'carry-P3-protect');pr=await prof();assert.deepEqual(pr.roster[2].carry,['tackle','protect']);
   // team: remove and re-add P1 so the order becomes P2, P3, P1; P3 stays the leader; "设为主控" is disabled for the current leader
   await click(p,'team-P1');await click(p,'team-P1');pr=await prof();
-  assert.deepEqual(pr.team,['P2','P3','P1']);assert.equal(pr.leader,'P3');assert.equal(await p.locator('#lead-P3').isDisabled(),true);await click(p,'lead-P1');assert.equal((await prof()).leader,'P1');await click(p,'lead-P3');
-  assert.deepEqual(await p.locator('#squad [data-member]').evaluateAll(slots=>slots.map(slot=>slot.dataset.member)),['P2','P3','P1']);
-  assert.equal(await p.locator('#squad [data-leader=true]').getAttribute('data-member'),'P3');
+  assert.deepEqual(pr.team,['P2','P3','P1']);assert.equal(pr.leader,'P3');await openCampRoster(p,'P3');assert.equal(await p.locator('#lead-P3').isDisabled(),true);await click(p,'lead-P1');assert.equal((await prof()).leader,'P1');await click(p,'lead-P3');
+  assert.equal(await p.locator('.camp-squad > span').count(),3,'the camp painting follows the saved team');
+  assert.deepEqual(await p.locator('.camp194-team-slot[data-camp-member]').evaluateAll(nodes=>nodes.map(node=>node.dataset.campMember)),['P2','P3','P1']);
+  assert.equal(await p.locator('.camp194-team-slot.is-leader').getAttribute('data-camp-member'),'P3');
   // a failed write freezes the base until the same write is retried
   await p.evaluate(()=>{window.__failWrites=true;});await click(p,'team-P1').catch(()=>{});
   await p.waitForFunction(()=>window.trial.store.status==='failed');
@@ -782,7 +794,8 @@ await test('结算8.1：全灭仍带回伙伴，招式机丢失，三组结算�
   await p.screenshot({path:artifact+'windows-settlement-wipe.png',fullPage:true});
   assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),after),true);
   await p.reload();await ready(p);assert.equal(await p.locator('#account').count(),0);assert.equal(await p.locator('#rescue-pool').count(),0);
-  assert.equal(await p.locator('#purse-up').count(),0);assert.equal(await p.locator('#difficulty-picker').count(),1);assert.equal(await p.locator('#depart').isEnabled(),true);
+  assert.equal(await p.locator('#purse-up').count(),0);assert.equal(await p.locator('#difficulty-picker').count(),0);assert.equal(await p.locator('#depart').isEnabled(),true);
+  await p.locator('#depart').click();await p.locator('#camp-departure[open]').waitFor();assert.equal(await p.locator('#difficulty-picker').count(),1,'difficulty is shown in the departure confirmation');await p.locator('#depart-cancel').click();await ready(p);
   assert.deepEqual(errors,[]);return {wipe:true,allPartnersReturned:true,machinesLost:true,threeRewardGroups:true};
  }finally{await context.close();}
 });
@@ -914,22 +927,26 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
    for(const [panel,name,keeper] of [['vault','仓库','卡比兽'],['talents','天赋石碑',null],['records','记录板',null]]){
     await openCampPanel(p,panel);
     assert.equal(await p.locator('#camp-dialog-heading').innerText(),name);
-    if(keeper)assert.match(await p.locator('.camp-dialog-keeper').innerText(),new RegExp(keeper));
+    if(keeper)assert.equal(await p.locator('.camp194-greeting-portrait').getAttribute('aria-label'),keeper);
     else{
      assert.equal(await p.locator('.camp-dialog-keeper').count(),0);
-     assert.equal(await p.locator('.camp-greeting').count(),0);
+     assert.equal(await p.locator('.camp194-greeting').count(),0);
     }
     await p.keyboard.press('Escape');
     assert.equal(await p.locator('#camp-dialog').count(),0);
    }
    assert.equal(await raw(p),campSave,'viewing camp panels does not write');
-   await openCampRoster(p);
-   await p.locator('#tactic-base-P1').selectOption('followme');await ready(p);
-   await p.locator('#tactic-base-P2').selectOption('avoid');await ready(p);
+   await openCampRoster(p,'P1');
+   await p.locator('[data-camp-tactic="followme"]').click();await ready(p);
+   await openCampRoster(p,'P2');
+   await p.locator('[data-camp-tactic="avoid"]').click();await ready(p);
    const pr=await p.evaluate(()=>window.trial.profile());
   assert.deepEqual(pr.roster.map(i=>i.species),['treecko','mudkip']);assert.deepEqual(pr.team,['P1','P2']);assert.equal(pr.leader,'P1');assert.equal(pr.expeditions,0);
    assert.deepEqual(pr.roster.map(i=>i.tactic),['followme','avoid'],'base tactics are saved per instance');
-  const base1=await p.locator('#base').innerText()+await p.locator('#camp-dialog').innerText();assert.match(base1,/木守宫/);assert.match(base1,/水跃鱼/);assert.match(base1,/树叶/);assert.doesNotMatch(base1,/leafage|watergun/);
+  const campTextBytes=await raw(p);let base1=await p.locator('#base').innerText();
+  for(const memberId of ['P1','P2']){await openCampRoster(p,memberId);base1+='\n'+await p.locator('#camp-dialog').innerText();}
+  assert.match(base1,/木守宫/);assert.match(base1,/水跃鱼/);assert.match(base1,/树叶/);assert.match(base1,/水枪/);assert.doesNotMatch(base1,/leafage|watergun/);
+  assert.equal(await raw(p),campTextBytes,'viewing each selected partner preserves the exact camp save');
    const campBeforeRun=await raw(p);await click(p,'depart');await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
     let s=await state(p);assert.equal(s.scenario,'expedition');assert.deepEqual(s.queue,['A','B']);assert.equal(s.units.A.species,'treecko');assert.equal(s.leader,'A');assert.equal(s.units.A.tactic,'followme');assert.equal(s.units.B.tactic,'avoid');
     assert.match(await p.locator('#goal-label').innerText(),/Lv5 · 升级经验 0\/5/);assert.match(await p.locator('#goal-label').innerText(),/升到下一级需当前等级经验/);
@@ -957,7 +974,7 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
  try{
   await p.setViewportSize({width:1280,height:720});await p.goto(base);await p.locator('#title-new').waitFor();await p.locator('#title-new').click();
   await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
-  await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();await p.locator('#depart').waitFor();await ready(p);await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
+  await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();await p.locator('#depart').waitFor();await ready(p);await confirmDeparture(p);await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   let s=await state(p);assert.equal(s.round,0);assert.equal(s.phase,'playing');
   assert.equal(await p.locator('#dungeon-layout').isVisible(),true,'the real player run uses the full-screen maze layout');
   assert.equal(await p.locator('#shortcut-card').isVisible(),true,'shortcut help is inside the maze view');
@@ -1265,14 +1282,15 @@ await test('162 同页替换新档：成功清空快捷分配，写入失败保�
    fixture.units[enemy.id]=enemy;fixture.enemies=[enemy.id];fixture.seen=fixture.floor.map(q=>q.x+','+q.y);
    await p.evaluate(world=>{window.trial.store.world=world;window.dispatchEvent(new Event('blur'));},fixture);await ready(p);
    await click(p,'wait');assert.equal((await state(p)).phase,'ended');assert.equal((await state(p)).end.outcome,'wipe');
+   for(const group of ['depth-rewards','harvest-rewards','camp-task-rewards'])assert.equal(await p.locator('.settlement194 #'+group).isVisible(),true,'the terminal result retains all three reward groups');
    await click(p,'to-base');assert.equal(await state(p),null);
    await openCampPanel(p,'records');
-   assert.match(await p.locator('#camp-dialog').innerText(),/上一局 · 全队倒下/);
-   for(const group of ['depth-rewards','harvest-rewards','camp-task-rewards'])assert.equal(await p.locator('#camp-dialog #'+group).isVisible(),true);
+   assert.equal(await p.locator('.camp194-note-last h3').innerText(),'上一次远征');
+   assert.equal(await p.locator('.camp194-note-last .camp194-result').innerText(),'全队倒下');
    await click(p,'to-title');await p.locator('#title-new').waitFor();
   };
   await p.goto(base);await p.locator('#title-new').click();await newGameClicks(p,'treecko','mudkip');
-  await p.locator('#depart').click();await ready(p);await injectHeldTonic();
+  await confirmDeparture(p);await ready(p);await injectHeldTonic();
   await click(p,'bag-open');await p.locator('[data-bag-slot="4"]').click();await p.locator('[data-bag-category="all"]').click();await p.locator('[data-bag-item="tonic"]').click();await click(p,'bag-close');
   assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。目标每招恢复 10 PP（不超过上限）。');
   await finishThroughWipe();const original=await raw(p);assert.ok(original);
@@ -1281,11 +1299,11 @@ await test('162 同页替换新档：成功清空快捷分配，写入失败保�
   await p.evaluate(()=>{window.__failNewProfile=true;});await p.locator('#newgame-start').click();
   await p.getByText(/没有写入新存档/).waitFor();assert.equal(await raw(p),original,'a failed replacement retains the exact old camp bytes');
   await p.evaluate(()=>{window.__failNewProfile=false;});await p.locator('#deputy-back').click();await p.locator('#newgame-cancel').click();await p.locator('#title-continue').click();
-  await p.locator('#depart').click();await ready(p);await injectHeldTonic();
+  await confirmDeparture(p);await ready(p);await injectHeldTonic();
   assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。目标每招恢复 10 PP（不超过上限）。','failed new-game persistence retains the old UI assignment and effect');
   await finishThroughWipe();await p.locator('#title-new').click();await p.locator('#overwrite-yes').click();await newGameClicks(p,'charmander','squirtle');
   assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(u=>u.species),['charmander','squirtle']);
-  await p.locator('#depart').click();await ready(p);await injectHeldTonic();const before=await state(p);
+  await confirmDeparture(p);await ready(p);await injectHeldTonic();const before=await state(p);
   assert.equal(before.prog.items.tonic,1,'the new run owns the same item previously assigned by the old profile');
   assert.equal(await p.locator('#hud-bottom .hud-quick-slot.is-empty').count(),6,'a successful same-page replacement clears every old quick assignment');
   await key(p,'9');assert.deepEqual(await state(p),before,'the old slot key no longer selects or uses the item');
@@ -1426,8 +1444,8 @@ await test('难度8.1：困难选择保存，刷新保留，出发固定零钱�
  try{
   await p.goto(base);await p.locator('#title-new').click();await newGameClicks(p,'treecko','mudkip');
   await click(p,'difficulty-hard');const camp=JSON.parse(await raw(p));assert.equal(camp.profile.difficulty,'hard');
-  await p.reload();await p.locator('#title-continue').click();await ready(p);assert.equal(await p.locator('#difficulty-hard').getAttribute('aria-pressed'),'true');
-  await click(p,'depart');const s=await state(p);assert.equal(s.difficulty,'hard');assert.equal(s.purse,0);assert.equal(await p.locator('#difficulty-picker').count(),0);
+  await p.reload();await p.locator('#title-continue').click();await ready(p);await p.locator('#depart').click();await p.locator('#camp-departure[open]').waitFor();assert.equal(await p.locator('#difficulty-hard').getAttribute('aria-pressed'),'true');
+  await p.locator('#depart-cancel').click();await ready(p);await click(p,'depart');const s=await state(p);assert.equal(s.difficulty,'hard');assert.equal(s.purse,0);assert.equal(await p.locator('#difficulty-picker').count(),0);
   const {generateFloor}=await import('../../src/core/dungeon.ts');
   const normal=generateFloor(s.dungeon.seed,1,{...s.dungeon,difficulty:'normal'});
   assert.ok(s.enemies.every(id=>s.units[id].maxHp>normal.enemies.find(e=>e.id===id).hp));
@@ -1439,7 +1457,7 @@ await test('8.5b 新游戏→出发→第1层：苔石运行时纹理，三层�
  try{
   await p.goto(base);await p.locator('#title-new').waitFor();await p.locator('#title-new').click();
   await newGameClicks(p,'treecko','mudkip');
-  await p.locator('#depart').click();await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
+  await confirmDeparture(p);await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   const s=await state(p);assert.equal(s.dungeon.floors,3);assert.equal(s.dungeon.boss,true);assert.equal(s.dungeon.level,1);assert.equal(s.dungeon.base,true);
   const v=await p.evaluate(()=>window.trial.view());assert.ok(v.tiles.includes('dtef-TinyWoods-tileset_0')&&!v.tiles.some(t=>t.startsWith('terrain-')),'floor 1 shows the original TinyWoods DTEF sheet by default (#178)');
   assert.match(await p.locator('#world-label').innerText(),/第1层/);
@@ -1722,7 +1740,7 @@ await test('8.5 结算：三组奖励、五项经验与升级显示',async()=>{
   for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
   const score=await p.locator('#rank-breakdown').innerText();
   assert.match(score,/到达第 1 层\s*\+1/);assert.match(score,/完成委托 2 个\s*\+2/);
-  assert.doesNotMatch(score,/击败首领|新伙伴|带回招式机/,'zero rewards are omitted in the approved layout');assert.deepEqual(await p.evaluate(()=>{const r=window.trial.store.settlementSummary.rank;return [r.boss,r.recruits,r.tms];}),[0,0,0]);
+  assert.doesNotMatch(score,/击败首领|新伙伴经验|招式机经验/,'zero rewards are omitted in the approved layout');assert.deepEqual(await p.evaluate(()=>{const r=window.trial.store.settlementSummary.rank;return [r.boss,r.recruits,r.tms];}),[0,0,0]);
   assert.match(await p.locator('#rank-gain').getAttribute('aria-label'),/经验 \+3.*5 → 8/);
   assert.match(await p.locator('#rank-level-change').getAttribute('aria-label'),/Lv1 → Lv2.*1 个天赋点/);
   await p.screenshot({path:artifact+'windows-85-rank-settlement.png',fullPage:true});
@@ -2175,7 +2193,9 @@ await test('#194 头像按可见像素居中：七种素材、实际进化、营
   assert.ok(['0001','0002','0003','0005','0009','0130','0156'].every(dex=>observed.some(row=>row.dex===dex)),'all seven requested source sheets were measured on real HUD elements');
   await p.reload();await p.locator('#start').waitFor();await p.evaluate(async profile=>{await window.trial.store.beginNewGame(profile);window.dispatchEvent(new Event('blur'));},initialProfile());await p.locator('#base').waitFor();
   assertPortraitsCentered(await visiblePortraits(p,'.camp-squad .portrait'),'camp squad');
-  await openCampPanel(p,'party');assertPortraitsCentered(await visiblePortraits(p,'.camp-party-slot .portrait'),'camp party slots');assertPortraitsCentered(await visiblePortraits(p,'.camp-dialog-keeper .portrait'),'camp keeper dialog');
+  await openCampPanel(p,'party');assertPortraitsCentered(await visiblePortraits(p,'.camp194-team-slot .portrait'),'camp team slots');
+  assertPortraitsCentered(await visiblePortraits(p,'.camp194-roster-select .portrait'),'camp roster');
+  assertPortraitsCentered(await visiblePortraits(p,'.camp194-greeting-portrait .portrait'),'camp hut keeper');
   await p.goto(base);await p.locator('#title-new').waitFor();await p.locator('#title-new').click();
   await p.waitForFunction(()=>{const visible=selector=>{const el=document.querySelector(selector);return !!el&&el.getClientRects().length>0;};return visible('#overwrite-yes')||visible('#pick-main-bulbasaur');},null,{timeout:10000});
   const overwrite=p.locator('#overwrite-yes');if(await overwrite.isVisible())await overwrite.click();
@@ -2195,6 +2215,7 @@ await test('8.9b #193 手机学招、四招、相性与睡眠自动推进',()=>s
 
 for(const [width,height] of [[1280,720],[900,720],[390,844]])await test('#194 新版窗口 '+width+'：详情、设置、结算及溢出',()=>panels194Checks({setup,startMemory,state,ready,cell,artifact,width,height}));
 await test('#194 新版窗口 睡眠与键盘隔离',()=>panels194SleepChecks({setup,startMemory,state,ready,artifact}));
+await test('#194 营地、伙伴小屋、仓库与记录板 1280×720 / 900×520 / 390×780',()=>camp194Checks({setup,startMemory,state,ready,emptyReady,artifact}));
 await browser.close();
 clearTimeout(browserDeadline);
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

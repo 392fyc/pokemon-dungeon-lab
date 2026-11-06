@@ -25,7 +25,7 @@ updated: 2026-10-25
 - [战斗场地与美术资源](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/06-%E7%A0%94%E7%A9%B6/%E5%8F%82%E8%80%83%E9%A1%B9%E7%9B%AE/pokemon-arena-2d/%E6%88%98%E6%96%97%E5%9C%BA%E5%9C%B0%E4%B8%8E%E7%BE%8E%E6%9C%AF%E8%B5%84%E6%BA%90.md)：公开画面、角色资源来源和地牢借鉴方向。
 - [开发进展与内容生产](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/06-%E7%A0%94%E7%A9%B6/%E5%8F%82%E8%80%83%E9%A1%B9%E7%9B%AE/pokemon-arena-2d/%E5%BC%80%E5%8F%91%E8%BF%9B%E5%B1%95%E4%B8%8E%E5%86%85%E5%AE%B9%E7%94%9F%E4%BA%A7.md)：角色投票、专题展示，以及不能由宣传速度推断的事项。
 - [资料来源与验证范围](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/06-%E7%A0%94%E7%A9%B6/%E5%8F%82%E8%80%83%E9%A1%B9%E7%9B%AE/pokemon-arena-2d/%E8%B5%84%E6%96%99%E6%9D%A5%E6%BA%90%E4%B8%8E%E9%AA%8C%E8%AF%81%E8%8C%83%E5%9B%B4.md)：原始来源、身份与发行范围。
-- [跨项目开发启示](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/06-%E7%A0%94%E7%A9%B6/%E5%8F%82%E8%80%83%E9%A1%B9%E7%9B%AE/%E8%B7%A8%E9%A1%B9%E7%9B%AE/%E5%86%85%E5%AE%B9%E7%94%9F%E4%BA%A7%E6%96%B9%E6%B3%95%E4%B8%8E%E5%BC%80%E5%8F%91%E5%90%AF%E7%A4%BA.md)：把公开做法转为可评估的开发建议。
+- [内容生产开发启示](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/06-%E7%A0%94%E7%A9%B6/%E5%8F%82%E8%80%83%E9%A1%B9%E7%9B%AE/%E8%B7%A8%E9%A1%B9%E7%9B%AE/%E5%86%85%E5%AE%B9%E7%94%9F%E4%BA%A7%E6%96%B9%E6%B3%95%E4%B8%8E%E5%BC%80%E5%8F%91%E5%90%AF%E7%A4%BA.md)：把公开做法转为可评估的开发建议。
 
 返回：[研究总索引](../../../README.md)。
 

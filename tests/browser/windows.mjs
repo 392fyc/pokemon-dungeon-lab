@@ -1,4 +1,4 @@
-import {panels194Checks} from './panels194.mjs';
+import {panels194Checks,panels194SleepChecks} from './panels194.mjs';
 import {fog350Checks} from './fog350.mjs';
 import {review357Checks} from './review357.mjs';
 import {review360FloorChecks} from './review360.mjs';
@@ -2193,7 +2193,8 @@ await test('#194 #360 真实敌人换层后例行日志与旧敌人编号保持�
 await test('8.9b #193 桌面学招、四招、相性与睡眠自动推进',()=>step193Checks({setup,startMemory,state,ready,cell,artifact,width:1280,height:720}));
 await test('8.9b #193 手机学招、四招、相性与睡眠自动推进',()=>step193Checks({setup,startMemory,state,ready,cell,artifact,width:390,height:844}));
 
-for(const [width,height] of [[1280,720],[390,844]])await test('#194 新版窗口 '+width+'：详情、设置、结算及溢出',()=>panels194Checks({setup,startMemory,state,ready,cell,artifact,width,height}));
+for(const [width,height] of [[1280,720],[900,720],[390,844]])await test('#194 新版窗口 '+width+'：详情、设置、结算及溢出',()=>panels194Checks({setup,startMemory,state,ready,cell,artifact,width,height}));
+await test('#194 新版窗口 睡眠与键盘隔离',()=>panels194SleepChecks({setup,startMemory,state,ready,artifact}));
 await browser.close();
 clearTimeout(browserDeadline);
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

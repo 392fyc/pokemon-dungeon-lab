@@ -9,7 +9,7 @@ import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
 import {moveOf} from '../core/moves.ts';
-import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,playerText,moveSummary,damageEstimateText,adventureRoomMarkers} from '../core/describe.ts';
+import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,playerText,moveSummary,adventureRoomMarkers} from '../core/describe.ts';
 import {renderTitle,renderNewGame,portrait,portraitTick,type NewGameState} from '../ui/title.ts';
 import {learnTm,newGameProfile,initialProfile,squadOf,MAX_TEAM,TALENTS,rankLevel,rankThreshold,availableTalentPoints,type BaseAction,type Profile,type TalentId} from '../core/base.ts';
 import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
@@ -86,7 +86,7 @@ let selectedConfig='main-invite';
 let draft:{partner:string;action:Action|null;main:Action|null;editor:string;swap:boolean}|null=null;
 let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
-let inviteChoice:string|undefined,inviteReject=false,notice='',detailsId:string|null=null;
+let inviteChoice:string|undefined,inviteReject=false,notice='',detailsId:string|null=null,detailsOpenerId:string|null=null;
 let tmPick:string|null=null;
 let campPanel:CampPanel|null=null;
 let lastCampReport='';
@@ -240,15 +240,17 @@ function showMoveTip(skill:Skill,actor:string){
  if(box.id==='detail-tooltip'&&detailDialog){const row=detailDialog.querySelector<HTMLElement>('[data-detail-skill="'+CSS.escape(skill)+'"]')!,r=row.getBoundingClientRect(),d=detailDialog.getBoundingClientRect();box.style.left=Math.max(8,Math.min(detailDialog.clientWidth-box.offsetWidth-8,r.left-d.left-box.offsetWidth-12))+'px';box.style.top=Math.max(detailDialog.scrollTop+8,Math.min(r.top-d.top+detailDialog.scrollTop,detailDialog.scrollTop+detailDialog.clientHeight-box.offsetHeight-8))+'px';}
 }
 function renderDetailsPanel(s:World,disabled:boolean){
- const host=$('unit-details-layer');host.replaceChildren();
+ const host=$('unit-details-layer'),previous=document.getElementById('unit-details-dialog');
+ const focusId=previous?.contains(document.activeElement)?(document.activeElement as HTMLElement).id:null,scrollTop=previous?.scrollTop??0;
+ host.replaceChildren();
  if(!detailsId||!s.units[detailsId]||s.phase!=='playing')return;
  const selected=detailsId,choices=[...s.queue,...s.enemies.filter(id=>!!enemyInfo(s,id))];
  host.innerHTML=unitDetails(s,selected,choices,disabled);const dialog=$('unit-details-dialog') as HTMLDialogElement;
- const close=()=>{detailsId=null;actionsOpen=false;render();};bind('unit-detail-close',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
+ const close=()=>{const opener=detailsOpenerId;detailsId=null;detailsOpenerId=null;actionsOpen=false;render();if(opener)document.querySelector<HTMLButtonElement>('[data-hud-details="'+CSS.escape(opener)+'"]')?.focus({preventScroll:true});};bind('unit-detail-close',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-unit]'))b.onclick=()=>{detailsId=b.dataset.detailUnit!;render();};
  for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-tactic]'))b.onclick=()=>{const tactic=b.dataset.detailTactic;if(isTactic(tactic))void setTactic(selected,tactic);};
- for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-skill]')){const show=()=>showMoveTip(b.dataset.detailSkill!,selected),hide=()=>{const tip=document.getElementById('detail-tooltip');if(tip)tip.hidden=true;};b.onmouseenter=show;b.onfocus=show;b.onmouseleave=hide;b.onblur=hide;}
- dialog.showModal();cancelSleepAdvance();
+ for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-skill]')){const show=()=>showMoveTip(b.dataset.detailSkill!,selected),hide=()=>{const active=host.querySelector<HTMLButtonElement>('[data-detail-skill]:focus')??host.querySelector<HTMLButtonElement>('[data-detail-skill]:hover');if(active)showMoveTip(active.dataset.detailSkill!,selected);else{const tip=document.getElementById('detail-tooltip');if(tip)tip.hidden=true;}};b.onmouseenter=show;b.onfocus=show;b.onmouseleave=hide;b.onblur=hide;}
+ dialog.showModal();dialog.scrollTop=scrollTop;if(focusId&&dialog.contains(document.getElementById(focusId)))document.getElementById(focusId)?.focus({preventScroll:true});cancelSleepAdvance();
 }
 function refreshSettlementOverflow(){
  const list=document.getElementById('rank-breakdown'),cue=document.getElementById('rank-more');if(!list||!cue)return;
@@ -266,7 +268,7 @@ function renderDungeonHud(){
  $('activity-status').innerHTML=hudTracking(s);$('activity-status').hidden=!s.dungeon?.roguelike;
  $('hud-tooltip').hidden=true;$('hud-tooltip').innerHTML='';
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-leader]'))b.onclick=()=>{actionsOpen=false;void send({type:'switch',actor:b.dataset.hudLeader!});};
- for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-details]'))b.onclick=()=>{const id=b.dataset.hudDetails!;const close=actionsOpen&&detailsId===id;detailsId=close?null:id;actionsOpen=!close;render();};
+ for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-details]'))b.onclick=()=>{const id=b.dataset.hudDetails!;const close=actionsOpen&&detailsId===id;detailsId=close?null:id;detailsOpenerId=close?null:id;actionsOpen=!close;render();};
  // The old action editor retains its transactional draft, service and confirmation handlers.
  // Its move/item controls are replaced by the actual HUD controls, so no duplicate IDs remain.
  $('controls').querySelectorAll(':scope > h2,:scope > p.muted,.items').forEach(el=>el.remove());
@@ -326,14 +328,16 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  if(!s){$('party').innerHTML='<p class="muted">出发后在这里显示队伍。</p>';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>还没有存档。请返回标题开始新游戏。</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>开发者场景只在本次页面内存中运行，不会写入玩家营地存档。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（三层首领战，仅在内存）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(checkMode?store.start(createScenario(fixture!,newId()),scenarioProfile(fixture!)):store.start(begin(selectedConfig),selectedConfig==='expedition'?initialProfile():undefined));});return;}
  const ready=store.status==='ready',playing=s.phase==='playing',editable=ready||store.status==='saving';
  $('party').innerHTML=s.queue.map((id,i)=>{const u=s.units[id];const down=u.hp===0,level=u.level??s.prog?.level;return `<article class="unit ${id===s.leader?'leader':''}" id="unit-card-${esc(id)}"><div><strong>${esc(unitLabel(u,id))}</strong><span>${down?'倒下 · 仍占名额':id===s.leader?'操控者':'同行'}${u.protected?' · 初始成员':''} · ${u.hp}/${u.maxHp}${u.species?` · ${esc(specName(u))}`:''}${level===undefined?'':` · Lv${level}`}</span></div><div class="hp"><i style="width:${u.hp/u.maxHp*100}%"></i></div><p class="muted" data-unit-status="${esc(id)}" ${combatStatus(u)?'':'hidden'}>${esc(combatStatus(u))}</p><p>${u.learned.map(k=>`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普通攻击，不耗PP'}</p>${tacticSelect(`tactic-run-${id}`,u.tactic??'together',!ready||!playing)}${button('leader-'+i,'设为操控者',!ready||!playing||down||s.leader===id)}${button('detail-'+i,'详情')}</article>`;}).join('')+(s.camp.length?`<p class="muted">此前已回营：${s.camp.map(id=>esc(resources(s,id))).join('；')}（本局不可调回）</p>`:'');
-  s.queue.forEach((id,i)=>{bind('leader-'+i,()=>{void send({type:'switch',actor:id});});bind('detail-'+i,()=>{detailsId=detailsId===id?null:id;render();});
+  s.queue.forEach((id,i)=>{bind('leader-'+i,()=>{void send({type:'switch',actor:id});});bind('detail-'+i,()=>{detailsId=detailsId===id?null:id;detailsOpenerId=detailsId;render();});
    const select=$(`tactic-run-${id}`) as HTMLSelectElement;select.addEventListener('change',()=>{if(isTactic(select.value))void setTactic(id,select.value);});
   });
- if(detailsId&&s.units[detailsId]){$('party').insertAdjacentHTML('beforeend',`<p class="detail">${esc(unitLabel(s.units[detailsId],detailsId))} 已学：${s.units[detailsId].learned.map(k=>`${esc(skillLabel(s.units[detailsId!],k))}（<span data-detail-move-preview="${esc(k)}">${esc(moveSummary(k,{s,sourceId:detailsId!,targetId:visibleHoverTarget(s)}))}</span>）`).join('；')||'无特殊招式'}。普通攻击造成<span id="basic-damage-preview">${esc(damageEstimateText(s,detailsId,visibleHoverTarget(s)))}</span>；选中招式后可查看射程与效果。详情不改变草稿。</p>`);}
  if(s.phase==='ended'){
   const end=s.end!;$('controls').innerHTML='';const persistentRun=s.scenario==='expedition'&&!!store.envelope;
   const resultSummary=s.dungeon?.roguelike?`<p>讨伐首领：${end.boss?'成功':'未击败'}</p>`:`<p>目标${end.goal?'已完成':'未完成'} · 已取得 ${end.acquired} · 正常带出 ${end.brought}${end.boss===undefined?'':` · 讨伐首领：${end.boss?'成功':'未挑战'}`}</p>`;
+  const previousResult=$('flow').querySelector<HTMLElement>('.settlement194'),sameResult=previousResult?.dataset.runId===s.runId;
+  const resultScroll=sameResult?['rank-breakdown','partner-loot-scroll','tm-list'].map(id=>{const el=document.getElementById(id);return {id,top:el?.scrollTop??0,left:el?.scrollLeft??0};}):[],flowScroll=sameResult?$('flow').scrollTop:0,resultFocus=sameResult&&$('flow').contains(document.activeElement)?(document.activeElement as HTMLElement).id:null;
   $('flow').innerHTML=s.dungeon?.roguelike?settlement(s,store.settlementSummary,ready,persistentRun):`<div class="result"><small>本局结果</small><h2>${end.outcome==='won'?'击败首领':end.outcome==='normal'?'正常撤离':'全队倒下'}${s.difficulty&&s.difficulty!=='normal'?`（${DIFFICULTY_LABEL[s.difficulty]}）`:''}</h2>${resultSummary}<p>${end.team.map(id=>`${esc(resources(s,id))}，${s.dungeon?.roguelike?'伙伴归营':end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。远征中已学的永久招式保留，回营后可以整备再出发。</p>${resultDetails(s)}${persistentRun?button('to-base','返回基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}<p class="muted">${persistentRun?(ready?'终局已结算并自动保存。':'终局已结算，保存失败；重试成功前不能回营地。'):'这是内存开发场景；结算不会写入营地存档。'}</p></div>`;
+  for(const pos of resultScroll){const el=document.getElementById(pos.id);if(el){el.scrollTop=pos.top;el.scrollLeft=pos.left;}}$('flow').scrollTop=flowScroll;if(resultFocus)document.getElementById(resultFocus)?.focus({preventScroll:true});
   const tally=document.getElementById('rank-breakdown');if(tally)tally.onscroll=refreshSettlementOverflow;requestAnimationFrame(refreshSettlementOverflow);
   bind('result-settings',openSettings);
   bind('to-base',()=>{if(anim.active)return;clear();notice='';const report='<h3>上一局 · '+(end.outcome==='won'?'击败首领':'全队倒下')+'</h3>'+resultDetails(s);void transition(store.returnToBase().then(ok=>{if(ok){lastCampReport=report;campPanel=null;}return ok;}));});
@@ -385,7 +389,7 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  const editor=draft?.editor??s.leader;const u=s.units[editor];
  const point=s.points.find(p=>same(p.pos,u.pos));const stairKind=point?.kind==='down'||point?.kind==='up';const restPoint=point?.kind==='rest';const serviceCell=point?.kind==='shop'||point?.kind==='exchange';const canCollect=!!point&&!point.used&&point.kind!=='exit'&&!stairKind&&!restPoint&&!serviceCell;const pickup=point?.kind==='berry'||point?.kind==='tonic';
  let draftText='';if(draft){const valid=draft.main&&(draft.swap||draft.action)?applyCommand(s,{type:'round',action:draft.main,...(!draft.swap?{override:{actor:draft.partner,action:draft.action!}}:{})}):null;
- draftText=`<div class="draft"><strong>本轮草稿中 · 正在编辑 ${esc(unitLabel(s.units[editor],editor))}</strong><p>${button('edit-main',`${unitLabel(s.units[s.leader],s.leader)}：${actionLabel(draft.main,s.leader)}`,draft.swap)}${button('edit-partner',`${unitLabel(s.units[draft.partner],draft.partner)}：${draft.swap?'换位（双方行动）':actionLabel(draft.action,draft.partner)}`,draft.swap)}</p><p>之后：敌方阶段</p>${draftOrder(s,draft)}${valid&&!valid.ok?`<p class="error">${esc(valid.error)}</p>`:''}${button('submit',draft.main?.type==='interact'&&draft.main.exit?'提交整轮并交互':'提交整轮',!ready||!valid?.ok,'data-confirm="true" class="primary"')}${button('cancel-draft','取消组合')}</div>`;
+ draftText=`<div class="draft"><strong>本轮草稿中 · 正在编辑 ${esc(unitLabel(s.units[editor],editor))}</strong><p>${button('edit-main',`${unitLabel(s.units[s.leader],s.leader)}：${actionLabel(draft.main,s.leader)}`,draft.swap)}${button('edit-partner',`${unitLabel(s.units[draft.partner],draft.partner)}：${draft.swap?'换位（双方行动）':actionLabel(draft.action,draft.partner)}`,draft.swap)}</p><p>之后：敌方阶段</p>${draftOrder(s,draft)}${valid&&!valid.ok?`<p class="error">${esc(playerText(valid.error))}</p>`:''}${button('submit',draft.main?.type==='interact'&&draft.main.exit?'提交整轮并交互':'提交整轮',!ready||!valid?.ok,'data-confirm="true" class="primary"')}${button('cancel-draft','取消组合')}</div>`;
  }
  $('controls').innerHTML=`<h2>${draft?'组合安排':'操控者行动'} <small>${esc(unitLabel(s.units[editor],editor))}</small></h2>${draftText}<div class="button-row">${button('wait','等待（.）',!editable||(!ready&&!draft)||!!draft?.swap)}${button('arrange','安排伙伴',!editable||!!draft)}${button('swap','换位',!editable||!!draft)}</div>${choosingPartner||choosingSwap?`<p>选择另一名伙伴：</p>${s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0).map(id=>button('partner-'+id,unitLabel(s.units[id],id),!editable)).join('')}`:''}<div class="skills">${u.learned.map(k=>button('skill-'+k,`${esc(skillLabel(u,k))} ${u.pp[k]??0}/${u.maxPp[k]??0}<small data-move-preview="${esc(k)}" style="display:block">${esc(moveSummary(k,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</small>`,!editable||(!ready&&!draft)||!!draft?.swap||(u.pp[k]??0)<1,selectedSkill===k?'class="selected"':'')).join('')}</div>${s.prog?`<div class="items"><p class="muted">背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）。占该成员一次行动，对自己或相邻同行。</p>${(['berry','tonic'] as Item[]).map(k=>button('use-'+k,`使用${ITEM_NAMES[k]}`,!editable||(!ready&&!draft)||!!draft?.swap,choosingItem===k?'class="selected"':'')).join('')}${choosingItem&&u.pos?`<p>对谁使用${ITEM_NAMES[choosingItem]}？</p>${s.queue.filter(id=>s.units[id].hp>0&&s.units[id].pos&&(selfOrAdjacentReachable(s.floor,u.pos!,s.units[id].pos!))).map(id=>button('item-target-'+id,id===editor?`${id}（自己）`:id,!editable)).join('')}`:''}</div>`:''}<p class="muted">${selectedSkill?`已选${esc(skillLabel(u,selectedSkill))}：<span id="selected-move-preview">${esc(moveSummary(selectedSkill,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</span>。消耗1PP；金圈标出合法目标${moveOf(selectedSkill)?.range==='user'||moveOf(selectedSkill)?.range==='room'?'（自身）':''}。`:draft?'点地图或方向键只编辑动作，尚未执行。':'方向键移动；点相邻敌人普通攻击；K选招式。'}</p>${point&&editor===s.leader&&restPoint?button('rest',point.used?'休整点已使用':`整理招式补给（休整点，每招恢复${PROG.restPp} PP，每局一次）`,!editable||(!ready&&!draft)||!!draft?.swap||point.used):''}${point&&editor===s.leader&&!restPoint&&!serviceCell?(canCollect?button('take',pickup?`拾取${ITEM_NAMES[point!.kind as Item]}`:'取得并继续',!editable||(!ready&&!draft)||!!draft?.swap):'')+(pickup||(s.dungeon?.roguelike&&!stairKind)?'':button('take-exit',stairKind?(point!.kind==='down'?'走下楼梯（请求跨层）':'走上楼梯（请求跨层）'):canCollect?'取得／请求撤离':'请求撤离',!editable||(!ready&&!draft)||!!draft?.swap)):''}`;
  if(choosingItem==='bigBerry')document.querySelectorAll<HTMLElement>('#controls [id^="item-target-"]').forEach(el=>{const id=el.id.slice('item-target-'.length);el.id=`item-target-bigBerry-${id}`;el.dataset.action=`item-target-bigBerry-${id}`;});
@@ -654,11 +658,7 @@ function refreshDamagePreviews(s:World):void{
   const tip=el.closest<HTMLElement>('#hud-tooltip,#learning-tooltip,#detail-tooltip'),actor=tip?.dataset.sourceId??sourceId;
   if(id)el.textContent=hudMoveAccuracy(s,actor,id,targetId);
  });
- if(detailsId&&s.units[detailsId])document.querySelectorAll<HTMLElement>('[data-detail-move-preview]').forEach(el=>{
-  const id=el.dataset.detailMovePreview;if(id)el.textContent=moveSummary(id,{s,sourceId:detailsId!,targetId});
- });
  if(selectedSkill){const summary=$('selected-move-preview');if(summary)summary.textContent=moveSummary(selectedSkill,{s,sourceId,targetId});}
- if(detailsId){const summary=$('basic-damage-preview');if(summary)summary.textContent=damageEstimateText(s,detailsId,targetId);}
 }
 /** Execution order of a combination draft and what each member would do, by running the rule code on a copy (nothing is executed). */
 function draftOrder(s:World,d:NonNullable<typeof draft>):string{

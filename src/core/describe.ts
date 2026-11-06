@@ -116,7 +116,7 @@ const escapeRe=(t:string)=>t.replace(/[.*+?^$|()[\]{}\\]/g,'\\$&');
 /** Player-facing prose only. Official move descriptions and keeper dialogue bypass this helper. */
 export function playerText(text:string):string {
  let value=text.replace(/向-?\d+,-?\d+挥空/g,'普通攻击挥空');
- for(const [from,to] of [["普攻","普通攻击"],["朝前","向前"],["回到","返回"],["带上","携带"],["教给","学习"],["对手","敌人"],["对方","敌人"],["贴住","紧跟"],["贴身","相邻"],["睡着","睡眠"],["追最近","追击最近"],["没打中","没有命中"],["打不到","无法攻击"],["打空","挥空"]])value=value.split(from).join(to);
+ for(const [from,to] of [["普攻","普通攻击"],["朝前","向前"],["回到","返回"],["带上","携带"],["教给","学习"],["贴住","紧跟"],["贴身","相邻"],["追最近","追击最近"],["没打中","没有命中"],["打不到","无法攻击"],["打空","挥空"]])value=value.split(from).join(to);
  return value;
 }
 /** Turns unit, species and move ids in a log line into readable player-facing names. */

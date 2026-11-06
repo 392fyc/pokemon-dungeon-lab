@@ -126,7 +126,7 @@ test('4.1 斜向普攻：斜向相邻的对方可以普攻，伤害与正向一�
 
 test('4.1 斜向普攻：穿过墙角时被拒绝，理由说明',()=>{
   const s=world({floor:without(rect(0,8,0,8),{x:2,y:1}),enemies:[still('E','geodude',2,2,40)]});
-  assert.match(refuse(s,{type:'basic',target:'E'}),/普攻需要相邻对方/);
+  assert.match(refuse(s,{type:'basic',target:'E'}),/普通攻击只能指定相邻敌人/);
 });
 
 test('4.1 斜向 front 招式：能指定斜向相邻目标；墙角挡住时不在合法目标里',()=>{

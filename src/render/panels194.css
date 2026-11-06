@@ -115,11 +115,14 @@ body.dungeon-mode #flow .settlement194 .settlement-heading{position:relative;dis
 .tm-disc{flex:none;width:84px;height:84px;margin:0 0 16px;position:relative;box-shadow:0 0 0 3px var(--paper-ink)}
 .tm-disc::after{content:"";position:absolute;inset:32%;background:var(--paper);box-shadow:0 0 0 3px var(--paper-ink)}
 .loot-tile.is-lost{color:var(--paper-muted)}.is-lost .tm-disc{filter:grayscale(1);opacity:.6}.is-lost .loot-tag{background:var(--paper-muted)}
-.settlement194 .settlement-foot{position:absolute;right:44px;left:516px;bottom:38px;display:flex;align-items:center;justify-content:space-between;gap:16px;height:62px;padding:0;color:#d9c9a5;font-size:14px}
-body.dungeon-mode #flow .settlement-foot .paper-button{font-family:var(--ui-body);font-weight:900;height:60px;padding:0 44px;font-size:20px;white-space:nowrap}
+.settlement194 .settlement-foot{--result-button-height:60px;--result-button-size:20px;--result-button-pad:44px;grid-column:2;grid-row:1/span 2;align-self:end;position:relative;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:16px;height:62px;padding:0;color:#d9c9a5;font-size:14px;line-height:1.4}
+body.dungeon-mode #flow .settlement-foot .paper-button{font-family:var(--ui-body);font-weight:900;height:var(--result-button-height);padding:0 var(--result-button-pad);font-size:var(--result-button-size);white-space:nowrap;flex-shrink:0}
 @media(min-width:761px) and (max-height:620px){
  .detail194{height:calc(100dvh - 64px)}.detail194 .detail-body{margin-top:6px}.detail194 .detail-portrait-pad{height:84px}.detail194 .detail-portrait-pad .panel-portrait{width:68px;height:68px}.detail194 .detail-chart{max-height:210px}.detail194 .detail-status{margin-top:6px}.detail194 .detail-tactics{bottom:10px}.detail194 .detail-tactics p{height:auto;margin-top:4px}
- .settlement194{grid-template-rows:96px minmax(0,1fr)}.settlement-heading h2{font-size:48px;top:6px}.settlement-heading>p{top:65px}.settlement-floors{top:20px}.settlement-body{padding:18px 32px 22px;gap:14px 30px}.settlement194 .settlement-foot{right:32px;left:calc(32px + min(430px,40%) + 30px);bottom:22px;height:46px}.settlement-foot .paper-button{height:44px;min-height:44px;font-size:17px;padding:0 24px}.settlement-loot{margin-bottom:60px}.settlement-team{padding-bottom:8px}.settlement-team .panel-portrait{width:64px;height:64px}.settlement-xp{padding:8px 16px}.settlement-xp-top strong{font-size:30px}.settlement-levelup{font-size:13px;padding:2px 8px}.settlement-level{font-size:14px}.settlement-xp .paper-bar{height:8px}.settlement-tally{font-size:14px}.settlement-tally li{min-height:24px}.loot-tile{height:100px;width:120px;font-size:13px}.loot-tile>.panel-portrait{width:48px;height:48px;margin-bottom:4px}.tm-disc{width:48px;height:48px;margin-bottom:8px}.settlement-loot{padding:10px 14px}
+ .settlement194{grid-template-rows:96px minmax(0,1fr)}.settlement-heading h2{font-size:48px;top:6px}.settlement-heading>p{top:65px}.settlement-floors{top:20px}.settlement-body{padding:18px 32px 22px;gap:14px 30px}.settlement194 .settlement-foot{--result-button-height:44px;--result-button-size:17px;--result-button-pad:24px;height:46px}.settlement-foot .paper-button{height:44px;min-height:44px;font-size:17px;padding:0 24px}.settlement-loot{margin-bottom:60px}.settlement-team{padding-bottom:8px}.settlement-team .panel-portrait{width:64px;height:64px}.settlement-xp{padding:8px 16px}.settlement-xp-top strong{font-size:30px}.settlement-levelup{font-size:13px;padding:2px 8px}.settlement-level{font-size:14px}.settlement-xp .paper-bar{height:8px}.settlement-tally{font-size:14px}.settlement-tally li{min-height:24px}.loot-tile{height:100px;width:120px;font-size:13px}.loot-tile>.panel-portrait{width:48px;height:48px;margin-bottom:4px}.tm-disc{width:48px;height:48px;margin-bottom:8px}.settlement-loot{padding:10px 14px}
+}
+@media(min-width:761px) and (max-width:1100px){
+ .settlement194 .settlement-foot{--result-button-height:44px;--result-button-size:17px;--result-button-pad:20px;flex-direction:column;align-items:stretch;justify-content:flex-end;gap:8px;height:auto;min-height:72px}.settlement-loot{margin-bottom:104px}
 }
 /* Narrow screens keep the existing single-column, vertically scrolling window arrangement. */
 @media(max-width:760px){
@@ -143,7 +146,7 @@ body.dungeon-mode #flow .settlement-foot .paper-button{font-family:var(--ui-body
  .settlement-team{height:136px;min-height:136px;padding-bottom:16px}.settlement-team .panel-portrait{width:80px;height:80px}
  .settlement-xp{height:330px;min-height:330px}
  .settlement-loot{height:400px;min-height:400px;margin-bottom:0;padding:14px}
- .settlement194 .settlement-foot{position:static;display:flex;flex-direction:column;align-items:stretch;height:auto;gap:14px;padding:0}
+ .settlement194 .settlement-foot{--result-button-height:52px;--result-button-size:20px;--result-button-pad:20px;position:static;display:flex;flex-direction:column;align-items:stretch;height:auto;gap:14px;padding:0}
  .settlement-foot .paper-button{height:52px;min-height:52px;font-size:20px}
 }
 

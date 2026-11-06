@@ -7,7 +7,7 @@ export const FONT_REPO=fileURLToPath(new URL('../../',import.meta.url));
 const printable=cp=>cp>=32&&!/\p{C}/u.test(String.fromCodePoint(cp));
 const add=(set,text)=>{for(const ch of text){const cp=ch.codePointAt(0);if(printable(cp))set.add(cp);}};
 export async function collectUiCharacters(root=FONT_REPO){
- const body=new Set(),display=new Set(),files=[];
+ const body=new Set(),display=new Set(),files=[];let settlementTitlesFound=false,settlementTitleCharacters=0;
  for(let cp=32;cp<=126;cp++){body.add(cp);display.add(cp);}
  async function walk(dir){
   for(const entry of (await fs.readdir(dir,{withFileTypes:true})).sort((a,b)=>a.name.localeCompare(b.name,'en'))){
@@ -25,7 +25,8 @@ export async function collectUiCharacters(root=FONT_REPO){
      const visit=n=>{
       if(literal(n))add(body,n.text);
       if(ts.isVariableDeclaration(n)&&n.name.getText(tree)==='SETTLEMENT_TITLES'){
-       const title=q=>{if(literal(q))add(display,q.text);ts.forEachChild(q,title);};
+       settlementTitlesFound=true;
+       const title=q=>{if(literal(q)){add(display,q.text);settlementTitleCharacters+=q.text.length;}ts.forEachChild(q,title);};
        if(n.initializer)title(n.initializer);
       }
       ts.forEachChild(n,visit);
@@ -35,6 +36,7 @@ export async function collectUiCharacters(root=FONT_REPO){
   }
  }
  await walk(path.join(root,'src'));
+ if(!settlementTitlesFound||settlementTitleCharacters===0)throw Error('SETTLEMENT_TITLES must exist and contain title strings for the display font subset');
  return {format:1,policy:'Conservative player-text superset: TypeScript string/template literals and JSON string values; source comments excluded.',files,body:[...body].sort((a,b)=>a-b),display:[...display].sort((a,b)=>a-b)};
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

@@ -1692,6 +1692,13 @@ body.dungeon-mode #hud-sleep-status {
   white-space: nowrap;
   font-weight: 700;
 }
+/* #194 wrap-up: at 320px the sleep label wraps under a three-digit HP and the info stack would spill into the move row; tighten it so the wrapped state fits the 70px row. */
+@media (max-width: 360px) {
+  body.dungeon-mode .hud-current-info { gap: 2px; }
+  body.dungeon-mode .hud-hp-track-large { height: 6px; }
+  body.dungeon-mode .hud-current-hp { gap: 1px; line-height: 12px; }
+  body.dungeon-mode #hud-sleep-status { font-size: 10px; line-height: 12px; }
+}
 body.dungeon-mode .learning-new,
 body.dungeon-mode .learning-move {
   display: flex;

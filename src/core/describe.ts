@@ -22,29 +22,31 @@ export function damageEstimateText(s:World,sourceId:string,targetId?:string,skil
   const amount=estimateAttackDamage(s,sourceId,targetId,skill,quickguard);
   return `约${amount}点${targetId===undefined?'（对普通目标）':''}`;
 }
-export function moveEffectLabel(id:string,context?:DamageSummaryContext):string{
+/** `side` is the side of whoever uses the move: duration and "enemy" wording in the fixed texts name the opposing side (#204). Defaults to the context's source, else the player's side. */
+export function moveEffectLabel(id:string,context?:DamageSummaryContext,side?:Unit['side']):string{
   const spec=moveOf(id);if(!spec)return '招式数据缺失';
+  const user=side??context?.s.units[context.sourceId]?.side??'friend',foe=user==='enemy'?'我方':'敌方',foeUnit=user==='enemy'?'我方单位':'敌人';
   const parts:string[]=[];
   for(const effect of spec.effects){
     if(effect==='damage')parts.push(spec.power===null?'造成伤害':context?`造成${damageEstimateText(context.s,context.sourceId,context.targetId,id)}`:`造成${6+Math.ceil(spec.power/2)}点基础伤害`);
     else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
     else if(effect==='recoil'){const r=moveEffects(id)?.recoil;if(r)parts.push(`承受实际伤害的${r[0]}/${r[1]}反作用（向下取整，至少1；未造成伤害时不扣HP）`);}
     else if(effect==='rest')parts.push('自身进入打盹2—3轮；结束时回满HP并解除全部异常');
-    else if(effect==='snore')parts.push('睡眠或打盹中受到敌人直接攻击且未醒来时，对攻击者发动；不受射程限制且不造成畏缩');
-    else if(effect==='sleeptalk')parts.push('睡眠或打盹中受到敌人直接攻击且未醒来时，随机发动一招；不受射程限制');
+    else if(effect==='snore')parts.push(`睡眠或打盹中受到${foeUnit}直接攻击且未醒来时，对攻击者发动；不受射程限制且不造成畏缩`);
+    else if(effect==='sleeptalk')parts.push(`睡眠或打盹中受到${foeUnit}直接攻击且未醒来时，随机发动一招；不受射程限制`);
     else if(effect==='heal:1:2')parts.push(`${spec.target==='party'?'同房间全队':'自身'}回复各自最大HP的一半（四舍五入，不超过上限）`);
     else if(effect.startsWith('status:'))parts.push(`命中后施加${STATUS_NAMES[effect.slice(7) as StatusId]}`);
-    else if(effect==='protect')parts.push('自身受到敌方攻击伤害为0（3个敌方阶段）');
-    else if(effect==='counter')parts.push('反击相邻敌人的有效伤害（3个敌方阶段）');
-    else if(effect==='quickguard')parts.push('使用时范围内全队在本回合挡下距离大于1格的敌方攻击；与守住不能连续使用');
-    else if(effect==='reflect')parts.push('使用时范围内全队受到的物理攻击伤害减半（10个敌方阶段）');
-    else if(effect==='lightscreen')parts.push('使用时范围内全队受到的特殊攻击伤害减半（10个敌方阶段）');
+    else if(effect==='protect')parts.push(`自身受到${foe}攻击伤害为0（3个${foe}阶段）`);
+    else if(effect==='counter')parts.push(`反击相邻${foeUnit}的有效伤害（3个${foe}阶段）`);
+    else if(effect==='quickguard')parts.push(`使用时范围内全队在本回合挡下距离大于1格的${foe}攻击；与守住不能连续使用`);
+    else if(effect==='reflect')parts.push(`使用时范围内全队受到的物理攻击伤害减半（10个${foe}阶段）`);
+    else if(effect==='lightscreen')parts.push(`使用时范围内全队受到的特殊攻击伤害减半（10个${foe}阶段）`);
     else if(effect==='blowaway')parts.push(spec.effects.includes('damage')?'伤害后沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害':'沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害');
     else {const stage=/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/.exec(effect);if(stage){const who=spec.range==='room'&&spec.target==='teammates'?'同房间队友':spec.range==='user'?'自身':'目标';parts.push(`${who}${STAGE_NAMES[stage[1] as StageKey]}${stage[2]}（上限±3）`);}}
   }
   return parts.join('；')||'无效果说明';
 }
-export const moveSummary=(id:string,context?:DamageSummaryContext):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id,context)}`;
+export const moveSummary=(id:string,context?:DamageSummaryContext,side?:Unit['side']):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id,context,side)}`;
 
 export type AdventureRoomMarker={room:number;at:Pos;kind:'door'|'interaction';roomType:AdventureRoomType;state:'idle'|'sealed'|'cleared'|'done';label:string;typeLabel:string;stateLabel:string;dimmed:boolean;itemLabel?:string};
 /** Show a room label on its first discovered door and keep the interaction marker separate. Hidden doors produce no marker. */
@@ -93,7 +95,7 @@ export type TeammateInfo={id:string;name:string;level:number|null;tactic:Tactic;
 const tacticFor=(u:Unit):Tactic=>isTactic(u.tactic)?u.tactic:u.side==='enemy'?'gofoes':'together';
 const moveRows=(u:Unit,context?:DamageSummaryContext):EnemyMoveRow[]=>u.learned.map(id=>{
   const pp=u.pp[id]??0,maxPp=u.maxPp[id]??pp,type=MOVE_TYPES[id];
-  return {id,name:moveZh(id),type:type?typeZh(type):'—',pp,maxPp,detail:moveZh(id)+'（'+moveSummary(id,context)+'） PP '+pp+'/'+maxPp};
+  return {id,name:moveZh(id),type:type?typeZh(type):'—',pp,maxPp,detail:moveZh(id)+'（'+moveSummary(id,context,u.side)+'） PP '+pp+'/'+maxPp};
 });
 /** What a revealed enemy shows. Returns null for anything the player cannot see yet (unrevealed cell, fallen, or not an enemy). */
 export function enemyInfo(s:World,id:string):EnemyInfo|null {

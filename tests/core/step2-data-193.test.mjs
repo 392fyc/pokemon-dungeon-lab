@@ -123,3 +123,10 @@ test('eight sleep move descriptions have official page and template revision evi
   assert.match(moveDescriptions.moves.snore.desc,/不造成畏缩.*不能主动使用/);
   assert.match(moveDescriptions.moves.sleeptalk.desc,/只消耗梦话的PP.*不能主动使用/);
 });
+test('Freeze-Dry describes the current Ice matchup and retains the original special-case text',()=>{
+  const row=moveDescriptions.moves.freezedry;
+  assert.equal(typeEffectiveness('freezedry',['Water']),0.5);
+  assert.equal(row.game,'本作');assert.match(row.desc,/水属性会抵抗/);
+  assert.doesNotMatch(row.desc,/水属性.*效果绝佳/);assert.match(row.originalDesc,/水属性.*效果绝佳/);
+  assert.ok(row.originalGame);assert.deepEqual(row.overrideSource.rules,['G5.3','G5.13']);
+});

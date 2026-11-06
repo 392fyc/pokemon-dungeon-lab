@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import {createExpedition,PROG,reveal,key} from '../../src/core/engine.ts';
 import {SPECIES,STARTER_IDS} from '../../src/core/roster.ts';
 import {moveOf} from '../../src/core/moves.ts';
+import {speciesZh,moveZh} from '../../src/core/names.ts';
 
 function worldFor(run,species,carry){
  const w=createExpedition(run,193,3,{members:[
@@ -12,14 +13,14 @@ function worldFor(run,species,carry){
  assert.ok(room&&room.w>=3&&room.h>=3);const at={x:room.x+1,y:room.y+1};
  w.units.A.pos={...at};w.units.B.pos={x:at.x,y:at.y+1};w.units.A.facing={x:1,y:0};
  for(const id of w.enemies){w.units[id].waitOnly=true;w.units[id].asleep=false;w.units[id].wakeSkip=false;}
- w.seen=w.floor.map(key);w.log=[];
+ w.seen=w.floor.map(key);
  return w;
 }
 function putEnemy(w,id,pos,hp,species){
  const u=w.units[id];u.pos={...pos};u.hp=u.maxHp=hp;if(species)u.species=species;u.waitOnly=true;u.asleep=false;u.wakeSkip=false;
 }
 export async function step193Checks({setup,startMemory,state,ready,cell,artifact,width,height}){
- const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef'),report={width,height,fixtureBoundary:'Generated map with controlled party/enemy positions, HP, experience and status; real keyboard, canvas and choice buttons. No natural-route or balance claim.'};
+ const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef',width<600?{hasTouch:true,isMobile:true}:{}),report={width,height,fixtureBoundary:'Generated map with controlled party/enemy positions, HP, experience and status; real keyboard, canvas and choice buttons. No natural-route or balance claim.'};
  try{
   await p.setViewportSize({width,height});
   const options=STARTER_IDS.flatMap(id=>(SPECIES[id].levelUp??[]).filter(row=>row.level>5&&row.level<=15&&!['snore','sleeptalk','rest'].includes(row.move)&&moveOf(row.move)?.effects.includes('damage')&&(SPECIES[id].levelUp??[]).filter(q=>q.level===row.level).length===1).map(row=>({id,row})));
@@ -34,7 +35,7 @@ export async function step193Checks({setup,startMemory,state,ready,cell,artifact
   const learning=await state(p),pending=learning.pendingLearnMoves[0];assert.equal(pending.actor,'A');assert.equal(pending.move,row.move);
   assert.equal(learning.round,before.round+1);assert.equal(await p.locator('.learning-move').count(),4);
   assert.equal(await p.locator('#learning-choice').isVisible(),true);assert.ok((await p.locator('#learning-heading').innerText()).includes('可以学会'));
-  await p.locator('.learning-new').focus();assert.equal(await p.locator('#hud-tooltip .hud-tip-field').filter({hasText:'PP'}).locator('strong').innerText(),pending.pp+'/'+pending.pp);
+  await p.locator('.learning-new').focus();assert.equal(await p.locator('#learning-tooltip .hud-tip-field').filter({hasText:'PP'}).locator('strong').innerText(),pending.pp+'/'+pending.pp);
   const dialog=await p.locator('#learning-choice').boundingBox();assert.ok(dialog.x>=0&&dialog.x+dialog.width<=width+1);
   assert.ok(dialog.y>=0&&dialog.y+dialog.height<=height+1,'the complete learning choice remains inside the viewport');
   const choiceBoxes=await p.locator('.learning-move').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,right:r.right,bottom:r.bottom};}));
@@ -42,12 +43,23 @@ export async function step193Checks({setup,startMemory,state,ready,cell,artifact
   await p.screenshot({path:artifact+'step193-'+width+'-learning-tip.png'});
   await p.locator('.learning-new').evaluate(el=>el.blur());await p.mouse.move(0,0);
   await p.screenshot({path:artifact+'step193-'+width+'-learning.png'});
-  const replaced=carry[3].move;await p.locator('#learn-replace-'+replaced).click();await ready(p);
+  const detailBox=await p.locator('#learning-tooltip').boundingBox(),actionBoxes=await p.locator('.learning-move,#learn-skip,#learn-close').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};}));
+  const overlaps=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
+  assert.ok(actionBoxes.every(b=>!overlaps(detailBox,b)),'learning descriptions never cover replacement or decline actions');
+  assert.equal(await p.locator('#hud-tooltip').isVisible(),false,'the global pointer-transparent card is not used for learning');
+  const beforeInspect=await state(p);
+  if(width<600){await p.touchscreen.tap(detailBox.x+detailBox.width/2,detailBox.y+detailBox.height/2);assert.deepEqual(await state(p),beforeInspect,'a real touch on the description cannot pass through and replace a move');}
+  report.learningInspection={detailBox,actionBoxes,touch:width<600,noOverlap:true};
+  const replaced=carry[3].move,replaceButton=p.locator('#learn-replace-'+replaced);
+  if(width<600){const b=await replaceButton.boundingBox();await p.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);}else await replaceButton.click();await ready(p);
   let prompts=0;while((await state(p)).phase==='learning'){assert.ok(++prompts<=30);await p.locator('#learn-skip').click();await ready(p);}
   if((await state(p)).phase==='invitation'){await p.locator('#reject').click();await p.locator('#reject-confirm').click();await ready(p);}
   const learned=await state(p);assert.equal(learned.phase,'playing');assert.equal(learned.round,learning.round,'choice buttons consume no round');
   assert.equal(learned.units.A.learned.length,4);assert.ok(learned.units.A.learned.includes(pending.move));assert.ok(!learned.units.A.learned.includes(replaced));
   assert.equal(learned.units.A.pp[pending.move],pending.pp);assert.equal(await p.locator('[data-hud-skill]').count(),4);
+  const learningMessages=await p.locator('#recent-events,#message').allTextContents();
+  assert.ok(learningMessages.some(t=>t.includes(speciesZh(species)+'用'+moveZh(pending.move)+'替换了')),'learning logs identify the member by its visible name');
+  assert.ok(learningMessages.every(t=>!t.includes('有同行学会')));report.learningMessages=learningMessages;
   const newSlot=learned.units.A.learned.indexOf(pending.move);await p.keyboard.press(String(newSlot+1));
   if((await state(p)).units.A.pp[pending.move]===pending.pp){const pos=(await state(p)).units[target].pos;await cell(p,pos.x,pos.y);}
   await ready(p);const used=await state(p);assert.equal(used.units.A.pp[pending.move],pending.pp-1,'the actual numbered move slot casts the learned move');
@@ -81,10 +93,19 @@ export async function step193Checks({setup,startMemory,state,ready,cell,artifact
   const cureShown=await p.locator('#recent-events,#history,#message').allTextContents();assert.ok(cureShown.some(t=>t.includes('零余果')));
   await p.screenshot({path:artifact+'step193-'+width+'-cured.png'});report.cure={round:cured.round,itemBefore:1,itemAfter:cured.prog.items.chestoBerry,status:cured.units.A.status??{},messages:cureShown};
 
-  const asleep=worldFor('step193-sleep-'+width,'squirtle',SPECIES.squirtle.kit);asleep.enemies=[];asleep.units.A.status={slp:{left:5}};
+  const asleep=worldFor('step193-sleep-'+width,'squirtle',SPECIES.squirtle.kit);asleep.enemies=[];asleep.units.A.status={slp:{left:5}};asleep.log.push('A陷入睡眠状态');
   await p.reload();await p.locator('#start').waitFor();await startMemory(p,asleep);
   await p.clock.install();await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));await p.evaluate(()=>window.trial.autoSleep(true));
-  assert.equal(await p.locator('#hud-sleep-status').innerText(),'睡眠中');await p.screenshot({path:artifact+'step193-'+width+'-sleep.png'});
+  assert.equal(await p.locator('#hud-sleep-status').innerText(),'睡眠中');
+  const noticeBox=await p.locator('#hud-sleep-status').boundingBox(),messageBox=await p.locator('#recent-events').boundingBox(),bottomBox=await p.locator('#hud-bottom').boundingBox();
+  assert.ok((await p.locator('#recent-events').innerText()).includes('睡眠'),'sleep layout is checked with an actual nonempty visible message');
+  assert.ok(!overlaps(noticeBox,messageBox),'sleep status does not cover the latest event area');
+  const skillsBox=await p.locator('#hud-bottom .hud-skills').boundingBox();assert.ok(!overlaps(noticeBox,skillsBox),'sleep status also stays clear of the move slots');
+  assert.ok(noticeBox.y>=bottomBox.y&&noticeBox.y+noticeBox.height<=bottomBox.y+bottomBox.height+1,'sleep status stays inside the bottom HUD');
+  const refreshKeys=await p.evaluate(()=>['F5','r'].map(key=>{const e=new KeyboardEvent('keydown',{key,ctrlKey:key==='r',bubbles:true,cancelable:true});document.body.dispatchEvent(e);return {key,cancelled:e.defaultPrevented};}));
+  assert.ok(refreshKeys.every(k=>!k.cancelled),'sleeping preserves F5 and Ctrl+R browser refresh defaults');
+  report.sleepLayout={noticeBox,messageBox,bottomBox,refreshKeys};
+  await p.screenshot({path:artifact+'step193-'+width+'-sleep.png'});
   await p.clock.runFor(599);assert.equal((await state(p)).round,asleep.round);
   await p.clock.runFor(1);await ready(p);assert.equal((await state(p)).round,asleep.round+1,'sleep waits exactly 600ms before advancing');
   await p.locator('#hud-settings').click();const settingsRound=(await state(p)).round;

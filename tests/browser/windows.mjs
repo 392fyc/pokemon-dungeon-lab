@@ -81,8 +81,8 @@ function assertPortraitsCentered(rows,context){
  for(const row of rows){assert.ok(row.fits,context+': visible alpha union is not cropped '+JSON.stringify(row));assert.ok(row.centerErrorX<=1&&row.centerErrorY<=1,context+': actual visible centre is within one pixel of its box '+JSON.stringify(row));}
 }
 
-async function setup(fixture,mode='pass',animate=false,source='painter'){
- const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
+async function setup(fixture,mode='pass',animate=false,source='painter',contextOptions={}){
+ const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true,...contextOptions});
  // Stage 6.4: the 22 existing checks run with animations off; only the animation check turns them on.
  await context.addInitScript(({animate,source})=>{if(!animate)window.__trialNoAnim=true;window.__trialNoAutoSleep=true;window.__terrainSource=source;},{animate,source});
  // #178: the game now draws original DTEF sheets by default; the 8.5b painter checks below pin the painter source, the DTEF checks pass source='dtef'.
@@ -1065,7 +1065,7 @@ await test('162 新果实：八种背包物品、分类分配、真实使用与�
    assert.ok(after.events.some(e=>e.type==='status'&&e.target==='B'&&e.status===status&&e.change==='cure'),'the round records the actual cure event');
    assert.equal(await slot.getAttribute('aria-label'),'空快捷格','an exhausted assignment renders as an empty slot');
    assert.equal(await slot.isDisabled(),true);
-   assert.doesNotMatch(await slot.innerText(),/×0|桃桃果|木子果|零余果|治愈之种/);
+   assert.doesNotMatch(await slot.innerText(),/×0|桃桃果|木子果|莓莓果|樱子果|零余果|治愈之种/);
    await p.screenshot({path:artifact+'windows-hud-new-fruit-'+item+'-used.png',fullPage:false});
    checks.push({item,category,status,assignedSlot:index,refusedWithoutCondition:true,curedCompanion:true,round:after.round});
   }

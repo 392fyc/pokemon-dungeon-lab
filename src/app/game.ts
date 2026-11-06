@@ -231,7 +231,9 @@ function chooseHudItem(item:Item){
 function showMoveTip(skill:Skill,actor:string){
  const s=live();if(!s||bagOpen||anim.active)return;const pending=s.phase==='learning'?s.pendingLearnMoves?.find(p=>p.actor===actor&&p.move===skill):undefined,unit=s.units[actor];
  const preview=pending&&unit?{...s,units:{...s.units,[actor]:{...unit,pp:{...unit.pp,[skill]:pending.pp},maxPp:{...unit.maxPp,[skill]:pending.pp}}}}:s;
- const box=$('hud-tooltip');box.dataset.sourceId=actor;box.innerHTML=hudMoveTip({...preview,leader:actor},skill);refreshDamagePreviews(s);box.hidden=false;
+ const box=(s.phase==='learning'?document.getElementById('learning-tooltip'):null)??$('hud-tooltip');
+ if(s.phase==='learning')$('hud-tooltip').hidden=true;
+ box.dataset.sourceId=actor;box.innerHTML=hudMoveTip({...preview,leader:actor},skill);refreshDamagePreviews(s);box.hidden=false;
 }
 function placeInspectBelowParty(){if(!dungeonMode())return;const party=$('party');$('inspect').style.top=(party.offsetTop+party.offsetHeight+8)+'px';}
 function renderDungeonHud(){
@@ -340,8 +342,8 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  }
  if(s.phase==='learning'){
   $('controls').innerHTML='';const pending=s.pendingLearnMoves?.[0],unit=pending?s.units[pending.actor]:undefined;
-  $('flow').innerHTML=pending&&unit?`<div class="result" id="learning-choice" role="dialog" aria-labelledby="learning-heading"><h2 id="learning-heading">${esc(unitLabel(unit,pending.actor))}可以学会新招式</h2><div class="learning-new" data-learning-preview="${esc(pending.move)}" tabindex="0"><strong>${esc(moveZh(pending.move))}</strong><span>PP ${pending.pp}/${pending.pp}</span></div><p>选择要替换的招式</p><div class="learning-moves">${unit.learned.map(move=>button('learn-replace-'+move,`<strong>${esc(moveZh(move))}</strong><span>PP ${unit.pp[move]??0}/${unit.maxPp[move]??0}</span>`,!ready,`data-learning-preview="${esc(move)}" class="learning-move"`)).join('')}</div><div class="button-row">${button('learn-skip','放弃学习',!ready)}${button('learn-close','关闭',!ready,'aria-label="关闭学招选择并放弃学习"')}</div></div>`:'<p class="error">缺少待处理的学招选择。</p>';
-  if(pending&&unit){for(const move of unit.learned)bind('learn-replace-'+move,()=>void send({type:'learnMove',replace:move}));for(const id of ['learn-skip','learn-close'])bind(id,()=>void send({type:'learnMove',replace:null}));for(const el of $('flow').querySelectorAll<HTMLElement>('[data-learning-preview]')){const show=()=>showMoveTip(el.dataset.learningPreview!,pending.actor);el.onmouseenter=show;el.onfocus=show;const hide=()=>{$('hud-tooltip').hidden=true;};el.onmouseleave=hide;el.onblur=hide;}}
+  $('flow').innerHTML=pending&&unit?`<div class="result" id="learning-choice" role="dialog" aria-labelledby="learning-heading"><h2 id="learning-heading">${esc(unitLabel(unit,pending.actor))}可以学会新招式</h2><div class="learning-new" data-learning-preview="${esc(pending.move)}" tabindex="0"><strong>${esc(moveZh(pending.move))}</strong><span>PP ${pending.pp}/${pending.pp}</span></div><div id="learning-tooltip" role="region" aria-label="招式说明" tabindex="0"></div><p>选择要替换的招式</p><div class="learning-moves">${unit.learned.map(move=>button('learn-replace-'+move,`<strong>${esc(moveZh(move))}</strong><span>PP ${unit.pp[move]??0}/${unit.maxPp[move]??0}</span>`,!ready,`data-learning-preview="${esc(move)}" class="learning-move"`)).join('')}</div><div class="button-row">${button('learn-skip','放弃学习',!ready)}${button('learn-close','关闭',!ready,'aria-label="关闭学招选择并放弃学习"')}</div></div>`:'<p class="error">缺少待处理的学招选择。</p>';
+  if(pending&&unit){for(const move of unit.learned)bind('learn-replace-'+move,()=>void send({type:'learnMove',replace:move}));for(const id of ['learn-skip','learn-close'])bind(id,()=>void send({type:'learnMove',replace:null}));for(const el of $('flow').querySelectorAll<HTMLElement>('[data-learning-preview]')){const show=()=>showMoveTip(el.dataset.learningPreview!,pending.actor);el.onmouseenter=show;el.onfocus=show;const hide=()=>{$('hud-tooltip').hidden=true;};el.onmouseleave=hide;el.onblur=hide;}showMoveTip(pending.move,pending.actor);}
   return;
  }
   if(s.phase==='evolution'){
@@ -626,11 +628,11 @@ function visibleHoverTarget(s:World):string|undefined{return hoverId&&enemyInfo(
 function refreshDamagePreviews(s:World):void{
  const targetId=visibleHoverTarget(s),sourceId=draft?.editor??s.leader;
  document.querySelectorAll<HTMLElement>('[data-move-preview]').forEach(el=>{
-  const id=el.dataset.movePreview;if(id)el.textContent=el.closest('#hud-tooltip')?hudDamageEstimate(s,$('hud-tooltip').dataset.sourceId??s.leader,targetId,id):moveSummary(id,{s,sourceId,targetId});
+  const id=el.dataset.movePreview,tip=el.closest<HTMLElement>('#hud-tooltip,#learning-tooltip');if(id)el.textContent=tip?hudDamageEstimate(s,tip.dataset.sourceId??s.leader,targetId,id):moveSummary(id,{s,sourceId,targetId});
  });
  document.querySelectorAll<HTMLElement>('[data-move-accuracy]').forEach(el=>{
   const id=el.dataset.moveAccuracy;
-  const actor=el.closest('#hud-tooltip')?$('hud-tooltip').dataset.sourceId??sourceId:sourceId;
+  const tip=el.closest<HTMLElement>('#hud-tooltip,#learning-tooltip'),actor=tip?.dataset.sourceId??sourceId;
   if(id)el.textContent=hudMoveAccuracy(s,actor,id,targetId);
  });
  if(detailsId&&s.units[detailsId])document.querySelectorAll<HTMLElement>('[data-detail-move-preview]').forEach(el=>{
@@ -886,7 +888,7 @@ document.addEventListener('keydown',e=>{
  if(k==='b'){e.preventDefault();bagOpen=!bagOpen;choosingItem=null;cancelMoveInput();render();return;}
  if(bagOpen)return;
  if(e.key==='Tab'){e.preventDefault();const alive=s.queue.filter(id=>s.units[id].hp>0);void send({type:'switch',actor:alive[(alive.indexOf(s.leader)+1)%alive.length]});return;}
- if(sleeping(s.units[s.leader])&&e.key!=='.'){e.preventDefault();return;}
+ if(sleeping(s.units[s.leader])&&e.key!=='.'){if(e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&k==='r'))e.preventDefault();return;}
  if(['1','2','3','4'].includes(e.key)){e.preventDefault();const skill=s.units[draft?.editor??s.leader].learned[Number(e.key)-1];if(skill&&(s.units[draft?.editor??s.leader].pp[skill]??0)>0)chooseHudSkill(skill);return;}
  if(['5','6','7','8','9','0'].includes(e.key)){e.preventDefault();const item=quickItems[['5','6','7','8','9','0'].indexOf(e.key)];if(item)chooseHudItem(item);return;}
  const directionKey=e.key.length===1?k:e.key;

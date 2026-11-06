@@ -251,6 +251,19 @@
           "src/data/move-effects.json"
         ]
       }
+    },
+    "freezedry": {
+      "desc": "以冰冷的冷气攻击对手，有10%概率使其冰冻。按冰属性相性结算，水属性会抵抗该招式。",
+      "source": {
+        "rules": [
+          "G5.3",
+          "G5.13"
+        ],
+        "data": [
+          "src/data/type-chart.json",
+          "src/data/move-effects.json"
+        ]
+      }
     }
   }
 }

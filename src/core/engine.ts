@@ -728,17 +728,16 @@ function supportAction(s:World,id:string,quickguard:ReadonlySet<string>,tactic:T
         if(kind==='status'?!status:!stages.some(e=>e.change<0))continue;
         const target=moveTargetsInReach(s,id,spec).find(t=>
           (!visibleOnly||visibleOnly.has(t.id))&&tacticalTargetAllowed(s,actor,t,tactic)&&!effectBlocked(s,actor,t,quickguard)&&
-          (kind==='status'?(!hasStatus(t,status!)&&!(status==='psn'&&hasStatus(t,'tox'))&&!statusMoveBlockReason(skill,t,status!)&&!t.asleep):stages.some(e=>e.change<0&&stageOf(t,e.stat)>-3)));
+          (kind==='status'?(!hasStatus(t,status!)&&!(status==='psn'&&hasStatus(t,'tox'))&&!statusMoveBlockReason(skill,t,status!)&&(status!=='slp'||!t.asleep)):stages.some(e=>e.change<0&&stageOf(t,e.stat)>-3)));
         if(target)return {type:'skill',skill,target:spec.range==='room'||spec.range==='user'?id:target.id};
       }else if(kind==='heal'){
         if(spec.effects.includes('heal:1:2')&&actor.hp<actor.maxHp/2)return {type:'skill',skill,target:id};
+        if(skill==='rest'&&(actor.hp<actor.maxHp/2||!!actor.status&&Object.keys(actor.status).some(k=>k!=='nap')))return {type:'skill',skill,target:id};
       }else if(spec.target==='user'&&!['defensecurl','harden'].includes(skill)&&stages.some(e=>e.change>0&&stageOf(actor,e.stat)<3)){
         return {type:'skill',skill,target:id};
       }
     }
   }
-  const rest=actor.learned.includes('rest')&&(actor.pp.rest??0)>0;
-  if(rest&&(actor.hp<actor.maxHp/2||!!actor.status&&Object.keys(actor.status).some(k=>k!=='nap')))return {type:'skill',skill:'rest',target:id};
   if(actor.protect===0&&threatenedByOpponent(s,id,quickguard)&&legalSupportTarget(s,id,'protect'))return {type:'skill',skill:'protect',target:id};
   if(actor.stages.def<1){const defMove=actor.learned.find(k=>moveOf(k)?.effects.includes('stage:def:+1')&&legalSupportTarget(s,id,k));if(defMove){const spec=moveOf(defMove)!;return {type:'skill',skill:defMove,target:spec.range==='user'||spec.range==='room'?id:moveTargetsInReach(s,id,spec)[0].id};}}
   const helpTargets=moveTargetsInReach(s,id,moveOf('helpinghand')!).filter(u=>u.stages.atk<2);
@@ -759,7 +758,7 @@ function enemyDisruptAction(s:World,id:string,quickguard:ReadonlySet<string>,vis
     const status=spec.effects.find(e=>e.startsWith('status:'))?.slice(7) as StatusId|undefined;
     const stages=spec.effects.map(stageEffect).filter((v):v is {stat:StageKey;change:number}=>v!==null);
     if(kind==='status'?!status:!stages.some(e=>e.change<0))continue;
-    const target=moveTargetsInReach(s,id,spec).find(t=>visibleOnly.has(t.id)&&tacticalTargetAllowed(s,actor,t,'gofoes')&&!effectBlocked(s,actor,t,quickguard)&&(kind==='status'?(!hasStatus(t,status!)&&!(status==='psn'&&hasStatus(t,'tox'))&&!statusMoveBlockReason(skill,t,status!)&&!t.asleep):stages.some(e=>e.change<0&&stageOf(t,e.stat)>-3)));
+    const target=moveTargetsInReach(s,id,spec).find(t=>visibleOnly.has(t.id)&&tacticalTargetAllowed(s,actor,t,'gofoes')&&!effectBlocked(s,actor,t,quickguard)&&(kind==='status'?(!hasStatus(t,status!)&&!(status==='psn'&&hasStatus(t,'tox'))&&!statusMoveBlockReason(skill,t,status!)&&(status!=='slp'||!t.asleep)):stages.some(e=>e.change<0&&stageOf(t,e.stat)>-3)));
     if(target)return {type:'skill',skill,target:spec.range==='room'||spec.range==='user'?id:target.id};
   }
   return null;
@@ -1018,10 +1017,11 @@ function tryPickup(s:World,actorId:string):void {
   note(s,`${actorId}拾取${ITEM_NAMES[item]}，背包共${amount}`);emit(s,{type:'pickup',actor:actorId,item,ok:true});progressCommission(s,'collector');
 }
 /** Applies HP loss and returns the HP actually lost. `cause` marks status damage (poison, burn), which has its own log line and does not wake a sleeper. A frozen unit takes no damage at all (8.8). */
-function hit(s:World,id:string,n:number,cause?:string):number {
+function hit(s:World,id:string,n:number,cause?:string,afterDamage?:(actual:number)=>void):number {
   const u=s.units[id],before=u.hp;
   if(n>0&&hasStatus(u,'frz')){note(s,`${id}冰冻中，不受伤害`);return 0;}
-  u.hp=Math.max(0,u.hp-n);note(s,cause?`${id}因${cause}损失${n}HP，HP ${u.hp}`:`${id}受到${n}伤害，HP ${u.hp}`);
+  u.hp=Math.max(0,u.hp-n);const actual=before-u.hp;note(s,cause?`${id}因${cause}损失${n}HP，HP ${u.hp}`:`${id}受到${n}伤害，HP ${u.hp}`);
+  afterDamage?.(actual);
   if(!cause&&u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
   if(before>0&&u.hp===0){u.pos=null;note(s,`${id}倒下退图`);
     if(u.side==='friend')for(const c of [...(s.commissions??[])].filter(c=>c.id==='guardian'))failCommission(s,c,'同行倒下');
@@ -1035,7 +1035,7 @@ function hit(s:World,id:string,n:number,cause?:string):number {
     const unit=clone(u.recruit);unit.id=`${u.recruit.id}`; // fixture IDs are stable; each event initializes once
     if(s.units[unit.id]||s.invitations.some(i=>i.unit.id===unit.id))unit.id=`${unit.id}-${s.invitations.length+1}`;
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});}}
-  return before-u.hp;
+  return actual;
 }
 /** Spec 3.1: a basic attack is Special when the actor's species has the higher base Sp. Atk than Atk, otherwise Physical (ties and units without a species count as Physical). */
 function basicCategory(u:Unit):'Physical'|'Special' {
@@ -1096,7 +1096,7 @@ function onDirectDamageToSleeper(s:World,owner:Unit,attacker:Unit,blockingGuard:
   }
   if(!sleeping(owner)||hasStatus(owner,'par')||hasStatus(owner,'flinch'))return;
   if(owner.learned.includes('snore')){
-    if((owner.pp.snore??0)>0&&moveOf('snore'))executeSkill(s,owner.id,{type:'skill',skill:'snore',target:attacker.id},blockingGuard,createdGuard,{suppressSleepTrigger:true,forcedTarget:attacker});
+    if((owner.pp.snore??0)>0&&moveOf('snore'))executeSkill(s,owner.id,{type:'skill',skill:'snore',target:attacker.id},blockingGuard,createdGuard,{suppressSleepTrigger:true,forcedTarget:attacker,ignoreConfusion:true});
     return;
   }
   if(!owner.learned.includes('sleeptalk')||(owner.pp.sleeptalk??0)<1)return;
@@ -1112,8 +1112,9 @@ function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number
   const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
   const amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill);
   if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,targetId+'被打中而解冻');emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
-  const hpBefore=target.hp;hit(s,targetId,amount);const actual=hpBefore-target.hp;
-  if(skill&&actual>0){const effectiveness=typeEffectiveness(skill,speciesTypes(target));if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}
+  const hpBefore=target.hp,effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
+  hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});
+  const actual=hpBefore-target.hp;
   if(opposing&&actual>0&&target.hp>0&&!suppressSleepTrigger)onDirectDamageToSleeper(s,target,source,quickguard,createdGuard);
   if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos))hit(s,sourceId,actual);
   return actual;
@@ -1640,7 +1641,7 @@ function recordKnown(u:Unit,move:string):boolean{return u.learned.includes(move)
 function queueLearnMove(s:World,actor:string,entry:KitMove):void {
   const u=s.units[actor];if(!alive(u)||!u.species||recordKnown(u,entry.move))return;
   if(s.pendingLearnMoves?.some(p=>p.actor===actor&&p.move===entry.move))return;
-  if(u.learned.length<4){u.learned.push(entry.move);u.pp[entry.move]=entry.pp;u.maxPp[entry.move]=entry.pp;note(s,'有同行学会了招式：'+(SKILL_CN[entry.move]??entry.move));}
+  if(u.learned.length<4){u.learned.push(entry.move);u.pp[entry.move]=entry.pp;u.maxPp[entry.move]=entry.pp;note(s,actor+'学会了招式：'+(SKILL_CN[entry.move]??entry.move));}
   else (s.pendingLearnMoves??=[]).push({actor,move:entry.move,pp:entry.pp});
 }
 function queueLevelUpMoves(s:World,from:number,to:number):void {
@@ -1862,8 +1863,8 @@ export function applyCommand(original:World,cmd:Command):Result {
       const slot=learner.learned.indexOf(cmd.replace);learner.learned[slot]=choice.move;
       delete learner.pp[cmd.replace];delete learner.maxPp[cmd.replace];
       learner.pp[choice.move]=choice.pp;learner.maxPp[choice.move]=choice.pp;
-      note(s,'有同行用'+(SKILL_CN[choice.move]??choice.move)+'替换了'+(SKILL_CN[cmd.replace]??cmd.replace));
-    }else note(s,'同行放弃学习'+(SKILL_CN[choice.move]??choice.move));
+      note(s,choice.actor+'用'+(SKILL_CN[choice.move]??choice.move)+'替换了'+(SKILL_CN[cmd.replace]??cmd.replace));
+    }else note(s,choice.actor+'放弃学习'+(SKILL_CN[choice.move]??choice.move));
     s.pendingLearnMoves!.shift();
     if(s.pendingLearnMoves!.length)s.phase='learning';
     else{s.pendingLearnMoves=undefined;advanceAfterLevelGrowth(s);}

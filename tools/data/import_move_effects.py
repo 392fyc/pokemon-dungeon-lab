@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """从 Pokémon Showdown 招式数据与 src/data/pmd-moves.json 生成 src/data/move-effects.json（8.8，#165）。
 
-规格：docs/02-进度/计划/8.8命中状态与PP规格.md 第 2、3、4 节。只使用 Python 标准库。
+现行规则：docs/01-现行规则/游戏规则.md G5；生成与迁移约定：docs/05-制作流程/实现备注.md 第 1、5 节。只使用 Python 标准库。
 输入文件只当数据读取，先校验 Showdown moves.json 的 sha256，不一致就退出。
 
 每招输出：

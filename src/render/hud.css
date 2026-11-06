@@ -1684,16 +1684,18 @@ body.dungeon-mode :focus-visible {
 }
 
 /* 8.9b: the sleep notice stays next to the bottom HUD; move choices share one size. */
+body.dungeon-mode .hud-current-hp { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 body.dungeon-mode #hud-sleep-status {
-  position: absolute;
-  left: 14px;
-  bottom: calc(100% + 8px);
+  display: inline-block;
   margin: 0;
-  padding: 6px 14px;
+  padding: 0 1px;
   border: 1px solid #e8d48a;
-  border-radius: 8px;
+  border-radius: 4px;
   background: rgba(12, 18, 15, .94);
   color: #f2eee0;
+  font-size: 11px;
+  line-height: 14px;
+  white-space: nowrap;
   font-weight: 700;
 }
 body.dungeon-mode .learning-new,
@@ -1709,3 +1711,12 @@ body.dungeon-mode .learning-move {
 body.dungeon-mode .learning-new { border: 1px solid #e8d48a; border-radius: 8px; }
 body.dungeon-mode .learning-moves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 body.dungeon-mode .learning-move strong { overflow-wrap: anywhere; }
+
+/* Learning details reserve their own space and receive touch input inside the choice window. */
+body.dungeon-mode #flow:has(#learning-choice) { max-height: calc(100vh - 32px); padding: 12px; }
+body.dungeon-mode #learning-choice { margin: 0; padding: 12px; }
+body.dungeon-mode #learning-tooltip { height: 146px; overflow: auto; overscroll-behavior: contain; touch-action: pan-y; margin: 10px 0; border: 1px solid #6c7758; border-radius: 8px; background: #101b15; pointer-events: auto; }
+body.dungeon-mode #learning-tooltip .hud-move-tip { padding: 8px; }
+body.dungeon-mode #learning-tooltip .hud-move-tip-main { gap: 8px; align-items: flex-start; }
+body.dungeon-mode #learning-tooltip .hud-tip-description { margin-bottom: 0; }
+body.dungeon-mode .hud-current-hp-value { white-space: nowrap; }

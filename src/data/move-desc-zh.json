@@ -791,9 +791,22 @@
       "tplRevid": 2523645
     },
     "freezedry": {
-      "desc": "急剧冷冻对手进行攻击。对于水属性宝可梦也是效果绝佳。有时也会让对手陷入冰冻状态。",
-      "game": "传说Z-A",
+      "desc": "以冰冷的冷气攻击对手，有10%概率使其冰冻。按冰属性相性结算，水属性会抵抗该招式。",
+      "game": "本作",
       "name": "冷冻干燥",
+      "originalDesc": "急剧冷冻对手进行攻击。对于水属性宝可梦也是效果绝佳。有时也会让对手陷入冰冻状态。",
+      "originalGame": "传说Z-A",
+      "overrideSource": {
+        "data": [
+          "src/data/type-chart.json",
+          "src/data/move-effects.json"
+        ],
+        "file": "tools/data/move-desc-zh-overrides.json",
+        "rules": [
+          "G5.3",
+          "G5.13"
+        ]
+      },
       "page": "冷冻干燥（招式）",
       "revid": 2595582,
       "tplRevid": 2561575

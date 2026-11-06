@@ -5,7 +5,7 @@ import {MOVE_DEFS,moveEffects,moveOf} from '../../src/core/moves.ts';
 import {SPECIES,movesAtLevel,tmPool,TM_MOVES_V5} from '../../src/core/roster.ts';
 import {typeEffectiveness} from '../../src/core/type-chart.ts';
 import {FLOOR_ITEM_WEIGHTS,generateChallengeEncounter} from '../../src/core/dungeon.ts';
-import {moveEffectLabel} from '../../src/core/describe.ts';
+import {moveEffectLabel,localizeLog} from '../../src/core/describe.ts';
 import {rngStep} from '../../src/core/engine.ts';
 
 function isolatedBattle(){
@@ -129,6 +129,17 @@ test('type immunity prevents recoil, self-cost, and blow-away; basic attacks rem
   }
 });
 
+test('damage, effectiveness, and fainting are logged in resolution order',()=>{
+  const s=isolatedBattle();s.units.A.species='squirtle';s.units.E.species='geodude';setMoves(s.units.A,['watergun']);s.units.E.hp=1;s.battleRng=seedWith(v=>v[0]<0.95);
+  const after=round(s,{type:'skill',skill:'watergun',target:'E'});
+  assert.equal(after.units.E.hp,0,'the super-effective Water Gun should defeat the one-HP target');
+  const damage=after.log.findIndex(line=>/^E受到\d+伤害，HP 0$/.test(line));
+  const effectiveness=after.log.indexOf('效果绝佳'),faint=after.log.indexOf('E倒下退图');
+  assert.ok(damage>=0,'the damage log should be present');
+  assert.equal(effectiveness,damage+1,'effectiveness follows the damage row immediately');
+  assert.ok(faint>effectiveness,'the target leaves the map after the effectiveness message');
+});
+
 test('Grass powder immunity and repeated sleep are resolved before hit rolls; born-asleep enemies convert to slp',()=>{
   const s=isolatedBattle(),a=s.units.A,e=s.units.E;e.asleep=true;e.wakeSkip=true;setMoves(a,['sleeppowder']);
   s.battleRng=seedWith(v=>v[0]<0.8);
@@ -143,6 +154,22 @@ test('Grass powder immunity and repeated sleep are resolved before hit rolls; bo
   assert.equal(second.battleRng,hold,'a sleeping target does not roll another hit or duration');
   assert.ok(sleeping(second.units.E));
   assert.equal(sleeping({...second.units.E,asleep:true,status:undefined}),false,'the exported helper excludes enemies born asleep');
+});
+
+test('partner and enemy status AI can affect born-asleep targets without choosing sleep again',()=>{
+  const partner=isolatedBattle();partner.queue=['A','B'];partner.units.A.pos={x:2,y:1};partner.units.B.hp=20;partner.units.B.pos={x:3,y:1};partner.units.E.pos={x:4,y:1};delete partner.units.E.species;partner.units.E.asleep=true;
+  setMoves(partner.units.B,['sleeppowder','thunderwave']);partner.battleRng=seedWith(v=>v[0]<0.95);
+  const partnerResult=round(partner,{type:'wait'});
+  assert.ok(partnerResult.units.E.status?.par,'a non-sleep status move can target an enemy born asleep');
+  assert.ok(partnerResult.log.some(line=>line==='B使用电磁波'));
+  assert.ok(!partnerResult.log.some(line=>line==='B使用催眠粉'),'a sleep move remains excluded for a born-asleep target');
+
+  const foe=isolatedBattle();delete foe.units.A.species;delete foe.units.E.species;foe.units.A.asleep=true;foe.units.E.waitOnly=false;foe.units.E.tactic='gofoes';
+  setMoves(foe.units.E,['tackle','thunderwave']);foe.battleRng=seedWith(v=>v[0]<0.3&&v[1]<0.95);
+  const hp=foe.units.A.hp,foeResult=round(foe,{type:'wait'});
+  assert.ok(foeResult.units.A.status?.par,'the enemy disruption branch can target a partner born asleep');
+  assert.equal(foeResult.units.A.hp,hp,'the seeded disruption branch chose paralysis instead of its damage move');
+  assert.ok(foeResult.log.some(line=>line==='E使用电磁波'));
 });
 
 test('an actual opposing hit wakes slp 25 percent of the time, while nap and status damage do not wake',()=>{
@@ -192,6 +219,17 @@ test('Snore has priority, Sleep Talk selects a move without spending its PP, bot
 });
 
 function staysSeed(){return seedWith(v=>v[0]>=0.25);}
+test('Snore ignores confusion on the sleeper and still hits the actual attacker',()=>{
+  const s=isolatedBattle(),a=s.units.A,e=s.units.E;s.difficulty='normal';delete a.species;delete e.species;
+  e.status={slp:{left:4},confusion:{left:5}};setMoves(e,['snore']);
+  s.battleRng=seedWith(v=>v[0]>=0.25&&v[1]<0.95&&Math.floor(v[1]*8)!==2);
+  const before=a.hp,after=round(s,{type:'basic',target:'E'});
+  assert.equal(after.units.A.hp,before-3,'without species modifiers, Snore base 8 scaled by 0.4 rounds to 3 damage');
+  assert.equal(after.units.E.pp.snore,1);
+  assert.ok(after.log.includes('E使用打鼾'));
+  assert.ok(after.log.includes('A受到3伤害，HP '+(before-3)),'Snore damages the attacker rather than the confused random direction');
+});
+
 test('manual Snore and Sleep Talk are rejected without PP loss',()=>{
   for(const move of ['snore','sleeptalk']){
     const s=isolatedBattle();setMoves(s.units.A,[move]);const result=applyCommand(s,{type:'round',action:{type:'skill',skill:move,target:'E'}});
@@ -253,6 +291,16 @@ test('Rest creates a 2–3 opportunity nap and heals fully while clearing ailmen
   assert.equal(crossed.units.A.status,undefined);
 });
 
+test('Rest healing priority precedes a partner self-boost when HP is low',()=>{
+  const s=isolatedBattle();s.queue=['A','B'];s.units.A.pos={x:2,y:1};s.units.B.pos={x:3,y:1};s.units.B.hp=8;s.units.B.maxHp=20;
+  setMoves(s.units.B,['rest','swordsdance']);
+  const after=round(s,{type:'wait'});
+  assert.ok(after.units.B.status?.nap,'the low-HP partner selects Rest as its A7 healing action');
+  assert.equal(after.units.B.stages.atk,0,'Rest wins before Swords Dance in the support priorities');
+  assert.equal(after.units.B.pp.rest,1);
+  assert.equal(after.units.B.pp.swordsdance,2);
+});
+
 test('level-up moves prompt sequentially, permit replacement or decline, and keep direct learns full-PP',()=>{
   const s=isolatedBattle();s.enemies=[];s.units.E.hp=0;s.units.E.pos=null;
   const a=s.units.A;a.species='bulbasaur';a.level=5;setMoves(a,['seedbomb','energyball','sludgebomb','growl']);
@@ -264,11 +312,17 @@ test('level-up moves prompt sequentially, permit replacement or decline, and kee
   const replacement=defaultLearningCommand(current);
   assert.deepEqual(replacement,{type:'learnMove',replace:'growl'});
   current=applyCommand(current,replacement).state;
+  const replacementLog=current.log.at(-1);
+  assert.ok(replacementLog.startsWith('A用'),'replacement log carries the learner id');
+  assert.ok(localizeLog(current,replacementLog).startsWith('妙蛙种子'),'replacement log localizes to the learner name');
   assert.ok(current.units.A.learned.includes('razorleaf'));
   assert.equal(current.units.A.pp.razorleaf,12);
   assert.equal(current.phase,'learning','additional prompts do not consume a turn or skip');
   assert.deepEqual(defaultLearningCommand(current),{type:'learnMove',replace:null});
   current=applyCommand(current,defaultLearningCommand(current)).state;
+  const firstDecline=current.log.filter(line=>line.includes('放弃学习')).at(-1);
+  assert.ok(firstDecline.startsWith('A'),'decline log carries the learner id');
+  assert.ok(localizeLog(current,firstDecline).startsWith('妙蛙种子'),'decline log localizes to the learner name');
   assert.equal(current.phase,'learning');
   assert.deepEqual(defaultLearningCommand(current),{type:'learnMove',replace:null});
   current=applyCommand(current,defaultLearningCommand(current)).state;
@@ -283,6 +337,9 @@ test('level-up moves prompt sequentially, permit replacement or decline, and kee
   assert.equal(learned.phase,'playing','an open slot learns automatically');
   assert.ok(learned.units.A.learned.includes('razorleaf'));
   assert.equal(learned.units.A.pp.razorleaf,12);
+  const directLog=learned.log.find(line=>line.includes('学会了招式：飞叶快刀'));
+  assert.ok(directLog?.startsWith('A'),'direct learn log carries the learner id');
+  assert.ok(localizeLog(learned,directLog).startsWith('妙蛙种子'),'direct learn log localizes to the learner name');
 });
 
 test('commission experience follows the same level-up learning path',()=>{

@@ -334,6 +334,32 @@ test('其余“行动已结束”的日志（动作失效、无路可走、普�
  }
 });
 
+test('混乱的非伤害招式撞上守住目标时不写日志，下一行别人的伤害仍归别人',()=>{
+ const sample=findRound(()=>{
+  const before=world({moves:['tailwhip'],targets:[enemy('H',2,1,40,'ranged',0),enemy('H2',5,5,40,'ranged',0)]});
+  before.units.H.protect=5;before.units.H2.hp=before.units.H2.maxHp=300;before.units.A.status={confusion:{left:3}};
+  before.units.B=friend('B',4,4,20,{});before.units.B.stages.acc=3;before.queue.push('B');
+  before.__command={type:'round',action:{type:'skill',skill:'tailwhip',target:'H'},override:{actor:'B',action:{type:'basic',target:'H2'}}};
+  return before;
+ },log=>{const i=log.findIndex(line=>/^A因混乱朝.+出手$/.test(line));return i>=0&&/^H2受到\d+伤害/.test(log[i+1]??'');});
+ assert.ok(sample,'a confused tail whip that lands on a protected target, followed by B hitting H2, is found');
+ const hit=inferEvents(sample.before,sample.after,sample.command).find(event=>event.k==='hit'&&event.target==='H2');
+ assert.ok(hit);assert.equal(hit.attacker,'B');assert.equal(hit.by,'B');
+});
+
+for(const flag of ['asleep','wakeSkip'])test(`本回合不行动的敌人（${flag}）不会被当成普攻的攻击者`,()=>{
+ const sample=findRound(()=>{
+  const before=world({moves:[],targets:[enemy('E1',2,1,40,'melee',0),enemy('E2',1,2,40,'melee',0)]});
+  for(const id of ['E1','E2']){const e=before.units[id];e.waitOnly=false;e.learned=[];e.pp={};e.maxPp={};}
+  before.units.E1[flag]=true;before.units.E2.stages.acc=3;before.units.A.hp=before.units.A.maxHp=200;
+  before.__command={type:'round',action:{type:'wait'}};
+  return before;
+ },log=>log.some(line=>line.startsWith('A受到')));
+ assert.ok(sample,'E2 hits A while E1 stays idle');
+ const hit=inferEvents(sample.before,sample.after,sample.command).find(event=>event.k==='hit'&&event.target==='A');
+ assert.ok(hit);assert.equal(hit.attacker,'E2');
+});
+
 test('混乱招式打中队友后施放即结束，下一行的别人普攻不算这次招式',()=>{
  const sample=findRound(()=>{
   const before=world({moves:['pound'],targets:[enemy('H',2,1,40,'ranged',0)]});before.units.H.hp=before.units.H.maxHp=300;

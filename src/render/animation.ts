@@ -166,7 +166,8 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     const candidates:{id:string;move:string|null;index:number}[]=[];
     for (let i = enemyCursor + 1; i < b.enemies.length; i++) {
       const id = b.enemies[i], p = pos[id];
-      if (!p || hp[id] <= 0 || used.has(id)) continue;
+      // Sleeping and just-woken enemies skip their turn without a log line (engine enemy phase).
+      if (!p || hp[id] <= 0 || used.has(id) || b.units[id].asleep || b.units[id].wakeSkip) continue;
       const move=spentMove(id),spec=move?moveOf(move):undefined;
       if(move&&isDamageMove(move)&&canSkillHit(id,target,move))candidates.push({id,move,index:i});
       else if(!spentAnyPp(id)&&adjacentReachable(floorCells,p,t))candidates.push({id,move:null,index:i});
@@ -213,7 +214,8 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     }
     // A unit whose action ended without a credited hit has still used its action, so a later hit on a target is not its work.
     if(spentWithoutHit.test(rest))used.add(id);
-    if(/^因混乱朝.+出手$/.test(rest)){pendingStrike=id;used.add(id);}
+    // A status move stopped by a guard writes nothing after this line, so only a damaging action may claim the next damage line.
+    if(/^因混乱朝.+出手$/.test(rest)){used.add(id);if(activeCast?.by!==id||isDamageMove(activeCast.move))pendingStrike=id;}
     // The cast is over when the log says so: a confused cast that found nothing, or another unit's own action line starts.
     if(activeCast&&((id===activeCast.by&&rest==='的招式未命中任何目标')||(id!==activeCast.by&&(spentWithoutHit.test(rest)||/^(?:移动到|趋近一步|向.+挥空|与.+换位|对.+使用|因混乱朝)/.test(rest))))){activeCast=null;reactionStack.length=0;}
     if ((m = rest.match(/^移动到(\d+),(\d+)$/))) {

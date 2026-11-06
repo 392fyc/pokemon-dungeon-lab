@@ -9,8 +9,8 @@
   "faces": {
     "body": {
       "file": "fonts/pdl-sans-sc.woff2",
-      "bytes": 1086004,
-      "sha256": "1db09e31f037574ca7c83a90101c5abfe46258f0145729e6eb27a426d6f5df34",
+      "bytes": 1086188,
+      "sha256": "2a8ec525c93f082ce06b13c770700fdae6262c7aff9d7d56a45290e5f764a416",
       "family": "PDL Sans SC",
       "codepoints": [
         32,
@@ -854,6 +854,7 @@
         22075,
         22079,
         22094,
+        22108,
         22120,
         22122,
         22124,

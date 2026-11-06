@@ -1,4 +1,4 @@
-import {availableTalentPoints,instanceOf,learnTm,rankLevel,MAX_CARRY,MAX_TEAM,type Profile,type SettleSummary} from '../core/base.ts';
+import {availableTalentPoints,instanceOf,learnTm,rankLevel,rankThreshold,TALENTS,MAX_CARRY,MAX_TEAM,type Profile,type SettleSummary,type TalentId} from '../core/base.ts';
 import {ALL_TM_MOVES,learnableMove,SPECIES} from '../core/roster.ts';
 import {THEME_FLOORS,type Difficulty} from '../core/dungeon.ts';
 import {TACTICS,TACTIC_LABELS,type Tactic} from '../core/tactics.ts';
@@ -12,8 +12,8 @@ import {starterMoveFields} from './hud.ts';
 import './camp.css';
 
 export const CAMP_BUILDINGS = {
-  party: {name:'伙伴小屋', keeper:'chansey', feet:[316,306], line:'大家都在这里休息。要带谁出发呢？'},
-  vault: {name:'仓库', keeper:'snorlax', feet:[960,318], line:'带回来的东西都放好了。'},
+  party: {name:'伙伴小屋', keeper:'chansey', feet:[316,306]},
+  vault: {name:'仓库', keeper:'snorlax', feet:[960,318]},
   talents: {name:'天赋石碑'},
   records: {name:'记录板'},
 } as const;
@@ -57,22 +57,28 @@ function campStandee(species:string):string {
   return frame&&keeperHeight?standingSprite(dex,frame.w,frame.h,frame.durations.length,keeperHeight):portrait(species);
 }
 
-export function campScene(profile:Profile,ready:boolean,difficulty:string,message:string):string {
-  void difficulty;
+export function campScene(profile:Profile,ready:boolean,message:string):string {
   const team=profile.team.map(id=>{
     const member=instanceOf(profile,id);
     return member?'<span aria-label="'+escape(speciesZh(member.species))+'">'+portrait(member.species)+'</span>':'';
   }).join('');
+  const level=rankLevel(profile.rankExp),floor=rankThreshold(level),next=rankThreshold(level+1);
+  const earned=Math.max(0,Math.min(next-floor,profile.rankExp-floor)),needed=next-floor;
+  const progress=needed>0?Math.round(earned/needed*100):0;
+  const hasSpendableTalent=Object.keys(TALENTS).some(talent=>(profile.talents[talent as TalentId]??0)<5);
+  const canSpendTalentPoints=availableTalentPoints(profile)>0&&hasSpendableTalent;
   const panels=Object.keys(CAMP_BUILDINGS) as CampPanel[];
   const buildings=panels.map(id=>{
     const building=CAMP_BUILDINGS[id],spot=CAMP_SPOTS[id], [x,y,width,height]=spot;
     const keeper='keeper' in building
       ? '<span class="camp-keeper" aria-hidden="true" style="left:'+((building.feet[0]-x)/width*100)+'%;top:'+((building.feet[1]-y)/height*100)+'%">'+campStandee(building.keeper)+'</span>'
       : '';
-    const alert=id==='talents'&&availableTalentPoints(profile)>0
-      ? '<span class="camp-alert" aria-label="有未使用天赋点">!</span>'
+    const showAlert=id==='talents'&&canSpendTalentPoints;
+    const alert=showAlert
+      ? '<span class="camp-alert" aria-hidden="true">!</span>'
       : '';
-    return '<button type="button" class="camp-hotspot camp-building'+(keeper?' has-keeper':'')+'" id="camp-open-'+id+'" aria-haspopup="dialog" aria-label="'+escape(building.name)+'" style="'+hotspot(spot)+'">'+
+    const accessibleName=building.name+(showAlert?'，有未使用天赋点':'');
+    return '<button type="button" class="camp-hotspot camp-building'+(keeper?' has-keeper':'')+'" id="camp-open-'+id+'" aria-haspopup="dialog" aria-label="'+escape(accessibleName)+'" style="'+hotspot(spot)+'">'+
       '<span class="camp-spot-label"><strong>'+escape(building.name)+'</strong>'+alert+'</span>'+keeper+'</button>';
   }).join('');
   return '<div id="base" class="camp-scene">'+
@@ -82,7 +88,8 @@ export function campScene(profile:Profile,ready:boolean,difficulty:string,messag
       '</button>'+
       '<div class="camp-squad" aria-label="出发阵容" style="'+spotPosition(638,462)+'">'+team+'</div>'+buildings+
     '</div>'+
-    '<div class="camp-badge">探险队 Lv'+rankLevel(profile.rankExp)+' <span>远征 '+profile.expeditions+' 次</span></div>'+
+    '<div class="camp-badge"><div class="camp-badge-line"><strong>探险队 Lv'+level+'</strong><span>远征 '+profile.expeditions+' 次</span></div>'+
+      '<div class="camp-rank-progress" role="progressbar" aria-label="探险队经验" aria-valuemin="0" aria-valuemax="'+needed+'" aria-valuenow="'+earned+'"><span class="camp-rank-track" aria-hidden="true"><i style="width:'+progress+'%"></i></span><span class="camp-rank-count">'+earned+'/'+needed+'</span></div></div>'+
     '<button type="button" id="camp-menu" class="camp-menu" aria-label="营地菜单">菜单</button>'+message+
   '</div>';
 }
@@ -100,18 +107,12 @@ export function campPanelMarkup(panel:CampPanel,content:string,message:string):s
           '</div>'+
     '</dialog>';
   }
-  const keeper='keeper' in building
-    ? '<div class="camp-dialog-keeper">'+portrait(building.keeper)+'<span>'+escape(speciesZh(building.keeper))+'</span></div>'
-    : '';
-  const greeting='line' in building?'<p class="camp-greeting">“'+escape(building.line)+'”</p>':'';
   return '<dialog id="camp-dialog" class="camp-dialog" data-camp-panel="'+panel+'" aria-labelledby="camp-dialog-heading">'+
-    '<div class="camp-dialog-layout'+(keeper?' has-keeper':'')+'">'+keeper+
-      '<div class="camp-dialog-main">'+
-        '<div class="camp-dialog-heading"><h2 id="camp-dialog-heading">'+escape(building.name)+'</h2>'+
-          '<button type="button" id="camp-close" aria-label="关闭'+escape(building.name)+'">×</button></div>'+
-        greeting+message+'<div class="camp-dialog-content">'+content+'</div>'+
-      '</div>'+
-    '</div>'+
+    '<div class="camp-dialog-layout"><div class="camp-dialog-main">'+
+      '<div class="camp-dialog-heading"><h2 id="camp-dialog-heading">'+escape(building.name)+'</h2>'+
+        '<button type="button" id="camp-close" aria-label="关闭'+escape(building.name)+'">×</button></div>'+
+      message+'<div class="camp-dialog-content">'+content+'</div>'+
+    '</div></div>'+
   '</dialog>';
 }
 
@@ -283,7 +284,7 @@ function moveDetail(profile:Profile,move:string,state:VaultState,ready:boolean):
       '<div><dt>范围</dt><dd>'+escape(fields.target)+'</dd></div></dl></div>'+
     '<p class="camp194-move-description">'+escape(fields.description||'没有招式说明。')+'</p>'+
     '<section class="camp194-learners" aria-label="学习对象"><div class="camp194-section-heading"><h3>学习对象</h3><span>库存 ×'+stock+'</span></div>'+
-      '<div class="camp194-learner-list" id="camp-vault-learners" data-camp-scroll">'+vaultLearningChoices(profile,move,state.learner)+'</div></section>'+
+      '<div class="camp194-learner-list" id="camp-vault-learners" data-camp-scroll>'+vaultLearningChoices(profile,move,state.learner)+'</div></section>'+
     '<button type="button" class="camp194-learn-button" id="learn-'+escape(state.learner??'none')+'" '+(canStudy?'':'disabled')+'>'+
       (learner?'由'+escape(learner)+'学习':'学习')+'</button>'+
   '</section>';
@@ -310,7 +311,7 @@ export function campVault194(profile:Profile,ready:boolean,state:VaultState):str
   const detail=view.tab==='tm'&&view.move?moveDetail(profile,view.move,view,ready):view.tab==='shards'?shardDetail(profile,view.shard):'<section class="camp194-vault-detail"><p class="camp194-empty">没有可显示的招式机。</p></section>';
   return '<div class="camp194-vault">'+
     '<div class="camp194-vault-left">'+
-      '<div class="camp194-greeting">'+memberMarkup('snorlax','camp194-greeting-portrait')+'<p>带回来的东西都放好了。</p></div>'+
+      '<div class="camp194-greeting">'+memberMarkup('snorlax','camp194-greeting-portrait')+'<p>……呼噜……带回来的东西都放好了……</p></div>'+
       '<div class="camp194-vault-tabs" role="tablist" aria-label="仓库分类">'+
         '<button type="button" id="camp-vault-tab-tm" role="tab" data-vault-tab="tm" aria-selected="'+(view.tab==='tm'?'true':'false')+'">招式机 <span>共 '+Object.values(profile.vault).reduce((sum,n)=>sum+Math.max(0,n),0)+'</span></button>'+
         '<button type="button" id="camp-vault-tab-shards" role="tab" data-vault-tab="shards" aria-selected="'+(view.tab==='shards'?'true':'false')+'">伙伴碎片 <span>共 '+shards.reduce((sum,row)=>sum+row[1],0)+'</span></button>'+
@@ -385,7 +386,7 @@ function departureMember(profile:Profile,id:string,index:number):string {
     '<span class="camp194-order">'+(index+1)+'</span><strong>'+escape(speciesZh(member.species))+'</strong>'+
     (profile.leader===id?'<span class="camp194-depart-lead">操控</span>':'')+'</div>';
 }
-export function campDeparture194(profile:Profile,ready:boolean,difficultyMarkup:string):string {
+export function campDeparture194(profile:Profile,ready:boolean,difficultyMarkup:string,feedback:string):string {
   const team=profile.team.map((id,index)=>departureMember(profile,id,index)).join('');
   return '<dialog id="camp-departure" class="camp194-paper-dialog camp194-departure" data-camp-panel="departure" aria-labelledby="camp-departure-heading">'+
     '<div class="camp194-departure-shell">'+
@@ -393,7 +394,7 @@ export function campDeparture194(profile:Profile,ready:boolean,difficultyMarkup:
       '<button type="button" id="depart-cancel" class="camp194-close" aria-label="取消出发">×</button>'+
             '<section class="camp194-depart-team" aria-label="出发阵容">'+(team||'<p class="camp194-empty">当前没有可出发的伙伴。</p>')+'</section>'+
       '<section class="camp194-depart-difficulty" aria-label="远征难度"><h3>远征难度</h3>'+difficultyMarkup+'</section>'+
-      '<button type="button" id="depart-confirm" class="camp194-depart-confirm" '+(ready?'':'disabled')+'>进入迷宫</button>'+
+      '<button type="button" id="depart-confirm" class="camp194-depart-confirm" '+(ready?'':'disabled')+'>进入迷宫</button>'+feedback+
     '</div>'+
   '</dialog>';
 }

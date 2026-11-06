@@ -49,43 +49,95 @@ const sq=(g:Phaser.GameObjects.Graphics,x:number,y:number,w:number,h:number,colo
 /** A bar of `width` along the unit direction `dir`; slanted bars are exact rotated rectangles. */
 function bar(g:Phaser.GameObjects.Graphics,from:Point,dir:Point,len:number,width:number,color:string,alpha=1):void{
  if(len<=0||alpha<=0)return;
- g.fillStyle(Number.parseInt(color.slice(1),16),alpha);
- if(Math.abs(dir.y)<1e-6){
-  g.fillRect(Math.round(dir.x<0?from.x-len:from.x),Math.round(from.y-width/2),Math.max(1,Math.round(len)),Math.max(1,Math.round(width)));
-  return;
- }
- if(Math.abs(dir.x)<1e-6){
-  g.fillRect(Math.round(from.x-width/2),Math.round(dir.y<0?from.y-len:from.y),Math.max(1,Math.round(width)),Math.max(1,Math.round(len)));
+ const clip=clips.get(g),col=Number.parseInt(color.slice(1),16);
+ if(Math.abs(dir.y)<1e-6||Math.abs(dir.x)<1e-6){
+  const horizontal=Math.abs(dir.y)<1e-6;
+  const x=Math.round(horizontal?(dir.x<0?from.x-len:from.x):from.x-width/2),y=Math.round(horizontal?from.y-width/2:(dir.y<0?from.y-len:from.y));
+  const w=Math.max(1,Math.round(horizontal?len:width)),h=Math.max(1,Math.round(horizontal?width:len));
+  if(clip&&!clip(x,y,w,h))return;
+  g.fillStyle(col,alpha);g.fillRect(x,y,w,h);
   return;
  }
  const nx=-dir.y*width/2,ny=dir.x*width/2,ex=from.x+dir.x*len,ey=from.y+dir.y*len;
- g.fillPoints([{x:from.x+nx,y:from.y+ny},{x:ex+nx,y:ey+ny},{x:ex-nx,y:ey-ny},{x:from.x-nx,y:from.y-ny}] as unknown as Phaser.Math.Vector2[],true);
+ const pts=[{x:from.x+nx,y:from.y+ny},{x:ex+nx,y:ey+ny},{x:ex-nx,y:ey-ny},{x:from.x-nx,y:from.y-ny}];
+ if(clip){
+  const xs=pts.map(q=>q.x),ys=pts.map(q=>q.y);
+  if(!clip(Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys)))return;
+ }
+ g.fillStyle(col,alpha);
+ g.fillPoints(pts as unknown as Phaser.Math.Vector2[],true);
 }
-/** The draft's particle shapes, centred on (x,y). `k` runs 1 to 0 over a particle's life; only `dot` changes size with it. */
+/**
+ * The draft's particle shapes, with the draft's own offsets (the origin is the draft's (x,y)). `k` runs 1 to 0 over a
+ * particle's life; only `dot` changes size with it. Only the streak has a direction: it is drawn along `angle`.
+ */
 function particle(g:Phaser.GameObjects.Graphics,kind:string,x:number,y:number,p:Palette,s:number,k=1,angle=0):void{
  const [a,b,c]=p;
- const px=(dx:number,dy:number,w:number,h:number,col:string)=>sq(g,x+(dx*Math.cos(angle)-dy*Math.sin(angle))*s,y+(dx*Math.sin(angle)+dy*Math.cos(angle))*s,w*s,h*s,col);
+ const px=(dx:number,dy:number,w:number,h:number,col:string)=>sq(g,x+dx*s,y+dy*s,w*s,h*s,col);
  switch(kind){
-  case 'flame':px(-1,-3,2,2,b);px(-2,-1,4,3,a);px(-1,2,2,1,c);break;
-  case 'drop':px(-1,-3,2,1,b);px(-2,-2,4,3,a);px(-1,1,2,1,c);break;
-  case 'leaf':px(-3,0,2,2,a);px(-1,-1,3,2,a);px(2,-2,1,1,b);px(-2,1,1,1,c);break;
-  case 'bolt':px(-1,-3,2,2,b);px(-2,-1,2,2,a);px(0,0,2,2,b);px(-1,2,2,1,a);break;
-  case 'shard':px(-.5,-3,1,6,b);px(-2,-1,4,3,a);break;
-  case 'bubble':px(-1,-3,3,1,a);px(-2,-2,1,4,a);px(2,-2,1,4,a);px(-1,2,3,1,a);px(0,-1,1,1,b);break;
+  case 'flame':px(0,-3,2,2,b);px(-1,-1,4,3,a);px(0,2,2,1,c);break;
+  case 'drop':px(0,-2,2,1,b);px(-1,-1,4,3,a);px(0,2,2,1,c);break;
+  case 'leaf':px(-2,0,2,2,a);px(0,-1,3,2,a);px(2,-2,1,1,b);px(-1,1,1,1,c);break;
+  case 'bolt':px(0,-3,2,2,b);px(-1,-1,2,2,a);px(1,0,2,2,b);px(0,2,2,1,a);break;
+  case 'shard':px(0,-3,1,6,b);px(-1,-1,3,3,a);break;
+  case 'bubble':px(-1,-2,3,1,a);px(-2,-1,1,3,a);px(2,-1,1,3,a);px(-1,2,3,1,a);px(-1,-1,1,1,b);break;
   case 'rock':px(-2,-1,4,3,a);px(-1,-2,2,1,b);px(-2,2,4,1,c);break;
-  case 'streak':px(-4,-1,8,1,b);px(-2,0,5,1,a);break;
+  case 'streak':{
+   const dir={x:Math.cos(angle),y:Math.sin(angle)},side={x:-dir.y,y:dir.x};
+   // Draft (pointing right): 8 long on the centre row, 5 long one row below and starting 2 behind the centre.
+   bar(g,{x:x+(-dir.x*4+side.x*.5)*s,y:y+(-dir.y*4+side.y*.5)*s},dir,8*s,s,b);
+   bar(g,{x:x+(-dir.x*2+side.x*1.5)*s,y:y+(-dir.y*2+side.y*1.5)*s},dir,5*s,s,a);
+   break;
+  }
   case 'ring':px(-2,-3,4,1,a);px(-2,3,4,1,a);px(-3,-2,1,4,a);px(3,-2,1,4,a);break;
   case 'wisp':px(-1,-2,3,3,a);px(0,1,1,2,b);px(-1,-1,1,1,b);break;
   case 'claw':px(-2,-3,1,5,a);px(0,-3,1,6,a);px(2,-2,1,5,a);break;
-  case 'spark':px(-1,-1,2,2,b);px(-3,-1,1,1,a);px(2,0,1,1,a);break;
-  case 'dot':{const d=k>.5?3:2;px(-d/2,-d/2,d,d,a);break;}
-  default:px(-.5,-2.5,1,5,b);px(-2.5,-.5,5,1,b);px(-.5,-.5,1,1,a);
+  case 'spark':px(0,0,2,2,b);px(-2,0,1,1,a);px(3,1,1,1,a);break;
+  case 'dot':{const d=k>.5?3:2;px(0,0,d,d,a);break;}
+  default:px(0,-2,1,5,b);px(-2,0,5,1,b);px(0,0,1,1,a);
  }
 }
 const unit=(from:Point,to:Point):Point=>{const dx=to.x-from.x,dy=to.y-from.y,n=Math.hypot(dx,dy);return n<1e-6?{x:1,y:0}:{x:dx/n,y:dy/n};};
 
-type ShakeEntry={x:number;y:number;users:number};
-const shakes=new WeakMap<object,ShakeEntry>();
+type ShakeBase={x:number;y:number;active:number};
+const shakes=new WeakMap<object,ShakeBase>();
+/** Puts the main camera back where it was before any combat shake; the scene's skip path calls this after it kills the tweens. */
+export function resetCombatShake(scene:Phaser.Scene):void{
+ const camera=scene.cameras?.main;if(!camera)return;
+ const base=shakes.get(camera);
+ if(base){camera.setPosition(base.x,base.y);shakes.delete(camera);}
+}
+/**
+ * Shakes the main camera by up to 2 draft units for 0.14s of real time (scaled with the round's speed-up, never under two
+ * frames). Its own tween runs on, even after the effect object has finished; the effect never waits for it. All shakes of
+ * one camera share the position recorded by the first, so overlapping shakes cannot drift. Returns a function that ends it.
+ */
+function startShake(stage:Stage,size:number,seed:number):()=>void{
+ const camera=stage.scene.cameras?.main as Phaser.Cameras.Scene2D.Camera|undefined;
+ if(!camera)return ()=>{};
+ let base=shakes.get(camera);
+ if(!base){base={x:camera.x,y:camera.y,active:0};shakes.set(camera,base);}
+ const mine=base;mine.active++;
+ const duration=Math.max(34,Math.round(140*(stage.f||1)));
+ let done=false;
+ const end=()=>{
+  if(done)return;
+  done=true;
+  if(shakes.get(camera)!==mine)return;
+  mine.active--;
+  if(mine.active<=0){camera.setPosition(mine.x,mine.y);shakes.delete(camera);}
+ };
+ let handle:{stop?:()=>unknown}|undefined;
+ try{
+  handle=stage.scene.tweens.add({targets:{t:0},t:1,duration,ease:'Linear',
+   onUpdate:(_:unknown,target:{t:number})=>{
+    if(done||shakes.get(camera)!==mine)return;
+    const frame=Math.floor(target.t*duration/(1000/60));
+    camera.setPosition(mine.x+Math.round(between(frame,seed+18,-2,2)*size),mine.y+Math.round(between(frame,seed+19,-2,2)*size));
+   },onComplete:end,onStop:end} as unknown as Phaser.Types.Tweens.TweenBuilderConfig) as unknown as {stop?:()=>unknown};
+ }catch(error){end();throw error;}
+ return ()=>{end();try{handle?.stop?.();}catch{/* the tween is already gone */}};
+}
 
 /** A single tween owns the Graphics object's lifetime, so skip/abort cleanup can stop and destroy it. */
 export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,impacts:readonly Pos[]=[at],durationMs=320):Promise<void>{
@@ -113,26 +165,10 @@ export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,
    const inside=(x:number,y:number)=>set.has(col(x)+','+row(y));
    clips.set(g,(x,y,w,h)=>inside(x,y)&&inside(x+w-1e-6,y)&&inside(x,y+h-1e-6)&&inside(x+w-1e-6,y+h-1e-6));
   }
-  const camera=stage.scene.cameras?.main as Phaser.Cameras.Scene2D.Camera|undefined;
-  let shaking=false,finished=false;
-  const releaseShake=()=>{
-   if(!shaking||!camera)return;
-   shaking=false;
-   const entry=shakes.get(camera);if(!entry)return;
-   entry.users--;
-   if(entry.users<=0){camera.setPosition(entry.x,entry.y);shakes.delete(camera);}
-  };
-  const applyShake=(dx:number,dy:number)=>{
-   if(!camera)return;
-   let entry=shakes.get(camera);
-   if(!entry){entry={x:camera.x,y:camera.y,users:0};shakes.set(camera,entry);}
-   if(!shaking){shaking=true;entry.users++;}
-   camera.setPosition(entry.x+dx,entry.y+dy);
-  };
+  let finished=false,shakeStarted=false;const shake:{stop:(()=>void)|null}={stop:null};
   const cleanup=()=>{
    if(finished)return;
    finished=true;
-   releaseShake();
    stage.temp.delete(g);
    if(g.active)g.destroy();
    resolve();
@@ -141,7 +177,7 @@ export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,
   g.once('destroy',()=>{
    if(finished)return;
    finished=true;
-   releaseShake();
+   shake.stop?.();
    stage.temp.delete(g);
    resolve();
   });
@@ -176,10 +212,12 @@ export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,
    }else if(template==='shot'){
     for(const target of allPoints){
      const dir=unit(start,target),side={x:-dir.y,y:dir.x},angle=Math.atan2(dir.y,dir.x);
+     // The draft's 520 u/s covers its 76u gap in 0.146s; keep that timing for any distance and let the particle fly on past the target.
+     const speed=Math.max(1,Math.hypot(target.x-start.x,target.y-start.y)/u-12)/.146;
      for(let i=0;i<7;i++){
-      const age=tau-i*.025;if(age<0||age>=.15)continue;
-      const off=between(i,seed+4,-2,2)*u,o={x:start.x+dir.x*12*u+side.x*off,y:start.y+dir.y*12*u+side.y*off};
-      paint(mix(o.x,target.x,age/.15),mix(o.y,target.y,age/.15),1-age/.15,angle);
+      const age=tau-i*.025;if(age<0||age>=.2)continue;
+      const off=between(i,seed+4,-2,2)*u,travel=(12+speed*age)*u;
+      paint(start.x+dir.x*travel+side.x*off,start.y+dir.y*travel+side.y*off,1-age/.2,angle);
      }
     }
    }else if(template==='beam'){
@@ -198,7 +236,12 @@ export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,
    }else if(template==='room'&&grid){
     if(tau<.42){
      const alpha=.28*Math.sin(Math.min(1,tau/.42)*Math.PI);
-     for(const c of cells)sq(g,c.x-stage.cell/2,c.y-stage.cell/2,stage.cell,stage.cell,palette[0],alpha);
+     // Whole cells, edges rounded once so fractional cell sizes leave neither gaps nor lost cells.
+     g.fillStyle(Number.parseInt(palette[0].slice(1),16),cap(alpha,0,1));
+     for(const c of cells){
+      const left=Math.round(c.x-stage.cell/2),top=Math.round(c.y-stage.cell/2);
+      g.fillRect(left,top,Math.max(1,Math.round(c.x+stage.cell/2)-left),Math.max(1,Math.round(c.y+stage.cell/2)-top));
+     }
     }
     for(let i=0;i<18;i++){
      const age=tau-i*.015;if(age<0||age>=.7)continue;
@@ -251,22 +294,18 @@ export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,
     }
    }
    if(ATTACK_TEMPLATES.includes(template))for(const target of allPoints)burst(target);
-   // Super-effective hits shake the main camera by up to 2 draft units for 0.14s; reduced motion keeps it still.
-   const shakeAge=tau-draft.impact;
-   if(heavy&&ATTACK_TEMPLATES.includes(template)&&!stage.reduceMotion&&shakeAge>=0&&shakeAge<.14){
-    const frame=Math.floor(tau*60);
-    applyShake(Math.round(between(frame,seed+18,-2,2)*u),Math.round(between(frame,seed+19,-2,2)*u));
-   }else releaseShake();
+   // Super-effective hits shake the main camera from the moment of impact, on a real-time clock of their own.
+   if(heavy&&ATTACK_TEMPLATES.includes(template)&&!stage.reduceMotion&&!shakeStarted&&tau>=draft.impact){shakeStarted=true;shake.stop=startShake(stage,u,seed);}
    const phase=p<.22?'start':p<impactP?'travel':'impact';
-   g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase,elapsed:Math.round(duration*p),superEffective:heavy,shaking,...(template==='room'?{cells:cellKeys}:{})});
+   g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase,elapsed:Math.round(duration*p),superEffective:heavy,...(template==='room'?{cells:cellKeys}:{})});
   };
-  g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase:'start',elapsed:0,superEffective:heavy,shaking:false,...(template==='room'?{cells:cellKeys}:{})});
+  g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase:'start',elapsed:0,superEffective:heavy,...(template==='room'?{cells:cellKeys}:{})});
   stage.temp.add(g);
   try{
    stage.scene.tweens.add({targets:{progress:0},progress:1,duration,ease:'Linear',onUpdate:(_:unknown,target:{progress:number})=>draw(target.progress),onComplete:cleanup,onStop:cleanup} as unknown as Phaser.Types.Tweens.TweenBuilderConfig);
   }catch(error){
    finished=true;
-   releaseShake();
+   shake.stop?.();
    stage.temp.delete(g);
    if(g.active)g.destroy();
    reject(error);

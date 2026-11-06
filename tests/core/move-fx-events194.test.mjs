@@ -260,3 +260,109 @@ test('声明时长与实际一致，多事件回合总长不超过1500ms，过�
  assert.ok(q&&q.total<=1500+1e-6&&Math.abs(q.total-1500)<1e-6);
  assert.equal(plan(Array.from({length:11},(_,i)=>effectHit(i))),null,'a round that would play below 30% speed is not animated');
 });
+
+/** Searches seeds of the real engine until `pick` accepts the round; the log text is the ground truth the tests read. */
+function findRound(build,pick,limit=600){
+ for(let seed=1;seed<=limit;seed++){
+  const before=build(seed),command=before.__command;delete before.__command;before.battleRng=seed;
+  const result=applyCommand(before,command);if(!result.ok)continue;
+  if(pick(result.state.log,result.state))return {before,after:result.state,command,log:result.state.log};
+ }
+ return null;
+}
+const basicRound=(extra={})=>({type:'round',action:{type:'basic',target:'H'},...extra});
+
+test('友方：混乱或畏缩、麻痹的 A 用掉行动后，B 对 H 的命中不算在 A 头上',()=>{
+ for(const [status,expectLine] of [['confusion',/^A因混乱朝.+出手$/],['flinch',/^A畏缩中，无法使用招式和普攻/],['par',/^A麻痹中，无法使用招式和普攻/]]){
+  const sample=findRound(()=>{
+   const before=world({moves:[],targets:[enemy('H',2,1,40,'ranged',0)]});before.units.H.hp=before.units.H.maxHp=300;
+   before.units.A.status={[status]:{left:3}};before.units.A.stages.acc=3;
+   before.units.B=friend('B',1,2,20,{});before.units.B.stages.acc=3;before.queue.push('B');
+   before.__command={type:'round',action:{type:'basic',target:'H'},override:{actor:'B',action:{type:'basic',target:'H'}}};
+   return before;
+  },log=>{
+   const i=log.findIndex(line=>expectLine.test(line));
+   // Nothing is damaged by A's own action: the line after it is not damage, and B's later hit on H exists.
+   return i>=0&&(status!=='confusion'||!/受到\d+伤害/.test(log[i+1]??''))&&log.slice(i).some(line=>/^H受到\d+伤害/.test(line));
+  });
+  assert.ok(sample,status+': a real round is found');
+  const hits=inferEvents(sample.before,sample.after,sample.command).filter(event=>event.k==='hit'&&event.target==='H');
+  assert.equal(hits.length,1,status);assert.equal(hits[0].attacker,'B',status+' is not credited to the spent unit');
+ }
+});
+
+test('友方混乱普攻真的打中 H 时算 A，随后 B 的普攻算 B',()=>{
+ const sample=findRound(()=>{
+  const before=world({moves:[],targets:[enemy('H',2,1,40,'ranged',0)]});before.units.H.hp=before.units.H.maxHp=300;
+  before.units.A.status={confusion:{left:3}};before.units.A.stages.acc=3;
+  before.units.B=friend('B',1,2,20,{});before.units.B.stages.acc=3;before.queue.push('B');
+  before.__command={type:'round',action:{type:'basic',target:'H'},override:{actor:'B',action:{type:'basic',target:'H'}}};
+  return before;
+ },log=>{const i=log.findIndex(line=>/^A因混乱朝.+出手$/.test(line));return i>=0&&/^H受到\d+伤害/.test(log[i+1]??'')&&log.slice(i+2).some(line=>/^H受到\d+伤害/.test(line));});
+ assert.ok(sample);
+ const hits=inferEvents(sample.before,sample.after,sample.command).filter(event=>event.k==='hit'&&event.target==='H');
+ assert.deepEqual(hits.map(event=>event.attacker),['A','B']);
+});
+
+test('敌方：混乱或畏缩、麻痹的 E1 用掉行动后，E2 对 A 的命中不算在 E1 头上',()=>{
+ for(const [status,expectLine] of [['confusion',/^E1因混乱朝.+出手$/],['flinch',/^E1畏缩中，无法使用招式和普攻/],['par',/^E1麻痹中，无法使用招式和普攻/]]){
+  const sample=findRound(()=>{
+   const before=world({moves:[],targets:[enemy('E1',2,1,40,'melee',0),enemy('E2',1,2,40,'melee',0)]});
+   for(const id of ['E1','E2']){const e=before.units[id];e.waitOnly=false;e.learned=[];e.pp={};e.maxPp={};e.stages.acc=3;}
+   before.units.E1.status={[status]:{left:3}};before.units.A.hp=before.units.A.maxHp=300;
+   before.__command={type:'round',action:{type:'wait'}};
+   return before;
+  },log=>{
+   const i=log.findIndex(line=>expectLine.test(line));
+   return i>=0&&(status!=='confusion'||!/受到\d+伤害/.test(log[i+1]??''))&&log.slice(i).some(line=>/^A受到\d+伤害/.test(line));
+  });
+  assert.ok(sample,status+': a real round is found');
+  const hits=inferEvents(sample.before,sample.after,sample.command).filter(event=>event.k==='hit'&&event.target==='A');
+  assert.equal(hits.length,1,status);assert.equal(hits[0].attacker,'E2',status+' is not credited to the spent enemy');
+ }
+});
+
+test('其余“行动已结束”的日志（动作失效、无路可走、普通攻击未命中任何目标）都标记该单位已行动',()=>{
+ // The three lines come from engine.ts; each must be recognised as the speaker's spent action.
+ const before=world({moves:[],targets:[enemy('H',2,1,40,'ranged',0)]});before.units.H.hp=before.units.H.maxHp=300;
+ before.units.B=friend('B',1,2,20,{});before.units.B.stages.acc=3;before.queue.push('B');
+ const after=structuredClone(before);after.round=before.round+1;after.units.H.hp-=5;
+ for(const line of ['A动作失效，等待，未扣PP','A的普通攻击未命中任何目标','A无路可走，等待','A等待','A因混乱朝右乱走，被挡住，原地不动']){
+  after.log=[...before.log,line,'H受到5伤害，HP '+after.units.H.hp];
+  const hit=inferEvents(before,after,{type:'round',action:{type:'basic',target:'H'},override:{actor:'B',action:{type:'basic',target:'H'}}}).find(event=>event.k==='hit'&&event.target==='H');
+  assert.equal(hit?.attacker,'B',line);
+ }
+});
+
+test('混乱招式打中队友后施放即结束，下一行的别人普攻不算这次招式',()=>{
+ const sample=findRound(()=>{
+  const before=world({moves:['pound'],targets:[enemy('H',2,1,40,'ranged',0)]});before.units.H.hp=before.units.H.maxHp=300;
+  before.units.A.status={confusion:{left:3}};
+  before.units.B=friend('B',1,2,200,{});before.units.B.maxHp=200;before.units.C=friend('C',2,2,20,{});before.units.C.stages.acc=3;before.queue.push('B','C');
+  before.units.B.tactic='wait';
+  before.__command={type:'round',action:{type:'skill',skill:'pound',target:'H'},override:{actor:'C',action:{type:'basic',target:'H'}}};
+  return before;
+ },log=>{const i=log.findIndex(line=>/^A因混乱朝.+出手$/.test(line));return i>=0&&/^B受到\d+伤害/.test(log[i+1]??'')&&log.slice(i+2).some(line=>/^H受到\d+伤害/.test(line));});
+ assert.ok(sample,'a confused pound that hits B and then C hits H is found');
+ const events=inferEvents(sample.before,sample.after,sample.command).filter(event=>event.k==='hit');
+ const onB=events.find(event=>event.target==='B'),onH=events.filter(event=>event.target==='H');
+ assert.equal(onB?.attacker,'A');assert.equal(onB?.effect?.move,'pound');
+ assert.ok(onH.length>=1&&onH.every(event=>event.attacker!=='A'&&event.effect?.move!=='pound'),'no later hit on H is credited to the finished pound: '+JSON.stringify(onH.map(event=>[event.attacker,event.effect?.move])));
+ assert.equal(onH.at(-1).attacker,'C');
+});
+
+test('房间招式中受击者的打鼾反应结束后，后面的目标仍属于原施放',()=>{
+ const sample=findRound(()=>{
+  const before=world({moves:['blizzard'],targets:[enemy('T1',2,1,40,'ranged',0),enemy('T2',3,1,40,'ranged',0)]});
+  for(const id of ['T1','T2']){const t=before.units[id];t.hp=t.maxHp=400;}
+  const t1=before.units.T1;t1.waitOnly=undefined;delete t1.waitOnly;t1.learned=['snore'];t1.pp={snore:5};t1.maxPp={snore:5};t1.status={slp:{left:6}};t1.stages.acc=3;
+  before.units.A.hp=before.units.A.maxHp=200;
+  before.__command={type:'round',action:{type:'skill',skill:'blizzard',target:'A'}};
+  return before;
+ },log=>{const i=log.findIndex(line=>line==='T1使用打鼾');return i>=0&&log.slice(i).some(line=>/^T2受到\d+伤害/.test(line))&&log.slice(0,i).some(line=>/^T1受到\d+伤害/.test(line));});
+ assert.ok(sample,'a real blizzard answered by a snore is found');
+ const events=inferEvents(sample.before,sample.after,sample.command).filter(event=>event.k==='hit');
+ const t2=events.find(event=>event.target==='T2'),back=events.find(event=>event.target==='A');
+ assert.equal(t2?.attacker,'A');assert.equal(t2?.effect?.move,'blizzard');
+ assert.equal(back?.attacker,'T1');assert.equal(back?.effect?.move,'snore');
+});

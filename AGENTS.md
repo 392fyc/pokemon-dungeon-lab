@@ -111,6 +111,8 @@ Claude（本机主会话及其子代理）先查证再回答：回答里的事�
 
 环境验证产物写入忽略目录，不能提交凭据或整个环境。
 
+PR 必须完整：做这件事的 PR 要把它的进度写完，不开只为补记上一个 PR 进度的 PR（D-20261107-01）。执行细节见`docs/01-现行规则/KB维护规则.md`的K4（D-20261107-02）。
+
 ## Git 写入
 
 Mercury安装的Codex规则禁止直接切换到`main`和裸`git push`。在本机（含从其他仓库启动的会话）提交与推送任务分支，经受管段「Controlled Git entry」所述的 `.mercury/packs/git-safe/scripts/git-safe.ps1`；调用任务 worktree 中的那一份。用户手动派发的Codex云任务（阶段3—4曾采用），以及`dev` lane派发、经核实能推送的云任务，通过阶段3—4规格的受控发布约定（固定提交 d03ef51 的 `docs/90-archive/trial-spec/README.md`）交付（`dev`派发的云任务默认由本机Codex取回差异后经git-safe提交，见`docs/07-工作环境/多lane并行协作.md`第11节）：GitHub连接器创建白名单文件树和提交，检查目标分支头后以expected_sha、force=false更新任务分支；不直写main，不强推，不绕过拒绝。独立审查和必要验证完成后才提交正式交付。Mercury受管路径保持原维护入口，本任务不手工改写。

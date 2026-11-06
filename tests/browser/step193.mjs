@@ -119,3 +119,31 @@ export async function step193Checks({setup,startMemory,state,ready,cell,artifact
   assert.deepEqual(errors,[]);report.pageErrors=errors;fs.writeFileSync(artifact+'step193-'+width+'-results.json',JSON.stringify(report,null,2));return report;
  }finally{await context.close();}
 }
+
+/** PR #198 review (#194 wrap-up): at 320px wide with a three-digit HP the sleep label may wrap under the HP value; measure it against the move row, the event area and the HUD. */
+export async function sleepLabelChecks({setup,startMemory,artifact,width=320,height=640,hp=300}){
+ const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef',{hasTouch:true,isMobile:true});
+ try{
+  await p.setViewportSize({width,height});
+  const w=worldFor('sleep-label-'+width,'squirtle',SPECIES.squirtle.kit);w.enemies=[];
+  w.units.A.hp=w.units.A.maxHp=hp;w.units.A.status={slp:{left:5}};w.log.push('A陷入睡眠状态');
+  await startMemory(p,w);
+  await p.clock.install();await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));await p.evaluate(()=>window.trial.autoSleep(true));
+  assert.equal(await p.locator('#hud-sleep-status').innerText(),'睡眠中');
+  assert.ok((await p.locator('.hud-current-hp-value').innerText()).includes('HP '+hp+'/'+hp),'the HP value shows three digits');
+  const box=async sel=>p.locator(sel).first().boundingBox();
+  const label=await box('#hud-sleep-status'),hpValue=await box('.hud-current-hp-value'),skills=await box('#hud-bottom .hud-skills'),bottom=await box('#hud-bottom'),events=await box('#recent-events');
+  const overlaps=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
+  const slots=await p.locator('#hud-bottom .hud-skills > *').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};}));
+  assert.ok(slots.length>0);await p.screenshot({path:artifact+'sleep-label-'+width+'-hp'+hp+'.png'});
+  const wrapped=label.y>=hpValue.y+hpValue.height-1;
+  assert.ok(!overlaps(label,skills),'sleep label does not overlap the move row container: '+JSON.stringify({label,skills}));
+  for(const slot of slots)assert.ok(!overlaps(label,slot),'sleep label does not overlap a move slot: '+JSON.stringify({label,slot}));
+  assert.ok(!overlaps(label,events),'sleep label does not overlap the event area: '+JSON.stringify({label,events}));
+  assert.ok(label.x>=0&&label.x+label.width<=width+1,'sleep label stays inside the viewport width');
+  assert.ok(label.y>=bottom.y&&label.y+label.height<=bottom.y+bottom.height+1,'sleep label stays inside the bottom HUD');
+  const scroll=await p.locator('#hud-bottom').evaluate(el=>({width:el.clientWidth,scrollWidth:el.scrollWidth}));assert.ok(scroll.scrollWidth<=scroll.width+1);
+  assert.deepEqual(errors,[]);
+  return {width,hp,wrapped,gapToMoveRow:skills.y-(label.y+label.height),label,hpValue,skills,events,bottom};
+ }finally{await context.close();}
+}

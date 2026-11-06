@@ -230,6 +230,15 @@ test('Snore ignores confusion on the sleeper and still hits the actual attacker'
   assert.ok(after.log.includes('A受到3伤害，HP '+(before-3)),'Snore damages the attacker rather than the confused random direction');
 });
 
+test('Sleep Talk ignores confusion on the sleeper and still hits the actual attacker',()=>{
+  const s=isolatedBattle(),a=s.units.A,e=s.units.E;s.difficulty='normal';delete a.species;delete e.species;
+  e.status={slp:{left:4},confusion:{left:5}};setMoves(e,['sleeptalk','tackle']);
+  s.battleRng=seedWith(v=>v[0]>=0.25&&v[1]<0.95&&Math.floor(v[1]*8)!==2);
+  const before=a.hp,after=round(s,{type:'basic',target:'E'});
+  assert.ok(after.units.A.hp<before,'the called move damages the attacker rather than the confused random direction');
+  assert.equal(after.units.E.pp.sleeptalk,1);
+});
+
 test('manual Snore and Sleep Talk are rejected without PP loss',()=>{
   for(const move of ['snore','sleeptalk']){
     const s=isolatedBattle();setMoves(s.units.A,[move]);const result=applyCommand(s,{type:'round',action:{type:'skill',skill:move,target:'E'}});

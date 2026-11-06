@@ -768,12 +768,40 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       route.path=path;
     }
     // Final shape check on the real ground: no one-cell wall between two ground cells (this includes single-wall pillars) and no ground cell pair that only touches diagonally.
-    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-      const here=cells.has(x+','+y);
-      if(!here&&((cells.has((x-1)+','+y)&&cells.has((x+1)+','+y))||(cells.has(x+','+(y-1))&&cells.has(x+','+(y+1))))){shapeRetries++;return null;}
-      const right=cells.has((x+1)+','+y),below=cells.has(x+','+(y+1)),diag=cells.has((x+1)+','+(y+1));
-      if((here&&diag&&!right&&!below)||(right&&below&&!here&&!diag)){shapeRetries++;return null;}
+    const shapeBad=()=>{
+      for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+        const here=cells.has(x+','+y);
+        if(!here&&((cells.has((x-1)+','+y)&&cells.has((x+1)+','+y))||(cells.has(x+','+(y-1))&&cells.has(x+','+(y+1)))))return true;
+        const right=cells.has((x+1)+','+y),below=cells.has(x+','+(y+1)),diag=cells.has((x+1)+','+(y+1));
+        if((here&&diag&&!right&&!below)||(right&&below&&!here&&!diag))return true;
+      }
+      return false;
+    };
+    if(shapeBad()){shapeRetries++;return null;}
+    // The block trim cannot see pockets: a one-deep stub on a room edge holds room cells, and a pocket wider than a
+    // corridor has blocks with two exits (#185). Ground off every route is kept only as a real second way through,
+    // meaning it opens onto the rest of the ground in at least two separate places.
+    const routeGround=new Set([...rooms.flatMap(roomCells),...corridors.flatMap(route=>route.path.flatMap(p=>brush(p.x,p.y)))].map(k));
+    const AROUND=[...DIRS,{x:1,y:1},{x:1,y:-1},{x:-1,y:1},{x:-1,y:-1}];
+    const near=(key:string,steps:readonly Cell[])=>{const [x,y]=key.split(',').map(Number);return steps.map(d=>k({x:x+d.x,y:y+d.y}));};
+    const offRoute=new Set([...cells.keys()].filter(key=>!routeGround.has(key)));
+    for(const key of [...offRoute]){
+      if(!offRoute.has(key))continue;
+      const piece=[key];offRoute.delete(key);const contact=new Set<string>();
+      for(let i=0;i<piece.length;i++)for(const next of near(piece[i],DIRS)){
+        if(offRoute.delete(next))piece.push(next);
+        else if(routeGround.has(next))contact.add(next);
+      }
+      let openings=0;
+      for(const start of contact){
+        if(!contact.delete(start))continue;
+        openings++;const edge=[start];
+        for(let i=0;i<edge.length;i++)for(const next of near(edge[i],AROUND))if(contact.delete(next))edge.push(next);
+      }
+      if(openings<2)for(const cell of piece)cells.delete(cell);
     }
+    // Pockets go after the first check so a seed keeps the layout it already had; only the ground around it changes.
+    if(shapeBad()){shapeRetries++;return null;}
     return {rooms,bossRoom,cells,corridors,ordinaryRooms,inRect};
   };
   let topology:ReturnType<typeof tryLayout>=null,shaped:LiquidFeatures|null=null,floor:Cell[]=[];

@@ -19,6 +19,7 @@ export type RescueEntry={inst:Instance;paid:boolean;left:number};
 /** 7.2 a partner lost for good, and the expedition count when it happened. */
 export type LostRecord={id:string;species:string;expedition:number};
 export type TalentId='vitality'|'offense'|'supplies';
+export const TALENT_MAX_RANK=5;
 export const TALENTS:Readonly<Record<TalentId,{name:string;description:string}>>={
   vitality:{name:'体质',description:'同行伙伴（包括局内新招募的伙伴）最大 HP 每级提高 5%；出发、升级和进化时重算并四舍五入。'},
   offense:{name:'攻势',description:'伙伴对敌方的招式和普攻伤害每级提高 3%；不加成误伤同行，不影响吹飞碰撞伤害和反击反弹。'},
@@ -50,7 +51,7 @@ export function availableTalentPoints(profile:Profile):number {
   if(!Number.isInteger(profile.rankExp)||profile.rankExp<0||!profile.talents||typeof profile.talents!=='object')return 0;
   let spent=0;
   for(const [id,rank] of Object.entries(profile.talents)){
-    if(!isTalentId(id)||!Number.isInteger(rank)||rank<0||rank>5)return 0;
+    if(!isTalentId(id)||!Number.isInteger(rank)||rank<0||rank>TALENT_MAX_RANK)return 0;
     spent+=rank;
   }
   return Math.max(0,rankLevel(profile.rankExp)-1-spent);
@@ -135,7 +136,7 @@ export function purseProblem(p:Profile,purse:number):string|null {
 function addTalent(original:Profile,talent:unknown):BaseResult {
   if(!isTalentId(talent))return fail('天赋分支不合法');
   const current=original.talents[talent]??0;
-  if(!Number.isInteger(current)||current<0||current>=5)return fail(`${TALENTS[talent].name}已达到 5 级`);
+  if(!Number.isInteger(current)||current<0||current>=TALENT_MAX_RANK)return fail(`${TALENTS[talent].name}已达到 ${TALENT_MAX_RANK} 级`);
   if(availableTalentPoints(original)<1)return fail('没有可分配的天赋点');
   const p=clone(original);p.talents[talent]=current+1;return {ok:true,profile:p};
 }
@@ -386,7 +387,7 @@ export function profileProblem(v:unknown):string|null {
   let talentPoints=0;
   for(const [name,rank] of Object.entries(v.talents)){
     if(!isTalentId(name))return `天赋分支${name}不合法`;
-    if(!nat(rank)||rank>5)return `天赋字段${name}须为0到5级整数`;
+    if(!nat(rank)||rank>TALENT_MAX_RANK)return `天赋字段${name}须为0到${TALENT_MAX_RANK}级整数`;
     talentPoints+=rank;
   }
   if(talentPoints>rankLevel(v.rankExp as number)-1)return '天赋点数超过探险队等级可分配数量';

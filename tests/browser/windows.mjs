@@ -1,3 +1,4 @@
+import {fx194Checks} from './fx194.mjs';
 import {panels194Checks,panels194SleepChecks} from './panels194.mjs';
 import {fog350Checks} from './fog350.mjs';
 import {review357Checks} from './review357.mjs';
@@ -2215,6 +2216,7 @@ await test('8.9b #193 手机学招、四招、相性与睡眠自动推进',()=>s
 
 for(const [width,height] of [[1280,720],[900,720],[390,844]])await test('#194 新版窗口 '+width+'：详情、设置、结算及溢出',()=>panels194Checks({setup,startMemory,state,ready,cell,artifact,width,height}));
 await test('#194 新版窗口 睡眠与键盘隔离',()=>panels194SleepChecks({setup,startMemory,state,ready,artifact}));
+await test('#194 招式特效：十二模板、真实伤害、输入锁与资源清理',()=>fx194Checks({setup,startMemory,state,ready,cell,artifact}));
 await test('#194 营地、伙伴小屋、仓库与记录板 1280×720 / 900×520 / 390×780',()=>camp194Checks({setup,startMemory,state,ready,emptyReady,artifact}));
 await browser.close();
 clearTimeout(browserDeadline);

@@ -2,9 +2,11 @@ import type Phaser from 'phaser';
 import {animKey,facingRow,sheet,groundOriginY,UNIT_GROUND_FRACTION} from './sprites.ts';
 import {animationBatches,BASE_MS,movementDuration,type AnimEvent} from './animation.ts';
 import type {Pos} from '../core/engine.ts';
+import {playCombatEffect,effectImpactDelay} from './combat-effects.ts';
+import type {EffectStyle} from './effect-spec.ts';
 /** Everything the scene draws for one unit, so a step can move the sprite, its shadow and its labels together. */
 export type UnitView={sprite:Phaser.GameObjects.Sprite;gfx:Phaser.GameObjects.Graphics;labels:{t:Phaser.GameObjects.Text;dx:number;dy:number}[];dex:string;row:number};
-export type Stage={scene:Phaser.Scene;views:Map<string,UnitView>;center:(p:Pos)=>{x:number;y:number};cell:number;scale:number;temp:Set<Phaser.GameObjects.GameObject>;f:number;onMovementStart?:(durationMs:number)=>void;onMovementProgress?:(progress:number)=>void};
+export type Stage={scene:Phaser.Scene;views:Map<string,UnitView>;center:(p:Pos)=>{x:number;y:number};cell:number;scale:number;temp:Set<Phaser.GameObjects.GameObject>;f:number;effectCells?:(caster:Pos)=>readonly Pos[];reduceMotion?:boolean;cancelled?:()=>boolean;setHitFlash?:(view:UnitView,on:boolean)=>void;onMovementStart?:(durationMs:number)=>void;onMovementProgress?:(progress:number)=>void};
 const wait=(st:Stage,ms:number)=>new Promise<void>(r=>{st.scene.time.delayedCall(Math.max(1,ms),()=>r());});
 const tween=(st:Stage,cfg:Record<string,unknown>)=>new Promise<void>(r=>{st.scene.tweens.add({...cfg,onComplete:()=>r()} as unknown as Phaser.Types.Tweens.TweenBuilderConfig);});
 const put=(st:Stage,v:UnitView,x:number,y:number)=>{v.sprite.setPosition(x,y+st.cell*UNIT_GROUND_FRACTION);v.gfx.setPosition(x,y);v.labels.forEach(l=>l.t.setPosition(x+l.dx,y+l.dy));};
@@ -28,39 +30,89 @@ function floatText(st:Stage,at:{x:number;y:number},text:string,color:string,ms:n
     const t=track(st,st.scene.add.text(at.x,at.y-st.cell*.3,text,{fontFamily:'sans-serif',fontSize:15,fontStyle:'bold',color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(9));
     return tween(st,{targets:t,y:at.y-st.cell*.85,alpha:0,duration:Math.max(1,ms),ease:'Quad.easeOut'}).then(()=>{t.destroy();st.temp.delete(t);});});
 }
-const hurt=(st:Stage,v:UnitView,ms:number,delay:number)=>wait(st,delay).then(()=>{
+const hurt=(st:Stage,v:UnitView,ms:number,delay:number,white=false,recoil=true)=>wait(st,delay).then(()=>{
   const x=v.sprite.x;useAnim(st,v,'Hurt',v.row,ms);
-  return tween(st,{targets:v.sprite,x:x+3,duration:Math.max(1,ms/6),yoyo:true,repeat:2}).then(()=>{v.sprite.x=x;idle(st,v);});});
-async function play(st:Stage,ev:AnimEvent):Promise<void>{
+  if(white)st.setHitFlash?.(v,true);
+  const motion=recoil?tween(st,{targets:v.sprite,x:x+3,duration:Math.max(1,ms/6),yoyo:true,repeat:2}):wait(st,ms);
+  const tint=white?wait(st,Math.min(ms,80*st.f)).then(()=>st.setHitFlash?.(v,false)):Promise.resolve();
+  return Promise.all([motion,tint]).then(()=>{v.sprite.x=x;idle(st,v);});});
+type EffectPlaybackOptions={skipEffect?:boolean;sharedCast?:boolean;impactPositions?:readonly Pos[];effect?:EffectStyle};
+const eventEffect=(ev:AnimEvent):EffectStyle|undefined=>ev.k==='effect'?ev.effect:'effect' in ev?ev.effect:undefined;
+function effectFrom(ev:AnimEvent):Pos{
+ if(ev.k==='hit')return ev.from??ev.at;
+ if(ev.k==='protect')return ev.from;
+ if(ev.k==='blowaway')return ev.actorAt;
+ if(ev.k==='heal')return ev.actorAt;
+ if(ev.k==='effect')return ev.from;
+ throw new Error('no effect source for event '+ev.k);
+}
+function effectAt(ev:AnimEvent):Pos{
+ if(ev.k==='hit'||ev.k==='protect'||ev.k==='heal'||ev.k==='effect')return ev.at;
+ if(ev.k==='blowaway')return ev.from;
+ throw new Error('no effect target for event '+ev.k);
+}
+function drawEffect(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise<void>{
+ const style=opts.effect??eventEffect(ev);if(!style||opts.skipEffect)return Promise.resolve();
+ const at=effectAt(ev),from=effectFrom(ev),base=style.template==='blow'?BASE_MS.blowaway:BASE_MS[ev.k];
+ return playCombatEffect(st,style,from,at,opts.impactPositions??[at],base*st.f);
+}
+function groupedEffects(batch:AnimEvent[]):Map<AnimEvent,EffectPlaybackOptions>{
+ const groups=new Map<string,{events:AnimEvent[];styles:EffectStyle[];points:Pos[]}>();
+ for(const ev of batch){
+  const style=eventEffect(ev);if(!style)continue;
+  const eligible=ev.k==='effect'||(style.template==='blow')||(ev.k==='hit'&&(style.template==='around'||style.template==='room'));if(!eligible)continue;
+  const key=[ev.by,style.move??'',style.template,style.type].join('|');let group=groups.get(key);
+  if(!group){group={events:[],styles:[],points:[]};groups.set(key,group);}
+  group.events.push(ev);group.styles.push(style);group.points.push(effectAt(ev));
+ }
+ const out=new Map<AnimEvent,EffectPlaybackOptions>();
+ for(const group of groups.values()){
+  if(group.events.length<2)continue;
+  const style={...group.styles[0],superEffective:group.styles.some(item=>item.superEffective===true)};
+  group.events.forEach((ev,index)=>out.set(ev,index===0?{effect:style,impactPositions:group.points}:{skipEffect:true,sharedCast:true}));
+ }
+ return out;
+}
+async function play(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise<void>{
   const f=st.f,d=(ms:number)=>ms*f,at=(p:Pos)=>st.center(p),V=(id:string)=>st.views.get(id);
   if(ev.k==='move'){const v=V(ev.id);if(!v)return;face(v,ev.from,ev.to);useAnim(st,v,'Walk',v.row);await slide(st,v,at(ev.from),at(ev.to),d(BASE_MS.move));idle(st,v);}
   else if(ev.k==='airAttack'){const v=V(ev.actor);if(v){face(v,ev.from,ev.to);useAnim(st,v,'Attack',v.row,d(BASE_MS.airAttack));await wait(st,d(BASE_MS.airAttack));idle(st,v);}}
-  else if(ev.k==='swap'){const a=V(ev.a),b=V(ev.b);const ps:Promise<void>[]=[];
+  else if(ev.k==='swap'){const a=V(ev.a),b=V(ev.b),ps:Promise<void>[]=[];
     if(a){face(a,ev.pa,ev.pb);useAnim(st,a,'Walk',a.row);ps.push(slide(st,a,at(ev.pa),at(ev.pb),d(BASE_MS.swap)));}
     if(b){face(b,ev.pb,ev.pa);useAnim(st,b,'Walk',b.row);ps.push(slide(st,b,at(ev.pb),at(ev.pa),d(BASE_MS.swap)));}
     await Promise.all(ps);if(a)idle(st,a);if(b)idle(st,b);}
   else if(ev.k==='hit'){
     const A=ev.attacker?V(ev.attacker):undefined,T=V(ev.target),to=at(ev.at),ps:Promise<void>[]=[];
-    if(A&&ev.from){face(A,ev.from,ev.at);useAnim(st,A,'Attack',A.row,d(260));ps.push(wait(st,d(260)).then(()=>idle(st,A)));}
-    if(ev.fx==='strong')ps.push(flash(st,'fx-strong',to,d(200),d(80)));
+    if(A&&ev.from&&!opts.sharedCast){face(A,ev.from,ev.at);useAnim(st,A,'Attack',A.row,d(260));ps.push(wait(st,d(260)).then(()=>idle(st,A)));}
+    if(ev.effect)ps.push(drawEffect(st,ev,opts));
+    else if(ev.fx==='strong')ps.push(flash(st,'fx-strong',to,d(200),d(80)));
     else if(ev.fx==='line'&&ev.from)ps.push(flash(st,'fx-line',to,d(200),d(60),{angle:Math.atan2(to.y-at(ev.from).y,to.x-at(ev.from).x),from:at(ev.from),grow:1}));
-    if(T){if(ev.from)face(T,ev.at,ev.from);ps.push(hurt(st,T,d(170),d(110)));}
-    ps.push(floatText(st,to,`-${ev.amount}`,'#ff9c88',d(220),d(110)));
-    if(ev.dead&&T)ps.push(wait(st,d(220)).then(()=>tween(st,{targets:[T.sprite,...T.labels.map(l=>l.t)],alpha:0,duration:Math.max(1,d(140))})));
+    const impact=ev.collision?d(280):ev.effect?d(effectImpactDelay(ev.effect,ev.effect.template==='blow'?BASE_MS.blowaway:BASE_MS.hit)):d(110);
+    const duration=ev.cast||ev.effect?500:BASE_MS.hit;
+    if(T){if(ev.from)face(T,ev.at,ev.from);ps.push(hurt(st,T,d(170),impact,!!ev.effect&&ev.amount>0,ev.effect?.template!=='blow'));}
+    ps.push(floatText(st,to,'-'+ev.amount,ev.effect?.superEffective?'#ffd24a':ev.effect?'#ffffff':'#ff9c88',ev.effect||ev.cast?Math.max(1,d(duration)-impact):d(220),impact));
+    if(ev.effect?.superEffective)ps.push(floatText(st,{x:to.x,y:to.y-st.cell*.3},'效果绝佳','#ffd24a',Math.max(1,d(duration)-impact),impact));
+    if(ev.dead&&T)ps.push(wait(st,d(ev.effect||ev.cast?duration-140:220)).then(()=>tween(st,{targets:[T.sprite,...T.labels.map(l=>l.t)],alpha:0,duration:Math.max(1,d(140))})));
     await Promise.all(ps);}
   else if(ev.k==='protect'){const A=V(ev.by);if(A)face(A,ev.from,ev.at);if(A)idle(st,A);
-    await flash(st,'fx-guard',at(ev.at),d(BASE_MS.protect),0,{grow:1.5});}
+    if(ev.effect)await drawEffect(st,ev,opts);else await flash(st,'fx-guard',at(ev.at),d(BASE_MS.protect),0,{grow:1.5});}
   else if(ev.k==='blowaway'){const A=V(ev.by),T=V(ev.target),ps:Promise<void>[]=[];
     const dir=Math.atan2(ev.to.y-ev.from.y,ev.to.x-ev.from.x);
-    if(A){face(A,ev.actorAt,ev.from);useAnim(st,A,'Attack',A.row,d(200));ps.push(wait(st,d(200)).then(()=>idle(st,A)));}
-    ps.push(flash(st,'fx-push',at(ev.from),d(160),d(30),{angle:dir,grow:1.4}));
-    if(T)ps.push(wait(st,d(60)).then(()=>{st.onMovementStart?.(d(160));return slide(st,T,at(ev.from),at(ev.to),d(160));}));
+    if(A&&!opts.sharedCast){face(A,ev.actorAt,ev.from);useAnim(st,A,'Attack',A.row,d(200));ps.push(wait(st,d(200)).then(()=>idle(st,A)));}
+    if(ev.effect)ps.push(drawEffect(st,ev,opts));else ps.push(flash(st,'fx-push',at(ev.from),d(160),d(30),{angle:dir,grow:1.4}));
+    if(T)ps.push(wait(st,d(ev.effect?effectImpactDelay(ev.effect,BASE_MS.blowaway):60)).then(()=>{st.onMovementStart?.(d(160));return slide(st,T,at(ev.from),at(ev.to),d(160));}));
     await Promise.all(ps);}
   else if(ev.k==='heal'){const A=V(ev.by);if(A)face(A,ev.actorAt,ev.at);if(A&&ev.target!==ev.by)idle(st,A);
-    await Promise.all([flash(st,'fx-heal',at(ev.at),d(BASE_MS.heal),0,{grow:1.3}),floatText(st,at(ev.at),ev.item==='berry'?`+${ev.amount}`:`PP+${ev.amount}`,'#9be3a0',d(220),d(40))]);}
+    const delay=ev.effect?d(effectImpactDelay(ev.effect,BASE_MS.heal)):d(40);
+    await Promise.all([ev.effect?drawEffect(st,ev,opts):flash(st,'fx-heal',at(ev.at),d(BASE_MS.heal),0,{grow:1.3}),floatText(st,at(ev.at),ev.item==='berry'?'+'+ev.amount:'PP+'+ev.amount,'#9be3a0',ev.effect?Math.max(1,d(BASE_MS.heal)-delay):d(220),delay)]);}
+  else if(ev.k==='effect'){const A=V(ev.by);if(A)face(A,ev.from,ev.at);if(A)idle(st,A);
+    const ps:Promise<void>[]=[drawEffect(st,ev,opts)],duration=(BASE_MS as Record<string,number>).effect??320;
+    if(ev.effect.template==='heal'&&ev.amount!==undefined&&ev.amount>0)ps.push(floatText(st,at(ev.at),'+'+ev.amount,'#9be3a0',d(duration),d(effectImpactDelay(ev.effect,duration))));
+    await Promise.all(ps);}
 }
 export async function playEvents(st:Stage,events:AnimEvent[]):Promise<void>{
  for(const batch of animationBatches(events)){
+  if(st.cancelled?.())return;
   const first=batch[0];
   if(first&&(first.k==='move'||first.k==='swap')){
    st.onMovementStart?.(movementDuration(batch,st.f));
@@ -69,6 +121,6 @@ export async function playEvents(st:Stage,events:AnimEvent[]):Promise<void>{
     progress[index]=value;st.onMovementProgress?.(Math.min(...progress));
    }},ev)));
    st.onMovementProgress?.(1);
-  }else await Promise.all(batch.map(ev=>play(st,ev)));
+  }else{const options=groupedEffects(batch);await Promise.all(batch.map(ev=>play(st,ev,options.get(ev))));}
  }
 }

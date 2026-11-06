@@ -57,6 +57,14 @@ async function assertDialogInViewport(page,selector,width,height){
   assert.ok(box.width>0&&box.height>0,selector+' is visible at '+width+'×'+height);
   assert.ok(box.x>=-1&&box.right<=box.viewportWidth+1,selector+' stays inside the horizontal viewport: '+JSON.stringify(box));
   assert.ok(box.y>=-1&&box.bottom<=box.viewportHeight+1,selector+' stays inside the vertical viewport: '+JSON.stringify(box));
+  if(selector.includes('camp-departure')){
+    // The scroll box clips anything above its padding edge; the whole title plaque, including its 3px outline, must sit inside it.
+    const plaque=await page.locator(selector).evaluate(element=>{
+      const dialog=element.getBoundingClientRect(),title=element.querySelector('.camp194-plaque').getBoundingClientRect();
+      return {plaqueTop:title.top-3,plaqueLeft:title.left-3,paddingTop:dialog.top+element.clientTop,paddingLeft:dialog.left+element.clientLeft,scrollTop:element.scrollTop};
+    });
+    assert.ok(plaque.plaqueTop>=plaque.paddingTop-.5&&plaque.plaqueLeft>=plaque.paddingLeft-.5,'the departure plaque is not clipped at '+width+'×'+height+': '+JSON.stringify(plaque));
+  }
   return box;
 }
 async function selectMember(page,id){
@@ -122,6 +130,19 @@ export async function camp194Checks({setup,ready,emptyReady,state,artifact}){
       assert.ok([rgb(alertBox.color),rgb(alertBox.background)].some(red),'the exclamation marker is red: '+JSON.stringify(alertBox));
       assert.equal(await p.locator('#difficulty-picker').count(),0,'difficulty is not selectable on the camp map');
       assert.equal(await p.locator('#difficulty-easy,#difficulty-normal,#difficulty-hard').count(),0,'difficulty controls exist only in the departure dialog');
+      let signGeometry=null;
+      if(width===1280){
+        signGeometry=await p.evaluate(()=>{
+          const map=document.querySelector('.camp-map').getBoundingClientRect();
+          const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right,width:r.width,height:r.height};};
+          return {map:{left:map.left,top:map.top,width:map.width,height:map.height,scale:map.width/1280},party:rect('#camp-open-party .camp-spot-label'),vault:rect('#camp-open-vault .camp-spot-label'),talents:rect('#camp-open-talents .camp-spot-label'),
+            hotspots:{party:rect('#camp-open-party'),vault:rect('#camp-open-vault')},
+            keepers:['party','vault'].map(id=>({label:rect('#camp-open-'+id+' .camp-spot-label'),keeper:rect('#camp-open-'+id+' .camp-keeper')}))};
+        });
+        for(const [id,top] of [['party',318],['vault',318],['talents',636]])
+          assert.equal(Math.round(signGeometry[id].top-signGeometry.map.top),top,'the '+id+' sign follows the fixed mock top coordinate');
+        assert.ok(signGeometry.keepers.every(({label,keeper})=>label.top>=keeper.bottom),'the moved building labels do not cover Chansey or Snorlax');
+      }
       await p.screenshot({path:artifact+`camp194-${width}x${height}-camp.png`});
 
       await openCampPanel(p,'records');
@@ -384,7 +405,74 @@ export async function camp194Checks({setup,ready,emptyReady,state,artifact}){
       reports.push({viewport:{width,height},initialProfile:{expeditions:before.expeditions,rankExp:before.rankExp,roster:before.roster.length,shards:Object.values(before.shards).reduce((sum,count)=>sum+count,0)},
         team:prepared.team,leader:prepared.leader,tactic:prepared.roster.find(member=>member.id==='P4').tactic,
         carryLimit:4,typeFilter,categoryFilter,learnedMove:fixture.learnMove,invalidMove:fixture.cannotLearn,
+        ...(signGeometry?{signGeometry}:{}),
         dialog:records,departureCanceled:true,...(width===1280?{confirmedDifficulty:'hard',actualRunReport:true,acceptedNewPartner:true,recruitFixture:'one controlled weedle invitation; real camp acceptance, terminal settlement and record UI',refreshHidesLastRun:true}:{})});
+    }finally{await context.close();}
+  }
+  {
+    const width=844,height=390;
+    const {context,page:p,errors}=await setup();
+    p.setDefaultTimeout(10000);
+    try{
+      const seededUrl=new URL(p.url());seededUrl.searchParams.set('seed','19');
+      await p.goto(seededUrl.href);await p.locator('#start').waitFor();
+      await p.setViewportSize({width,height});await emptyReady(p);
+      const {newGameProfile}=await import('../../src/core/base.ts');
+      const fixture=campProfile(newGameProfile('bulbasaur','charmander'));
+      assert.equal(await p.evaluate(profile=>window.trial.store.beginNewGame(profile,true),fixture.profile),true,'the short-screen save fixture uses the real profile writer');
+      await p.reload();await ready(p);await p.locator('#base').waitFor();
+      const shortMapGeometry=await p.evaluate(()=>{
+        const map=document.querySelector('.camp-map').getBoundingClientRect();
+        const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {x:r.left-map.left,y:r.top-map.top,width:r.width,height:r.height,bottom:r.bottom-map.top};};
+        return {map:{width:map.width,height:map.height,scale:map.width/1280},party:{hotspot:rect('#camp-open-party'),label:rect('#camp-open-party .camp-spot-label'),keeper:rect('#camp-open-party .camp-keeper')},vault:{hotspot:rect('#camp-open-vault'),label:rect('#camp-open-vault .camp-spot-label'),keeper:rect('#camp-open-vault .camp-keeper')}};
+      });
+      await p.locator('#depart').click();await p.locator('#camp-departure[open]').waitFor();
+      await p.evaluate(()=>{window.__fault.mode='pending';});
+      await p.locator('#difficulty-hard').click();
+      await p.waitForFunction(()=>window.trial.store.status==='saving'&&window.__fault.pending.length>0);
+      await p.evaluate(()=>window.__fault.pending.at(-1).reject());
+      await p.waitForFunction(()=>window.trial.store.status==='failed'&&document.querySelector('#camp-departure .camp-feedback')?.textContent.includes('重试保存'));
+      await assertDialogInViewport(p,'#camp-departure[open]',width,height);
+      const initialScroll=await p.locator('#camp-departure').evaluate(el=>({scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,scrollTop:el.scrollTop,overflowY:getComputedStyle(el).overflowY}));
+      assert.equal(initialScroll.overflowY,'auto','the short departure window scrolls internally');
+      assert.ok(initialScroll.scrollHeight>initialScroll.clientHeight,'the failed-save retry row remains in scrollable dialog content');
+      const scrolled=await p.locator('#camp-departure').evaluate(el=>{
+        el.scrollTop=el.scrollHeight;
+        const button=el.querySelector('#camp-retry').getBoundingClientRect(),windowRect=el.getBoundingClientRect();
+        const visibleTop=windowRect.top+el.clientTop,visibleBottom=visibleTop+el.clientHeight;
+        return {scrollTop:el.scrollTop,max:el.scrollHeight-el.clientHeight,retryTop:button.top,retryBottom:button.bottom,visibleTop,visibleBottom};
+      });
+      assert.ok(scrolled.max>0&&scrolled.scrollTop>0,'the failure row is reachable by scrolling the departure window');
+      assert.ok(scrolled.retryTop>=scrolled.visibleTop&&scrolled.retryBottom<=scrolled.visibleBottom,'scrolling places the retry button inside the window viewport: '+JSON.stringify(scrolled));
+      await p.screenshot({path:artifact+'camp194-844x390-departure-failure-retry.png'});
+      await p.evaluate(()=>{window.__fault.mode='pass';});
+      await p.locator('#camp-retry').click();await ready(p);
+      assert.equal(await p.locator('#camp-departure[open]').count(),1,'short-screen retry keeps departure open');
+      assert.equal(await p.locator('#camp-departure .camp-feedback').count(),0,'short-screen retry clears the failure row');
+      assert.equal(await p.locator('#depart-confirm').isEnabled(),true,'short-screen retry restores departure controls');
+      assert.equal((await savedProfile(p)).difficulty,'hard','short-screen retry saves the selected difficulty');
+      await p.evaluate(()=>{window.__fault.mode='pending';});
+      await p.locator('#difficulty-easy').click();
+      await p.waitForFunction(()=>window.trial.store.status==='saving'&&window.__fault.pending.length>0);
+      await p.evaluate(()=>window.__fault.pending.at(-1).reject());
+      await p.waitForFunction(()=>window.trial.store.status==='failed');
+      await p.keyboard.press('Escape');await p.locator('#camp-departure[open]').waitFor({state:'detached'});
+      assert.match(await p.locator('#base .camp-feedback').innerText(),/保存失败.*重试保存/,'closing the failed departure shows the retry prompt at camp');
+      assert.equal(await p.locator('#camp-retry').isVisible(),true,'the camp retry is visible after Escape closes departure');
+      assert.equal(await p.evaluate(()=>document.activeElement?.id),'camp-retry','Escape returns focus to the available camp retry');
+      const campRetryGeometry=await p.evaluate(()=>{
+        const rect=selector=>{const r=document.querySelector(selector).getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom};};
+        return {viewport:{width:innerWidth,height:innerHeight},feedback:rect('#base .camp-feedback'),retry:rect('#camp-retry'),focus:document.activeElement?.id};
+      });
+      await p.screenshot({path:artifact+'camp194-844x390-camp-retry-after-escape.png'});
+      await p.evaluate(()=>{window.__fault.mode='pass';});
+      await p.locator('#camp-retry').click();await ready(p);
+      assert.equal(await p.locator('#base .camp-feedback').count(),0,'the camp prompt clears after a successful retry');
+      assert.equal(await p.evaluate(()=>document.activeElement?.id),'depart','after a successful camp retry the focus moves to the departure gate instead of being lost');
+      assert.equal((await savedProfile(p)).difficulty,'easy','retrying from camp saves the pending difficulty change');
+      assert.equal(await state(p),null,'retrying from camp does not start the expedition');
+      assert.deepEqual(errors,[]);
+      reports.push({viewport:{width,height},mapGeometry:shortMapGeometry,initialScroll,scrolled,campRetryGeometry,departureFailureScroll:true,campRetryAfterEscape:true});
     }finally{await context.close();}
   }
   return reports;

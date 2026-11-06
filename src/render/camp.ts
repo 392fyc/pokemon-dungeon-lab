@@ -1,4 +1,4 @@
-import {availableTalentPoints,instanceOf,learnTm,rankLevel,rankThreshold,TALENTS,MAX_CARRY,MAX_TEAM,type Profile,type SettleSummary,type TalentId} from '../core/base.ts';
+import {availableTalentPoints,instanceOf,learnTm,rankLevel,rankThreshold,TALENT_MAX_RANK,TALENTS,MAX_CARRY,MAX_TEAM,type Profile,type SettleSummary,type TalentId} from '../core/base.ts';
 import {ALL_TM_MOVES,learnableMove,SPECIES} from '../core/roster.ts';
 import {THEME_FLOORS,type Difficulty} from '../core/dungeon.ts';
 import {TACTICS,TACTIC_LABELS,type Tactic} from '../core/tactics.ts';
@@ -65,7 +65,7 @@ export function campScene(profile:Profile,ready:boolean,message:string):string {
   const level=rankLevel(profile.rankExp),floor=rankThreshold(level),next=rankThreshold(level+1);
   const earned=Math.max(0,Math.min(next-floor,profile.rankExp-floor)),needed=next-floor;
   const progress=needed>0?Math.round(earned/needed*100):0;
-  const hasSpendableTalent=Object.keys(TALENTS).some(talent=>(profile.talents[talent as TalentId]??0)<5);
+  const hasSpendableTalent=Object.keys(TALENTS).some(talent=>(profile.talents[talent as TalentId]??0)<TALENT_MAX_RANK);
   const canSpendTalentPoints=availableTalentPoints(profile)>0&&hasSpendableTalent;
   const panels=Object.keys(CAMP_BUILDINGS) as CampPanel[];
   const buildings=panels.map(id=>{
@@ -78,7 +78,7 @@ export function campScene(profile:Profile,ready:boolean,message:string):string {
       ? '<span class="camp-alert" aria-hidden="true">!</span>'
       : '';
     const accessibleName=building.name+(showAlert?'，有未使用天赋点':'');
-    return '<button type="button" class="camp-hotspot camp-building'+(keeper?' has-keeper':'')+'" id="camp-open-'+id+'" aria-haspopup="dialog" aria-label="'+escape(accessibleName)+'" style="'+hotspot(spot)+'">'+
+    return '<button type="button" class="camp-hotspot camp-building" id="camp-open-'+id+'" aria-haspopup="dialog" aria-label="'+escape(accessibleName)+'" style="'+hotspot(spot)+'">'+
       '<span class="camp-spot-label"><strong>'+escape(building.name)+'</strong>'+alert+'</span>'+keeper+'</button>';
   }).join('');
   return '<div id="base" class="camp-scene">'+

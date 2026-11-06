@@ -130,6 +130,9 @@ body.camp-mode main {
 }
 
 .camp-gate .camp-spot-label { top: 100%; }
+#camp-open-party .camp-spot-label { top: calc(100% + 2.03125cqw); }
+#camp-open-vault .camp-spot-label { top: calc(100% + 1.40625cqw); }
+#camp-open-talents .camp-spot-label { top: calc(100% - 1.40625cqw); }
 .camp-hotspot:hover:not(:disabled) .camp-spot-label, .camp-hotspot:focus-visible .camp-spot-label {
   background: #d9622b;
   text-shadow: none;
@@ -151,10 +154,6 @@ body.camp-mode main {
 }
 
 .camp-difficulty {
-  position: absolute;
-  top: 20%;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   gap: 3px;
 }
@@ -182,7 +181,7 @@ body.camp-mode main {
 }
 
 .camp-squad { gap: 1.2cqw; }
-.camp-keeper { --sprite-scale: 0.18cqw; pointer-events: auto; }
+.camp-keeper { z-index: 2; --sprite-scale: 0.18cqw; pointer-events: auto; }
 
 .camp-squad .portrait-box {
   width: 5cqw;
@@ -247,7 +246,6 @@ body.camp-mode main {
 }
 
 @media (max-width: 570px), (max-height: 480px) {
-  .camp-dialog-layout { gap: 9px; }
   .camp-badge { font-size: 13px; }
   .camp-badge-line { gap: 5px; }
   .camp-menu { padding: 7px 12px; font-size: 13px; }
@@ -1089,7 +1087,8 @@ body.camp-mode main {
   height: fit-content;
   max-height: calc(100dvh - 32px);
   padding: 22px;
-  overflow: visible;
+  overflow-x: hidden;
+  overflow-y: auto;
   margin: 0;
   transform: translate(-50%, -50%);
 }

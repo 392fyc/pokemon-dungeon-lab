@@ -1,4 +1,4 @@
-/* 招式特效演示：11 种形状模板 × 18 种属性外观。画布按游戏同样的 2 倍像素绘制，粒子全部用方块，不用贴图。 */
+/* 招式特效演示：12 种形状模板 × 18 种属性外观。画布按游戏同样的 2 倍像素绘制，粒子全部用方块，不用贴图。 */
 window.FX=(function(){
  const PAL={Normal:['#e8e4d8','#ffffff','#9a9486'],Fire:['#f0702a','#ffd24a','#a82c14'],Water:['#3f8fe0','#a8e0ff','#1f4f9a'],Grass:['#4fb83f','#c8f07a','#1f6a2a'],Electric:['#f5d02a','#fff8b0','#b08a10'],Ice:['#7fdcec','#eaffff','#3f8fb0'],Fighting:['#d8483a','#ffc0a0','#8a2020'],Poison:['#a050c8','#e0a8f0','#5a2478'],Ground:['#c49a4a','#f0d890','#7a5a24'],Flying:['#a8c8f0','#ffffff','#5f86b8'],Psychic:['#f05a9a','#ffc0e0','#a02a68'],Bug:['#a0c030','#e0f080','#5a7a18'],Rock:['#a8946a','#d8c8a0','#5f5238'],Ghost:['#7a60c0','#c8b0ff','#3f2f78'],Dragon:['#6a58e8','#b8b0ff','#2f2a98'],Dark:['#5a4a42','#a08a7a','#241c18'],Steel:['#a8b8c8','#ffffff','#5a6a7a'],Fairy:['#f08ac0','#ffe0f0','#b04a88']};
  /* 每种属性一种粒子外形：同样的“爆开”，火是火苗，水是水滴，草是叶片。 */

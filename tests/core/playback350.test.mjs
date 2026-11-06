@@ -20,12 +20,16 @@ function loadTs(relativePath,dependencies){
 const animation=loadTs('../../src/render/animation.ts',{
  '../core/engine.ts':{key:p=>`${p.x},${p.y}`,plus:(p,d)=>({x:p.x+d.x,y:p.y+d.y}),same:(a,b)=>a.x===b.x&&a.y===b.y},
  '../core/moves.ts':{moveOf:()=>undefined},
+ '../core/type-chart.ts':{typeEffectiveness:()=>1},
+ '../core/roster.ts':{SPECIES:{}},
+ './effect-spec.ts':{effectForMove:()=>null},
  './reach.ts':{adjacentReachable:()=>true,floorIndex:()=>new Set(),rayReachable:()=>true},
 });
 const {BASE_MS,ROUND_CAP_MS,animationBatches,movementDuration,plan}=animation;
 const {playEvents}=loadTs('../../src/render/playback.ts',{
  './sprites.ts':{animKey:()=>'',facingRow:()=>0,sheet:()=>null,groundOriginY:()=>0,UNIT_GROUND_FRACTION:.4},
  './animation.ts':animation,
+ './combat-effects.ts':loadTs('../../src/render/combat-effects.ts',{}),
 });
 
 const move=(id,x0,x1)=>({k:'move',by:id,id,from:{x:x0,y:0},to:{x:x1,y:0}});

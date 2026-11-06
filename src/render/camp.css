@@ -1086,7 +1086,8 @@ body.camp-mode main {
   width: min(520px, calc(100vw - 32px));
   height: fit-content;
   max-height: calc(100dvh - 32px);
-  padding: 22px;
+  /* The plaque hangs 25px above the shell; the scroll box would clip it, so the top padding has to hold it. */
+  padding: 30px 22px 22px;
   overflow-x: hidden;
   overflow-y: auto;
   margin: 0;

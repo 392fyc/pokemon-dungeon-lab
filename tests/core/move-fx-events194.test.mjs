@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {applyCommand,createMain,enemy,friend,key} from '../../src/core/engine.ts';
 import {effectForMove} from '../../src/render/effect-spec.ts';
-import {animationBatches,inferEvents,plan} from '../../src/render/animation.ts';
+import {animationBatches,animationDuration,inferEvents,plan} from '../../src/render/animation.ts';
 import {sureHit} from './sure-hit.mjs';
 
 const templates=[
@@ -195,4 +195,68 @@ test('属性免疫的群体施放不会认领后续普通攻击',()=>{
  assert.ok(result.state.log.some(line=>line.includes('没有效果')),'the real Electric move is immune on the Ground target');
  const hit=inferEvents(before,result.state,command).find(event=>event.k==='hit');
  assert.equal(hit?.attacker,'B');assert.deepEqual(hit?.effect,{move:null,template:'melee',type:'Normal'});
+});
+
+test('友方普攻未命中后，下一名友方的普攻命中算在命中者头上',()=>{
+ let sample;
+ for(let seed=1;seed<=128&&!sample;seed++){
+  const before=world({moves:[],targets:[enemy('H',2,1,40,'ranged',0)]});before.units.H.hp=before.units.H.maxHp=100;
+  before.battleRng=seed;before.units.A.stages.acc=-3;
+  before.units.B=friend('B',1,2,20,{});before.units.B.stages.acc=3;before.queue.push('B');
+  const command={type:'round',action:{type:'basic',target:'H'},override:{actor:'B',action:{type:'basic',target:'H'}}};
+  const result=applyCommand(before,command);assert.equal(result.ok,true,result.error);
+  if(result.state.events.some(event=>event.type==='miss'&&event.actor==='A')&&result.state.log.some(line=>line.startsWith('H受到')))sample={before,after:result.state,command};
+ }
+ assert.ok(sample,'a real deterministic basic-attack miss followed by a real hit is found');
+ const hits=inferEvents(sample.before,sample.after,sample.command).filter(event=>event.k==='hit'&&event.target==='H');
+ assert.equal(hits.length,1);assert.equal(hits[0].attacker,'B');
+});
+
+test('敌方普攻未命中后，下一名敌方的普攻命中算在命中者头上',()=>{
+ let sample;
+ for(let seed=1;seed<=256&&!sample;seed++){
+  const before=world({moves:[],targets:[enemy('E1',2,1,40,'melee',0),enemy('E2',1,2,40,'melee',0)]});
+  for(const id of ['E1','E2']){const e=before.units[id];e.waitOnly=false;e.learned=[];e.pp={};e.maxPp={};}
+  before.units.E1.stages.acc=-3;before.units.E2.stages.acc=3;before.battleRng=seed;
+  before.units.A.hp=before.units.A.maxHp=200;
+  const command={type:'round',action:{type:'wait'}};
+  const result=applyCommand(before,command);if(!result.ok)continue;
+  const missed=(result.state.events??[]).some(event=>event.type==='miss'&&event.actor==='E1'&&event.skill===null);
+  if(missed&&result.state.log.some(line=>line.startsWith('A受到')))sample={before,after:result.state,command};
+ }
+ assert.ok(sample,'a real deterministic enemy basic-attack miss followed by a real hit is found');
+ const hits=inferEvents(sample.before,sample.after,sample.command).filter(event=>event.k==='hit'&&event.target==='A');
+ assert.equal(hits.length,1);assert.equal(hits[0].attacker,'E2');
+});
+
+test('混乱使招式未命中任何目标后，别人对邻近敌人的普攻不会被认成这次招式',()=>{
+ let sample;
+ for(let seed=1;seed<=512&&!sample;seed++){
+  const before=world({moves:['pound'],targets:[enemy('H2',2,1,40,'ranged',0)]});before.units.H2.hp=before.units.H2.maxHp=200;
+  before.units.A.status={confusion:{left:3}};before.battleRng=seed;
+  before.units.B=friend('B',2,2,20,{});before.units.B.stages.acc=3;before.queue.push('B');
+  const command={type:'round',action:{type:'skill',skill:'pound',target:'H2'},override:{actor:'B',action:{type:'basic',target:'H2'}}};
+  const result=applyCommand(before,command);if(!result.ok)continue;
+  const log=result.state.log;
+  if(log.includes('A的招式未命中任何目标')&&log.some(line=>line.startsWith('H2受到')))sample={before,after:result.state,command};
+ }
+ assert.ok(sample,'a real confused miss followed by another member hitting the neighbouring enemy is found');
+ const hit=inferEvents(sample.before,sample.after,sample.command).find(event=>event.k==='hit'&&event.target==='H2');
+ assert.ok(hit);assert.equal(hit.attacker,'B');assert.notEqual(hit.effect?.move,'pound','the hit is not attributed to the finished pound cast');
+});
+
+test('声明时长与实际一致，多事件回合总长不超过1500ms，过长回合不播放',()=>{
+ const hit=(by,extra={})=>({k:'hit',by,attacker:by,target:'H',from:{x:0,y:0},at:{x:1,y:0},fx:'strong',amount:3,dead:false,...extra});
+ assert.equal(animationDuration(hit('A')),320,'a plain hit keeps its legacy 320ms');
+ assert.equal(animationDuration(hit('A',{dead:true})),360,'a plain fatal hit: fade ends at 220+140ms');
+ assert.equal(animationDuration(hit('A',{effect:{move:'pound',template:'melee',type:'Normal'}})),500);
+ assert.equal(animationDuration(hit('A',{effect:{move:'pound',template:'melee',type:'Normal'},dead:true})),500);
+ const effectHit=index=>hit('U'+index,{effect:{move:'pound',template:'melee',type:'Normal'}});
+ const eight=Array.from({length:8},(_,i)=>effectHit(i)),p=plan(eight);
+ assert.equal(animationBatches(eight).length,8);
+ assert.ok(p&&p.scale<1&&p.total<=1500+1e-6,'eight 500ms effects are squeezed into the 1500ms round cap: '+JSON.stringify(p));
+ assert.ok(Math.abs(p.total-1500)<1e-6);
+ const mixed=[...Array.from({length:5},(_,i)=>effectHit(i)),...Array.from({length:3},(_,i)=>hit('P'+i,{dead:true}))],q=plan(mixed);
+ assert.ok(q&&q.total<=1500+1e-6&&Math.abs(q.total-1500)<1e-6);
+ assert.equal(plan(Array.from({length:11},(_,i)=>effectHit(i))),null,'a round that would play below 30% speed is not animated');
 });

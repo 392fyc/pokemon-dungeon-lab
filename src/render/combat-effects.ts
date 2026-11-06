@@ -11,24 +11,60 @@ export const EFFECT_SHAPE:Record<string,string>={
 };
 export const EFFECT_TEMPLATES:readonly EffectTemplate[]=['melee','special','shot','beam','around','room','up','down','status','heal','guard','blow'];
 export const EFFECT_TYPES:readonly string[]=Object.keys(EFFECT_PALETTE);
+/** Real milliseconds of one effect: `total` is its nominal length, `impact` the moment the target is struck. */
 const TIMING:Record<EffectTemplate,{total:number;impact:number}>={
- melee:{total:320,impact:100},special:{total:320,impact:240},shot:{total:320,impact:200},beam:{total:320,impact:200},around:{total:320,impact:200},room:{total:320,impact:280},up:{total:320,impact:0},down:{total:320,impact:0},status:{total:320,impact:50},heal:{total:260,impact:0},guard:{total:240,impact:0},blow:{total:220,impact:120}
+ melee:{total:320,impact:100},special:{total:320,impact:240},shot:{total:320,impact:200},beam:{total:320,impact:200},around:{total:320,impact:200},room:{total:320,impact:100},up:{total:320,impact:0},down:{total:320,impact:0},status:{total:320,impact:50},heal:{total:260,impact:0},guard:{total:240,impact:0},blow:{total:220,impact:120}
 };
+/**
+ * Seconds on the design draft's own clock (docs/05-制作流程/界面设计稿/fx.js): `impact` is when the draft calls hit(), `total`
+ * is when its last pixel disappears. The whole draft timeline is squeezed proportionally into the real budget above, so a
+ * compressed round plays the same picture faster instead of dropping parts of it.
+ */
+const DRAFT:Record<EffectTemplate,{impact:number;total:number}>={
+ melee:{impact:.1,total:.5},special:{impact:.24,total:.64},shot:{impact:.22,total:.62},beam:{impact:.2,total:.6},around:{impact:.2,total:.6},room:{impact:.28,total:.96},up:{impact:0,total:.75},down:{impact:0,total:.75},status:{impact:0,total:.85},heal:{impact:0,total:.885},guard:{impact:0,total:.5},blow:{impact:.12,total:.52}
+};
+const ATTACK_TEMPLATES:readonly EffectTemplate[]=['melee','special','shot','beam','around','room','blow'];
 export const effectImpactDelay=(effect:EffectStyle,durationMs:number):number=>{
  const timing=TIMING[effect.template];return Math.min(durationMs,durationMs*timing.impact/timing.total);
 };
 type Point={x:number;y:number};
 type Palette=readonly [string,string,string];
+type Clip=(x:number,y:number,w:number,h:number)=>boolean;
+const GREEN='#8affa0',ORANGE='#ff8a4a',BLUE='#6aa8ff',WHITE='#ffffff';
 const cap=(n:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,n));
 const mix=(a:number,b:number,t:number)=>a+(b-a)*t;
+/** Deterministic stand-in for the draft's Math.random: the same cast always draws the same picture. */
+const noise=(i:number,salt:number)=>{const x=Math.sin(i*127.1+salt*311.7)*43758.5453;return x-Math.floor(x);};
+const between=(i:number,salt:number,lo:number,hi:number)=>lo+noise(i,salt)*(hi-lo);
+/** Evenly spread, still deterministic, horizontal offsets in [-16,16) so no two arrows or crosses share a column. */
+const spread=(i:number,salt:number)=>((i*.6180339887+noise(0,salt))%1)*32-16;
+const clips=new WeakMap<object,Clip>();
 const sq=(g:Phaser.GameObjects.Graphics,x:number,y:number,w:number,h:number,color:string,alpha=1)=>{
  if(alpha<=0)return;
+ const rx=Math.round(x),ry=Math.round(y),rw=Math.max(1,Math.round(w)),rh=Math.max(1,Math.round(h));
+ const clip=clips.get(g);if(clip&&!clip(rx,ry,rw,rh))return;
  g.fillStyle(Number.parseInt(color.slice(1),16),cap(alpha,0,1));
- g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));
+ g.fillRect(rx,ry,rw,rh);
 };
-function particle(g:Phaser.GameObjects.Graphics,kind:string,x:number,y:number,p:Palette,s:number,alpha:number,angle=0):void{
+/** A bar of `width` along the unit direction `dir`; slanted bars are exact rotated rectangles. */
+function bar(g:Phaser.GameObjects.Graphics,from:Point,dir:Point,len:number,width:number,color:string,alpha=1):void{
+ if(len<=0||alpha<=0)return;
+ g.fillStyle(Number.parseInt(color.slice(1),16),alpha);
+ if(Math.abs(dir.y)<1e-6){
+  g.fillRect(Math.round(dir.x<0?from.x-len:from.x),Math.round(from.y-width/2),Math.max(1,Math.round(len)),Math.max(1,Math.round(width)));
+  return;
+ }
+ if(Math.abs(dir.x)<1e-6){
+  g.fillRect(Math.round(from.x-width/2),Math.round(dir.y<0?from.y-len:from.y),Math.max(1,Math.round(width)),Math.max(1,Math.round(len)));
+  return;
+ }
+ const nx=-dir.y*width/2,ny=dir.x*width/2,ex=from.x+dir.x*len,ey=from.y+dir.y*len;
+ g.fillPoints([{x:from.x+nx,y:from.y+ny},{x:ex+nx,y:ey+ny},{x:ex-nx,y:ey-ny},{x:from.x-nx,y:from.y-ny}] as unknown as Phaser.Math.Vector2[],true);
+}
+/** The draft's particle shapes, centred on (x,y). `k` runs 1 to 0 over a particle's life; only `dot` changes size with it. */
+function particle(g:Phaser.GameObjects.Graphics,kind:string,x:number,y:number,p:Palette,s:number,k=1,angle=0):void{
  const [a,b,c]=p;
- const px=(dx:number,dy:number,w:number,h:number,col:string)=>sq(g,x+(dx*Math.cos(angle)-dy*Math.sin(angle))*s,y+(dx*Math.sin(angle)+dy*Math.cos(angle))*s,w*s,h*s,col,alpha);
+ const px=(dx:number,dy:number,w:number,h:number,col:string)=>sq(g,x+(dx*Math.cos(angle)-dy*Math.sin(angle))*s,y+(dx*Math.sin(angle)+dy*Math.cos(angle))*s,w*s,h*s,col);
  switch(kind){
   case 'flame':px(-1,-3,2,2,b);px(-2,-1,4,3,a);px(-1,2,2,1,c);break;
   case 'drop':px(-1,-3,2,1,b);px(-2,-2,4,3,a);px(-1,1,2,1,c);break;
@@ -42,25 +78,14 @@ function particle(g:Phaser.GameObjects.Graphics,kind:string,x:number,y:number,p:
   case 'wisp':px(-1,-2,3,3,a);px(0,1,1,2,b);px(-1,-1,1,1,b);break;
   case 'claw':px(-2,-3,1,5,a);px(0,-3,1,6,a);px(2,-2,1,5,a);break;
   case 'spark':px(-1,-1,2,2,b);px(-3,-1,1,1,a);px(2,0,1,1,a);break;
-  case 'dot':px(-.5,-.5,2,2,a);break;
+  case 'dot':{const d=k>.5?3:2;px(-d/2,-d/2,d,d,a);break;}
   default:px(-.5,-2.5,1,5,b);px(-2.5,-.5,5,1,b);px(-.5,-.5,1,1,a);
  }
 }
-function line(g:Phaser.GameObjects.Graphics,a:Point,b:Point,spacing:number,draw:(x:number,y:number,i:number,n:number)=>void):void{
- const dx=b.x-a.x,dy=b.y-a.y,n=Math.max(1,Math.ceil(Math.hypot(dx,dy)/Math.max(1,spacing)));
- for(let i=0;i<=n;i++){const t=i/n;draw(a.x+dx*t,a.y+dy*t,i,n);}
-}
-function orbit(center:Point,r:number,i:number,count:number):Point{
- const angle=i*Math.PI*2/count;
- return{x:center.x+Math.cos(angle)*r,y:center.y+Math.sin(angle)*r*.72};
-}
-function cross(g:Phaser.GameObjects.Graphics,center:Point,s:number,color:string,alpha:number):void{
- sq(g,center.x-2*s,center.y-s,4*s,2*s,color,alpha);
- sq(g,center.x-s,center.y-2*s,2*s,4*s,color,alpha);
-}
-function roomCells(stage:Stage,at:Pos):Point[]{
- return (stage.visibleCells??[at]).map(p=>stage.center(p));
-}
+const unit=(from:Point,to:Point):Point=>{const dx=to.x-from.x,dy=to.y-from.y,n=Math.hypot(dx,dy);return n<1e-6?{x:1,y:0}:{x:dx/n,y:dy/n};};
+
+type ShakeEntry={x:number;y:number;users:number};
+const shakes=new WeakMap<object,ShakeEntry>();
 
 /** A single tween owns the Graphics object's lifetime, so skip/abort cleanup can stop and destroy it. */
 export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,impacts:readonly Pos[]=[at],durationMs=320):Promise<void>{
@@ -71,115 +96,177 @@ export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,
   const kind=EFFECT_SHAPE[effect.type]??'star';
   const start=stage.center(from),end=stage.center(at);
   const points=(impacts.length?impacts:[at]).map(p=>stage.center(p));
-  const cells=effect.template==='room'?roomCells(stage,at):[];
   const allPoints=points.length?points:[end];
   const duration=cap(durationMs,1,500);
-  const timing=TIMING[effect.template],impactP=timing.impact/timing.total;
-  const driver={progress:0};
-  let finished=false;
+  const template=effect.template,timing=TIMING[template],draft=DRAFT[template],impactP=timing.impact/timing.total;
+  const seed=[...(effect.move??'')].reduce((sum,ch)=>sum+ch.charCodeAt(0),template.length);
+  const heavy=effect.superEffective===true;
+  // Room effects stay on the revealed floor of the caster's real reach: the stage lists those cells, the renderer never widens them.
+  const cells=template==='room'?(stage.effectCells?.(from)??[at]).map(p=>({key:p.x+','+p.y,...stage.center(p)})):[];
+  const cellKeys=cells.map(c=>c.key);
+  let grid:{ox:number;oy:number;top:number}|null=null;
+  if(cells.length){
+   const ox=cells[0].x,oy=cells[0].y,set=new Set<string>();
+   const col=(x:number)=>Math.round((x-ox)/stage.cell),row=(y:number)=>Math.round((y-oy)/stage.cell);
+   for(const c of cells)set.add(col(c.x)+','+row(c.y));
+   grid={ox,oy,top:Math.min(...cells.map(c=>c.y))-stage.cell/2};
+   const inside=(x:number,y:number)=>set.has(col(x)+','+row(y));
+   clips.set(g,(x,y,w,h)=>inside(x,y)&&inside(x+w-1e-6,y)&&inside(x,y+h-1e-6)&&inside(x+w-1e-6,y+h-1e-6));
+  }
+  const camera=stage.scene.cameras?.main as Phaser.Cameras.Scene2D.Camera|undefined;
+  let shaking=false,finished=false;
+  const releaseShake=()=>{
+   if(!shaking||!camera)return;
+   shaking=false;
+   const entry=shakes.get(camera);if(!entry)return;
+   entry.users--;
+   if(entry.users<=0){camera.setPosition(entry.x,entry.y);shakes.delete(camera);}
+  };
+  const applyShake=(dx:number,dy:number)=>{
+   if(!camera)return;
+   let entry=shakes.get(camera);
+   if(!entry){entry={x:camera.x,y:camera.y,users:0};shakes.set(camera,entry);}
+   if(!shaking){shaking=true;entry.users++;}
+   camera.setPosition(entry.x+dx,entry.y+dy);
+  };
   const cleanup=()=>{
    if(finished)return;
    finished=true;
+   releaseShake();
    stage.temp.delete(g);
    if(g.active)g.destroy();
    resolve();
   };
+  // The scene's skip path kills tweens and destroys every temporary object; no tween callback runs then.
+  g.once('destroy',()=>{
+   if(finished)return;
+   finished=true;
+   releaseShake();
+   stage.temp.delete(g);
+   resolve();
+  });
+  const toDraft=(p:number)=>draft.impact>0
+   ?(p<impactP?p/impactP*draft.impact:draft.impact+(p-impactP)/Math.max(.001,1-impactP)*(draft.total-draft.impact))
+   :p*draft.total;
   const draw=(progress:number)=>{
+   if(finished)return;
    g.clear();
-   const p=cap(progress,0,1);
-   const attack=['melee','special','shot','beam','around','room','blow'].includes(effect.template);
-   const heavy=effect.superEffective===true;
-   const pulse=Math.sin(Math.PI*cap(p/.76,0,1));
-   const paint=(x:number,y:number,alpha=1,angle=0)=>particle(g,kind,x,y,palette,size,alpha,angle);
-   const paintOrbit=(center:Point,r:number,count:number,alpha=1)=>{
-    for(let i=0;i<count;i++){const q=orbit(center,r,i,count);paint(q.x,q.y,alpha,i*Math.PI/2);}
+   const p=cap(progress,0,1),tau=toDraft(p),u=size;
+   const paint=(x:number,y:number,k=1,angle=0,shape=kind)=>particle(g,shape,x,y,palette,u,k,angle);
+   const burst=(c:Point)=>{
+    const a=tau-draft.impact,n=heavy?16:10;
+    if(a<0)return;
+    for(let i=0;i<n;i++){
+     const ang=Math.PI*2*i/n+between(i,seed+1,-.2,.2),v=between(i,seed+2,35,70),life=between(i,seed+3,.22,.4);
+     if(a>life)continue;
+     paint(c.x+Math.cos(ang)*v*a*u,c.y+(Math.sin(ang)*v*a+30*a*a)*u,1-a/life);
+    }
    };
-   if(effect.template==='melee'){
-    const t=cap(p/Math.max(.001,impactP),0,1);
+   if(template==='melee'){
+    const k=(tau-draft.impact)/.12;
+    if(k>=0&&k<1)for(const target of allPoints)for(let s=0;s<3;s++)for(let i=0;i<14;i++){
+     sq(g,target.x+(-14+s*7+i)*u,target.y+(-14+i*1.6)*u,2*u,2*u,k<.5?WHITE:palette[1]);
+    }
+   }else if(template==='special'){
+    const age=tau-.04;
+    if(age>=0&&age<.2)for(const target of allPoints)for(let i=0;i<14;i++){
+     const a=i/14*Math.PI*2,r=22-100*age;
+     paint(target.x+Math.cos(a)*r*u,target.y+Math.sin(a)*r*u);
+    }
+   }else if(template==='shot'){
     for(const target of allPoints){
-     const center={x:mix(start.x,target.x,t),y:mix(start.y,target.y,t)-stage.cell*.22};
-     for(let slash=0;slash<3;slash++){
-      const spread=(slash-1)*size*5;
-      line(g,{x:center.x-8*size,y:center.y+spread+5*size},{x:center.x+8*size,y:center.y+spread-5*size},size*2,(x,y)=>sq(g,x,y,size*2,size,p<.28?palette[1]:palette[0],.9*(1-p*.35)));
+     const dir=unit(start,target),side={x:-dir.y,y:dir.x},angle=Math.atan2(dir.y,dir.x);
+     for(let i=0;i<7;i++){
+      const age=tau-i*.025;if(age<0||age>=.15)continue;
+      const off=between(i,seed+4,-2,2)*u,o={x:start.x+dir.x*12*u+side.x*off,y:start.y+dir.y*12*u+side.y*off};
+      paint(mix(o.x,target.x,age/.15),mix(o.y,target.y,age/.15),1-age/.15,angle);
      }
     }
-   }else if(effect.template==='special'){
-    for(const target of allPoints)paintOrbit(target,(1-pulse)*stage.cell*.28+size*2,14,.9);
-   }else if(effect.template==='shot'){
-    const t=cap(p/Math.max(.001,impactP),0,1);
-    for(const target of allPoints)line(g,start,target,size*5,(x,y,i,n)=>{
-     if(i/n<=t)paint(x,y-size*2+(i%3-1)*size,1-t*.25,Math.atan2(target.y-start.y,target.x-start.x));
-    });
-   }else if(effect.template==='beam'){
-    const width=(p<impactP?7:3)*size;
-    if(p<=impactP)for(const target of allPoints)line(g,start,target,size*2,(x,y,i)=>{
-     sq(g,x-width/2,y-width/2,width,width,p<impactP?palette[0]:palette[1],.72);
-     if(i%3===0)sq(g,x-size,y-size,size*2,size*2,palette[1],1);
-    });
-   }else if(effect.template==='around'){
-    paintOrbit(start,size*4+cap(p/Math.max(.001,impactP),0,1)*stage.cell*.55,20,.9);
-   }else if(effect.template==='room'){
-    const wash=Math.sin(Math.PI*cap(p/.82,0,1))*.2;
-    for(const cell of cells){
-     sq(g,cell.x-stage.cell/2,cell.y-stage.cell/2,stage.cell,stage.cell,palette[0],wash);
-     const seed=((Math.floor(cell.x/size)*17+Math.floor(cell.y/size)*31)%9+9)%9;
-     if(seed<4&&p<.92){
-      const x=cell.x-stage.cell*.38+((seed*7+Math.floor(p*7)*3)%7)*stage.cell*.1;
-      const y=cell.y-stage.cell*.35+((seed*3+Math.floor(p*11)*5)%7)*stage.cell*.1;
-      paint(x,y,.8);
+   }else if(template==='beam'){
+    if(tau>.02&&tau<.26)for(const target of allPoints){
+     const dir=unit(start,target),o={x:start.x+dir.x*12*u,y:start.y+dir.y*12*u},len=Math.max(0,Math.hypot(target.x-start.x,target.y-start.y)-12*u);
+     bar(g,o,dir,len,(Math.floor(tau*40)%2?5:7)*u,palette[0]);
+     bar(g,o,dir,len,2*u,palette[1]);
+    }
+   }else if(template==='around'){
+    const age=tau-.04,c={x:start.x,y:start.y+2*u};
+    if(age>=0&&age<.3){
+     for(let i=0;i<20;i++){const a=i/20*Math.PI*2;paint(c.x+Math.cos(a)*170*age*u,c.y+Math.sin(a)*170*age*u);}
+     const r=age/.3*60;
+     for(let i=0;i<28;i++){const a=i/28*Math.PI*2;sq(g,c.x+Math.cos(a)*r*u,c.y+Math.sin(a)*r*.7*u,2*u,2*u,palette[1]);}
+    }
+   }else if(template==='room'&&grid){
+    if(tau<.42){
+     const alpha=.28*Math.sin(Math.min(1,tau/.42)*Math.PI);
+     for(const c of cells)sq(g,c.x-stage.cell/2,c.y-stage.cell/2,stage.cell,stage.cell,palette[0],alpha);
+    }
+    for(let i=0;i<18;i++){
+     const age=tau-i*.015;if(age<0||age>=.7)continue;
+     const c=cells[Math.floor(noise(i,seed+5)*cells.length)%cells.length];
+     paint(c.x-stage.cell/2+noise(i,seed+6)*stage.cell+between(i,seed+7,-30,30)*age*u,grid.top-4*u+between(i,seed+8,240,340)*age*u,1-age/.7);
+    }
+   }else if(template==='up'||template==='down'){
+    const dir=template==='up'?-1:1,col=template==='up'?ORANGE:BLUE;
+    for(const [index,target] of allPoints.entries()){
+     const k=tau/.5;
+     if(template==='up'&&k<1)for(let i=0;i<16;i++){const a=i/16*Math.PI*2+k*3;sq(g,target.x+Math.cos(a)*18*u,target.y+Math.sin(a)*6*u-k*10*u,2*u,2*u,palette[0]);}
+     for(let i=0;i<8;i++){
+      const t=(tau-i*.05)/.4;if(t<0||t>=1)continue;
+      const x=target.x+spread(i+index*8,seed+9)*u,y=target.y+(template==='up'?12:-18)*u+dir*t*24*u;
+      sq(g,x,y-3*u,2*u,7*u,col);
+      sq(g,x-2*u,y+(dir<0?-1:2)*u,6*u,2*u,col);
+      sq(g,x-u,y+(dir<0?-3:4)*u,4*u,2*u,col);
      }
     }
-   }else if(effect.template==='up'){
-    for(let i=0;i<3;i++){
-     const age=p*.32-i*.04;if(age<0||age>.4)continue;
-     const t=age/.4,x=start.x+(i-1)*stage.cell*.32-size,y=start.y-stage.cell*.28-t*stage.cell*.25;
-     sq(g,x,y-size*3,size*2,size*7,'#ff8a4a',.95);sq(g,x-size*2,y-size,size*6,size*2,'#ff8a4a',.95);sq(g,x-size,y-size*3,size*4,size*2,'#ff8a4a',.95);
+   }else if(template==='status'){
+    const age=tau-.05;
+    if(age>=0)for(const [index,target] of allPoints.entries()){
+     for(let i=0;i<12;i++){
+      const n=i+index*12,life=between(n,seed+10,.4,.7);if(age>=life)continue;
+      paint(target.x+between(n,seed+11,-14,14)*u,target.y+(8+between(n,seed+12,-4,4)+between(n,seed+13,-70,-30)*age)*u);
+     }
+     if(age<.8)paint(target.x+Math.sin(age*10)*4*u,target.y-22*u);
     }
-    for(let i=0;i<16;i++){const q=orbit(start,stage.cell*.22,i,16);sq(g,q.x,q.y-stage.cell*.1*p,size*2,size*2,palette[0],.7);}
-   }else if(effect.template==='down'){
-    for(const target of allPoints)for(let i=0;i<8;i++){
-     const age=p*.32-i*.05;if(age<0||age>.4)continue;
-     const t=age/.4,x=target.x+Math.sin(i*2.4)*stage.cell*.26,y=target.y-stage.cell*.42+t*stage.cell*.4;
-     sq(g,x,y-size*3,size*2,size*7,'#6aa8ff',.9);sq(g,x-size*2,y+size*2,size*6,size*2,'#6aa8ff',.9);sq(g,x-size,y+size*4,size*4,size*2,'#6aa8ff',.9);
+   }else if(template==='heal'){
+    for(const [index,target] of allPoints.entries())for(let i=0;i<12;i++){
+     const k=(tau-i*.035)/.5;if(k<0||k>=1)continue;
+     const n=i+index*12,x=target.x+spread(n,seed+14)*u,y=target.y+(8+between(n,seed+15,-4,8)-k*30)*u;
+     sq(g,x,y-2*u,2*u,6*u,GREEN);
+     sq(g,x-2*u,y,6*u,2*u,GREEN);
     }
-   }else if(effect.template==='status'){
-    for(const target of allPoints)paintOrbit(target,stage.cell*.16+pulse*stage.cell*.08,12,.9);
-   }else if(effect.template==='heal'){
-    for(const target of allPoints)for(let i=0;i<5;i++){
-     const t=(p*1.1+i/5)%1,x=target.x+Math.sin(i*3)*stage.cell*.3,y=target.y+stage.cell*.18-t*stage.cell*.5;
-     cross(g,{x,y},size,palette[1],.95);
+   }else if(template==='guard'){
+    const col=p<.3?WHITE:palette[1];
+    for(const target of allPoints)for(let i=-7;i<=7;i++){
+     const a=i/7*1.2;
+     sq(g,target.x+Math.cos(a)*22*u,target.y+Math.sin(a)*24*u,3*u,3*u,col);
     }
-   }else if(effect.template==='guard'){
-    const shield=p<.7?palette[1]:palette[0];
-    for(const target of allPoints)for(let i=0;i<18;i++){
-     const a=-1.2+i*2.4/17,x=target.x+Math.cos(a)*stage.cell*.42,y=target.y-stage.cell*.08+Math.sin(a)*stage.cell*.42;
-     sq(g,x-size,y-size,size*2,size*2,shield,.95);
-    }
-   }else if(effect.template==='blow'){
-    const t=cap(p/Math.max(.001,impactP),0,1);
-    for(const target of allPoints)line(g,start,target,size*3,(x,y,i,n)=>{
-     if(i/n>=t*.5)paint(x,y-stage.cell*.16,1-t*.35,Math.atan2(target.y-start.y,target.x-start.x));
-    });
-   }
-   if(attack&&p>=impactP){
-    const tail=Math.max(.001,Math.min(80,timing.total-timing.impact)/timing.total);
-    const t=cap((p-impactP)/tail,0,1),count=heavy?18:11;
+   }else if(template==='blow'){
     for(const target of allPoints){
-     for(let i=0;i<count;i++){
-      const angle=i*Math.PI*2/count,r=(size*2+stage.cell*.18*t)*(heavy?1.12:1);
-      paint(target.x+Math.cos(angle)*r,target.y+Math.sin(angle)*r*.65,(1-t)*.95,angle);
+     const dir=unit(start,target),side={x:-dir.y,y:dir.x},angle=Math.atan2(dir.y,dir.x);
+     for(let i=0;i<10;i++){
+      const age=tau-i*.02;if(age<0||age>=.3)continue;
+      const along=14+between(i,seed+16,320,440)*age,off=-8+between(i,seed+17,-12,16);
+      paint(start.x+(dir.x*along+side.x*off)*u,start.y+(dir.y*along+side.y*off)*u,1-age/.3,angle,'streak');
      }
-     cross(g,target,size*1.5,'#ffffff',cap(1-t*2,0,1));
     }
    }
+   if(ATTACK_TEMPLATES.includes(template))for(const target of allPoints)burst(target);
+   // Super-effective hits shake the main camera by up to 2 draft units for 0.14s; reduced motion keeps it still.
+   const shakeAge=tau-draft.impact;
+   if(heavy&&ATTACK_TEMPLATES.includes(template)&&!stage.reduceMotion&&shakeAge>=0&&shakeAge<.14){
+    const frame=Math.floor(tau*60);
+    applyShake(Math.round(between(frame,seed+18,-2,2)*u),Math.round(between(frame,seed+19,-2,2)*u));
+   }else releaseShake();
    const phase=p<.22?'start':p<impactP?'travel':'impact';
-   g.setData('combatEffect',{template:effect.template,type:effect.type,move:effect.move,phase,elapsed:Math.round(duration*p)});
+   g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase,elapsed:Math.round(duration*p),superEffective:heavy,shaking,...(template==='room'?{cells:cellKeys}:{})});
   };
-  g.setData('combatEffect',{template:effect.template,type:effect.type,move:effect.move,phase:'start',elapsed:0});
+  g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase:'start',elapsed:0,superEffective:heavy,shaking:false,...(template==='room'?{cells:cellKeys}:{})});
   stage.temp.add(g);
   try{
-   stage.scene.tweens.add({targets:driver,progress:1,duration,ease:'Linear',onUpdate:(_:unknown,target:{progress:number})=>draw(target.progress),onComplete:cleanup,onStop:cleanup} as unknown as Phaser.Types.Tweens.TweenBuilderConfig);
+   stage.scene.tweens.add({targets:{progress:0},progress:1,duration,ease:'Linear',onUpdate:(_:unknown,target:{progress:number})=>draw(target.progress),onComplete:cleanup,onStop:cleanup} as unknown as Phaser.Types.Tweens.TweenBuilderConfig);
   }catch(error){
+   finished=true;
+   releaseShake();
    stage.temp.delete(g);
    if(g.active)g.destroy();
    reject(error);

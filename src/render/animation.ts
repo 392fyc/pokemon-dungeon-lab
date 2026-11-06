@@ -175,16 +175,6 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     enemyCursor=candidates[0].index;return {id:candidates[0].id,move:candidates[0].move};
   };
 
-  // Status damage is emitted at round end. Match its final target/damage log backwards so poison
-  // and burn do not borrow the move style of an unrelated attacker.
-  const statusDamageLines=new Set<number>();
-  for(const event of a.events??[])if(event.type==='statusDamage'){
-    for(let i=lines.length-1;i>=0;i--){
-      if(statusDamageLines.has(i))continue;
-      const h=head(lines[i]),match=h?.rest.match(/^受到(\d+)伤害，HP (\d+)$/);
-      if(h?.id===event.target&&match&&Number(match[1])===event.amount){statusDamageLines.add(i);break;}
-    }
-  }
   const collisionVictims=new Map<string,{left:number;by:string;cast?:string}>();
   type Cast={by:string;move:string;index:number;positions:Record<string,Pos|null>;health:Record<string,number>;hit:Set<string>};
   const casts:Cast[]=[];let activeCast:Cast|null=null;
@@ -210,6 +200,10 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       const prefix='的'+(SKILL_CN[activeCast.move]??activeCast.move)+'没打中';
       if(rest.startsWith(prefix)){const target=rest.slice(prefix.length);if(ids.includes(target))activeCast.hit.add(target);}
     }
+    // A missed basic attack still is that unit's action this round, so a later hit on the same target is not its work.
+    if(rest.startsWith('的普攻没打中'))used.add(id);
+    // The cast is over when the log says so: a confused cast that found nothing, or another unit's own action line starts.
+    if(activeCast&&((id===activeCast.by&&rest==='的招式未命中任何目标')||(id!==activeCast.by&&/^(?:移动到|趋近一步|向.+挥空|与.+换位|对.+使用|的普攻没打中|的普通攻击未命中任何目标|因混乱朝)/.test(rest))))activeCast=null;
     if ((m = rest.match(/^移动到(\d+),(\d+)$/))) {
       const from = pos[id], to = {x:Number(m[1]), y:Number(m[2])};
       if (from && (unit.side === 'friend' || (vis(from) && vis(to)))) emit({k:'move', by:id, id, from, to});
@@ -246,7 +240,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       hp[id] = remaining;
       const collision=collisionVictims.get(id);
       if(collision){if(collision.left<=1)collisionVictims.delete(id);else collisionVictims.set(id,{...collision,left:collision.left-1});}
-      if (!statusDamageLines.has(i)&&at && (unit.side === 'friend' || vis(at))) {
+      if (at && (unit.side === 'friend' || vis(at))) {
         if(collision){emit({k:'hit',by:collision.by,attacker:null,target:id,from:null,at,fx:null,amount,dead,collision:true,...(collision.cast?{cast:collision.cast}:{})});if(dead)pos[id]=null;continue;}
         let attacker:string|null = null, from:Pos|null = null, fx:Fx = 'strong', by = '', move:string|null=null;
         const cast=activeCast;
@@ -273,8 +267,9 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     }
   }
 
-  // A cast is shown only when PP really fell and its effect is visible in a state change, event,
-  // or action log. This also works when the fixed-size log has wrapped and has no new suffix.
+  // A non-damage cast is shown only when its own `使用` line is among the new log lines and the lines after it
+  // report a visible result on a target in range (stage change, status, heal, guard). PP is not checked here, and a
+  // cast line that fell out of the fixed-size log produces no effect.
   for(const cast of casts){
     const {by:id,move}=cast;
     const spec=moveOf(move),baseStyle=effectForMove(move);if(!spec||!baseStyle||isDamageMove(move)||spec.effects.includes('protect'))continue;
@@ -360,7 +355,10 @@ export function movementDuration(events:AnimEvent[], scale=1):number {
 
 /** A 500ms charge covers impact feedback and blowaway collisions without changing legacy timings. */
 export function animationDuration(event:AnimEvent):number {
- return ('cast' in event&&event.cast)||(event.k==='hit'&&event.effect)?500:BASE_MS[event.k];
+ if(('cast' in event&&event.cast)||(event.k==='hit'&&event.effect))return 500;
+ // A fatal plain hit fades out for 140ms after 220ms, so it really lasts 360ms; a non-fatal one keeps the legacy 320ms.
+ if(event.k==='hit')return event.dead?360:BASE_MS.hit;
+ return BASE_MS[event.k];
 }
 
 export function plan(events:AnimEvent[]):{scale:number; total:number}|null {

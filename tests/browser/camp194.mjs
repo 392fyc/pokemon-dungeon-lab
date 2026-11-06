@@ -57,6 +57,14 @@ async function assertDialogInViewport(page,selector,width,height){
   assert.ok(box.width>0&&box.height>0,selector+' is visible at '+width+'×'+height);
   assert.ok(box.x>=-1&&box.right<=box.viewportWidth+1,selector+' stays inside the horizontal viewport: '+JSON.stringify(box));
   assert.ok(box.y>=-1&&box.bottom<=box.viewportHeight+1,selector+' stays inside the vertical viewport: '+JSON.stringify(box));
+  if(selector.includes('camp-departure')){
+    // The scroll box clips anything above its padding edge; the whole title plaque, including its 3px outline, must sit inside it.
+    const plaque=await page.locator(selector).evaluate(element=>{
+      const dialog=element.getBoundingClientRect(),title=element.querySelector('.camp194-plaque').getBoundingClientRect();
+      return {plaqueTop:title.top-3,plaqueLeft:title.left-3,paddingTop:dialog.top+element.clientTop,paddingLeft:dialog.left+element.clientLeft,scrollTop:element.scrollTop};
+    });
+    assert.ok(plaque.plaqueTop>=plaque.paddingTop-.5&&plaque.plaqueLeft>=plaque.paddingLeft-.5,'the departure plaque is not clipped at '+width+'×'+height+': '+JSON.stringify(plaque));
+  }
   return box;
 }
 async function selectMember(page,id){
@@ -460,6 +468,7 @@ export async function camp194Checks({setup,ready,emptyReady,state,artifact}){
       await p.evaluate(()=>{window.__fault.mode='pass';});
       await p.locator('#camp-retry').click();await ready(p);
       assert.equal(await p.locator('#base .camp-feedback').count(),0,'the camp prompt clears after a successful retry');
+      assert.equal(await p.evaluate(()=>document.activeElement?.id),'depart','after a successful camp retry the focus moves to the departure gate instead of being lost');
       assert.equal((await savedProfile(p)).difficulty,'easy','retrying from camp saves the pending difficulty change');
       assert.equal(await state(p),null,'retrying from camp does not start the expedition');
       assert.deepEqual(errors,[]);

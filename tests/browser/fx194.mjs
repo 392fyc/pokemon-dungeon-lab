@@ -27,6 +27,7 @@ export function effectFixture(move,template){
  }
  return w;
 }
+const HIT_SHOT={melee:160,special:280,shot:260,beam:260,around:260,room:160,blow:190};
 export async function fx194Checks({setup,startMemory,ready,state,cell,artifact}){
  const {context,page:p,errors}=await setup(undefined,'pass',true,'dtef');
  const report={fixtureBoundary:'Fixed developer display fixtures with real move definitions, controlled loadouts/HP/placement and waiting enemies; real HUD selection and canvas command; no natural-route or balance claim.',cases:[]};
@@ -45,14 +46,24 @@ export async function fx194Checks({setup,startMemory,ready,state,cell,artifact})
    await p.clock.runFor(80);
    const started=await p.evaluate(()=>window.trial.view());
    assert.ok(started.combatEffects.some(effect=>effect.template===template&&effect.move===move),move+' starts the chosen template within 100ms: '+JSON.stringify(started.combatEffects));
-   await p.clock.runFor(80);
+   if(template==='room'){
+    const cells=started.combatEffects.find(effect=>effect.template==='room').cells;
+    assert.equal(cells.length,77,'the blizzard covers the caster room 1..11 x 1..7 and nothing else: '+cells.length);
+    assert.ok(cells.every(keyText=>Number(keyText.split(',')[0])<12),'the unrevealed column x=12 is outside the effect whitelist');
+    assert.ok(cells.every(keyText=>w.seen.includes(keyText)),'every whitelist cell is revealed');
+   }
+   await p.clock.runFor(40);
    const middle=await p.evaluate(()=>window.trial.view());
    await p.screenshot({path:artifact+'fx194-'+template+'-'+move+'.png'});
    const round=(await state(p)).round;await p.keyboard.press('.');
    assert.equal((await state(p)).round,round,'input during '+move+' does not advance a second round');
-   await p.clock.runFor(160);
+   const heavy=started.combatEffects.some(effect=>effect.superEffective);let shifted=false,elapsed=120;
+   const hitAt=HIT_SHOT[template]??240;
+   while(elapsed<hitAt){await p.clock.runFor(10);elapsed+=10;if(heavy&&await p.evaluate(()=>{const c=window.trial.view().cameraPosition;return c.x!==0||c.y!==0;}))shifted=true;}
    await p.screenshot({path:artifact+'fx194-'+template+'-'+move+'-impact.png'});
-   await p.clock.runFor(230);
+   while(elapsed<560){await p.clock.runFor(10);elapsed+=10;if(heavy&&await p.evaluate(()=>{const c=window.trial.view().cameraPosition;return c.x!==0||c.y!==0;}))shifted=true;}
+   if(heavy)assert.equal(shifted,true,move+' is super effective, so the main camera shakes');
+   assert.deepEqual(await p.evaluate(()=>window.trial.view().cameraPosition),{x:0,y:0},'the camera is back in place after '+move);
    assert.equal(await p.evaluate(()=>window.trial.animating()),false,move+' completes within the 500ms budget plus one render frame');
    await p.clock.resume();
    await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:5000});await ready(p);
@@ -65,11 +76,26 @@ export async function fx194Checks({setup,startMemory,ready,state,cell,artifact})
    report.cases.push({move,template,effects:started.combatEffects,middle:middle.combatEffects,hpDeltas,ppBefore:5,ppAfter:after.units.A.pp[move],round:after.round,temporaryObjects:finished.temporaryObjects});
    assert.equal(after.units.A.pp[move],4,'the real move spends exactly one PP');
   }
+  {
+   const corridor=effectFixture('blizzard','room');corridor.rooms=[];corridor.seen=corridor.floor.map(key);
+   await p.reload();await p.locator('#start').waitFor();
+   await startMemory(p,corridor);await p.clock.pauseAt(await p.evaluate(()=>Date.now()+100));
+   await p.locator('[data-hud-skill="blizzard"]').click();await cell(p,4,4);await p.clock.runFor(80);
+   const cells=(await p.evaluate(()=>window.trial.view())).combatEffects.find(effect=>effect.template==='room').cells;
+   assert.equal(cells.length,25,'outside any room the blizzard reaches only the 2-cell neighbourhood: '+cells.length);
+   assert.ok(cells.every(keyText=>{const [x,y]=keyText.split(',').map(Number);return Math.abs(x-4)<=2&&Math.abs(y-4)<=2;}));
+   await p.clock.resume();await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:5000});await ready(p);
+   report.corridorRoomCells=cells.length;
+  }
   const cancelWorld=effectFixture('aurorabeam','beam');
   await p.reload();await p.locator('#start').waitFor();
   await startMemory(p,cancelWorld);assert.equal((await state(p)).runId,cancelWorld.runId);await p.clock.pauseAt(await p.evaluate(()=>Date.now()+100));
   await p.locator('[data-hud-skill="aurorabeam"]').click();await cell(p,7,4);await p.clock.runFor(80);
   assert.equal(await p.evaluate(()=>window.trial.animating()),true,'the cancellation starts during a real beam');
+  // Press Shift only after the white hit flash is on, so the skip has something to clear.
+  let flashed=false;
+  for(let waited=0;waited<400&&!flashed;waited+=10){await p.clock.runFor(10);flashed=await p.evaluate(()=>Object.values(window.trial.view().units).some(unit=>unit&&unit.whiteFlash));}
+  assert.equal(flashed,true,'the beam has hit and the target is flashing white');
   const committed=await state(p);await p.keyboard.press('Shift');
   await p.evaluate(()=>Promise.resolve());
   assert.equal(await p.evaluate(()=>window.trial.animating()),false,'Shift releases the presentation input lock');

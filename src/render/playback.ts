@@ -6,7 +6,7 @@ import {playCombatEffect,effectImpactDelay} from './combat-effects.ts';
 import type {EffectStyle} from './effect-spec.ts';
 /** Everything the scene draws for one unit, so a step can move the sprite, its shadow and its labels together. */
 export type UnitView={sprite:Phaser.GameObjects.Sprite;gfx:Phaser.GameObjects.Graphics;labels:{t:Phaser.GameObjects.Text;dx:number;dy:number}[];dex:string;row:number};
-export type Stage={scene:Phaser.Scene;views:Map<string,UnitView>;center:(p:Pos)=>{x:number;y:number};cell:number;scale:number;temp:Set<Phaser.GameObjects.GameObject>;f:number;visibleCells?:readonly Pos[];cancelled?:()=>boolean;setHitFlash?:(view:UnitView,on:boolean)=>void;onMovementStart?:(durationMs:number)=>void;onMovementProgress?:(progress:number)=>void};
+export type Stage={scene:Phaser.Scene;views:Map<string,UnitView>;center:(p:Pos)=>{x:number;y:number};cell:number;scale:number;temp:Set<Phaser.GameObjects.GameObject>;f:number;effectCells?:(caster:Pos)=>readonly Pos[];reduceMotion?:boolean;cancelled?:()=>boolean;setHitFlash?:(view:UnitView,on:boolean)=>void;onMovementStart?:(durationMs:number)=>void;onMovementProgress?:(progress:number)=>void};
 const wait=(st:Stage,ms:number)=>new Promise<void>(r=>{st.scene.time.delayedCall(Math.max(1,ms),()=>r());});
 const tween=(st:Stage,cfg:Record<string,unknown>)=>new Promise<void>(r=>{st.scene.tweens.add({...cfg,onComplete:()=>r()} as unknown as Phaser.Types.Tweens.TweenBuilderConfig);});
 const put=(st:Stage,v:UnitView,x:number,y:number)=>{v.sprite.setPosition(x,y+st.cell*UNIT_GROUND_FRACTION);v.gfx.setPosition(x,y);v.labels.forEach(l=>l.t.setPosition(x+l.dx,y+l.dy));};
@@ -89,7 +89,7 @@ async function play(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise
     else if(ev.fx==='line'&&ev.from)ps.push(flash(st,'fx-line',to,d(200),d(60),{angle:Math.atan2(to.y-at(ev.from).y,to.x-at(ev.from).x),from:at(ev.from),grow:1}));
     const impact=ev.collision?d(280):ev.effect?d(effectImpactDelay(ev.effect,ev.effect.template==='blow'?BASE_MS.blowaway:BASE_MS.hit)):d(110);
     const duration=ev.cast||ev.effect?500:BASE_MS.hit;
-    if(T){if(ev.from)face(T,ev.at,ev.from);ps.push(hurt(st,T,d(170),impact,!!ev.effect,ev.effect?.template!=='blow'));}
+    if(T){if(ev.from)face(T,ev.at,ev.from);ps.push(hurt(st,T,d(170),impact,!!ev.effect&&ev.amount>0,ev.effect?.template!=='blow'));}
     ps.push(floatText(st,to,'-'+ev.amount,ev.effect?.superEffective?'#ffd24a':ev.effect?'#ffffff':'#ff9c88',ev.effect||ev.cast?Math.max(1,d(duration)-impact):d(220),impact));
     if(ev.effect?.superEffective)ps.push(floatText(st,{x:to.x,y:to.y-st.cell*.3},'效果绝佳','#ffd24a',Math.max(1,d(duration)-impact),impact));
     if(ev.dead&&T)ps.push(wait(st,d(ev.effect||ev.cast?duration-140:220)).then(()=>tween(st,{targets:[T.sprite,...T.labels.map(l=>l.t)],alpha:0,duration:Math.max(1,d(140))})));

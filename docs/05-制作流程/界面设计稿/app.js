@@ -62,7 +62,7 @@ V.result=()=>{const R=RES[st.res],won=st.res!=='lost';
  const tms=[...R.tms.map(id=>`<div class="lt">${TMTILE(id)}</div>`),...R.lost.map(id=>`<div class="lt lost"><span class="tag">丢失</span>${TMTILE(id)}</div>`)].join('');
  const gets=[...R.mons.map(([k,n])=>`<div class="lt"><span class="tag">新伙伴</span>${mon(k)}${n}</div>`),...R.shards.map(([k,n,c])=>`<div class="lt">${mon(k)}${n}<span class="cnt">×${c}</span></div>`)].join('');
  return `${won?'<img class="bg" src="img/camp.png" alt=""><div class="dim"></div>':'<div class="view" style="background:#16110d"></div>'}
- <header class="res-head ${won?'won':'lost'}"><h2>${R.title}</h2><div class="res-sub">${R.sub}</div><div class="floors">${floors}</div></header>
+ <header class="res-head ${won?'won':'lost'}"><button type="button" aria-label="设置与存档" data-a="go:settings" style="position:absolute;right:12px;top:12px;z-index:2;width:36px;height:36px;padding:0;border:2px solid #2a1c14;background:#e0cfa4;color:#2a1c14;font-size:22px;font-weight:900;line-height:1">⚙</button><h2>${R.title}</h2><div class="res-sub">${R.sub}</div><div class="floors">${floors}</div></header>
  <section class="res-team" aria-label="队伍"><div class="line">${R.team.map(([k,d])=>`<div class="${d?'down':''}">${mon(k,S[k].name)}</div>`).join('')}</div></section>
  <section class="res-xp"><div class="res-top"><h3 class="hd">探险队经验</h3><strong>+${R.gain}</strong></div><div class="tally-box"><div class="tally" id="tally" tabindex="0" aria-label="经验明细">${R.rows.map(([a,b])=>`<span title="${a}">${a}</span><b class="num">${b}</b>`).join('')}</div><div class="more" id="more" hidden></div></div><div class="res-lv"><span>${R.lv}</span><span class="num">${R.barT}</span></div><div class="bar"><i style="width:${R.bar}%"></i></div>${R.up?`<div class="lvup"><span>${R.up}</span><span>${R.pts}</span></div>`:''}</section>
  <section class="res-loot"><h3 class="hd">本次收获 ${R.mons.length+R.shards.length}</h3>${gets?`<div class="loot" tabindex="0">${gets}</div>`:'<p class="nil">本局无此项奖励</p>'}<h3 class="hd">招式机 ${R.tms.length+R.lost.length}</h3>${tms?`<div class="loot" tabindex="0">${tms}</div>`:'<p class="nil">本局无此项奖励</p>'}</section>
@@ -133,7 +133,7 @@ V.fx=()=>{const cur=TPL.find(t=>t[0]===st.fxT);
 const VIEWS=[['detail','详情','画内窗口。上方小头像切换成员和敌人，敌人没有方针。方针是六个图标格，招式悬停显示范围和官方说明；攻防升降标在六边图顶点上，命中和闪避的升降用状态标签。'],
 ['settings','设置','只放游戏里真实存在的选项，分画面、键位、存档三页。标题、营地和迷宫共用这个窗口，“返回标题”只在营地显示。'],
 ['result','结算','整屏结果页：先看结果和到达的层，再看经验，最后看收获。值为 0 的项不显示。经验明细放不下时只在明细区内滚动，总经验、等级条和升级提示始终可见；收获放不下时横向滚动。'],
-['camp','营地','建筑牌只留名字，有事要处理才亮感叹号（图中是还有天赋点）。待确认的改动：难度移进“出发”窗口；点迷宫入口先弹窗确认阵容和难度；新增感叹号提示。'],
+['camp','营地','建筑牌只留名字，有事要处理才亮感叹号（图中是还有天赋点）。用户已同意，列入第 2 批实现：难度移进“出发”窗口；点迷宫入口先弹窗确认阵容和难度；新增感叹号提示。'],
 ['hut','伙伴小屋','上面阵容、下面小图标、右边当前伙伴。点谁看谁，右侧改方针和配招。招式点一下进出携带格，左上数字是出发顺序。'],
 ['store','仓库','分招式机和伙伴碎片两页。招式机可按属性或分类（物理、特殊、变化）筛选，选中后右侧显示招式字段和学习对象。招式机图标暂时相同，靠颜色和名字区分。碎片在现行规则里还没有用途，所以碎片页只显示数量和来源。'],
 ['stele','天赋石碑','暂不改动。现有三项继续生效，天赋内容以后由用户和 main 一起重做。'],

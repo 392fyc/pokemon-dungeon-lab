@@ -595,3 +595,5 @@ export function starterMoveFields(skill: Skill) {
     description: MOVE_DESCRIPTIONS[skill]?.desc ?? "",
   };
 }
+
+export {statusMarkup as hudStatusMarkup};

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createScenario} from '../../src/core/scenarios.ts';
-import {actionText,enemyInfo,localizeLog,orderLine,unitLabel,unitName} from '../../src/core/describe.ts';
+import {actionText,enemyInfo,localizeLog,orderLine,unitLabel,unitName,playerText} from '../../src/core/describe.ts';
 import {speciesZh} from '../../src/core/names.ts';
 
 test('visible unit labels and logs use species names or readable fallbacks without world ids',()=>{
@@ -13,7 +13,7 @@ test('visible unit labels and logs use species names or readable fallbacks witho
  assert.equal(order,unitName(friend)+' → '+unitName(enemy)+' → 敌方');
  assert.ok(!order.includes(friendId));
  assert.ok(!order.includes(enemyId));
- assert.equal(actionText(s,friendId,{type:'basicForward'}),'朝前普攻','the new F action is described as an attack in combination drafts');
+ assert.equal(actionText(s,friendId,{type:'basicForward'}),'向前普通攻击','the new F action is described as an attack in combination drafts');
 
  const friendWithoutSpecies={...friend,species:undefined};
  const enemyWithoutSpecies={...enemy,species:undefined};
@@ -47,4 +47,10 @@ test('enemy card exposes short move rows and keeps full descriptions separate',(
  assert.match(first.detail,/造成/);
  assert.match(first.detail,/PP 15\/15$/);
  assert.doesNotMatch(first.name,/射程|造成|PP/);
+});
+
+test('player prose uses readable attack terms without exposing empty-attack coordinates',()=>{
+ assert.equal(playerText('朝前普攻，向12,-3挥空'),'向前普通攻击，普通攻击挥空');
+ const s=createScenario('K1','describe-protected-move');
+ assert.match(localizeLog(s,'A使用ember'),/火花/);
 });

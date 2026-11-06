@@ -29,7 +29,7 @@ export async function review360FloorChecks({setup,startMemory,state,ready,viaSta
   assert.ok(shown.some(text=>text.includes('同行抵达第2层')));
   const format=structuredClone(w),actor=format.leader;format.runId='review360-formats';format.log=[actor+'无路可走，等待',actor+'动作失效，等待，未扣PP',actor+'向13,8挥空'];
   await p.reload();await p.locator('#start').waitFor();await startMemory(p,format);
-  const formatted=await p.locator('#recent-events,#history,#message').allTextContents();assert.ok(formatted.every(text=>!text.includes('无路可走，等待')));assert.ok(formatted.some(text=>text.includes('动作失效，等待，未扣PP')));assert.ok(formatted.some(text=>text.includes('向13,8挥空')),'air-swing coordinates remain outside this change');assert.deepEqual((await state(p)).log,format.log);
+  const formatted=await p.locator('#recent-events,#history,#message').allTextContents();assert.ok(formatted.every(text=>!text.includes('无路可走，等待')));assert.ok(formatted.some(text=>text.includes('动作失效，等待，未扣PP')));assert.ok(formatted.every(text=>!text.includes('向13,8挥空')),'empty-attack coordinates stay out of visible prose');assert.ok(formatted.some(text=>text.includes('普通攻击挥空')),'the actual empty-attack event remains readable');assert.deepEqual((await state(p)).log,format.log);
   await p.screenshot({path:artifact+'review360-wait-filter.png'});report.formatFixture={raw:format.log,shown:formatted};
   let challenge=createExpedition('review363-challenge',4,3,{members:[
    {inst:'P1',species:'mudkip',carry:[{move:'blizzard',pp:20}],tactic:'wait'},

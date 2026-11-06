@@ -112,3 +112,12 @@ Original dungeon tilesets (public/assets/tiles/dtef: TinyWoods, WaterfallCave, M
 from PMDCollab/RawAsset commit 03c80dad937911572f8fb19903771a47956fc696 (TileDtef). Rights belong to Spike Chunsoft, Nintendo and others; the
 repository carries no licence text. Private build only; must be replaced before any public release (D-20261103-12). The order of the 47 shape rules
 follows SkyTemple skytemple_dtef rules.py (GPL-3.0); only that table is used, as data.
+
+
+UI fonts — Noto Sans SC / ZCOOL QingKe HuangYou
+Source: google/fonts@24ddc1f324cac5d9f5aedca126d298f56e3f1640
+Both are licensed under SIL Open Font License 1.1.
+Copyright notices and full licenses: assets/fonts/NotoSansSC-OFL.txt and assets/fonts/ZCOOLQingKeHuangYou-OFL.txt.
+The distributed WOFF2 subsets are modified font software, internally renamed PDL Sans SC and PDL Display.
+Copyright and OFL notices are retained. Sources, hashes, selections and reproduction commands are recorded in assets/manifest.json.
+Fonts load locally with font-display: swap and system fallbacks; no external font service is used by the game.

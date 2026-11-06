@@ -186,7 +186,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
   // A confused unit's strike has no target line of its own: the very next damage line is what it hit, whatever the side.
   let pendingStrike:string|null=null;
   const isAreaCast=(c:Cast)=>['room','around'].includes(moveOf(c.move)?.range??'');
-  const claims=(c:Cast|null,target:string):c is Cast=>!!c&&isDamageMove(c.move)&&!c.hit.has(target)&&(c.hit.size===0||isAreaCast(c))&&(c.reaction?b.units[target]?.side!==b.units[c.by]?.side&&(c.hit.size===0||canSkillHit(c.by,target,c.move,c.positions,c.health)):canSkillHit(c.by,target,c.move,c.positions,c.health));
+  const claims=(c:Cast|null,target:string):c is Cast=>!!c&&isDamageMove(c.move)&&!c.hit.has(target)&&(c.hit.size===0||isAreaCast(c))&&(c.reaction?c.hit.size===0&&b.units[target]?.side!==b.units[c.by]?.side:canSkillHit(c.by,target,c.move,c.positions,c.health));
   /** Every log line that says a unit's own action ended without a hit it could be credited with (engine.ts statusBlock, invalid, confused, miss and wait lines). */
   const spentWithoutHit=/^(?:的普攻没打中|的普通攻击未命中任何目标|冰冻中，无法行动|打盹中，无法行动|睡眠中，无法行动|麻痹中，无法使用招式和普攻|畏缩中，无法使用招式和普攻|动作失效，等待，未扣PP|无路可走，等待|等待|因混乱乱走|因混乱朝.+乱走)|落空，未扣PP$|换位落空/;
 

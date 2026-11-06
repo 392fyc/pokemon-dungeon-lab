@@ -1197,7 +1197,6 @@ body.dungeon-mode #hud-actions {
   color: #f2eee0;
 }
 
-body.dungeon-mode #hud-actions .hud-member-options,
 body.dungeon-mode #hud-actions #controls,
 body.dungeon-mode #hud-actions #save {
   display: flex;
@@ -1358,11 +1357,6 @@ body.dungeon-mode .enemy-move-list details[open] > p {
   }
 }
 
-body.dungeon-mode .hud-member-options {
-  padding: 10px;
-  border-radius: 8px;
-  background: rgba(26, 38, 30, 0.85);
-}
 
 body.dungeon-mode :focus-visible {
   outline: 2px solid #fff1b8;

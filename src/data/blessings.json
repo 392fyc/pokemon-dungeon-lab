@@ -22,7 +22,7 @@
   },
   "lullaby": {
     "name": "安眠",
-    "description": "下一层普通敌人出生睡着的概率提高到50%。",
+    "description": "下一层普通敌人出生时处于睡眠状态的概率提高到50%。",
     "floors": [1, 2],
     "effect": "lullaby",
     "sleepChance": 0.5

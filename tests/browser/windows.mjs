@@ -1,3 +1,4 @@
+import {panels194Checks,panels194SleepChecks} from './panels194.mjs';
 import {fog350Checks} from './fog350.mjs';
 import {review357Checks} from './review357.mjs';
 import {review360FloorChecks} from './review360.mjs';
@@ -121,6 +122,13 @@ async function chord(p,first,second){
  return trace[1].at-trace[0].at;
 }
 async function click(p,id,settle=true){
+ // Legacy helper names map to the real close/tab controls of the redesigned dialog.
+ const detail=p.locator('#unit-details-dialog');
+ if(await detail.count()&&await detail.isVisible()){
+  if(/^detail-\d+$/.test(id)){const unit=(await state(p)).queue[Number(id.slice(7))],tab=detail.locator('[data-detail-unit="'+unit+'"]');if(await tab.getAttribute('aria-pressed')==='true')await p.locator('#unit-detail-close').click();else await tab.click();if(settle)await ready(p);return;}
+  if(!await p.locator('#'+id).evaluate(el=>!!el.closest('#unit-details-dialog')).catch(()=>false)){await p.locator('#unit-detail-close').click();if(settle)await ready(p);}
+ }
+ if(['save-export','save-import'].includes(id))await p.locator('#settings-tab-save').click();
  if(id.startsWith('use-')){
   const item=id.slice(4),slot={berry:0,tonic:1,bigBerry:2,teamTonic:3}[item];
   assert.notEqual(slot,undefined,'the helper names an existing consumable');
@@ -141,6 +149,7 @@ function expectedCamera(view,pos){
  return {x:Math.round(cx-v.width/2),y:Math.round(cy+g.cell*.3-v.height/2)};
 }
 async function cell(p,x,y){
+ if(await p.locator('#unit-details-dialog').count())await p.locator('#unit-detail-close').click();
  const canvas=p.locator('canvas'),s=await state(p);assert.ok(s,'a live world is required for a map click');
  const actionPanel=p.locator('#hud-actions');if(await actionPanel.count()&&await actionPanel.isVisible()&&await p.locator('#actions-open').isVisible()){await p.locator('#actions-open').click();await ready(p);}
  const bagPanel=p.locator('#hud-bag');if(await bagPanel.count()&&await bagPanel.isVisible()){await p.locator('#bag-close').click();await ready(p);}
@@ -578,14 +587,14 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
 
    const setupState=await state(p);
    for(const [index,id] of ['A','B'].entries()){
-    await click(p,'detail-'+index);await p.locator('#hud-tactic').selectOption('wait');
+    await click(p,'detail-'+index);await p.locator('[data-detail-tactic="wait"]').click();
     await p.waitForFunction(unit=>window.trial.getState().units[unit].tactic==='wait',id);
    }
    const tacticsSet=await state(p);assert.equal(tacticsSet.round,setupState.round,'setting member tactics does not advance a round');
    assert.deepEqual(['A','B'].map(id=>tacticsSet.units[id].tactic),['wait','wait']);
   let s=await state(p);assert.equal(s.prog.level,5);assert.deepEqual(s.queue.map(i=>s.units[i].species),['charmander','squirtle','bulbasaur']);
   const partyText=await p.locator('#party').innerText();for(const species of ['小火龙','杰尼龟','妙蛙种子'])assert.ok(partyText.includes(species),`the HUD shows ${species}`);
-  await p.locator('#unit-card-A').hover();assert.equal(await p.locator('#unit-info').count(),0,'party hover does not open an inspector');await click(p,'detail-0');assert.ok(await p.locator('.hud-member-options').isVisible(),'member details remain explicitly available');assert.match(await p.locator('#goal-label').innerText(),/Lv5/);
+  await p.locator('#unit-detail-close').click();await p.locator('#unit-card-A').hover();assert.equal(await p.locator('#unit-info').count(),0,'party hover does not open an inspector');await click(p,'detail-0');assert.ok(await p.locator('#unit-details-dialog').isVisible(),'member details remain explicitly available');assert.match(await p.locator('#goal-label').innerText(),/Lv5/);await p.locator('#unit-detail-close').click();
   assert.match(await p.locator('#goal-label').innerText(),/橙橙果×0/);
   const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
   const settlePrompt=async()=>{for(let i=0;i<20;i++){const phase=(await state(p)).phase;if(phase==='invitation')await reject(p);else if(phase==='evolution')await click(p,'evolution-close');else return;}throw Error('too many pending invitation/evolution prompts');};
@@ -758,15 +767,15 @@ await test('结算8.1：全灭仍带回伙伴，招式机丢失，三组结算�
   await start(p);const before=await p.evaluate(()=>window.trial.profile());
   await click(p,'wait');const ended=await state(p);assert.equal(ended.end.outcome,'wipe');
   assert.equal(ended.dungeon.roguelike,true);
-  const resultText=await p.locator('.result').innerText();assert.match(resultText,/讨伐首领：未击败/);
+  const resultText=await p.locator('.result').innerText();assert.equal(await p.locator('.settlement-heading h2').innerText(),'全队倒下');assert.equal((await state(p)).end.boss,false);
   assert.doesNotMatch(resultText,/讨伐首领：未挑战|目标未完成|已取得 0 · 正常带出 0/);
   assert.deepEqual(ended.end.lost,[]);assert.equal(ended.end.reward,0);assert.equal(ended.purse,0);
   assert.ok(ended.end.tms.every(t=>t.fate==='lost'));
   for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
-  assert.match(await p.locator('#depth-rewards').innerText(),/深度：\+3/);
-  assert.match(await p.locator('#rank-gain').innerText(),/经验 \+3.*0 → 3/);
+  assert.match(await p.locator('#depth-rewards').innerText(),/到达第 3 层\s*\+3/);
+  assert.match(await p.locator('#rank-gain').getAttribute('aria-label'),/经验 \+3.*0 → 3/);
   assert.match(await p.locator('#camp-task-rewards').innerText(),/本局无此项奖励/);
-  assert.match(await p.locator('#harvest-rewards').innerText(),/伙伴.*招式机/s);
+  assert.equal(await p.locator('#harvest-rewards [aria-label="伙伴与碎片收获"]').count(),1);assert.match(await p.locator('#harvest-rewards').innerText(),/本次收获 \d+.*招式机 \d+/s);
   const after=await p.evaluate(()=>window.trial.profile());assert.equal(after.expeditions,before.expeditions+1);
   assert.deepEqual(after.roster,before.roster.map(i=>({...i,tactic:'wait'})),'both partners return and keep the in-run tactic');assert.deepEqual(after.rescue,before.rescue);assert.equal(after.account,before.account);
   assert.deepEqual(after.vault,before.vault);assert.equal(await raw(p),null,'developer fixture remains in memory');
@@ -925,14 +934,14 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
     let s=await state(p);assert.equal(s.scenario,'expedition');assert.deepEqual(s.queue,['A','B']);assert.equal(s.units.A.species,'treecko');assert.equal(s.leader,'A');assert.equal(s.units.A.tactic,'followme');assert.equal(s.units.B.tactic,'avoid');
     assert.match(await p.locator('#goal-label').innerText(),/Lv5 · 升级经验 0\/5/);assert.match(await p.locator('#goal-label').innerText(),/升到下一级需当前等级经验/);
    assert.equal(await raw(p),campBeforeRun,'departure leaves the selected camp tactics in the saved profile');
-   const beforeMenu=structuredClone(s);await click(p,'detail-1');await p.locator('#hud-tactic').selectOption('wait');await p.waitForFunction(()=>window.trial.getState().units.B.tactic==='wait');
+   const beforeMenu=structuredClone(s);await click(p,'detail-1');await p.locator('[data-detail-tactic="wait"]').click();await p.waitForFunction(()=>window.trial.getState().units.B.tactic==='wait');
    beforeMenu.units.B.tactic='wait';assert.deepEqual(await state(p),beforeMenu,'changing a maze tactic changes only that unit and does not advance a round');assert.equal(await raw(p),campBeforeRun);
   assert.equal(await p.locator('#guide-card').count(),0,'maze view does not show the old explanatory guide');
   assert.equal(await p.locator('#guide-close').count(),0,'the in-canvas HUD replaces the first-run guide controls');
   const overflow=await p.evaluate(()=>({scrollY:window.scrollY,scrollX:window.scrollX,scrollHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,clientHeight:document.documentElement.clientHeight,clientWidth:document.documentElement.clientWidth}));
   assert.equal(overflow.scrollY,0);assert.equal(overflow.scrollX,0);assert.ok(overflow.scrollHeight<=overflow.clientHeight&&overflow.scrollWidth<=overflow.clientWidth,'the full-screen maze HUD does not require page scrolling');
    // Team tactic details stay available from the in-frame member card.
-   await p.locator('#unit-card-B').hover();assert.equal(await p.locator('#unit-info').count(),0);assert.equal(await p.locator('#hud-tactic').inputValue(),'wait','the explicitly opened member details preserve the chosen tactic');
+   await p.locator('#unit-detail-close').click();await p.locator('#unit-card-B').hover();assert.equal(await p.locator('#unit-info').count(),0);await click(p,'detail-1');assert.equal(await p.locator('[data-detail-tactic="wait"]').getAttribute('aria-pressed'),'true','the explicitly opened member details preserve the chosen tactic');await p.locator('#unit-detail-close').click();
   for(const k of ['ArrowRight','ArrowDown','ArrowLeft','ArrowUp']){await p.keyboard.press(k);await ready(p);if((await state(p)).round>0)break;}
    assert.ok((await state(p)).round>0,'a real key press advanced the run');assert.equal(await raw(p),campBeforeRun,'run actions do not change the camp record');
   assert.ok((await p.locator('#recent-list li').count())>0,'recent events are visible');
@@ -1404,7 +1413,7 @@ await test('结算8.1：首领倒下后自动胜利，三组奖励与招式机�
   const ended=await state(p);assert.equal(ended.phase,'ended');assert.equal(ended.end.outcome,'won');assert.equal(ended.end.boss,true);
   assert.ok(ended.end.tms.some(t=>t.source==='boss'&&t.fate==='brought'));
   assert.equal(ended.dungeon.roguelike,true);
-  const resultText=await p.locator('.result').innerText();assert.match(resultText,/讨伐首领：成功/);
+  const resultText=await p.locator('.result').innerText();assert.equal(await p.locator('.settlement-heading h2').innerText(),'击败首领');assert.equal((await state(p)).end.boss,true);
   assert.doesNotMatch(resultText,/目标(?:已完成|未完成)|正常带出/);
   assert.match(await p.locator('.result').innerText(),/击败首领/);
   for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
@@ -1712,10 +1721,10 @@ await test('8.5 结算：三组奖励、五项经验与升级显示',async()=>{
   assert.equal((await state(p)).phase,'ended');assert.equal((await state(p)).end.outcome,'wipe');
   for(const id of ['depth-rewards','harvest-rewards','camp-task-rewards'])await p.locator('#'+id).waitFor();
   const score=await p.locator('#rank-breakdown').innerText();
-  assert.match(score,/深度：\+1/);assert.match(score,/击败首领：\+0/);assert.match(score,/完成委托：\+2/);
-  assert.match(score,/新招募伙伴：\+0/);assert.match(score,/带回招式机：\+0/);
-  assert.match(await p.locator('#rank-gain').innerText(),/经验 \+3.*5 → 8/);
-  assert.match(await p.locator('#rank-level-change').innerText(),/Lv1 → Lv2.*1 个天赋点/);
+  assert.match(score,/到达第 1 层\s*\+1/);assert.match(score,/完成委托 2 个\s*\+2/);
+  assert.doesNotMatch(score,/击败首领|新伙伴|带回招式机/,'zero rewards are omitted in the approved layout');assert.deepEqual(await p.evaluate(()=>{const r=window.trial.store.settlementSummary.rank;return [r.boss,r.recruits,r.tms];}),[0,0,0]);
+  assert.match(await p.locator('#rank-gain').getAttribute('aria-label'),/经验 \+3.*5 → 8/);
+  assert.match(await p.locator('#rank-level-change').getAttribute('aria-label'),/Lv1 → Lv2.*1 个天赋点/);
   await p.screenshot({path:artifact+'windows-85-rank-settlement.png',fullPage:true});
   assert.equal(await raw(p),null);assert.deepEqual(errors,[]);
   return {fixtureBoundary:'预置营地经验5、两条已完成委托及只剩1HP的同行；真实等待触发全灭与结算，开发者夹具不写存档。',rankBefore:5,rankAfter:8};
@@ -1981,7 +1990,7 @@ await test('#194 全部物品说明、敌招分行与队友显式详情',async()
   await p.locator('[data-bag-item="healSeed"]').click();assert.match(await p.locator('#hud-bag').innerText(),/中毒|异常|冰冻/,'selection retains a readable effect description');
   await p.locator('#bag-close').click();
   const party=p.locator('#party [id^="unit-card-"]').first();await party.hover();assert.equal(await p.locator('#unit-info').count(),0,'party hover does not open a second inspector');
-  await p.locator('[data-hud-details]').first().click();assert.ok(await p.locator('.hud-member-options').isVisible(),'explicit details still opens member controls');await p.locator('#actions-open').click();
+  await p.locator('[data-hud-details]').first().click();assert.ok(await p.locator('#unit-details-dialog').isVisible(),'explicit details still opens member controls');await p.locator('#unit-detail-close').click();
   const map=await p.evaluate(()=>({v:window.trial.view(),cam:window.trial.camera()})),bounds=await p.locator('canvas').boundingBox(),g=map.v.geometry;
   await p.mouse.move(bounds.x+(g.ox+(11-g.minX+.5)*g.cell-map.cam.x)*bounds.width/map.v.cameraView.width,bounds.y+(g.oy+(10-g.minY+.5)*g.cell-map.cam.y)*bounds.height/map.v.cameraView.height);
   await p.locator('#enemy-info').waitFor();
@@ -2184,6 +2193,8 @@ await test('#194 #360 真实敌人换层后例行日志与旧敌人编号保持�
 await test('8.9b #193 桌面学招、四招、相性与睡眠自动推进',()=>step193Checks({setup,startMemory,state,ready,cell,artifact,width:1280,height:720}));
 await test('8.9b #193 手机学招、四招、相性与睡眠自动推进',()=>step193Checks({setup,startMemory,state,ready,cell,artifact,width:390,height:844}));
 
+for(const [width,height] of [[1280,720],[900,720],[390,844]])await test('#194 新版窗口 '+width+'：详情、设置、结算及溢出',()=>panels194Checks({setup,startMemory,state,ready,cell,artifact,width,height}));
+await test('#194 新版窗口 睡眠与键盘隔离',()=>panels194SleepChecks({setup,startMemory,state,ready,artifact}));
 await browser.close();
 clearTimeout(browserDeadline);
 if(results.some(r=>r.status!=='PASS'))process.exitCode=1;

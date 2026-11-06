@@ -42,7 +42,8 @@ const state=()=>page.evaluate(()=>window.trial.getState());
 const envelope=()=>page.evaluate(()=>window.trial.store.envelope);
 const raw=()=>page.evaluate(()=>localStorage.getItem(window.trial.store.key));
 const click=async id=>{
- if(id==='open-settings'&&await page.locator('#hud-settings').isVisible())id='hud-settings';
+ if(id==='open-settings'&&await page.locator('#result-settings').isVisible())id='result-settings';
+ else if(id==='open-settings'&&await page.locator('#hud-settings').isVisible())id='hud-settings';
  if(id.startsWith('use-')){
   const item=id.slice(4),inventory=await state();
   assert.ok((inventory.prog?.items?.[item]??0)>0,'the selected consumable must exist in the visible party inventory');
@@ -188,7 +189,7 @@ function assertMovementOutcome(before,after,requested){
 async function roundTrip(label){
  const before=await envelope();
  assert.deepEqual(Object.keys(before).sort(),['build','content','format','profile','rules','sequence'],label+' contains only camp data');
- await click('open-settings');
+ await click('open-settings');await page.locator('#settings-tab-save').click();
  const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#save-export').click()]);
  const bytes=fs.readFileSync(await download.path(),'utf8');
  assert.deepEqual(JSON.parse(bytes),before,label+' export');

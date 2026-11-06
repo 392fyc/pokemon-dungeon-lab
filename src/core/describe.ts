@@ -30,8 +30,8 @@ export function moveEffectLabel(id:string,context?:DamageSummaryContext):string{
     else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
     else if(effect==='recoil'){const r=moveEffects(id)?.recoil;if(r)parts.push(`承受实际伤害的${r[0]}/${r[1]}反作用（向下取整，至少1；未造成伤害时不扣HP）`);}
     else if(effect==='rest')parts.push('自身进入打盹2—3轮；结束时回满HP并解除全部异常');
-    else if(effect==='snore')parts.push('睡眠或打盹中受到对方直接攻击且未醒来时，对攻击者发动；不受射程限制且不造成畏缩');
-    else if(effect==='sleeptalk')parts.push('睡眠或打盹中受到对方直接攻击且未醒来时，随机发动一招；不受射程限制');
+    else if(effect==='snore')parts.push('睡眠或打盹中受到敌人直接攻击且未醒来时，对攻击者发动；不受射程限制且不造成畏缩');
+    else if(effect==='sleeptalk')parts.push('睡眠或打盹中受到敌人直接攻击且未醒来时，随机发动一招；不受射程限制');
     else if(effect==='heal:1:2')parts.push(`${spec.target==='party'?'同房间全队':'自身'}回复各自最大HP的一半（四舍五入，不超过上限）`);
     else if(effect.startsWith('status:'))parts.push(`命中后施加${STATUS_NAMES[effect.slice(7) as StatusId]}`);
     else if(effect==='protect')parts.push('自身受到敌方攻击伤害为0（3个敌方阶段）');
@@ -68,8 +68,8 @@ export function actionText(s:World,actor:string,a:Action):string {
   const who=(id:string)=>unitLabel(s.units[id],id);
   switch(a.type){
     case 'move':return `移动到(${a.to.x},${a.to.y})`;
-    case 'basic':return `普攻 ${who(a.target)}`;
-    case 'basicForward':return '朝前普攻';
+    case 'basic':return `普通攻击 ${who(a.target)}`;
+    case 'basicForward':return '向前普通攻击';
     case 'skill':return `${skillLabel(s.units[actor],a.skill)} → ${a.target===actor?'自身':who(a.target)}`;
     case 'swap':return `与${who(a.target)}换位`;
     case 'use':return a.item==='teamTonic'?`使用${itemZh(a.item)}恢复在场同行的PP`:`使用${itemZh(a.item)} → ${who(a.target)}`;
@@ -113,6 +113,12 @@ export function teammateInfo(s:World,id:string,targetId?:string):TeammateInfo|nu
 }
 
 const escapeRe=(t:string)=>t.replace(/[.*+?^$|()[\]{}\\]/g,'\\$&');
+/** Player-facing prose only. Official move descriptions and keeper dialogue bypass this helper. */
+export function playerText(text:string):string {
+ let value=text.replace(/向-?\d+,-?\d+挥空/g,'普通攻击挥空');
+ for(const [from,to] of [["普攻","普通攻击"],["朝前","向前"],["回到","返回"],["带上","携带"],["教给","学习"],["贴住","紧跟"],["贴身","相邻"],["追最近","追击最近"],["没打中","没有命中"],["打不到","无法攻击"],["打空","挥空"]])value=value.split(from).join(to);
+ return value;
+}
 /** Turns unit, species and move ids in a log line into readable player-facing names. */
 export function localizeLog(s:World,line:string):string {
   const units:Record<string,Unit>={...s.units};
@@ -126,7 +132,8 @@ export function localizeLog(s:World,line:string):string {
   for(const id of ids){const u=units[id];guard(id,unitName(u));}
   for(const id of Object.keys(SPECIES))guard(id,speciesZh(id));
   for(const move of Object.keys(MOVE_DEFS))guard(move,moveZh(move));
+  out=playerText(out);
   for(const [token,to] of swaps)out=out.split(token).join(to);
   return out.replace(/全员\s*PP\s*补剂/g,itemZh('teamTonic'));
 }
-export const skillSummary=(u:Unit):string=>u.learned.length?u.learned.map(k=>skillLabel(u,k)).join('、'):'普攻';
+export const skillSummary=(u:Unit):string=>u.learned.length?u.learned.map(k=>skillLabel(u,k)).join('、'):'普通攻击';

@@ -272,7 +272,7 @@ function applyStatus(s:World,targetId:string,kind:StatusId):void {
   if(kind==='slp'&&(hasStatus(t,'slp')||hasStatus(t,'nap')))return;
   if(kind==='psn'&&hasStatus(t,'tox')){note(s,`${targetId}已经是剧毒，仍保持剧毒`);emit(s,{type:'status',target:targetId,status:'tox',change:'unchanged'});return;}
   const had=hasStatus(t,kind),interval=STATUS_INTERVAL[kind];
-  if(kind==='slp'&&t.asleep){t.asleep=false;t.wakeSkip=false;note(s,targetId+'由出生时睡着转为睡眠状态');}
+  if(kind==='slp'&&t.asleep){t.asleep=false;t.wakeSkip=false;note(s,targetId+'出生时的睡眠转为招式造成的睡眠状态');}
   if(kind==='frz'&&dropStatus(t,'brn'))note(s,`${targetId}的灼伤被冰冻顶掉`);
   if(kind==='brn'&&dropStatus(t,'frz'))note(s,`${targetId}的冰冻被灼伤顶掉`);
   if(kind==='tox'&&dropStatus(t,'psn'))note(s,`${targetId}的中毒被剧毒顶掉`);
@@ -980,7 +980,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   const t=s.units[a.target];if(!alive(t)||(!s.queue.includes(t.id)&&!s.enemies.includes(t.id)))return '目标不存在或已倒下';
   if(!s.seen.includes(key(t.pos)))return '目标尚未发现';
   if(a.type==='swap')return !s.queue.includes(t.id)||id===t.id||!adjacent(s,u.pos,t.pos)?'只能与相邻存活伙伴换位':null;
-  if(a.type==='basic')return t.side===u.side||!adjacent(s,u.pos,t.pos)?'普攻需要相邻对方（斜向相邻也算，但不能穿过墙角）':null;
+  if(a.type==='basic')return t.side===u.side||!adjacent(s,u.pos,t.pos)?'普通攻击只能指定相邻敌人（斜向相邻也算，但不能穿过墙角）':null;
   if(!u.learned.includes(a.skill)||(u.pp[a.skill]??0)<1)return '未装备该招式或PP不足';
   const spec=moveOf(a.skill);if(!spec)return '招式数据不存在';
   if(a.skill==='snore'||a.skill==='sleeptalk')return '打鼾和梦话只能在睡眠中受直接攻击时触发';
@@ -991,7 +991,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
     if(!moveTargetsInReach(s,id,spec).length)return spec.range==='room'?'范围内没有能受此招式影响的单位':'招式无法作用于使用者';
     return null;
   }
-  if(!targetKindMatches(s,id,t,spec))return spec.target==='enemy'?'该招式只能指定对方阵营':spec.target==='teammates'?'该招式只能指定己方其他单位':spec.target==='user'?'该招式只能指定使用者自己':'目标阵营不符合招式要求';
+  if(!targetKindMatches(s,id,t,spec))return spec.target==='enemy'?'该招式只能指定与使用者不同阵营的目标':spec.target==='teammates'?'该招式只能指定己方其他单位':spec.target==='user'?'该招式只能指定使用者自己':'目标阵营不符合招式要求';
   if(!moveTargetsInReach(s,id,spec).some(v=>v.id===t.id))return moveRangeProblem(s,u,t,spec);
   if(t.boss&&!bossCanBeBlownAway(t)&&spec.effects.includes('blowaway')&&!spec.effects.includes('damage'))return '首领不能被吹飞';
   return null;
@@ -1111,7 +1111,7 @@ function onDirectDamageToSleeper(s:World,owner:Unit,attacker:Unit,blockingGuard:
 function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set(),thaw=false,skill?:Skill,suppressSleepTrigger=false,createdGuard:Set<string>=new Set()):number {
   const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
   const amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill);
-  if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,targetId+'被打中而解冻');emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
+  if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,targetId+'受到火系招式或热水攻击后解冻');emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
   const hpBefore=target.hp,effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
   hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});
   const actual=hpBefore-target.hp;
@@ -1184,7 +1184,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
     confusedDirection=true;
     const found=confusedStrike(s,actor,RANGE_CELLS[spec.range]);
     targets=found?[found]:[];
-    if(!found)note(s,`${id}的招式没有打到任何单位`);
+    if(!found)note(s,`${id}的招式未命中任何目标`);
   }
   if(!confusedDirection&&attackTarget&&actor.pos){
     const aimed=s.units[a.target];if(alive(aimed)&&aimed.id!==id)faceToward(actor,actor.pos,aimed.pos);
@@ -1231,7 +1231,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
     if(effect==='reflect'||effect==='lightscreen'){
       for(const target of landed)if(alive(target)&&target.side===actor.side){
         target[effect]=10;
-        note(s,`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续10个对方行动阶段`);
+        note(s,`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续10个${target.side==='enemy'?'我方':'敌方'}行动阶段`);
       }
       continue;
     }
@@ -1295,7 +1295,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     // 8.8 (G5.1): a basic attack always hits unless its user's accuracy stage is lowered; a confused attacker strikes a random direction.
     let target:string|undefined=a.target;
     const confused=hasStatus(u,'confusion');
-    if(confused){const found=confusedStrike(s,u as Unit&{pos:Pos},1);target=found?.id;if(!found)note(s,`${id}的普攻没有打到任何单位`);}
+    if(confused){const found=confusedStrike(s,u as Unit&{pos:Pos},1);target=found?.id;if(!found)note(s,`${id}的普通攻击未命中任何目标`);}
     if(target!==undefined){
       const victim=s.units[target];
       if(alive(victim)&&u.pos){if(!confused)faceToward(u,u.pos,victim.pos);if(victim.id!==id)faceToward(victim,victim.pos,u.pos);}
@@ -1476,7 +1476,7 @@ function decayOpponentStatuses(s:World,actedSide:Unit['side']):void {
 }
 function wakeAdjacentEnemies(s:World):void {
   for(const id of s.enemies){const e=s.units[id];if(!alive(e)||!e.asleep)continue;
-    if(s.queue.some(q=>alive(s.units[q])&&adjacent(s,e.pos,s.units[q].pos!))){e.asleep=false;e.wakeSkip=true;note(s,`${id}被相邻的对方惊醒，本回合不行动`);}
+    if(s.queue.some(q=>alive(s.units[q])&&adjacent(s,e.pos,s.units[q].pos!))){e.asleep=false;e.wakeSkip=true;note(s,`${id}被相邻的队员惊醒，本回合不行动`);}
   }
 }
 /** 8.8 (G5.13): why the unit's chosen action cannot happen because of a status condition, or null. */

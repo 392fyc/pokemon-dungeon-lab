@@ -49,7 +49,7 @@ test('V1 names B as the preceding mover, including in a planned combination',()=
 });
 test('other explicit action rejections also state that the round did not execute',()=>{
  const s=createMain('other-reasons',false);
- denied(s,round({type:'basic',target:'E'}),/普攻需要相邻对方/);
+ denied(s,round({type:'basic',target:'E'}),/普通攻击只能指定相邻敌人/);
  denied(s,round({type:'move',to:{x:5,y:1}}),/只能移动到相邻格/);
  denied(s,round({type:'skill',skill:'protect',target:'B'}),/未装备该招式或PP不足/);
  denied(s,round({type:'swap',target:'A'}),/只能与相邻存活伙伴换位/);

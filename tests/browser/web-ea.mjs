@@ -45,11 +45,13 @@ async function clickCell(page,pos){
 }
 const capture=name=>p.screenshot({path:'.artifacts/trial/title-load-'+name+'.png',fullPage:true});
 async function upload(text,accept=true){
+ await p.locator('#settings-tab-save').click();
  p.once('dialog',async d=>{assert.match(d.message(),/覆盖当前存档/);await (accept?d.accept():d.dismiss());});
  await p.locator('#save-file').setInputFiles({name:'save.json',mimeType:'application/json',buffer:Buffer.from(text)});
  await p.waitForFunction(()=>!document.querySelector('#settings-close').disabled);
 }
 async function exported(){
+ await p.locator('#settings-tab-save').click();
  const [download]=await Promise.all([p.waitForEvent('download'),p.locator('#save-export').click()]);
  return fs.readFileSync(await download.path(),'utf8');
 }
@@ -62,10 +64,10 @@ try{
  assert.equal(await p.evaluate(()=>performance.getEntriesByType('resource').some(r=>/\/phaser-.*\.js/.test(r.name))),false,'title must not load Phaser');
  assert.equal(scriptRequests.some(url=>/\/game-data-.*\.js/.test(url)),false,'idle title must not request game data');
  assert.ok(scriptRequests.length>0&&scriptRequests.every(url=>/\/index-.*\.js/.test(url)),'idle title requests only the small entry script');
- await p.locator('#title-settings').click();await p.locator('#anim-toggle').uncheck();
+ await p.locator('#title-settings').click();await p.locator('#anim-off').click();
  assert.ok(scriptRequests.some(url=>/\/game-data-.*\.js/.test(url)),'entering settings loads the existing save validator and game data');
- assert.match(await p.locator('#settings').innerText(),/设置与存档/);
- await p.locator('#settings summary').click();const help=await p.locator('#settings').innerText();assert.match(help,/按住方向键连续移动/);assert.match(help,/碰墙只转身/);assert.match(help,/F 朝前普攻，打空也占一轮/);
+ assert.match(await p.locator('#settings-heading').innerText(),/设置/);
+ await p.locator('#settings-tab-keys').click();const help=await p.locator('#settings-pane-keys').innerText();for(const text of ['W','A','S','D','斜向移动','F','向前普通攻击','Tab','切换操控','B','背包','等待'])assert.ok(help.includes(text),'key instructions include '+text);
  await p.locator('#settings-close').click();await p.reload();await p.locator('#title-settings').click();
  assert.equal(await p.locator('#anim-toggle').isChecked(),false);await p.locator('#settings-close').click();
  result.checks.push('静止标题只请求入口脚本、不请求 Phaser 或数据块；主动打开设置才加载存档校验；动画偏好重载保留，设置含按键说明');

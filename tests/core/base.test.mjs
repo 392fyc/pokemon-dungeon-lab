@@ -96,16 +96,22 @@ test('B4 learning: a compatible machine teaches and is used up; incompatible or 
  assert.equal(learnTm(p,'P9','protect').ok,false);
 });
 
-test('B5 carry: at most two distinct learned moves, only learned ones; taking one off keeps it learned',()=>{
- let p=learnTm(withVault({protect:1}),'P1','protect').profile;
- const c=setCarry(p,'P1',['scratch','protect']);assert.equal(c.ok,true);
- assert.deepEqual(c.profile.roster[0].carry,['scratch','protect']);
- assert.deepEqual(c.profile.roster[0].learned.map(l=>l.move),['scratch','ember','protect']);
- assert.equal(setCarry(p,'P1',['scratch','ember','protect']).ok,false,'three moves');
+test('B5 carry: four distinct learned moves are legal; a fifth, an unknown move, or a duplicate is refused',()=>{
+ let p=withVault({protect:1,roar:1,swordsdance:1});
+ for(const move of ['protect','roar','swordsdance']){
+  const learned=learnTm(p,'P1',move);assert.equal(learned.ok,true,learned.error);p=learned.profile;
+ }
+ const fourMoves=['scratch','ember','protect','roar'];
+ const c=setCarry(p,'P1',fourMoves);assert.equal(c.ok,true);
+ assert.deepEqual(c.profile.roster[0].carry,fourMoves);
+ assert.deepEqual(c.profile.roster[0].learned.map(l=>l.move),['scratch','ember','protect','roar','swordsdance']);
+ assert.deepEqual(decode(JSON.stringify(envelope({profile:c.profile}))).profile.roster[0].carry,fourMoves,'strict save validation accepts four carried moves');
+ const fifth=setCarry(p,'P1',[...fourMoves,'swordsdance']);assert.equal(fifth.ok,false,'five moves');assert.match(fifth.error,/最多携带4招/);
  assert.equal(setCarry(p,'P1',['scratch','whirlwind']).ok,false,'not learned');
  assert.equal(setCarry(p,'P1',['scratch','scratch']).ok,false,'same move twice');
- // Scratch and Ember both deal front damage, but are distinct moves and may be carried together.
- assert.equal(setCarry(p,'P1',['scratch','ember']).ok,true);
+ // Taking a move off the carried list does not remove it from the learned list.
+ const fewer=setCarry(c.profile,'P1',['scratch','ember']);assert.equal(fewer.ok,true);
+ assert.deepEqual(fewer.profile.roster[0].learned.map(l=>l.move),c.profile.roster[0].learned.map(l=>l.move));
  assert.equal(setCarry(p,'P1',[]).ok,true);
 });
 
@@ -265,7 +271,7 @@ test('B19 tampered profiles and records are refused on load',()=>{
   ['learned move not learnable',e=>{e.profile.roster[0].learned.push({move:'hyperbeam',pp:1});}],
   ['learned move outside the species list',e=>{e.profile.roster[0].learned[0].move='quickattack';}],
   ['carry not learned',e=>{e.profile.roster[0].carry=['scratch','protect'];}],
-  ['carry three',e=>{e.profile.roster[0].learned.push({move:'protect',pp:1});e.profile.roster[0].carry=['scratch','ember','protect'];}],
+  ['carry five',e=>{e.profile.roster[0].learned.push({move:'protect',pp:10},{move:'roar',pp:14},{move:'swordsdance',pp:7});e.profile.roster[0].carry=['scratch','ember','protect','roar','swordsdance'];}],
   ['carry a move not learnable by the species',e=>{e.profile.roster[2].learned.push({move:'roar',pp:2});e.profile.roster[2].carry=['tackle','roar'];}],
   ['negative machine count',e=>{e.profile.vault={protect:-1};}],
   ['fractional machine count',e=>{e.profile.vault={protect:1.5};}],

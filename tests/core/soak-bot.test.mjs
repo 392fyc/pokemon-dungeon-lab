@@ -54,10 +54,10 @@ test('S81 all four policies finish only by boss victory or wipe, with settlement
  }
 });
 
-// 固定 seed 96028（playSeed 索引 12）验证 hard 难度传入真实局，且 cautious 继续寻找首领。
+// 固定 seed 8919（playSeed 索引 1；#193 相性与等级装配后的样本）验证 hard 难度传入真实局，且 cautious 继续寻找首领。
 // 该样本不用于声明 8.6 机器人改版后仍是较小索引中的最早接触样本。
 test('S81 difficult setting is passed into real expeditions and cautious keeps seeking the boss',async()=>{
- const result=await playSeed(12,{policy:'cautious',difficulty:'hard'});
+ const result=await playSeed(1,{policy:'cautious',difficulty:'hard'});
  assert.equal(result.difficulty,'hard');
  assert.equal(result.games.filter(g=>g.outcome==='timeout').length,0);
  assert.ok(result.st.reachedBoss>0,'cautious did not reach the boss floor');

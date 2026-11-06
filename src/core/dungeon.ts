@@ -13,9 +13,9 @@ import {SPECIES,BOSS_CONFIG,speciesMaxHp,tmPool} from './roster.ts';
 import rooms83 from '../data/rooms-83.json' with {type:'json'};
 import terrainThemesJson from '../data/terrain-themes.json' with {type:'json'};
 export {BOSS_CONFIG} from './roster.ts';
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'healSeed'|'rest'|'shop'|'exchange';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'rest'|'shop'|'exchange';
 /** 8.8 (#165, G3.x): what a floor item point holds, with its weight in percent (WORKING CANDIDATE). */
-export const FLOOR_ITEM_WEIGHTS:readonly (readonly [PointKind,number])[]=[['berry',40],['pechaBerry',15],['rawstBerry',15],['cheriBerry',15],['healSeed',15]];
+export const FLOOR_ITEM_WEIGHTS:readonly (readonly [PointKind,number])[]=[['berry',35],['pechaBerry',13],['rawstBerry',13],['cheriBerry',13],['chestoBerry',13],['healSeed',13]];
 export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
 export type EnemySpec={id:string;species:string;level:number;hp:number;pos:Cell;post?:Cell;boss?:true;asleep?:boolean};
 export type Room={x:number;y:number;w:number;h:number};
@@ -158,7 +158,7 @@ function makeAdventureRooms(seed:number,level:number,layout:AdventureLayout):Adv
   });
 }
 /** Pre-draw a challenge fight and its reward from streams independent of map, ordinary enemies, and expedition recruitment. */
-export function generateChallengeEncounter(seed:number,level:number,difficulty:Difficulty,bossEnabled:boolean,tmPoolVersion?:3|4):ChallengeEncounter {
+export function generateChallengeEncounter(seed:number,level:number,difficulty:Difficulty,bossEnabled:boolean,tmPoolVersion?:3|4|5):ChallengeEncounter {
   const countRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeCount));
   const speciesRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeSpecies));
   const levelRandom=mulberry32(adventureSeed(seed,level,ADVENTURE_STREAMS.challengeLevel));

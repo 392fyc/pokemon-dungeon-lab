@@ -4,13 +4,14 @@
   "files": {
    "learnsets.json": "cedbe661968e2d69abe9f317e9a3f5d4f2dcf989e1f937cb0cdd72e7af29ab8f",
    "moves.json": "26909a321a7e4528d14a7dffd24173aa03a6845776cf41c39cc3d76f8e14616b",
-   "pokedex.json": "e74d0364b230001fc086cefb4259e051f1d16a4730eb89f7d6336a88a0d9a47e"
+   "pokedex.json": "e74d0364b230001fc086cefb4259e051f1d16a4730eb89f7d6336a88a0d9a47e",
+   "typechart.ts": "7b0eae126bdcf98edfd71cbe75af00b763f5f0d5db36024b6f3e7c5e4aea95ac"
   },
-  "url": "https://play.pokemonshowdown.com/data/<name>.json",
+  "url": "https://play.pokemonshowdown.com/data/<name>.json and the pinned GitHub typechart.ts source",
   "downloaded": "2026-10-30",
   "githubCommit": "ccfaa20f32af363569cd21a9d501b2bc1ded26b1",
   "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建",
-  "note": "图鉴1–151完整基础形态，并保留旧23种及其15种后续形态。learnsetGen按最新有升级招式的世代决定；原160种既有字段保留，仅追加进化与分类字段。"
+  "note": "图鉴1–151完整基础形态，并保留旧23种及其15种后续形态。learnsetGen按最新有升级招式的世代决定；levelUp仅收准入招式的等级记录，排除L1并保留L0。"
  },
  "species": [
   {
@@ -108,8 +109,20 @@
      "pp": 12
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -150,6 +163,53 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 3,
+     "move": "vinewhip",
+     "pp": 15
+    },
+    {
+     "level": 12,
+     "move": "razorleaf",
+     "pp": 12
+    },
+    {
+     "level": 15,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 15,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 18,
+     "move": "seedbomb",
+     "pp": 11
+    },
+    {
+     "level": 21,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 24,
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
+     "level": 27,
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "level": 33,
+     "move": "powerwhip",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[bulbasaur]; learnsets.json[bulbasaur] 第9世代; moves.json",
@@ -313,6 +373,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -335,6 +399,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smokescreen",
@@ -363,6 +431,53 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "ember",
+     "pp": 15
+    },
+    {
+     "level": 8,
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
+     "level": 12,
+     "move": "dragonbreath",
+     "pp": 12
+    },
+    {
+     "level": 17,
+     "move": "firefang",
+     "pp": 13
+    },
+    {
+     "level": 20,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 24,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 32,
+     "move": "firespin",
+     "pp": 19
+    },
+    {
+     "level": 36,
+     "move": "inferno",
+     "pp": 15
+    },
+    {
+     "level": 40,
+     "move": "flareblitz",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[charmander]; learnsets.json[charmander] 第9世代; moves.json",
@@ -486,6 +601,14 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -524,6 +647,53 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 3,
+     "move": "watergun",
+     "pp": 17
+    },
+    {
+     "level": 6,
+     "move": "withdraw",
+     "pp": 16
+    },
+    {
+     "level": 9,
+     "move": "rapidspin",
+     "pp": 17
+    },
+    {
+     "level": 12,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 15,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 18,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 24,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 30,
+     "move": "irondefense",
+     "pp": 16
+    },
+    {
+     "level": 33,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[squirtle]; learnsets.json[squirtle] 第9世代; moves.json",
@@ -628,8 +798,20 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "sandattack",
      "pp": 20
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "steelwing",
@@ -662,6 +844,53 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 9,
+     "move": "gust",
+     "pp": 19
+    },
+    {
+     "level": 13,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 17,
+     "move": "whirlwind",
+     "pp": 27
+    },
+    {
+     "level": 21,
+     "move": "twister",
+     "pp": 15
+    },
+    {
+     "level": 25,
+     "move": "featherdance",
+     "pp": 22
+    },
+    {
+     "level": 33,
+     "move": "wingattack",
+     "pp": 20
+    },
+    {
+     "level": 49,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 53,
+     "move": "hurricane",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[pidgey]; learnsets.json[pidgey] 第7世代; moves.json",
@@ -773,6 +1002,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
     },
@@ -783,6 +1016,14 @@
     {
      "move": "shockwave",
      "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "suckerpunch",
@@ -827,6 +1068,43 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 10,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 13,
+     "move": "pursuit",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "hyperfang",
+     "pp": 13
+    },
+    {
+     "level": 22,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 25,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 31,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[rattata]; learnsets.json[rattata] 第7世代; moves.json",
@@ -935,6 +1213,18 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
+    },
+    {
      "move": "steelwing",
      "pp": 10
     },
@@ -957,6 +1247,28 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "leer",
+     "pp": 27
+    },
+    {
+     "level": 8,
+     "move": "pursuit",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "aerialace",
+     "pp": 8
+    },
+    {
+     "level": 36,
+     "move": "drillpeck",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[spearow]; learnsets.json[spearow] 第7世代; moves.json",
@@ -1096,6 +1408,14 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "spark",
      "pp": 15
     },
@@ -1146,6 +1466,53 @@
     {
      "move": "wildcharge",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "level": 8,
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "feint",
+     "pp": 12
+    },
+    {
+     "level": 20,
+     "move": "spark",
+     "pp": 15
+    },
+    {
+     "level": 28,
+     "move": "irontail",
+     "pp": 10
+    },
+    {
+     "level": 32,
+     "move": "discharge",
+     "pp": 8
+    },
+    {
+     "level": 36,
+     "move": "thunderbolt",
+     "pp": 10
+    },
+    {
+     "level": 40,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 44,
+     "move": "thunder",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[pikachu]; learnsets.json[pikachu] 第9世代; moves.json",
@@ -1234,6 +1601,10 @@
      "pp": 8
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "leechlife",
      "pp": 19
     },
@@ -1258,12 +1629,24 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "steelwing",
@@ -1296,6 +1679,53 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "astonish",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "poisonfang",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "quickguard",
+     "pp": 13
+    },
+    {
+     "level": 25,
+     "move": "aircutter",
+     "pp": 17
+    },
+    {
+     "level": 30,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 40,
+     "move": "venoshock",
+     "pp": 16
+    },
+    {
+     "level": 45,
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
+     "level": 50,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 55,
+     "move": "leechlife",
+     "pp": 19
     }
    ],
    "source": "pokedex.json[zubat]; learnsets.json[zubat] 第8世代; moves.json",
@@ -1412,6 +1842,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -1422,6 +1856,10 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -1442,6 +1880,33 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "bulldoze",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "rockthrow",
+     "pp": 16
+    },
+    {
+     "level": 18,
+     "move": "smackdown",
+     "pp": 15
+    },
+    {
+     "level": 40,
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "level": 42,
+     "move": "stoneedge",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[geodude]; learnsets.json[geodude] 第9世代; moves.json",
@@ -1553,8 +2018,16 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sweetscent",
@@ -1579,6 +2052,53 @@
     {
      "move": "vinewhip",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 6,
+     "move": "razorleaf",
+     "pp": 12
+    },
+    {
+     "level": 9,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 12,
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "level": 17,
+     "move": "reflect",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "magicalleaf",
+     "pp": 8
+    },
+    {
+     "level": 28,
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
+     "level": 31,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 34,
+     "move": "bodyslam",
+     "pp": 17
+    },
+    {
+     "level": 42,
+     "move": "gigadrain",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[chikorita]; learnsets.json[chikorita] 第9世代; moves.json",
@@ -1714,8 +2234,16 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smokescreen",
@@ -1744,6 +2272,68 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 6,
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
+     "level": 10,
+     "move": "ember",
+     "pp": 15
+    },
+    {
+     "level": 13,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 19,
+     "move": "flamewheel",
+     "pp": 11
+    },
+    {
+     "level": 22,
+     "move": "defensecurl",
+     "pp": 16
+    },
+    {
+     "level": 28,
+     "move": "flamecharge",
+     "pp": 17
+    },
+    {
+     "level": 31,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 37,
+     "move": "lavaplume",
+     "pp": 10
+    },
+    {
+     "level": 40,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 46,
+     "move": "inferno",
+     "pp": 15
+    },
+    {
+     "level": 55,
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "level": 58,
+     "move": "overheat",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[cyndaquil]; learnsets.json[cyndaquil] 第9世代; moves.json",
@@ -1883,6 +2473,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -1905,6 +2499,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "superpower",
@@ -1941,6 +2539,53 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 6,
+     "move": "watergun",
+     "pp": 17
+    },
+    {
+     "level": 9,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 19,
+     "move": "icefang",
+     "pp": 15
+    },
+    {
+     "level": 27,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 30,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 33,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 41,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 45,
+     "move": "superpower",
+     "pp": 11
+    },
+    {
+     "level": 50,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[totodile]; learnsets.json[totodile] 第9世代; moves.json",
@@ -2068,6 +2713,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -2092,6 +2741,10 @@
      "pp": 11
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -2114,6 +2767,58 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 3,
+     "move": "leafage",
+     "pp": 40
+    },
+    {
+     "level": 6,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 9,
+     "move": "megadrain",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "quickguard",
+     "pp": 13
+    },
+    {
+     "level": 21,
+     "move": "gigadrain",
+     "pp": 10
+    },
+    {
+     "level": 24,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 27,
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
+     "level": 30,
+     "move": "energyball",
+     "pp": 11
+    },
+    {
+     "level": 33,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 39,
+     "move": "leafstorm",
+     "pp": 5
     }
    ],
    "source": "pokedex.json[treecko]; learnsets.json[treecko] 第9世代; moves.json",
@@ -2241,6 +2946,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -2265,6 +2974,10 @@
      "pp": 11
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -2279,6 +2992,53 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 3,
+     "move": "ember",
+     "pp": 15
+    },
+    {
+     "level": 6,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 9,
+     "move": "flamecharge",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 18,
+     "move": "aerialace",
+     "pp": 8
+    },
+    {
+     "level": 21,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 30,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 33,
+     "move": "featherdance",
+     "pp": 22
+    },
+    {
+     "level": 39,
+     "move": "flareblitz",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[torchic]; learnsets.json[torchic] 第9世代; moves.json",
@@ -2386,6 +3146,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -2404,6 +3168,10 @@
     {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludge",
@@ -2448,6 +3216,63 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 3,
+     "move": "watergun",
+     "pp": 17
+    },
+    {
+     "level": 9,
+     "move": "rockthrow",
+     "pp": 16
+    },
+    {
+     "level": 12,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 15,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 18,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 21,
+     "move": "rockslide",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 27,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 30,
+     "move": "surf",
+     "pp": 11
+    },
+    {
+     "level": 33,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 39,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[mudkip]; learnsets.json[mudkip] 第9世代; moves.json",
@@ -2575,6 +3400,10 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -2601,6 +3430,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -2633,6 +3466,43 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 3,
+     "move": "poisonsting",
+     "pp": 19
+    },
+    {
+     "level": 6,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 15,
+     "move": "rapidspin",
+     "pp": 17
+    },
+    {
+     "level": 18,
+     "move": "bulldoze",
+     "pp": 17
+    },
+    {
+     "level": 21,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 30,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 39,
+     "move": "swordsdance",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[sandshrew]; learnsets.json[sandshrew] 第9世代; moves.json",
@@ -2760,12 +3630,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
     {
      "move": "roar",
      "pp": 14
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "snarl",
@@ -2794,6 +3672,63 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 8,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 12,
+     "move": "flamewheel",
+     "pp": 11
+    },
+    {
+     "level": 16,
+     "move": "helpinghand",
+     "pp": 16
+    },
+    {
+     "level": 24,
+     "move": "firefang",
+     "pp": 13
+    },
+    {
+     "level": 28,
+     "move": "retaliate",
+     "pp": 10
+    },
+    {
+     "level": 32,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 36,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 40,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 44,
+     "move": "roar",
+     "pp": 14
+    },
+    {
+     "level": 48,
+     "move": "playrough",
+     "pp": 13
+    },
+    {
+     "level": 56,
+     "move": "flareblitz",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[growlithe]; learnsets.json[growlithe] 第9世代; moves.json",
@@ -2890,8 +3825,16 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "spark",
@@ -2934,6 +3877,53 @@
      "pp": 15
     },
     {
+     "move": "zapcannon",
+     "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 8,
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "spark",
+     "pp": 15
+    },
+    {
+     "level": 24,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 32,
+     "move": "flashcannon",
+     "pp": 11
+    },
+    {
+     "level": 36,
+     "move": "discharge",
+     "pp": 8
+    },
+    {
+     "level": 40,
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
+     "level": 44,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 52,
      "move": "zapcannon",
      "pp": 9
     }
@@ -3052,6 +4042,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -3076,8 +4070,16 @@
      "pp": 12
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smackdown",
      "pp": 15
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stoneedge",
@@ -3086,6 +4088,53 @@
     {
      "move": "tackle",
      "pp": 30
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "smackdown",
+     "pp": 15
+    },
+    {
+     "level": 12,
+     "move": "dragonbreath",
+     "pp": 12
+    },
+    {
+     "level": 20,
+     "move": "rockslide",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 28,
+     "move": "sandtomb",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 48,
+     "move": "irontail",
+     "pp": 10
+    },
+    {
+     "level": 52,
+     "move": "stoneedge",
+     "pp": 7
+    },
+    {
+     "level": 56,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[onix]; learnsets.json[onix] 第8世代; moves.json",
@@ -3214,8 +4263,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "supersonic",
@@ -3256,6 +4313,43 @@
     {
      "move": "waterpulse",
      "pp": 12
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "twister",
+     "pp": 15
+    },
+    {
+     "level": 10,
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "dragontail",
+     "pp": 13
+    },
+    {
+     "level": 25,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 31,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 35,
+     "move": "dragonrush",
+     "pp": 8
+    },
+    {
+     "level": 50,
+     "move": "dragondance",
+     "pp": 22
     }
    ],
    "source": "pokedex.json[dratini]; learnsets.json[dratini] 第9世代; moves.json",
@@ -3376,6 +4470,10 @@
      "pp": 12
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -3386,6 +4484,10 @@
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -3430,6 +4532,38 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 8,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 16,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 24,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 28,
+     "move": "muddywater",
+     "pp": 10
+    },
+    {
+     "level": 32,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 36,
+     "move": "toxic",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[wooper]; learnsets.json[wooper] 第9世代; moves.json",
@@ -3574,12 +4708,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -3616,6 +4758,58 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 8,
+     "move": "smog",
+     "pp": 17
+    },
+    {
+     "level": 13,
+     "move": "roar",
+     "pp": 14
+    },
+    {
+     "level": 16,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 20,
+     "move": "incinerate",
+     "pp": 15
+    },
+    {
+     "level": 28,
+     "move": "firefang",
+     "pp": 13
+    },
+    {
+     "level": 40,
+     "move": "foulplay",
+     "pp": 17
+    },
+    {
+     "level": 44,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 49,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 52,
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
+     "level": 56,
+     "move": "inferno",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[houndour]; learnsets.json[houndour] 第9世代; moves.json",
@@ -3751,6 +4945,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -3761,6 +4959,10 @@
     {
      "move": "sandattack",
      "pp": 20
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -3805,6 +5007,43 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 10,
+     "move": "fakeout",
+     "pp": 12
+    },
+    {
+     "level": 13,
+     "move": "forcepalm",
+     "pp": 12
+    },
+    {
+     "level": 16,
+     "move": "whirlwind",
+     "pp": 27
+    },
+    {
+     "level": 22,
+     "move": "bulkup",
+     "pp": 16
+    },
+    {
+     "level": 34,
+     "move": "focuspunch",
+     "pp": 8
+    },
+    {
+     "level": 40,
+     "move": "closecombat",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[makuhita]; learnsets.json[makuhita] 第9世代; moves.json",
@@ -3909,12 +5148,24 @@
      "pp": 12
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
     {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -3955,6 +5206,48 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "razorleaf",
+     "pp": 12
+    },
+    {
+     "level": 15,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 15,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 20,
+     "move": "seedbomb",
+     "pp": 11
+    },
+    {
+     "level": 25,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 30,
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
+     "level": 35,
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "level": 45,
+     "move": "powerwhip",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[ivysaur]; learnsets.json[ivysaur] 第9世代; moves.json",
@@ -4080,12 +5373,24 @@
      "pp": 12
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
     {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -4126,6 +5431,53 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "petalblizzard",
+     "pp": 12
+    },
+    {
+     "level": 12,
+     "move": "razorleaf",
+     "pp": 12
+    },
+    {
+     "level": 15,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 15,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 20,
+     "move": "seedbomb",
+     "pp": 11
+    },
+    {
+     "level": 25,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 30,
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
+     "level": 37,
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "level": 51,
+     "move": "powerwhip",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[venusaur]; learnsets.json[venusaur] 第9世代; moves.json",
@@ -4267,6 +5619,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -4289,6 +5645,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smokescreen",
@@ -4317,6 +5677,38 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "dragonbreath",
+     "pp": 12
+    },
+    {
+     "level": 19,
+     "move": "firefang",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 30,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 48,
+     "move": "inferno",
+     "pp": 15
+    },
+    {
+     "level": 54,
+     "move": "flareblitz",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[charmeleon]; learnsets.json[charmeleon] 第9世代; moves.json",
@@ -4482,6 +5874,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -4504,6 +5900,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smokescreen",
@@ -4532,6 +5932,48 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 12,
+     "move": "dragonbreath",
+     "pp": 12
+    },
+    {
+     "level": 19,
+     "move": "firefang",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 30,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 46,
+     "move": "firespin",
+     "pp": 19
+    },
+    {
+     "level": 54,
+     "move": "inferno",
+     "pp": 15
+    },
+    {
+     "level": 62,
+     "move": "flareblitz",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[charizard]; learnsets.json[charizard] 第9世代; moves.json",
@@ -4645,6 +6087,14 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -4683,6 +6133,43 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 9,
+     "move": "rapidspin",
+     "pp": 17
+    },
+    {
+     "level": 12,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 15,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 20,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 30,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 40,
+     "move": "irondefense",
+     "pp": 16
+    },
+    {
+     "level": 45,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[wartortle]; learnsets.json[wartortle] 第9世代; moves.json",
@@ -4823,6 +6310,10 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -4833,6 +6324,10 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -4877,6 +6372,48 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "flashcannon",
+     "pp": 11
+    },
+    {
+     "level": 9,
+     "move": "rapidspin",
+     "pp": 17
+    },
+    {
+     "level": 12,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 15,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 20,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 30,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 42,
+     "move": "irondefense",
+     "pp": 16
+    },
+    {
+     "level": 49,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[blastoise]; learnsets.json[blastoise] 第9世代; moves.json",
@@ -4926,6 +6463,13 @@
      "pp": 30
     }
    ],
+   "levelUp": [
+    {
+     "level": 9,
+     "move": "bugbite",
+     "pp": 12
+    }
+   ],
    "source": "pokedex.json[caterpie]; learnsets.json[caterpie] 第8世代; moves.json",
    "evoLevel": 1,
    "evos": [
@@ -4968,6 +6512,13 @@
     },
     {
      "move": "irondefense",
+     "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "harden",
      "pp": 16
     }
    ],
@@ -5083,8 +6634,24 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stunspore",
@@ -5113,6 +6680,63 @@
     {
      "move": "whirlwind",
      "pp": 27
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "gust",
+     "pp": 19
+    },
+    {
+     "level": 4,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 8,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 12,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 12,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 12,
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "whirlwind",
+     "pp": 27
+    },
+    {
+     "level": 24,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 32,
+     "move": "bugbuzz",
+     "pp": 10
+    },
+    {
+     "level": 44,
+     "move": "quiverdance",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[butterfree]; learnsets.json[butterfree] 第8世代; moves.json",
@@ -5161,6 +6785,13 @@
     {
      "move": "poisonsting",
      "pp": 19
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 9,
+     "move": "bugbite",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[weedle]; learnsets.json[weedle] 第7世代; moves.json",
@@ -5213,6 +6844,7 @@
      "pp": 16
     }
    ],
+   "levelUp": [],
    "source": "pokedex.json[kakuna]; learnsets.json[kakuna] 第7世代; moves.json",
    "availability": "暂不出场",
    "evoLevel": 7,
@@ -5313,8 +6945,20 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "swordsdance",
@@ -5339,6 +6983,28 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 17,
+     "move": "pursuit",
+     "pp": 17
+    },
+    {
+     "level": 23,
+     "move": "venoshock",
+     "pp": 16
+    },
+    {
+     "level": 35,
+     "move": "poisonjab",
+     "pp": 14
+    },
+    {
+     "level": 44,
+     "move": "fellstinger",
+     "pp": 20
     }
    ],
    "source": "pokedex.json[beedrill]; learnsets.json[beedrill] 第7世代; moves.json",
@@ -5421,8 +7087,20 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "sandattack",
      "pp": 20
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "steelwing",
@@ -5455,6 +7133,43 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 13,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 17,
+     "move": "whirlwind",
+     "pp": 27
+    },
+    {
+     "level": 22,
+     "move": "twister",
+     "pp": 15
+    },
+    {
+     "level": 27,
+     "move": "featherdance",
+     "pp": 22
+    },
+    {
+     "level": 37,
+     "move": "wingattack",
+     "pp": 20
+    },
+    {
+     "level": 57,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 62,
+     "move": "hurricane",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[pidgeotto]; learnsets.json[pidgeotto] 第7世代; moves.json",
@@ -5540,8 +7255,20 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "sandattack",
      "pp": 20
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "steelwing",
@@ -5574,6 +7301,33 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 17,
+     "move": "whirlwind",
+     "pp": 27
+    },
+    {
+     "level": 22,
+     "move": "twister",
+     "pp": 15
+    },
+    {
+     "level": 27,
+     "move": "featherdance",
+     "pp": 22
+    },
+    {
+     "level": 38,
+     "move": "wingattack",
+     "pp": 20
+    },
+    {
+     "level": 62,
+     "move": "airslash",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[pidgeot]; learnsets.json[pidgeot] 第7世代; moves.json",
@@ -5679,6 +7433,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -5689,6 +7447,14 @@
     {
      "move": "shockwave",
      "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "suckerpunch",
@@ -5741,6 +7507,38 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 10,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 13,
+     "move": "pursuit",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "hyperfang",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 29,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 39,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[raticate]; learnsets.json[raticate] 第7世代; moves.json",
@@ -5835,6 +7633,18 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
+    },
+    {
      "move": "steelwing",
      "pp": 10
     },
@@ -5853,6 +7663,18 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 15,
+     "move": "aerialace",
+     "pp": 8
+    },
+    {
+     "level": 41,
+     "move": "drillpeck",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[fearow]; learnsets.json[fearow] 第7世代; moves.json",
@@ -5978,6 +7800,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -5992,6 +7818,10 @@
     {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -6024,6 +7854,58 @@
     {
      "move": "venoshock",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "poisonsting",
+     "pp": 19
+    },
+    {
+     "level": 9,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 12,
+     "move": "glare",
+     "pp": 22
+    },
+    {
+     "level": 17,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 20,
+     "move": "acid",
+     "pp": 17
+    },
+    {
+     "level": 28,
+     "move": "acidspray",
+     "pp": 17
+    },
+    {
+     "level": 33,
+     "move": "sludgebomb",
+     "pp": 10
+    },
+    {
+     "level": 38,
+     "move": "belch",
+     "pp": 15
+    },
+    {
+     "level": 44,
+     "move": "coil",
+     "pp": 15
+    },
+    {
+     "level": 49,
+     "move": "gunkshot",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[ekans]; learnsets.json[ekans] 第9世代; moves.json",
@@ -6163,6 +8045,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -6177,6 +8063,10 @@
     {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -6213,6 +8103,53 @@
     {
      "move": "venoshock",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 12,
+     "move": "glare",
+     "pp": 22
+    },
+    {
+     "level": 17,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 20,
+     "move": "acid",
+     "pp": 17
+    },
+    {
+     "level": 32,
+     "move": "acidspray",
+     "pp": 17
+    },
+    {
+     "level": 39,
+     "move": "sludgebomb",
+     "pp": 10
+    },
+    {
+     "level": 48,
+     "move": "belch",
+     "pp": 15
+    },
+    {
+     "level": 56,
+     "move": "coil",
+     "pp": 15
+    },
+    {
+     "level": 63,
+     "move": "gunkshot",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[arbok]; learnsets.json[arbok] 第9世代; moves.json",
@@ -6354,6 +8291,14 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "spark",
      "pp": 15
     },
@@ -6404,6 +8349,18 @@
     {
      "move": "wildcharge",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "level": 5,
+     "move": "thunderbolt",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[raichu]; learnsets.json[raichu] 第9世代; moves.json",
@@ -6537,6 +8494,10 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -6563,6 +8524,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -6595,6 +8560,38 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 15,
+     "move": "rapidspin",
+     "pp": 17
+    },
+    {
+     "level": 18,
+     "move": "bulldoze",
+     "pp": 17
+    },
+    {
+     "level": 21,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 31,
+     "move": "sandtomb",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 51,
+     "move": "swordsdance",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[sandslash]; learnsets.json[sandslash] 第9世代; moves.json",
@@ -6696,6 +8693,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -6704,8 +8705,16 @@
      "pp": 10
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "supersonic",
@@ -6738,6 +8747,43 @@
     {
      "move": "venoshock",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "scratch",
+     "pp": 28
+    },
+    {
+     "level": 10,
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "level": 30,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 35,
+     "move": "helpinghand",
+     "pp": 16
+    },
+    {
+     "level": 40,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 50,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 55,
+     "move": "earthpower",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[nidoranf]; learnsets.json[nidoranf] 第8世代; moves.json",
@@ -6833,6 +8879,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -6841,8 +8891,16 @@
      "pp": 10
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "tailwhip",
@@ -6867,6 +8925,33 @@
     {
      "move": "venoshock",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 36,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 43,
+     "move": "helpinghand",
+     "pp": 16
+    },
+    {
+     "level": 50,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 64,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 71,
+     "move": "earthpower",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[nidorina]; learnsets.json[nidorina] 第8世代; moves.json",
@@ -7024,6 +9109,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -7048,12 +9137,20 @@
      "pp": 10
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
     },
     {
      "move": "sludgewave",
      "pp": 13
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stoneedge",
@@ -7102,6 +9199,13 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "superpower",
+     "pp": 11
     }
    ],
    "source": "pokedex.json[nidoqueen]; learnsets.json[nidoqueen] 第8世代; moves.json",
@@ -7211,8 +9315,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -7221,6 +9333,10 @@
     {
      "move": "smartstrike",
      "pp": 15
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "suckerpunch",
@@ -7253,6 +9369,38 @@
     {
      "move": "venoshock",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "peck",
+     "pp": 26
+    },
+    {
+     "level": 30,
+     "move": "hornattack",
+     "pp": 18
+    },
+    {
+     "level": 35,
+     "move": "helpinghand",
+     "pp": 16
+    },
+    {
+     "level": 40,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 50,
+     "move": "poisonjab",
+     "pp": 14
+    },
+    {
+     "level": 55,
+     "move": "earthpower",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[nidoranm]; learnsets.json[nidoranm] 第8世代; moves.json",
@@ -7352,8 +9500,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -7362,6 +9518,10 @@
     {
      "move": "smartstrike",
      "pp": 15
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "thief",
@@ -7382,6 +9542,33 @@
     {
      "move": "venoshock",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 36,
+     "move": "hornattack",
+     "pp": 18
+    },
+    {
+     "level": 43,
+     "move": "helpinghand",
+     "pp": 16
+    },
+    {
+     "level": 50,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 64,
+     "move": "poisonjab",
+     "pp": 14
+    },
+    {
+     "level": 71,
+     "move": "earthpower",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[nidorino]; learnsets.json[nidorino] 第8世代; moves.json",
@@ -7543,6 +9730,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -7563,6 +9754,10 @@
      "pp": 10
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
     },
@@ -7573,6 +9768,10 @@
     {
      "move": "smartstrike",
      "pp": 15
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stoneedge",
@@ -7617,6 +9816,13 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "megahorn",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[nidoking]; learnsets.json[nidoking] 第8世代; moves.json",
@@ -7802,8 +10008,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sweetkiss",
@@ -7844,6 +10062,23 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 32,
+     "move": "meteormash",
+     "pp": 9
+    },
+    {
+     "level": 40,
+     "move": "cosmicpower",
+     "pp": 14
+    },
+    {
+     "level": 44,
+     "move": "moonblast",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[clefairy]; learnsets.json[clefairy] 第9世代; moves.json",
@@ -8035,8 +10270,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sweetkiss",
@@ -8079,6 +10326,7 @@
      "pp": 9
     }
    ],
+   "levelUp": [],
    "source": "pokedex.json[clefable]; learnsets.json[clefable] 第9世代; moves.json",
    "evoLevel": 20,
    "prevo": "clefairy",
@@ -8186,6 +10434,10 @@
      "pp": 16
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "incinerate",
      "pp": 15
     },
@@ -8210,8 +10462,16 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "snarl",
@@ -8239,6 +10499,53 @@
     },
     {
      "move": "zenheadbutt",
+     "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 8,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 16,
+     "move": "incinerate",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "willowisp",
+     "pp": 17
+    },
+    {
+     "level": 28,
+     "move": "extrasensory",
+     "pp": 12
+    },
+    {
+     "level": 32,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 40,
+     "move": "firespin",
+     "pp": 19
+    },
+    {
+     "level": 48,
+     "move": "inferno",
+     "pp": 15
+    },
+    {
+     "level": 52,
+     "move": "fireblast",
      "pp": 9
     }
    ],
@@ -8383,12 +10690,20 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "snarl",
@@ -8419,6 +10734,7 @@
      "pp": 9
     }
    ],
+   "levelUp": [],
    "source": "pokedex.json[ninetales]; learnsets.json[ninetales] 第9世代; moves.json",
    "evoLevel": 20,
    "prevo": "vulpix",
@@ -8595,8 +10911,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sweetkiss",
@@ -8641,6 +10969,33 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 8,
+     "move": "covet",
+     "pp": 27
+    },
+    {
+     "level": 20,
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "level": 24,
+     "move": "bodyslam",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "hypervoice",
+     "pp": 12
+    },
+    {
+     "level": 44,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[jigglypuff]; learnsets.json[jigglypuff] 第9世代; moves.json",
@@ -8825,8 +11180,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sweetkiss",
@@ -8871,6 +11238,13 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "playrough",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[wigglytuff]; learnsets.json[wigglytuff] 第9世代; moves.json",
@@ -8973,6 +11347,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
     },
@@ -8981,8 +11359,16 @@
      "pp": 10
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "steelwing",
@@ -9007,6 +11393,48 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 15,
+     "move": "poisonfang",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "quickguard",
+     "pp": 13
+    },
+    {
+     "level": 27,
+     "move": "aircutter",
+     "pp": 17
+    },
+    {
+     "level": 34,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 48,
+     "move": "venoshock",
+     "pp": 16
+    },
+    {
+     "level": 55,
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
+     "level": 62,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 69,
+     "move": "leechlife",
+     "pp": 19
     }
    ],
    "source": "pokedex.json[golbat]; learnsets.json[golbat] 第8世代; moves.json",
@@ -9105,8 +11533,20 @@
      "pp": 12
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -9139,6 +11579,53 @@
     {
      "move": "venoshock",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "acid",
+     "pp": 17
+    },
+    {
+     "level": 8,
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
+     "level": 12,
+     "move": "megadrain",
+     "pp": 17
+    },
+    {
+     "level": 14,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 16,
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "level": 18,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 20,
+     "move": "gigadrain",
+     "pp": 10
+    },
+    {
+     "level": 24,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 28,
+     "move": "moonblast",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[oddish]; learnsets.json[oddish] 第9世代; moves.json",
@@ -9239,8 +11726,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -9265,6 +11764,43 @@
     {
      "move": "venoshock",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "megadrain",
+     "pp": 17
+    },
+    {
+     "level": 14,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 16,
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "level": 18,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 20,
+     "move": "gigadrain",
+     "pp": 10
+    },
+    {
+     "level": 26,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 32,
+     "move": "moonblast",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[gloom]; learnsets.json[gloom] 第9世代; moves.json",
@@ -9374,8 +11910,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -9408,6 +11956,13 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "petalblizzard",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[vileplume]; learnsets.json[vileplume] 第9世代; moves.json",
@@ -9522,6 +12077,10 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -9538,8 +12097,20 @@
      "pp": 11
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
+    },
+    {
+     "move": "snore",
+     "pp": 16
+    },
+    {
+     "move": "spore",
+     "pp": 12
     },
     {
      "move": "stunspore",
@@ -9570,6 +12141,43 @@
      "pp": 16
     },
     {
+     "move": "xscissor",
+     "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 6,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 6,
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "level": 11,
+     "move": "absorb",
+     "pp": 15
+    },
+    {
+     "level": 22,
+     "move": "spore",
+     "pp": 12
+    },
+    {
+     "level": 27,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 38,
+     "move": "gigadrain",
+     "pp": 10
+    },
+    {
+     "level": 54,
      "move": "xscissor",
      "pp": 10
     }
@@ -9672,6 +12280,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -9684,8 +12296,20 @@
      "pp": 11
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
+    },
+    {
+     "move": "snore",
+     "pp": 16
+    },
+    {
+     "move": "spore",
+     "pp": 12
     },
     {
      "move": "stunspore",
@@ -9716,6 +12340,28 @@
      "pp": 16
     },
     {
+     "move": "xscissor",
+     "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 22,
+     "move": "spore",
+     "pp": 12
+    },
+    {
+     "level": 29,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 44,
+     "move": "gigadrain",
+     "pp": 10
+    },
+    {
+     "level": 66,
      "move": "xscissor",
      "pp": 10
     }
@@ -9812,8 +12458,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -9858,6 +12516,63 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 11,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 13,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 17,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 23,
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "level": 25,
+     "move": "bugbuzz",
+     "pp": 10
+    },
+    {
+     "level": 29,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 35,
+     "move": "leechlife",
+     "pp": 19
+    },
+    {
+     "level": 37,
+     "move": "zenheadbutt",
+     "pp": 9
+    },
+    {
+     "level": 41,
+     "move": "poisonfang",
+     "pp": 15
+    },
+    {
+     "level": 47,
+     "move": "psychic",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[venonat]; learnsets.json[venonat] 第9世代; moves.json",
@@ -9970,6 +12685,18 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
     },
@@ -10016,6 +12743,63 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 11,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 13,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 17,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 23,
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "level": 25,
+     "move": "bugbuzz",
+     "pp": 10
+    },
+    {
+     "level": 29,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 37,
+     "move": "leechlife",
+     "pp": 19
+    },
+    {
+     "level": 41,
+     "move": "zenheadbutt",
+     "pp": 9
+    },
+    {
+     "level": 47,
+     "move": "poisonfang",
+     "pp": 15
+    },
+    {
+     "level": 55,
+     "move": "psychic",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[venomoth]; learnsets.json[venomoth] 第9世代; moves.json",
@@ -10117,6 +12901,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -10143,6 +12931,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -10175,6 +12967,43 @@
     {
      "move": "throatchop",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "growl",
+     "pp": 20
+    },
+    {
+     "level": 8,
+     "move": "astonish",
+     "pp": 17
+    },
+    {
+     "level": 12,
+     "move": "mudslap",
+     "pp": 16
+    },
+    {
+     "level": 16,
+     "move": "bulldoze",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 24,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 36,
+     "move": "earthpower",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[diglett]; learnsets.json[diglett] 第9世代; moves.json",
@@ -10270,6 +13099,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -10296,6 +13129,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -10336,6 +13173,38 @@
     {
      "move": "triattack",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "sandtomb",
+     "pp": 17
+    },
+    {
+     "level": 12,
+     "move": "mudslap",
+     "pp": 16
+    },
+    {
+     "level": 16,
+     "move": "bulldoze",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 24,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 42,
+     "move": "earthpower",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[dugtrio]; learnsets.json[dugtrio] 第9世代; moves.json",
@@ -10445,6 +13314,10 @@
      "pp": 12
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icywind",
      "pp": 13
     },
@@ -10477,6 +13350,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -10499,6 +13376,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "snarl",
@@ -10535,6 +13416,48 @@
     {
      "move": "thunderwave",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "feint",
+     "pp": 12
+    },
+    {
+     "level": 8,
+     "move": "scratch",
+     "pp": 28
+    },
+    {
+     "level": 12,
+     "move": "payday",
+     "pp": 16
+    },
+    {
+     "level": 16,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 32,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 36,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 40,
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
+     "level": 44,
+     "move": "playrough",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[meowth]; learnsets.json[meowth] 第9世代; moves.json",
@@ -10670,6 +13593,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -10696,6 +13623,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "snarl",
@@ -10728,6 +13659,43 @@
     {
      "move": "thunderwave",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "powergem",
+     "pp": 15
+    },
+    {
+     "level": 12,
+     "move": "payday",
+     "pp": 16
+    },
+    {
+     "level": 16,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 36,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 42,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 48,
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
+     "level": 54,
+     "move": "playrough",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[persian]; learnsets.json[persian] 第9世代; moves.json",
@@ -10825,6 +13793,10 @@
      "pp": 8
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icebeam",
      "pp": 8
     },
@@ -10877,6 +13849,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -10887,6 +13863,10 @@
     {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "surf",
@@ -10931,6 +13911,43 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 3,
+     "move": "watergun",
+     "pp": 17
+    },
+    {
+     "level": 6,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 12,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 18,
+     "move": "zenheadbutt",
+     "pp": 9
+    },
+    {
+     "level": 21,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 24,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 34,
+     "move": "amnesia",
+     "pp": 22
     }
    ],
    "source": "pokedex.json[psyduck]; learnsets.json[psyduck] 第9世代; moves.json",
@@ -11086,6 +14103,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scratch",
      "pp": 28
     },
@@ -11096,6 +14117,10 @@
     {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "surf",
@@ -11140,6 +14165,38 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 18,
+     "move": "zenheadbutt",
+     "pp": 9
+    },
+    {
+     "level": 21,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 24,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 36,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 40,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[golduck]; learnsets.json[golduck] 第9世代; moves.json",
@@ -11265,6 +14322,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -11287,6 +14348,10 @@
     {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "stoneedge",
@@ -11315,6 +14380,23 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 22,
+     "move": "crosschop",
+     "pp": 10
+    },
+    {
+     "level": 33,
+     "move": "closecombat",
+     "pp": 7
+    },
+    {
+     "level": 36,
+     "move": "screech",
+     "pp": 22
     }
    ],
    "source": "pokedex.json[mankey]; learnsets.json[mankey] 第9世代; moves.json",
@@ -11434,6 +14516,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -11456,6 +14542,10 @@
     {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -11496,6 +14586,23 @@
     {
      "move": "vacuumwave",
      "pp": 14
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 22,
+     "move": "crosschop",
+     "pp": 10
+    },
+    {
+     "level": 39,
+     "move": "closecombat",
+     "pp": 7
+    },
+    {
+     "level": 44,
+     "move": "screech",
+     "pp": 22
     }
    ],
    "source": "pokedex.json[primeape]; learnsets.json[primeape] 第9世代; moves.json",
@@ -11641,12 +14748,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
     {
      "move": "roar",
      "pp": 14
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "snarl",
@@ -11675,6 +14790,18 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "extremespeed",
+     "pp": 12
+    },
+    {
+     "level": 5,
+     "move": "flamethrower",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[arcanine]; learnsets.json[arcanine] 第9世代; moves.json",
@@ -11756,6 +14883,10 @@
      "pp": 8
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icebeam",
      "pp": 8
     },
@@ -11792,6 +14923,14 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -11826,6 +14965,43 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 6,
+     "move": "pound",
+     "pp": 27
+    },
+    {
+     "level": 12,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 18,
+     "move": "bubblebeam",
+     "pp": 10
+    },
+    {
+     "level": 30,
+     "move": "bodyslam",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "earthpower",
+     "pp": 8
+    },
+    {
+     "level": 42,
+     "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "level": 54,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[poliwag]; learnsets.json[poliwag] 第9世代; moves.json",
@@ -11913,6 +15089,10 @@
      "pp": 8
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icebeam",
      "pp": 8
     },
@@ -11957,6 +15137,14 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "surf",
      "pp": 11
     },
@@ -11991,6 +15179,33 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 18,
+     "move": "bubblebeam",
+     "pp": 10
+    },
+    {
+     "level": 32,
+     "move": "bodyslam",
+     "pp": 17
+    },
+    {
+     "level": 40,
+     "move": "earthpower",
+     "pp": 8
+    },
+    {
+     "level": 48,
+     "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "level": 66,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[poliwhirl]; learnsets.json[poliwhirl] 第9世代; moves.json",
@@ -12108,6 +15323,10 @@
      "pp": 8
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icebeam",
      "pp": 8
     },
@@ -12156,12 +15375,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "surf",
@@ -12206,6 +15433,13 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "dynamicpunch",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[poliwrath]; learnsets.json[poliwrath] 第9世代; moves.json",
@@ -12306,8 +15540,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "swift",
@@ -12334,6 +15580,7 @@
      "pp": 9
     }
    ],
+   "levelUp": [],
    "source": "pokedex.json[abra]; learnsets.json[abra] 第8世代; moves.json",
    "availability": "暂不出场",
    "evoLevel": 1,
@@ -12460,8 +15707,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "swift",
@@ -12486,6 +15745,48 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 5,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 10,
+     "move": "reflect",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "psychocut",
+     "pp": 14
+    },
+    {
+     "level": 25,
+     "move": "recover",
+     "pp": 12
+    },
+    {
+     "level": 30,
+     "move": "psyshock",
+     "pp": 13
+    },
+    {
+     "level": 35,
+     "move": "psychic",
+     "pp": 10
+    },
+    {
+     "level": 50,
+     "move": "calmmind",
+     "pp": 19
     }
    ],
    "source": "pokedex.json[kadabra]; learnsets.json[kadabra] 第8世代; moves.json",
@@ -12622,8 +15923,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "swift",
@@ -12648,6 +15961,43 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 10,
+     "move": "reflect",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "psychocut",
+     "pp": 14
+    },
+    {
+     "level": 25,
+     "move": "recover",
+     "pp": 12
+    },
+    {
+     "level": 30,
+     "move": "psyshock",
+     "pp": 13
+    },
+    {
+     "level": 35,
+     "move": "psychic",
+     "pp": 10
+    },
+    {
+     "level": 50,
+     "move": "calmmind",
+     "pp": 19
     }
    ],
    "source": "pokedex.json[alakazam]; learnsets.json[alakazam] 第8世代; moves.json",
@@ -12781,6 +16131,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
@@ -12791,6 +16145,14 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "submission",
@@ -12815,6 +16177,33 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "lowsweep",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "bulkup",
+     "pp": 16
+    },
+    {
+     "level": 44,
+     "move": "dynamicpunch",
+     "pp": 13
+    },
+    {
+     "level": 48,
+     "move": "crosschop",
+     "pp": 10
+    },
+    {
+     "level": 52,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[machop]; learnsets.json[machop] 第8世代; moves.json",
@@ -12942,6 +16331,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
@@ -12952,6 +16345,14 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "superpower",
@@ -12968,6 +16369,33 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "lowsweep",
+     "pp": 17
+    },
+    {
+     "level": 42,
+     "move": "bulkup",
+     "pp": 16
+    },
+    {
+     "level": 54,
+     "move": "dynamicpunch",
+     "pp": 13
+    },
+    {
+     "level": 60,
+     "move": "crosschop",
+     "pp": 10
+    },
+    {
+     "level": 66,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[machoke]; learnsets.json[machoke] 第8世代; moves.json",
@@ -13104,6 +16532,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
@@ -13114,6 +16546,14 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stoneedge",
@@ -13138,6 +16578,33 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "lowsweep",
+     "pp": 17
+    },
+    {
+     "level": 42,
+     "move": "bulkup",
+     "pp": 16
+    },
+    {
+     "level": 54,
+     "move": "dynamicpunch",
+     "pp": 13
+    },
+    {
+     "level": 60,
+     "move": "crosschop",
+     "pp": 10
+    },
+    {
+     "level": 66,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[machamp]; learnsets.json[machamp] 第8世代; moves.json",
@@ -13236,12 +16703,24 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -13294,6 +16773,53 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 13,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 15,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 17,
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "level": 23,
+     "move": "acid",
+     "pp": 17
+    },
+    {
+     "level": 29,
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
+     "level": 39,
+     "move": "razorleaf",
+     "pp": 12
+    },
+    {
+     "level": 41,
+     "move": "poisonjab",
+     "pp": 14
+    },
+    {
+     "level": 47,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 52,
+     "move": "powerwhip",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[bellsprout]; learnsets.json[bellsprout] 第9世代; moves.json",
@@ -13398,12 +16924,24 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -13448,6 +16986,53 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 13,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 15,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 17,
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "level": 24,
+     "move": "acid",
+     "pp": 17
+    },
+    {
+     "level": 32,
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
+     "level": 44,
+     "move": "razorleaf",
+     "pp": 12
+    },
+    {
+     "level": 47,
+     "move": "poisonjab",
+     "pp": 14
+    },
+    {
+     "level": 54,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 58,
+     "move": "powerwhip",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[weepinbell]; learnsets.json[weepinbell] 第9世代; moves.json",
@@ -13549,8 +17134,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -13591,6 +17188,18 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "leafstorm",
+     "pp": 5
+    },
+    {
+     "level": 44,
+     "move": "leafblade",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[victreebel]; learnsets.json[victreebel] 第9世代; moves.json",
@@ -13713,8 +17322,16 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -13771,6 +17388,58 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "acid",
+     "pp": 17
+    },
+    {
+     "level": 12,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 16,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 20,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 24,
+     "move": "bubblebeam",
+     "pp": 10
+    },
+    {
+     "level": 32,
+     "move": "acidarmor",
+     "pp": 16
+    },
+    {
+     "level": 36,
+     "move": "poisonjab",
+     "pp": 14
+    },
+    {
+     "level": 40,
+     "move": "surf",
+     "pp": 11
+    },
+    {
+     "level": 44,
+     "move": "sludgewave",
+     "pp": 13
+    },
+    {
+     "level": 48,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[tentacool]; learnsets.json[tentacool] 第9世代; moves.json",
@@ -13887,8 +17556,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -13945,6 +17622,53 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 16,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 20,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 24,
+     "move": "bubblebeam",
+     "pp": 10
+    },
+    {
+     "level": 34,
+     "move": "acidarmor",
+     "pp": 16
+    },
+    {
+     "level": 40,
+     "move": "poisonjab",
+     "pp": 14
+    },
+    {
+     "level": 46,
+     "move": "surf",
+     "pp": 11
+    },
+    {
+     "level": 52,
+     "move": "sludgewave",
+     "pp": 13
+    },
+    {
+     "level": 58,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[tentacruel]; learnsets.json[tentacruel] 第9世代; moves.json",
@@ -14055,6 +17779,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -14065,6 +17793,10 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -14085,6 +17817,33 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "bulldoze",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "rockthrow",
+     "pp": 16
+    },
+    {
+     "level": 18,
+     "move": "smackdown",
+     "pp": 15
+    },
+    {
+     "level": 50,
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "level": 54,
+     "move": "stoneedge",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[graveler]; learnsets.json[graveler] 第9世代; moves.json",
@@ -14198,6 +17957,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -14212,6 +17975,10 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -14232,6 +17999,33 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 16,
+     "move": "rockthrow",
+     "pp": 16
+    },
+    {
+     "level": 18,
+     "move": "smackdown",
+     "pp": 15
+    },
+    {
+     "level": 22,
+     "move": "bulldoze",
+     "pp": 17
+    },
+    {
+     "level": 50,
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "level": 54,
+     "move": "stoneedge",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[golem]; learnsets.json[golem] 第9世代; moves.json",
@@ -14325,6 +18119,10 @@
      "pp": 10
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "inferno",
      "pp": 15
     },
@@ -14347,6 +18145,18 @@
     {
      "move": "protect",
      "pp": 10
+    },
+    {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stomp",
@@ -14375,6 +18185,58 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "level": 10,
+     "move": "ember",
+     "pp": 15
+    },
+    {
+     "level": 15,
+     "move": "flamecharge",
+     "pp": 17
+    },
+    {
+     "level": 25,
+     "move": "flamewheel",
+     "pp": 11
+    },
+    {
+     "level": 30,
+     "move": "stomp",
+     "pp": 17
+    },
+    {
+     "level": 35,
+     "move": "firespin",
+     "pp": 19
+    },
+    {
+     "level": 41,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 45,
+     "move": "inferno",
+     "pp": 15
+    },
+    {
+     "level": 50,
+     "move": "fireblast",
+     "pp": 9
+    },
+    {
+     "level": 55,
+     "move": "flareblitz",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[ponyta]; learnsets.json[ponyta] 第8世代; moves.json",
@@ -14510,8 +18372,20 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smartstrike",
      "pp": 15
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stomp",
@@ -14548,6 +18422,53 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "smartstrike",
+     "pp": 15
+    },
+    {
+     "level": 15,
+     "move": "flamecharge",
+     "pp": 17
+    },
+    {
+     "level": 25,
+     "move": "flamewheel",
+     "pp": 11
+    },
+    {
+     "level": 30,
+     "move": "stomp",
+     "pp": 17
+    },
+    {
+     "level": 35,
+     "move": "firespin",
+     "pp": 19
+    },
+    {
+     "level": 43,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 49,
+     "move": "inferno",
+     "pp": 15
+    },
+    {
+     "level": 56,
+     "move": "fireblast",
+     "pp": 9
+    },
+    {
+     "level": 63,
+     "move": "flareblitz",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[rapidash]; learnsets.json[rapidash] 第8世代; moves.json",
@@ -14682,11 +18603,19 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
     {
      "move": "slackoff",
+     "pp": 17
+    },
+    {
+     "move": "sleeptalk",
      "pp": 17
     },
     {
@@ -14736,6 +18665,58 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 3,
+     "move": "growl",
+     "pp": 20
+    },
+    {
+     "level": 6,
+     "move": "watergun",
+     "pp": 17
+    },
+    {
+     "level": 12,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 18,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 21,
+     "move": "headbutt",
+     "pp": 17
+    },
+    {
+     "level": 24,
+     "move": "zenheadbutt",
+     "pp": 9
+    },
+    {
+     "level": 27,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 30,
+     "move": "surf",
+     "pp": 11
+    },
+    {
+     "level": 33,
+     "move": "slackoff",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "psychic",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[slowpoke]; learnsets.json[slowpoke] 第9世代; moves.json",
@@ -14900,6 +18881,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scald",
      "pp": 15
     },
@@ -14909,6 +18894,10 @@
     },
     {
      "move": "slackoff",
+     "pp": 17
+    },
+    {
+     "move": "sleeptalk",
      "pp": 17
     },
     {
@@ -14958,6 +18947,48 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 18,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 21,
+     "move": "headbutt",
+     "pp": 17
+    },
+    {
+     "level": 24,
+     "move": "zenheadbutt",
+     "pp": 9
+    },
+    {
+     "level": 27,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 30,
+     "move": "surf",
+     "pp": 11
+    },
+    {
+     "level": 33,
+     "move": "slackoff",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "psychic",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[slowbro]; learnsets.json[slowbro] 第9世代; moves.json",
@@ -15052,8 +19083,16 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "spark",
@@ -15100,6 +19139,48 @@
      "pp": 15
     },
     {
+     "move": "zapcannon",
+     "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "triattack",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "spark",
+     "pp": 15
+    },
+    {
+     "level": 24,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 34,
+     "move": "flashcannon",
+     "pp": 11
+    },
+    {
+     "level": 40,
+     "move": "discharge",
+     "pp": 8
+    },
+    {
+     "level": 46,
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
+     "level": 52,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 64,
      "move": "zapcannon",
      "pp": 9
     }
@@ -15228,6 +19309,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
@@ -15238,6 +19323,14 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "steelwing",
@@ -15262,6 +19355,53 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "leer",
+     "pp": 27
+    },
+    {
+     "level": 20,
+     "move": "aerialace",
+     "pp": 8
+    },
+    {
+     "level": 25,
+     "move": "aircutter",
+     "pp": 17
+    },
+    {
+     "level": 35,
+     "move": "falseswipe",
+     "pp": 15
+    },
+    {
+     "level": 40,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 45,
+     "move": "swordsdance",
+     "pp": 7
+    },
+    {
+     "level": 50,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 55,
+     "move": "leafblade",
+     "pp": 12
+    },
+    {
+     "level": 65,
+     "move": "bravebird",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[farfetchd]; learnsets.json[farfetchd] 第8世代; moves.json",
@@ -15355,6 +19495,14 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -15377,6 +19525,28 @@
     {
      "move": "whirlwind",
      "pp": 27
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 14,
+     "move": "pluck",
+     "pp": 15
+    },
+    {
+     "level": 33,
+     "move": "swordsdance",
+     "pp": 7
+    },
+    {
+     "level": 36,
+     "move": "drillpeck",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[doduo]; learnsets.json[doduo] 第9世代; moves.json",
@@ -15477,6 +19647,14 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -15499,6 +19677,28 @@
     {
      "move": "triattack",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "triattack",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "pluck",
+     "pp": 15
+    },
+    {
+     "level": 34,
+     "move": "swordsdance",
+     "pp": 7
+    },
+    {
+     "level": 38,
+     "move": "drillpeck",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[dodrio]; learnsets.json[dodrio] 第9世代; moves.json",
@@ -15624,6 +19824,14 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smartstrike",
      "pp": 15
     },
@@ -15654,6 +19862,63 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 3,
+     "move": "growl",
+     "pp": 20
+    },
+    {
+     "level": 7,
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "level": 11,
+     "move": "icywind",
+     "pp": 13
+    },
+    {
+     "level": 17,
+     "move": "iceshard",
+     "pp": 16
+    },
+    {
+     "level": 21,
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "level": 27,
+     "move": "aurorabeam",
+     "pp": 17
+    },
+    {
+     "level": 31,
+     "move": "aquajet",
+     "pp": 18
+    },
+    {
+     "level": 33,
+     "move": "brine",
+     "pp": 8
+    },
+    {
+     "level": 37,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 43,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 47,
+     "move": "icebeam",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[seel]; learnsets.json[seel] 第9世代; moves.json",
@@ -15778,6 +20043,14 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smartstrike",
      "pp": 15
     },
@@ -15808,6 +20081,48 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 17,
+     "move": "iceshard",
+     "pp": 16
+    },
+    {
+     "level": 21,
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "level": 27,
+     "move": "aurorabeam",
+     "pp": 17
+    },
+    {
+     "level": 31,
+     "move": "aquajet",
+     "pp": 18
+    },
+    {
+     "level": 33,
+     "move": "brine",
+     "pp": 8
+    },
+    {
+     "level": 39,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 49,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 55,
+     "move": "icebeam",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[dewgong]; learnsets.json[dewgong] 第9世代; moves.json",
@@ -15933,6 +20248,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -15955,6 +20274,10 @@
     {
      "move": "shadowsneak",
      "pp": 16
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludge",
@@ -15999,6 +20322,68 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "harden",
+     "pp": 16
+    },
+    {
+     "level": 7,
+     "move": "mudslap",
+     "pp": 16
+    },
+    {
+     "level": 15,
+     "move": "sludge",
+     "pp": 15
+    },
+    {
+     "level": 18,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 21,
+     "move": "minimize",
+     "pp": 27
+    },
+    {
+     "level": 26,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 29,
+     "move": "sludgebomb",
+     "pp": 10
+    },
+    {
+     "level": 32,
+     "move": "sludgewave",
+     "pp": 13
+    },
+    {
+     "level": 37,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 40,
+     "move": "gunkshot",
+     "pp": 6
+    },
+    {
+     "level": 43,
+     "move": "acidarmor",
+     "pp": 16
+    },
+    {
+     "level": 46,
+     "move": "belch",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[grimer]; learnsets.json[grimer] 第9世代; moves.json",
@@ -16142,6 +20527,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -16156,6 +20545,10 @@
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludge",
@@ -16204,6 +20597,58 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 15,
+     "move": "sludge",
+     "pp": 15
+    },
+    {
+     "level": 18,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 21,
+     "move": "minimize",
+     "pp": 27
+    },
+    {
+     "level": 26,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 29,
+     "move": "sludgebomb",
+     "pp": 10
+    },
+    {
+     "level": 32,
+     "move": "sludgewave",
+     "pp": 13
+    },
+    {
+     "level": 37,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 40,
+     "move": "gunkshot",
+     "pp": 6
+    },
+    {
+     "level": 46,
+     "move": "acidarmor",
+     "pp": 16
+    },
+    {
+     "level": 52,
+     "move": "belch",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[muk]; learnsets.json[muk] 第9世代; moves.json",
@@ -16301,6 +20746,14 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "supersonic",
      "pp": 10
     },
@@ -16339,6 +20792,63 @@
     {
      "move": "withdraw",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "withdraw",
+     "pp": 16
+    },
+    {
+     "level": 8,
+     "move": "iceshard",
+     "pp": 16
+    },
+    {
+     "level": 12,
+     "move": "leer",
+     "pp": 27
+    },
+    {
+     "level": 16,
+     "move": "whirlpool",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 24,
+     "move": "aurorabeam",
+     "pp": 17
+    },
+    {
+     "level": 28,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 32,
+     "move": "razorshell",
+     "pp": 15
+    },
+    {
+     "level": 36,
+     "move": "irondefense",
+     "pp": 16
+    },
+    {
+     "level": 40,
+     "move": "icebeam",
+     "pp": 8
+    },
+    {
+     "level": 48,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[shellder]; learnsets.json[shellder] 第9世代; moves.json",
@@ -16455,6 +20965,14 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smartstrike",
      "pp": 15
     },
@@ -16501,6 +21019,13 @@
     {
      "move": "withdraw",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "razorshell",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[cloyster]; learnsets.json[cloyster] 第9世代; moves.json",
@@ -16587,6 +21112,10 @@
      "pp": 6
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icepunch",
      "pp": 12
     },
@@ -16615,8 +21144,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -16661,6 +21198,28 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
+     "level": 32,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 36,
+     "move": "darkpulse",
+     "pp": 10
+    },
+    {
+     "level": 40,
+     "move": "shadowball",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[gastly]; learnsets.json[gastly] 第9世代; moves.json",
@@ -16745,6 +21304,10 @@
      "pp": 6
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icepunch",
      "pp": 12
     },
@@ -16773,6 +21336,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -16783,6 +21350,10 @@
     {
      "move": "shadowpunch",
      "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -16823,6 +21394,28 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "shadowpunch",
+     "pp": 8
+    },
+    {
+     "level": 36,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 42,
+     "move": "darkpulse",
+     "pp": 10
+    },
+    {
+     "level": 48,
+     "move": "shadowball",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[haunter]; learnsets.json[haunter] 第9世代; moves.json",
@@ -16924,6 +21517,10 @@
      "pp": 6
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icepunch",
      "pp": 12
     },
@@ -16952,6 +21549,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
     },
@@ -16962,6 +21563,10 @@
     {
      "move": "shadowpunch",
      "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -17006,6 +21611,23 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 36,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 42,
+     "move": "darkpulse",
+     "pp": 10
+    },
+    {
+     "level": 48,
+     "move": "shadowball",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[gengar]; learnsets.json[gengar] 第9世代; moves.json",
@@ -17103,6 +21725,10 @@
      "pp": 16
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icepunch",
      "pp": 12
     },
@@ -17151,8 +21777,16 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -17181,6 +21815,48 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 9,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 13,
+     "move": "headbutt",
+     "pp": 17
+    },
+    {
+     "level": 17,
+     "move": "poisongas",
+     "pp": 27
+    },
+    {
+     "level": 21,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 29,
+     "move": "zenheadbutt",
+     "pp": 9
+    },
+    {
+     "level": 37,
+     "move": "psychic",
+     "pp": 10
+    },
+    {
+     "level": 41,
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
+     "level": 45,
+     "move": "psyshock",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[drowzee]; learnsets.json[drowzee] 第9世代; moves.json",
@@ -17284,6 +21960,10 @@
      "pp": 16
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icepunch",
      "pp": 12
     },
@@ -17328,8 +22008,16 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -17358,6 +22046,43 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 13,
+     "move": "headbutt",
+     "pp": 17
+    },
+    {
+     "level": 17,
+     "move": "poisongas",
+     "pp": 27
+    },
+    {
+     "level": 21,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 32,
+     "move": "zenheadbutt",
+     "pp": 9
+    },
+    {
+     "level": 42,
+     "move": "psychic",
+     "pp": 10
+    },
+    {
+     "level": 47,
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
+     "level": 51,
+     "move": "psyshock",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[hypno]; learnsets.json[hypno] 第9世代; moves.json",
@@ -17483,6 +22208,10 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -17501,6 +22230,14 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stomp",
@@ -17533,6 +22270,58 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "harden",
+     "pp": 16
+    },
+    {
+     "level": 8,
+     "move": "metalclaw",
+     "pp": 15
+    },
+    {
+     "level": 12,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 16,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 20,
+     "move": "bubblebeam",
+     "pp": 10
+    },
+    {
+     "level": 24,
+     "move": "stomp",
+     "pp": 17
+    },
+    {
+     "level": 32,
+     "move": "razorshell",
+     "pp": 15
+    },
+    {
+     "level": 36,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 40,
+     "move": "swordsdance",
+     "pp": 7
+    },
+    {
+     "level": 44,
+     "move": "crabhammer",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[krabby]; learnsets.json[krabby] 第8世代; moves.json",
@@ -17660,6 +22449,10 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -17674,6 +22467,14 @@
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stomp",
@@ -17706,6 +22507,48 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 16,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 20,
+     "move": "bubblebeam",
+     "pp": 10
+    },
+    {
+     "level": 24,
+     "move": "stomp",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "razorshell",
+     "pp": 15
+    },
+    {
+     "level": 42,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 48,
+     "move": "swordsdance",
+     "pp": 7
+    },
+    {
+     "level": 54,
+     "move": "crabhammer",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[kingler]; learnsets.json[kingler] 第8世代; moves.json",
@@ -17787,8 +22630,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "spark",
@@ -17829,6 +22680,48 @@
     {
      "move": "wildcharge",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "thundershock",
+     "pp": 17
+    },
+    {
+     "level": 6,
+     "move": "eerieimpulse",
+     "pp": 17
+    },
+    {
+     "level": 9,
+     "move": "spark",
+     "pp": 15
+    },
+    {
+     "level": 13,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 16,
+     "move": "chargebeam",
+     "pp": 12
+    },
+    {
+     "level": 20,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 29,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 37,
+     "move": "discharge",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[voltorb]; learnsets.json[voltorb] 第9世代; moves.json",
@@ -17912,8 +22805,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "spark",
@@ -17954,6 +22855,38 @@
     {
      "move": "wildcharge",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 9,
+     "move": "spark",
+     "pp": 15
+    },
+    {
+     "level": 13,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 16,
+     "move": "chargebeam",
+     "pp": 12
+    },
+    {
+     "level": 20,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 29,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 41,
+     "move": "discharge",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[electrode]; learnsets.json[electrode] 第9世代; moves.json",
@@ -18024,6 +22957,10 @@
      "pp": 16
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "leafstorm",
      "pp": 5
     },
@@ -18060,8 +22997,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -18086,6 +23035,38 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "reflect",
+     "pp": 15
+    },
+    {
+     "level": 15,
+     "move": "megadrain",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 25,
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "gigadrain",
+     "pp": 10
+    },
+    {
+     "level": 40,
+     "move": "extrasensory",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[exeggcute]; learnsets.json[exeggcute] 第9世代; moves.json",
@@ -18170,6 +23151,10 @@
      "pp": 16
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "leafstorm",
      "pp": 5
     },
@@ -18206,8 +23191,16 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -18240,6 +23233,13 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "stomp",
+     "pp": 17
     }
    ],
    "source": "pokedex.json[exeggutor]; learnsets.json[exeggutor] 第9世代; moves.json",
@@ -18373,6 +23373,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
@@ -18387,6 +23391,14 @@
     {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "swift",
@@ -18407,6 +23419,33 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "level": 8,
+     "move": "falseswipe",
+     "pp": 15
+    },
+    {
+     "level": 12,
+     "move": "headbutt",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "retaliate",
+     "pp": 10
+    },
+    {
+     "level": 48,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[cubone]; learnsets.json[cubone] 第8世代; moves.json",
@@ -18538,6 +23577,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
@@ -18552,6 +23595,14 @@
     {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stoneedge",
@@ -18580,6 +23631,23 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "headbutt",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "retaliate",
+     "pp": 10
+    },
+    {
+     "level": 60,
+     "move": "doubleedge",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[marowak]; learnsets.json[marowak] 第8世代; moves.json",
@@ -18689,12 +23757,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "stoneedge",
@@ -18731,6 +23807,38 @@
     {
      "move": "vacuumwave",
      "pp": 14
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "brickbreak",
+     "pp": 12
+    },
+    {
+     "level": 16,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 24,
+     "move": "blazekick",
+     "pp": 13
+    },
+    {
+     "level": 28,
+     "move": "feint",
+     "pp": 12
+    },
+    {
+     "level": 32,
+     "move": "megakick",
+     "pp": 12
+    },
+    {
+     "level": 36,
+     "move": "closecombat",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[hitmonlee]; learnsets.json[hitmonlee] 第9世代; moves.json",
@@ -18863,12 +23971,20 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "stoneedge",
@@ -18905,6 +24021,63 @@
     {
      "move": "vacuumwave",
      "pp": 14
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "drainpunch",
+     "pp": 8
+    },
+    {
+     "level": 4,
+     "move": "machpunch",
+     "pp": 22
+    },
+    {
+     "level": 8,
+     "move": "vacuumwave",
+     "pp": 14
+    },
+    {
+     "level": 16,
+     "move": "bulletpunch",
+     "pp": 16
+    },
+    {
+     "level": 21,
+     "move": "quickguard",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "firepunch",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "icepunch",
+     "pp": 12
+    },
+    {
+     "level": 24,
+     "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "level": 32,
+     "move": "megapunch",
+     "pp": 12
+    },
+    {
+     "level": 36,
+     "move": "closecombat",
+     "pp": 7
+    },
+    {
+     "level": 44,
+     "move": "focuspunch",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[hitmonchan]; learnsets.json[hitmonchan] 第9世代; moves.json",
@@ -19037,6 +24210,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
@@ -19059,6 +24236,14 @@
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stomp",
@@ -19103,6 +24288,33 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 30,
+     "move": "stomp",
+     "pp": 17
+    },
+    {
+     "level": 42,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 48,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 54,
+     "move": "powerwhip",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[lickitung]; learnsets.json[lickitung] 第8世代; moves.json",
@@ -19187,8 +24399,16 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludge",
@@ -19241,6 +24461,43 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "smog",
+     "pp": 17
+    },
+    {
+     "level": 8,
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
+     "level": 12,
+     "move": "clearsmog",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "sludge",
+     "pp": 15
+    },
+    {
+     "level": 32,
+     "move": "sludgebomb",
+     "pp": 10
+    },
+    {
+     "level": 36,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 40,
+     "move": "belch",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[koffing]; learnsets.json[koffing] 第9世代; moves.json",
@@ -19332,8 +24589,16 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludge",
@@ -19386,6 +24651,33 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "clearsmog",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "sludge",
+     "pp": 15
+    },
+    {
+     "level": 32,
+     "move": "sludgebomb",
+     "pp": 10
+    },
+    {
+     "level": 38,
+     "move": "toxic",
+     "pp": 12
+    },
+    {
+     "level": 44,
+     "move": "belch",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[weezing]; learnsets.json[weezing] 第9世代; moves.json",
@@ -19516,6 +24808,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -19526,6 +24822,10 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -19574,6 +24874,48 @@
     {
      "move": "thunderfang",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "smackdown",
+     "pp": 15
+    },
+    {
+     "level": 10,
+     "move": "bulldoze",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "hornattack",
+     "pp": 18
+    },
+    {
+     "level": 25,
+     "move": "stomp",
+     "pp": 17
+    },
+    {
+     "level": 35,
+     "move": "drillrun",
+     "pp": 13
+    },
+    {
+     "level": 40,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 50,
+     "move": "stoneedge",
+     "pp": 7
+    },
+    {
+     "level": 55,
+     "move": "megahorn",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[rhyhorn]; learnsets.json[rhyhorn] 第9世代; moves.json",
@@ -19738,6 +25080,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -19752,6 +25098,10 @@
     {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -19808,6 +25158,43 @@
     {
      "move": "thunderpunch",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "hammerarm",
+     "pp": 16
+    },
+    {
+     "level": 15,
+     "move": "hornattack",
+     "pp": 18
+    },
+    {
+     "level": 25,
+     "move": "stomp",
+     "pp": 17
+    },
+    {
+     "level": 35,
+     "move": "drillrun",
+     "pp": 13
+    },
+    {
+     "level": 40,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 54,
+     "move": "stoneedge",
+     "pp": 7
+    },
+    {
+     "level": 61,
+     "move": "megahorn",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[rhydon]; learnsets.json[rhydon] 第9世代; moves.json",
@@ -19953,6 +25340,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -19963,6 +25354,14 @@
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "softboiled",
@@ -20015,6 +25414,48 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "tailwhip",
+     "pp": 22
+    },
+    {
+     "level": 16,
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 32,
+     "move": "helpinghand",
+     "pp": 16
+    },
+    {
+     "level": 36,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 40,
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "level": 44,
+     "move": "softboiled",
+     "pp": 15
+    },
+    {
+     "level": 48,
+     "move": "lastresort",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[chansey]; learnsets.json[chansey] 第9世代; moves.json",
@@ -20111,6 +25552,10 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
     },
@@ -20119,8 +25564,20 @@
      "pp": 12
     },
     {
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "sludgebomb",
      "pp": 10
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stunspore",
@@ -20141,6 +25598,58 @@
     {
      "move": "vinewhip",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "stunspore",
+     "pp": 17
+    },
+    {
+     "level": 12,
+     "move": "megadrain",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "vinewhip",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "poisonpowder",
+     "pp": 22
+    },
+    {
+     "level": 24,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 32,
+     "move": "gigadrain",
+     "pp": 10
+    },
+    {
+     "level": 36,
+     "move": "sleeppowder",
+     "pp": 13
+    },
+    {
+     "level": 40,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 44,
+     "move": "tickle",
+     "pp": 17
+    },
+    {
+     "level": 48,
+     "move": "powerwhip",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[tangela]; learnsets.json[tangela] 第8世代; moves.json",
@@ -20293,6 +25802,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "retaliate",
      "pp": 10
     },
@@ -20311,6 +25824,14 @@
     {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stomp",
@@ -20351,6 +25872,48 @@
     {
      "move": "workup",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "growl",
+     "pp": 20
+    },
+    {
+     "level": 8,
+     "move": "fakeout",
+     "pp": 12
+    },
+    {
+     "level": 12,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 16,
+     "move": "stomp",
+     "pp": 17
+    },
+    {
+     "level": 24,
+     "move": "headbutt",
+     "pp": 17
+    },
+    {
+     "level": 28,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 36,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 52,
+     "move": "lastresort",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[kangaskhan]; learnsets.json[kangaskhan] 第8世代; moves.json",
@@ -20451,6 +26014,14 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smokescreen",
      "pp": 10
     },
@@ -20485,6 +26056,48 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "smokescreen",
+     "pp": 10
+    },
+    {
+     "level": 10,
+     "move": "twister",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "dragonbreath",
+     "pp": 12
+    },
+    {
+     "level": 25,
+     "move": "bubblebeam",
+     "pp": 10
+    },
+    {
+     "level": 35,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 40,
+     "move": "dragonpulse",
+     "pp": 10
+    },
+    {
+     "level": 45,
+     "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "level": 50,
+     "move": "dragondance",
+     "pp": 22
     }
    ],
    "source": "pokedex.json[horsea]; learnsets.json[horsea] 第9世代; moves.json",
@@ -20580,6 +26193,14 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smokescreen",
      "pp": 10
     },
@@ -20614,6 +26235,38 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 20,
+     "move": "dragonbreath",
+     "pp": 12
+    },
+    {
+     "level": 25,
+     "move": "bubblebeam",
+     "pp": 10
+    },
+    {
+     "level": 37,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 44,
+     "move": "dragonpulse",
+     "pp": 10
+    },
+    {
+     "level": 51,
+     "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "level": 58,
+     "move": "dragondance",
+     "pp": 22
     }
    ],
    "source": "pokedex.json[seadra]; learnsets.json[seadra] 第9世代; moves.json",
@@ -20719,12 +26372,24 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scald",
      "pp": 15
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smartstrike",
      "pp": 15
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "supersonic",
@@ -20761,6 +26426,33 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 10,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 15,
+     "move": "hornattack",
+     "pp": 18
+    },
+    {
+     "level": 35,
+     "move": "waterfall",
+     "pp": 12
+    },
+    {
+     "level": 45,
+     "move": "megahorn",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[goldeen]; learnsets.json[goldeen] 第8世代; moves.json",
@@ -20856,12 +26548,24 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scald",
      "pp": 15
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smartstrike",
      "pp": 15
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "supersonic",
@@ -20898,6 +26602,23 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 15,
+     "move": "hornattack",
+     "pp": 18
+    },
+    {
+     "level": 37,
+     "move": "waterfall",
+     "pp": 12
+    },
+    {
+     "level": 51,
+     "move": "megahorn",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[seaking]; learnsets.json[seaking] 第8世代; moves.json",
@@ -21015,8 +26736,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scald",
      "pp": 15
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "surf",
@@ -21057,6 +26790,78 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 4,
+     "move": "watergun",
+     "pp": 17
+    },
+    {
+     "level": 8,
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
+     "level": 12,
+     "move": "rapidspin",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "minimize",
+     "pp": 27
+    },
+    {
+     "level": 20,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 24,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 28,
+     "move": "brine",
+     "pp": 8
+    },
+    {
+     "level": 32,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 36,
+     "move": "powergem",
+     "pp": 15
+    },
+    {
+     "level": 40,
+     "move": "psychic",
+     "pp": 10
+    },
+    {
+     "level": 44,
+     "move": "surf",
+     "pp": 11
+    },
+    {
+     "level": 48,
+     "move": "recover",
+     "pp": 12
+    },
+    {
+     "level": 52,
+     "move": "cosmicpower",
+     "pp": 14
+    },
+    {
+     "level": 56,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[staryu]; learnsets.json[staryu] 第8世代; moves.json",
@@ -21185,8 +26990,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "scald",
      "pp": 15
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "surf",
@@ -21229,6 +27046,7 @@
      "pp": 17
     }
    ],
+   "levelUp": [],
    "source": "pokedex.json[starmie]; learnsets.json[starmie] 第8世代; moves.json",
    "evoLevel": 20,
    "prevo": "staryu",
@@ -21325,6 +27143,10 @@
      "pp": 16
     },
     {
+     "move": "hypnosis",
+     "pp": 13
+    },
+    {
      "move": "icepunch",
      "pp": 12
     },
@@ -21389,8 +27211,20 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "suckerpunch",
@@ -21423,6 +27257,48 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 20,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 28,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 36,
+     "move": "reflect",
+     "pp": 15
+    },
+    {
+     "level": 40,
+     "move": "suckerpunch",
+     "pp": 7
+    },
+    {
+     "level": 44,
+     "move": "dazzlinggleam",
+     "pp": 15
+    },
+    {
+     "level": 48,
+     "move": "psychic",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[mrmime]; learnsets.json[mrmime] 第8世代; moves.json",
@@ -21532,8 +27408,16 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "strugglebug",
@@ -21566,6 +27450,43 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 8,
+     "move": "falseswipe",
+     "pp": 15
+    },
+    {
+     "level": 12,
+     "move": "wingattack",
+     "pp": 20
+    },
+    {
+     "level": 16,
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
+     "level": 24,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 36,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 40,
+     "move": "xscissor",
+     "pp": 10
+    },
+    {
+     "level": 44,
+     "move": "swordsdance",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[scyther]; learnsets.json[scyther] 第9世代; moves.json",
@@ -21683,6 +27604,10 @@
      "pp": 15
     },
     {
+     "move": "lovelykiss",
+     "pp": 11
+    },
+    {
      "move": "megakick",
      "pp": 12
     },
@@ -21723,8 +27648,24 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "sweetkiss",
@@ -21737,6 +27678,48 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "confusion",
+     "pp": 22
+    },
+    {
+     "level": 16,
+     "move": "covet",
+     "pp": 27
+    },
+    {
+     "level": 20,
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "level": 24,
+     "move": "faketears",
+     "pp": 22
+    },
+    {
+     "level": 28,
+     "move": "icepunch",
+     "pp": 12
+    },
+    {
+     "level": 34,
+     "move": "psychic",
+     "pp": 10
+    },
+    {
+     "level": 40,
+     "move": "lovelykiss",
+     "pp": 11
+    },
+    {
+     "level": 58,
+     "move": "blizzard",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[jynx]; learnsets.json[jynx] 第8世代; moves.json",
@@ -21857,12 +27840,20 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "screech",
      "pp": 22
     },
     {
      "move": "shockwave",
      "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -21899,6 +27890,53 @@
     {
      "move": "wildcharge",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 16,
+     "move": "shockwave",
+     "pp": 8
+    },
+    {
+     "level": 20,
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "level": 24,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 28,
+     "move": "thunderpunch",
+     "pp": 17
+    },
+    {
+     "level": 34,
+     "move": "discharge",
+     "pp": 8
+    },
+    {
+     "level": 46,
+     "move": "thunderbolt",
+     "pp": 10
+    },
+    {
+     "level": 52,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 58,
+     "move": "thunder",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[electabuzz]; learnsets.json[electabuzz] 第9世代; moves.json",
@@ -22039,8 +28077,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smog",
@@ -22065,6 +28111,43 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "clearsmog",
+     "pp": 15
+    },
+    {
+     "level": 16,
+     "move": "flamewheel",
+     "pp": 11
+    },
+    {
+     "level": 20,
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
+     "level": 28,
+     "move": "firepunch",
+     "pp": 13
+    },
+    {
+     "level": 34,
+     "move": "lavaplume",
+     "pp": 10
+    },
+    {
+     "level": 46,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 58,
+     "move": "fireblast",
+     "pp": 9
     }
    ],
    "source": "pokedex.json[magmar]; learnsets.json[magmar] 第9世代; moves.json",
@@ -22169,12 +28252,24 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stoneedge",
@@ -22211,6 +28306,43 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 8,
+     "move": "bind",
+     "pp": 17
+    },
+    {
+     "level": 16,
+     "move": "bugbite",
+     "pp": 12
+    },
+    {
+     "level": 20,
+     "move": "stormthrow",
+     "pp": 17
+    },
+    {
+     "level": 32,
+     "move": "xscissor",
+     "pp": 10
+    },
+    {
+     "level": 40,
+     "move": "swordsdance",
+     "pp": 7
+    },
+    {
+     "level": 44,
+     "move": "submission",
+     "pp": 17
+    },
+    {
+     "level": 52,
+     "move": "superpower",
+     "pp": 11
     }
    ],
    "source": "pokedex.json[pinsir]; learnsets.json[pinsir] 第8世代; moves.json",
@@ -22307,6 +28439,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -22317,6 +28453,10 @@
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smartstrike",
@@ -22371,6 +28511,33 @@
      "pp": 9
     }
    ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "workup",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "hornattack",
+     "pp": 18
+    },
+    {
+     "level": 30,
+     "move": "zenheadbutt",
+     "pp": 9
+    },
+    {
+     "level": 40,
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "level": 55,
+     "move": "doubleedge",
+     "pp": 12
+    }
+   ],
    "source": "pokedex.json[tauros]; learnsets.json[tauros] 第9世代; moves.json",
    "evoLevel": 1,
    "legendary": false
@@ -22401,6 +28568,13 @@
    ],
    "learnable": [
     {
+     "move": "tackle",
+     "pp": 30
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 15,
      "move": "tackle",
      "pp": 30
     }
@@ -22544,12 +28718,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
     {
      "move": "scald",
      "pp": 15
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "stoneedge",
@@ -22594,6 +28776,58 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 4,
+     "move": "whirlpool",
+     "pp": 17
+    },
+    {
+     "level": 8,
+     "move": "icefang",
+     "pp": 15
+    },
+    {
+     "level": 12,
+     "move": "brine",
+     "pp": 8
+    },
+    {
+     "level": 21,
+     "move": "waterfall",
+     "pp": 12
+    },
+    {
+     "level": 24,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 32,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 36,
+     "move": "dragondance",
+     "pp": 22
+    },
+    {
+     "level": 40,
+     "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "level": 44,
+     "move": "hurricane",
+     "pp": 13
     }
    ],
    "source": "pokedex.json[gyarados]; learnsets.json[gyarados] 第9世代; moves.json",
@@ -22740,6 +28974,18 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smartstrike",
      "pp": 15
     },
@@ -22788,6 +29034,48 @@
      "pp": 9
     }
    ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "sing",
+     "pp": 13
+    },
+    {
+     "level": 20,
+     "move": "iceshard",
+     "pp": 16
+    },
+    {
+     "level": 25,
+     "move": "confuseray",
+     "pp": 13
+    },
+    {
+     "level": 30,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "brine",
+     "pp": 8
+    },
+    {
+     "level": 40,
+     "move": "bodyslam",
+     "pp": 17
+    },
+    {
+     "level": 45,
+     "move": "icebeam",
+     "pp": 8
+    },
+    {
+     "level": 55,
+     "move": "hydropump",
+     "pp": 8
+    }
+   ],
    "source": "pokedex.json[lapras]; learnsets.json[lapras] 第9世代; moves.json",
    "evoLevel": 1,
    "legendary": false
@@ -22812,6 +29100,7 @@
    "learnsetGen": 9,
    "kit": [],
    "learnable": [],
+   "levelUp": [],
    "source": "pokedex.json[ditto]; learnsets.json[ditto] 第9世代; moves.json",
    "availability": "暂不出场",
    "evoLevel": 1,
@@ -22911,6 +29200,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -22921,6 +29214,10 @@
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -22945,6 +29242,53 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 10,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 15,
+     "move": "babydolleyes",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 25,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 40,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 45,
+     "move": "charm",
+     "pp": 22
+    },
+    {
+     "level": 50,
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "level": 55,
+     "move": "lastresort",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[eevee]; learnsets.json[eevee] 第9世代; moves.json",
@@ -23082,6 +29426,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -23096,6 +29444,10 @@
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "surf",
@@ -23136,6 +29488,58 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "watergun",
+     "pp": 17
+    },
+    {
+     "level": 5,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 10,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 15,
+     "move": "babydolleyes",
+     "pp": 15
+    },
+    {
+     "level": 25,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 30,
+     "move": "aurorabeam",
+     "pp": 17
+    },
+    {
+     "level": 40,
+     "move": "muddywater",
+     "pp": 10
+    },
+    {
+     "level": 45,
+     "move": "acidarmor",
+     "pp": 16
+    },
+    {
+     "level": 50,
+     "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "level": 55,
+     "move": "lastresort",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[vaporeon]; learnsets.json[vaporeon] 第9世代; moves.json",
@@ -23261,6 +29665,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -23271,6 +29679,10 @@
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -23315,6 +29727,53 @@
     {
      "move": "wildcharge",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "thundershock",
+     "pp": 17
+    },
+    {
+     "level": 5,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 10,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 15,
+     "move": "babydolleyes",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "thunderwave",
+     "pp": 17
+    },
+    {
+     "level": 30,
+     "move": "thunderfang",
+     "pp": 15
+    },
+    {
+     "level": 40,
+     "move": "discharge",
+     "pp": 8
+    },
+    {
+     "level": 50,
+     "move": "thunder",
+     "pp": 7
+    },
+    {
+     "level": 55,
+     "move": "lastresort",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[jolteon]; learnsets.json[jolteon] 第9世代; moves.json",
@@ -23456,6 +29915,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -23466,6 +29929,10 @@
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smog",
@@ -23494,6 +29961,63 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "ember",
+     "pp": 15
+    },
+    {
+     "level": 5,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 10,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 15,
+     "move": "babydolleyes",
+     "pp": 15
+    },
+    {
+     "level": 20,
+     "move": "smog",
+     "pp": 17
+    },
+    {
+     "level": 25,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 30,
+     "move": "firefang",
+     "pp": 13
+    },
+    {
+     "level": 35,
+     "move": "firespin",
+     "pp": 19
+    },
+    {
+     "level": 40,
+     "move": "lavaplume",
+     "pp": 10
+    },
+    {
+     "level": 50,
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
+     "level": 55,
+     "move": "lastresort",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[flareon]; learnsets.json[flareon] 第9世代; moves.json",
@@ -23591,8 +30115,16 @@
      "pp": 12
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -23636,6 +30168,43 @@
     },
     {
      "move": "zenheadbutt",
+     "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 15,
+     "move": "thundershock",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "psybeam",
+     "pp": 17
+    },
+    {
+     "level": 35,
+     "move": "recover",
+     "pp": 12
+    },
+    {
+     "level": 40,
+     "move": "discharge",
+     "pp": 8
+    },
+    {
+     "level": 45,
+     "move": "triattack",
+     "pp": 17
+    },
+    {
+     "level": 50,
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "level": 60,
+     "move": "zapcannon",
      "pp": 9
     }
    ],
@@ -23746,6 +30315,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -23764,6 +30337,14 @@
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "supersonic",
@@ -23800,6 +30381,53 @@
     {
      "move": "withdraw",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 10,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 15,
+     "move": "watergun",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "leer",
+     "pp": 27
+    },
+    {
+     "level": 25,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 30,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "brine",
+     "pp": 8
+    },
+    {
+     "level": 41,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 50,
+     "move": "surf",
+     "pp": 11
+    },
+    {
+     "level": 60,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[omanyte]; learnsets.json[omanyte] 第8世代; moves.json",
@@ -23908,6 +30536,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -23922,6 +30554,14 @@
     {
      "move": "scald",
      "pp": 15
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stoneedge",
@@ -23950,6 +30590,53 @@
     {
      "move": "withdraw",
      "pp": 16
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 15,
+     "move": "watergun",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "leer",
+     "pp": 27
+    },
+    {
+     "level": 25,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 30,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "brine",
+     "pp": 8
+    },
+    {
+     "level": 43,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 56,
+     "move": "surf",
+     "pp": 11
+    },
+    {
+     "level": 70,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[omastar]; learnsets.json[omastar] 第8世代; moves.json",
@@ -24088,6 +30775,10 @@
      "pp": 17
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -24112,6 +30803,14 @@
      "pp": 22
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
+    },
+    {
      "move": "stoneedge",
      "pp": 7
     },
@@ -24134,6 +30833,68 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "scratch",
+     "pp": 28
+    },
+    {
+     "level": 10,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 15,
+     "move": "aquajet",
+     "pp": 18
+    },
+    {
+     "level": 20,
+     "move": "leer",
+     "pp": 27
+    },
+    {
+     "level": 25,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 30,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "brine",
+     "pp": 8
+    },
+    {
+     "level": 41,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 45,
+     "move": "leechlife",
+     "pp": 19
+    },
+    {
+     "level": 50,
+     "move": "liquidation",
+     "pp": 10
+    },
+    {
+     "level": 55,
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
+     "level": 60,
+     "move": "stoneedge",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[kabuto]; learnsets.json[kabuto] 第8世代; moves.json",
@@ -24282,6 +31043,10 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -24308,6 +31073,14 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "stoneedge",
@@ -24340,6 +31113,63 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 15,
+     "move": "aquajet",
+     "pp": 18
+    },
+    {
+     "level": 20,
+     "move": "leer",
+     "pp": 27
+    },
+    {
+     "level": 25,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 30,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "brine",
+     "pp": 8
+    },
+    {
+     "level": 43,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 49,
+     "move": "leechlife",
+     "pp": 19
+    },
+    {
+     "level": 56,
+     "move": "liquidation",
+     "pp": 10
+    },
+    {
+     "level": 63,
+     "move": "metalsound",
+     "pp": 17
+    },
+    {
+     "level": 70,
+     "move": "stoneedge",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[kabutops]; learnsets.json[kabutops] 第8世代; moves.json",
@@ -24454,6 +31284,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -24464,6 +31298,14 @@
     {
      "move": "rocktomb",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "steelwing",
@@ -24500,6 +31342,48 @@
     {
      "move": "wingattack",
      "pp": 20
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 10,
+     "move": "wingattack",
+     "pp": 20
+    },
+    {
+     "level": 20,
+     "move": "rockslide",
+     "pp": 13
+    },
+    {
+     "level": 25,
+     "move": "roar",
+     "pp": 14
+    },
+    {
+     "level": 30,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 35,
+     "move": "ironhead",
+     "pp": 12
+    },
+    {
+     "level": 40,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 45,
+     "move": "stoneedge",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[aerodactyl]; learnsets.json[aerodactyl] 第8世代; moves.json",
@@ -24660,6 +31544,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -24680,8 +31568,16 @@
      "pp": 10
     },
     {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "smackdown",
      "pp": 15
+    },
+    {
+     "move": "snore",
+     "pp": 16
     },
     {
      "move": "surf",
@@ -24714,6 +31610,58 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 16,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 20,
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "level": 20,
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
+     "level": 20,
+     "move": "snore",
+     "pp": 16
+    },
+    {
+     "level": 24,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 28,
+     "move": "bodyslam",
+     "pp": 17
+    },
+    {
+     "level": 36,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 40,
+     "move": "highhorsepower",
+     "pp": 10
+    },
+    {
+     "level": 44,
+     "move": "hammerarm",
+     "pp": 16
+    },
+    {
+     "level": 52,
+     "move": "belch",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[snorlax]; learnsets.json[snorlax] 第9世代; moves.json",
@@ -24831,8 +31779,16 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -24849,6 +31805,48 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "powdersnow",
+     "pp": 10
+    },
+    {
+     "level": 10,
+     "move": "reflect",
+     "pp": 15
+    },
+    {
+     "level": 15,
+     "move": "iceshard",
+     "pp": 16
+    },
+    {
+     "level": 25,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "freezedry",
+     "pp": 13
+    },
+    {
+     "level": 45,
+     "move": "icebeam",
+     "pp": 8
+    },
+    {
+     "level": 55,
+     "move": "hurricane",
+     "pp": 13
+    },
+    {
+     "level": 65,
+     "move": "blizzard",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[articuno]; learnsets.json[articuno] 第9世代; moves.json",
@@ -24950,6 +31948,14 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
+    },
+    {
      "move": "swift",
      "pp": 8
     },
@@ -24982,6 +31988,48 @@
      "pp": 15
     },
     {
+     "move": "zapcannon",
+     "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "thundershock",
+     "pp": 17
+    },
+    {
+     "level": 10,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 15,
+     "move": "pluck",
+     "pp": 15
+    },
+    {
+     "level": 25,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "drillpeck",
+     "pp": 13
+    },
+    {
+     "level": 45,
+     "move": "discharge",
+     "pp": 8
+    },
+    {
+     "level": 55,
+     "move": "thunder",
+     "pp": 7
+    },
+    {
+     "level": 70,
      "move": "zapcannon",
      "pp": 9
     }
@@ -25105,8 +32153,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -25127,6 +32183,48 @@
     {
      "move": "wingattack",
      "pp": 20
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 5,
+     "move": "ember",
+     "pp": 15
+    },
+    {
+     "level": 15,
+     "move": "wingattack",
+     "pp": 20
+    },
+    {
+     "level": 25,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 30,
+     "move": "incinerate",
+     "pp": 15
+    },
+    {
+     "level": 35,
+     "move": "airslash",
+     "pp": 15
+    },
+    {
+     "level": 45,
+     "move": "heatwave",
+     "pp": 8
+    },
+    {
+     "level": 55,
+     "move": "hurricane",
+     "pp": 13
+    },
+    {
+     "level": 65,
+     "move": "overheat",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[moltres]; learnsets.json[moltres] 第9世代; moves.json",
@@ -25243,8 +32341,16 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "surf",
@@ -25285,6 +32391,33 @@
     {
      "move": "weatherball",
      "pp": 15
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 15,
+     "move": "dragontail",
+     "pp": 13
+    },
+    {
+     "level": 25,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 33,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 39,
+     "move": "dragonrush",
+     "pp": 8
+    },
+    {
+     "level": 60,
+     "move": "dragondance",
+     "pp": 22
     }
    ],
    "source": "pokedex.json[dragonair]; learnsets.json[dragonair] 第9世代; moves.json",
@@ -25458,6 +32591,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -25472,6 +32609,10 @@
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "stoneedge",
@@ -25524,6 +32665,38 @@
     {
      "move": "wingattack",
      "pp": 20
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "hurricane",
+     "pp": 13
+    },
+    {
+     "level": 15,
+     "move": "dragontail",
+     "pp": 13
+    },
+    {
+     "level": 25,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 33,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 39,
+     "move": "dragonrush",
+     "pp": 8
+    },
+    {
+     "level": 62,
+     "move": "dragondance",
+     "pp": 22
     }
    ],
    "source": "pokedex.json[dragonite]; learnsets.json[dragonite] 第9世代; moves.json",
@@ -25725,6 +32898,10 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -25735,6 +32912,10 @@
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "stoneedge",
@@ -25775,6 +32956,43 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 8,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 16,
+     "move": "psychocut",
+     "pp": 14
+    },
+    {
+     "level": 32,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 40,
+     "move": "aurasphere",
+     "pp": 10
+    },
+    {
+     "level": 48,
+     "move": "psychic",
+     "pp": 10
+    },
+    {
+     "level": 72,
+     "move": "psystrike",
+     "pp": 15
+    },
+    {
+     "level": 80,
+     "move": "recover",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[mewtwo]; learnsets.json[mewtwo] 第9世代; moves.json",
@@ -26171,6 +33389,10 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -26201,6 +33423,10 @@
     {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -26319,6 +33545,33 @@
      "pp": 9
     }
    ],
+   "levelUp": [
+    {
+     "level": 10,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 30,
+     "move": "ancientpower",
+     "pp": 12
+    },
+    {
+     "level": 50,
+     "move": "nastyplot",
+     "pp": 20
+    },
+    {
+     "level": 90,
+     "move": "aurasphere",
+     "pp": 10
+    },
+    {
+     "level": 100,
+     "move": "psychic",
+     "pp": 10
+    }
+   ],
    "source": "pokedex.json[mew]; learnsets.json[mew] 第9世代; moves.json",
    "evoLevel": 1,
    "legendary": true
@@ -26421,8 +33674,16 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sweetscent",
@@ -26443,6 +33704,43 @@
     {
      "move": "takedown",
      "pp": 19
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "level": 18,
+     "move": "reflect",
+     "pp": 15
+    },
+    {
+     "level": 22,
+     "move": "magicalleaf",
+     "pp": 8
+    },
+    {
+     "level": 32,
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
+     "level": 36,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 40,
+     "move": "bodyslam",
+     "pp": 17
+    },
+    {
+     "level": 50,
+     "move": "gigadrain",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[bayleef]; learnsets.json[bayleef] 第9世代; moves.json",
@@ -26563,8 +33861,16 @@
      "pp": 15
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "seedbomb",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sweetscent",
@@ -26593,6 +33899,43 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 12,
+     "move": "synthesis",
+     "pp": 12
+    },
+    {
+     "level": 18,
+     "move": "reflect",
+     "pp": 15
+    },
+    {
+     "level": 22,
+     "move": "magicalleaf",
+     "pp": 8
+    },
+    {
+     "level": 34,
+     "move": "sweetscent",
+     "pp": 22
+    },
+    {
+     "level": 40,
+     "move": "lightscreen",
+     "pp": 15
+    },
+    {
+     "level": 46,
+     "move": "bodyslam",
+     "pp": 17
+    },
+    {
+     "level": 60,
+     "move": "gigadrain",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[meganium]; learnsets.json[meganium] 第9世代; moves.json",
@@ -26722,8 +34065,16 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smokescreen",
@@ -26752,6 +34103,63 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 10,
+     "move": "ember",
+     "pp": 15
+    },
+    {
+     "level": 13,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 20,
+     "move": "flamewheel",
+     "pp": 11
+    },
+    {
+     "level": 24,
+     "move": "defensecurl",
+     "pp": 16
+    },
+    {
+     "level": 31,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 35,
+     "move": "flamecharge",
+     "pp": 17
+    },
+    {
+     "level": 42,
+     "move": "lavaplume",
+     "pp": 10
+    },
+    {
+     "level": 46,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 53,
+     "move": "inferno",
+     "pp": 15
+    },
+    {
+     "level": 64,
+     "move": "doubleedge",
+     "pp": 12
+    },
+    {
+     "level": 68,
+     "move": "overheat",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[quilava]; learnsets.json[quilava] 第9世代; moves.json",
@@ -26904,6 +34312,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -26922,6 +34334,10 @@
     {
      "move": "shadowclaw",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smokescreen",
@@ -26958,6 +34374,53 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 13,
+     "move": "quickattack",
+     "pp": 13
+    },
+    {
+     "level": 20,
+     "move": "flamewheel",
+     "pp": 11
+    },
+    {
+     "level": 24,
+     "move": "defensecurl",
+     "pp": 16
+    },
+    {
+     "level": 31,
+     "move": "swift",
+     "pp": 8
+    },
+    {
+     "level": 35,
+     "move": "flamecharge",
+     "pp": 17
+    },
+    {
+     "level": 43,
+     "move": "lavaplume",
+     "pp": 10
+    },
+    {
+     "level": 48,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 56,
+     "move": "inferno",
+     "pp": 15
+    },
+    {
+     "level": 74,
+     "move": "overheat",
+     "pp": 10
     }
    ],
    "source": "pokedex.json[typhlosion]; learnsets.json[typhlosion] 第9世代; moves.json",
@@ -27087,6 +34550,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -27113,6 +34580,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "superpower",
@@ -27149,6 +34620,48 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 13,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 21,
+     "move": "icefang",
+     "pp": 15
+    },
+    {
+     "level": 30,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 34,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 37,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 47,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 50,
+     "move": "superpower",
+     "pp": 11
+    },
+    {
+     "level": 55,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[croconaw]; learnsets.json[croconaw] 第9世代; moves.json",
@@ -27301,6 +34814,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -27327,6 +34844,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "snarl",
@@ -27367,6 +34888,48 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 13,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 21,
+     "move": "icefang",
+     "pp": 15
+    },
+    {
+     "level": 32,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 37,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 44,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 59,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 65,
+     "move": "superpower",
+     "pp": 11
+    },
+    {
+     "level": 70,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[feraligatr]; learnsets.json[feraligatr] 第9世代; moves.json",
@@ -27496,6 +35059,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -27514,6 +35081,10 @@
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -27542,6 +35113,48 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 9,
+     "move": "megadrain",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "quickguard",
+     "pp": 13
+    },
+    {
+     "level": 25,
+     "move": "gigadrain",
+     "pp": 10
+    },
+    {
+     "level": 30,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
+     "level": 40,
+     "move": "leafblade",
+     "pp": 12
+    },
+    {
+     "level": 45,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 55,
+     "move": "leafstorm",
+     "pp": 5
     }
    ],
    "source": "pokedex.json[grovyle]; learnsets.json[grovyle] 第9世代; moves.json",
@@ -27702,6 +35315,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -27724,6 +35341,10 @@
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -27756,6 +35377,48 @@
     {
      "move": "xscissor",
      "pp": 10
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "leafblade",
+     "pp": 12
+    },
+    {
+     "level": 5,
+     "move": "megadrain",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "quickguard",
+     "pp": 13
+    },
+    {
+     "level": 25,
+     "move": "gigadrain",
+     "pp": 10
+    },
+    {
+     "level": 30,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 35,
+     "move": "doubleteam",
+     "pp": 17
+    },
+    {
+     "level": 42,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 56,
+     "move": "leafstorm",
+     "pp": 5
     }
    ],
    "source": "pokedex.json[sceptile]; learnsets.json[sceptile] 第9世代; moves.json",
@@ -27898,6 +35561,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -27920,6 +35587,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "swift",
@@ -27948,6 +35619,43 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 9,
+     "move": "flamecharge",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 20,
+     "move": "aerialace",
+     "pp": 8
+    },
+    {
+     "level": 25,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 40,
+     "move": "blazekick",
+     "pp": 13
+    },
+    {
+     "level": 45,
+     "move": "bulkup",
+     "pp": 16
+    },
+    {
+     "level": 55,
+     "move": "flareblitz",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[combusken]; learnsets.json[combusken] 第9世代; moves.json",
@@ -28109,6 +35817,10 @@
      "pp": 13
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -28135,6 +35847,10 @@
     {
      "move": "slash",
      "pp": 11
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "stoneedge",
@@ -28167,6 +35883,48 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "blazekick",
+     "pp": 13
+    },
+    {
+     "level": 9,
+     "move": "flamecharge",
+     "pp": 17
+    },
+    {
+     "level": 15,
+     "move": "sandattack",
+     "pp": 20
+    },
+    {
+     "level": 20,
+     "move": "aerialace",
+     "pp": 8
+    },
+    {
+     "level": 25,
+     "move": "slash",
+     "pp": 11
+    },
+    {
+     "level": 42,
+     "move": "bulkup",
+     "pp": 16
+    },
+    {
+     "level": 56,
+     "move": "flareblitz",
+     "pp": 6
+    },
+    {
+     "level": 63,
+     "move": "bravebird",
+     "pp": 6
     }
    ],
    "source": "pokedex.json[blaziken]; learnsets.json[blaziken] 第9世代; moves.json",
@@ -28285,6 +36043,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -28307,6 +36069,10 @@
     {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgewave",
@@ -28343,6 +36109,63 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 0,
+     "move": "mudshot",
+     "pp": 13
+    },
+    {
+     "level": 9,
+     "move": "rockthrow",
+     "pp": 16
+    },
+    {
+     "level": 12,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 15,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 20,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 25,
+     "move": "rockslide",
+     "pp": 13
+    },
+    {
+     "level": 30,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 35,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 40,
+     "move": "muddywater",
+     "pp": 10
+    },
+    {
+     "level": 45,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 55,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[marshtomp]; learnsets.json[marshtomp] 第9世代; moves.json",
@@ -28484,6 +36307,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
@@ -28506,6 +36333,10 @@
     {
      "move": "screech",
      "pp": 22
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgewave",
@@ -28554,6 +36385,58 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 9,
+     "move": "rockthrow",
+     "pp": 16
+    },
+    {
+     "level": 12,
+     "move": "protect",
+     "pp": 10
+    },
+    {
+     "level": 15,
+     "move": "supersonic",
+     "pp": 10
+    },
+    {
+     "level": 20,
+     "move": "waterpulse",
+     "pp": 12
+    },
+    {
+     "level": 25,
+     "move": "rockslide",
+     "pp": 13
+    },
+    {
+     "level": 30,
+     "move": "takedown",
+     "pp": 19
+    },
+    {
+     "level": 35,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 42,
+     "move": "muddywater",
+     "pp": 10
+    },
+    {
+     "level": 49,
+     "move": "screech",
+     "pp": 22
+    },
+    {
+     "level": 63,
+     "move": "hydropump",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[swampert]; learnsets.json[swampert] 第9世代; moves.json",
@@ -28692,6 +36575,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -28702,6 +36589,10 @@
     {
      "move": "slam",
      "pp": 12
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -28750,6 +36641,33 @@
     {
      "move": "whirlpool",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 16,
+     "move": "slam",
+     "pp": 12
+    },
+    {
+     "level": 28,
+     "move": "aquatail",
+     "pp": 11
+    },
+    {
+     "level": 34,
+     "move": "muddywater",
+     "pp": 10
+    },
+    {
+     "level": 40,
+     "move": "amnesia",
+     "pp": 22
+    },
+    {
+     "level": 46,
+     "move": "toxic",
+     "pp": 12
     }
    ],
    "source": "pokedex.json[quagsire]; learnsets.json[quagsire] 第9世代; moves.json",
@@ -28888,12 +36806,20 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "roar",
      "pp": 14
     },
     {
      "move": "shadowball",
      "pp": 10
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "sludgebomb",
@@ -28930,6 +36856,48 @@
     {
      "move": "willowisp",
      "pp": 17
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 13,
+     "move": "roar",
+     "pp": 14
+    },
+    {
+     "level": 16,
+     "move": "bite",
+     "pp": 19
+    },
+    {
+     "level": 20,
+     "move": "incinerate",
+     "pp": 15
+    },
+    {
+     "level": 30,
+     "move": "firefang",
+     "pp": 13
+    },
+    {
+     "level": 45,
+     "move": "foulplay",
+     "pp": 17
+    },
+    {
+     "level": 50,
+     "move": "flamethrower",
+     "pp": 12
+    },
+    {
+     "level": 56,
+     "move": "crunch",
+     "pp": 13
+    },
+    {
+     "level": 62,
+     "move": "inferno",
+     "pp": 15
     }
    ],
    "source": "pokedex.json[houndoom]; learnsets.json[houndoom] 第9世代; moves.json",
@@ -29055,6 +37023,10 @@
      "pp": 10
     },
     {
+     "move": "rest",
+     "pp": 8
+    },
+    {
      "move": "rockslide",
      "pp": 13
     },
@@ -29065,6 +37037,10 @@
     {
      "move": "sandattack",
      "pp": 20
+    },
+    {
+     "move": "sleeptalk",
+     "pp": 17
     },
     {
      "move": "smackdown",
@@ -29113,6 +37089,38 @@
     {
      "move": "zenheadbutt",
      "pp": 9
+    }
+   ],
+   "levelUp": [
+    {
+     "level": 10,
+     "move": "fakeout",
+     "pp": 12
+    },
+    {
+     "level": 13,
+     "move": "forcepalm",
+     "pp": 12
+    },
+    {
+     "level": 16,
+     "move": "whirlwind",
+     "pp": 27
+    },
+    {
+     "level": 22,
+     "move": "bulkup",
+     "pp": 16
+    },
+    {
+     "level": 38,
+     "move": "focuspunch",
+     "pp": 8
+    },
+    {
+     "level": 46,
+     "move": "closecombat",
+     "pp": 7
     }
    ],
    "source": "pokedex.json[hariyama]; learnsets.json[hariyama] 第9世代; moves.json",

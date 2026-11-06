@@ -89,7 +89,7 @@ test('format 2 stores only camp data; zero-purse departure, purchases, and excha
  assert.equal(await store.depart('memory-run',103,0),true);
  assert.equal(port.writes(),writes,'departure stays in memory');assert.equal(port.raw(),before);
  assert.deepEqual(store.envelope,campEnvelope,'the exported record remains the pre-departure camp');
- assert.equal(store.state.dungeon.tmPool,4);
+ assert.equal(store.state.dungeon.tmPool,5);
  assert.equal(store.state.purse,0);
  assert.equal(store.profile.account,40,'v0.1 does not spend or deduct base money');
  const reopened=new TrialStore(port,'camp-test');assert.equal(await reopened.whenReady,true);

@@ -14,7 +14,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "absorb",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -38,7 +39,8 @@
     "id": "acid",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -54,7 +56,8 @@
     "id": "acidarmor",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -78,7 +81,8 @@
     "id": "acidspray",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -93,7 +97,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "aerialace",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -108,7 +113,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "aircutter",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -130,7 +136,8 @@
     "id": "airslash",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -146,7 +153,8 @@
     "id": "amnesia",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -191,7 +199,8 @@
     "id": "ancientpower",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -206,7 +215,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "aquajet",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "18",
@@ -221,7 +231,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "aquatail",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "11",
@@ -243,7 +254,8 @@
     "id": "astonish",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -258,7 +270,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "aurasphere",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -282,7 +295,8 @@
     "id": "aurorabeam",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -298,7 +312,8 @@
     "id": "babydolleyes",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -330,7 +345,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "belch",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -346,7 +362,8 @@
     "id": "bind",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -368,7 +385,8 @@
     "id": "bite",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "19",
@@ -391,7 +409,8 @@
     "id": "blazekick",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -413,7 +432,8 @@
     "id": "blizzard",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "7",
@@ -435,7 +455,8 @@
     "id": "bodyslam",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -455,7 +476,8 @@
     "id": "bravebird",
     "fields": [
      "accuracy",
-     "recoil"
+     "recoil",
+     "flags"
     ],
     "pmd": {
      "basePp": "6",
@@ -483,7 +505,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "brickbreak",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -498,7 +521,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "brine",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -522,7 +546,8 @@
     "id": "bubblebeam",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -537,7 +562,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "bugbite",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -561,7 +587,8 @@
     "id": "bugbuzz",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -577,7 +604,8 @@
     "id": "bulkup",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -601,7 +629,8 @@
     "id": "bulldoze",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -616,7 +645,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "bulletpunch",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -632,7 +662,8 @@
     "id": "calmmind",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "19",
@@ -673,7 +704,8 @@
     "id": "chargebeam",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -689,7 +721,8 @@
     "id": "charm",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -722,7 +755,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "circlethrow",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -737,7 +771,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "clearsmog",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -757,7 +792,8 @@
     "id": "closecombat",
     "fields": [
      "accuracy",
-     "self"
+     "self",
+     "flags"
     ],
     "pmd": {
      "basePp": "7",
@@ -773,7 +809,8 @@
     "id": "coil",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -806,7 +843,8 @@
     "id": "confide",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "20",
@@ -839,7 +877,8 @@
     "id": "confuseray",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -874,7 +913,8 @@
     "id": "confusion",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -890,7 +930,8 @@
     "id": "cosmicpower",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "14",
@@ -922,7 +963,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "covet",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "27",
@@ -937,7 +979,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "crabhammer",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -952,7 +995,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "crosschop",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -974,7 +1018,8 @@
     "id": "crosspoison",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -998,7 +1043,8 @@
     "id": "crunch",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -1022,7 +1068,8 @@
     "id": "crushclaw",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -1044,7 +1091,8 @@
     "id": "darkpulse",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -1059,7 +1107,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "dazzlinggleam",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -1076,7 +1125,8 @@
     "fields": [
      "accuracy",
      "boosts",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -1091,7 +1141,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "disarmingvoice",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -1113,7 +1164,8 @@
     "id": "discharge",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -1133,7 +1185,8 @@
     "id": "doubleedge",
     "fields": [
      "accuracy",
-     "recoil"
+     "recoil",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -1162,7 +1215,8 @@
     "id": "doubleteam",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -1198,7 +1252,8 @@
     "id": "dracometeor",
     "fields": [
      "accuracy",
-     "self"
+     "self",
+     "flags"
     ],
     "pmd": {
      "basePp": "5",
@@ -1220,7 +1275,8 @@
     "id": "dragonbreath",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -1235,7 +1291,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "dragonclaw",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -1251,7 +1308,8 @@
     "id": "dragondance",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -1283,7 +1341,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "dragonpulse",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -1305,7 +1364,8 @@
     "id": "dragonrush",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -1320,7 +1380,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "dragontail",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -1335,7 +1396,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "drainingkiss",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -1350,7 +1412,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "drainpunch",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -1365,7 +1428,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "drillpeck",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -1380,7 +1444,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "drillrun",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -1402,7 +1467,8 @@
     "id": "dynamicpunch",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -1426,7 +1492,8 @@
     "id": "earthpower",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -1442,7 +1509,8 @@
     "id": "eerieimpulse",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -1483,7 +1551,8 @@
     "id": "electroweb",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -1506,7 +1575,8 @@
     "id": "ember",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -1530,7 +1600,8 @@
     "id": "energyball",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "11",
@@ -1552,7 +1623,8 @@
     "id": "extrasensory",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -1567,7 +1639,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "extremespeed",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -1582,7 +1655,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "facade",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -1604,7 +1678,8 @@
     "id": "fakeout",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -1620,7 +1695,8 @@
     "id": "faketears",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -1652,7 +1728,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "falseswipe",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -1668,7 +1745,8 @@
     "id": "featherdance",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -1700,7 +1778,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "feint",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -1715,7 +1794,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "feintattack",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "25",
@@ -1730,7 +1810,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "fellstinger",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "20",
@@ -1753,7 +1834,8 @@
     "id": "fireblast",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "9",
@@ -1780,7 +1862,8 @@
     "id": "firefang",
     "fields": [
      "accuracy",
-     "secondaries"
+     "secondaries",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -1803,7 +1886,8 @@
     "id": "firepunch",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -1820,7 +1904,8 @@
     "id": "firespin",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "19",
@@ -1845,7 +1930,8 @@
     "id": "flamecharge",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -1868,7 +1954,8 @@
     "id": "flamethrower",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -1891,7 +1978,8 @@
     "id": "flamewheel",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "11",
@@ -1919,7 +2007,8 @@
     "fields": [
      "accuracy",
      "recoil",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "6",
@@ -1956,7 +2045,8 @@
     "id": "flashcannon",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "11",
@@ -1980,7 +2070,8 @@
     "id": "focusblast",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "6",
@@ -1995,7 +2086,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "focuspunch",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -2017,7 +2109,8 @@
     "id": "forcepalm",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -2032,7 +2125,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "foulplay",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -2054,7 +2148,8 @@
     "id": "freezedry",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -2069,7 +2164,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "gigadrain",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -2085,7 +2181,8 @@
     "id": "glare",
     "fields": [
      "accuracy",
-     "status"
+     "status",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -2114,7 +2211,8 @@
     "id": "growl",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "20",
@@ -2153,7 +2251,8 @@
     "id": "gunkshot",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "6",
@@ -2168,7 +2267,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "gust",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "19",
@@ -2187,7 +2287,8 @@
     "id": "hammerarm",
     "fields": [
      "accuracy",
-     "self"
+     "self",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -2203,7 +2304,8 @@
     "id": "harden",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -2225,7 +2327,8 @@
     "id": "headbutt",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -2245,7 +2348,8 @@
     "id": "headsmash",
     "fields": [
      "accuracy",
-     "recoil"
+     "recoil",
+     "flags"
     ],
     "pmd": {
      "basePp": "5",
@@ -2281,7 +2385,8 @@
     "id": "heatwave",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -2297,7 +2402,8 @@
     "id": "helpinghand",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -2312,7 +2418,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "highhorsepower",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -2328,7 +2435,8 @@
     "id": "honeclaws",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -2360,7 +2468,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "hornattack",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "18",
@@ -2382,7 +2491,8 @@
     "id": "hurricane",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -2397,7 +2507,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "hydropump",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -2419,7 +2530,8 @@
     "id": "hyperfang",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -2434,12 +2546,32 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "hypervoice",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
      "accuracy": "90%",
      "cutsCorners": "Yes"
+    }
+   }
+  },
+  "hypnosis": {
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "hypnosis",
+    "fields": [
+     "accuracy",
+     "status",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "88%",
+     "cutsCorners": "Yes",
+     "range": "Front",
+     "target": "Enemy"
     }
    }
   },
@@ -2456,7 +2588,8 @@
     "id": "icebeam",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -2482,7 +2615,8 @@
     "id": "icefang",
     "fields": [
      "accuracy",
-     "secondaries"
+     "secondaries",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -2504,7 +2638,8 @@
     "id": "icepunch",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -2519,7 +2654,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "iceshard",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -2541,7 +2677,8 @@
     "id": "iciclecrash",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -2565,7 +2702,8 @@
     "id": "icywind",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -2581,7 +2719,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "incinerate",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -2604,7 +2743,8 @@
     "id": "inferno",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -2620,7 +2760,8 @@
     "id": "infestation",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -2636,7 +2777,8 @@
     "id": "irondefense",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -2658,7 +2800,8 @@
     "id": "ironhead",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -2682,7 +2825,8 @@
     "id": "irontail",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -2698,7 +2842,8 @@
     "id": "kinesis",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -2730,7 +2875,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "lastresort",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "7",
@@ -2753,7 +2899,8 @@
     "id": "lavaplume",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -2768,7 +2915,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "leafage",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": null
    }
@@ -2779,7 +2927,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "leafblade",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -2798,7 +2947,8 @@
     "id": "leafstorm",
     "fields": [
      "accuracy",
-     "self"
+     "self",
+     "flags"
     ],
     "pmd": {
      "basePp": "5",
@@ -2813,7 +2963,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "leechlife",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "19",
@@ -2829,7 +2980,8 @@
     "id": "leer",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "27",
@@ -2868,7 +3020,8 @@
     "id": "lick",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "20",
@@ -2883,7 +3036,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "lightscreen",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -2907,12 +3061,32 @@
     "id": "liquidation",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
      "accuracy": "95%",
      "cutsCorners": "No"
+    }
+   }
+  },
+  "lovelykiss": {
+   "acc": 88,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "lovelykiss",
+    "fields": [
+     "accuracy",
+     "status",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "11",
+     "accuracy": "88%",
+     "cutsCorners": "Yes",
+     "range": "1 tile around user",
+     "target": "Enemy"
     }
    }
   },
@@ -2931,7 +3105,8 @@
     "id": "lowsweep",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -2946,7 +3121,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "machpunch",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -2961,7 +3137,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "magicalleaf",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -2976,7 +3153,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "megadrain",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -2991,7 +3169,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "megahorn",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "7",
@@ -3006,7 +3185,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "megakick",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -3021,7 +3201,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "megapunch",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -3045,7 +3226,8 @@
     "id": "metalclaw",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -3061,7 +3243,8 @@
     "id": "metalsound",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -3105,7 +3288,8 @@
     "id": "meteormash",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "9",
@@ -3122,7 +3306,8 @@
     "fields": [
      "accuracy",
      "boosts",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "27",
@@ -3167,7 +3352,8 @@
     "id": "moonblast",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -3191,7 +3377,8 @@
     "id": "muddywater",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -3215,7 +3402,8 @@
     "id": "mudshot",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -3239,7 +3427,8 @@
     "id": "mudslap",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -3264,7 +3453,8 @@
     "id": "mysticalfire",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -3280,7 +3470,8 @@
     "id": "nastyplot",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "20",
@@ -3312,7 +3503,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "nightslash",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -3334,7 +3526,8 @@
     "id": "nuzzle",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -3354,7 +3547,8 @@
     "id": "overheat",
     "fields": [
      "accuracy",
-     "self"
+     "self",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -3369,7 +3563,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "payday",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -3384,7 +3579,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "peck",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "26",
@@ -3399,7 +3595,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "petalblizzard",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -3415,7 +3612,8 @@
     "id": "playnice",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "20",
@@ -3456,7 +3654,8 @@
     "id": "playrough",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -3471,7 +3670,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "pluck",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -3493,7 +3693,8 @@
     "id": "poisonfang",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -3509,7 +3710,8 @@
     "id": "poisongas",
     "fields": [
      "accuracy",
-     "status"
+     "status",
+     "flags"
     ],
     "pmd": {
      "basePp": "27",
@@ -3544,7 +3746,8 @@
     "id": "poisonjab",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "14",
@@ -3555,12 +3758,14 @@
   },
   "poisonpowder": {
    "acc": 100,
+   "powder": true,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "poisonpowder",
     "fields": [
      "accuracy",
-     "status"
+     "status",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -3595,7 +3800,8 @@
     "id": "poisonsting",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "19",
@@ -3617,7 +3823,8 @@
     "id": "poisontail",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -3632,7 +3839,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "pound",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "27",
@@ -3654,7 +3862,8 @@
     "id": "powdersnow",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -3669,7 +3878,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "powergem",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -3684,7 +3894,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "powerwhip",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -3700,7 +3911,8 @@
     "id": "protect",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -3722,7 +3934,8 @@
     "id": "psybeam",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -3746,7 +3959,8 @@
     "id": "psychic",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -3761,7 +3975,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "psychocut",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "14",
@@ -3776,7 +3991,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "psyshock",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -3791,7 +4007,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "psystrike",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -3806,7 +4023,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "pursuit",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -3821,7 +4039,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "quickattack",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -3836,7 +4055,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "quickguard",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -3852,7 +4072,8 @@
     "id": "quiverdance",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -3893,7 +4114,8 @@
     "id": "rapidspin",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -3908,7 +4130,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "razorleaf",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -3932,7 +4155,8 @@
     "id": "razorshell",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -3948,7 +4172,8 @@
     "id": "recover",
     "fields": [
      "accuracy",
-     "heal"
+     "heal",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -3976,12 +4201,31 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "reflect",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
      "accuracy": "—%",
      "cutsCorners": "Yes"
+    }
+   }
+  },
+  "rest": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "rest",
+    "fields": [
+     "accuracy",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "—%",
+     "cutsCorners": "-",
+     "range": "User",
+     "target": "User"
     }
    }
   },
@@ -3991,7 +4235,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "retaliate",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -4006,7 +4251,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "roar",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "14",
@@ -4028,7 +4274,8 @@
     "id": "rockslide",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -4043,7 +4290,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "rockthrow",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -4067,7 +4315,8 @@
     "id": "rocktomb",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -4083,7 +4332,8 @@
     "id": "sandattack",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "20",
@@ -4116,7 +4366,8 @@
     "id": "sandtomb",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -4139,7 +4390,8 @@
     "id": "scald",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -4154,7 +4406,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "scratch",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "28",
@@ -4170,7 +4423,8 @@
     "id": "screech",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -4203,7 +4457,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "seedbomb",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "11",
@@ -4227,7 +4482,8 @@
     "id": "shadowball",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -4242,7 +4498,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "shadowclaw",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -4257,7 +4514,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "shadowpunch",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -4272,7 +4530,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "shadowsneak",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -4287,12 +4546,32 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "shockwave",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
      "accuracy": "—%",
      "cutsCorners": "Yes"
+    }
+   }
+  },
+  "sing": {
+   "acc": 87,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sing",
+    "fields": [
+     "accuracy",
+     "status",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "87%",
+     "cutsCorners": "Yes",
+     "range": "Front",
+     "target": "Enemy"
     }
    }
   },
@@ -4303,7 +4582,8 @@
     "id": "slackoff",
     "fields": [
      "accuracy",
-     "heal"
+     "heal",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -4331,7 +4611,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "slam",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -4346,12 +4627,51 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "slash",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "11",
      "accuracy": "88%",
      "cutsCorners": "No"
+    }
+   }
+  },
+  "sleeppowder": {
+   "acc": 80,
+   "powder": true,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sleeppowder",
+    "fields": [
+     "accuracy",
+     "status",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "13",
+     "accuracy": "80%",
+     "cutsCorners": "Yes",
+     "range": "1 tile around user",
+     "target": "Enemy"
+    }
+   }
+  },
+  "sleeptalk": {
+   "acc": null,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "sleeptalk",
+    "fields": [
+     "accuracy",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "17",
+     "accuracy": "—%",
+     "cutsCorners": "Varies",
+     "range": "Varies",
+     "target": "Varies"
     }
    }
   },
@@ -4368,7 +4688,8 @@
     "id": "sludge",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -4390,7 +4711,8 @@
     "id": "sludgebomb",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -4412,7 +4734,8 @@
     "id": "sludgewave",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "13",
@@ -4428,7 +4751,8 @@
     "id": "smackdown",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -4443,7 +4767,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "smartstrike",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -4465,7 +4790,8 @@
     "id": "smog",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -4481,7 +4807,8 @@
     "id": "smokescreen",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -4523,12 +4850,38 @@
     "id": "snarl",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
      "accuracy": "85%",
      "cutsCorners": "Yes"
+    }
+   }
+  },
+  "snore": {
+   "acc": 95,
+   "fx": [
+    {
+     "chance": 30,
+     "status": "flinch"
+    }
+   ],
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "snore",
+    "fields": [
+     "accuracy",
+     "secondary",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "16",
+     "accuracy": "95%",
+     "cutsCorners": "No",
+     "range": "Front",
+     "target": "Enemy"
     }
    }
   },
@@ -4539,7 +4892,8 @@
     "id": "softboiled",
     "fields": [
      "accuracy",
-     "heal"
+     "heal",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -4575,12 +4929,33 @@
     "id": "spark",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
      "accuracy": "88%",
      "cutsCorners": "No"
+    }
+   }
+  },
+  "spore": {
+   "acc": 88,
+   "powder": true,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "spore",
+    "fields": [
+     "accuracy",
+     "status",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "12",
+     "accuracy": "88%",
+     "cutsCorners": "Yes",
+     "range": "Entire room",
+     "target": "Enemy"
     }
    }
   },
@@ -4599,7 +4974,8 @@
     "id": "steelwing",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -4621,7 +4997,8 @@
     "id": "stomp",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -4636,7 +5013,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "stoneedge",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "7",
@@ -4651,7 +5029,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "stormthrow",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -4675,7 +5054,8 @@
     "id": "strugglebug",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -4686,12 +5066,14 @@
   },
   "stunspore": {
    "acc": 88,
+   "powder": true,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "stunspore",
     "fields": [
      "accuracy",
-     "status"
+     "status",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -4724,7 +5106,8 @@
     "id": "submission",
     "fields": [
      "accuracy",
-     "recoil"
+     "recoil",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -4752,7 +5135,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "suckerpunch",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "7",
@@ -4772,7 +5156,8 @@
     "id": "superpower",
     "fields": [
      "accuracy",
-     "self"
+     "self",
+     "flags"
     ],
     "pmd": {
      "basePp": "11",
@@ -4788,7 +5173,8 @@
     "id": "supersonic",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -4816,7 +5202,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "surf",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "11",
@@ -4832,7 +5219,8 @@
     "id": "sweetkiss",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -4861,7 +5249,8 @@
     "id": "sweetscent",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -4896,7 +5285,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "swift",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "8",
@@ -4912,7 +5302,8 @@
     "id": "swordsdance",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "7",
@@ -4927,7 +5318,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "synthesis",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -4954,7 +5346,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "tackle",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "30",
@@ -4970,7 +5363,8 @@
     "id": "tailwhip",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -5007,7 +5401,8 @@
     "id": "takedown",
     "fields": [
      "accuracy",
-     "recoil"
+     "recoil",
+     "flags"
     ],
     "pmd": {
      "basePp": "19",
@@ -5035,7 +5430,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "thief",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "20",
@@ -5051,7 +5447,8 @@
     "id": "throatchop",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -5073,7 +5470,8 @@
     "id": "thunder",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "7",
@@ -5095,7 +5493,8 @@
     "id": "thunderbolt",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -5121,7 +5520,8 @@
     "id": "thunderfang",
     "fields": [
      "accuracy",
-     "secondaries"
+     "secondaries",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -5143,7 +5543,8 @@
     "id": "thunderpunch",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -5165,7 +5566,8 @@
     "id": "thundershock",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -5181,7 +5583,8 @@
     "id": "thunderwave",
     "fields": [
      "accuracy",
-     "status"
+     "status",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -5210,7 +5613,8 @@
     "id": "tickle",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -5243,7 +5647,8 @@
     "id": "toxic",
     "fields": [
      "accuracy",
-     "status"
+     "status",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -5272,7 +5677,8 @@
     "id": "triattack",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -5294,7 +5700,8 @@
     "id": "twister",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -5309,7 +5716,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "vacuumwave",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "14",
@@ -5324,7 +5732,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "venoshock",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -5339,7 +5748,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "vinewhip",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -5354,7 +5764,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "visegrip",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "22",
@@ -5376,7 +5787,8 @@
     "id": "waterfall",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -5391,7 +5803,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "watergun",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -5413,7 +5826,8 @@
     "id": "waterpulse",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "12",
@@ -5428,7 +5842,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "weatherball",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -5444,7 +5859,8 @@
     "id": "whirlpool",
     "fields": [
      "accuracy",
-     "volatileStatus"
+     "volatileStatus",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -5459,7 +5875,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "whirlwind",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "27",
@@ -5479,7 +5896,8 @@
     "id": "wildcharge",
     "fields": [
      "accuracy",
-     "recoil"
+     "recoil",
+     "flags"
     ],
     "pmd": {
      "basePp": "15",
@@ -5509,7 +5927,8 @@
     "id": "willowisp",
     "fields": [
      "accuracy",
-     "status"
+     "status",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -5537,7 +5956,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "wingattack",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "20",
@@ -5553,7 +5973,8 @@
     "id": "withdraw",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "16",
@@ -5573,7 +5994,8 @@
     "id": "woodhammer",
     "fields": [
      "accuracy",
-     "recoil"
+     "recoil",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -5602,7 +6024,8 @@
     "id": "workup",
     "fields": [
      "accuracy",
-     "boosts"
+     "boosts",
+     "flags"
     ],
     "pmd": {
      "basePp": "17",
@@ -5634,7 +6057,8 @@
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "xscissor",
     "fields": [
-     "accuracy"
+     "accuracy",
+     "flags"
     ],
     "pmd": {
      "basePp": "10",
@@ -5656,7 +6080,8 @@
     "id": "zapcannon",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "9",
@@ -5678,7 +6103,8 @@
     "id": "zenheadbutt",
     "fields": [
      "accuracy",
-     "secondary"
+     "secondary",
+     "flags"
     ],
     "pmd": {
      "basePp": "9",

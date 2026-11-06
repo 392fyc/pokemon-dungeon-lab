@@ -1,7 +1,8 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
 import {generateFloor,generateChallengeEncounter,serviceRoll,ENEMY_DIFFICULTY,DIFFICULTY,isDifficulty,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,mulberry32,type Difficulty,type GeneratedFloor,type AdventureRoom} from './dungeon.ts';
 import {ECON} from './economy.ts';
-import {SPECIES,speciesOf,tmPool,learnableMove,speciesMaxHp,type KitMove} from './roster.ts';
+import {SPECIES,speciesOf,tmPool,learnableMove,speciesMaxHp,movesAtLevel,type KitMove} from './roster.ts';
+import {typeEffectiveness,stabMultiplier} from './type-chart.ts';
 import {TACTICS,isTactic,type Tactic} from './tactics.ts';
 import {moveOf,moveCategory,moveEffects,type MoveSpec,type StageKey,type StageChange,type StatusId} from './moves.ts';
 import names from '../data/names-zh.json' with {type:'json'};
@@ -9,7 +10,7 @@ import commissionData from '../data/commissions.json' with {type:'json'};
 import blessingData from '../data/blessings.json' with {type:'json'};
 export type Pos = {x:number;y:number};
 export type {StatusId,StageKey} from './moves.ts';
-export type StatusState={left?:number;tick?:number};
+export type StatusState={left?:number;tick?:number;fresh?:boolean};
 /** Skills are move ids; PP and learned use the same keys. */
 export type Skill = string;
 /** Camp talent levels copied into a new camp expedition; absent on developer and legacy worlds. */
@@ -45,23 +46,23 @@ export type Command = {type:'switch';actor:string}|{type:'round';action:Action;o
   |{type:'invite';choice:'accept'|'reject'|'camp';outgoing?:string}|{type:'finishExit'}|{type:'finishTransit'}
   |{type:'commissionChoice';choice:'accept'|'reject'}|{type:'blessingChoice';blessing:BlessingId|null}|{type:'tmChoice';move:string}
   /** 7.2 shop purchase: needs the leader on the shop cell; takes no round. */
-  |{type:'buy';item:ShopItem};
+  |{type:'buy';item:ShopItem}|{type:'learnMove';replace:string|null};
 export type Invitation = {id:string;unit:Unit;status:'pending'|'accepted'|'rejected'|'cancelled'};
 /** `to` is set only for a stairs request (the target floor number); a plain exit request has no `to`. */
 export type ExitRequest = {actor:string;pos:Pos;locked:boolean;to?:number};
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'healSeed'|'rest'|'shop'|'exchange';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'rest'|'shop'|'exchange';
 export type ShopItem='berry'|'tonic'|'tm'|'pechaBerry'|'healSeed';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
-export type Item='berry'|'tonic'|'bigBerry'|'teamTonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'healSeed'|'violentSeed'|'maxElixir';
+export type Item='berry'|'tonic'|'bigBerry'|'teamTonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'violentSeed'|'maxElixir';
 /** 8.8 (#165, G9.1): items lying on the floor, picked up by walking onto them. */
 export type PickupKind=Extract<PointKind,Item>;
-export const PICKUP_KINDS:readonly PickupKind[]=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','healSeed'];
+export const PICKUP_KINDS:readonly PickupKind[]=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed'];
 export const isPickupKind=(kind:string):kind is PickupKind=>(PICKUP_KINDS as readonly string[]).includes(kind);
 export const SKILL_CN:Record<Skill,string>=(names as unknown as {moves:Record<string,string>}).moves;
-export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂',pechaBerry:'桃桃果',rawstBerry:'木子果',cheriBerry:'零余果',healSeed:'治愈之种',violentSeed:'暴力种子',maxElixir:'单人满 PP 补剂'};
+export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂',pechaBerry:'桃桃果',rawstBerry:'莓莓果',cheriBerry:'樱子果',chestoBerry:'零余果',healSeed:'治愈之种',violentSeed:'暴力种子',maxElixir:'单人满 PP 补剂'};
 /** 8.8 (#165, G9.1): which status conditions each cure item removes (Heal Seed: all of them). */
-export const ITEM_CURES:Partial<Record<Item,readonly StatusId[]>>={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],healSeed:['psn','tox','brn','par','frz','confusion','flinch']};
-export const STATUS_NAMES:Record<StatusId,string>={psn:'中毒',tox:'剧毒',brn:'灼伤',par:'麻痹',frz:'冰冻',confusion:'混乱',flinch:'畏缩'};
+export const ITEM_CURES:Partial<Record<Item,readonly StatusId[]>>={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],chestoBerry:['slp'],healSeed:['psn','tox','brn','par','frz','slp','confusion','flinch']};
+export const STATUS_NAMES:Record<StatusId,string>={psn:'中毒',tox:'剧毒',brn:'灼伤',par:'麻痹',frz:'冰冻',slp:'睡眠',nap:'打盹',confusion:'混乱',flinch:'畏缩'};
 export const STAGE_NAMES:Record<StageKey,string>={atk:'攻击',def:'防御',spa:'特攻',spd:'特防',spe:'速度',acc:'命中',eva:'闪避'};
 export type CommissionId='hunter'|'collector'|'scout'|'guardian'|'speedrun';
 export type BlessingId='berryBoost'|'floorHeal'|'battleSpirit'|'lullaby'|'rally'|'tmChoice';
@@ -80,7 +81,7 @@ export type Rect={x:number;y:number;w:number;h:number};
  * `rng` is the recruit-draw state (a 32-bit integer, separate from `dungeon.seed`); `kills` holds defeated enemies of the current round
  * until the round-end settlement and is empty at every checkpoint; `made` counts recruits created so far (ids N1, N2...).
  */
-export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number;pechaBerry?:number;rawstBerry?:number;cheriBerry?:number;healSeed?:number;violentSeed?:number;maxElixir?:number}};
+export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number;pechaBerry?:number;rawstBerry?:number;cheriBerry?:number;chestoBerry?:number;healSeed?:number;violentSeed?:number;maxElixir?:number}};
 /** Cumulative experience thresholds: reaching Lv L costs the sum of levels 5 through L-1. */
 const expThreshold=(level:number)=>level<=INITIAL_LEVEL?0:level*(level-1)/2-((INITIAL_LEVEL-1)*INITIAL_LEVEL)/2;
 export const PROG={recruitChance:0.3,thresholds:Array.from({length:101},(_,level)=>expThreshold(level)),initialLevel:INITIAL_LEVEL,maxLevel:100,hpPerLevel:1,damagePerLevel:1,damageEveryLevels:4,expMultiplier:2,goalExp:0,bossExp:0,berryHeal:8,tonicPp:10,teamTonicPp:5,restPp:5,bagLimit:null as number|null};
@@ -93,7 +94,7 @@ export type StoredFloor={floor:Pos[];liquid?:string[];arrival?:Pos;seen:string[]
 /** `base` (6.5): true for a run started from the base; only those runs get the floor-2 rest point (older generated runs keep their exact floors). */
 /** `services` (7.2): true for a run that may hold a shop and an exchanger (decided by `serviceRoll` from the seed). Older runs never get them. */
 /** `boss` (7.3): themed floors and a regional boss on the last floor. `roguelike` marks the new one-way rules; absent means a legacy run. */
-export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true;tmPool?:3|4;roguelike?:true};
+export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true;tmPool?:3|4|5;roguelike?:true};
 /** A technique machine obtained in this run; `sent` remains a possible in-run fate, while final rogue fate is decided by win or wipe. */
 export type TmItem={move:string;source:'target'|'shop'|'boss'|'challenge';fate:'held'|'brought'|'sent'|'lost'};
 /** 7.2 the shop of this run: fixed stock decided at the start, and every sale so far. `tm` is null once sold. */
@@ -110,7 +111,7 @@ export type End = {id:string;outcome:'normal'|'won'|'wipe';team:string[];camp:st
   boss?:boolean;tms?:TmItem[];lost?:string[];effective?:boolean;reasons?:string[];reward?:number;purse?:number;refund?:number};
 export type World = {runId:string;scenario:string;round:number;floor:Pos[];liquid?:string[];arrival?:Pos;seen:string[];seenWalls?:string[];units:Record<string,Unit>;
   queue:string[];enemies:string[];camp:string[];leader:string;points:Point[];
-  goal:boolean;bag:number;phase:'playing'|'evolution'|'invitation'|'commission'|'blessing'|'tmChoice'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
+  goal:boolean;bag:number;phase:'playing'|'learning'|'evolution'|'invitation'|'commission'|'blessing'|'tmChoice'|'exit'|'transit'|'ended';invitations:Invitation[];anchor:Pos|null;
   request:ExitRequest|null;end:End|null;log:string[];dungeon?:Dungeon;difficulty?:Difficulty;prog?:Progress;rooms?:Rect[];bossRoom?:number;
   /** 8.3 room state stays in the in-memory expedition (current World or StoredFloor) and is never saved. */
   adventureRooms?:AdventureRoom[];pendingAdventureStart?:{room:number;actor:string;pos:Pos};
@@ -123,7 +124,7 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   /** 8.8 (#165): latest round events (misses, air swings, status changes, status damage, pickups) for the interface; reset by each round command. */
   events?:RoundEvent[];
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
-  pendingEvolutions?:{actor:string;choices:string[]}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
+  pendingEvolutions?:{actor:string;choices:string[]}[];pendingLearnMoves?:{actor:string;move:string;pp:number}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
   purse?:number;tms?:TmItem[];shop?:Shop;exchange?:Exchange};
 export type RoundEvent=
@@ -133,8 +134,8 @@ export type RoundEvent=
   |{type:'statusDamage';target:string;status:'psn'|'tox'|'brn';amount:number}
   |{type:'pickup';actor:string;item:Item;ok:boolean};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
-export const RULE_VERSION='trial-rules-5';
-export const CONTENT_VERSION='trial-content-6';
+export const RULE_VERSION='trial-rules-6';
+export const CONTENT_VERSION='trial-content-7';
 export const SPEC_SOURCE='5f3547889b30e59f6cdfebc5af8c91e46cba4ee4';
 export const key=(p:Pos)=>`${p.x},${p.y}`;
 export const same=(a:Pos|null,b:Pos|null)=>!!a&&!!b&&a.x===b.x&&a.y===b.y;
@@ -176,6 +177,11 @@ export function speciesUnit(id:string,speciesId:string,level=INITIAL_LEVEL,pos:P
   const sp=SPECIES[speciesId],maxHp=speciesMaxHp(speciesId,level);
   return {id,side:'friend',hp:maxHp,maxHp,pos,pp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),maxPp:Object.fromEntries(sp.kit.map(k=>[k.move,k.pp])),learned:sp.kit.map(k=>k.move),species:speciesId,entrySpecies:speciesId,level,...freshCombatState(),reflect:0,lightscreen:0,tactic:'together'};
 }
+function setUnitLoadout(u:Unit,loadout:KitMove[]):void {
+  u.learned=loadout.map(move=>move.move);
+  u.pp=Object.fromEntries(loadout.map(move=>[move.move,move.pp]));
+  u.maxPp=Object.fromEntries(loadout.map(move=>[move.move,move.pp]));
+}
 /** Integer percentages keep exact half points from rounding down due to a binary float multiplier. */
 export function applyTalentBonus(value:number,percent:number):number {
   return Math.floor((value*(100+percent)+50)/100);
@@ -185,7 +191,7 @@ function vitalityMaxHp(speciesId:string,level:number,vitality=0):number {
 }
 /** R07 half snapshot of a new recruit: HP floor(max/2) (at least 1). 8.8 (#165, G8.2): PP is full, not halved. */
 export function recruitUnit(id:string,speciesId:string,level:number,vitality=0):Unit {
-  const u=speciesUnit(id,speciesId,level);u.maxHp=vitalityMaxHp(speciesId,level,vitality);u.hp=Math.max(1,Math.floor(u.maxHp/2));
+  const u=speciesUnit(id,speciesId,level);setUnitLoadout(u,movesAtLevel(speciesId,level));u.maxHp=vitalityMaxHp(speciesId,level,vitality);u.hp=Math.max(1,Math.floor(u.maxHp/2));
   return u;
 }
 /** Recoverable recruit-draw stream: mulberry32 stepped from an explicit state, so the state can be saved and resumed without redrawing. */
@@ -250,9 +256,11 @@ function rollHit(s:World,sourceId:string,targetId:string,skill?:Skill):boolean {
   const chance=hitChance(s,sourceId,targetId,skill);
   return chance>=100||battleRandom(s)*100<chance;
 }
-const STATUS_DURATION:Partial<Record<StatusId,[number,number]>>={par:[2,3],frz:[1,3],confusion:[7,12]};
+const STATUS_DURATION:Partial<Record<StatusId,[number,number]>>={par:[2,3],frz:[1,3],slp:[3,6],nap:[2,3],confusion:[7,12]};
 const STATUS_INTERVAL:Partial<Record<StatusId,number>>={psn:20,tox:2,brn:20};
 export const hasStatus=(u:Unit|undefined,k:StatusId):boolean=>!!u&&u.status?.[k]!==undefined;
+/** Returns true only for the slp and nap conditions; enemies born asleep use separate flags. */
+export const sleeping=(u:Unit|undefined):boolean=>hasStatus(u,'slp')||hasStatus(u,'nap');
 function dropStatus(u:Unit,k:StatusId):boolean {
   if(!u.status||u.status[k]===undefined)return false;
   delete u.status[k];if(!Object.keys(u.status).length)delete u.status;return true;
@@ -261,8 +269,10 @@ function dropStatus(u:Unit,k:StatusId):boolean {
 function applyStatus(s:World,targetId:string,kind:StatusId):void {
   const t=s.units[targetId];if(!alive(t))return;
   const name=STATUS_NAMES[kind];
+  if(kind==='slp'&&(hasStatus(t,'slp')||hasStatus(t,'nap')))return;
   if(kind==='psn'&&hasStatus(t,'tox')){note(s,`${targetId}已经是剧毒，仍保持剧毒`);emit(s,{type:'status',target:targetId,status:'tox',change:'unchanged'});return;}
   const had=hasStatus(t,kind),interval=STATUS_INTERVAL[kind];
+  if(kind==='slp'&&t.asleep){t.asleep=false;t.wakeSkip=false;note(s,targetId+'由出生时睡着转为睡眠状态');}
   if(kind==='frz'&&dropStatus(t,'brn'))note(s,`${targetId}的灼伤被冰冻顶掉`);
   if(kind==='brn'&&dropStatus(t,'frz'))note(s,`${targetId}的冰冻被灼伤顶掉`);
   if(kind==='tox'&&dropStatus(t,'psn'))note(s,`${targetId}的中毒被剧毒顶掉`);
@@ -276,19 +286,50 @@ function applyStatus(s:World,targetId:string,kind:StatusId):void {
   note(s,`${targetId}${had?'的':'陷入'}${name}${had?'持续时间重新计算':'状态'}`);
   emit(s,{type:'status',target:targetId,status:kind,change:had?'refresh':'apply'});
 }
+function speciesTypes(u:Unit):readonly string[]{return u.species?speciesOf(u.species)?.types??[]:[];}
+function statusTypeBlockReason(moveId:string,target:Unit,status:StatusId):string|null {
+  const types=speciesTypes(target).map(t=>t.toLowerCase());
+  if((status==='psn'||status==='tox')&&(types.includes('poison')||types.includes('steel')))return '属性免疫'+STATUS_NAMES[status];
+  if(status==='brn'&&types.includes('fire'))return '属性免疫灼伤';
+  if(status==='frz'&&types.includes('ice'))return '属性免疫冰冻';
+  if(status==='par'&&types.includes('electric'))return '属性免疫麻痹';
+  if(moveEffects(moveId)?.powder&&types.includes('grass'))return '草系免疫粉末招式';
+  if(moveId==='thunderwave'&&types.includes('ground'))return '地面系免疫电磁波';
+  return null;
+}
+function statusMoveBlockReason(moveId:string,target:Unit,status:StatusId):string|null {
+  if(status==='slp'&&(hasStatus(target,'slp')||hasStatus(target,'nap')))return '已经睡眠或打盹';
+  return statusTypeBlockReason(moveId,target,status);
+}
+function noEffectReason(moveId:string,target:Unit,spec:MoveSpec):string|null {
+  if((spec.effects.includes('damage')||moveId==='snore')&&typeEffectiveness(moveId,speciesTypes(target))===0)return '属性相性为零';
+  if(!spec.effects.includes('damage')){
+    const statuses=spec.effects.filter(e=>e.startsWith('status:')).map(e=>e.slice(7) as StatusId);
+    if(statuses.length&&statuses.every(status=>!!statusMoveBlockReason(moveId,target,status)))return statusMoveBlockReason(moveId,target,statuses[0]!)??'状态无效';
+  }
+  return null;
+}
 /** Removes the listed conditions; returns the ones that were present. */
 function cureStatuses(s:World,u:Unit,kinds:readonly StatusId[]):StatusId[] {
   const cured=kinds.filter(k=>dropStatus(u,k));
   for(const k of cured)emit(s,{type:'status',target:u.id,status:k,change:'cure'});
   return cured;
 }
-/** End of one of the unit's own action opportunities (whether or not it could act): par, frz, confusion and flinch count down by one. */
+/** End of one of the unit's own action opportunities: action-counted conditions advance once per turn. */
 function endOwnTurn(s:World,id:string):void {
   const u=s.units[id];if(!alive(u)||!u.status)return;
-  for(const k of ['par','frz','confusion','flinch'] as const){
+  for(const k of ['slp','nap','par','frz','confusion','flinch'] as const){
     const st=u.status?.[k];if(!st)continue;
+    if(st.fresh){delete st.fresh;continue;}
     st.left=(st.left??1)-1;
-    if(st.left<=0){dropStatus(u,k);note(s,`${id}的${STATUS_NAMES[k]}解除`);emit(s,{type:'status',target:id,status:k,change:'expire'});}
+    if(st.left<=0){
+      dropStatus(u,k);note(s,id+'的'+STATUS_NAMES[k]+'解除');emit(s,{type:'status',target:id,status:k,change:'expire'});
+      if(k==='nap'){
+        const before=u.hp;u.hp=u.maxHp;
+        const cured=cureStatuses(s,u,Object.keys(u.status??{}) as StatusId[]);
+        note(s,id+'打盹结束，HP '+before+'→'+u.hp+'，异常状态全部解除'+(cured.length?'：'+cured.map(v=>STATUS_NAMES[v]).join('、'):''));
+      }
+    }
   }
 }
 /** Round end: poison, bad poison and burn tick (first damage at the first round end after being applied, then every 20 / 2 / 20 rounds). */
@@ -552,14 +593,13 @@ function applyBlessing(s:World,id:BlessingId):void {
   note(s,`获得祝福：${def.name}。${def.description}`);
 }
 function updateLevelsAfterCommissionReward(s:World):boolean {
-  const p=s.prog;if(!p)return false;
-  let changed=false;while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level+1]){
-    p.level++;changed=true;refreshPartyLevel(s);note(s,`升到 Lv${p.level}`);
-  }
+  const p=s.prog;if(!p)return false;let changed=false;const before=p.level;
+  while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level+1]){p.level++;changed=true;refreshPartyLevel(s);note(s,'升到 Lv'+p.level);}
   if(!changed)return false;
-  const pending=findEvolutions(s);if(!pending.length)return false;
-  s.pendingEvolutions=pending;s.phase='evolution';note(s,'委托经验使队伍成长，出现进化选择');return true;
+  queueLevelUpMoves(s,before,p.level);s.pendingEvolutions=undefined;
+  note(s,'委托经验使队伍成长');advanceAfterLevelGrowth(s);return true;
 }
+
 function adventureAt(s:World,p:Pos):AdventureRoom|undefined{return s.adventureRooms?.find(r=>same(r.interaction,p));}
 /** Current sight is recomputed from the unit's position; `seen` remains only the player's remembered map. */
 export function currentlyVisible(s:World,from:Pos,to:Pos):boolean {
@@ -627,11 +667,12 @@ function pickDamageAction(s:World,id:string,tactic:Tactic,quickguard:ReadonlySet
   const actor=s.units[id];if(!alive(actor)||tactic==='avoid')return null;
   const candidates:ScoredAction[]=[];const opponents=opponentIds(s,actor.side);
   actor.learned.forEach((move,moveIndex)=>{
-    const spec=moveOf(move),pp=actor.pp[move]??0;if(!spec||pp<1||(!spec.effects.includes('damage')&&!spec.effects.includes('blowaway'))||isProtectionMove(spec)&&isProtectionMoveId(actor.lastMove))return;
+    const spec=moveOf(move),pp=actor.pp[move]??0;if(!spec||pp<1||['rest','snore','sleeptalk'].includes(move)||(!spec.effects.includes('damage')&&!spec.effects.includes('blowaway'))||isProtectionMove(spec)&&isProtectionMoveId(actor.lastMove))return;
     const targets=attackableTargets(s,id,spec);
     for(const target of targets){
       if(visibleOnly&&!visibleOnly.has(target.id))continue;
       if(!tacticalTargetAllowed(s,actor,target,tactic)||rejectedForBoss(spec,target))continue;
+      if(spec.effects.includes('damage')&&typeEffectiveness(move,speciesTypes(target))===0)continue;
       const dist=chebyshev(actor.pos!,target.pos!);
       let score=0;
       if(spec.effects.includes('damage')&&spec.power!==null){
@@ -687,10 +728,11 @@ function supportAction(s:World,id:string,quickguard:ReadonlySet<string>,tactic:T
         if(kind==='status'?!status:!stages.some(e=>e.change<0))continue;
         const target=moveTargetsInReach(s,id,spec).find(t=>
           (!visibleOnly||visibleOnly.has(t.id))&&tacticalTargetAllowed(s,actor,t,tactic)&&!effectBlocked(s,actor,t,quickguard)&&
-          (kind==='status'?(!hasStatus(t,status!)&&!(status==='psn'&&hasStatus(t,'tox'))):stages.some(e=>e.change<0&&stageOf(t,e.stat)>-3)));
+          (kind==='status'?(!hasStatus(t,status!)&&!(status==='psn'&&hasStatus(t,'tox'))&&!statusMoveBlockReason(skill,t,status!)&&(status!=='slp'||!t.asleep)):stages.some(e=>e.change<0&&stageOf(t,e.stat)>-3)));
         if(target)return {type:'skill',skill,target:spec.range==='room'||spec.range==='user'?id:target.id};
       }else if(kind==='heal'){
         if(spec.effects.includes('heal:1:2')&&actor.hp<actor.maxHp/2)return {type:'skill',skill,target:id};
+        if(skill==='rest'&&(actor.hp<actor.maxHp/2||!!actor.status&&Object.keys(actor.status).some(k=>k!=='nap')))return {type:'skill',skill,target:id};
       }else if(spec.target==='user'&&!['defensecurl','harden'].includes(skill)&&stages.some(e=>e.change>0&&stageOf(actor,e.stat)<3)){
         return {type:'skill',skill,target:id};
       }
@@ -707,6 +749,20 @@ function supportAction(s:World,id:string,quickguard:ReadonlySet<string>,tactic:T
   }
   return null;
 }
+function enemyDisruptAction(s:World,id:string,quickguard:ReadonlySet<string>,visibleOnly:ReadonlySet<string>):Action|null {
+  const actor=s.units[id];if(!alive(actor))return null;
+  for(const kind of ['status','foeStages'] as const)for(const skill of actor.learned){
+    if(!legalSupportTarget(s,id,skill))continue;
+    const spec=moveOf(skill)!;
+    if(spec.target!=='enemy'||spec.effects.includes('damage')||spec.effects.includes('blowaway'))continue;
+    const status=spec.effects.find(e=>e.startsWith('status:'))?.slice(7) as StatusId|undefined;
+    const stages=spec.effects.map(stageEffect).filter((v):v is {stat:StageKey;change:number}=>v!==null);
+    if(kind==='status'?!status:!stages.some(e=>e.change<0))continue;
+    const target=moveTargetsInReach(s,id,spec).find(t=>visibleOnly.has(t.id)&&tacticalTargetAllowed(s,actor,t,'gofoes')&&!effectBlocked(s,actor,t,quickguard)&&(kind==='status'?(!hasStatus(t,status!)&&!(status==='psn'&&hasStatus(t,'tox'))&&!statusMoveBlockReason(skill,t,status!)&&(status!=='slp'||!t.asleep)):stages.some(e=>e.change<0&&stageOf(t,e.stat)>-3)));
+    if(target)return {type:'skill',skill,target:spec.range==='room'||spec.range==='user'?id:target.id};
+  }
+  return null;
+}
 function legalBasicTarget(s:World,id:string,tactic:Tactic,visibleOnly?:ReadonlySet<string>):Unit|undefined {
   const actor=s.units[id];if(!alive(actor))return undefined;
   return opponentIds(s,actor.side).map(i=>s.units[i]).find(t=>alive(t)&&adjacent(s,actor.pos,t.pos)&&(!visibleOnly||visibleOnly.has(t.id))&&tacticalTargetAllowed(s,actor,t,tactic));
@@ -714,6 +770,11 @@ function legalBasicTarget(s:World,id:string,tactic:Tactic,visibleOnly?:ReadonlyS
 function chooseAllyAction(s:World,id:string,blockingGuard:ReadonlySet<string>=new Set(),createdGuard:ReadonlySet<string>=new Set()):Action {
   const actor=s.units[id];if(!alive(actor))return {type:'wait'};
   const actorPos=actor.pos;
+  const lead=s.units[s.leader];
+  if(id!==s.leader&&alive(lead)&&hasStatus(lead,'slp')&&!sleeping(actor)&&!hasStatus(actor,'frz')){
+    const item=(s.prog?.items.chestoBerry??0)>0?'chestoBerry':(s.prog?.items.healSeed??0)>0?'healSeed':null;
+    if(item){if(adjacent(s,actorPos,lead.pos))return {type:'use',item,target:lead.id};return towardLeader(s,id);}
+  }
   const tactic=isTactic(actor.tactic)?actor.tactic:'together';
   const visible=tactic==='gofoes'?new Set(opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&currentlyVisible(s,actorPos,t.pos)).map(t=>t.id)):undefined;
   const quickguard=new Set([...blockingGuard,...createdGuard]);
@@ -922,6 +983,8 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(a.type==='basic')return t.side===u.side||!adjacent(s,u.pos,t.pos)?'普攻需要相邻对方（斜向相邻也算，但不能穿过墙角）':null;
   if(!u.learned.includes(a.skill)||(u.pp[a.skill]??0)<1)return '未装备该招式或PP不足';
   const spec=moveOf(a.skill);if(!spec)return '招式数据不存在';
+  if(a.skill==='snore'||a.skill==='sleeptalk')return '打鼾和梦话只能在睡眠中受直接攻击时触发';
+  if(spec.effects.includes('rest')&&u.hp>=u.maxHp&&!Object.keys(u.status??{}).some(k=>k!=='nap'))return 'HP已满且没有异常状态，不能使用睡觉';
   if(isProtectionMove(spec)&&isProtectionMoveId(u.lastMove))return '守住与快速防守不能连续使用';
   if((spec.range==='user'||spec.range==='room')&&a.target!==id)return spec.range==='user'?'这种招式的目标必须填使用者自己':'这种范围招式的目标必须填使用者自己';
   if(spec.range==='user'||spec.range==='room'){
@@ -954,10 +1017,11 @@ function tryPickup(s:World,actorId:string):void {
   note(s,`${actorId}拾取${ITEM_NAMES[item]}，背包共${amount}`);emit(s,{type:'pickup',actor:actorId,item,ok:true});progressCommission(s,'collector');
 }
 /** Applies HP loss and returns the HP actually lost. `cause` marks status damage (poison, burn), which has its own log line and does not wake a sleeper. A frozen unit takes no damage at all (8.8). */
-function hit(s:World,id:string,n:number,cause?:string):number {
+function hit(s:World,id:string,n:number,cause?:string,afterDamage?:(actual:number)=>void):number {
   const u=s.units[id],before=u.hp;
   if(n>0&&hasStatus(u,'frz')){note(s,`${id}冰冻中，不受伤害`);return 0;}
-  u.hp=Math.max(0,u.hp-n);note(s,cause?`${id}因${cause}损失${n}HP，HP ${u.hp}`:`${id}受到${n}伤害，HP ${u.hp}`);
+  u.hp=Math.max(0,u.hp-n);const actual=before-u.hp;note(s,cause?`${id}因${cause}损失${n}HP，HP ${u.hp}`:`${id}受到${n}伤害，HP ${u.hp}`);
+  afterDamage?.(actual);
   if(!cause&&u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
   if(before>0&&u.hp===0){u.pos=null;note(s,`${id}倒下退图`);
     if(u.side==='friend')for(const c of [...(s.commissions??[])].filter(c=>c.id==='guardian'))failCommission(s,c,'同行倒下');
@@ -971,7 +1035,7 @@ function hit(s:World,id:string,n:number,cause?:string):number {
     const unit=clone(u.recruit);unit.id=`${u.recruit.id}`; // fixture IDs are stable; each event initializes once
     if(s.units[unit.id]||s.invitations.some(i=>i.unit.id===unit.id))unit.id=`${unit.id}-${s.invitations.length+1}`;
     s.invitations.push({id:`${s.runId}:invite:${s.invitations.length+1}`,unit,status:'pending'});}}
-  return before-u.hp;
+  return actual;
 }
 /** Spec 3.1: a basic attack is Special when the actor's species has the higher base Sp. Atk than Atk, otherwise Physical (ties and units without a species count as Physical). */
 function basicCategory(u:Unit):'Physical'|'Special' {
@@ -980,7 +1044,7 @@ function basicCategory(u:Unit):'Physical'|'Special' {
 }
 export const STAT_DAMAGE_RATIO=Object.freeze({min:0.8,max:1.25} as const);
 /** Shared, side-effect-free damage calculation. An absent target represents an ordinary opposing ratio-1 target. */
-function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>,thaw=false):number {
+function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>,thaw=false,skill?:Skill):number {
   const attackStats=source.species?speciesOf(source.species)?.baseStats:undefined;
   const defenceStats=target?.species?speciesOf(target.species)?.baseStats:undefined;
   const ratio=attackStats&&defenceStats&&category!=='Status'
@@ -991,7 +1055,6 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
   const opposing=!!target&&source.side!==target.side;
   const attackDistance=source.pos&&target?.pos?chebyshev(source.pos,target.pos):0;
   const base=source.side==='enemy'?Math.max(1,Math.round(scaled*DIFFICULTY[s.difficulty??'normal'])):scaled;
-  // 8.8 (G5.3 step 4): special attacks use the special attack / special defence stages, everything else attack / defence.
   const special=category==='Special';
   const raw=base+stageOf(source,special?'spa':'atk');
   const hunterPenalty=target?.side==='friend'&&activeCommission(s,'hunter')?1:0;
@@ -1001,12 +1064,14 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
     if(category==='Physical'&&(target!.reflect??0)>0)amount=Math.floor(amount/2);
     if(category==='Special'&&(target!.lightscreen??0)>0)amount=Math.floor(amount/2);
   }
-  // 8.8 (G5.3 step 5b): a burned attacker deals 80% (rounded down, at least 1).
   if(amount>0&&hasStatus(source,'brn'))amount=Math.max(1,Math.floor(amount*4/5));
+  const effectiveness=skill&&target?typeEffectiveness(skill,speciesTypes(target)):1;
+  const stab=skill?stabMultiplier(skill,speciesTypes(source)):1;
+  const immune=effectiveness===0;
+  if(amount>0)amount=immune?0:Math.max(1,Math.round(amount*stab*effectiveness));
   const blocked=opposing&&(target!.protect>0||(quickguard.has(target!.id)&&attackDistance>1));
   if(blocked)amount=0;
-  else if(raw>0)amount=Math.max(1,amount);
-  // 8.8: a frozen target takes no damage, except from a thawing hit (fire moves, Scald).
+  else if(raw>0&&!immune)amount=Math.max(1,amount);
   if(target&&hasStatus(target,'frz')&&!thaw)amount=0;
   return amount;
 }
@@ -1015,24 +1080,43 @@ export function estimateAttackDamage(s:World,sourceId:string,targetId:string|und
   const source=s.units[sourceId],target=targetId===undefined?undefined:s.units[targetId];
   if(!source)return 0;
   const spec=skill===undefined?undefined:moveOf(skill);
-  if(skill!==undefined&&(!spec||!spec.effects.includes('damage')||spec.power===null))return 0;
+  if(skill!==undefined&&(!spec||(!spec.effects.includes('damage')&&skill!=='snore')||spec.power===null))return 0;
   const level=source.side==='friend'?(s.prog?.level??source.level??INITIAL_LEVEL):(source.level??INITIAL_LEVEL);
   const base=6+(spec?Math.ceil(spec.power!/2):0)+levelDamageBonus(level);
   const category=skill===undefined?basicCategory(source):moveCategory(skill);
-  if(!category)throw new Error(`缺少招式类别：${skill}`);
-  const amount=damageAmount(s,source,target,base,category,quickguard,!!(skill&&moveEffects(skill)?.thaw));
+  if(!category)throw new Error('缺少招式类别：'+skill);
+  const amount=damageAmount(s,source,target,base,category,quickguard,!!(skill&&moveEffects(skill)?.thaw),skill);
   return target?Math.min(target.hp,amount):amount;
 }
 /** Apply the shared damage amount; return actual HP lost for drain and counter. */
-function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set(),thaw=false):number {
+function onDirectDamageToSleeper(s:World,owner:Unit,attacker:Unit,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>):void {
+  if(!alive(owner)||!alive(attacker)||!sleeping(owner))return;
+  if(hasStatus(owner,'slp')){
+    if(battleRandom(s)<0.25){dropStatus(owner,'slp');note(s,owner.id+'被攻击后醒来');emit(s,{type:'status',target:owner.id,status:'slp',change:'expire'});return;}
+  }
+  if(!sleeping(owner)||hasStatus(owner,'par')||hasStatus(owner,'flinch'))return;
+  if(owner.learned.includes('snore')){
+    if((owner.pp.snore??0)>0&&moveOf('snore'))executeSkill(s,owner.id,{type:'skill',skill:'snore',target:attacker.id},blockingGuard,createdGuard,{suppressSleepTrigger:true,forcedTarget:attacker,ignoreConfusion:true});
+    return;
+  }
+  if(!owner.learned.includes('sleeptalk')||(owner.pp.sleeptalk??0)<1)return;
+  const choices=owner.learned.filter(move=>move!=='rest'&&move!=='snore'&&move!=='sleeptalk'&&(owner.pp[move]??0)>0&&!['teammates','party'].includes(moveOf(move)?.target??''));
+  if(!choices.length)return;
+  const chosen=choices[Math.floor(battleRandom(s)*choices.length)],spec=moveOf(chosen);if(!spec)return;
+  const target=spec.target==='user'?owner:attacker;
+  owner.pp.sleeptalk=(owner.pp.sleeptalk??0)-1;
+  note(s,owner.id+'在睡眠中使用梦话，发动'+(SKILL_CN[chosen]??chosen));
+  executeSkill(s,owner.id,{type:'skill',skill:chosen,target:target.id},blockingGuard,createdGuard,{suppressSleepTrigger:true,spendPp:false,lastMove:'sleeptalk',forcedTarget:target,ignoreConfusion:true});
+}
+function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set(),thaw=false,skill?:Skill,suppressSleepTrigger=false,createdGuard:Set<string>=new Set()):number {
   const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
-  const amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw);
-  if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,`${targetId}被打中而解冻`);emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
-  const hpBefore=target.hp;
-  hit(s,targetId,amount);
+  const amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill);
+  if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,targetId+'被打中而解冻');emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
+  const hpBefore=target.hp,effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
+  hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});
   const actual=hpBefore-target.hp;
-  if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos))
-    hit(s,sourceId,actual);
+  if(opposing&&actual>0&&target.hp>0&&!suppressSleepTrigger)onDirectDamageToSleeper(s,target,source,quickguard,createdGuard);
+  if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos))hit(s,sourceId,actual);
   return actual;
 }
 function collide(s:World,targetId:string):void {
@@ -1087,14 +1171,16 @@ function confusedStrike(s:World,actor:Unit&{pos:Pos},range:number):Unit|undefine
   }
   return undefined;
 }
-function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>):void {
-  const actor=s.units[id],spec=moveOf(a.skill)!,fx=moveEffects(a.skill);actor.pp[a.skill]=(actor.pp[a.skill]??0)-1;actor.lastMove=a.skill;
+type SkillExecutionOptions={suppressSleepTrigger?:boolean;forcedTarget?:Unit;spendPp?:boolean;lastMove?:string;ignoreConfusion?:boolean};
+function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>,options:SkillExecutionOptions={}):void {
+  const actor=s.units[id],spec=moveOf(a.skill)!,fx=moveEffects(a.skill),{suppressSleepTrigger=false,forcedTarget,spendPp=true,lastMove,ignoreConfusion=false}=options;
+  if(spendPp)actor.pp[a.skill]=(actor.pp[a.skill]??0)-1;actor.lastMove=lastMove??a.skill;
   note(s,`${id}使用${SKILL_CN[a.skill]??a.skill}`);
-  let targets=spec.range==='room'||spec.range==='around'?moveTargetsInReach(s,id,spec):[s.units[a.target]];
+  let targets=forcedTarget?[forcedTarget]:(spec.range==='room'||spec.range==='around'?moveTargetsInReach(s,id,spec):[s.units[a.target]]);
   if(spec.range==='user')targets=[actor];
   let confusedDirection=false;
   const attackTarget=spec.target==='enemy'||(spec.target==='all'&&spec.effects.includes('damage'));
-  if(hasStatus(actor,'confusion')&&alive(actor)&&(spec.range==='front'||spec.range==='front2'||spec.range==='line10')){
+  if(!ignoreConfusion&&hasStatus(actor,'confusion')&&alive(actor)&&(spec.range==='front'||spec.range==='front2'||spec.range==='line10')){
     confusedDirection=true;
     const found=confusedStrike(s,actor,RANGE_CELLS[spec.range]);
     targets=found?[found]:[];
@@ -1106,20 +1192,28 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
   if((attackTarget||confusedDirection)&&actor.pos){
     for(const target of targets)if(alive(target)&&target.id!==id)faceToward(target,target.pos,actor.pos);
   }
-  // 8.8 (G5.1): every target is judged separately; a miss takes no damage and no side effect, and the PP stays spent.
-  const landed=targets.filter(t=>{
-    if(!alive(t)||!needsHitRoll(spec))return true;
+  // Immunity is checked before a hit roll; an immune target takes no secondary effects and still costs PP.
+  const eligible=targets.filter(t=>{
+    if(!alive(t)||!needsHitRoll(spec))return alive(t);
+    const reason=noEffectReason(a.skill,t,spec);
+    if(reason){note(s,(SKILL_CN[a.skill]??a.skill)+'对'+t.id+'没有效果（'+reason+'）');return false;}
+    return true;
+  });
+  const landed=eligible.filter(t=>{
+    if(!needsHitRoll(spec))return true;
     if(rollHit(s,id,t.id,a.skill))return true;
-    note(s,`${id}的${SKILL_CN[a.skill]??a.skill}没打中${t.id}`);emit(s,{type:'miss',actor:id,target:t.id,skill:a.skill});return false;
+    note(s,id+'的'+(SKILL_CN[a.skill]??a.skill)+'没打中'+t.id);emit(s,{type:'miss',actor:id,target:t.id,skill:a.skill});return false;
   });
   let dealt=0;
   for(const effect of spec.effects){
     const stage=stageEffect(effect);
     if(stage){for(const target of landed)if(alive(target)&&!effectBlocked(s,actor,target,blockingGuard))changeStage(s,target.id,stage.stat,stage.change);continue;}
     if(effect.startsWith('status:')){
-      for(const target of landed)if(alive(target)&&!effectBlocked(s,actor,target,blockingGuard))applyStatus(s,target.id,effect.slice(7) as StatusId);
+      const status=effect.slice(7) as StatusId;
+      for(const target of landed)if(alive(target)&&!effectBlocked(s,actor,target,blockingGuard)){const blocked=statusTypeBlockReason(a.skill,target,status);if(blocked){note(s,target.id+'免疫'+STATUS_NAMES[status]);continue;}applyStatus(s,target.id,status);}
       continue;
     }
+    if(effect==='rest'){actor.status??={};actor.status.nap={left:battleInt(s,2,3),fresh:true};note(s,id+'开始打盹');continue;}
     if(effect==='heal:1:2'){
       for(const target of landed)if(alive(target)){
         const before=target.hp;target.hp=Math.min(target.maxHp,target.hp+Math.round(target.maxHp/2));
@@ -1141,10 +1235,10 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
       }
       continue;
     }
-    if(effect==='damage'&&spec.power!==null){
+    if((effect==='damage'||(effect==='snore'&&suppressSleepTrigger))&&spec.power!==null){
       const base=6+Math.ceil(spec.power/2)+levelDamageBonus(actor.side==='friend'?(s.prog?.level??actor.level??INITIAL_LEVEL):(actor.level??INITIAL_LEVEL));
       for(const target of landed)if(alive(target)){
-        const hpBefore=target.hp;resolveDamage(s,id,target.id,base,moveCategory(a.skill),blockingGuard,!!fx?.thaw);dealt+=hpBefore-target.hp;
+        const hpBefore=target.hp;resolveDamage(s,id,target.id,base,moveCategory(a.skill),blockingGuard,!!fx?.thaw,a.skill,suppressSleepTrigger,createdGuard);dealt+=hpBefore-target.hp;
       }
       continue;
     }
@@ -1169,7 +1263,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
       if(entry.self)continue;
       if(!alive(target))break;
       if(entry.chance<100&&battleRandom(s)*100>=entry.chance)continue;
-      if(entry.status)applyStatus(s,target.id,entry.status);
+      if(entry.status){const blocked=statusTypeBlockReason(a.skill,target,entry.status);if(blocked)note(s,target.id+'免疫'+STATUS_NAMES[entry.status]);else applyStatus(s,target.id,entry.status);}
       if(entry.foe)applyStageChange(s,target.id,entry.foe);
     }
   }
@@ -1349,7 +1443,7 @@ function startAdventureChallenge(s:World,room:AdventureRoom):boolean{
   const battleEnemies=s.enemies.filter(id=>{const u=s.units[id];return alive(u)&&inRect(u.pos!,s.rooms![room.room]);});
   for(const move of plan.spawns){
     const spec=encounter.enemies.find(enemy=>enemy.id===move.id)!;
-    const unit=speciesUnit(spec.id,spec.species,spec.level,move.pos);unit.side='enemy';unit.hp=spec.hp;unit.maxHp=spec.hp;unit.tactic='gofoes';
+    const unit=speciesUnit(spec.id,spec.species,spec.level,move.pos);setUnitLoadout(unit,movesAtLevel(spec.species,spec.level));unit.side='enemy';unit.hp=spec.hp;unit.maxHp=spec.hp;unit.tactic='gofoes';
     unit.asleep=false;unit.wakeSkip=false;unit.targetMemory=null;unit.lostSightTurns=0;unit.roamTarget=null;unit.direction=null;
     s.units[unit.id]=unit;s.enemies.push(unit.id);battleEnemies.push(unit.id);
   }
@@ -1389,6 +1483,7 @@ function wakeAdjacentEnemies(s:World):void {
 function statusBlock(u:Unit,a:Action):string|null {
   if(a.type==='wait')return null;
   if(hasStatus(u,'frz'))return '冰冻中，无法行动';
+  if(sleeping(u))return hasStatus(u,'nap')?'打盹中，无法行动':'睡眠中，无法行动';
   if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'par'))return '麻痹中，无法使用招式和普攻';
   if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'flinch'))return '畏缩中，无法使用招式和普攻';
   return null;
@@ -1402,16 +1497,17 @@ function confusedMove(s:World,id:string,chosen:Extract<Action,{type:'move'}>):Ac
   note(s,`${id}因混乱朝${DIR_NAMES[key(dir)]}乱走`);return alt;
 }
 function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,trace?:TraceStep[]):string|null {
-  const lead=s.leader,moved=new Set<string>(),friendGuard=new Set<string>(),enemyGuard=new Set<string>(),blockingFromEnemies=new Set(s.quickguard?.owner==='enemy'?s.quickguard.units:[]);
+  const lead=s.leader,moved=new Set<string>(),friendGuard=new Set<string>(),enemyGuard=new Set<string>(),blockingFromEnemies=new Set(s.quickguard?.owner==='enemy'?s.quickguard.units:[]),leaderSleeping=sleeping(s.units[lead]);
+  if(leaderSleeping&&cmd.override)return '主控睡眠时不能安排伙伴干预';
   if(cmd.override&&(cmd.override.actor===lead||!s.queue.includes(cmd.override.actor)||!alive(s.units[cmd.override.actor])))return '只能安排另一名存活伙伴';
   if(cmd.override?.action.type==='swap')return '换位须从主控发起';
   if(cmd.override?.action.type==='interact'||cmd.override?.action.type==='exchange')return '伙伴不能代替主控交互';
-  const swap=cmd.action.type==='swap'?cmd.action.target:null;
+  const swap=!leaderSleeping&&cmd.action.type==='swap'?cmd.action.target:null;
   if(swap){if(cmd.override)return '换位已占唯一伙伴干预';const err=invalid(s,lead,cmd.action);if(err)return err;}
   const later=swap?Math.max(s.queue.indexOf(lead),s.queue.indexOf(swap)):-1;
   // 7.2 exchanger: the leader's whole action. The companion leaves at once (it takes no further part this round), then everyone else acts as usual.
   // 8.8: a frozen leader cannot operate it; then the command falls through to the normal turn below, where the action is lost.
-  const ex=cmd.action.type==='exchange'&&!statusBlock(s.units[lead],cmd.action)?cmd.action:null;
+  const ex=!leaderSleeping&&cmd.action.type==='exchange'&&!statusBlock(s.units[lead],cmd.action)?cmd.action:null;
   if(ex){const err=invalid(s,lead,ex);if(err)return err;if(cmd.override?.actor===ex.target)return '被送走的伙伴不能同时被安排动作';
     sendHome(s,ex);trace?.push({id:lead,action:ex,explicit:true,failed:false});}
   const order=[...s.queue];
@@ -1427,7 +1523,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
           const mate2=step.type==='move'?allyAt(s,lead,step.to):undefined;execute(s,lead,step,blockingFromEnemies,friendGuard);if(step.type==='move')moved.add(lead);trace?.push({id:lead,action:step,explicit:true,failed:false,...(mate2?{swapWith:mate2.id}:{})});continue;}
         const p=s.units[lead].pos,q=s.units[swap].pos;if(p&&q){faceToward(s.units[lead],p,q);faceToward(s.units[swap],q,p);onRoomEntry(s,p,q);onRoomEntry(s,q,p);}
         s.units[lead].pos=q;s.units[swap].pos=p;s.units[lead].lastMove=null;s.units[swap].lastMove=null;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);tryPickup(s,lead);tryPickup(s,swap);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
-    const explicit=id===lead?cmd.action:cmd.override?.actor===id?cmd.override.action:null;
+    const explicit=id===lead?(leaderSleeping?{type:'wait'} as Action:cmd.action):cmd.override?.actor===id?cmd.override.action:null;
     let a=explicit??defaultAction(s,id,blockingFromEnemies,friendGuard);const err=invalid(s,id,a,moved);
     if(err){if(explicit&&preflight)return err;s.units[id].lastMove=null;note(s,`${id}动作失效，等待，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
     // 8.8: a frozen member cannot act; a paralysed or flinching one cannot use moves or basic attacks. The command is accepted and the action is lost (no PP is spent).
@@ -1448,6 +1544,11 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     // 8.8: a frozen enemy cannot act; a paralysed or flinching one cannot use moves or basic attacks; a confused one walks in a random direction.
     const lost=statusBlock(e,action);
     if(lost){note(s,`${id}${lost}`);continue;}
+    const visibleIds=new Set(s.queue.map(q=>s.units[q]).filter(t=>alive(t)&&currentlyVisible(s,e.pos,t.pos)).map(t=>t.id));
+    if(!e.waitOnly&&!sleeping(e)&&!hasStatus(e,'frz')&&!hasStatus(e,'par')&&!hasStatus(e,'flinch')){
+      const disrupt=enemyDisruptAction(s,id,friendGuard,visibleIds);
+      if(disrupt&&battleRandom(s)<0.3)action=disrupt;
+    }
     if(action.type==='move'&&hasStatus(e,'confusion')){const to=plus(e.pos,DIRS8[Math.floor(battleRandom(s)*8)]);note(s,`${id}因混乱乱走`);action={type:'move',to};}
     if(action.type==='move'){
       if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)){note(s,`${id}无路可走，等待`);continue;}
@@ -1536,13 +1637,45 @@ function evolveUnit(s:World,id:string,species:string):void {
   const u=s.units[id],level=u.level??s.prog?.level??INITIAL_LEVEL,before=u.hp;u.species=species;u.level=level;
   u.maxHp=vitalityMaxHp(species,level,s.talents?.vitality??0);u.hp=Math.min(before,u.maxHp);note(s,`${id}进化为${species}，生命上限${u.maxHp}，当前HP${u.hp}`);
 }
+function recordKnown(u:Unit,move:string):boolean{return u.learned.includes(move);}
+function queueLearnMove(s:World,actor:string,entry:KitMove):void {
+  const u=s.units[actor];if(!alive(u)||!u.species||recordKnown(u,entry.move))return;
+  if(s.pendingLearnMoves?.some(p=>p.actor===actor&&p.move===entry.move))return;
+  if(u.learned.length<4){u.learned.push(entry.move);u.pp[entry.move]=entry.pp;u.maxPp[entry.move]=entry.pp;note(s,actor+'学会了招式：'+(SKILL_CN[entry.move]??entry.move));}
+  else (s.pendingLearnMoves??=[]).push({actor,move:entry.move,pp:entry.pp});
+}
+function queueLevelUpMoves(s:World,from:number,to:number):void {
+  if(to<=from)return;
+  for(const actor of s.queue){const u=s.units[actor];if(!alive(u)||!u.species)continue;
+    const records=SPECIES[u.species]?.levelUp??[];
+    for(let level=from+1;level<=to;level++)for(const entry of records)if(entry.level===level)queueLearnMove(s,actor,entry);
+  }
+}
+function queuePostEvolutionMoves(s:World,actor:string):void {
+  const u=s.units[actor];if(!alive(u)||!u.species)return;
+  const level=s.prog?.level??u.level??INITIAL_LEVEL;
+  for(const entry of SPECIES[u.species]?.levelUp??[])if(entry.level===0||entry.level===level)queueLearnMove(s,actor,entry);
+}
+function advanceAfterLevelGrowth(s:World):void {
+  const living=s.queue.find(id=>alive(s.units[id]));
+  if(living&&!alive(s.units[s.leader]))s.leader=living;
+  if(s.pendingLearnMoves?.length){s.phase='learning';return;}
+  if(s.pendingEvolutions!==undefined){
+    if(s.pendingEvolutions.length){s.phase='evolution';return;}
+    s.pendingEvolutions=undefined;finishRoundSettlement(s);return;
+  }
+  const pending=findEvolutions(s);s.pendingEvolutions=pending;
+  if(s.pendingLearnMoves?.length){s.phase='learning';return;}
+  if(pending.length){s.phase='evolution';note(s,'队伍成长后出现进化选择');return;}
+  s.pendingEvolutions=undefined;finishRoundSettlement(s);
+}
 function findEvolutions(s:World):{actor:string;choices:string[]}[] {
   const p=s.prog;if(!p)return [];
   const pending:{actor:string;choices:string[]}[]=[];
   for(const id of s.queue){const u=s.units[id];if(!alive(u)||!u.species)continue;
     const choices=(SPECIES[u.species]?.evos??[]).filter(id=>!!SPECIES[id]);if(!choices.length)continue;
     const at=Math.min(...choices.map(id=>SPECIES[id].evoLevel));if(p.level<at||u.deferredEvolutionLevel===p.level)continue;
-    if(choices.length===1)evolveUnit(s,id,choices[0]);else pending.push({actor:id,choices});
+    if(choices.length===1){evolveUnit(s,id,choices[0]);queuePostEvolutionMoves(s,id);}else pending.push({actor:id,choices});
   }
   return pending;
 }
@@ -1627,6 +1760,7 @@ function completeAdventureIfReady(s:World):boolean{
   return false;
 }
 function finishRoundSettlement(s:World):void {
+  if(updateLevelsAfterCommissionReward(s))return;
   drawRecruitmentAndBossTm(s);
   const living=s.queue.find(i=>alive(s.units[i]));
   if(!living){
@@ -1643,6 +1777,7 @@ function finishRoundSettlement(s:World):void {
   else if(s.dungeon?.roguelike&&bossDefeated(s))end(s,'won');
   else s.phase=settled(s);
 }
+
 function afterRound(s:World):void {
   resolveAdventureStart(s);
   if(s.request){const u=s.units[s.request.actor];if(alive(u)&&same(u.pos,s.request.pos))s.request.locked=true;else s.request=null;}
@@ -1650,16 +1785,15 @@ function afterRound(s:World):void {
   const bossWin=!!s.dungeon?.roguelike&&bossDefeated(s);
   updateSpeedrunProgress(s);
   if(!s.queue.some(i=>alive(s.units[i]))&&!bossWin){s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});if(s.prog)s.prog.kills=[];end(s,'wipe');return;}
-  const p=s.prog,kills=p?[...p.kills]:[];if(p){p.kills=[];}
+  const p=s.prog,kills=p?[...p.kills]:[];if(p)p.kills=[];
   const bossDrop=!!s.dungeon?.boss&&bossDefeated(s)&&!(s.tms??[]).some(t=>t.source==='boss');
-  if(p){while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level+1]){
-      p.level++;refreshPartyLevel(s);note(s,`升到 Lv${p.level}`);
-    }}
+  const previousLevel=p?.level??INITIAL_LEVEL;
+  if(p)while(p.level<PROG.maxLevel&&p.exp>=PROG.thresholds[p.level+1]){p.level++;refreshPartyLevel(s);note(s,'升到 Lv'+p.level);}
   s.pendingSettlement={bossDrop,kills};
-  s.pendingEvolutions=findEvolutions(s);
-  if(s.pendingEvolutions.length){s.phase='evolution';note(s,'队伍成长后出现进化选择');return;}
-  s.pendingEvolutions=undefined;finishRoundSettlement(s);
+  queueLevelUpMoves(s,previousLevel,p?.level??previousLevel);
+  s.pendingEvolutions=undefined;advanceAfterLevelGrowth(s);
 }
+
 export type InvitationPreview={ok:true;pos:Pos;queue:string[];leader:string}|{ok:false;error:string};
 export function previewInvitation(s:World,outgoing?:string):InvitationPreview {
   if(s.phase!=='invitation'||!s.anchor)return {ok:false,error:'当前没有待处理邀请'};
@@ -1708,8 +1842,34 @@ function resumeAfterChoice(s:World):void {
   s.anchor=null;
   if(s.dungeon?.roguelike&&bossDefeated(s))end(s,'won');else s.phase=settled(s);
 }
+/** Robot-only choice for level-up prompts: replace the first lowest-power move only when the new move is stronger. */
+export function defaultLearningCommand(s:World):Extract<Command,{type:'learnMove'}>|null {
+  const pending=s.pendingLearnMoves?.[0],unit=pending?s.units[pending.actor]:undefined;if(!pending||!unit)return null;
+  const power=(move:string)=>moveOf(move)?.power??0;
+  if(!unit.learned.length)return {type:'learnMove',replace:null};
+  let weakest=unit.learned[0],minimum=power(weakest);
+  for(const move of unit.learned.slice(1)){const value=power(move);if(value<minimum){weakest=move;minimum=value;}}
+  return power(pending.move)>minimum?{type:'learnMove',replace:weakest}:{type:'learnMove',replace:null};
+}
 export function applyCommand(original:World,cmd:Command):Result {
   const fail=(error:string):Result=>({ok:false,state:original,error:`${error}；本轮未执行`});
+  if(cmd.type==='learnMove'){
+    if(original.phase!=='learning'||!original.pendingLearnMoves?.length)return fail('当前没有待处理的学招选择');
+    const pending=original.pendingLearnMoves[0],unit=original.units[pending.actor];
+    if(!alive(unit)||!original.queue.includes(pending.actor))return fail('学招对象已不在同行队伍');
+    if(cmd.replace!==null&&!unit.learned.includes(cmd.replace))return fail('所选替换招式不在当前携带列表中');
+    const s=clone(original),choice=s.pendingLearnMoves![0],learner=s.units[choice.actor];
+    if(cmd.replace!==null){
+      const slot=learner.learned.indexOf(cmd.replace);learner.learned[slot]=choice.move;
+      delete learner.pp[cmd.replace];delete learner.maxPp[cmd.replace];
+      learner.pp[choice.move]=choice.pp;learner.maxPp[choice.move]=choice.pp;
+      note(s,choice.actor+'用'+(SKILL_CN[choice.move]??choice.move)+'替换了'+(SKILL_CN[cmd.replace]??cmd.replace));
+    }else note(s,choice.actor+'放弃学习'+(SKILL_CN[choice.move]??choice.move));
+    s.pendingLearnMoves!.shift();
+    if(s.pendingLearnMoves!.length)s.phase='learning';
+    else{s.pendingLearnMoves=undefined;advanceAfterLevelGrowth(s);}
+    return {ok:true,state:s};
+  }
   if(cmd.type==='commissionChoice'){
     const pending=original.pendingChoices?.[0];
     if(original.phase!=='commission'||pending?.type!=='commission')return fail('当前没有待处理的委托选择');
@@ -1762,9 +1922,8 @@ export function applyCommand(original:World,cmd:Command):Result {
     if(original.phase!=='evolution'||!original.pendingEvolutions?.length)return fail('当前没有待处理的进化选择');
     const s=clone(original),pending=s.pendingEvolutions![0],unit=s.units[pending.actor];
     if(cmd.species!==null&&!pending.choices.includes(cmd.species))return fail('所选形态不在这次进化选项中');
-    if(cmd.species===null)unit.deferredEvolutionLevel=s.prog?.level??INITIAL_LEVEL;else evolveUnit(s,pending.actor,cmd.species);
-    s.pendingEvolutions!.shift();
-    if(!s.pendingEvolutions!.length){s.pendingEvolutions=undefined;finishRoundSettlement(s);}
+    if(cmd.species===null)unit.deferredEvolutionLevel=s.prog?.level??INITIAL_LEVEL;else{evolveUnit(s,pending.actor,cmd.species);queuePostEvolutionMoves(s,pending.actor);}
+    s.pendingEvolutions!.shift();advanceAfterLevelGrowth(s);
     return {ok:true,state:s};
   }
   if(cmd.type==='buy'){const err=buyProblem(original,cmd.item);return err?{ok:false,state:original,error:`${err}；没有购买`}:{ok:true,state:buy(original,cmd.item)};}
@@ -1812,7 +1971,7 @@ export function applyCommand(original:World,cmd:Command):Result {
 function floorUnits(g:GeneratedFloor):{units:Record<string,Unit>;enemies:string[]} {
   const units:Record<string,Unit>={};
   for(const e of g.enemies){
-    const u=speciesUnit(e.id,e.species,e.level,{x:e.pos.x,y:e.pos.y});u.side='enemy';u.hp=e.hp;u.maxHp=e.hp;u.tactic='gofoes';
+    const u=speciesUnit(e.id,e.species,e.level,{x:e.pos.x,y:e.pos.y});u.side='enemy';u.hp=e.hp;u.maxHp=e.hp;u.tactic='gofoes';if(!e.boss)setUnitLoadout(u,movesAtLevel(e.species,e.level));
     u.asleep=!!e.asleep;u.wakeSkip=false;u.targetMemory=null;u.lostSightTurns=0;u.roamTarget=null;u.direction=null;
     if(e.boss)u.boss=true;if(e.post)u.post=clone(e.post);units[e.id]=u;
   }
@@ -1898,9 +2057,10 @@ export function carriedUnit(id:string,m:SquadMember,vitality=0):Unit {
     learned:m.carry.map(k=>k.move),species:m.species,entrySpecies:m.species,level:INITIAL_LEVEL,tactic:m.tactic??'together',inst:m.inst,moves:m.carry.map(k=>k.move),...freshCombatState(),reflect:0,lightscreen:0,...(m.protected?{protected:true as const}:{})};
 }
 /** `boss` defaults to true for a base run of 3 floors. New expeditions start as one-way roguelike runs. */
-export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number;talents?:ExpeditionTalents},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3|4,difficulty:Difficulty='normal'):World {
+export function createExpedition(runId:string,seed:number,floors=2,squad?:{members:SquadMember[];leader:number;talents?:ExpeditionTalents},purse=0,boss=!!squad&&floors===3,tmPoolVersion?:3|4|5,difficulty:Difficulty='normal'):World {
   const selectedDifficulty=isDifficulty(difficulty)?difficulty:'normal';
-  const d:Dungeon={seed:seed>>>0,width:36,height:24,floors,level:1,stored:{},roguelike:true,...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const}:{}),...((tmPoolVersion===3||tmPoolVersion===4)&&squad&&boss?{tmPool:tmPoolVersion}:{})};
+  const selectedTmPool=tmPoolVersion??5;
+  const d:Dungeon={seed:seed>>>0,width:36,height:24,floors,level:1,stored:{},roguelike:true,...(squad?{base:true as const,services:true as const}:{}),...(squad&&boss?{boss:true as const,tmPool:selectedTmPool}:{})};
   const f=freshFloor(d,1,true,selectedDifficulty);
   const s:World={runId,scenario:'expedition',round:0,floor:f.floor,liquid:f.liquid,arrival:f.arrival,seen:[],
     units:{...(squad?Object.fromEntries(squad.members.map((m,i)=>['ABC'[i],carriedUnit('ABC'[i],m,squad.talents?.vitality??0)])):{A:speciesUnit('A','charmander',INITIAL_LEVEL),B:speciesUnit('B','squirtle',INITIAL_LEVEL),C:speciesUnit('C','bulbasaur',INITIAL_LEVEL)}),...f.units},

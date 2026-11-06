@@ -19,7 +19,7 @@ const oldV3=(profile=initialProfile())=>{
 };
 const currentEnvelope=profile=>({format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:1,profile});
 
-test('rules/content 3 camp records migrate tactics and v0.1 defaults, then persist as version 5',async()=>{
+test('rules/content 3 camp records migrate tactics and v0.1 defaults, then persist as rules-6/content-7',async()=>{
   const old=oldV3(),profileBefore=copy(old.profile),raw=JSON.stringify(old),port=memory(raw),store=new TrialStore(port);
   assert.equal(await store.whenReady,true,store.error);
   assert.equal(store.status,'ready');assert.equal(store.state,null);assert.equal(port.writes(),1);
@@ -29,7 +29,7 @@ test('rules/content 3 camp records migrate tactics and v0.1 defaults, then persi
   expected.difficulty='normal';expected.shards={};expected.rankExp=0;expected.talents={};
   assert.deepEqual(store.profile,expected,'all profile fields remain, with one default added per instance');
   assert.deepEqual(Object.keys(store.envelope).sort(),['build','content','format','profile','rules','sequence']);
-  assert.equal(store.envelope.rules,'trial-rules-5');assert.equal(store.envelope.content,'trial-content-6');
+  assert.equal(store.envelope.rules,'trial-rules-6');assert.equal(store.envelope.content,'trial-content-7');
   assert.deepEqual(decode(port.raw()).profile,expected);
   assert.equal(store.envelope.sequence,8);
 });

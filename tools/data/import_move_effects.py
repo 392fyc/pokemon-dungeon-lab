@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """从 Pokémon Showdown 招式数据与 src/data/pmd-moves.json 生成 src/data/move-effects.json（8.8，#165）。
 
-规格：docs/02-进度/计划/8.8命中状态与PP规格.md 第 2、3、4 节。只使用 Python 标准库。
+现行规则：docs/01-现行规则/游戏规则.md G5；生成与迁移约定：docs/05-制作流程/实现备注.md 第 1、5 节。只使用 Python 标准库。
 输入文件只当数据读取，先校验 Showdown moves.json 的 sha256，不一致就退出。
 
 每招输出：
@@ -32,7 +32,7 @@ SOURCE_COMMIT = "ccfaa20f32af363569cd21a9d501b2bc1ded26b1"
 # 本作没有太晶化，不生成它的数据（pmd-moves.json 仍保留数据行以便读取旧档）。
 SKIPPED = {"terablast"}
 STAGE_KEYS = {"atk": "atk", "def": "def", "spa": "spa", "spd": "spd", "spe": "spe", "accuracy": "acc", "evasion": "eva"}
-STATUS_KEYS = {"brn", "frz", "par", "psn", "tox"}
+STATUS_KEYS = {"brn", "frz", "par", "psn", "slp", "tox"}
 VOLATILE_KEYS = {"confusion": "confusion", "flinch": "flinch"}
 
 
@@ -109,6 +109,8 @@ def build(showdown, pmd):
         row = {"acc": acc}
         if sd.get("type") == "Fire" or sd.get("thawsTarget"):
             row["thaw"] = True
+        if (sd.get("flags") or {}).get("powder"):
+            row["powder"] = True
         if fx:
             row["fx"] = fx
         cost = (sd.get("self") or {}).get("boosts")
@@ -122,7 +124,7 @@ def build(showdown, pmd):
         row["source"] = {
             "showdown": f"https://github.com/smogon/pokemon-showdown/blob/{SOURCE_COMMIT}/data/moves.ts",
             "id": move_id,
-            "fields": [key for key in ("accuracy", "boosts", "status", "volatileStatus", "recoil", "heal", "secondary", "secondaries", "self") if key in sd],
+            "fields": [key for key in ("accuracy", "boosts", "status", "volatileStatus", "recoil", "heal", "secondary", "secondaries", "self", "flags") if key in sd],
             "pmd": spec.get("official", {}),
         }
         if move_id in template_sources:

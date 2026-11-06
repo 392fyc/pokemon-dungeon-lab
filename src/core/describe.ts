@@ -4,7 +4,7 @@ import {SPECIES} from './roster.ts';
 import {MOVE_DEFS,moveOf,moveEffects,type StageKey,type StatusId,type MoveRange} from './moves.ts';
 import {adventureRoomMark,adventureRoomStateZh,adventureRoomTypeZh,speciesZh,moveZh,typeZh,itemZh,type AdventureRoomType} from './names.ts';
 import {TACTIC_LABELS,isTactic,type Tactic} from './tactics.ts';
-import moveTypeSnapshot from '../render/move-types.json' with {type:'json'};
+import moveTypeSnapshot from '../data/move-types.json' with {type:'json'};
 const MOVE_TYPES=(moveTypeSnapshot as unknown as {types:Record<string,string>}).types;
 
 /** Species name, or a readable side-based fallback for species-less fixtures. */
@@ -29,6 +29,9 @@ export function moveEffectLabel(id:string,context?:DamageSummaryContext):string{
     if(effect==='damage')parts.push(spec.power===null?'造成伤害':context?`造成${damageEstimateText(context.s,context.sourceId,context.targetId,id)}`:`造成${6+Math.ceil(spec.power/2)}点基础伤害`);
     else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
     else if(effect==='recoil'){const r=moveEffects(id)?.recoil;if(r)parts.push(`承受实际伤害的${r[0]}/${r[1]}反作用（向下取整，至少1；未造成伤害时不扣HP）`);}
+    else if(effect==='rest')parts.push('自身进入打盹2—3轮；结束时回满HP并解除全部异常');
+    else if(effect==='snore')parts.push('睡眠或打盹中受到对方直接攻击且未醒来时，对攻击者发动；不受射程限制且不造成畏缩');
+    else if(effect==='sleeptalk')parts.push('睡眠或打盹中受到对方直接攻击且未醒来时，随机发动一招；不受射程限制');
     else if(effect==='heal:1:2')parts.push(`${spec.target==='party'?'同房间全队':'自身'}回复各自最大HP的一半（四舍五入，不超过上限）`);
     else if(effect.startsWith('status:'))parts.push(`命中后施加${STATUS_NAMES[effect.slice(7) as StatusId]}`);
     else if(effect==='protect')parts.push('自身受到敌方攻击伤害为0（3个敌方阶段）');

@@ -1,6 +1,7 @@
 import {fog350Checks} from './fog350.mjs';
 import {review357Checks} from './review357.mjs';
 import {review360FloorChecks} from './review360.mjs';
+import {step193Checks} from './step193.mjs';
 import assert from 'node:assert/strict';
 import {campControl,openCampPanel,openCampRoster} from './camp-ui.mjs';
 import fs from 'node:fs';
@@ -80,10 +81,10 @@ function assertPortraitsCentered(rows,context){
  for(const row of rows){assert.ok(row.fits,context+': visible alpha union is not cropped '+JSON.stringify(row));assert.ok(row.centerErrorX<=1&&row.centerErrorY<=1,context+': actual visible centre is within one pixel of its box '+JSON.stringify(row));}
 }
 
-async function setup(fixture,mode='pass',animate=false,source='painter'){
- const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
+async function setup(fixture,mode='pass',animate=false,source='painter',contextOptions={}){
+ const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true,...contextOptions});
  // Stage 6.4: the 22 existing checks run with animations off; only the animation check turns them on.
- await context.addInitScript(({animate,source})=>{if(!animate)window.__trialNoAnim=true;window.__terrainSource=source;},{animate,source});
+ await context.addInitScript(({animate,source})=>{if(!animate)window.__trialNoAnim=true;window.__trialNoAutoSleep=true;window.__terrainSource=source;},{animate,source});
  // #178: the game now draws original DTEF sheets by default; the 8.5b painter checks below pin the painter source, the DTEF checks pass source='dtef'.
  await context.addInitScript(({mode})=>{
   const original=Storage.prototype.setItem;
@@ -166,7 +167,8 @@ async function clearR(p){
  const s=await state(p);assert.equal(s.units.R.hp,0);assert.equal(s.units.C.hp,12);
 }
 async function defeatMainEAndRecordG(p){
- await click(p,'skill-quickattack');await cell(p,4,1); // the two-tile, 8-point Quick Attack defeats E at 8 HP
+ for(let attack=0;attack<2;attack++){await click(p,'skill-quickattack');const e=(await state(p)).units.E;await cell(p,e.pos.x,e.pos.y);}
+ assert.equal((await state(p)).units.E.hp,0); // Two resisted Quick Attacks deal 4 each to the actual 8-HP Rock/Ground target.
  await key(p,'ArrowRight');await key(p,'ArrowRight'); // walk onto G after E is gone
  await click(p,'take'); // record G; R walks to x=5 beside C
 }
@@ -176,7 +178,7 @@ async function test(name,fn){if(process.env.TRIAL_CHECK_FILTER&&!name.includes(p
 await test('M1、S2、S5、S8：开发场景真实输入、待邀请、终局与独立重开仅在内存',async()=>{
  const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);const invited=await state(p);assert.equal(await raw(p),null);
  await click(p,'detail-0');await click(p,'detail-0');assert.equal(await raw(p),null);
- await reject(p);await key(p,'ArrowRight');await exit(p);let s=await state(p);assert.equal(s.round,5);assert.deepEqual(s.queue.map(i=>s.units[i].pos.x),[1,3,4]);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,20,8]);   // E hit C twice (20->12), then R's 4-point Tackle hit once on the exit round
+ await reject(p);await key(p,'ArrowRight');await exit(p);let s=await state(p);assert.equal(s.round,5);assert.deepEqual(s.queue.map(i=>s.units[i].pos.x),[1,3,4]);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,20,6]);   // E hits twice for 4; Pidgey R has Normal STAB, so its Tackle deals round(9 × 0.4 × 1.5)=6.
  assert.equal(s.end.brought,0);const terminal=s;
  await p.screenshot({path:artifact+'windows-m1-terminal.png',fullPage:true});assert.equal(await raw(p),null);
  await click(p,'new');s=await state(p);assert.equal(s.round,0);assert.notEqual(s.runId,terminal.runId);assert.equal(await raw(p),null);
@@ -188,15 +190,17 @@ await test('M2、S1：开发场景探看与关闭后回到空的内存状态',as
 });
 await test('M3：电光一闪两格射程、合法目标提示与T撤离',async()=>{
  const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
-  await click(p,'skill-quickattack');const card=p.locator('#skill-quickattack'),tip=p.locator('#hud-tooltip');await hoverCell(p,4,1);await card.hover();await tip.waitFor({state:'visible'});let label=await tip.innerText();assert.match(label,/电光一闪/);for(const field of ['威力','命中','PP','射程','范围'])assert.ok(label.includes(field),`hover card exposes the independent ${field} field`);const rangeField=tip.locator('.hud-tip-field').filter({hasText:'射程'}),rangeValue=rangeField.locator('strong');assert.equal(await rangeValue.innerText(),'2格','Quick Attack retains its two-cell reach');assert.equal(await rangeValue.getAttribute('aria-label'),'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角','Quick Attack exposes its actual eight-direction ray and corner restrictions');assert.match(label,/约8点/,'the live hover estimate preserves Quick Attack damage against the real nearby target');assert.doesNotMatch(await card.innerText(),/同排|同列|斜线|造成约/,'details belong in the hover card, not the compact move card');
-  await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.pp.quickattack,1); // E's 8 HP are defeated by an 8-point Quick Attack from two cells away
+  // This route needs a one-hit E; Normal Quick Attack is now resisted by Rock, so use a literal 4-HP target.
+  await p.evaluate(()=>{const e=window.trial.store.world.units.E;e.hp=e.maxHp=4;});
+  await click(p,'skill-quickattack');const card=p.locator('#skill-quickattack'),tip=p.locator('#hud-tooltip');await hoverCell(p,4,1);await card.hover();await tip.waitFor({state:'visible'});let label=await tip.innerText();assert.match(label,/电光一闪/);for(const field of ['威力','命中','PP','射程','范围'])assert.ok(label.includes(field),`hover card exposes the independent ${field} field`);const rangeField=tip.locator('.hud-tip-field').filter({hasText:'射程'}),rangeValue=rangeField.locator('strong');assert.equal(await rangeValue.innerText(),'2格','Quick Attack retains its two-cell reach');assert.equal(await rangeValue.getAttribute('aria-label'),'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角','Quick Attack exposes its actual eight-direction ray and corner restrictions');assert.match(label,/约4点/,'the live hover estimate preserves Quick Attack damage against the real nearby target');assert.doesNotMatch(await card.innerText(),/同排|同列|斜线|造成约/,'details belong in the hover card, not the compact move card');
+  await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.pp.quickattack,1); // E's 4 HP are defeated by round(8 × 0.5)=4 Quick Attack from two cells away
   await key(p,'ArrowRight');s=await state(p);assert.equal(s.units.C.pos.x,3); // kill E before the remaining Quick Attack PP is used on R
-  for(let i=0;i<4;i++)await key(p,'.');s=await state(p);assert.equal(s.round,6);assert.equal(s.units.R.hp,8);assert.deepEqual(s.units.R.pos,{x:4,y:1});assert.equal(s.units.C.hp,16); // R walks from 9 to 4, then deals one 4-point Tackle
-  await click(p,'skill-quickattack');await cell(p,4,1);s=await state(p);assert.equal(s.round,7);assert.equal(s.units.R.hp,0);assert.equal(s.units.C.pp.quickattack,0);assert.equal(s.units.C.hp,16);
+  for(let i=0;i<4;i++)await key(p,'.');s=await state(p);assert.equal(s.round,6);assert.equal(s.units.R.hp,8);assert.deepEqual(s.units.R.pos,{x:4,y:1});assert.equal(s.units.C.hp,14); // R walks from 9 to 4, then deals one 6-point STAB Tackle
+  await click(p,'skill-quickattack');await cell(p,4,1);s=await state(p);assert.equal(s.round,7);assert.equal(s.units.R.hp,0);assert.equal(s.units.C.pp.quickattack,0);assert.equal(s.units.C.hp,14);
   await key(p,'ArrowRight');await click(p,'take');s=await state(p);assert.equal(s.round,9);assert.equal(s.goal,true);
-  await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');s=await state(p);assert.deepEqual(s.units.C.pos,{x:7,y:1});assert.equal(s.units.C.hp,16);
+  await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');s=await state(p);assert.deepEqual(s.units.C.pos,{x:7,y:1});assert.equal(s.units.C.hp,14);
   await click(p,'take');s=await state(p);assert.equal(s.round,13);assert.equal(s.bag,1);assert.equal(s.points.find(q=>q.kind==='item').used,true);
-  await exit(p);s=await state(p);assert.equal(s.round,14);assert.equal(s.end.brought,1);assert.equal(s.units.C.hp,16);await p.screenshot({path:artifact+'windows-m3-terminal.png',fullPage:true});assert.deepEqual(errors,[]);return {rounds:14,brought:1,quickattackPP:0,E:0,R:0};}finally{await context.close();}
+  await exit(p);s=await state(p);assert.equal(s.round,14);assert.equal(s.end.brought,1);assert.equal(s.units.C.hp,14);await p.screenshot({path:artifact+'windows-m3-terminal.png',fullPage:true});assert.deepEqual(errors,[]);return {rounds:14,brought:1,quickattackPP:0,E:0,R:0};}finally{await context.close();}
 });
 await test('M3：三格直线目标拒绝且不耗PP或回合',async()=>{
  const {context,page:p,errors}=await setup('K5');try{await start(p);await reject(p);const before=await state(p);
@@ -208,9 +212,9 @@ await test('M3：三格直线目标拒绝且不耗PP或回合',async()=>{
 });
 await test('M6：邀请替换、双方换位、承伤撤离',async()=>{
  const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await click(p,'leader-1');await click(p,'swap');await click(p,'partner-N');assert.ok((await p.locator('#controls').innerText()).includes('双方行动'));await click(p,'submit');
-  // B now leads at x=3 and R is at 5. B waits (R steps adjacent), then trades basic attacks: R tackles B once (4), B's second hit (6+6>=8) kills it.
+  // B now leads at x=3 and R is at 5. B waits (R steps adjacent), then trades basic attacks: R tackles B once (6 after Normal STAB), B's second hit (6+6>=8) kills it.
   await key(p,'.');await cell(p,4,1);await cell(p,4,1);assert.equal((await state(p)).units.R.hp,0);
-  await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,13);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,16,10]);assert.equal(s.units.C.hp,12);assert.deepEqual(s.camp,['C']);assert.deepEqual(s.camp.map(i=>s.units[i].hp),[12]);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(errors,[]);return {rounds:13,team:['A20','B16','N10'],camp:'C12'};}finally{await context.close();}
+  await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,13);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,14,10]);assert.equal(s.units.C.hp,12);assert.deepEqual(s.camp,['C']);assert.deepEqual(s.camp.map(i=>s.units[i].hp),[12]);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(errors,[]);return {rounds:13,team:['A20','B14','N10'],camp:'C12'};}finally{await context.close();}
 });
 await test('V1/V2、I1：直接预检、草稿取消、切换操控者清空、长按和详情',async()=>{
  const {context,page:p,errors}=await setup('V1');try{await start(p);const original=await state(p);await key(p,'ArrowUp');original.units[original.leader].facing={x:0,y:-1};assert.deepEqual(await state(p),original,'blocked keyboard movement turns only, without advancing any gameplay state');assert.equal(await p.locator('#message').innerText(),''); // #194: the wall above C is a free turn
@@ -658,6 +662,7 @@ await test('6.4 动画：演出期间世界不推进、输入不积压，结束�
 await test('基地6.5：回到基地、学习招式机、配招、编队、出发，新一局用上学到的招式',async()=>{
   const {initialProfile}=await import('../../src/core/base.ts');
   const profile=initialProfile();profile.vault={protect:1};profile.expeditions=1;
+  const {SPECIES}=await import('../../src/core/roster.ts');const extraCarry=SPECIES.bulbasaur.learnable.filter(m=>!['tackle','seedbomb','protect'].includes(m.move)).slice(0,2);assert.equal(extraCarry.length,2);profile.roster[2].learned.push(...extraCarry);
  const context=await browser.newContext({viewport:{width:1440,height:1100}});
   await context.addInitScript(()=>{window.__trialNoAnim=true;window.__failWrites=false;
    const original=Storage.prototype.setItem;
@@ -681,12 +686,13 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
   await p.screenshot({path:artifact+'windows-base-1.png',fullPage:true});
   // learning
   await click(p,'tm-protect');await click(p,'learn-P3');pr=await prof();
-  assert.deepEqual(pr.vault,{});assert.deepEqual(pr.roster[2].learned.map(l=>l.move),['tackle','seedbomb','protect']);
+  assert.deepEqual(pr.vault,{});assert.deepEqual(pr.roster[2].learned.map(l=>l.move),['tackle','seedbomb',...extraCarry.map(m=>m.move),'protect']);
   assert.equal(await p.locator('#tm-protect').isDisabled(),true,'no machine left to use twice');
-  // carry: a third move is refused with a reason and nothing changes; then swap seedbomb for protect
+  // Carry four real learned moves, reject a fifth without writing, then swap seedbomb for protect.
+  for(const m of extraCarry)await click(p,'carry-P3-'+m.move);assert.equal((await prof()).roster[2].carry.length,4);
   const before=await raw(p);await click(p,'carry-P3-protect');
-  assert.match(await p.locator('#message').innerText(),/最多携带2招/);assert.equal(await raw(p),before);
-  await click(p,'carry-P3-seedbomb');await click(p,'carry-P3-protect');pr=await prof();assert.deepEqual(pr.roster[2].carry,['tackle','protect']);
+  assert.match(await p.locator('#message').innerText(),/最多携带4招/);assert.equal(await raw(p),before);
+  for(const m of extraCarry)await click(p,'carry-P3-'+m.move);await click(p,'carry-P3-seedbomb');await click(p,'carry-P3-protect');pr=await prof();assert.deepEqual(pr.roster[2].carry,['tackle','protect']);
   // team: remove and re-add P1 so the order becomes P2, P3, P1; P3 stays the leader; "设为主控" is disabled for the current leader
   await click(p,'team-P1');await click(p,'team-P1');pr=await prof();
   assert.deepEqual(pr.team,['P2','P3','P1']);assert.equal(pr.leader,'P3');assert.equal(await p.locator('#lead-P3').isDisabled(),true);await click(p,'lead-P1');assert.equal((await prof()).leader,'P1');await click(p,'lead-P3');
@@ -1059,7 +1065,7 @@ await test('162 新果实：八种背包物品、分类分配、真实使用与�
    assert.ok(after.events.some(e=>e.type==='status'&&e.target==='B'&&e.status===status&&e.change==='cure'),'the round records the actual cure event');
    assert.equal(await slot.getAttribute('aria-label'),'空快捷格','an exhausted assignment renders as an empty slot');
    assert.equal(await slot.isDisabled(),true);
-   assert.doesNotMatch(await slot.innerText(),/×0|桃桃果|木子果|零余果|治愈之种/);
+   assert.doesNotMatch(await slot.innerText(),/×0|桃桃果|木子果|莓莓果|樱子果|零余果|治愈之种/);
    await p.screenshot({path:artifact+'windows-hud-new-fruit-'+item+'-used.png',fullPage:false});
    checks.push({item,category,status,assignedSlot:index,refusedWithoutCondition:true,curedCompanion:true,round:after.round});
   }
@@ -1474,9 +1480,9 @@ await test('7.7b 仓库：三招可见、学习、配招，新远征使用新版
   assert.deepEqual(prepared.roster[1].carry,['reflect','lightscreen']);
   await p.screenshot({path:artifact+'windows-team-guard-warehouse.png',fullPage:true});
   await p.reload();await ready(p);assert.deepEqual(await p.evaluate(()=>window.trial.profile()),prepared);const campBytes=await raw(p);
-  await click(p,'depart');const s=await state(p);assert.equal(await raw(p),campBytes,'departure does not save the expedition world');assert.equal(s.dungeon.tmPool,4);
+  await click(p,'depart');const s=await state(p);assert.equal(await raw(p),campBytes,'departure does not save the expedition world');assert.equal(s.dungeon.tmPool,5);
   assert.ok(s.units.A.learned.includes('quickguard'));assert.deepEqual(s.units.B.learned,['reflect','lightscreen']);
-  assert.deepEqual(errors,[]);return {injectedCampInventory:true,learnedAndEquipped:true,newPool:4,expeditionMemoryOnly:true};
+  assert.deepEqual(errors,[]);return {injectedCampInventory:true,learnedAndEquipped:true,newPool:5,expeditionMemoryOnly:true};
  }finally{await context.close();}
 });
 
@@ -1958,18 +1964,18 @@ await test('#194 持续移动、遇见新敌停止、碰墙免费转身与 F 打
   assert.deepEqual(errors,[]);return {freeTurn:true,airRound:true,heldSteps:released.round-air.round,releaseStops:true,encounterStops:true,freshPressResumes:true};
  }finally{await context.close();}
 });
-await test('#194 物品十项说明、敌招分行与队友显式详情',async()=>{
+await test('#194 全部物品说明、敌招分行与队友显式详情',async()=>{
  const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef');
  try{
   const {ITEM_NAMES}=await import('../../src/core/engine.ts');const w=await playtest194World();
   for(const item of Object.keys(ITEM_NAMES))w.prog.items[item]=2;
   const enemy=Object.values(w.units).find(u=>u.side==='enemy');enemy.pos={x:11,y:10};enemy.waitOnly=true;w.enemies=[enemy.id];
   await startMemory(p,w);await p.locator('#bag-open').click();
-  assert.equal(await p.locator('[data-bag-item]').count(),10,'all ten current items are visible in the all category');
+  assert.equal(await p.locator('[data-bag-item]').count(),11,'all eleven current items are visible in the all category');
   for(const item of Object.keys(ITEM_NAMES)){
    const button=p.locator('[data-bag-item="'+item+'"]');await button.focus();
    const description=button.locator('.hud-item-description');assert.ok(await description.isVisible(),'effect is visibly displayed on keyboard focus: '+item);
-   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/最大 HP/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP.*上限/};
+   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/最大 HP/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠.*不解除打盹/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP.*上限/};
    assert.match(text,effects[item],'visible effect matches the current item rule: '+item);assert.ok((await button.getAttribute('aria-label')).includes(text),'accessible item label includes the same effect: '+item);
   }
   await p.locator('[data-bag-item="healSeed"]').click();assert.match(await p.locator('#hud-bag').innerText(),/中毒|异常|冰冻/,'selection retains a readable effect description');
@@ -1985,7 +1991,7 @@ await test('#194 物品十项说明、敌招分行与队友显式详情',async()
    await row.locator('summary').click();assert.ok((await row.locator('p').innerText()).length>5);await row.locator('summary').click();
   }
   assert.doesNotMatch(await p.locator('#party').innerText(),/\b(?:A|B|C|w\d+[a-z]?|N\d+)\b/,'cards show species instead of opaque IDs');
-  assert.deepEqual(errors,[]);return {items:10,accessibleFocusDescriptions:true,selectedDescription:true,enemyMoveRows:enemy.learned.length,explicitPartyDetails:true};
+  assert.deepEqual(errors,[]);return {items:Object.keys(ITEM_NAMES).length,accessibleFocusDescriptions:true,selectedDescription:true,enemyMoveRows:enemy.learned.length,explicitPartyDetails:true};
  }finally{await context.close();}
 });
 await test('#194 满员邀请可让新人直接回营且不进入本局队列',async()=>{
@@ -2040,7 +2046,7 @@ await test('#194 F 空挥实际播放攻击动作并保持动画输入锁',async
 
 
 for(const touchWidth of [390,320]){
-await test('#194 手机触屏 '+touchWidth+'px 十种快捷物品先选中看说明，全员补剂确认后才消耗',async()=>{
+await test('#194 手机触屏 '+touchWidth+'px 全部快捷物品先选中看说明，全员补剂确认后才消耗',async()=>{
  const context=await browser.newContext({viewport:{width:touchWidth,height:844},hasTouch:true,isMobile:true}),p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
   await context.addInitScript(()=>{window.__trialNoAnim=true;});await p.goto(base+'?dev=1');await p.locator('#start').waitFor();
@@ -2061,7 +2067,7 @@ await test('#194 手机触屏 '+touchWidth+'px 十种快捷物品先选中看说
   await assign('teamTonic');await p.locator('[data-hud-quick="0"]').tap();assert.deepEqual(await state(p),before);
   await p.locator('#item-use-teamTonic').tap();await ready(p);const after=await state(p);
   assert.equal(after.round,before.round+1);assert.equal(after.prog.items.teamTonic,0);assert.equal(after.units[after.leader].pp[move],before.units[before.leader].pp[move]+5);
-  await p.screenshot({path:artifact+'playtest194-touch-'+touchWidth+'x844.png'});assert.deepEqual(errors,[]);return {touch:true,selectedItems:10,selectionConsumesNothing:true,teamTonicConfirm:true};
+  await p.screenshot({path:artifact+'playtest194-touch-'+touchWidth+'x844.png'});assert.deepEqual(errors,[]);return {touch:true,selectedItems:Object.keys(ITEM_NAMES).length,selectionConsumesNothing:true,teamTonicConfirm:true};
  }finally{await context.close();}
 });
 
@@ -2174,6 +2180,9 @@ await test('#194 #350 墙心底层、未知地形保密、连续移动与精灵�
 await test('#194 #357 消息过滤、日志保留与行走中 HUD 亮度及输入锁',()=>review357Checks({setup,startMemory,state,ready,artifact}));
 
 await test('#194 #360 真实敌人换层后例行日志与旧敌人编号保持隐藏',()=>review360FloorChecks({setup,startMemory,state,ready,viaStairs,artifact}));
+
+await test('8.9b #193 桌面学招、四招、相性与睡眠自动推进',()=>step193Checks({setup,startMemory,state,ready,cell,artifact,width:1280,height:720}));
+await test('8.9b #193 手机学招、四招、相性与睡眠自动推进',()=>step193Checks({setup,startMemory,state,ready,cell,artifact,width:390,height:844}));
 
 await browser.close();
 clearTimeout(browserDeadline);

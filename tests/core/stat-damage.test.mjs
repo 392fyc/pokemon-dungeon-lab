@@ -25,8 +25,8 @@ function strike(s,move){
 }
 for(const [attacker,defender,move,level,friendDamage,enemyDamage] of [
  ['mudkip','pidgey','tackle',5,11,4], // round(9*1.25)=11, then enemy round(11*.4)=4
- ['pidgey','mudkip','tackle',5,8,3], // round(9*45/50)=8, then round(8*.4)=3
- ['charmander','squirtle','ember',5,9,4], // round(10*60/64)=9, then round(9*.4)=4
+ ['pidgey','mudkip','tackle',5,12,5], // round(9*45/50)=8; Pidgey Normal STAB makes 12. Enemy: round(8*.4)=3, then round(3*1.5)=5
+ ['charmander','squirtle','ember',5,7,3], // round(10*60/64)=9; Fire STAB x Squirtle's 0.5 resistance gives round(9*.75)=7. Enemy: round(9*.4)=4, then round(4*.75)=3
  ['arcanine','mudkip','bite',22,18,7], // round((10+4)*1.25)=18, then round(18*.4)=7
  ['mudkip','arcanine','tackle',5,8,3], // round(9*70/80)=8
  ['treecko','arcanine','tackle',5,7,3], // round(9*.8)=7
@@ -80,10 +80,10 @@ test('#112 比例取整后乘难度，再处理阶段、屏障与反击；AI估�
 test('#112 自动选招比较物理和特殊的实际伤害',()=>{
  const s=duel('bulbasaur','geodude',{side:'enemy'});
  s.units.A.learned=['tackle','absorb'];s.units.A.pp={tackle:5,absorb:5};s.units.A.maxPp={...s.units.A.pp};
- // Physical: round(9*.8)=7 -> 3; Special: round(7*1.25)=9 -> 4.
- assert.equal(estimateAttackDamage(s,'A','D','tackle'),3);
- assert.equal(estimateAttackDamage(s,'A','D','absorb'),4);
+ // Tackle: round(9*.8)=7, enemy difficulty gives 3, then Rock resistance gives 2. Absorb: round(7*1.25)=9, enemy difficulty gives 4; Grass STAB x 4x weakness gives 24.
+ assert.equal(estimateAttackDamage(s,'A','D','tackle'),2);
+ assert.equal(estimateAttackDamage(s,'A','D','absorb'),24);
  const after=strike(s);
  assert.equal(after.units.A.lastMove,'absorb');
- assert.equal(after.units.D.hp,196);
+ assert.equal(after.units.D.hp,176);
 });

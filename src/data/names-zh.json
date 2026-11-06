@@ -736,11 +736,16 @@
     "bulkup": "健美",
     "willowisp": "鬼火",
     "thunderwave": "电磁波",
-    "swordsdance": "剑舞"
+    "swordsdance": "剑舞",
+    "rest": "睡觉",
+    "sleeptalk": "梦话"
   },
   "items": {
     "berry": "橙橙果",
     "tonic": "PP多项小补剂",
+    "rawstBerry": "莓莓果",
+    "cheriBerry": "樱子果",
+    "chestoBerry": "零余果",
     "violentSeed": "暴力种子",
     "maxElixir": "单人满 PP 补剂"
   }

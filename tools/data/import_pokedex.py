@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import the pinned Pokédex, learnsets, PMD move rows and names without network access.
+"""Import pinned Pokédex, learnsets, PMD move rows and names; fetch only a missing pinned typechart source.
 
 Usage (isolated stdlib run):
   python -I tools/data/import_pokedex.py [--snapshot-root PATH] [--out-dir PATH]
@@ -17,6 +17,8 @@ import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -27,6 +29,9 @@ PMD_NAME = "wiki-2026-10-30.json"
 PMD_SHA = "12436b4fd16aa726e2d06e1ccfdf3f9836c4c63ce5f82a853825494f5d4fda0f"
 PMD_EXTRA_NAME = "wiki-2026-10-30-extra.json"
 PMD_EXTRA_SHA = "ca1883a2005e2e57c9347001a72d24be649e99a6cd1607723650cc88fa72ec49"
+TYPECHART_SHA256 = "7b0eae126bdcf98edfd71cbe75af00b763f5f0d5db36024b6f3e7c5e4aea95ac"
+TYPECHART_COMMIT = "ccfaa20f32af363569cd21a9d501b2bc1ded26b1"
+TYPECHART_URL = f"https://raw.githubusercontent.com/smogon/pokemon-showdown/{TYPECHART_COMMIT}/data/typechart.ts"
 NAMES_BASE_SHA = "b9cbfd799a1d9d952b92d743995f5fe53c9f53b5bc42523c8497c5d1d42aa626"
 OLD_PMD_BASE_NAME = "moves-2026-10-30.json"
 OLD_PMD_BASE_SHA = "9dc017d8964cce9785988236c1dd56417cae3ecfd38ea3213d7969d47d81c683"
@@ -36,6 +41,7 @@ INPUT_SHA = {
     "showdown/pokedex.json": "e74d0364b230001fc086cefb4259e051f1d16a4730eb89f7d6336a88a0d9a47e",
     "showdown/moves.json": "26909a321a7e4528d14a7dffd24173aa03a6845776cf41c39cc3d76f8e14616b",
     "showdown/learnsets.json": "cedbe661968e2d69abe9f317e9a3f5d4f2dcf989e1f937cb0cdd72e7af29ab8f",
+    "showdown/typechart.ts": TYPECHART_SHA256,
     "pmd/" + PMD_NAME: PMD_SHA,
     "pmd/" + PMD_EXTRA_NAME: PMD_EXTRA_SHA,
     "pmd/" + OLD_PMD_BASE_NAME: OLD_PMD_BASE_SHA,
@@ -78,6 +84,19 @@ TEAM_PROTECTION_NOTES = {
 }
 TEAM_PROTECTION_EFFECTS = {move_id: move_id for move_id in TEAM_PROTECTION_MOVE_IDS}
 TM_89_MOVE_IDS = ("calmmind", "toxic", "bulkup", "willowisp", "thunderwave", "swordsdance")
+TM_8B_MOVE_IDS = ("rest", "sleeptalk")
+SLEEP_STATUS_MOVES = {
+    "hypnosis": "status:slp", "sleeppowder": "status:slp", "sing": "status:slp",
+    "spore": "status:slp", "lovelykiss": "status:slp",
+}
+SLEEP_ACTION_MOVES = {"rest": "rest", "snore": "snore", "sleeptalk": "sleeptalk"}
+SLEEP_MOVE_IDS = {**SLEEP_STATUS_MOVES, **SLEEP_ACTION_MOVES}
+TYPE_NAMES = (
+    "Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying",
+    "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water",
+)
+TYPE_IDS = {name.casefold(): name for name in TYPE_NAMES}
+TYPE_DAMAGE_MULTIPLIER = {0: 1, 1: 2, 2: 0.5, 3: 0}
 
 GAME_PRIORITY = ("TDS", "S", "TD", "GTI", "SMD", "RTDX")
 GAME_OUTPUT = {
@@ -88,7 +107,7 @@ GAME_OUTPUT = {
     "SMD": ("SMD", "超不可思议的迷宫"),
     "RTDX": ("RTDX", "救助队 DX"),
 }
-ADMISSION_KEYS = ("existingMoveRule", "blowaway", "drain", "pureDamage", "selfStages", "teamProtection", "foeStages", "status", "recoil", "heal")
+ADMISSION_KEYS = ("existingMoveRule", "blowaway", "drain", "pureDamage", "selfStages", "teamProtection", "foeStages", "status", "sleepStatus", "sleepAction", "recoil", "heal")
 EXCLUSION_KEYS = (
     "nonstandard", "noOfficialData", "unsupportedRange", "unsupportedTarget",
     "selfCostOrCondition", "ohko", "fixedDamage", "multihit", "recoil",
@@ -146,6 +165,28 @@ def main_checkout_root() -> Path:
     if not common_path.is_absolute():
         common_path = (REPO / common_path).resolve()
     return common_path.parent
+
+
+def ensure_typechart_snapshot(snapshot_root: Path) -> None:
+    """Use the local fixed bytes first; fetch only the pinned official commit when absent."""
+    path = snapshot_root / "showdown" / "typechart.ts"
+    if path.exists():
+        return
+    try:
+        with urllib.request.urlopen(TYPECHART_URL, timeout=20) as response:
+            raw = response.read(1_000_001)
+    except (OSError, TimeoutError, urllib.error.URLError) as exc:
+        fail(f"无法读取固定 Showdown typechart.ts：{exc}")
+    if len(raw) > 1_000_000:
+        fail("固定 Showdown typechart.ts 超过 1 MB，上限检查拒绝保存")
+    actual = sha256(raw)
+    if actual != TYPECHART_SHA256:
+        fail(f"固定 Showdown typechart.ts sha256 不一致：预期 {TYPECHART_SHA256}，实际 {actual}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        path.write_bytes(raw)
+    except OSError as exc:
+        fail(f"无法保存固定 Showdown typechart.ts：{exc}")
 
 
 def verify_and_load(snapshot_root: Path) -> dict:
@@ -371,6 +412,68 @@ def learnset_data(data: dict, species_ids: list[str]):
     return out, union
 
 
+def build_type_chart(raw: bytes) -> dict:
+    """Parse the fixed Showdown TypeChart.damageTaken records; never execute its TypeScript."""
+    if sha256(raw) != TYPECHART_SHA256:
+        fail(f"Showdown typechart.ts 的 sha256 与固定输入不一致：{sha256(raw)}")
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        fail(f"Showdown typechart.ts 不是有效 UTF-8：{exc}")
+    damage_taken = {}
+    current = None
+    in_damage_taken = False
+    root_re = re.compile(r"^\t([a-z]+): \{$")
+    entry_re = re.compile(r"^\t\t\t([A-Za-z]+): ([0-3]),$")
+    for line in text.splitlines():
+        root = root_re.fullmatch(line)
+        if root:
+            candidate = TYPE_IDS.get(root.group(1))
+            current = candidate
+            in_damage_taken = False
+            if candidate:
+                if candidate in damage_taken:
+                    fail(f"typechart.ts 中属性重复：{candidate}")
+                damage_taken[candidate] = {}
+            continue
+        if current and line == "\t\tdamageTaken: {":
+            in_damage_taken = True
+            continue
+        if in_damage_taken and line == "\t\t},":
+            in_damage_taken = False
+            continue
+        if in_damage_taken:
+            entry = entry_re.fullmatch(line)
+            if entry and entry.group(1) in TYPE_NAMES:
+                move_type, code = entry.group(1), int(entry.group(2))
+                if move_type in damage_taken[current]:
+                    fail(f"typechart.ts 中相性重复：{current} / {move_type}")
+                damage_taken[current][move_type] = code
+    if set(damage_taken) != set(TYPE_NAMES):
+        fail(f"typechart.ts 的现代属性集合变化：{sorted(damage_taken)}")
+    for defending, rows in damage_taken.items():
+        if set(rows) != set(TYPE_NAMES):
+            fail(f"typechart.ts 的 {defending} damageTaken 行不是完整18属性：{sorted(rows)}")
+    effectiveness = {
+        attacking: {
+            defending: TYPE_DAMAGE_MULTIPLIER[damage_taken[defending][attacking]]
+            for defending in TYPE_NAMES
+        }
+        for attacking in TYPE_NAMES
+    }
+    return {
+        "source": {
+            "project": "Pokémon Showdown", "file": "typechart.ts",
+            "sha256": TYPECHART_SHA256, "githubCommit": TYPECHART_COMMIT,
+            "url": f"https://github.com/smogon/pokemon-showdown/blob/{TYPECHART_COMMIT}/data/typechart.ts",
+            "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建",
+            "note": "从固定 TypeChart.damageTaken 转成攻击属性对防守属性的倍率；只取现代18属性。",
+        },
+        "types": list(TYPE_NAMES),
+        "effectiveness": effectiveness,
+    }
+
+
 def split_template_fields(text: str) -> list[str]:
     fields, start, depth, pos = [], 0, 0, 0
     while pos < len(text):
@@ -498,6 +601,12 @@ def attack_special_reason(move: dict) -> str | None:
 
 def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_move_specs: dict, expanded=True):
     specs, result, admission_counts, exclusions, unavailable_power = {}, {}, {"existingMoveRule": 0}, {}, {}
+    sleep_expected = {
+        "hypnosis": ("front", "enemy"), "sleeppowder": ("around", "enemy"),
+        "sing": ("front", "enemy"), "spore": ("room", "enemy"),
+        "lovelykiss": ("around", "enemy"), "rest": ("user", "user"),
+        "snore": ("front", "enemy"), "sleeptalk": ("user", "user"),
+    }
     for move_id in sorted(union):
         if move_id in old_move_specs:
             result[move_id] = {"admitted": True, "kind": "existingMoveRule"}
@@ -506,6 +615,65 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
         move = showdown_moves.get(move_id)
         if not isinstance(move, dict):
             fail(f"Showdown learnset 引用了不存在的招式：{move_id}")
+        if expanded and move_id in SLEEP_MOVE_IDS:
+            if excluded_nonstandard(move_id, move):
+                fail(f"8.9b 固定准入招式被判为非标准：{move_id}")
+            row = selected_pmd_row(move_id, pmd_data)
+            if row is None:
+                fail(f"8.9b 准入招式缺少固定探险队行：{move_id}")
+            if row["game"] != "TDS":
+                fail(f"{move_id} 的选定探险队作品为 {row['game']}，预期 TDS")
+            if move_id == "sleeptalk":
+                range_value, target_value = "user", "user"
+            else:
+                range_value, range_reason = mapped_field(row["range"], RANGE_MAP, UNSUPPORTED_RANGES, "range", move_id)
+                target_value, target_reason = mapped_field(row["target"], TARGET_MAP, UNSUPPORTED_TARGETS, "target", move_id)
+                if range_reason or target_reason:
+                    fail(f"{move_id} 的探险队射程或目标不符合8.9b：{row['range']} / {row['target']}")
+            if (range_value, target_value) != sleep_expected[move_id]:
+                fail(f"{move_id} 的规格射程或目标不同：{range_value} / {target_value}")
+            category = move.get("category")
+            if move_id in SLEEP_STATUS_MOVES:
+                if category != "Status" or move.get("status") != "slp" or move.get("target") != "normal":
+                    fail(f"{move_id} 的固定 Showdown 状态字段不符合睡眠招式：{move!r}")
+                kind = "sleepStatus"
+            elif move_id == "rest":
+                if category != "Status" or move.get("target") != "self":
+                    fail(f"rest 的固定 Showdown 字段不符合自我休息招式：{move!r}")
+                kind = "sleepAction"
+            elif move_id == "snore":
+                if category not in ("Physical", "Special") or not move.get("sleepUsable"):
+                    fail(f"snore 的固定 Showdown 字段不符合受睡眠触发招式：{move!r}")
+                kind = "sleepAction"
+            else:
+                if category != "Status" or move.get("target") != "self" or not move.get("sleepUsable"):
+                    fail(f"sleeptalk 的固定 Showdown 字段不符合反应招式：{move!r}")
+                kind = "sleepAction"
+            power = as_power(row["pow"])
+            if (move_id == "snore" and power != 4) or (move_id != "snore" and power is not None):
+                fail(f"{move_id} 的探险队威力不符合8.9b：{row['pow']!r}")
+            effect = SLEEP_MOVE_IDS[move_id]
+            game_id, game_name = GAME_OUTPUT[row["game"]]
+            note = {
+                "hypnosis": "8.9b：施加睡眠；命中与PP取固定探险队行。",
+                "sleeppowder": "8.9b：施加睡眠；保留 Showdown powder 标记供草系免疫；命中与PP取固定探险队行。",
+                "sing": "8.9b：施加睡眠；命中与PP取固定探险队行。",
+                "spore": "8.9b：施加睡眠；保留 Showdown powder 标记供草系免疫；命中与PP取固定探险队行。",
+                "lovelykiss": "8.9b：施加睡眠；命中与PP取固定探险队行。",
+                "rest": "8.9b：手动使用进入打盹；持续时间与回复由本作规格决定。",
+                "snore": "8.9b：手动使用无效；睡眠受击反应使用探险队威力、PP与命中数据。",
+                "sleeptalk": "8.9b：手动使用无效；被动选招按本作规格执行；官方目标与射程随调用招式变化。",
+            }[move_id]
+            specs[move_id] = {
+                "range": range_value, "target": target_value, "power": power,
+                "game": game_id, "gameName": game_name,
+                "official": {"basePp": row["pp"], "accuracy": row["acc"], "cutsCorners": row["cuts"],
+                             "range": row["range"], "target": row["target"]},
+                "effects": [effect], "source": "Bulbapedia", "note": note,
+            }
+            result[move_id] = {"admitted": True, "kind": kind, "effects": [effect]}
+            admission_counts[kind] = admission_counts.get(kind, 0) + 1
+            continue
         if excluded_nonstandard(move_id, move):
             reason = "非标准／Z／极巨招式"
         else:
@@ -795,12 +963,27 @@ def generate_roster(data: dict, all_species: list[dict], learnsets: dict, union:
             if len(kit) != 2 or not any("damage" in (move_specs.get(m["move"], {}).get("effects") or []) for m in kit):
                 unavailable.append({"id": sid, "dex": f"{entry['num']:04d}", "kit": kit, "learnsetGen": era})
 
+        level_up_pairs = set()
+        for mid, methods in selected.items():
+            if mid not in permitted:
+                continue
+            for method, level in methods:
+                if method != "L":
+                    continue
+                if level is None or level < 0:
+                    fail(f"升级学习记录缺少有效等级：{sid} / {mid} / {level!r}")
+                if level != 1:
+                    level_up_pairs.add((level, mid))
+        level_up = [
+            {"level": level, "move": mid, "pp": pp_for(mid, move_specs, showdown_moves)}
+            for level, mid in sorted(level_up_pairs, key=lambda value: (value[0], value[1]))
+        ]
         learnable = [{"move": mid, "pp": pp_for(mid, move_specs, showdown_moves)} for mid in sorted(learned)]
         available_for_play = len(kit) == 2 and any("damage" in (move_specs.get(m["move"], {}).get("effects") or []) for m in kit)
         output.append({
             "id": sid, "dex": f"{entry['num']:04d}", "name": entry["name"], "starter": starter,
             "types": entry.get("types", []), "baseStats": entry["baseStats"], "maxHp": max_hp,
-            "learnsetGen": era, "kit": kit, "learnable": learnable,
+            "learnsetGen": era, "kit": kit, "learnable": learnable, "levelUp": level_up,
             "source": f"pokedex.json[{sid}]; learnsets.json[{sid}] 第{era}世代; moves.json",
             **({"availability": "暂不出场"} if sid not in legacy_by_id and not available_for_play else {}),
             **species_evolution[sid],
@@ -861,8 +1044,8 @@ def validate_existing_species(current_species: list[dict] | None, generated_spec
         if generated is None:
             fail(f"当前 roster.json 含固定名单以外物种：{species_id}")
         # 8.8（#165）：PP 与太晶爆发的去除是有意的改动，kit/learnable 只比较招式 id。
-        old_fields = {key: frozen_view(value) for key, value in current.items() if key not in EVOLUTION_FIELDS and key != "learnable"}
-        generated_old_fields = {key: frozen_view(value) for key, value in generated.items() if key not in EVOLUTION_FIELDS and key != "learnable"}
+        old_fields = {key: frozen_view(value) for key, value in current.items() if key not in EVOLUTION_FIELDS and key not in {"learnable", "levelUp"}}
+        generated_old_fields = {key: frozen_view(value) for key, value in generated.items() if key not in EVOLUTION_FIELDS and key not in {"learnable", "levelUp"}}
         old_learnable = {m["move"] for m in current.get("learnable", [])}
         if not old_learnable.issubset({m["move"] for m in generated["learnable"]}):
             fail(f"既有可学招式丢失：{species_id}")
@@ -1168,15 +1351,15 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "source": {
             "project": "Pokémon Showdown",
             "files": {name.rsplit("/", 1)[-1]: digest for name, digest in checked["hashes"].items() if name.startswith("showdown/")},
-            "url": "https://play.pokemonshowdown.com/data/<name>.json",
+            "url": "https://play.pokemonshowdown.com/data/<name>.json and the pinned GitHub typechart.ts source",
             "downloaded": "2026-10-30", "githubCommit": showdown_commit,
             "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建",
-            "note": "图鉴1–151完整基础形态，并保留旧23种及其15种后续形态。learnsetGen按最新有升级招式的世代决定；原160种既有字段保留，仅追加进化与分类字段。",
+            "note": "图鉴1–151完整基础形态，并保留旧23种及其15种后续形态。learnsetGen按最新有升级招式的世代决定；levelUp仅收准入招式的等级记录，排除L1并保留L0。",
         },
         "species": roster,
     }
     tm_names = dict(baseline_names["tms"])
-    for move_id in (*TEAM_PROTECTION_MOVE_IDS, *TM_89_MOVE_IDS):
+    for move_id in (*TEAM_PROTECTION_MOVE_IDS, *TM_89_MOVE_IDS, *TM_8B_MOVE_IDS):
         if not move_names.get(move_id):
             fail(f"招式机名称缺失：{move_id}")
         tm_names[move_id] = move_names[move_id]
@@ -1186,7 +1369,11 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "types": baseline_names["types"],
         "moves": dict(sorted(move_names.items())),
         "tms": tm_names,
-        "items": {**baseline_names["items"], "violentSeed": "暴力种子", "maxElixir": "单人满 PP 补剂"},
+        "items": {
+            **baseline_names["items"],
+            "rawstBerry": "莓莓果", "cheriBerry": "樱子果", "chestoBerry": "零余果",
+            "violentSeed": "暴力种子", "maxElixir": "单人满 PP 补剂",
+        },
     }
     pmd_bytes = serialize_pmd(old_pmd, new_specs, baseline_snippets, data["moves"])
 
@@ -1269,8 +1456,9 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "src/data/roster.json": roster_bytes,
         "src/data/pmd-moves.json": pmd_bytes,
         "src/data/names-zh.json": names_bytes,
-        "src/render/move-types.json": (json.dumps({"source": "fixed Showdown moves.json", "sha256": checked["hashes"]["showdown/moves.json"],
+        "src/data/move-types.json": (json.dumps({"source": "fixed Showdown moves.json", "sha256": checked["hashes"]["showdown/moves.json"],
             "types": {mid: data["moves"][mid]["type"] for mid in sorted(all_move_specs)}}, ensure_ascii=False, indent=2) + "\n").encode("utf-8"),
+        "src/data/type-chart.json": (json.dumps(build_type_chart(checked["raw"]["showdown/typechart.ts"]), ensure_ascii=False, indent=1) + "\n").encode("utf-8"),
         ".artifacts/pokedex/exceptions.md": exceptions.encode("utf-8"),
         ".artifacts/pokedex/summary.json": summary_bytes,
         "summary": summary,
@@ -1287,6 +1475,7 @@ def main() -> int:
         main_root = main_checkout_root()
         snapshot_root = (args.snapshot_root or (main_root / ".artifacts")).resolve()
         out_root = (args.out_dir or REPO).resolve()
+        ensure_typechart_snapshot(snapshot_root)
         checked = verify_and_load(snapshot_root)
         outputs = build_outputs(snapshot_root, main_root, checked)
         summary = outputs.pop("summary")
@@ -1302,7 +1491,7 @@ def main() -> int:
         print(f"import_pokedex: 输入或派生数据无效：{exc}", file=sys.stderr)
         return 1
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
-    print("import_pokedex: 已写出 roster.json、pmd-moves.json、names-zh.json、exceptions.md、summary.json")
+    print("import_pokedex: 已写出 roster.json、pmd-moves.json、names-zh.json、move-types.json、type-chart.json、exceptions.md、summary.json")
     return 0
 
 

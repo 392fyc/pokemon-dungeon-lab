@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate} from '../render/hud.ts';
 import '../render/hud.css';
 import {CAMP_BUILDINGS,campScene,campPanelMarkup,type CampPanel} from '../render/camp.ts';
-import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
+import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
@@ -74,7 +74,7 @@ function syncDungeonLayout(){
 /** `?seed=<integer>` fixes the expedition seed (browser checks); otherwise every expedition draws a fresh one. */
 const seedParam=params.get('seed');
 const newSeed=()=>dev&&seedParam!==null&&/^\d+$/.test(seedParam)?Number(seedParam)>>>0:Math.floor(Math.random()*4294967296);
-const begin=(config:string):World=>config==='expedition'?createExpedition(newId(),newSeed(),3,squadOf(initialProfile()),0,true,3):createMain(newId(),config==='main-invite');
+const begin=(config:string):World=>config==='expedition'?createExpedition(newId(),newSeed(),3,squadOf(initialProfile()),0,true,5):createMain(newId(),config==='main-invite');
 const newId=()=>crypto.randomUUID();
 let port:StoragePort;
 try{port=window.localStorage;}catch{port={getItem(){throw Error('浏览器拒绝读取本地存储');},setItem(){throw Error('浏览器拒绝本地存储');}};}
@@ -102,6 +102,19 @@ let hoverId:string|null=null,pinnedId:string|null=null;
 let attrib=new Map<string,string>(),freshCount=0;
 /** Stage 6.4: `active` is true while a round's animation plays; every world-changing input is dropped (not queued) meanwhile. */
 const anim={active:false,shift:false};
+let sleepTimer:ReturnType<typeof setTimeout>|null=null,sleepTurn='';
+const sleepAutoEnabled=()=>!(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep;
+function cancelSleepAdvance(){if(sleepTimer!==null)clearTimeout(sleepTimer);sleepTimer=null;sleepTurn='';}
+function syncSleepAdvance(){
+ const s=live(),eligible=screen==='play'&&s?.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&sleepAutoEnabled()&&sleeping(s.units[s.leader]);
+ if(!eligible||!s){cancelSleepAdvance();return;}
+ const turn=s.runId+'|'+s.round+'|'+s.leader;if(sleepTimer!==null&&sleepTurn===turn)return;
+ cancelSleepAdvance();sleepTurn=turn;sleepTimer=setTimeout(()=>{
+  sleepTimer=null;sleepTurn='';const current=live();
+  if(current&&current.runId+'|'+current.round+'|'+current.leader===turn&&screen==='play'&&current.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&sleepAutoEnabled()&&sleeping(current.units[current.leader]))void send({type:'round',action:{type:'wait'}});
+ },600);
+}
+
 const PREF_KEY='trial-anim-pref'; // deliberately outside the `dungeon-trial.` namespace used by the save store
 /** Animation switch: `?anim=off|on` wins, then `window.__trialNoAnim` (browser checks), then the saved checkbox, then reduced-motion. */
 const animationEnabled=():boolean=>{const q=params.get('anim');if(q==='off')return false;if(q==='on')return true;if((window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim)return false;
@@ -140,6 +153,7 @@ async function setTactic(actor:string,value:string){
  render();
 }
 function act(action:Action){cancelMoveInput();if(anim.active||!live()||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
+ if(sleeping(live()!.units[live()!.leader])&&action.type!=='wait')return;
  selectedSkill=null;choosingItem=null;
  if(draft?.swap){notice='换位已占双方动作卡；要改成其他动作，请先取消组合。';render();return;}
  if(draft){if(draft.editor===live()!.leader)draft.main=action;else draft.action=action;render();return;}
@@ -205,7 +219,7 @@ function adventureRoomPanel(s:World,room:AdventureRoom,editor:string,ready:boole
  if(room.type==='commission')return `<section class="service" id="adventure-room-panel" data-room-type="commission" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以查看本层试炼，选择接下或拒绝；拒绝会完成此房间。':'此房间已处理；进行中的委托进度与效果显示在右侧。'}</p>${room.state==='idle'?button('interact-commission','查看本层委托',!canAct,'data-action="interact-commission"'):''}</section>`;
  return `<section class="service" id="adventure-room-panel" data-room-type="blessing" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以选择一项祝福，也可以放弃。':`此房间已处理；已获得的祝福显示在右侧。`}</p>${room.state==='idle'?button('interact-blessing','查看祝福选项',!canAct,'data-action="interact-blessing"'):''}</section>`;
 }
-function render(){document.body.classList.toggle('camp-mode',screen==='play'&&store.atBase);syncDungeonLayout();for(const id of ['context-actions','hud-bottom','hud-item-targets'])$(id).replaceChildren();renderOverlay();renderMain();renderExtras();renderDungeonHud();refreshTransfer();if(screen==='play')void ensureBoard();}
+function render(){document.body.classList.toggle('camp-mode',screen==='play'&&store.atBase);syncDungeonLayout();for(const id of ['context-actions','hud-bottom','hud-item-targets'])$(id).replaceChildren();renderOverlay();renderMain();renderExtras();renderDungeonHud();refreshTransfer();syncSleepAdvance();if(screen==='play')void ensureBoard();}
 
 function chooseHudSkill(skill:Skill){cancelMoveInput();selectedSkill=selectedSkill===skill?null:skill;choosingItem=null;bagOpen=false;actionsOpen=false;render();}
 function chooseHudItem(item:Item){
@@ -215,7 +229,11 @@ function chooseHudItem(item:Item){
  choosingItem=choosingItem===item?null:item;render();
 }
 function showMoveTip(skill:Skill,actor:string){
- const s=live();if(!s||bagOpen||anim.active)return;const box=$('hud-tooltip');box.dataset.sourceId=actor;box.innerHTML=hudMoveTip({...s,leader:actor},skill);refreshDamagePreviews(s);box.hidden=false;
+ const s=live();if(!s||bagOpen||anim.active)return;const pending=s.phase==='learning'?s.pendingLearnMoves?.find(p=>p.actor===actor&&p.move===skill):undefined,unit=s.units[actor];
+ const preview=pending&&unit?{...s,units:{...s.units,[actor]:{...unit,pp:{...unit.pp,[skill]:pending.pp},maxPp:{...unit.maxPp,[skill]:pending.pp}}}}:s;
+ const box=(s.phase==='learning'?document.getElementById('learning-tooltip'):null)??$('hud-tooltip');
+ if(s.phase==='learning')$('hud-tooltip').hidden=true;
+ box.dataset.sourceId=actor;box.innerHTML=hudMoveTip({...preview,leader:actor},skill);refreshDamagePreviews(s);box.hidden=false;
 }
 function placeInspectBelowParty(){if(!dungeonMode())return;const party=$('party');$('inspect').style.top=(party.offsetTop+party.offsetHeight+8)+'px';}
 function renderDungeonHud(){
@@ -223,7 +241,7 @@ function renderDungeonHud(){
  const s=live()!,unavailable=store.status!=='ready'||s.phase!=='playing',disabled=anim.active||unavailable;
  $('party').innerHTML=hudParty(s,unavailable);
  placeInspectBelowParty();
- $('hud-bottom').innerHTML=hudBottom(s,quickItems,unavailable,draft&&draft.editor!==s.leader?null:selectedSkill,choosingItem);
+ $('hud-bottom').innerHTML=hudBottom(s,quickItems,unavailable||sleeping(s.units[s.leader]),draft&&draft.editor!==s.leader?null:selectedSkill,choosingItem);
  $('hud-map').innerHTML=hudMinimap(s);
  $('activity-status').innerHTML=hudTracking(s);$('activity-status').hidden=!s.dungeon?.roguelike;
  $('hud-tooltip').hidden=true;$('hud-tooltip').innerHTML='';
@@ -321,6 +339,12 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   if(!pending||pending.type!=='tmChoice'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的招式机选择。</p></div>';return;}
   $('flow').innerHTML=`<div class="result" id="tm-choice" role="dialog" aria-labelledby="tm-choice-heading"><small>${SRC[pending.source]} · 下一张招式机</small><h2 id="tm-choice-heading">选择一张招式机</h2><p>选择后即可继续本轮。</p><div>${pending.options.map(move=>button(`tm-choice-${move}`,`${esc(tmZh(move))}招式机`,!ready,'class="primary"')).join('')}</div></div>`;
   for(const move of pending.options)bind(`tm-choice-${move}`,()=>void send({type:'tmChoice',move}));return;
+ }
+ if(s.phase==='learning'){
+  $('controls').innerHTML='';const pending=s.pendingLearnMoves?.[0],unit=pending?s.units[pending.actor]:undefined;
+  $('flow').innerHTML=pending&&unit?`<div class="result" id="learning-choice" role="dialog" aria-labelledby="learning-heading"><h2 id="learning-heading">${esc(unitLabel(unit,pending.actor))}可以学会新招式</h2><div class="learning-new" data-learning-preview="${esc(pending.move)}" tabindex="0"><strong>${esc(moveZh(pending.move))}</strong><span>PP ${pending.pp}/${pending.pp}</span></div><div id="learning-tooltip" role="region" aria-label="招式说明" tabindex="0"></div><p>选择要替换的招式</p><div class="learning-moves">${unit.learned.map(move=>button('learn-replace-'+move,`<strong>${esc(moveZh(move))}</strong><span>PP ${unit.pp[move]??0}/${unit.maxPp[move]??0}</span>`,!ready,`data-learning-preview="${esc(move)}" class="learning-move"`)).join('')}</div><div class="button-row">${button('learn-skip','放弃学习',!ready)}${button('learn-close','关闭',!ready,'aria-label="关闭学招选择并放弃学习"')}</div></div>`:'<p class="error">缺少待处理的学招选择。</p>';
+  if(pending&&unit){for(const move of unit.learned)bind('learn-replace-'+move,()=>void send({type:'learnMove',replace:move}));for(const id of ['learn-skip','learn-close'])bind(id,()=>void send({type:'learnMove',replace:null}));for(const el of $('flow').querySelectorAll<HTMLElement>('[data-learning-preview]')){const show=()=>showMoveTip(el.dataset.learningPreview!,pending.actor);el.onmouseenter=show;el.onfocus=show;const hide=()=>{$('hud-tooltip').hidden=true;};el.onmouseleave=hide;el.onblur=hide;}showMoveTip(pending.move,pending.actor);}
+  return;
  }
   if(s.phase==='evolution'){
    $('controls').innerHTML='';const pending=s.pendingEvolutions?.[0],unit=pending?s.units[pending.actor]:undefined;
@@ -604,11 +628,11 @@ function visibleHoverTarget(s:World):string|undefined{return hoverId&&enemyInfo(
 function refreshDamagePreviews(s:World):void{
  const targetId=visibleHoverTarget(s),sourceId=draft?.editor??s.leader;
  document.querySelectorAll<HTMLElement>('[data-move-preview]').forEach(el=>{
-  const id=el.dataset.movePreview;if(id)el.textContent=el.closest('#hud-tooltip')?hudDamageEstimate(s,$('hud-tooltip').dataset.sourceId??s.leader,targetId,id):moveSummary(id,{s,sourceId,targetId});
+  const id=el.dataset.movePreview,tip=el.closest<HTMLElement>('#hud-tooltip,#learning-tooltip');if(id)el.textContent=tip?hudDamageEstimate(s,tip.dataset.sourceId??s.leader,targetId,id):moveSummary(id,{s,sourceId,targetId});
  });
  document.querySelectorAll<HTMLElement>('[data-move-accuracy]').forEach(el=>{
   const id=el.dataset.moveAccuracy;
-  const actor=el.closest('#hud-tooltip')?$('hud-tooltip').dataset.sourceId??sourceId:sourceId;
+  const tip=el.closest<HTMLElement>('#hud-tooltip,#learning-tooltip'),actor=tip?.dataset.sourceId??sourceId;
   if(id)el.textContent=hudMoveAccuracy(s,actor,id,targetId);
  });
  if(detailsId&&s.units[detailsId])document.querySelectorAll<HTMLElement>('[data-detail-move-preview]').forEach(el=>{
@@ -769,11 +793,12 @@ function refreshTransfer(){
 function openSettings(){
  if(anim.active)return;
  $('transfer-message').textContent=store.status==='blocked'?`${store.error}。请先导出原记录保留备份，再导入其他存档。`:store.status==='failed'?'当前改动尚未保存，请先重试保存。':'';
- refreshTransfer();settings.showModal();
+ refreshTransfer();settings.showModal();cancelSleepAdvance();
 }
 bind('open-settings',openSettings);
-bind('settings-close',()=>settings.close());
+bind('settings-close',()=>{settings.close();syncSleepAdvance();});
 settings.addEventListener('cancel',e=>{if(transferBusy)e.preventDefault();});
+settings.addEventListener('close',()=>syncSleepAdvance());
 bind('save-export',()=>{
  const raw=store.status==='blocked'?store.exportRaw():store.exportRecord();
  if(raw===null){$('transfer-message').textContent='没有可导出的记录，请先完成保存。';return;}
@@ -818,7 +843,7 @@ function queueHeldMove(){moveFrame=requestAnimationFrame(()=>{moveFrame=null;if(
 async function flushMoveInput(tapDirection?:Pos){
  const tap=tapDirection??moveTap;moveTap=null;
  if(moveTimer!==null)clearTimeout(moveTimer);if(moveFrame!==null)cancelAnimationFrame(moveFrame);moveTimer=null;moveFrame=null;moveCollecting=false;if(moveInFlight)return;
- const s=live();if(!s||s.phase!=='playing'||anim.active||bagOpen||settings.open||screen!=='play'||store.status!=='ready'){cancelMoveInput();return;}
+ const s=live();if(!s||s.phase!=='playing'||sleeping(s.units[s.leader])||anim.active||bagOpen||settings.open||screen!=='play'||store.status!=='ready'){cancelMoveInput();return;}
  const dx=tap?.x??(Number(heldDirections.has('d')||heldDirections.has('ArrowRight'))-Number(heldDirections.has('a')||heldDirections.has('ArrowLeft')));
  const dy=tap?.y??(Number(heldDirections.has('s')||heldDirections.has('ArrowDown'))-Number(heldDirections.has('w')||heldDirections.has('ArrowUp')));
  const u=s.units[draft?.editor??s.leader];if(!(dx||dy)||!u.pos)return;
@@ -854,6 +879,7 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Enter'){if(target.matches('button[data-confirm]')&&!target.hasAttribute('disabled')){e.preventDefault();target.click();}else e.preventDefault();return;}
  if(e.key==='Escape'){
   if(bagOpen){bagOpen=false;render();return;}
+  if(live()?.phase==='learning'){e.preventDefault();void send({type:'learnMove',replace:null});return;}
   if(live()?.phase==='evolution'){e.preventDefault();void send({type:'evolve',species:null});return;}
   if(live()?.phase==='invitation'&&inviteReject){inviteReject=false;notice='已取消拒绝，返回邀请比较。';}else{clear();actionsOpen=false;notice='';}render();return;
  }
@@ -862,6 +888,7 @@ document.addEventListener('keydown',e=>{
  if(k==='b'){e.preventDefault();bagOpen=!bagOpen;choosingItem=null;cancelMoveInput();render();return;}
  if(bagOpen)return;
  if(e.key==='Tab'){e.preventDefault();const alive=s.queue.filter(id=>s.units[id].hp>0);void send({type:'switch',actor:alive[(alive.indexOf(s.leader)+1)%alive.length]});return;}
+ if(sleeping(s.units[s.leader])&&e.key!=='.'){if(e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&k==='r'))e.preventDefault();return;}
  if(['1','2','3','4'].includes(e.key)){e.preventDefault();const skill=s.units[draft?.editor??s.leader].learned[Number(e.key)-1];if(skill&&(s.units[draft?.editor??s.leader].pp[skill]??0)>0)chooseHudSkill(skill);return;}
  if(['5','6','7','8','9','0'].includes(e.key)){e.preventDefault();const item=quickItems[['5','6','7','8','9','0'].indexOf(e.key)];if(item)chooseHudItem(item);return;}
  const directionKey=e.key.length===1?k:e.key;
@@ -879,5 +906,5 @@ window.addEventListener('blur',()=>{cancelMoveInput();anim.shift=false;selectedS
 {const box=document.getElementById('anim-toggle') as HTMLInputElement;box.checked=animationEnabled();box.disabled=params.get('anim')!==null||!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim;
  box.addEventListener('change',()=>{try{window.localStorage.setItem(PREF_KEY,box.checked?'on':'off');}catch{/* preference is optional */}if(!box.checked)scene?.skip();});}
 // Read-only state inspection and the same dispatch API for private browser acceptance.
-Object.assign(window,{trial:{store,profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
+Object.assign(window,{trial:{store,autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
 render();void store.whenReady.then(()=>{render();const next=finishing();if(next)void transition(store.dispatch(next));});

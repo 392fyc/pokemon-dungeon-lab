@@ -1,6 +1,6 @@
 /**
  * 6.5 base profile: the part of the player's progress that outlives one run. Pure data and pure functions; no storage, no renderer.
- * Specification: https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E5%9F%BA%E5%9C%B0%E4%B8%8E%E5%9F%B9%E5%85%BB.md. All numbers (two carried moves, three-member squads) are working candidates.
+ * Specification: https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E5%9F%BA%E5%9C%B0%E4%B8%8E%E5%9F%B9%E5%85%BB.md. The carried-move limit is four.
  */
 import {SPECIES,speciesOf,learnableMove,ALL_TM_MOVES,STARTER_IDS,type KitMove} from './roster.ts';
 import type {World,SquadMember} from './engine.ts';
@@ -10,7 +10,7 @@ import {speciesZh,moveZh} from './names.ts';
 import {ECON} from './economy.ts';
 import {isDifficulty,type Difficulty} from './dungeon.ts';
 /**
- * One roster member. `learned` is everything it has permanently learned; `carry` names the (at most two) moves it brings into a run.
+ * One roster member. `learned` is everything it has permanently learned; `carry` names the (at most four) moves it brings into a run.
  * `protected` (7.2) marks a founding member (the initial two, or the three starters of an old profile): it never goes missing in a wipe.
  */
 export type Instance={id:string;species:string;learned:KitMove[];carry:string[];protected:boolean;tactic:Tactic};
@@ -31,7 +31,7 @@ export const TALENTS:Readonly<Record<TalentId,{name:string;description:string}>>
 export type Profile={expeditions:number;next:number;roster:Instance[];vault:Record<string,number>;team:string[];leader:string;account:number;rescue:RescueEntry[];lost:LostRecord[];origin:string;difficulty:Difficulty;shards:Record<string,number>;rankExp:number;talents:Partial<Record<TalentId,number>>};
 export type BaseAction={type:'learn';inst:string;move:string}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string}|{type:'tactic';inst:string;tactic:Tactic}|{type:'difficulty';difficulty:Difficulty}|{type:'talent';talent:TalentId}|{type:'resetTalents'};
 export type BaseResult={ok:true;profile:Profile}|{ok:false;error:string};
-export const MAX_CARRY=2,MAX_TEAM=3;
+export const MAX_CARRY=4,MAX_TEAM=3;
 const TALENT_IDS=Object.keys(TALENTS) as TalentId[];
 const isTalentId=(value:unknown):value is TalentId=>typeof value==='string'&&TALENT_IDS.includes(value as TalentId);
 /** Experience needed to reach the given expedition rank. Rank 1 starts at zero experience. */

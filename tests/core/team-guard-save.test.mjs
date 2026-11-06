@@ -5,7 +5,7 @@ import {createExpedition,jumpToFloor,applyCommand,RULE_VERSION,CONTENT_VERSION} 
 import {createScenario} from '../../src/core/scenarios.ts';
 import {initialProfile,squadOf} from '../../src/core/base.ts';
 import {decodeLegacy,TrialStore,BUILD_ID} from '../../src/core/save.ts';
-import {ALL_TM_MOVES,LEGACY_TM_MOVES,TM_MOVES,TM_MOVES_V3,TM_MOVES_V4,SPECIES,tmPool} from '../../src/core/roster.ts';
+import {ALL_TM_MOVES,LEGACY_TM_MOVES,TM_MOVES,TM_MOVES_V3,TM_MOVES_V4,TM_MOVES_V5,SPECIES,tmPool} from '../../src/core/roster.ts';
 
 const frozen=JSON.parse(readFileSync(new URL('./fixtures78/legacy-worlds.json',import.meta.url),'utf8'));
 const copy=value=>structuredClone(value);
@@ -27,27 +27,29 @@ function blocked(raw){
 }
 
 test('7.7b keeps both historical draw lists and enables the nine-move list only with a boss tmPool:3 mark (8.8: Tera Blast removed from both)',()=>{
-  assert.equal(RULE_VERSION,'trial-rules-5');assert.equal(CONTENT_VERSION,'trial-content-6');
+  assert.equal(RULE_VERSION,'trial-rules-6');assert.equal(CONTENT_VERSION,'trial-content-7');
   assert.deepEqual([...LEGACY_TM_MOVES],['protect','whirlwind','roar']);
   assert.deepEqual([...TM_MOVES],['protect','whirlwind','roar','dragontail','helpinghand','mudslap']);
   assert.deepEqual([...TM_MOVES_V3],[...TM_MOVES,'quickguard','reflect','lightscreen']);
-  assert.deepEqual([...ALL_TM_MOVES],[...TM_MOVES_V4]);
+  assert.deepEqual([...ALL_TM_MOVES],[...TM_MOVES_V5]);
+  assert.deepEqual([...TM_MOVES_V5],[...TM_MOVES_V4,'rest','sleeptalk']);
   assert.deepEqual([...tmPool(undefined)],[...LEGACY_TM_MOVES]);
   assert.deepEqual([...tmPool({})],[...LEGACY_TM_MOVES]);
   assert.deepEqual([...tmPool({boss:true})],[...TM_MOVES]);
   assert.deepEqual([...tmPool({boss:true,tmPool:3})],[...TM_MOVES_V3]);
 });
 
-test('fixed old no-tmPool draws at the target, shop and boss (8.8: the six-entry list shifts every index, so the literal results were re-observed)',()=>{
+test('new expeditions use pool 5 for target and shop; the unmarked historical boss scenario keeps the six-entry draw',()=>{
   const target=targetRun(1,undefined);
-  assert.equal(target.dungeon.tmPool,undefined);
-  assert.deepEqual(target.tms,[{move:'mudslap',source:'target',fate:'held'}]);   // 8.8: floor(r*6) replaces floor(r*7)
+  assert.equal(target.dungeon.tmPool,5);
+  assert.deepEqual(target.tms,[{move:'sleeptalk',source:'target',fate:'held'}]); // #193: the same target draw indexes the seventeen-entry pool.
 
   const shop=createExpedition('team-guard-old-shop-38',38,3,squadOf(initialProfile()),0);
-  assert.equal(shop.dungeon.tmPool,undefined);
-  assert.deepEqual(shop.shop.stock,{berry:2,tonic:1,pechaBerry:1,healSeed:1,tm:'mudslap'});   // 8.8: two new stock items (G9.4)
+  assert.equal(shop.dungeon.tmPool,5);
+  assert.deepEqual(shop.shop.stock,{berry:2,tonic:1,pechaBerry:1,healSeed:1,tm:'sleeptalk'});   // 8.8: two new stock items (G9.4)
 
   const boss=createScenario('BOSS','team-guard-old-boss');
+  delete boss.dungeon.tmPool; // Explicit historical unmarked shape; new factories correctly default to pool 5.
   assert.equal(boss.dungeon.tmPool,undefined);
   boss.units.boss.hp=1;boss.prog.rng=4;
   const drop=applyCommand(boss,{type:'round',action:{type:'basic',target:'boss'}});
@@ -55,15 +57,16 @@ test('fixed old no-tmPool draws at the target, shop and boss (8.8: the six-entry
   assert.deepEqual(drop.state.tms,[{move:'mudslap',source:'boss',fate:'brought'}],'the old draw list is unchanged; the v0.1 terminal win brings the boss drop immediately');
 });
 
-test('a new base departure creates tmPool:4 in memory and leaves the saved camp unchanged',async()=>{
+test('a new base departure creates tmPool:5 in memory and leaves the saved camp unchanged',async()=>{
   const storage=memory(),store=new TrialStore(storage);
   assert.equal(await store.beginNewGame(initialProfile(),false),true);
   const raw=storage.raw(),writes=storage.writes();
   assert.equal(await store.depart('team-guard-new-departure',38),true,store.error);
   assert.equal(store.state.dungeon.boss,true);
-  assert.equal(store.state.dungeon.tmPool,4);
-  assert.deepEqual([...tmPool(store.state.dungeon)],[...TM_MOVES_V4]);
-  assert.equal(store.state.shop.stock.tm,'swordsdance'); // same draw ~1, now floor(r*15)
+  assert.equal(store.state.dungeon.tmPool,5);
+  assert.deepEqual([...tmPool(store.state.dungeon)],[...TM_MOVES_V5]);
+  assert.deepEqual([...tmPool({boss:true,tmPool:4})],[...TM_MOVES_V4],'marked historical pool 4 retains its fifteen moves');
+  assert.equal(store.state.shop.stock.tm,'sleeptalk'); // Same draw near 1 now selects the last move in the 17-move pool.
   const reloaded=new TrialStore(storage);
   assert.equal(reloaded.status,'ready',reloaded.error);
   assert.equal(reloaded.state,null);assert.deepEqual(reloaded.profile,store.envelope.profile);

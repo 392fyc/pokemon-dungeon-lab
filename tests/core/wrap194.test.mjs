@@ -125,3 +125,35 @@ test('N-c 混乱的 A 用火花打中冰冻队友 B：解冻行不丢来源',()=
   const hit=inferEvents(sample.before,sample.after,sample.command).find(event=>event.k==='hit'&&event.target==='B');
   assert.ok(hit);assert.equal(hit.attacker,'A');assert.ok(hit.effect,'the effect survives');assert.equal(hit.effect.move,'ember');
 });
+
+// ---- reaction casts skip the range check only: the target must still be on the other side ----
+test('N-b 梦话发动的范围招式不会把原施放的下一个目标算成打队友',()=>{
+  const sample=findRound(()=>{
+    const s=base();
+    const a=withMoves(friend('A',1,1,300,{}),['blizzard']);a.stages.acc=3;
+    const t=withMoves(enemy('T',2,1,500,'ranged',0),['sleeptalk','thunderbolt']);delete t.waitOnly;t.status={slp:{left:6}};t.stages.acc=3;t.species='geodude';
+    const u=enemy('U',4,4,500,'melee',0);u.waitOnly=true;u.species='geodude';
+    t.hp=t.maxHp=u.hp=u.maxHp=500;
+    s.units={A:a,T:t,U:u};s.queue=['A'];s.enemies=['T','U'];
+    s.__command={type:'round',action:{type:'skill',skill:'blizzard',target:'A'}};
+    return sureHit(s);
+  },log=>{const i=log.findIndex(l=>l.startsWith('T在睡眠中使用梦话'));return i>=0&&log.slice(i).some(l=>/^A受到\d+伤害/.test(l))&&log.slice(i).some(l=>/^U受到\d+伤害/.test(l));});
+  assert.ok(sample,'a blizzard interrupted by a sleep-talked area move was found');
+  const onU=inferEvents(sample.before,sample.after,sample.command).find(event=>event.k==='hit'&&event.target==='U');
+  assert.ok(onU);assert.equal(onU.attacker,'A');assert.equal(onU.effect?.move,'blizzard');
+});
+
+test('N-b 打鼾目标看不见时，后面敌人打队友的普攻不算成打鼾',()=>{
+  const s=base();
+  const a=withMoves(friend('A',1,1,300,{}),['snore']);
+  const b=friend('B',3,3,300,{});
+  const e=enemy('E',0,1,500,'melee',0);e.species='geodude';
+  const f=enemy('F',4,3,500,'melee',0);f.species='geodude';
+  for(const u of [e,f]){delete u.waitOnly;u.learned=[];u.pp={};u.maxPp={};}
+  s.units={A:a,B:b,E:e,F:f};s.queue=['A','B'];s.enemies=['E','F'];
+  s.seen=s.seen.filter(cell=>cell!==key({x:0,y:1}));
+  const after=structuredClone(s);after.round=s.round+1;
+  after.log=[...s.log,'A受到3伤害，HP 297','A使用打鼾','E受到4伤害，HP 496','B受到3伤害，HP 297'];
+  const onB=inferEvents(s,after,{type:'round',action:{type:'wait'}}).find(event=>event.k==='hit'&&event.target==='B');
+  assert.ok(onB);assert.equal(onB.attacker,'F');assert.notEqual(onB.effect?.move,'snore');
+});

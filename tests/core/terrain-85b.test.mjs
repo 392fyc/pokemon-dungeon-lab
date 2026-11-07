@@ -185,6 +185,19 @@ function assertTerrainGeneration(g, seed, level) {
           `seed ${seed} floor ${level}: non-boss route stays outside the boss room frame`);
       }
     }
+    // #200: a route is a walk without U-turns and without a repeated position; a turn is a real change of direction.
+    const seenAt = new Set();
+    for (let i = 0; i < route.path.length; i++) {
+      const at = cellKey(route.path[i]);
+      assert.ok(!seenAt.has(at), `seed ${seed} floor ${level}: route ${route.fromRoom}:${route.toRoom} visits ${at} twice`);
+      seenAt.add(at);
+      if (i >= 2) {
+        const before = {x: route.path[i - 1].x - route.path[i - 2].x, y: route.path[i - 1].y - route.path[i - 2].y};
+        const now = {x: route.path[i].x - route.path[i - 1].x, y: route.path[i].y - route.path[i - 1].y};
+        assert.ok(before.x + now.x !== 0 || before.y + now.y !== 0,
+          `seed ${seed} floor ${level}: route ${route.fromRoom}:${route.toRoom} reverses at ${at}`);
+      }
+    }
     const pair = route.fromRoom < route.toRoom ? `${route.fromRoom}:${route.toRoom}` : `${route.toRoom}:${route.fromRoom}`;
     assert.ok(directlyConnected.has(pair), `seed ${seed} floor ${level}: diagnostic route ${pair} has a real non-room floor path`);
     if (routeTurns(route.path, from, to) > 0) turned++;

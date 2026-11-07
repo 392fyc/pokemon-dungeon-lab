@@ -446,8 +446,8 @@ await test('阶段5 换位草稿不被方向键、句点或点地图改写',asyn
 });
 
 /* Stage 6.3 expedition: fixed seed, real keyboard and mouse. Route finding below only reads the state to choose the next key. */
-// 8.8 (#178): the map for seed 3 changed; its first-floor route now meets an awake wanderer in the corridor and this movement-only route cannot pass it. Seed 2 has a clear route (also 5, 6).
-const EXPEDITION_SEED=process.env.EXPEDITION_SEED??'2';
+// #200: corridors were regenerated with real bends, so every seed's map changed. Seed 2 now meets an awake wanderer on its first floor and this movement-only route cannot pass it; seed 4 has a clear route (also 5, 6, 8).
+const EXPEDITION_SEED=process.env.EXPEDITION_SEED??'4';
 async function walkTo(p,target,{mouseFirst=false}={}){
  const {applyCommand}=await import('../../src/core/engine.ts');
  const arrows={'1,0':'ArrowRight','0,1':'ArrowDown','-1,0':'ArrowLeft','0,-1':'ArrowUp'};
@@ -501,9 +501,9 @@ await test('8.2 浏览器：三层地图截图、Q6走廊视野、首领房位�
  try{
   await openEmpty();
   const expectedFloors=[
-   {level:1,floor:329,rooms:9,arrival:{x:21,y:19},down:{x:3,y:6}},
-   {level:2,floor:323,rooms:10,arrival:{x:13,y:13},down:{x:28,y:20}},
-   {level:3,floor:355,rooms:9,arrival:{x:3,y:21},down:null}
+   {level:1,floor:367,rooms:9,arrival:{x:21,y:19},down:{x:3,y:21}},
+   {level:2,floor:351,rooms:10,arrival:{x:13,y:13},down:{x:3,y:18}},
+   {level:3,floor:365,rooms:9,arrival:{x:3,y:21},down:null}
   ];
   for(const expected of expectedFloors){
    if(expected.level>1)await resetEmpty();
@@ -622,7 +622,7 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   const full=s.queue.every(i=>s.units[i].hp===s.units[i].maxHp);
   if(full){await click(p,'use-berry');await p.locator('#item-target-C').click();await ready(p);assert.match(await p.locator('#message').innerText(),/HP已满.*本轮未执行/);assert.deepEqual(await state(p),s);}
   // get hurt: walk next to the melee enemy and hold the line until someone is below max HP
-    await go(await (async()=>{const t=await state(p);const f=t.units[t.enemies.find(i=>t.units[i].hp>0&&t.units[i].pos)].pos;const floor=new Set(t.floor.map(q=>q.x+','+q.y));return [{x:f.x+1,y:f.y},{x:f.x-1,y:f.y},{x:f.x,y:f.y+1},{x:f.x,y:f.y-1}].find(c=>floor.has(c.x+','+c.y));})());
+    await go(await (async()=>{const t=await state(p);const lp=t.units[t.leader].pos,f=t.units[t.enemies.filter(i=>t.units[i].hp>0&&t.units[i].pos).sort((x,y)=>Math.abs(t.units[x].pos.x-lp.x)+Math.abs(t.units[x].pos.y-lp.y)-Math.abs(t.units[y].pos.x-lp.x)-Math.abs(t.units[y].pos.y-lp.y))[0]].pos;const floor=new Set(t.floor.map(q=>q.x+','+q.y));return [{x:f.x+1,y:f.y},{x:f.x-1,y:f.y},{x:f.x,y:f.y+1},{x:f.x,y:f.y-1}].find(c=>floor.has(c.x+','+c.y));})());
   for(let i=0;i<8;i++){await settlePrompt();s=await state(p);if(s.queue.some(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp))break;await key(p,'.');}
   await settlePrompt();s=await state(p);
   const hurt=s.queue.filter(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp);assert.ok(hurt.length,'someone was hurt');
@@ -1106,7 +1106,7 @@ await test('162 画布输入：短窗口的小地图和追踪区不拦截攻击'
   await p.setViewportSize({width:460,height:410});
   const {createExpedition,jumpToFloor}=await import('../../src/core/engine.ts');
   const {initialProfile,squadOf}=await import('../../src/core/base.ts');
-  const world=jumpToFloor(createExpedition('hud-overlay-click',64352,3,squadOf(initialProfile()),0,true,3),2);
+  const world=jumpToFloor(createExpedition('hud-overlay-click',64353,3,squadOf(initialProfile()),0,true,3),2);
   const from={x:30,y:3},northEast={x:31,y:2},southEast={x:31,y:4};
   const leader=world.units[world.leader];
   leader.pos=from;leader.learned=['tackle'];leader.pp={tackle:5};leader.maxPp={tackle:5};
@@ -1765,13 +1765,13 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
  const {createExpedition,jumpToFloor,reveal}=await import('../../src/core/engine.ts');
  const {initialProfile,squadOf}=await import('../../src/core/base.ts');
  try{
-  const original=jumpToFloor(createExpedition('terrain-visual',73,3,squadOf(initialProfile()),0,true,3),2);
+  const original=jumpToFloor(createExpedition('terrain-visual',74,3,squadOf(initialProfile()),0,true,3),2);
   const liquid=new Set(original.liquid),rooms=original.rooms;
   const shoreScore=r=>{let n=0;for(let y=r.y-1;y<=r.y+r.h;y++)for(let x=r.x-1;x<=r.x+r.w;x++)if(liquid.has(`${x},${y}`))n++;return n;};
   const room=[...rooms].sort((a,b)=>shoreScore(b)-shoreScore(a)||b.w*b.h-a.w*a.h)[0];
   const fixture=structuredClone(original),leader=fixture.units[fixture.leader];
   for(const id of fixture.queue)if(id!==fixture.leader){fixture.units[id].hp=0;fixture.units[id].pos=null;}
-  // 镜头向左一格，固定seed73同一房间中三个主题都能展示真装饰和岸边。
+  // 镜头向左一格，固定seed74（#200 地图改变后由73换成74）同一房间中三个主题都能展示真装饰和岸边。
   leader.pos={x:room.x+Math.floor(room.w/2)-1,y:room.y+Math.floor(room.h/2)};
   revealAllTerrain(fixture);
   const screenshots=[],exports=[],decorationViews=[];
@@ -1825,7 +1825,7 @@ await test('8.5b T9：三主题、未揭示边界与运行时图集导出',async
   for(const d of boundaryView.decorations)assert.ok(known.has(`${Math.floor(d.x/cell)},${Math.round(d.y/cell)-1}`),'unknown cells do not display decorations');
   const file='windows-85b-unknown-boundary.png';await p.screenshot({path:output+file,fullPage:true});screenshots.push(file);
   assert.deepEqual(errors,[]);
-  const report={fixtureBoundary:'真实 seed73 第2层地图与第二地形，固定相机与房间，分别套用三个主题；独立边界图重新运行reveal。截图不代表完整游玩。',screenshots,exports,decorationViews,knownBoundaryOnly:true};
+  const report={fixtureBoundary:'真实 seed74 第2层地图与第二地形，固定相机与房间，分别套用三个主题；独立边界图重新运行reveal。截图不代表完整游玩。',screenshots,exports,decorationViews,knownBoundaryOnly:true};
   fs.writeFileSync(output+'browser-terrain.json',JSON.stringify(report,null,2));return report;
  }finally{await context.close();}
 });

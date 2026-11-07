@@ -183,7 +183,7 @@ body.dungeon-mode #flow #result-settings{position:absolute;right:12px;top:12px;z
 .detail-howto summary{margin:0;padding:2px 0;line-height:1.2;cursor:pointer;font-weight:900;color:var(--paper-wood-dark)}
 /* Opening the explanation swaps it in for the numbers, so the column never grows into the tactics row. */
 .detail-chart:has(.detail-howto[open]) > :is(svg,table,.detail-chart-note){display:none}
-.detail-howto-body{max-height:214px;overflow-y:auto;padding:2px 4px 2px 0;font-size:11px;scrollbar-width:thin}.detail-howto-body p{margin:2px 0;line-height:1.3}.detail-howto-body p{color:var(--paper-ink)}
+.detail-howto-body{max-height:214px;overflow-y:auto;padding:2px 4px 2px 0;font-size:11px;scrollbar-width:thin}.detail-howto-body p{color:var(--paper-ink)}
 .detail-howto p{margin:3px 0;line-height:1.35}
 .detail194 .paper-move{height:auto;min-height:42px;grid-template-rows:auto auto;padding-top:2px;padding-bottom:2px}
 .paper-move-numbers{grid-column:2/-1;font-size:11px;color:var(--paper-muted);font-weight:400}

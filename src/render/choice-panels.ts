@@ -26,20 +26,20 @@ export function learningPanel(s:World,pending:NonNullable<World['pendingLearnMov
    '<footer class="c195-foot"><button type="button" id="learn-confirm" class="paper-button is-primary" data-confirm'+(!ready||!old?' disabled':'')+'>'+(old?'忘掉'+esc(moveZh(old))+'，学会'+esc(moveZh(pending.move)):'先选一个要忘掉的招式')+'</button><button type="button" id="learn-skip" class="paper-button"'+(ready?'':' disabled')+'>不学</button></footer></section>';
 }
 /** A unit card for the invitation window: portrait, name, types, level, HP and each move with a one-line effect. */
-function unitCard(u:Unit,id:string,o:{big?:boolean;button?:{id:string;disabled:boolean};selected?:boolean;tag?:string}):string {
+function unitCard(u:Unit,id:string,o:{big?:boolean;button?:{id:string;disabled:boolean};selected?:boolean;tag?:string;level:number}):string {
   const sp=u.species?SPECIES[u.species]:undefined;
-  const moves=u.learned.map(m=>{const f=starterMoveFields(m);return '<li><span class="paper-move-type" style="background:'+(TYPES[f.type]??'#5f5e50')+'">'+esc(typeZh(f.type))+'</span><strong>'+esc(moveZh(m))+'</strong>'+(o.big?'<span class="c195-move-text">'+esc(moveEffectLabel(m,undefined,u.side))+'</span>':'')+'</li>';}).join('')||'<li>普通攻击</li>';
+  const moves=u.learned.map(m=>{const f=starterMoveFields(m);return '<li><span class="paper-move-type" style="background:'+(TYPES[f.type]??'#5f5e50')+'">'+esc(typeZh(f.type))+'</span><strong>'+esc(moveZh(m))+'</strong>'+(o.big?'<span class="c195-move-text">'+esc(moveEffectLabel(m,undefined,u.side,o.level))+'</span>':'')+'</li>';}).join('')||'<li>普通攻击</li>';
   const inner=(o.tag?'<em class="c195-tag">'+esc(o.tag)+'</em>':'')+unitPortrait(u,'c195-portrait')+'<span class="c195-unit-main"><strong class="c195-unit-name">'+esc(unitLabel(u,id))+'</strong><span class="c195-unit-meta">'+(sp?typeChips(sp.types??[]):'')+'<span>Lv'+(u.level??'?')+'</span><span>HP '+u.hp+'/'+u.maxHp+'</span></span><ul class="c195-unit-moves">'+moves+'</ul></span>';
   const cls='c195-unit'+(o.big?' is-big':'')+(o.selected?' is-selected':'');
   return o.button?'<button type="button" id="'+o.button.id+'" class="'+cls+'" aria-pressed="'+!!o.selected+'"'+(o.button.disabled?' disabled':'')+'>'+inner+'</button>':'<div class="'+cls+'">'+inner+'</div>';
 }
 export function invitationPanel(s:World,pending:NonNullable<World['invitations']>[number],choice:string|undefined,preview:{ok:boolean;error?:string},ready:boolean):string {
   const full=s.queue.length>=3,incoming=unitLabel(pending.unit,pending.unit.id),out=choice?s.units[choice]:undefined;
-  const team=full?'<p class="c195-note" id="invite-full-note">队伍已满，选一名队员回营换它上场。</p><div class="c195-team">'+s.queue.map((id,i)=>unitCard(s.units[id],id,{button:{id:'out-'+i,disabled:!ready},selected:choice===id})).join('')+'</div>':'';
+  const team=full?'<p class="c195-note" id="invite-full-note">队伍已满，选一名队员回营换它上场。</p><div class="c195-team">'+s.queue.map((id,i)=>unitCard(s.units[id],id,{level:unitMoveLevel(s,s.units[id]),button:{id:'out-'+i,disabled:!ready},selected:choice===id})).join('')+'</div>':'';
   const acceptLabel=full?(out?'让'+esc(unitLabel(out,choice!))+'回营，'+esc(incoming)+'上场':'先选一名队员回营'):'加入队伍';
   const acceptOk=ready&&preview.ok&&(!full||!!out);
   return '<section class="paper-window c195 c195-invite" id="invitation-choice" role="dialog" aria-labelledby="invite-heading"><h2 class="paper-plaque">新伙伴</h2>'+
-   '<h3 id="invite-heading" class="c195-title">'+esc(incoming)+'想加入队伍</h3>'+unitCard(pending.unit,pending.unit.id,{big:true,tag:'新人'})+team+
+   '<h3 id="invite-heading" class="c195-title">'+esc(incoming)+'想加入队伍</h3>'+unitCard(pending.unit,pending.unit.id,{big:true,tag:'新人',level:unitMoveLevel(s,pending.unit)})+team+
    (!preview.ok&&(!full||out)?'<p class="error c195-error">'+esc(preview.error??'')+'</p>':'')+
    '<footer class="c195-foot"><button type="button" id="accept" class="paper-button is-primary" data-confirm'+(acceptOk?'':' disabled')+'>'+acceptLabel+'</button>'+
    (full?'<button type="button" id="invite-to-camp" class="paper-button"'+(ready?'':' disabled')+'>'+esc(incoming)+'直接回营</button>':'')+

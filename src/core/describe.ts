@@ -158,7 +158,6 @@ export function mergeLogLines(lines:readonly string[]):{merged:Map<number,string
     const hit=/^(.+)受到(\d+)伤害，HP \d+$/.exec(t);if(!hit)return;
     const note=lines[i+1];
     if(note==='效果绝佳'||note==='效果不好'){merged.set(i,`${hit[1]}受到${hit[2]}伤害，${note}`);skipped.add(i+1);}
-    else if(hit[2]==='0'&&note==='没有效果'){merged.set(i,`${hit[1]}受到0伤害，没有效果`);skipped.add(i+1);}
   });
   return {merged,skipped};
 }

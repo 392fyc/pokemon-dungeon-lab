@@ -37,6 +37,7 @@ for(const mode of ['wait','held-key','skip-key','skip-click','noanim']){
   if(st.f&&flowAt===null){flowAt=Date.now()-t0;break;}
   await p.waitForTimeout(100);
  }
+ if(mode==='wait')assert.match(await p.evaluate(()=>document.activeElement?.id??''),/^(accept|out-0)$/,'the invitation window takes the focus once the pause ends');
  console.log(mode,{seenBanner,bannerGoneAt,flowAt,errs:p.errs});assert.deepEqual(p.errs,[]);results[mode]={seenBanner,flowAt};await ctx.close();
 }
 assert.ok(results.wait.seenBanner&&results.wait.flowAt>=1200,'the banner holds the panel back for the full pause');

@@ -88,7 +88,7 @@
   },
   "thickskin": {
     "name": "厚皮",
-    "description": "每层每名队员第一次受到的伤害减半（至少1点）。",
+    "description": "每层每名队员第一次受到的直接伤害减半（至少1点）；中毒、灼伤和反作用不算。",
     "floors": [1, 2, 3],
     "effect": "thickskin"
   },

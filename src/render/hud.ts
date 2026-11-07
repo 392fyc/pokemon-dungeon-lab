@@ -372,7 +372,7 @@ function blessingEffectLabel(id: BlessingId): string {
     case "scholar": return "经验 +" + Math.round((definition.value ?? 0) * 100) + "%";
     case "killheal": return "击倒回复 " + Math.round((definition.value ?? 0) * 100) + "% HP";
     case "regen": return "每 " + (definition.every ?? 10) + " 轮回复 " + Math.round((definition.value ?? 0) * 100) + "% HP";
-    case "thickskin": return "每层每人首次受伤减半";
+    case "thickskin": return "每层每人首次直接伤害减半";
     case "laststand": return "首次 HP<" + Math.round((definition.threshold ?? 0) * 100) + "% 回复 " + Math.round((definition.value ?? 0) * 100) + "%";
   }
 }

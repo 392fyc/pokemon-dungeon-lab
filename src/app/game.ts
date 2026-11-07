@@ -247,6 +247,8 @@ function applyPanelFocus(previousId:string):void{
  else if(screen==='play'&&s&&s.phase==='invitation'){key='invite|'+(s.invitations.find(i=>i.status==='pending')?.id??'');first='#accept:not(:disabled), #out-0:not(:disabled)';}
  else if(screen==='play'&&bagOpen){key='bag';first='.c195-bag-item.is-selected, .c195-bag-item';}
  if(!key){panelFocusKey='';return;}
+ // The learn and invitation windows stay hidden through the animation and pause: wait, so the focus lands once they show.
+ if(key!=='bag'&&$('flow').hidden)return;
  if(key!==panelFocusKey){panelFocusKey=key;document.querySelector<HTMLElement>(first)?.focus({preventScroll:true});return;}
  const el=previousId?document.getElementById(previousId) as HTMLButtonElement|null:null;
  if(el&&!el.disabled)el.focus({preventScroll:true});

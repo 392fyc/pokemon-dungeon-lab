@@ -57,7 +57,7 @@ function detailStats(s:World,u:Unit):string {
   const table='<table class="detail-stat-table" aria-label="能力值"><tbody>'+rows.map(r=>'<tr data-stat="'+r.key+'"><th>'+r.label+'</th><td class="now">'+(r.key==='hp'?u.hp+'/'+r.value:r.value)+'</td><td class="stage">'+(r.key==='hp'||r.key==='spe'?'':(r.stage?'阶段 '+(r.stage>0?'+':'')+r.stage:'阶段 0'))+'</td><td class="base">种族值 '+r.base+(r.doesNotAffectAction?'；不影响行动':'')+'</td></tr>').join('')+'</tbody></table>';
   return '<svg class="detail-stat-chart" viewBox="0 0 250 250" role="img" aria-label="'+esc(rows.map(r=>r.label+' '+r.value).join('，'))+'"><polygon points="'+ring(1)+'" fill="#e0cfa4" stroke="#b89a56" stroke-width="2"/><polygon points="'+ring(.66)+'" fill="none" stroke="#cdb985"/><polygon points="'+ring(.33)+'" fill="none" stroke="#cdb985"/><polygon points="'+shape+'" fill="#d9622b73" stroke="#a64217" stroke-width="2"/>'+labels+'</svg>'+table+
     '<p class="paper-muted detail-chart-note">能力值按等级换算，种族值只是基础。</p>'+
-    '<details class="detail-howto"><summary>数字怎么来、伤害怎么算</summary><div class="detail-howto-body"><p>能力值等于（2×种族值×等级除以100，取整数部分）＋5。HP 是（2×种族值×等级除以100，取整数部分）＋等级＋10，再乘体质天赋；所以和种族值不同，也随等级增长。</p><p>第一步：招式基础伤害为 6＋威力的一半（向上取整）＋等级加成；再乘 攻方能力值除以守方能力值（物理用攻击对防御，特殊用特攻对特防，比值限制在 0.5 到 2 倍）。</p><p>第二步：加上攻方的攻击阶段、减去守方的防御阶段（每级 1 点，最多 3 级）；屏障减半，灼伤变为 0.8 倍；最后乘本系加成和属性相性。</p></div></details>';
+    '<details class="detail-howto"><summary>数字怎么来、伤害怎么算</summary><div class="detail-howto-body"><p>能力值等于（2×种族值×等级除以100，取整数部分）＋5。HP 是（2×种族值×等级除以100，取整数部分）＋等级＋10，再乘体质天赋；所以和种族值不同，也随等级增长。</p><p>第一步：招式基础伤害为 6＋威力的一半（向上取整）＋等级加成；再乘 攻方能力值除以守方能力值（物理用攻击对防御，特殊用特攻对特防，比值限制在 0.5 到 2 倍）。我方出手再乘攻势天赋（每级加 3%）；敌方出手再乘难度倍数（简单 0.28、普通 0.4、困难 0.56）。</p><p>第二步：加上攻方的攻击阶段、减去守方的防御阶段（每级 1 点，最多 3 级）；屏障减半，灼伤变为 0.8 倍；再乘本系加成和属性相性；守住、快速防守和冰冻会让伤害变为 0。最后我方打敌人时按已有祝福加成（异常敌人加 10%、首领加 15%、自己血量高于 80% 时加 8%）。</p></div></details>';
 }
 function blessingsPage(s:World,tabs:string):string {
   const list=(s.blessings??[]).map(id=>'<li data-blessing="'+esc(id)+'"><strong>'+esc(BLESSINGS[id]?.name??id)+'</strong><span>'+esc(BLESSINGS[id]?.description??'')+'</span></li>').join('');
@@ -67,7 +67,7 @@ function blessingsPage(s:World,tabs:string):string {
 export function unitDetails(s:World,id:string,choices:readonly string[],disabled:boolean):string {
   const tactic=s.units[id]?.tactic??'together';
   const blessingsTab='<button type="button" id="detail-unit-__blessings" data-detail-unit="__blessings" class="detail-blessings-tab" aria-label="本局祝福" aria-pressed="'+(id==='__blessings')+'"><span>祝福</span></button>';
-  const tabs=choices.map(k=>'<button type="button" id="detail-unit-'+esc(k)+'" data-detail-unit="'+esc(k)+'" aria-label="'+esc(unitLabel(s.units[k],k))+'" aria-pressed="'+(k===id)+'">'+unitPortrait(s.units[k],'detail-tab-portrait')+'</button>').join('')+blessingsTab;
+  const tabs=blessingsTab+choices.map(k=>'<button type="button" id="detail-unit-'+esc(k)+'" data-detail-unit="'+esc(k)+'" aria-label="'+esc(unitLabel(s.units[k],k))+'" aria-pressed="'+(k===id)+'">'+unitPortrait(s.units[k],'detail-tab-portrait')+'</button>').join('');
   if(id==='__blessings')return blessingsPage(s,tabs);
   const u=s.units[id],sp=u.species?SPECIES[u.species]:undefined;
   const moves=u.learned.slice(0,4).map(move=>{

@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import {currentStats,statAtLevel,hpAtLevel} from '../../src/core/stats.ts';
 import {SPECIES,speciesMaxHp,bossMaxHp} from '../../src/core/roster.ts';
 import {speciesUnit,estimateAttackDamage,damageStage,applyCommand,applyTalentBonus} from '../../src/core/engine.ts';
-import {statSheet,moveBaseDamage} from '../../src/core/describe.ts';
+import {statSheet,moveBaseDamage,moveSummary} from '../../src/core/describe.ts';
+import {moveOf} from '../../src/core/moves.ts';
 import {world,pos,row} from '../acceptance/fixtures.mjs';
 
 const BULB=SPECIES.bulbasaur.baseStats;   // hp 45, atk 49, def 49, spa 65, spd 65, spe 45
@@ -58,7 +59,7 @@ test('the details table shows the numbers the damage rule uses, and follows an a
  // the hunter commission's penalty is part of the stage the details show
  s2.units.T.stages.def=0;const mate=s2.units.A;s2.commissions=[{id:'hunter',floor:1,acceptedRound:0,progress:0,progressTarget:3,speedLimit:null}];
  assert.equal(damageStage(s2,mate,'def'),-1);assert.equal(statSheet(s2,mate).find(r=>r.key==='def').stage,-1);
- assert.equal(moveBaseDamage(duel(5,5),duel(5,5).units.A,'tackle'),6+Math.ceil(SPECIES.bulbasaur.kit.length?6/2:3),'base damage = 6 + half power rounded up + level bonus');
+ assert.equal(moveBaseDamage(duel(5,5),duel(5,5).units.A,'tackle'),9,'Lv5 tackle: 6 + half of its power 6 + level bonus 0');
 });
 test('evolving recomputes ability values and max HP from the new species',()=>{
  const s=duel(20,5);const a=s.units.A;s.phase='evolution';s.pendingEvolutions=[{actor:'A',choices:['ivysaur']}];
@@ -67,4 +68,15 @@ test('evolving recomputes ability values and max HP from the new species',()=>{
  assert.equal(u.species,'ivysaur');assert.equal(u.maxHp,applyTalentBonus(hpAtLevel(iv.hp,20),0));
  assert.deepEqual(currentStats(u),{atk:statAtLevel(iv.atk,20),def:statAtLevel(iv.def,20),spa:statAtLevel(iv.spa,20),spd:statAtLevel(iv.spd,20),spe:statAtLevel(iv.spe,20)});
  assert.ok(currentStats(u).spa>before.spa&&u.maxHp>hpAtLevel(BULB.hp,20));
+});
+test('the fixed base-damage text and the details number agree: with the level it includes the level bonus, without it (camp) it says it does not',()=>{
+ const s=duel(21,5),a=s.units.A;   // the run is Lv21: level bonus floor((21-5)/4) = 4
+ assert.equal(moveBaseDamage(s,a,'tackle'),13,'6 + 3 + 4');
+ assert.match(moveSummary('tackle',undefined,'friend',21),/造成13点基础伤害$/);
+ assert.match(moveSummary('tackle',undefined,'friend'),/造成9点基础伤害（不含等级加成）$/);
+ assert.match(moveSummary('tackle',undefined,'friend',5),/造成9点基础伤害$/);
+ // Snore is not a plain damage move but the engine estimates it from the same base
+ const snorer=speciesUnit('S','bulbasaur',5,pos(1));snorer.learned=['snore'];
+ const s2=world({S:snorer},{floor:row(6),leader:'S',queue:['S'],enemies:[]});s2.prog={level:5,exp:0,rng:1,made:0,kills:[],items:{berry:0,tonic:0}};
+ assert.equal(moveBaseDamage(s2,snorer,'snore'),6+Math.ceil(moveOf('snore').power/2));
 });

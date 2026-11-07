@@ -47,9 +47,9 @@ test('#112 普攻采用较高攻击对应的防御，相等时物理',()=>{
  for(const [attacker,defender,expected] of [
   ['mudkip','pidgey',8], // Lv5 atk 12 / def 9: round(6*12/9)=8
   ['bulbasaur','geodude',8], // spa 11 > atk 9, so special: round(6*11/8)=8 against spd 8
-  ['pikachu','squirtle',5], // atk 10 = spa 10 counts as physical: round(6*10/11)=5
+  ['pikachu','squirtle',5], // atk 10 = spa 10 counts as physical (a tie goes to physical): round(6*10/11)=5
   ['pidgey','squirtle',5], // atk 9 > spa 8: round(6*9/11)=5
-  ['mew','geodude',6], // atk = spa = 25; def 25 (not spd 8): ratio 1
+  ['mew','geodude',6], // atk = spa = 15; def 15 (not spd 8): ratio 1
  ]){
   const s=duel(attacker,defender,{move:null});
   assert.equal(estimateAttackDamage(s,'A','D'),expected,attacker);

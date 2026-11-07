@@ -14,7 +14,7 @@ import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
 import {moveOf} from '../core/moves.ts';
-import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,mergeLogLines,playerText,moveSummary,adventureRoomMarkers} from '../core/describe.ts';
+import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,mergeLogLines,playerText,moveSummary,unitMoveLevel,adventureRoomMarkers} from '../core/describe.ts';
 import {renderTitle,renderNewGame,portrait,portraitTick,type NewGameState} from '../ui/title.ts';
 import {newGameProfile,initialProfile,squadOf,TALENTS,TALENT_MAX_RANK,rankLevel,rankThreshold,availableTalentPoints,type BaseAction,type Profile,type TalentId} from '../core/base.ts';
 import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
@@ -266,7 +266,14 @@ function chooseHudSkill(skill:Skill){cancelMoveInput();selectedSkill=selectedSki
 const isTargetedItem=(item:Item):boolean=>item!=='teamTonic'&&item!=='reviverSeed'&&!ORB_ITEMS.includes(item);
 /** Party members the chosen item can be used on right now (the real rule check, so a full-HP member is not offered a berry). */
 let targetUsable=new Set<string>();
+/** Each check simulates one whole round, about 1.7 ms per member on a late floor (measured, 5 ms for three), and render runs often, so the answer is kept until something the check reads changes. */
+let targetCache:{sig:string;out:Set<string>}|null=null;
+const targetSignature=(s:World,item:Item):string=>JSON.stringify([item,s.runId,s.round,s.phase,s.leader,draft?.editor,draft?.main,s.prog?.items[item],s.queue.map(id=>{const u=s.units[id];return [id,u.hp,u.maxHp,u.pos,u.status,u.pp];})]);
 function itemTargets(s:World,item:Item):Set<string>{
+ const sig=targetSignature(s,item);if(targetCache?.sig===sig)return new Set(targetCache.out);
+ const out=computeItemTargets(s,item);targetCache={sig,out};return new Set(out);
+}
+function computeItemTargets(s:World,item:Item):Set<string>{
  const actor=draft?.editor??s.leader,out=new Set<string>();
  for(const id of s.queue){
   const use:Action={type:'use',item,target:id};
@@ -350,7 +357,7 @@ function renderDungeonHud(){
  {// Services, rooms and the shop open as a centred panel; × closes it until the leader moves, and a small button brings it back.
   const lp=s.units[s.leader]?.pos,svcKey=lp?`${s.runId}|${s.dungeon?.level??0}|${lp.x},${lp.y}`:'',panels=Array.from(context.querySelectorAll<HTMLElement>('.service'));
   if(serviceClosedKey&&serviceClosedKey!==svcKey)serviceClosedKey='';
-  if(panels.length&&serviceClosedKey===svcKey){const label=panels[0].id==='shop-panel'?'打开商店':panels[0].id==='exchange-panel'?'打开伙伴交换机':panels[0].id==='rest-panel'?'打开休息点':'打开房间面板';panels.forEach(el=>el.remove());context.insertAdjacentHTML('beforeend','<button type="button" id="service-reopen" class="service-reopen">'+label+'</button>');bind('service-reopen',()=>{serviceClosedKey='';render();});}
+  if(panels.length&&serviceClosedKey===svcKey){const label=panels[0].id==='shop-panel'?'打开商店':panels[0].id==='exchange-panel'?'打开伙伴交换机':panels[0].id==='rest-panel'?'打开休整点':'打开房间面板';panels.forEach(el=>el.remove());context.insertAdjacentHTML('beforeend','<button type="button" id="service-reopen" class="service-reopen">'+label+'</button>');bind('service-reopen',()=>{serviceClosedKey='';render();});}
   else if(panels.length){for(const el of panels){if(!el.querySelector('.service-close'))el.insertAdjacentHTML('afterbegin','<button type="button" class="paper-close service-close" aria-label="关闭面板（Esc）">×</button>');}
    context.querySelectorAll<HTMLButtonElement>('.service-close').forEach(b=>b.onclick=()=>{serviceClosedKey=svcKey;render();});}
  }
@@ -485,7 +492,7 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   $('controls').insertAdjacentHTML('beforeend',adventureRoomPanel(s,activeAdventure,editor,ready,!!draft));
   bind('start-challenge',()=>act({type:'interact',exit:false}));bind('take-adventure-item',()=>act({type:'interact',exit:false}));
   bind('interact-commission',()=>act({type:'interact',exit:false}));bind('interact-blessing',()=>act({type:'interact',exit:false}));}
- if(!draft&&editor===s.leader){$('controls').insertAdjacentHTML('beforeend',servicePanel(s,point,ready));bindService(s);}
+ if(editor===s.leader&&(!draft||point?.kind==='rest')){$('controls').insertAdjacentHTML('beforeend',servicePanel(s,point,ready||!!draft,!!draft?.swap));bindService(s);}   // the rest point stays reachable while a combination is being arranged
  bind('wait',()=>act({type:'wait'}));bind('arrange',()=>{actionsOpen=true;choosingPartner=true;choosingSwap=false;selectedSkill=null;render();});bind('swap',()=>{actionsOpen=true;choosingSwap=true;choosingPartner=false;selectedSkill=null;render();});
  for(const id of s.queue.filter(id=>id!==s.leader))bind('partner-'+id,()=>{const swap=choosingSwap;draft={partner:id,action:null,main:swap?{type:'swap',target:id}:null,editor:swap?s.leader:id,swap};choosingPartner=false;choosingSwap=false;render();});
  u.learned.forEach(k=>bind('skill-'+k,()=>{selectedSkill=k;choosingItem=null;render();}));
@@ -612,7 +619,7 @@ function resultDetails(s:World):string{
 /** Shop stock beyond the three fixed rows: the cure berry, heal seed (stock existed, never listed), the four orbs and the Reviver Seed. */
 let shopSelected:ShopItem='berry',serviceClosedKey='';
 const SHOP_EXTRA=['pechaBerry','healSeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb','reviverSeed'] as const;
-function servicePanel(s:World,point:Point|undefined,ready:boolean):string{
+function servicePanel(s:World,point:Point|undefined,ready:boolean,swapping=false):string{
  if(!point||!s.prog)return '';
  if(point.kind==='shop'&&s.shop){
   const sh=s.shop,purse=s.purse??0;
@@ -623,11 +630,12 @@ function servicePanel(s:World,point:Point|undefined,ready:boolean):string{
   const iconOf=(item:ShopItem,big=false)=>item!=='tm'?itemIconImg(item as Item,big?'shop-icon is-big':'shop-icon'):`<span class="shop-icon tm-icon">${sh.stock.tm?tmDiscOf(sh.stock.tm):''}</span>`;
   const rows=goods.map(item=>{const pr=ECON.price[item],lf=stockOf(item),sh2=purse<pr&&lf>0;
    return `<li><button type="button" id="shop-pick-${item}" class="shop-row${item===picked?' is-selected':''}${lf<1?' is-sold':''}${sh2?' is-short':''}" aria-pressed="${item===picked}">${iconOf(item)}<span class="shop-name">${esc(nameOf(item))}</span><span class="shop-price">价格 ${pr}</span><span class="shop-stock">库存 ${lf}</span></button></li>`;}).join('');
-  const description=picked==='tm'?(sh.stock.tm?moveSummary(sh.stock.tm):'已经卖完了。'):itemDescription(picked as Item);
+  const description=picked==='tm'?(sh.stock.tm?moveSummary(sh.stock.tm,undefined,undefined,unitMoveLevel(s,s.units[s.leader])):'已经卖完了。'):itemDescription(picked as Item);
   return `<div class="service panel195 shop195" id="shop-panel" role="dialog" aria-labelledby="shop-heading"><h2 class="paper-plaque" id="shop-heading">商店</h2><p id="purse-line" class="shop-purse">钱袋余额：<strong>${purse}</strong></p><div class="shop-body"><ul class="shop-list" aria-label="商品">${rows}</ul><aside class="shop-detail" aria-label="商品详情"><div class="shop-detail-head">${iconOf(picked,true)}<div><strong>${esc(nameOf(picked))}</strong><small class="${left>0&&short?'is-short':''}">价格 <b class="shop-price-num">${price}</b> · 库存 ${left}</small></div></div><p class="shop-detail-text">${esc(description)}</p>${button('buy-'+picked,left<1?'售罄':'购买',!ready||left<1||short,'class="paper-button is-primary"')}</aside></div><p class="paper-muted shop-note">只能用钱袋付款；买东西不占回合；本次远征期间库存固定；不收购。</p></div>`;
  }
- if(point.kind==='rest'){   // a centred paper panel like the shop: what the rest does, one button
-  return `<div class="service panel195 rest195" id="rest-panel" role="dialog" aria-labelledby="rest-heading"><h2 class="paper-plaque" id="rest-heading">休息点</h2><p id="rest-text">${point.used?'这个休息点已经用过了。':`每名存活队员的每个招式恢复 ${PROG.restPp} PP；每个休息点只能用一次。`}</p>${button('rest',point.used?'已使用':'休息',!ready||point.used,'class="primary"')}</div>`;
+ if(point.kind==='rest'){   // a centred paper panel like the shop: what the rest does, one button; a used point shows nothing
+  if(point.used)return '';
+  return `<div class="service panel195 rest195" id="rest-panel" role="dialog" aria-labelledby="rest-heading"><h2 class="paper-plaque" id="rest-heading">休整点</h2><p id="rest-text">每名存活队员的每个招式恢复 ${PROG.restPp} PP；每个休整点只能用一次。</p>${button('rest','休整',!ready||swapping,'class="primary"')}</div>`;
  }
  if(point.kind==='exchange'&&s.exchange){
   const ex=s.exchange;
@@ -1108,6 +1116,7 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Enter'){if(target.matches('button')&&!target.hasAttribute('disabled')&&(target.hasAttribute('data-confirm')||target.closest('#flow,#hud-bag'))){e.preventDefault();target.click();}else e.preventDefault();return;}
  if(e.key==='Escape'){
   if(bagOpen){e.preventDefault();bagOpen=false;render();return;}
+  if(choosingItem){e.preventDefault();choosingItem=null;render();return;}   // only the target state closes: a combination draft and a service panel stay as they are
   if(document.querySelector('#context-actions .service-close')){e.preventDefault();(document.querySelector('#context-actions .service-close') as HTMLElement).click();return;}
   if(inspectShown()){e.preventDefault();closeInspect();return;}
   if(live()?.phase==='learning'){e.preventDefault();void send({type:'learnMove',replace:null});return;}
@@ -1121,12 +1130,13 @@ document.addEventListener('keydown',e=>{
  if(bagOpen)return;
  if(e.key==='Tab'){e.preventDefault();const alive=s.queue.filter(id=>s.units[id].hp>0);void send({type:'switch',actor:alive[(alive.indexOf(s.leader)+1)%alive.length]});return;}
  if(sleeping(s.units[s.leader])&&e.key!=='.'){if(e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&k==='r'))e.preventDefault();return;}
- if(targetMode()&&['1','2','3'].includes(e.key)){e.preventDefault();const id=s.queue[Number(e.key)-1];if(id)useOn(id);return;}
+ if(targetMode()&&['1','2','3','4'].includes(e.key)){e.preventDefault();const id=e.key==='4'?undefined:s.queue[Number(e.key)-1];if(id)useOn(id);return;}   // 4 has no card: it does not switch to a move behind the player's back
  if(['1','2','3','4'].includes(e.key)){e.preventDefault();const skill=s.units[draft?.editor??s.leader].learned[Number(e.key)-1];if(skill&&(s.units[draft?.editor??s.leader].pp[skill]??0)>0)chooseHudSkill(skill);return;}
  if(['5','6','7','8','9','0'].includes(e.key)){e.preventDefault();const item=quickItems[['5','6','7','8','9','0'].indexOf(e.key)];if(item)chooseHudItem(item);return;}
  const directionKey=e.key.length===1?k:e.key;
  if(['w','a','s','d','ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(directionKey)){
-  e.preventDefault();const first=heldDirections.size===0;heldDirections.add(directionKey);
+  e.preventDefault();if(choosingItem){choosingItem=null;render();}   // walking away leaves the target state
+  const first=heldDirections.size===0;heldDirections.add(directionKey);
   // Only a fresh press collects a chord; held movement changes direction at the next step.
   if(moveCollecting)moveTap=null;
   if(first){moveCollecting=true;moveTimer=setTimeout(()=>void flushMoveInput(),40);}else if(!moveCollecting&&!moveInFlight)void flushMoveInput();return;

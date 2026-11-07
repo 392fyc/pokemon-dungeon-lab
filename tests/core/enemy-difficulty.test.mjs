@@ -34,7 +34,7 @@ test('difficulty: the player is not multiplied (basic 6, tackle 9)',()=>{
  assert.equal(s.units.E.hp,31,'40 - 9, not round(9 x 0.4) = 4');
 });
 
-test('difficulty: enemy max HP is the roster value times 0.4; the boss also takes its hpMultiplier',()=>{
+test('difficulty: enemy max HP is the level-based HP times 0.4; the boss keeps its fixed rule times hpMultiplier',()=>{
  const f=generateFloor(3,2);
  assert.deepEqual(f.enemies.map(e=>[e.species,e.level,e.hp]),[
   ['shellder',8,9],['drowzee',11,14],['wooper',8,10],['drowzee',8,11],['wooper',8,10],['shellder',9,10]

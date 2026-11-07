@@ -17,7 +17,7 @@ export type AnimEvent =
   | {k:'move'; by:string; id:string; from:Pos; to:Pos}
   | {k:'airAttack';by:string;actor:string;from:Pos;to:Pos}
   | {k:'swap'; by:string; a:string; b:string; pa:Pos; pb:Pos}
-  | {k:'hit'; by:string; attacker:string|null; target:string; from:Pos|null; at:Pos; fx:Fx; amount:number; dead:boolean; effect?:EffectStyle; cast?:string; collision?:true}
+  | {k:'hit'; by:string; attacker:string|null; target:string; from:Pos|null; at:Pos; fx:Fx; amount:number; dead:boolean; effect?:EffectStyle; cast?:string; collision?:true; immune?:true}
   | {k:'protect'; by:string; target:string; from:Pos; at:Pos; effect?:EffectStyle}
   | {k:'blowaway'; by:string; target:string; actorAt:Pos; from:Pos; to:Pos; effect?:EffectStyle; cast?:string}
   | {k:'heal'; by:string; target:string; item:Item; amount:number; at:Pos; actorAt:Pos; effect?:EffectStyle}
@@ -279,11 +279,12 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
         if (!by) by = unit.side === 'enemy' ? (b.queue.find(q => !used.has(q) && b.units[q].hp > 0) ?? b.queue[0]) : b.enemies[0] ?? id;
         if (unit.side === 'friend' && !by) by = id;
         const effect=attacker?styleFor(move,id,amount):null;
-        emit({k:'hit', by, attacker, target:id, from, at, fx, amount, dead, ...(effect?{effect}:{}),...(effect?.template==='blow'&&move?{cast:move}:{})});
+        const immune=amount<=0&&!!move&&isDamageMove(move)&&typeEffectiveness(move,SPECIES[a.units[id]?.species??b.units[id]?.species??'']?.types??[])===0;
+        emit({k:'hit', by, attacker, target:id, from, at, fx, amount, dead, ...(immune?{immune:true as const}:{}),...(effect?{effect}:{}),...(effect?.template==='blow'&&move?{cast:move}:{})});
       }
       if (dead) pos[id] = null;
     } else if ((m = rest.match(/^因.+损失\d+HP，HP (\d+)$/))) {
-      hp[id]=Number(m[1]);if(hp[id]===0)pos[id]=null;
+      hp[id]=Number(m[1]);if(hp[id]===0&&!lines.slice(i+1,i+3).some(l=>l.startsWith(id+'倒下的瞬间，')))pos[id]=null;   // a Reviver Seed answers a recoil or status death too: the unit keeps its place
     } else if ((m = rest.match(/^倒下的瞬间，.+发动，HP恢复到(\d+)$/))) {
       hp[id]=Number(m[1]);
     } else if ((m = rest.match(/^(?:回复HP|吸取生命，HP) (\d+)→(\d+)$/))) {

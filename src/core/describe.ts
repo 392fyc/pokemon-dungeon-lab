@@ -24,12 +24,13 @@ export function damageEstimateText(s:World,sourceId:string,targetId?:string,skil
   return `约${amount}点${targetId===undefined?'（对普通目标）':''}`;
 }
 /** `side` is the side of whoever uses the move: duration and "enemy" wording in the fixed texts name the opposing side (#204). Defaults to the context's source, else the player's side. */
-export function moveEffectLabel(id:string,context?:DamageSummaryContext,side?:Unit['side']):string{
+/** `level` (the level the move is used at) adds the level bonus to the fixed base-damage text; without a context and without a level (the camp) the text says plainly that it leaves the level bonus out. */
+export function moveEffectLabel(id:string,context?:DamageSummaryContext,side?:Unit['side'],level?:number):string{
   const spec=moveOf(id);if(!spec)return '招式数据缺失';
   const user=side??context?.s.units[context.sourceId]?.side??'friend',foe=user==='enemy'?'我方':'敌方',foeUnit=user==='enemy'?'我方单位':'敌人';
   const parts:string[]=[];
   for(const effect of spec.effects){
-    if(effect==='damage')parts.push(spec.power===null?'造成伤害':context?`造成${damageEstimateText(context.s,context.sourceId,context.targetId,id)}`:`造成${6+Math.ceil(spec.power/2)}点基础伤害`);
+    if(effect==='damage')parts.push(spec.power===null?'造成伤害':context?`造成${damageEstimateText(context.s,context.sourceId,context.targetId,id)}`:level===undefined?`造成${6+Math.ceil(spec.power/2)}点基础伤害（不含等级加成）`:`造成${6+Math.ceil(spec.power/2)+levelDamageBonus(level)}点基础伤害`);
     else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
     else if(effect==='recoil'){const r=moveEffects(id)?.recoil;if(r)parts.push(`承受实际伤害的${r[0]}/${r[1]}反作用（向下取整，至少1；未造成伤害时不扣HP）`);}
     else if(effect==='rest')parts.push('自身进入打盹2—3轮；结束时回满HP并解除全部异常');
@@ -47,7 +48,7 @@ export function moveEffectLabel(id:string,context?:DamageSummaryContext,side?:Un
   }
   return parts.join('；')||'无效果说明';
 }
-export const moveSummary=(id:string,context?:DamageSummaryContext,side?:Unit['side']):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id,context,side)}`;
+export const moveSummary=(id:string,context?:DamageSummaryContext,side?:Unit['side'],level?:number):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id,context,side,level)}`;
 
 export type AdventureRoomMarker={room:number;at:Pos;kind:'door'|'interaction';roomType:AdventureRoomType;state:'idle'|'sealed'|'cleared'|'done';label:string;typeLabel:string;stateLabel:string;dimmed:boolean;itemLabel?:string};
 /** Show a room label on its first discovered door and keep the interaction marker separate. Hidden doors produce no marker. */
@@ -101,10 +102,11 @@ export function statSheet(s:World,u:Unit):StatRow[]|null {
   return rows;
 }
 /** The base damage a move does before any ratio: 6 + half the power (rounded up) + the level bonus, the same numbers estimateAttackDamage starts from. */
+/** The level a unit's moves are used at, the same rule estimateAttackDamage applies (friends use the run level). */
+export const unitMoveLevel=(s:World,u:Unit):number=>u.side==='friend'?(s.prog?.level??u.level??5):(u.level??5);
 export function moveBaseDamage(s:World,u:Unit,move:string):number|null {
-  const spec=moveOf(move);if(!spec||!spec.effects.includes('damage')||spec.power===null)return null;
-  const level=u.side==='friend'?(s.prog?.level??u.level??5):(u.level??5);
-  return 6+Math.ceil(spec.power/2)+levelDamageBonus(level);
+  const spec=moveOf(move);if(!spec||(!spec.effects.includes('damage')&&move!=='snore')||spec.power===null)return null;   // Snore hits through its own rule but uses the same base
+  return 6+Math.ceil(spec.power/2)+levelDamageBonus(unitMoveLevel(s,u));
 }
 export type EnemyMoveRow={id:string;name:string;type:string;pp:number;maxPp:number;detail:string};
 export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];moveRows:EnemyMoveRow[];note:string;statuses:string[]};
@@ -147,7 +149,7 @@ export function playerText(text:string):string {
 }
 /**
  * Display-only merge of the engine's separate type note into its damage line (the engine log keeps its own format; animation.ts and the tests parse it):
- * "X受到N伤害，HP h" + "效果绝佳"/"效果不好" -> "X受到N伤害，效果绝佳"/"……效果不好"; "X受到0伤害，HP h" -> "X受到0伤害，没有效果".
+ * "X受到N伤害，HP h" + "效果绝佳"/"效果不好" -> "X受到N伤害，效果绝佳"/"……效果不好"; "X受到0伤害，HP h" + "没有效果" (an engine note written only for a type immunity) -> "X受到0伤害，没有效果". Any other 0 damage (guard, quick guard) stays as the plain line.
  * `merged` maps a line index to its replacement text; `skipped` holds the indexes of note lines that were folded in.
  */
 export function mergeLogLines(lines:readonly string[]):{merged:Map<number,string>;skipped:Set<number>} {
@@ -156,7 +158,7 @@ export function mergeLogLines(lines:readonly string[]):{merged:Map<number,string
     const hit=/^(.+)受到(\d+)伤害，HP \d+$/.exec(t);if(!hit)return;
     const note=lines[i+1];
     if(note==='效果绝佳'||note==='效果不好'){merged.set(i,`${hit[1]}受到${hit[2]}伤害，${note}`);skipped.add(i+1);}
-    else if(hit[2]==='0')merged.set(i,`${hit[1]}受到0伤害，没有效果`);
+    else if(hit[2]==='0'&&note==='没有效果'){merged.set(i,`${hit[1]}受到0伤害，没有效果`);skipped.add(i+1);}
   });
   return {merged,skipped};
 }

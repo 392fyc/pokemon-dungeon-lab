@@ -58,6 +58,17 @@ for(const [w,h] of [[1280,720],[900,520]]){
  await p.evaluate(({near})=>{const s=window.trial.store.world;s.units[near].hp=s.units[near].maxHp;window.dispatchEvent(new Event('blur'));},ids);
  const solo=await snap();await choose();assert.deepEqual(await snap(),solo,'choosing the item does not use it by itself');assert.equal(await p.locator('.hud-party-card.is-target').count(),1);
  await p.keyboard.press('Escape');
+ // key 4 has no card: it neither uses an item nor switches to a move; a direction key leaves the target state
+ await p.evaluate(({near})=>{const s=window.trial.store.world;s.units[near].hp=5;window.dispatchEvent(new Event('blur'));},ids);
+ const before4=await snap();await choose();await p.keyboard.press('4');await p.waitForTimeout(150);
+ assert.equal(await p.locator('#target-hint').count(),1,'key 4 leaves the target state alone');assert.deepEqual(await snap(),before4);assert.equal(await p.locator('#selected-move-preview').count(),0,'and does not select a move');
+ await p.keyboard.press('d');await p.waitForTimeout(400);assert.equal(await p.locator('#target-hint').count(),0,'a direction key leaves the target state');
+ // Esc in the target state closes only that state: the combination draft behind it stays
+ await p.evaluate(()=>{const s=window.trial.store.world;for(const id of s.queue)s.units[id].hp=5;window.dispatchEvent(new Event('blur'));});
+ await p.locator('#actions-open').click();await p.locator('#arrange').click();await p.locator('#partner-'+ids.near).click();
+ assert.equal(await p.locator('#controls .draft').count(),1,'a combination draft is open');
+ await p.locator('#bag-open').click();await p.locator('[data-bag-item="berry"]').click();await p.locator('#bag-use').click();await p.waitForSelector('#target-hint');
+ await p.keyboard.press('Escape');assert.equal(await p.locator('#target-hint').count(),0);assert.equal(await p.locator('#controls .draft').count(),1,'Esc closed the target state only; the draft is still there');
  assert.deepEqual(errs,[]);await ctx.close();
 }
 await b.close();console.log('target checks passed');

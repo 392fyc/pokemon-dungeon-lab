@@ -767,15 +767,15 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
  try{
   await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,full,profile);await p.locator('#rest').waitFor();
   const s0=await state(p);assert.equal(s0.points.find(q=>q.kind==='rest').used,false);
-  assert.equal(await p.locator('#rest-panel h2').innerText(),'休息点');assert.equal(await p.locator('#rest-panel #rest').innerText(),'休息','the rest point is a shop-style panel with one button');
-  assert.equal(await p.locator('#rest-text').innerText(),'每名存活队员的每个招式恢复 '+PROG.restPp+' PP；每个休息点只能用一次。','rest text uses the current shared PP amount');
+  assert.equal(await p.locator('#rest-panel h2').innerText(),'休整点');assert.equal(await p.locator('#rest-panel #rest').innerText(),'休整','the rest point is a shop-style panel with one button');
+  assert.equal(await p.locator('#rest-text').innerText(),'每名存活队员的每个招式恢复 '+PROG.restPp+' PP；每个休整点只能用一次。','rest text uses the current shared PP amount');
   await click(p,'rest');          // PP are full: refused with the reason, nothing changes
   assert.deepEqual(await state(p),s0);assert.match(await p.locator('#message').innerText(),/PP都已满.*没有消耗/);
   // Reload discards the first developer world; create a second in-memory fixture with one PP spent.
   await p.reload();await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,spent,profile);
   await click(p,'rest');const s1=await state(p);
   assert.equal(s1.units.C.pp[spentMove],Math.min(5,s0.units.C.maxPp[spentMove]));assert.equal(s1.points.find(q=>q.kind==='rest').used,true);assert.equal(s1.round,s0.round+1);   // 8.8 (#165, G9.2): the rest point restores 5 PP per move
-  assert.equal(await p.locator('#rest').isDisabled(),true);assert.equal(await p.locator('#rest').innerText(),'已使用');
+  assert.equal(await p.locator('#rest-panel').count(),0,'a used rest point shows no panel when stood on');
   assert.equal(await raw(p),null);assert.deepEqual(errors,[]);
   return {refusedWhenFull:true,usedOnce:true,fixturesMemoryOnly:true};
  }finally{await context.close();}
@@ -1682,7 +1682,7 @@ await test('8.4 选机：真实三选一按钮、一次消费与挑战奖励来�
   await p.screenshot({path:artifact+'windows-84-tm-choice.png',fullPage:true});
   await click(p,'tm-choice-'+options[1]);const s=await state(p);
   assert.equal(s.phase,'playing');assert.equal(s.round,offered.round);
-  assert.equal(s.tms.length,2);assert.deepEqual(s.tms[1],{move:options[1],source:'target',fate:'held'});
+  assert.equal(s.tms.length,2);assert.deepEqual(s.tms[1],{move:options[1],source:'blessing',fate:'held'});
   assert.equal(await raw(p),null);
   const {closeOut}=await import('../../src/core/engine.ts');
   s.phase='ended';s.end=closeOut(s,'won');

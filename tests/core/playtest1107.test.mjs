@@ -42,10 +42,10 @@ test('item names in player text come from ITEM_NAMES, never an English id (PR 21
 
 test('round 3: the type note is merged into its damage line for display, the engine log is untouched',async()=>{
  const {mergeLogLines}=await import('../../src/core/describe.ts');
- const lines=['A使用撞击','T受到36伤害，HP 4','效果绝佳','B使用火花','U受到9伤害，HP 20','效果不好','C使用撞击','V受到5伤害，HP 7','W受到0伤害，HP 9'];
+ const lines=['A使用撞击','T受到36伤害，HP 4','效果绝佳','B使用火花','U受到9伤害，HP 20','效果不好','C使用撞击','V受到5伤害，HP 7','W受到0伤害，HP 9','没有效果','X受到0伤害，HP 9'];
  const {merged,skipped}=mergeLogLines(lines);
  assert.equal(merged.get(1),'T受到36伤害，效果绝佳');assert.equal(merged.get(4),'U受到9伤害，效果不好');
- assert.equal(merged.get(8),'W受到0伤害，没有效果','a zero-damage hit says so');
+ assert.equal(merged.get(8),'W受到0伤害，没有效果','a type immunity says so');assert.equal(merged.has(10),false,'0 damage from a guard has no reason text');assert.ok(skipped.has(9)&&!skipped.has(10));
  assert.ok(skipped.has(2)&&skipped.has(5)&&!skipped.has(7),'only the note lines are folded in');assert.equal(merged.has(7),false,'an ordinary hit keeps its line');
  assert.deepEqual(lines.slice(1,3),['T受到36伤害，HP 4','效果绝佳'],'the input (the engine log) is not modified');
 });

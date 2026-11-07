@@ -1186,7 +1186,9 @@ function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number
   if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,targetId+'受到火系招式或热水攻击后解冻');emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
   const effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
   const previousKiller=currentKiller;currentKiller=opposing?sourceId:null;let actual=0;
-  try{actual=hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});}finally{currentKiller=previousKiller;}
+  // Only a type immunity writes 'no effect'; a guard, quick guard or frozen target also takes 0 but for another reason (G5.3 step 7).
+  try{actual=hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}
+    if(skill&&effectiveness===0)note(s,'没有效果');});}finally{currentKiller=previousKiller;}
   // `actual` is the HP the hit really took; Last Stand or a Reviver Seed may have raised target.hp afterwards.
   if(opposing&&actual>0&&target.hp>0&&!suppressSleepTrigger)onDirectDamageToSleeper(s,target,source,quickguard,createdGuard);
   if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos)){const keep=currentKiller;currentKiller=targetId;try{hit(s,sourceId,actual);}finally{currentKiller=keep;}}

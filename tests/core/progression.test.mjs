@@ -147,7 +147,7 @@ test('P4e a new member joins at the current level; a member sent back to camp no
  s.prog.exp=10;s.units.w2=wild('w2',3,6,'rattata',3);s.enemies=['w2'];     // test edit: one more Lv3 enemy next to C (+6 exp), exp one short of Lv7 (11) before the kill
  s=round(s,basic('w2'));
  assert.equal(s.prog.level,7);
- assert.deepEqual([s.units.B,s.units.C,s.units.N1].map(u=>[u.hp,u.maxHp]),[[20,23],[21,23],[10,22]]);   // +1 each, HP untouched
+ assert.deepEqual([s.units.B,s.units.C,s.units.N1].map(u=>[u.hp,u.maxHp]),[[20,23],[21,23],[10,22]]);   // max HP recomputed from the Lv7 stats (23 / 23 / 22), current HP untouched
  assert.deepEqual([s.units.A.hp,s.units.A.maxHp],[19,20],'the member at camp stays as it was');
 });
 test('P5 damage grows with the actor level: basic 6, tackle 9, seed bomb 14 at Lv5; +floor((L-5)/4) per level, so Lv9 adds 1, Lv13 adds 2, Lv21 adds 4',()=>{

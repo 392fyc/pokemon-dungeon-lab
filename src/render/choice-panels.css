@@ -208,7 +208,6 @@ body.dungeon-mode #context-actions .shop-row { display: grid; grid-template-colu
 body.dungeon-mode #context-actions .shop-row.is-selected { background: #fff0b8; box-shadow: 0 0 0 3px #d9622b; }
 body.dungeon-mode #context-actions .shop-row.is-short .shop-price, .shop-detail-head small.is-short .shop-price-num { color: #c0301e; }
 body.dungeon-mode #context-actions .shop-row.is-sold { opacity: .4; }
-.shop-row .shop-short { grid-column: 2 / -1; color: #a83c2c; font-size: 12px; font-weight: 700; }
 .shop-icon { image-rendering: pixelated; width: 32px; height: 32px; margin: 0; vertical-align: middle; }
 .shop-icon.is-big { width: 64px; height: 64px; }
 .tm-disc-icon { position: relative; display: block; width: 24px; height: 24px; flex: none; background: var(--tm-color, #5f5e50); box-shadow: 0 0 0 2px var(--paper-ink, #2a1c14); }
@@ -221,7 +220,6 @@ body.dungeon-mode #context-actions .shop-row.is-sold { opacity: .4; }
 .shop-detail-head strong { font-size: 17px; }
 .shop-detail-head small { display: block; font-size: 13px; color: var(--paper-muted); }
 .shop-detail .shop-detail-text { min-height: 60px; line-height: 1.5; }
-.shop-short-line { color: #a83c2c !important; font-weight: 700; }
 .shop-note { font-size: 12px !important; }
 .service-reopen { position: fixed; left: 50%; bottom: 252px; transform: translateX(-50%); z-index: 36; padding: 8px 18px; border: 2px solid #e8d48a; border-radius: 8px; background: rgba(12, 18, 15, .94); color: #fff1b8; font: 700 15px sans-serif; cursor: pointer; }
 @media (max-width: 700px), (max-height: 560px) {

@@ -1926,16 +1926,12 @@ body.dungeon-mode #dungeon-hud #recent-events {
 }
 
 body.dungeon-mode #recent-events .log-hint {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   display: block;
-  margin: -2px 0 2px;
-  padding: 0 0 1px;
-  background: rgba(10, 15, 12, 0.92);
-  color: #e8d48a;
+  margin: 0 0 2px;
+  background: none;
+  color: rgba(232, 212, 138, 0.72);
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.4;
   text-align: right;
 }
 

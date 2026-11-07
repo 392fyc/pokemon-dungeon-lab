@@ -7,7 +7,7 @@ import {moveOf} from '../../src/core/moves.ts';
 import {SPECIES} from '../../src/core/roster.ts';
 import {typeEffectiveness} from '../../src/core/type-chart.ts';
 // 8.8 (#165): floor items other than the orange berry and the PP tonic are the cure berries and the heal seed; walking onto one picks it up.
-const FLOOR_ITEMS=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed'];
+const FLOOR_ITEMS=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb'];
 const CURES={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],chestoBerry:['slp'],healSeed:['psn','tox','brn','par','frz','confusion','flinch','slp']};
 const STATUS_KEYS=['psn','tox','brn','par','frz','confusion','flinch','slp','nap'];
 const damageMoves=u=>u.learned.filter(k=>!['snore','sleeptalk'].includes(k)&&(u.pp[k]??0)>0&&moveOf(k)?.effects.includes('damage'));
@@ -135,7 +135,7 @@ function route(s,from,wanted){
    first.set(key(p),first.get(key(cur))??p);len.set(key(p),len.get(key(cur))+1);q.push(p);}}
  return null;
 }
-const affordable=s=>s.shop&&s.dungeon.level===s.shop.level?['berry','tonic','tm'].filter(i=>(i==='tm'?s.shop.stock.tm!==null:s.shop.stock[i]>0)&&s.purse>=ECON.price[i]):[];
+const affordable=s=>s.shop&&s.dungeon.level===s.shop.level?['berry','tonic','tm','reviverSeed'].filter(i=>(i==='tm'?s.shop.stock.tm!==null:s.shop.stock[i]>0)&&s.purse>=ECON.price[i]):[];
 /** Visible stairs and boss remain the objectives, with the existing nearby pickup/service priorities. */
 function objective(s,memo){
  const L=s.units[s.leader],level=s.dungeon.level,seen=new Set(s.seen);
@@ -323,8 +323,8 @@ function commissionDecisionKnown(s,memo,id){
  return false;
 }
 const BLESSING_ORDER={
- tactical:{early:['rally','tmChoice','battleSpirit','berryBoost','floorHeal','lullaby'],late:['battleSpirit','rally','tmChoice','berryBoost']},
- cautious:{early:['floorHeal','berryBoost','lullaby','rally','tmChoice','battleSpirit'],late:['berryBoost','rally','tmChoice','battleSpirit']}
+ tactical:{early:['rally','tmChoice','scholar','thickskin','laststand','killheal','nemesis','fullpower','regen','battleSpirit','berryBoost','floorHeal','lullaby','headhunter'],late:['headhunter','thickskin','laststand','battleSpirit','killheal','fullpower','nemesis','regen','rally','tmChoice','berryBoost']},
+ cautious:{early:['thickskin','laststand','floorHeal','berryBoost','regen','killheal','lullaby','rally','tmChoice','scholar','battleSpirit','nemesis','fullpower','headhunter'],late:['thickskin','laststand','berryBoost','regen','killheal','headhunter','rally','tmChoice','battleSpirit','nemesis','fullpower']}
 };
 export function blessingChoice(s,memo){
  s=visibleView(s);
@@ -510,6 +510,13 @@ function backpackCommands(s,memo){
  const ppCapacity=members.reduce((n,m)=>n+m.learned.reduce((v,k)=>v+(m.maxPp[k]??0),0),0);
  const hasEmptyMove=members.some(m=>m.learned.some(k=>(m.pp[k]??0)===0));
  if(!memo.reckless&&hasEmptyMove&&ppCapacity>0&&ppTotal<ppCapacity/2&&(s.prog.items.teamTonic??0)>0)act({type:'use',item:'teamTonic',target:L.id});
+ // Playtest 1107 orbs: sleep or confuse a crowd when the team is hurt; light the map when no stairs are known yet; call the team in when it is scattered.
+ {const items=s.prog.items,room=(s.rooms??[]).find(r=>L.pos.x>=r.x&&L.pos.x<r.x+r.w&&L.pos.y>=r.y&&L.pos.y<r.y+r.h);
+  const foes=s.enemies.map(i=>s.units[i]).filter(e=>aliveU(e)&&e.pos&&s.seen.includes(key(e.pos))&&(room?e.pos.x>=room.x&&e.pos.x<room.x+room.w&&e.pos.y>=room.y&&e.pos.y<room.y+room.h:dist(L.pos,e.pos)<=2));
+  const awake=foes.filter(e=>!e.asleep&&!e.status?.slp&&!e.status?.nap),teamLow=members.some(m=>low(m)<0.6);
+  if(!memo.reckless&&awake.length>=2&&teamLow){if((items.slumberOrb??0)>0)act({type:'use',item:'slumberOrb',target:L.id});else if((items.totterOrb??0)>0&&foes.filter(e=>!e.status?.confusion).length>=2)act({type:'use',item:'totterOrb',target:L.id});}
+  if((items.luminousOrb??0)>0&&!s.mapRevealed&&!s.points.some(p=>p.kind==='down'&&s.seen.includes(key(p.pos))))act({type:'use',item:'luminousOrb',target:L.id});
+  if((items.rollcallOrb??0)>0&&members.length>1&&members.some(m=>m.id!==L.id&&m.pos&&dist(m.pos,L.pos)>3))act({type:'use',item:'rollcallOrb',target:L.id});}
  return out;
 }
 /**
@@ -745,7 +752,8 @@ export function observeActivity(before,after,cmd,x,memo){
  }
  if(cmd.type==='round'){
   a.commissions.concurrentTotal+=(after.commissions?.length??0);a.commissions.concurrentSamples++;
-  if(cmd.action?.type==='use'&&['bigBerry','teamTonic'].includes(cmd.action.item))tally(a.usedItems,cmd.action.item);
+  if(cmd.action?.type==='use'&&['bigBerry','teamTonic','slumberOrb','totterOrb','luminousOrb','rollcallOrb'].includes(cmd.action.item))tally(a.usedItems,cmd.action.item);
+  {const spent=(before.prog?.items?.reviverSeed??0)-(after.prog?.items?.reviverSeed??0);for(let i=0;i<spent;i++)tally(a.usedItems,'reviverSeed');}
  }
  if(after.phase==='ended')for(const c of before.commissions??[]){
   const commissionKey=`${c.id}:${c.floor}:${c.acceptedRound}:${c.speedLimit??''}`;

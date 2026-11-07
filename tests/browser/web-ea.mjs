@@ -139,7 +139,7 @@ try{
   await q.keyboard.press('ArrowRight');await readyOn(q);
   const enemy=await q.evaluate(()=>{const s=window.trial.getState();return s.units.E.pos;});
   for(let i=0;i<2;i++)await clickCell(q,enemy);
-  await clickUI(q,'reject');await clickUI(q,'reject-confirm');await q.keyboard.press('ArrowRight');await readyOn(q);
+  await clickUI(q,'reject');await q.keyboard.press('ArrowRight');await readyOn(q);
   await clickUI(q,'take-exit');await clickUI(q,'exit-confirm');
   await q.waitForFunction(()=>window.trial.getState()?.phase==='ended');
   const end=await q.evaluate(()=>window.trial.getState());assert.equal(end.round,5);assert.equal(end.goal,true);assert.equal(end.end.outcome,'normal');

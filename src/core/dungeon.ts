@@ -13,16 +13,16 @@ import {SPECIES,BOSS_CONFIG,speciesMaxHp,tmPool} from './roster.ts';
 import rooms83 from '../data/rooms-83.json' with {type:'json'};
 import terrainThemesJson from '../data/terrain-themes.json' with {type:'json'};
 export {BOSS_CONFIG} from './roster.ts';
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'rest'|'shop'|'exchange';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'rest'|'shop'|'exchange';
 /** 8.8 (#165, G3.x): what a floor item point holds, with its weight in percent (WORKING CANDIDATE). */
-export const FLOOR_ITEM_WEIGHTS:readonly (readonly [PointKind,number])[]=[['berry',35],['pechaBerry',13],['rawstBerry',13],['cheriBerry',13],['chestoBerry',13],['healSeed',13]];
+export const FLOOR_ITEM_WEIGHTS:readonly (readonly [PointKind,number])[]=[['berry',35],['healSeed',13],['pechaBerry',8],['rawstBerry',8],['cheriBerry',8],['chestoBerry',8],['slumberOrb',5],['totterOrb',5],['luminousOrb',5],['rollcallOrb',5]];
 export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
 export type EnemySpec={id:string;species:string;level:number;hp:number;pos:Cell;post?:Cell;boss?:true;asleep?:boolean};
 export type Room={x:number;y:number;w:number;h:number};
 export type AdventureRoomType='challenge'|'commission'|'blessing'|'item';
 export type AdventureRoomState='idle'|'sealed'|'cleared'|'done';
 type LegacyAdventureItemId='bigBerry'|'teamTonic';
-export type AdventureItemId=LegacyAdventureItemId|'violentSeed'|'maxElixir';
+export type AdventureItemId=LegacyAdventureItemId|'violentSeed'|'maxElixir'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'reviverSeed';
 export type ChallengeRewardType='currency'|'item'|'invite'|'tm'|'blessing';
 export type AdventureRoom={room:number;type:AdventureRoomType;state:AdventureRoomState;interaction:Cell;doors:Cell[];sealedCells:Cell[];
   enemyIds:string[];reward:ChallengeRewardType|null;rewardCurrency:number|null;item:AdventureItemId|null;rewardItem:AdventureItemId|null;rewardMove:string|null};
@@ -106,7 +106,7 @@ export function serviceRoll(seed:number,floors:number):ServiceRoll {
   return {shop:shopOn?{level:shopLevel,tmDraw}:null,exchange:exOn?{level:exLevel}:null};
 }
 type Rooms83Data={roomTypeWeights:Record<AdventureRoomType,number>;challengeRewardWeights:Record<ChallengeRewardType,number>;
-  itemWeights:Record<LegacyAdventureItemId,number>;roomItemWeights:Record<AdventureItemId,number>;challengeCurrencyAmount:number;
+  itemWeights:Record<AdventureItemId,number>;roomItemWeights:Record<AdventureItemId,number>;challengeCurrencyAmount:number;
 };
 const ROOMS_83=rooms83 as Rooms83Data;
 const ADVENTURE_STREAMS={roomItem:0x4C957F2D,challengeCount:0x165667B1,challengeSpecies:0x9E3779B9,

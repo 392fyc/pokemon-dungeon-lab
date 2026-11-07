@@ -90,13 +90,20 @@ export function stepRows(s:World,steps:TraceStep[]):{id:string;text:string}[] {
 }
 
 export type EnemyMoveRow={id:string;name:string;type:string;pp:number;maxPp:number;detail:string};
-export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];moveRows:EnemyMoveRow[];note:string};
+export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];moveRows:EnemyMoveRow[];note:string;statuses:string[]};
 export type TeammateInfo={id:string;name:string;level:number|null;tactic:Tactic;moves:string[]};
 const tacticFor=(u:Unit):Tactic=>isTactic(u.tactic)?u.tactic:u.side==='enemy'?'gofoes':'together';
 const moveRows=(u:Unit,context?:DamageSummaryContext):EnemyMoveRow[]=>u.learned.map(id=>{
   const pp=u.pp[id]??0,maxPp=u.maxPp[id]??pp,type=MOVE_TYPES[id];
   return {id,name:moveZh(id),type:type?typeZh(type):'—',pp,maxPp,detail:moveZh(id)+'（'+moveSummary(id,context,u.side)+'） PP '+pp+'/'+maxPp};
 });
+/** Names of the conditions a unit is under now, in STATUS_NAMES order; a unit born asleep (not yet woken) shows as sleeping. */
+export function statusLabels(u:Unit):string[]{
+  const out:string[]=[];
+  for(const kind of Object.keys(STATUS_NAMES) as StatusId[]){const st=u.status?.[kind];if(!st)continue;const left=st.left??st.tick;out.push(STATUS_NAMES[kind]+(left===undefined?'':'（剩余'+left+'）'));}
+  if(u.asleep&&!out.some(v=>v.startsWith(STATUS_NAMES.slp)))out.push(STATUS_NAMES.slp);
+  return out;
+}
 /** What a revealed enemy shows. Returns null for anything the player cannot see yet (unrevealed cell, fallen, or not an enemy). */
 export function enemyInfo(s:World,id:string):EnemyInfo|null {
   const u=s.units[id];
@@ -105,7 +112,7 @@ export function enemyInfo(s:World,id:string):EnemyInfo|null {
   const tactic=tacticFor(u),note=u.boss?'区域首领；击败后有概率发出加入邀请，入队的是普通形态。':u.species?'击败后有概率发出加入邀请。':'';
   const rows=moveRows(u);
   return {id,name:u.boss?`${unitName(u,'敌人')}（首领）`:unitName(u,'敌人'),types:sp?(sp.types??[]).map(typeZh).join('／'):'',hp:u.hp,maxHp:u.maxHp,
-    level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:rows.map(row=>row.detail),moveRows:rows,note};
+    level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:rows.map(row=>row.detail),moveRows:rows,note,statuses:statusLabels(u)};
 }
 /** Read-only detail for a teammate card when the player explicitly opens it. */
 export function teammateInfo(s:World,id:string,targetId?:string):TeammateInfo|null {
@@ -118,7 +125,7 @@ const escapeRe=(t:string)=>t.replace(/[.*+?^$|()[\]{}\\]/g,'\\$&');
 /** Player-facing prose only. Official move descriptions and keeper dialogue bypass this helper. */
 export function playerText(text:string):string {
  let value=text.replace(/向-?\d+,-?\d+挥空/g,'普通攻击挥空');
- for(const [from,to] of [["普攻","普通攻击"],["朝前","向前"],["回到","返回"],["带上","携带"],["教给","学习"],["贴住","紧跟"],["贴身","相邻"],["追最近","追击最近"],["没打中","没有命中"],["打不到","无法攻击"],["打空","挥空"]])value=value.split(from).join(to);
+ for(const [from,to] of [["普攻","普通攻击"],["朝前","向前"],["回到","返回"],["带上","携带"],["教给","学习"],["贴住","紧跟"],["贴身","相邻"],["追最近","追击最近"],["没打中","没有命中"],["打不到","无法攻击"],["打空","挥空"],["倒下退图","倒下了"]])value=value.split(from).join(to);
  return value;
 }
 /** Turns unit, species and move ids in a log line into readable player-facing names. */

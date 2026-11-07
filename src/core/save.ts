@@ -64,9 +64,9 @@ function validUnit(v:unknown,depth=0):boolean {
   return v.recruit===undefined||(depth<1&&validUnit(v.recruit,depth+1));
 }
 const keyOf=(p:{x:number;y:number})=>`${p.x},${p.y}`;
-const pointKinds=['goal','item','exit','down','up','berry','tonic','pechaBerry','rawstBerry','cheriBerry','healSeed','rest','shop','exchange'];
+const pointKinds=['goal','item','exit','down','up','berry','tonic','pechaBerry','rawstBerry','cheriBerry','healSeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb','rest','shop','exchange'];
 /** Points that exist only in 6.4+ expeditions (pickups, the 6.5 rest point and the 7.2 service cells). */
-const isPickup=(k:unknown)=>k==='berry'||k==='tonic'||k==='pechaBerry'||k==='rawstBerry'||k==='cheriBerry'||k==='healSeed'||k==='rest'||k==='shop'||k==='exchange';
+const isPickup=(k:unknown)=>k==='berry'||k==='tonic'||k==='pechaBerry'||k==='rawstBerry'||k==='cheriBerry'||k==='healSeed'||k==='slumberOrb'||k==='totterOrb'||k==='luminousOrb'||k==='rollcallOrb'||k==='rest'||k==='shop'||k==='exchange';
 const validPoint=(p:unknown,cells:Set<string>)=>object(p)&&position(p.pos)&&pointKinds.includes(String(p.kind))&&typeof p.used==='boolean'&&cells.has(keyOf(p.pos));
 /** A stored (non-current) floor: terrain, revealed cells, real enemies and points. Ids are claimed in `taken` so none repeats across floors. */
 function validStored(f:unknown,d:Dungeon,taken:Set<string>,run:boolean):f is StoredFloor {

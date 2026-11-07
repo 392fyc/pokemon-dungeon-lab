@@ -24,6 +24,8 @@ export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; p
   status?:Partial<Record<StatusId,StatusState>>;
   tactic?:Tactic; level?:number; entrySpecies?:string;
   post?:Pos;
+  /** Blessings: thick skin and last stand each work once per member per floor. */
+  thickUsed?:boolean; standUsed?:boolean;
   asleep?:boolean; wakeSkip?:boolean; targetMemory?:Pos|null; lostSightTurns?:number; roamTarget?:Pos|null; direction?:Pos|null;
   waitOnly?:true; recruit?:Unit; species?:string;
   deferredEvolutionLevel?:number;
@@ -50,38 +52,44 @@ export type Command = {type:'switch';actor:string}|{type:'round';action:Action;o
 export type Invitation = {id:string;unit:Unit;status:'pending'|'accepted'|'rejected'|'cancelled'};
 /** `to` is set only for a stairs request (the target floor number); a plain exit request has no `to`. */
 export type ExitRequest = {actor:string;pos:Pos;locked:boolean;to?:number};
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'rest'|'shop'|'exchange';
-export type ShopItem='berry'|'tonic'|'tm'|'pechaBerry'|'healSeed';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'rest'|'shop'|'exchange';
+export type ShopItem='berry'|'tonic'|'tm'|'pechaBerry'|'healSeed'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'reviverSeed';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
-export type Item='berry'|'tonic'|'bigBerry'|'teamTonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'violentSeed'|'maxElixir';
+export type Item='berry'|'tonic'|'bigBerry'|'teamTonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'violentSeed'|'maxElixir'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'reviverSeed';
 /** 8.8 (#165, G9.1): items lying on the floor, picked up by walking onto them. */
 export type PickupKind=Extract<PointKind,Item>;
-export const PICKUP_KINDS:readonly PickupKind[]=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed'];
+export const PICKUP_KINDS:readonly PickupKind[]=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb'];
 export const isPickupKind=(kind:string):kind is PickupKind=>(PICKUP_KINDS as readonly string[]).includes(kind);
 export const SKILL_CN:Record<Skill,string>=(names as unknown as {moves:Record<string,string>}).moves;
-export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂',pechaBerry:'桃桃果',rawstBerry:'莓莓果',cheriBerry:'樱子果',chestoBerry:'零余果',healSeed:'治愈之种',violentSeed:'暴力种子',maxElixir:'单人满 PP 补剂'};
+export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂',pechaBerry:'桃桃果',rawstBerry:'莓莓果',cheriBerry:'樱子果',chestoBerry:'零余果',healSeed:'治愈之种',violentSeed:'暴力种子',maxElixir:'单人满 PP 补剂',slumberOrb:'睡眠宝珠',totterOrb:'慌乱宝珠',luminousOrb:'发光宝珠',rollcallOrb:'邀回宝珠',reviverSeed:'复活种子'};
+/** Items that are used by the member itself, on its own cell, and need no target. */
+export const ORB_ITEMS:readonly Item[]=['slumberOrb','totterOrb','luminousOrb','rollcallOrb'];
+/** Cure berries also restore a little HP (the original games do). */
+export const ITEM_HEALS:Partial<Record<Item,number>>={pechaBerry:4,rawstBerry:4,cheriBerry:4};
+/** Orange Berry: 30% of the target's maximum HP, but never less than the old flat 8. */
+export const berryBaseHeal=(maxHp:number):number=>Math.max(PROG.berryHeal,Math.floor(maxHp*0.3));
 /** 8.8 (#165, G9.1): which status conditions each cure item removes (Heal Seed: all of them). */
 export const ITEM_CURES:Partial<Record<Item,readonly StatusId[]>>={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],chestoBerry:['slp'],healSeed:['psn','tox','brn','par','frz','slp','confusion','flinch']};
 export const STATUS_NAMES:Record<StatusId,string>={psn:'中毒',tox:'剧毒',brn:'灼伤',par:'麻痹',frz:'冰冻',slp:'睡眠',nap:'打盹',confusion:'混乱',flinch:'畏缩'};
 export const STAGE_NAMES:Record<StageKey,string>={atk:'攻击',def:'防御',spa:'特攻',spd:'特防',spe:'速度',acc:'命中',eva:'闪避'};
 export type CommissionId='hunter'|'collector'|'scout'|'guardian'|'speedrun';
-export type BlessingId='berryBoost'|'floorHeal'|'battleSpirit'|'lullaby'|'rally'|'tmChoice';
+export type BlessingId='berryBoost'|'floorHeal'|'battleSpirit'|'lullaby'|'rally'|'tmChoice'|'nemesis'|'headhunter'|'fullpower'|'scholar'|'killheal'|'regen'|'thickskin'|'laststand';
 export type CommissionDefinition={name:string;description:string;progressTarget:number|null;equivalentEnemies:number;penalty:'defenseMinusOne'|'berryHealHalf'|null;floors:number[];speedMultiplier?:number;requiresRoomTypes?:AdventureRoom['type'][]};
-export type BlessingDefinition={name:string;description:string;floors:number[];effect:BlessingId;berryHealBonus?:number;floorHealHp?:number;attackStage?:number;sleepChance?:number;recruitChance?:number;choiceCount?:number};
+export type BlessingDefinition={name:string;description:string;floors:number[];effect:BlessingId;berryHealBonus?:number;berryHealRate?:number;floorHealHp?:number;floorHealRate?:number;floorHealMin?:number;value?:number;every?:number;threshold?:number;attackStage?:number;sleepChance?:number;recruitChance?:number;choiceCount?:number};
 export const COMMISSIONS=commissionData as Record<CommissionId,CommissionDefinition>;
 export const BLESSINGS=blessingData as Record<BlessingId,BlessingDefinition>;
 export type ActiveCommission={id:CommissionId;floor:number;acceptedRound:number;progress:number;progressTarget:number;speedLimit:number|null};
 export type PendingChoice=
   |{type:'commission';room:number;commission:CommissionId}
   |{type:'blessing';source:'room'|'challenge';room:number|null;options:BlessingId[]}
-  |{type:'tmChoice';source:'target'|'challenge'|'boss';options:string[]};
+  |{type:'tmChoice';source:'target'|'challenge'|'boss'|'blessing';options:string[]};
 export type Rect={x:number;y:number;w:number;h:number};
 /**
  * 6.4 shared run level and counters (expedition only; absent in the fixed map and in expeditions saved before 6.4).
  * `rng` is the recruit-draw state (a 32-bit integer, separate from `dungeon.seed`); `kills` holds defeated enemies of the current round
  * until the round-end settlement and is empty at every checkpoint; `made` counts recruits created so far (ids N1, N2...).
  */
-export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number;pechaBerry?:number;rawstBerry?:number;cheriBerry?:number;chestoBerry?:number;healSeed?:number;violentSeed?:number;maxElixir?:number}};
+export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number;pechaBerry?:number;rawstBerry?:number;cheriBerry?:number;chestoBerry?:number;healSeed?:number;violentSeed?:number;maxElixir?:number;slumberOrb?:number;totterOrb?:number;luminousOrb?:number;rollcallOrb?:number;reviverSeed?:number}};
 /** Cumulative experience thresholds: reaching Lv L costs the sum of levels 5 through L-1. */
 const expThreshold=(level:number)=>level<=INITIAL_LEVEL?0:level*(level-1)/2-((INITIAL_LEVEL-1)*INITIAL_LEVEL)/2;
 export const PROG={recruitChance:0.3,thresholds:Array.from({length:101},(_,level)=>expThreshold(level)),initialLevel:INITIAL_LEVEL,maxLevel:100,hpPerLevel:1,damagePerLevel:1,damageEveryLevels:4,expMultiplier:2,goalExp:0,bossExp:0,berryHeal:8,tonicPp:10,teamTonicPp:5,restPp:5,bagLimit:null as number|null};
@@ -98,7 +106,7 @@ export type Dungeon={seed:number;width:number;height:number;floors:number;level:
 /** A technique machine obtained in this run; `sent` remains a possible in-run fate, while final rogue fate is decided by win or wipe. */
 export type TmItem={move:string;source:'target'|'shop'|'boss'|'challenge';fate:'held'|'brought'|'sent'|'lost'};
 /** 7.2 the shop of this run: fixed stock decided at the start, and every sale so far. `tm` is null once sold. */
-export type Shop={level:number;stock:{berry:number;tonic:number;tm:string|null;pechaBerry?:number;healSeed?:number};trades:{item:ShopItem;price:number}[]};
+export type Shop={level:number;stock:{berry:number;tonic:number;tm:string|null;pechaBerry?:number;healSeed?:number;slumberOrb?:number;totterOrb?:number;luminousOrb?:number;rollcallOrb?:number;reviverSeed?:number};trades:{item:ShopItem;price:number}[]};
 /** 7.2 the exchanger of this run: used at most once; `sent` is the companion it took home. */
 export type Exchange={level:number;used:boolean;sent:string|null};
 /**
@@ -121,6 +129,8 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   talents?:ExpeditionTalents;completedCommissions?:number;
   /** 8.8 (#165): state of the separate battle random stream (hits, secondary effects, status durations, confusion). Derived from the dungeon seed on first use; never saved. */
   battleRng?:number;
+  /** Luminous Orb: the whole floor's terrain is drawn (not units); cleared on every floor change. */
+  mapRevealed?:boolean;
   /** 8.8 (#165): latest round events (misses, air swings, status changes, status damage, pickups) for the interface; reset by each round command. */
   events?:RoundEvent[];
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
@@ -541,7 +551,7 @@ function tmChoiceOptions(s:World,source:Extract<PendingChoice,{type:'tmChoice'}>
   const count=BLESSINGS.tmChoice.choiceCount??3,pool=tmPool(s.dungeon),random=choiceRandom(s,`tm:${source}`,room,salt);
   return sampleWithoutReplacement([...new Set(pool)],Math.min(count,new Set(pool).size),random);
 }
-function addPendingTmChoice(s:World,source:'target'|'challenge'|'boss',room:number|null,salt=''):boolean {
+function addPendingTmChoice(s:World,source:'target'|'challenge'|'boss'|'blessing',room:number|null,salt=''):boolean {
   const options=tmChoiceOptions(s,source,room,salt);if(!options.length)return false;
   (s.pendingChoices??=[]).push({type:'tmChoice',source,options});s.tmChoiceReady=false;return true;
 }
@@ -563,7 +573,7 @@ function commissionRewardExp(c:ActiveCommission):number {
 function finishCommission(s:World,c:ActiveCommission):void {
   s.commissions=(s.commissions??[]).filter(v=>v!==c);
   if(s.completedCommissions!==undefined)s.completedCommissions++;
-  const exp=commissionRewardExp(c);if(s.prog)s.prog.exp+=exp;
+  const exp=hasBless(s,'scholar')?Math.round(commissionRewardExp(c)*1.15):commissionRewardExp(c);if(s.prog)s.prog.exp+=exp;
   note(s,`${COMMISSIONS[c.id].name}委托完成，队伍经验+${exp}`);
 }
 function failCommission(s:World,c:ActiveCommission,reason:string):void {
@@ -588,9 +598,8 @@ function onRoomEntry(s:World,from:Pos,to:Pos):void {
 function applyBlessing(s:World,id:BlessingId):void {
   const def=BLESSINGS[id];(s.blessings??=[]).push(id);
   if(def.effect==='battleSpirit')for(const member of s.queue)if(alive(s.units[member]))changeStage(s,member,'atk',def.attackStage??1);
-  if(def.effect==='lullaby')s.lullabyPending=true;
-  if(def.effect==='tmChoice')s.tmChoiceReady=true;
   note(s,`获得祝福：${def.name}。${def.description}`);
+  if(def.effect==='tmChoice'){if(addPendingTmChoice(s,'blessing',s.dungeon?.level??null,'blessing'))note(s,`${def.name}：立即从${def.choiceCount??3}张招式机里选一张`);else note(s,`${def.name}：没有可选的招式机`);}
 }
 function updateLevelsAfterCommissionReward(s:World):boolean {
   const p=s.prog;if(!p)return false;let changed=false;const before=p.level;
@@ -784,6 +793,15 @@ function chooseAllyAction(s:World,id:string,blockingGuard:ReadonlySet<string>=ne
   }
   const basic=legalBasicTarget(s,id,tactic,visible);if(basic)return {type:'basic',target:basic.id};
   if(tactic==='wait')return {type:'wait'};
+  if(tactic==='together'||tactic==='nomoves'){
+    // Nothing to attack from here: close in on the nearest visible opponent inside the leader's 3-cell zone (the same zone tacticalTargetAllowed uses), else rejoin the leader.
+    const anchor=alive(s.units[s.leader])?s.units[s.leader]:s.queue.map(i=>s.units[i]).find(alive);
+    if(anchor?.pos){
+      const target=opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&currentlyVisible(s,actorPos,t.pos!)&&chebyshev(anchor.pos!,t.pos!)<=3).sort((a,b)=>chebyshev(actorPos,a.pos!)-chebyshev(actorPos,b.pos!))[0];
+      const step=target?firstStepTo(s,actorPos,target.pos!,true):null;
+      if(step&&!occupied(s,step))return {type:'move',to:step};
+    }
+  }
   if(tactic==='gofoes'&&visible?.size){
     const target=opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&visible.has(t.id)).sort((a,b)=>chebyshev(actorPos,a.pos!)-chebyshev(actorPos,b.pos!))[0];
     const step=target?firstStepTo(s,actorPos,target.pos!,true):null;return step?{type:'move',to:step}:{type:'wait'};
@@ -944,6 +962,14 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
   if(a.type==='use'){
     if(!s.prog)return '这里没有可用的背包物品';
     if((s.prog.items[a.item]??0)<1)return `背包里没有${ITEM_NAMES[a.item]}`;
+    if(a.item==='reviverSeed')return '复活种子不能主动使用，队员倒下的瞬间会自动用掉';
+    if(ORB_ITEMS.includes(a.item)){
+      if(a.target!==id)return `${ITEM_NAMES[a.item]}由使用者发动，目标必须是使用者自己`;
+      if((a.item==='slumberOrb'||a.item==='totterOrb')&&!orbFoes(s,u).length)return `房间范围内没有敌人，${ITEM_NAMES[a.item]}不会有效果`;
+      if(a.item==='luminousOrb'&&s.mapRevealed)return '本层的地形已经显现';
+      if(a.item==='rollcallOrb'&&!s.queue.some(m=>m!==id&&alive(s.units[m])))return '没有其他存活同行';
+      return null;
+    }
     if(a.item==='teamTonic'&&a.target!==id)return '全员PP补剂由使用者发动，目标必须是使用者自己';
     if(a.item==='teamTonic'&&!s.queue.some(member=>alive(s.units[member])&&s.units[member].learned.some(k=>(s.units[member].pp[k]??0)<(s.units[member].maxPp[k]??0))))return `在场成员的所有招式PP已满，${ITEM_NAMES.teamTonic}不会有效果`;
     if(a.item==='bigBerry'||a.item==='berry'){
@@ -1016,20 +1042,44 @@ function tryPickup(s:World,actorId:string):void {
   const amount=(s.prog.items[item]??0)+1;s.prog.items[item]=amount;point.used=true;
   note(s,`${actorId}拾取${ITEM_NAMES[item]}，背包共${amount}`);emit(s,{type:'pickup',actor:actorId,item,ok:true});progressCommission(s,'collector');
 }
+const hasBless=(s:World,id:BlessingId):boolean=>(s.blessings??[]).includes(id);
+/** The attacker of the damage being resolved, for the kill-heal blessing. */
+let currentKiller:string|null=null;
+/** Experience goes through here so the scholar blessing (+15%) counts every source. */
+function gainExp(s:World,n:number):void {if(!s.prog)return;s.prog.exp+=hasBless(s,'scholar')?Math.round(n*1.15):n;}
+function healUnit(s:World,id:string,n:number,why:string):void {
+  const u=s.units[id];if(!alive(u)||n<=0)return;const before=u.hp;u.hp=Math.min(u.maxHp,u.hp+n);if(u.hp>before)note(s,`${why}：${id} HP ${before}→${u.hp}`);
+}
+/** Enemies inside the user's room (corridor: 2 cells), the reach of the sleep and confusion orbs. */
+function orbFoes(s:World,u:Unit):Unit[] {return s.enemies.map(i=>s.units[i]).filter(e=>alive(e)&&!!u.pos&&inRoomReach(s,u.pos,e.pos));}
+/** Berry heal for one target: 30% of max HP (at least 8), +50% with the berry blessing, plus the supplies talent; guardian halves the lot. */
+function berryHealAmount(s:World,t:Unit):number {
+  let raw=berryBaseHeal(t.maxHp);if(hasBless(s,'berryBoost'))raw=Math.floor(raw*(1+(BLESSINGS.berryBoost.berryHealRate??0.5)));
+  raw+=s.talents?.supplies??0;return activeCommission(s,'guardian')?Math.floor(raw/2):raw;
+}
 /** Applies HP loss and returns the HP actually lost. `cause` marks status damage (poison, burn), which has its own log line and does not wake a sleeper. A frozen unit takes no damage at all (8.8). */
 function hit(s:World,id:string,n:number,cause?:string,afterDamage?:(actual:number)=>void):number {
   const u=s.units[id],before=u.hp;
   if(n>0&&hasStatus(u,'frz')){note(s,`${id}冰冻中，不受伤害`);return 0;}
+  if(n>0&&!cause&&u.side==='friend'&&s.queue.includes(id)&&hasBless(s,'thickskin')&&!u.thickUsed){u.thickUsed=true;const halved=Math.max(1,Math.floor(n/2));note(s,`厚皮：${id}本层第一次受到的伤害减半（${n}→${halved}）`);n=halved;}
   u.hp=Math.max(0,u.hp-n);const actual=before-u.hp;note(s,cause?`${id}因${cause}损失${n}HP，HP ${u.hp}`:`${id}受到${n}伤害，HP ${u.hp}`);
   afterDamage?.(actual);
   if(!cause&&u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
+  if(before>0&&u.hp===0&&u.side==='friend'&&s.prog&&s.queue.includes(id)&&(s.prog.items.reviverSeed??0)>0){
+    s.prog.items.reviverSeed=(s.prog.items.reviverSeed??0)-1;u.hp=Math.max(1,Math.floor(u.maxHp/2));
+    note(s,`${id}倒下的瞬间，${ITEM_NAMES.reviverSeed}发动，HP恢复到${u.hp}`);return actual;
+  }
+  if(u.hp>0&&u.side==='friend'&&s.queue.includes(id)&&hasBless(s,'laststand')&&!u.standUsed&&u.hp<u.maxHp*(BLESSINGS.laststand.threshold??0.35)){
+    u.standUsed=true;healUnit(s,id,Math.max(1,Math.floor(u.maxHp*(BLESSINGS.laststand.value??0.25))),'背水');
+  }
   if(before>0&&u.hp===0){u.pos=null;note(s,`${id}倒下退图`);
+    if(u.side==='enemy'&&currentKiller&&hasBless(s,'killheal')){const k=s.units[currentKiller];if(alive(k)&&k.side==='friend')healUnit(s,k.id,Math.max(1,Math.floor(k.maxHp*(BLESSINGS.killheal.value??0.08))),'击倒回复');}
     if(u.side==='friend')for(const c of [...(s.commissions??[])].filter(c=>c.id==='guardian'))failCommission(s,c,'同行倒下');
     if(u.side==='enemy')progressCommission(s,'hunter');
     if(u.side==='enemy'&&s.prog){
       if(s.dungeon?.roguelike){const coins=Math.min(15,Math.max(5,u.level??INITIAL_LEVEL));s.purse=(s.purse??0)+coins;note(s,`${id}被击败，钱袋增加${coins}`);}
       if(!u.recruit&&u.species)s.prog.kills.push(u.species);
-      s.prog.exp+=Math.round((u.level??INITIAL_LEVEL)*PROG.expMultiplier);
+      gainExp(s,Math.round((u.level??INITIAL_LEVEL)*PROG.expMultiplier));
     }
     if(u.side==='enemy'&&u.recruit){
     const unit=clone(u.recruit);unit.id=`${u.recruit.id}`; // fixture IDs are stable; each event initializes once
@@ -1073,6 +1123,13 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
   if(blocked)amount=0;
   else if(raw>0&&!immune)amount=Math.max(1,amount);
   if(target&&hasStatus(target,'frz')&&!thaw)amount=0;
+  if(amount>0&&opposing&&source.side==='friend'&&target){
+    let bonus=0;
+    if(hasBless(s,'nemesis')&&((target.status&&Object.keys(target.status).length>0)||target.asleep))bonus+=BLESSINGS.nemesis.value??0.1;
+    if(hasBless(s,'headhunter')&&target.boss)bonus+=BLESSINGS.headhunter.value??0.15;
+    if(hasBless(s,'fullpower')&&source.hp>source.maxHp*(BLESSINGS.fullpower.threshold??0.8))bonus+=BLESSINGS.fullpower.value??0.08;
+    if(bonus>0)amount=Math.max(1,Math.round(amount*(1+bonus)));
+  }
   return amount;
 }
 /** HP loss for the damage part of a move/basic attack; AI and UI use the same arithmetic as resolution. */
@@ -1113,7 +1170,8 @@ function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number
   const amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill);
   if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,targetId+'受到火系招式或热水攻击后解冻');emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
   const hpBefore=target.hp,effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
-  hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});
+  const previousKiller=currentKiller;currentKiller=opposing?sourceId:null;
+  try{hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});}finally{currentKiller=previousKiller;}
   const actual=hpBefore-target.hp;
   if(opposing&&actual>0&&target.hp>0&&!suppressSleepTrigger)onDirectDamageToSleeper(s,target,source,quickguard,createdGuard);
   if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos))hit(s,sourceId,actual);
@@ -1322,17 +1380,30 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     if(a.item==='bigBerry'){
       const before=t.hp,heal=activeCommission(s,'guardian')?Math.floor(t.maxHp/2):t.maxHp;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.bigBerry}，HP ${before}→${t.hp}`);
     }else if(a.item==='berry'){
-      const before=t.hp,boost=(s.blessings??[]).includes('berryBoost')?(BLESSINGS.berryBoost.berryHealBonus??0):0;
-      const raw=PROG.berryHeal+boost+(s.talents?.supplies??0),heal=activeCommission(s,'guardian')?Math.floor(raw/2):raw;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
+      const before=t.hp,heal=berryHealAmount(s,t);t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
     }else if(a.item==='violentSeed'){
       changeStage(s,t.id,'atk',3-stageOf(t,'atk'));changeStage(s,t.id,'spa',3-stageOf(t,'spa'));
       note(s,`${id}对${t.id}使用${ITEM_NAMES.violentSeed}，攻击和特攻升到最高`);
     }else if(a.item==='maxElixir'){
       for(const k of t.learned)t.pp[k]=t.maxPp[k]??0;
       note(s,`${id}对${t.id}使用${ITEM_NAMES.maxElixir}，所有招式PP回满`);
+    }else if(a.item==='slumberOrb'||a.item==='totterOrb'){
+      const kind:StatusId=a.item==='slumberOrb'?'slp':'confusion',foes=orbFoes(s,u);
+      note(s,`${id}使用${ITEM_NAMES[a.item]}，房间里的${foes.length}个敌人受到影响`);
+      for(const e of foes){const blocked=statusTypeBlockReason(a.item,e,kind);if(blocked){note(s,e.id+'免疫'+STATUS_NAMES[kind]);continue;}
+        if(kind==='slp'&&(hasStatus(e,'slp')||hasStatus(e,'nap')))continue;applyStatus(s,e.id,kind);}
+    }else if(a.item==='luminousOrb'){
+      s.mapRevealed=true;note(s,`${id}使用${ITEM_NAMES.luminousOrb}，本层的地形全部显现`);
+    }else if(a.item==='rollcallOrb'){
+      const moved:string[]=[];
+      for(const mid of s.queue){if(mid===id)continue;const m=s.units[mid];if(!alive(m)||adjacent(s,u.pos!,m.pos))continue;
+        const spot=DIRS8.map(d=>plus(u.pos!,d)).find(c=>walk(s,c)&&s.seen.includes(key(c))&&stepOk(s,u.pos!,c)&&!active(s).some(v=>same(v.pos,c)));
+        if(!spot)continue;m.pos=clone(spot);moved.push(mid);}
+      note(s,`${id}使用${ITEM_NAMES.rollcallOrb}，${moved.length?moved.join('、')+'被召到身边':'身边没有空位，同行留在原地'}`);if(moved.length)reveal(s);
     }else if(ITEM_CURES[a.item]){
       const cured=cureStatuses(s,t,ITEM_CURES[a.item]!);
       note(s,`${id}对${t.id}使用${ITEM_NAMES[a.item]}，治好了${cured.map(k=>STATUS_NAMES[k]).join('、')}`);
+      const extra=ITEM_HEALS[a.item];if(extra){const half=activeCommission(s,'guardian')?Math.floor(extra/2):extra;healUnit(s,t.id,half,`${ITEM_NAMES[a.item]}同时回复`);}
     }else if(a.item==='teamTonic'){
       const restored:string[]=[];
       for(const member of s.queue){const ally=s.units[member];if(!alive(ally))continue;
@@ -1370,7 +1441,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
       p.used=true;note(s,`休整点：整理招式补给，${parts.join('，')}`);return;
     }
     if(isPickupKind(p.kind)){if(s.prog)tryPickup(s,id);else p.used=true;return;}
-    if(!stairs&&!p.used){if(p.kind==='goal'){s.goal=true;if(s.prog)s.prog.exp+=PROG.goalExp;}
+    if(!stairs&&!p.used){if(p.kind==='goal'){s.goal=true;if(s.prog)gainExp(s,PROG.goalExp);}
       if(p.kind==='item'){s.bag++;if(s.prog){
         if(s.tmChoiceReady){if(addPendingTmChoice(s,'target',s.dungeon?.level??null,key(p.pos)))note(s,`${id}取得招式机，${BLESSINGS.tmChoice.name}提供选择`);}
         else{const r=rngStep(s.prog.rng);s.prog.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];queueTmItem(s,move,'target');note(s,`${id}取得招式机：${move}`);}
@@ -1779,6 +1850,7 @@ function finishRoundSettlement(s:World):void {
 }
 
 function afterRound(s:World):void {
+  if(hasBless(s,'regen')&&s.round>0&&s.round%(BLESSINGS.regen.every??10)===0)for(const id of s.queue){const m=s.units[id];if(alive(m))healUnit(s,id,Math.max(1,Math.floor(m.maxHp*(BLESSINGS.regen.value??0.05))),'再生');}
   resolveAdventureStart(s);
   if(s.request){const u=s.units[s.request.actor];if(alive(u)&&same(u.pos,s.request.pos))s.request.locked=true;else s.request=null;}
   settleDownCommissions(s);
@@ -1903,7 +1975,7 @@ export function applyCommand(original:World,cmd:Command):Result {
     const pending=original.pendingChoices?.[0];if(original.phase!=='tmChoice'||pending?.type!=='tmChoice')return fail('当前没有待处理的招式机选择');
     if(!pending.options.includes(cmd.move))return fail('所选招式不在本次选项中');
     const s=clone(original),choice=s.pendingChoices!.shift() as Extract<PendingChoice,{type:'tmChoice'}>;
-    (s.tms??=[]).push({move:cmd.move,source:choice.source,fate:'held'});note(s,`取得${choice.source==='challenge'?'挑战奖励':choice.source==='boss'?'首领掉落':'目标奖励'}招式机：${cmd.move}`);
+    (s.tms??=[]).push({move:cmd.move,source:choice.source==='blessing'?'target':choice.source,fate:'held'});note(s,`取得${choice.source==='challenge'?'挑战奖励':choice.source==='boss'?'首领掉落':choice.source==='blessing'?'祝福奖励':'目标奖励'}招式机：${cmd.move}`);
     resumeAfterChoice(s);return {ok:true,state:s};
   }
   if(cmd.type==='tactic'){
@@ -2023,7 +2095,7 @@ function transit(original:World):World {
   const cancelled=(why:string)=>{const c=clone(original);c.request=null;c.phase='playing';note(c,`跨层取消：${why}；动作已用，留在原层`);return c;};
   if(d.roguelike&&to<=from)return cancelled('本局只能向下');
   const cur=stashFloor(s);
-  const generating=!d.stored[to],sleepChance=(s.lullabyPending&&generating)?(BLESSINGS.lullaby.sleepChance??0.5):0.25;
+  const generating=!d.stored[to],sleepChance=(hasBless(s,'lullaby')&&generating)?(BLESSINGS.lullaby.sleepChance??0.4):0.25;
   const next=d.stored[to]??freshFloor(d,to,!!s.prog,original.difficulty??'normal',sleepChance);
   loadFloor(s,clone(next));
   const stair=s.points.find(p=>p.kind===(to>from?'up':'down'));
@@ -2033,8 +2105,9 @@ function transit(original:World):World {
   if(!entry)return cancelled('目标层没有对应楼梯');
   if(!placeTeam(s,entry))return cancelled('目标层入口附近没有合法位置');
   delete d.stored[to];d.stored[String(from)]=cur;clearCombatState(s);d.level=to;s.request=null;s.phase='playing';
-  if(s.lullabyPending&&generating){s.lullabyPending=false;note(s,'安眠的待用效果已用于本层生成');}
-  if((s.blessings??[]).includes('floorHeal'))for(const id of s.queue){const u=s.units[id];if(!alive(u))continue;const before=u.hp;u.hp=Math.min(u.maxHp,u.hp+(BLESSINGS.floorHeal.floorHealHp??3));note(s,`换层回复：${id} HP ${before}→${u.hp}`);}
+  s.mapRevealed=undefined;for(const id of s.queue){const m=s.units[id];if(m){m.thickUsed=undefined;m.standUsed=undefined;}}
+  if(hasBless(s,'lullaby')&&generating)note(s,'安眠：本层普通敌人出生时更容易睡着');
+  if(hasBless(s,'floorHeal'))for(const id of s.queue){const u=s.units[id];if(!alive(u))continue;const before=u.hp;u.hp=Math.min(u.maxHp,u.hp+Math.max(BLESSINGS.floorHeal.floorHealMin??4,Math.floor(u.maxHp*(BLESSINGS.floorHeal.floorHealRate??0.2))));note(s,`换层回复：${id} HP ${before}→${u.hp}`);}
   note(s,`同行抵达第${to}层`);return s;
 }
 /**
@@ -2070,7 +2143,7 @@ export function createExpedition(runId:string,seed:number,floors=2,squad?:{membe
     prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:(squad?.talents?.supplies??0)>=3?1:0,tonic:0}},purse:0,tms:[]};
   if(squad){
     const roll=serviceRoll(d.seed,floors);
-    if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,pechaBerry:ECON.stock.pechaBerry,healSeed:ECON.stock.healSeed,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};
+    if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,pechaBerry:ECON.stock.pechaBerry,healSeed:ECON.stock.healSeed,slumberOrb:ECON.stock.slumberOrb,totterOrb:ECON.stock.totterOrb,luminousOrb:ECON.stock.luminousOrb,rollcallOrb:ECON.stock.rollcallOrb,reviverSeed:ECON.stock.reviverSeed,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};
     if(roll.exchange)s.exchange={level:roll.exchange.level,used:false,sent:null};
   }
   for(const id of s.queue)s.units[id].pos=null;

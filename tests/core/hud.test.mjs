@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ITEM_DESCRIPTIONS,itemDescription} from '../../src/core/item-descriptions.ts';
 
-const items=['berry','tonic','bigBerry','teamTonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','violentSeed','maxElixir'];
+const items=['berry','tonic','bigBerry','teamTonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','violentSeed','maxElixir','slumberOrb','totterOrb','luminousOrb','rollcallOrb','reviverSeed'];
 
 test('every current item has a visible Chinese effect description',()=>{
  assert.deepEqual(Object.keys(ITEM_DESCRIPTIONS),items);

@@ -10,7 +10,7 @@ import {portraitMarkup} from './portrait.ts';
 import {skinFor} from './sprites.ts';
 
 const esc=(v:unknown)=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-const TYPES:Record<string,string>={Normal:'#5f5e50',Water:'#2b5f8a',Fire:'#a8482a',Grass:'#3f7a3a',Electric:'#9a7a24',Ice:'#4f8196',Fighting:'#963f45',Poison:'#765196',Ground:'#86643b',Flying:'#54799b',Psychic:'#a25891',Bug:'#55753a',Rock:'#776749',Ghost:'#5b4e81',Dragon:'#4f4c9b',Dark:'#49413b',Steel:'#627381',Fairy:'#9d6688'};
+export const TYPES:Record<string,string>={Normal:'#5f5e50',Water:'#2b5f8a',Fire:'#a8482a',Grass:'#3f7a3a',Electric:'#9a7a24',Ice:'#4f8196',Fighting:'#963f45',Poison:'#765196',Ground:'#86643b',Flying:'#54799b',Psychic:'#a25891',Bug:'#55753a',Rock:'#776749',Ghost:'#5b4e81',Dragon:'#4f4c9b',Dark:'#49413b',Steel:'#627381',Fairy:'#9d6688'};
 export const SETTLEMENT_TITLES=['击败首领','全队倒下'] as const;
 const DIFFICULTY={easy:'简单',normal:'普通',hard:'困难'};
 const TACTIC_TEXT:Record<Tactic,string>={
@@ -30,13 +30,13 @@ const ICONS:Record<Tactic,string>={
   nomoves:rect(5,1,2,10)+rect(1,5,10,2)+rect(1,1,2,2)+rect(9,9,2,2),
   avoid:rect(1,5,4,2)+rect(7,5,4,2)+rect(1,3,2,6)+rect(9,3,2,6),
 };
-function unitPortrait(u:Unit,box='panel-portrait'):string {
+export function unitPortrait(u:Unit,box='panel-portrait'):string {
   return portraitMarkup(skinFor(u.id,u.side,u.species),{boxClass:box,spriteClass:'panel-portrait-sprite',label:unitLabel(u,u.id)});
 }
 function speciesPortrait(species:string,box='panel-portrait'):string {
   return portraitMarkup(SPECIES[species]?.dex??'',{boxClass:box,spriteClass:'panel-portrait-sprite',label:speciesZh(species)});
 }
-function typeChips(types:readonly string[]):string {
+export function typeChips(types:readonly string[]):string {
   return types.map(t=>'<span class="paper-type" style="background:'+(TYPES[t]??'#5f5e50')+'">'+esc(typeZh(t))+'</span>').join('');
 }
 const AXES=[['hp','HP','#3f8f3a'],['atk','攻击','#c2491f'],['def','防御','#a07a10'],['spa','特攻','#2b6fb0'],['spd','特防','#2f8f7f'],['spe','速度','#b0417f']] as const;

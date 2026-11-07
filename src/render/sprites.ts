@@ -3,6 +3,7 @@ import index from './characters.json';
 import {WILD_SPECIES} from '../core/dungeon.ts';
 import {SPECIES,BOSS_SPECIES} from '../core/roster.ts';
 import {preloadDtef} from './dtef-scene.ts';
+import {ITEM_ICON_KEYS,ROOM_PROP_KEYS} from './item-icons.ts';
 import {buildAtlas,buildFloorTexture,type TerrainThemeKey,type TerrainLayer,type PixelTexture} from './terrain.ts';
 /** Character sheets come from SpriteCollab and tiles from tools/art; provenance is in public/assets/manifest.json. */
 type AnimMeta = {file:string;w:number;h:number;durations:number[]};
@@ -38,8 +39,8 @@ export function preloadArt(scene:Phaser.Scene):void {
   scene.load.image('item', base + 'props/marker-item.png');
   scene.load.image('stairs-down', base + 'tiles/stairs-down.png');
   scene.load.image('stairs-up', base + 'tiles/stairs-up.png');
-  scene.load.image('item-berry', base + 'props/item-berry.png');
-  scene.load.image('item-tonic', base + 'props/item-tonic.png');
+  for (const key of ITEM_ICON_KEYS) scene.load.image(key, base + `props/${key}.png`);
+  for (const key of ROOM_PROP_KEYS) scene.load.image(key, base + `props/${key}.png`);
   for (const fx of ['strong', 'line', 'guard', 'push', 'heal']) scene.load.image('fx-' + fx, base + `effects/fx-${fx}.png`);
   for (const [dex, anims] of Object.entries(CHARACTERS))
     for (const [name, m] of Object.entries(anims)) scene.load.spritesheet(`${dex}-${name}`, base + m.file, {frameWidth:m.w, frameHeight:m.h});

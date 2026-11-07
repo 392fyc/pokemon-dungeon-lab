@@ -1721,3 +1721,196 @@ body.dungeon-mode #learning-tooltip .hud-move-tip { padding: 8px; }
 body.dungeon-mode #learning-tooltip .hud-move-tip-main { gap: 8px; align-items: flex-start; }
 body.dungeon-mode #learning-tooltip .hud-tip-description { margin-bottom: 0; }
 body.dungeon-mode .hud-current-hp-value { white-space: nowrap; }
+
+/* ---- playtest 1107 ---- */
+/* The global details rule (padding 15px, margin 12px, top border) made a blank band above every enemy move row. */
+body.dungeon-mode .enemy-move-list details {
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+}
+
+body.dungeon-mode .enemy-move-list details > summary {
+  padding: 3px 7px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+body.dungeon-mode .enemy-move-list details > summary span {
+  margin-left: 0;
+  font-size: inherit;
+}
+
+body.dungeon-mode .enemy-move-list li {
+  margin: 0;
+}
+
+body.dungeon-mode #inspect .inspect-card {
+  position: relative;
+  max-height: var(--inspect-max, 60vh);
+  overflow-y: auto;
+  margin: 0;
+  padding-right: 30px;
+}
+
+body.dungeon-mode #inspect .inspect-card p {
+  font-size: 11px;
+}
+
+body.dungeon-mode #inspect .inspect-card > span {
+  margin-left: 8px;
+  font-size: 11px;
+}
+
+body.dungeon-mode #inspect .inspect-card .enemy-status {
+  color: #ffd9a0;
+}
+
+body.dungeon-mode #inspect .inspect-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(125, 143, 127, 0.7);
+  border-radius: 5px;
+  background: rgba(26, 38, 30, 0.9);
+  color: #f2eee0;
+  font: 700 15px/1 sans-serif;
+  cursor: pointer;
+}
+
+/* Choice windows (blessings, TMs): equal-size cards in a grid; the skip button sits on its own centred row. */
+body.dungeon-mode #flow .choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+body.dungeon-mode #flow .choice-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 112px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+body.dungeon-mode #flow .choice-card .choice-title {
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+body.dungeon-mode #flow .choice-card .choice-desc {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #405038;
+}
+
+body.dungeon-mode #flow #blessing-choice .button-row {
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  body.dungeon-mode #flow .choice-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body.dungeon-mode #flow .choice-card {
+    min-height: 0;
+  }
+}
+
+/* Full log window (L). */
+#log-dialog {
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - 24px));
+  max-height: min(70vh, calc(100vh - 24px));
+  padding: 0;
+  border: 1px solid #e8d48a;
+  border-radius: 12px;
+  background: rgba(12, 18, 15, 0.98);
+  color: #f2eee0;
+}
+
+#log-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+#log-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+#log-dialog .log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(125, 143, 127, 0.5);
+}
+
+#log-dialog h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+#log-dialog #log-close {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(125, 143, 127, 0.7);
+  border-radius: 6px;
+  background: rgba(26, 38, 30, 0.9);
+  color: #f2eee0;
+  font: 700 18px/1 sans-serif;
+  cursor: pointer;
+}
+
+#log-dialog #log-list {
+  margin: 0;
+  padding: 8px 14px 12px;
+  overflow-y: auto;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+#log-dialog #log-list li {
+  border-bottom: 1px solid rgba(125, 143, 127, 0.18);
+  overflow-wrap: anywhere;
+}
+
+/* Centre banner shown for a moment after a defeat or invitation, before the next panel. */
+#result-banner {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  z-index: 70;
+  transform: translate(-50%, -50%);
+  padding: 14px 34px;
+  border: 2px solid #e8d48a;
+  border-radius: 12px;
+  background: rgba(12, 18, 15, 0.9);
+  color: #fff1b8;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-align: center;
+  pointer-events: none;
+}
+
+#result-banner[hidden] {
+  display: none;
+}

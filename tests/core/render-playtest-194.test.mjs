@@ -5,9 +5,9 @@ import {POINT_VISUALS,dungeonCellSize} from '../../src/render/point-visuals.ts';
 import {inferEvents,newLines} from '../../src/render/animation.ts';
 
 test('P194 pickup points retain their item names and never use the exit icon',()=>{
- for(const kind of PICKUP_KINDS){assert.equal(POINT_VISUALS[kind].name,ITEM_NAMES[kind]);assert.ok(['berry','tonic','seed'].includes(POINT_VISUALS[kind].icon),kind);}
+ for(const kind of PICKUP_KINDS){assert.equal(POINT_VISUALS[kind].name,ITEM_NAMES[kind]);assert.equal(POINT_VISUALS[kind].icon,'drop',kind);assert.match(POINT_VISUALS[kind].texture,/^item2-/,kind);}
  assert.equal(new Set(['berry','pechaBerry','rawstBerry','cheriBerry'].map(k=>POINT_VISUALS[k].color)).size,4);
- assert.equal(POINT_VISUALS.healSeed.icon,'seed');assert.equal(POINT_VISUALS.exit.icon,'exit');
+ assert.equal(POINT_VISUALS.healSeed.texture,'item2-heal-seed');assert.equal(POINT_VISUALS.exit.icon,'exit');
 });
 test('P194 viewport scale uses source-pixel multiples and about nine vertical cells at delivery sizes',()=>{
  for(const height of [410,720,844,1080]){const cell=dungeonCellSize(height);assert.ok(cell>=48);assert.equal(cell%24,0);assert.ok(height/cell>=8&&height/cell<=10);}

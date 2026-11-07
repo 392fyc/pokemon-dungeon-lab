@@ -243,8 +243,8 @@ test('P8e a berry picked up on one floor is still taken, and not given again, af
  assert.ok(s.points.some(p=>p.kind==='exit'),'the fixed historical exit remains on floor 1');
  assert.deepEqual([s.dungeon.width,s.dungeon.height],[20,14]);
 });
-test('P8f floor item points (8.8): 2-4 per floor drawn from the six floor items, floor 2 also holds exactly one tonic',()=>{
- const FLOOR_ITEMS=new Set(['berry','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed']),counts=new Set(),kinds=new Set();
+test('P8f floor item points (8.8): 2-4 per floor drawn from the ten floor items, floor 2 also holds exactly one tonic',()=>{
+ const FLOOR_ITEMS=new Set(['berry','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb']),counts=new Set(),kinds=new Set();
  for(let seed=0;seed<300;seed++){
   const g1=generateFloor(seed,1),g2=generateFloor(seed,2),k=p=>(p.pos?p.pos:p).x+','+(p.pos?p.pos:p).y;
   const items1=g1.pickups.map(p=>p.kind),items2=g2.pickups.filter(p=>p.kind!=='tonic').map(p=>p.kind);

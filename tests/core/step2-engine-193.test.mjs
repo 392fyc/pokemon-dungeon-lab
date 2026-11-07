@@ -409,7 +409,7 @@ test('recruits and ordinary enemies use level-based loadouts, bosses keep their 
   const challenge=(()=>{for(let seed=0;seed<200;seed++){const encounter=generateChallengeEncounter(seed,1,'normal',true,5);if(encounter.reward==='tm')return encounter;}return null;})();
   assert.ok(challenge,'seeded challenge draws a TM reward in the searched seeds');
   assert.ok(tmPool({boss:true,tmPool:5}).includes(challenge.rewardMove));
-  assert.deepEqual(FLOOR_ITEM_WEIGHTS,[['berry',35],['pechaBerry',13],['rawstBerry',13],['cheriBerry',13],['chestoBerry',13],['healSeed',13]]);
+  assert.deepEqual(FLOOR_ITEM_WEIGHTS,[['berry',35],['healSeed',13],['pechaBerry',8],['rawstBerry',8],['cheriBerry',8],['chestoBerry',8],['slumberOrb',5],['totterOrb',5],['luminousOrb',5],['rollcallOrb',5]]);
   assert.equal(ITEM_NAMES.chestoBerry,'零余果');
   assert.deepEqual(ITEM_CURES.chestoBerry,['slp']);
   assert.deepEqual(tmPool({boss:true,tmPool:5}),TM_MOVES_V5);

@@ -13,14 +13,24 @@
     "blessing": 15
   },
   "itemWeights": {
-    "bigBerry": 50,
-    "teamTonic": 50
+    "bigBerry": 35,
+    "teamTonic": 30,
+    "slumberOrb": 8,
+    "totterOrb": 8,
+    "luminousOrb": 7,
+    "rollcallOrb": 7,
+    "reviverSeed": 5
   },
   "roomItemWeights": {
-    "bigBerry": 35,
-    "teamTonic": 35,
+    "bigBerry": 30,
+    "teamTonic": 25,
     "violentSeed": 15,
-    "maxElixir": 15
+    "maxElixir": 10,
+    "reviverSeed": 10,
+    "slumberOrb": 3,
+    "totterOrb": 3,
+    "luminousOrb": 2,
+    "rollcallOrb": 2
   },
   "challengeCurrencyAmount": 40
 }

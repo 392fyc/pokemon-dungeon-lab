@@ -54,8 +54,8 @@ const click=async id=>{
   await bag.locator('[data-bag-category="all"]').click();await ready();
   const itemButton=bag.locator('[data-bag-item="'+item+'"]');
   assert.equal(await itemButton.count(),1,'the held consumable must appear in the all-items category');
-  const itemName=(await itemButton.locator('.hud-item-name').innerText()).trim();
-  await itemButton.click();await ready();
+  const itemName=(await itemButton.locator('.c195-name').innerText()).trim();
+  await itemButton.click();await bag.locator('#bag-pin').click();await ready();
   const slotLabel=await bag.locator('[data-bag-slot="0"]').getAttribute('aria-label');
   assert.ok(slotLabel?.includes(itemName),'the selected item must appear in the assigned quick slot');
   await page.locator('#bag-close').click();await ready();
@@ -118,12 +118,12 @@ async function command(c){
   assert.equal(s.phase,'invitation');
   const pending=s.invitations.find(i=>i.status==='pending');assert.ok(pending);
   if(c.choice==='accept'){
-   if(c.outgoing)await click('out-'+s.queue.indexOf(c.outgoing));else await click('out-none');
+   if(c.outgoing)await click('out-'+s.queue.indexOf(c.outgoing));
    await click('accept');
    const after=await state();
    assert.equal(after.invitations.find(i=>i.id===pending.id).status,'accepted');
    assert.ok(after.queue.includes(pending.unit.id),'accepted recruit must actually join the party');
-  }else{await click('reject');await click('reject-confirm');}
+  }else{await click('reject');}
   assert.notEqual((await state()).invitations.find(i=>i.id===pending.id)?.status,'pending','the chosen invitation must be resolved');
   return;
  }
@@ -378,7 +378,7 @@ async function playRun(index,route){
    if(decision.outgoing)replacementsInRun++;
    continue;
   }
-  if(s.phase==='learning'){const cmd=defaultLearningCommand(s);assert.ok(cmd);await click(cmd.replace?'learn-replace-'+cmd.replace:'learn-skip');continue;}
+  if(s.phase==='learning'){const cmd=defaultLearningCommand(s);assert.ok(cmd);await click(cmd.replace?'learn-replace-'+cmd.replace:'learn-skip');if(cmd.replace)await click('learn-confirm');continue;}
   if(s.phase==='evolution'){await click('evolution-close');continue;}
   assert.equal(s.phase,'playing','game must remain playable while routing');
   if(sleeping(s.units[s.leader])){await page.keyboard.press('.');await ready();roundActions++;continue;}

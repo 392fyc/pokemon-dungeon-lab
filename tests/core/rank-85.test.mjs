@@ -349,7 +349,7 @@ test('K6 supplies start with no berry at rank 2 and one at rank 3; blessing is a
   s.talents={supplies:5};s.blessings=['berryBoost'];
   s.commissions=[{id:'guardian',floor:1,acceptedRound:0,progress:0,progressTarget:3,speedLimit:null}];
   const healed=command(s,{type:'use',item:'berry',target:'A'});
-  assert.equal(healed.units.A.hp,13,'floor((8 base + 4 blessing + 5 supplies) / 2 guardian penalty) heals 8 HP');
+  assert.equal(healed.units.A.hp,16,'floor((max(8, 30% of 40) = 12, +50% blessing = 18, + 5 supplies = 23) / 2 guardian penalty) heals 11 HP');
 });
 
 test('K7 an existing current-version record stays byte-for-byte unchanged; invalid talent imports preserve the current record',async()=>{

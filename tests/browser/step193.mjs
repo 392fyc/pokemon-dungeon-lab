@@ -33,27 +33,24 @@ export async function step193Checks({setup,startMemory,state,ready,cell,artifact
   await startMemory(p,w);const before=await state(p);await p.keyboard.press('f');
   await p.waitForFunction(()=>window.trial.getState()?.phase==='learning');await ready(p);
   const learning=await state(p),pending=learning.pendingLearnMoves[0];assert.equal(pending.actor,'A');assert.equal(pending.move,row.move);
-  assert.equal(learning.round,before.round+1);assert.equal(await p.locator('.learning-move').count(),4);
-  assert.equal(await p.locator('#learning-choice').isVisible(),true);assert.ok((await p.locator('#learning-heading').innerText()).includes('可以学会'));
-  await p.locator('.learning-new').focus();assert.equal(await p.locator('#learning-tooltip .hud-tip-field').filter({hasText:'PP'}).locator('strong').innerText(),pending.pp+'/'+pending.pp);
+  assert.equal(learning.round,before.round+1);assert.equal(await p.locator('.c195-old .c195-move').count(),4);
+  assert.equal(await p.locator('#learning-choice').isVisible(),true);assert.ok((await p.locator('#learning-heading').innerText()).includes('想学会'));
+  const panelText=await p.locator('#learning-choice').innerText();for(const label of ['威力','命中','PP','范围'])assert.ok(panelText.includes(label),'every move card shows '+label+' without hovering');
+  assert.ok(panelText.includes(pending.pp+'/'+pending.pp),'the new move card shows its PP');
+  assert.equal(await p.locator('#learn-confirm').isDisabled(),true,'nothing is forgotten before a card is chosen');
   const dialog=await p.locator('#learning-choice').boundingBox();assert.ok(dialog.x>=0&&dialog.x+dialog.width<=width+1);
   assert.ok(dialog.y>=0&&dialog.y+dialog.height<=height+1,'the complete learning choice remains inside the viewport');
-  const choiceBoxes=await p.locator('.learning-move').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,right:r.right,bottom:r.bottom};}));
-  assert.ok(choiceBoxes.every(r=>Math.abs(r.width-choiceBoxes[0].width)<=1&&Math.abs(r.height-choiceBoxes[0].height)<=1&&r.right<=width+1&&r.bottom<=height+1),'all four replacement cards use equal dimensions and remain visible');
-  await p.screenshot({path:artifact+'step193-'+width+'-learning-tip.png'});
-  await p.locator('.learning-new').evaluate(el=>el.blur());await p.mouse.move(0,0);
+  const choiceBoxes=await p.locator('.c195-old .c195-move').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,right:r.right,bottom:r.bottom};}));
+  assert.ok(choiceBoxes.every(r=>Math.abs(r.width-choiceBoxes[0].width)<=1&&r.right<=width+1),'all four replacement cards use equal widths and stay inside the viewport');
   await p.screenshot({path:artifact+'step193-'+width+'-learning.png'});
-  const detailBox=await p.locator('#learning-tooltip').boundingBox(),actionBoxes=await p.locator('.learning-move,#learn-skip,#learn-close').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};}));
-  const overlaps=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
-  assert.ok(actionBoxes.every(b=>!overlaps(detailBox,b)),'learning descriptions never cover replacement or decline actions');
   assert.equal(await p.locator('#hud-tooltip').isVisible(),false,'the global pointer-transparent card is not used for learning');
+  const overlaps=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;
   const beforeInspect=await state(p);
-  if(width<600){await p.touchscreen.tap(detailBox.x+detailBox.width/2,detailBox.y+detailBox.height/2);assert.deepEqual(await state(p),beforeInspect,'a real touch on the description cannot pass through and replace a move');}
-  report.learningInspection={detailBox,actionBoxes,touch:width<600,noOverlap:true};
+  report.learningInspection={choiceBoxes,noHoverNeeded:true};
   const replaced=carry[3].move,replaceButton=p.locator('#learn-replace-'+replaced);
-  if(width<600){const b=await replaceButton.boundingBox();await p.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);}else await replaceButton.click();await ready(p);
+  await replaceButton.scrollIntoViewIfNeeded();if(width<600){const b=await replaceButton.boundingBox();await p.touchscreen.tap(b.x+b.width/2,b.y+b.height/2);}else await replaceButton.click();assert.deepEqual(await state(p),beforeInspect,'choosing a card only selects it');await p.locator('#learn-confirm').scrollIntoViewIfNeeded();await p.locator('#learn-confirm').click();await ready(p);
   let prompts=0;while((await state(p)).phase==='learning'){assert.ok(++prompts<=30);await p.locator('#learn-skip').click();await ready(p);}
-  if((await state(p)).phase==='invitation'){await p.locator('#reject').click();await p.locator('#reject-confirm').click();await ready(p);}
+  if((await state(p)).phase==='invitation'){await p.locator('#reject').click();await ready(p);}
   const learned=await state(p);assert.equal(learned.phase,'playing');assert.equal(learned.round,learning.round,'choice buttons consume no round');
   assert.equal(learned.units.A.learned.length,4);assert.ok(learned.units.A.learned.includes(pending.move));assert.ok(!learned.units.A.learned.includes(replaced));
   assert.equal(learned.units.A.pp[pending.move],pending.pp);assert.equal(await p.locator('[data-hud-skill]').count(),4);
@@ -72,7 +69,7 @@ export async function step193Checks({setup,startMemory,state,ready,cell,artifact
   await p.waitForFunction(()=>window.trial.getState()?.phase==='learning');await ready(p);const skipRound=(await state(p)).round;
   await p.keyboard.press('Escape');await ready(p);let skippedChoices=0;
   while((await state(p)).phase==='learning'){assert.ok(++skippedChoices<=30);await p.locator('#learn-skip').click();await ready(p);}
-  if((await state(p)).phase==='invitation'){await p.locator('#reject').click();await p.locator('#reject-confirm').click();await ready(p);}
+  if((await state(p)).phase==='invitation'){await p.locator('#reject').click();await ready(p);}
   assert.ok(!(await state(p)).units.A.learned.includes(row.move));assert.equal((await state(p)).round,skipRound);
   await p.keyboard.press('.');await ready(p);assert.equal((await state(p)).phase,'playing','Esc discards the choice without asking again on a later wait');
   report.declined={move:row.move,choiceRound:skipRound,afterWait:(await state(p)).round};

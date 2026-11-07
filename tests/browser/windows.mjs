@@ -137,7 +137,7 @@ async function click(p,id,settle=true){
   await p.locator('#bag-open').click();await ready(p);
   await p.locator('[data-bag-slot="'+slot+'"]').click();await ready(p);
   await p.locator('[data-bag-category="all"]').click();await ready(p);
-  await p.locator('[data-bag-item="'+item+'"]').click();await ready(p);
+  await p.locator('[data-bag-item="'+item+'"]').click();await p.locator('#bag-pin').click();await ready(p);
   await p.locator('#bag-close').click();await ready(p);
   await p.locator('[data-hud-quick="'+slot+'"]').click();if(settle)await ready(p);if(item==='teamTonic'){await p.locator('#item-use-teamTonic').click();if(settle)await ready(p);}return;
  }
@@ -183,7 +183,7 @@ async function defeatMainEAndRecordG(p){
  await key(p,'ArrowRight');await key(p,'ArrowRight'); // walk onto G after E is gone
  await click(p,'take'); // record G; R walks to x=5 beside C
 }
-async function reject(p){await click(p,'reject');await click(p,'reject-confirm');}
+async function reject(p){await click(p,'reject');}
 async function exit(p){await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='ended');}
 async function test(name,fn){if(process.env.TRIAL_CHECK_FILTER&&!name.includes(process.env.TRIAL_CHECK_FILTER))return;let r={name,status:'FAIL'};try{r.details=await fn();r.status='PASS';}catch(e){r.error=String(e.stack??e);}results.push(r);console.log(r.status,name,r.error??'');fs.writeFileSync(artifact+(process.env.TRIAL_CHECK_FILTER?'windows-browser-extra-results.json':'windows-browser-results.json'),JSON.stringify({origin:base,browser:await browser.version(),results},null,2));}
 await test('M1、S2、S5、S8：开发场景真实输入、待邀请、终局与独立重开仅在内存',async()=>{
@@ -249,7 +249,7 @@ await test('S6、I1：开发场景行动不等待写入，草稿取消后不自�
  assert.deepEqual(await p.evaluate(()=>window.__fault.writes),[]);assert.deepEqual(errors,[]);return {memoryActionDoesNotWaitForStorage:true,draftEditable:true,cancelDoesNotSubmit:true};}finally{await context.close();}
 });
 await test('S9：损坏记录保留、导出后明确重置',async()=>{
- const {context,page:p,errors}=await setup();try{const bad='{broken save bytes';await p.evaluate(v=>localStorage.setItem('dungeon-trial.player.v1',v),bad);await p.reload();await p.waitForFunction(()=>window.trial.store.status==='blocked');assert.equal(await raw(p),bad);const downloaded=p.waitForEvent('download');await p.locator('#export').click();const file=await downloaded;const filePath=await file.path();assert.equal(fs.readFileSync(filePath,'utf8'),bad);p.once('dialog',d=>d.accept());await p.locator('#reset').click();await ready(p);assert.equal((await state(p)).round,0);assert.deepEqual(errors,[]);return {rawExportExact:true,explicitReset:true};}finally{await context.close();}
+ const {context,page:p,errors}=await setup();try{const bad='{broken save bytes';await p.evaluate(v=>localStorage.setItem('dungeon-trial.player.v1',v),bad);await p.reload();await p.waitForFunction(()=>window.trial?.store.status==='blocked');assert.equal(await raw(p),bad);const downloaded=p.waitForEvent('download');await p.locator('#export').click();const file=await downloaded;const filePath=await file.path();assert.equal(fs.readFileSync(filePath,'utf8'),bad);p.once('dialog',d=>d.accept());await p.locator('#reset').click();await ready(p);assert.equal((await state(p)).round,0);assert.deepEqual(errors,[]);return {rawExportExact:true,explicitReset:true};}finally{await context.close();}
 });
 await test('补充 I1：浏览器失焦事件后选招高亮同步',async()=>{
  const {context,page:p,errors}=await setup('K1');try{await start(p);await key(p,'1');const card=p.locator('#hud-bottom [data-hud-skill="tackle"]');assert.equal(await card.getAttribute('aria-pressed'),'true');const before=await state(p);
@@ -267,7 +267,7 @@ await test('营地存档：终局写入失败可重试，回营不再写入或�
   await p.evaluate(()=>window.__fault.mode='fail');
   for(let n=0;n<200&&(await state(p)).phase!=='ended';n++){
    const phase=(await state(p)).phase;
-   if(phase==='invitation'){await click(p,'reject');await click(p,'reject-confirm');}
+   if(phase==='invitation'){await click(p,'reject');}
    else if(phase==='evolution')await click(p,'evolution-close');
    else {
     const s=await state(p),lead=s.units[s.leader].pos,k=q=>q.x+','+q.y;
@@ -371,18 +371,18 @@ await test('PR5 非法移动点名真实原因且说明本轮未执行',async()=
  // normal reveal exposes all adjacent walkable tiles, so no fake browser claim.
  return observations;
 });
-await test('PR5 V10拒绝确认按Esc回比较且不处理邀请',async()=>{
+await test('PR5 V10邀请窗口：Esc不处理邀请，满员时必须先选回营队员才能接受，拒绝一次点击生效',async()=>{
  const {context,page:p,errors}=await setup('V10');
  try{
   await start(p);const before=await state(p),bytes=await raw(p);
-  await click(p,'reject');assert.equal(await p.locator('#reject-confirm').count(),1);
+  assert.equal(await p.locator('#accept').isDisabled(),true,'full team: accept stays disabled until a member is chosen');
   await key(p,'Escape');
-  assert.equal(await p.locator('#reject-confirm').count(),0);
-  assert.equal(await p.locator('#reject').isVisible(),true);
-  assert.equal(await p.locator('#accept').count(),1);
+  assert.equal(await p.locator('#invitation-choice').isVisible(),true);
+  assert.equal(await p.locator('#reject-confirm').count(),0,'no second confirmation step');
   assert.deepEqual(await state(p),before);assert.equal(await raw(p),bytes);
   assert.equal((await state(p)).invitations.filter(i=>i.status==='pending').length,2);
-  assert.deepEqual(errors,[]);return {returnedToComparison:true,invitationUnchanged:true};
+  await click(p,'out-0');assert.equal(await p.locator('#accept').isDisabled(),false);
+  assert.deepEqual(errors,[]);return {invitationUnchanged:true,acceptNeedsChoice:true};
  }finally{await context.close();}
 });
 await test('PR5 伙伴草稿切换操控者提示取消，无草稿不误报',async()=>{
@@ -836,10 +836,10 @@ await test('服务点7.2：商店购买不占回合；交换机送回伙伴与�
   await p.screenshot({path:artifact+'windows-service-1-shop.png',fullPage:true});
   assert.equal(await raw(p),null);const purchasedStock=structuredClone(s.shop.stock);
   await click(p,'wait');s=await state(p);assert.equal(s.round,1,'waiting at the shop consumes one round');
-  if(s.phase==='invitation'){await click(p,'reject');await click(p,'reject-confirm');s=await state(p);}
+  if(s.phase==='invitation'){await click(p,'reject');s=await state(p);}
   else if(s.phase==='evolution'){await click(p,'evolution-close');s=await state(p);}
   assert.equal(s.round,1);assert.deepEqual(s.shop.stock,purchasedStock,'a later round does not refresh the shop inventory');
-  const rows=await p.locator('#shop-panel li').allInnerTexts();assert.equal(rows.length,3);
+  const rows=await p.locator('#shop-panel li').allInnerTexts();assert.equal(rows.length,10,'berry, tonic, TM, plus the cure berry, heal seed, four orbs and the Reviver Seed');
   assert.match(rows[0],/橙橙果.*价格 20.*库存 1/s,'the shop shows the one remaining berry after the wait');
   assert.match(rows[2],/招式机.*库存 0/s,'the purchased TM remains out of stock after the wait');
   assert.equal(await raw(p),null,'the shop and wait remain expedition-only state');
@@ -879,7 +879,7 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   const text=await p.locator('#title-screen').innerText();
   for(const n of ['妙蛙种子','小火龙','杰尼龟','菊草叶','火球鼠','小锯鳄','木守宫','火稚鸡','水跃鱼'])assert.ok(text.includes(n),n);
   assert.match(text,/撞击/);assert.doesNotMatch(text,/tackle/);
-  assert.equal(await p.locator('#main-next').isDisabled(),true);
+  assert.equal(await p.locator('#main-next').isDisabled(),false);
   await p.locator('#pick-main-squirtle').click();
   assert.match(await p.locator('.starter-stats').getAttribute('aria-label'),/HP 44.*攻击 48.*防御 65.*特攻 50.*特防 64.*速度 43/);
   await p.screenshot({path:artifact+'windows-starter-aligned-1280.png'});
@@ -1064,13 +1064,13 @@ await test('162 新果实：八种背包物品、分类分配、真实使用与�
    assert.equal(await p.locator('[data-bag-item="'+item+'"]').count(),1,item+' is visible in its actual category');
    await p.screenshot({path:artifact+'windows-hud-new-fruit-'+item+'-bag.png',fullPage:false});
    await p.locator('[data-bag-slot="'+index+'"]').click();await ready(p);
-   await p.locator('[data-bag-item="'+item+'"]').click();await ready(p);
+   await p.locator('[data-bag-item="'+item+'"]').click();await p.locator('#bag-pin').click();await ready(p);
    const slot=p.locator('[data-hud-quick="'+index+'"]');
    const {itemDescription}=await import('../../src/core/item-descriptions.ts');assert.equal(await slot.getAttribute('aria-label'),ITEM_NAMES[item]+' ×1。'+itemDescription(item),'the assigned slot identifies its item, quantity, and effect');
    if(index===0){
     await p.locator('[data-bag-category="drink"]').click();await ready(p);
     for(const [drink,n,label] of [['tonic',4,'PP剂'],['teamTonic',5,'全员PP剂']]){
-     await p.locator('[data-bag-slot="'+n+'"]').click();await p.locator('[data-bag-item="'+drink+'"]').click();await ready(p);
+     await p.locator('[data-bag-slot="'+n+'"]').click();await p.locator('[data-bag-item="'+drink+'"]').click();await p.locator('#bag-pin').click();await ready(p);
      const name=p.locator('[data-hud-quick="'+n+'"] .hud-quick-name');
      assert.equal(await name.innerText(),label);
      assert.equal(await name.evaluate(el=>getComputedStyle(el).whiteSpace),'nowrap','quick names stay on one line');
@@ -1292,8 +1292,8 @@ await test('162 同页替换新档：成功清空快捷分配，写入失败保�
   };
   await p.goto(base);await p.locator('#title-new').click();await newGameClicks(p,'treecko','mudkip');
   await confirmDeparture(p);await ready(p);await injectHeldTonic();
-  await click(p,'bag-open');await p.locator('[data-bag-slot="4"]').click();await p.locator('[data-bag-category="all"]').click();await p.locator('[data-bag-item="tonic"]').click();await click(p,'bag-close');
-  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。目标每招恢复 10 PP（不超过上限）。');
+  await click(p,'bag-open');await p.locator('[data-bag-slot="4"]').click();await p.locator('[data-bag-category="all"]').click();await p.locator('[data-bag-item="tonic"]').click();await p.locator('#bag-pin').click();await click(p,'bag-close');
+  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。给自己或相邻的队员，每个招式恢复 10 PP（不超过上限）。');
   await finishThroughWipe();const original=await raw(p);assert.ok(original);
   await p.locator('#title-new').click();await p.locator('#overwrite-yes').click();
   await p.locator('#pick-main-charmander').click();await p.locator('#main-next').click();await p.locator('#pick-deputy-squirtle').click();
@@ -1301,7 +1301,7 @@ await test('162 同页替换新档：成功清空快捷分配，写入失败保�
   await p.getByText(/没有写入新存档/).waitFor();assert.equal(await raw(p),original,'a failed replacement retains the exact old camp bytes');
   await p.evaluate(()=>{window.__failNewProfile=false;});await p.locator('#deputy-back').click();await p.locator('#newgame-cancel').click();await p.locator('#title-continue').click();
   await confirmDeparture(p);await ready(p);await injectHeldTonic();
-  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。目标每招恢复 10 PP（不超过上限）。','failed new-game persistence retains the old UI assignment and effect');
+  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。给自己或相邻的队员，每个招式恢复 10 PP（不超过上限）。','failed new-game persistence retains the old UI assignment and effect');
   await finishThroughWipe();await p.locator('#title-new').click();await p.locator('#overwrite-yes').click();await newGameClicks(p,'charmander','squirtle');
   assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(u=>u.species),['charmander','squirtle']);
   await confirmDeparture(p);await ready(p);await injectHeldTonic();const before=await state(p);
@@ -1575,7 +1575,7 @@ await test('8.9a 道具房：实际拾取四种道具、分类分配、使用与
  const {context,page:p,errors}=await setup();try{
   const {createExpedition}=await import('../../src/core/engine.ts');const checks=[];
   await p.setViewportSize({width:1280,height:720});
-  for(const [seed,item] of [[7,'bigBerry'],[10,'teamTonic'],[24,'violentSeed'],[17,'maxElixir']]){
+  for(const [seed,item] of [[7,'bigBerry'],[10,'teamTonic'],[1,'violentSeed'],[24,'maxElixir']]){
    await p.reload();await emptyReady(p);
    const fixture=createExpedition('browser-rooms83-item-'+seed,seed,3,{members:[
     {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'},
@@ -1591,10 +1591,10 @@ await test('8.9a 道具房：实际拾取四种道具、分类分配、使用与
    if(item==='bigBerry'){
     const beforeAssign=await state(p);await click(p,'bag-open');
     for(const category of ['all','berry','drink','tm','other'])assert.equal(await p.locator(`[data-bag-category="${category}"]`).count(),1,`bag category ${category} is present`);
-    await p.locator('[data-bag-slot="2"]').click();await p.locator('[data-bag-category="berry"]').click();await p.locator('[data-bag-item="bigBerry"]').click();await ready(p);
+    await p.locator('[data-bag-slot="2"]').click();await p.locator('[data-bag-category="berry"]').click();await p.locator('[data-bag-item="bigBerry"]').click();await p.locator('#bag-pin').click();await ready(p);
     assert.match(await p.locator('[data-hud-quick="2"]').innerText(),/大树果/,'assign the collected item before testing duplicate reassignment');
     await p.locator('[data-bag-slot="4"]').click();await p.locator('[data-bag-category="berry"]').click();
-    const assign=p.locator('[data-bag-item="bigBerry"]');assert.equal(await assign.count(),1,'the actually collected big berry can be assigned from the berry category');await assign.click();await ready(p);
+    const assign=p.locator('[data-bag-item="bigBerry"]');assert.equal(await assign.count(),1,'the actually collected big berry can be assigned from the berry category');await assign.click();await p.locator('#bag-pin').click();await ready(p);
     assert.match(await p.locator('[data-hud-quick="4"]').innerText(),/大树果/,'the collected item is assigned to quick slot 5');
     assert.equal((await p.locator('[data-hud-quick="2"]').getAttribute('aria-label')),'空快捷格','duplicate item assignment clears its original quick slot');
     assert.match(await p.locator('[data-bag-slot="2"]').getAttribute('aria-label'),/空快捷格/,'the backpack also shows the duplicate slot as empty');
@@ -1605,7 +1605,7 @@ await test('8.9a 道具房：实际拾取四种道具、分类分配、使用与
     const category=item==='maxElixir'?'drink':'other',beforeAssign=await state(p);
     await click(p,'bag-open');await p.locator('[data-bag-slot="5"]').click();await p.locator('[data-bag-category="'+category+'"]').click();
     assert.equal(await p.locator('[data-bag-item="'+item+'"]').count(),1,'the collected new item appears in its actual category');
-    await p.locator('[data-bag-item="'+item+'"]').click();await ready(p);
+    await p.locator('[data-bag-item="'+item+'"]').click();await p.locator('#bag-pin').click();await ready(p);
     assert.equal(await p.locator('#hud-bottom [data-hud-quick]').count(),6);
     assert.deepEqual(await state(p),beforeAssign,'category and quick assignment do not spend an action');
     await p.screenshot({path:artifact+'windows-rooms191-'+item+'-bag.png',fullPage:false});
@@ -1999,12 +1999,13 @@ await test('#194 全部物品说明、敌招分行与队友显式详情',async()
   for(const item of Object.keys(ITEM_NAMES))w.prog.items[item]=2;
   const enemy=Object.values(w.units).find(u=>u.side==='enemy');enemy.pos={x:11,y:10};enemy.waitOnly=true;w.enemies=[enemy.id];
   await startMemory(p,w);await p.locator('#bag-open').click();
-  assert.equal(await p.locator('[data-bag-item]').count(),11,'all eleven current items are visible in the all category');
+  assert.equal(await p.locator('[data-bag-item]').count(),16,'all sixteen current items are visible in the all category');
   for(const item of Object.keys(ITEM_NAMES)){
-   const button=p.locator('[data-bag-item="'+item+'"]');await button.focus();
-   const description=button.locator('.hud-item-description');assert.ok(await description.isVisible(),'effect is visibly displayed on keyboard focus: '+item);
-   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/最大 HP/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠.*不解除打盹/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP.*上限/};
-   assert.match(text,effects[item],'visible effect matches the current item rule: '+item);assert.ok((await button.getAttribute('aria-label')).includes(text),'accessible item label includes the same effect: '+item);
+   const button=p.locator('[data-bag-item="'+item+'"]');await button.click();
+   const description=p.locator('.c195-bag-text');assert.ok(await description.isVisible(),'effect stays visible in the detail panel: '+item);
+   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/最大 HP/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠.*不解除打盹/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP.*上限/,slumberOrb:/所有敌人.*睡着/,totterOrb:/所有敌人.*混乱/,luminousOrb:/全部地形/,rollcallOrb:/同行.*身边/,reviverSeed:/倒下的瞬间.*一半/};
+   assert.match(text,effects[item],'visible effect matches the current item rule: '+item);assert.ok((await button.getAttribute('aria-label')).includes(ITEM_NAMES[item]),'accessible item label names the item: '+item);
+   assert.match(await p.locator('.c195-bag-detail').innerText(),new RegExp(ITEM_NAMES[item]),'detail shows the selected item name');
   }
   await p.locator('[data-bag-item="healSeed"]').click();assert.match(await p.locator('#hud-bag').innerText(),/中毒|异常|冰冻/,'selection retains a readable effect description');
   await p.locator('#bag-close').click();
@@ -2081,7 +2082,7 @@ await test('#194 手机触屏 '+touchWidth+'px 全部快捷物品先选中看说
   const {ITEM_NAMES}=await import('../../src/core/engine.ts'),w=await playtest194World();for(const item of Object.keys(ITEM_NAMES))w.prog.items[item]=1;
   const leader=w.units[w.leader],move=leader.learned[0];leader.pp[move]=leader.maxPp[move]-7;
   await startMemory(p,w);const before=await state(p);
-  const assign=async (item,slot=0)=>{await p.locator('#bag-open').tap();await p.locator('[data-bag-slot="'+slot+'"]').tap();await p.locator('[data-bag-category="all"]').tap();await p.locator('[data-bag-item="'+item+'"]').tap();await p.locator('#bag-close').tap();};
+  const assign=async (item,slot=0)=>{await p.locator('#bag-open').tap();await p.locator('[data-bag-slot="'+slot+'"]').tap();await p.locator('[data-bag-category="all"]').tap();await p.locator('[data-bag-item="'+item+'"]').tap();await p.locator('#bag-pin').tap();await p.locator('#bag-close').tap();};
   for(const [index,item] of Object.keys(ITEM_NAMES).entries()){
    const slot=index%6;await assign(item,slot);const quick=p.locator('[data-hud-quick="'+slot+'"]');await quick.tap();
    assert.equal(await quick.getAttribute('aria-pressed'),'true');assert.ok(await p.locator('[data-selected-item-description]').isVisible(),item+' has a stable selected description after a real touch');

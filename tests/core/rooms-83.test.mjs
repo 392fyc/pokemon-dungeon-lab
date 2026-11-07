@@ -169,14 +169,14 @@ test('8.3 R16: the hidden goal anchor has no interaction in a new expedition',()
 });
 
 test('8.3 R17: independent reward streams give exact fixed 10000-draw counts',()=>{
- const counts={currency:0,item:0,invite:0,tm:0,blessing:0},items={bigBerry:0,teamTonic:0};
+ const counts={currency:0,item:0,invite:0,tm:0,blessing:0},items={bigBerry:0,teamTonic:0,slumberOrb:0,totterOrb:0,luminousOrb:0,rollcallOrb:0,reviverSeed:0};
  for(let seed=1;seed<=10000;seed++){
   const r=generateChallengeEncounter(seed,1,'normal',true,3);counts[r.reward]++;
   if(r.rewardItem)items[r.rewardItem]++;
   assert.deepEqual(r,generateChallengeEncounter(seed,1,'normal',true,3));
  }
  assert.deepEqual(counts,{currency:2933,item:2521,invite:1517,tm:1564,blessing:1465});
- assert.deepEqual(items,{bigBerry:1261,teamTonic:1260});
+ assert.deepEqual(items,{bigBerry:886,teamTonic:775,slumberOrb:178,totterOrb:186,luminousOrb:183,rollcallOrb:182,reviverSeed:131});   // playtest 1107 weights 35/30/8/8/7/7/5
 });
 
 test('8.4 replaces R18: challenge blessing opens a choice and gives no substitute money',()=>{

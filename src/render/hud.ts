@@ -24,6 +24,8 @@ import { itemZh, moveZh, speciesZh, tmZh, typeZh } from "../core/names.ts";
 import { damageEstimateText, moveRangeLabel } from "../core/describe.ts";
 import { itemDescription } from "../core/item-descriptions.ts";
 import { skinFor } from "./sprites.ts";
+import { terrainKnown } from "./point-visuals.ts";
+import { itemIconImg } from "./item-icons.ts";
 import { portraitMarkup } from "./portrait.ts";
 import "./portrait.css";
 import moveTypeSnapshot from "../data/move-types.json" with { type: "json" };
@@ -45,11 +47,17 @@ const ITEM_CATEGORIES: Record<Item, string> = {
   healSeed: "other",
   violentSeed: "other",
   maxElixir: "drink",
+  slumberOrb: "orb",
+  totterOrb: "orb",
+  luminousOrb: "orb",
+  rollcallOrb: "orb",
+  reviverSeed: "other",
 };
 const CATEGORY_TABS = [
   ["all", "全部"],
   ["berry", "树果"],
   ["drink", "补剂"],
+  ["orb", "宝珠"],
   ["tm", "招式机"],
   ["other", "其他"],
 ] as const;
@@ -102,7 +110,7 @@ function statusMarkup(unit: Unit): string {
     badges.push('<span class="hud-status-badge is-down">' +
       esc(STATUS_NAMES[kind] + (remaining === undefined ? "" : remaining)) + "</span>");
   }
-  if (unit.asleep) badges.push('<span class="hud-status-badge is-down">睡眠</span>');
+  if (unit.asleep && !unit.status?.slp && !unit.status?.nap) badges.push('<span class="hud-status-badge is-down">睡眠</span>');
   if (unit.protect > 0) badges.push('<span class="hud-status-badge is-up">守住' + unit.protect + '</span>');
   if (unit.reflect && unit.reflect > 0) badges.push('<span class="hud-status-badge is-up">反射' + unit.reflect + '</span>');
   if (unit.lightscreen && unit.lightscreen > 0) badges.push('<span class="hud-status-badge is-up">光墙' + unit.lightscreen + '</span>');
@@ -131,6 +139,11 @@ const QUICK_ITEM_NAMES: Record<Item, string> = {
   healSeed: "治愈种",
   violentSeed: "暴力种",
   maxElixir: "满PP剂",
+  slumberOrb: "睡眠珠",
+  totterOrb: "慌乱珠",
+  luminousOrb: "发光珠",
+  rollcallOrb: "邀回珠",
+  reviverSeed: "复活种",
 };
 
 function quickSlotMarkup(world: World, item: Item | null, index: number, disabled: boolean, selectedItem: Item | null): string {
@@ -145,7 +158,7 @@ function quickSlotMarkup(world: World, item: Item | null, index: number, disable
   const unavailable = disabled;
   return '<button type="button" class="hud-quick-slot' + (selected ? " is-selected" : "") + '" data-hud-quick="' + index +
     '" aria-pressed="' + selected + '" aria-label="' + esc(name + " ×" + amount + "。" + description) + '"' + (unavailable ? " disabled" : "") + ">" +
-    '<span class="hud-quick-name">' + esc(QUICK_ITEM_NAMES[item]) + '</span><span class="hud-quick-count">×' +
+    itemIconImg(item, 'hud-quick-icon') + '<span class="hud-quick-name">' + esc(QUICK_ITEM_NAMES[item]) + '</span><span class="hud-quick-count">×' +
     amount + '</span><span class="hud-item-description">' + esc(description) + "</span></button>";
 }
 
@@ -343,9 +356,10 @@ export function hudBottom(
 }
 
 export function hudMinimap(s: World): string {
-  const seen = new Set(s.seen);
+  const known = terrainKnown(s);
+  const seen = new Set(known.seen);
   const floorCells = s.floor.filter((pos) => seen.has(pos.x + "," + pos.y));
-  const wallCells = (s.seenWalls ?? []).map((value) => {
+  const wallCells = known.seenWalls.map((value) => {
     const [x, y] = value.split(",").map(Number);
     return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
   }).filter((pos): pos is { x: number; y: number } => !!pos);
@@ -395,12 +409,20 @@ export function hudMinimap(s: World): string {
 function blessingEffectLabel(id: BlessingId): string {
   const definition = BLESSINGS[id];
   switch (id) {
-    case "berryBoost": return "橙橙果额外回复 " + (definition.berryHealBonus ?? 0) + " HP";
-    case "floorHeal": return "换层回复 " + (definition.floorHealHp ?? 0) + " HP";
+    case "berryBoost": return "橙橙果回复 +" + Math.round((definition.berryHealRate ?? 0) * 100) + "%";
+    case "floorHeal": return "换层回复最大HP的 " + Math.round((definition.floorHealRate ?? 0) * 100) + "%";
     case "battleSpirit": return "攻击 +" + (definition.attackStage ?? 0) + "，换层清除";
-    case "lullaby": return "下层睡眠 " + Math.round((definition.sleepChance ?? 0) * 100) + "%";
+    case "lullaby": return "新楼层敌人睡眠 " + Math.round((definition.sleepChance ?? 0) * 100) + "%";
     case "rally": return "招募概率 " + Math.round((definition.recruitChance ?? 0) * 100) + "%";
     case "tmChoice": return "招式机 " + (definition.choiceCount ?? 0) + " 选 1";
+    case "nemesis": return "对异常敌人伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
+    case "headhunter": return "对首领伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
+    case "fullpower": return "HP>" + Math.round((definition.threshold ?? 0) * 100) + "% 时伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
+    case "scholar": return "经验 +" + Math.round((definition.value ?? 0) * 100) + "%";
+    case "killheal": return "击倒回复 " + Math.round((definition.value ?? 0) * 100) + "% HP";
+    case "regen": return "每 " + (definition.every ?? 10) + " 轮回复 " + Math.round((definition.value ?? 0) * 100) + "% HP";
+    case "thickskin": return "每层每人首次受伤减半";
+    case "laststand": return "首次 HP<" + Math.round((definition.threshold ?? 0) * 100) + "% 回复 " + Math.round((definition.value ?? 0) * 100) + "%";
   }
 }
 
@@ -452,73 +474,74 @@ export function hudTracking(s: World): string {
     (blessings || '<li class="hud-track-empty">无</li>') + "</ul></section></div>";
 }
 
+function bagIcon(item: Item | null, category: string): string {
+  if (item) return '<span class="c195-icon">' + itemIconImg(item, "c195-icon-img") + "</span>";
+  return '<span class="c195-icon cat-' + category + '" aria-hidden="true">盘</span>';
+}
+
+/** Backpack window: category tabs, item grid, an always-visible detail panel and the six quick slots. Clicking an item only selects it. */
 export function hudBag(
   s: World,
   quick: (Item | null)[],
   category: string,
   selectedSlot: number,
-  selectedItem: Item | null = null,
+  selectedItem: Item | string | null = null,
+  canUse = true,
 ): string {
   const activeCategory = CATEGORY_SET.has(category) ? category : "all";
-  const selected = Number.isInteger(selectedSlot) && selectedSlot >= 0 && selectedSlot < 6;
-  const selectedBagItem = selectedItem ?? (selected ? quick[selectedSlot] ?? null : null);
-  const quickMarkup = Array.from({ length: 6 }, (_, index) => {
+  const slot = Number.isInteger(selectedSlot) && selectedSlot >= 0 && selectedSlot < 6 ? selectedSlot : 0;
+  type Entry = { key: string; category: string; item: Item | null; move?: string; amount: number };
+  const entries: Entry[] = [
+    ...consumableList(s).map((e) => ({ key: e.item as string, category: e.category, item: e.item as Item | null, amount: e.amount })),
+    ...heldTmList(s).map((e) => ({ key: "tm:" + e.move, category: "tm", item: null as Item | null, move: e.move, amount: e.amount })),
+  ].filter((e) => activeCategory === "all" || e.category === activeCategory);
+  const current = entries.find((e) => e.key === selectedItem || e.key === "tm:" + selectedItem) ?? entries[0] ?? null;
+  const tabs = CATEGORY_TABS.map(([id, label]) =>
+    '<button type="button" role="tab" class="hud-bag-tab' + (activeCategory === id ? " is-active" : "") +
+    '" data-bag-category="' + id + '" aria-selected="' + (activeCategory === id) + '">' + label + "</button>",
+  ).join("");
+  const cells = entries.map((e) => {
+    const name = e.item ? itemTitle(e.item) : "招式机 · " + tmZh(e.move!);
+    const attrs = e.item ? ' data-bag-item="' + e.item + '"' : ' data-bag-tm="' + esc(e.move) + '"';
+    return '<button type="button" class="c195-bag-item' + (current && e.key === current.key ? " is-selected" : "") + '"' + attrs +
+      ' aria-pressed="' + (!!current && e.key === current.key) + '" aria-label="' + esc(name + " ×" + e.amount) + '">' +
+      bagIcon(e.item, e.category) + '<span class="c195-name">' + esc(name) + '</span><b class="c195-count">×' + e.amount + "</b></button>";
+  });
+  const grid = cells.length ? cells.join("") : '<div class="hud-bag-empty c195-bag-empty">无物品</div>';
+  let detail: string;
+  if (!current) {
+    detail = '<p class="c195-bag-text">背包里还没有物品。</p>';
+  } else {
+    const name = current.item ? itemTitle(current.item) : "招式机 · " + tmZh(current.move!);
+    const text = current.item ? itemDescription(current.item) : "本局无法使用，带回营地后再用。";
+    const pinnedAt = current.item ? quick.findIndex((q) => q === current.item) : -1;
+    const buttons: string[] = [];
+    if (current.item) {
+      if (current.item !== "reviverSeed") buttons.push('<button type="button" id="bag-use" class="paper-button is-primary" data-bag-use="' + current.item + '"' + (canUse ? "" : " disabled") + ">使用</button>");
+      if (pinnedAt !== slot) buttons.push('<button type="button" id="bag-pin" class="paper-button" data-bag-pin="' + current.item + '">放入快捷格 ' + (slot + 1) + "</button>");
+      if (pinnedAt >= 0) buttons.push('<button type="button" id="bag-unpin" class="paper-button" data-bag-unpin="' + current.item + '">移出快捷格</button>');
+    }
+    detail = '<div class="c195-bag-detail-head">' + bagIcon(current.item, current.category) + "<div><strong>" + esc(name) + "</strong><small>数量 ×" + current.amount +
+      (pinnedAt >= 0 ? " · 在快捷格 " + (pinnedAt + 1) : "") + '</small></div></div><p class="c195-bag-text" aria-live="polite">' + esc(text) +
+      '</p><div class="c195-bag-actions">' + buttons.join("") + "</div>";
+  }
+  const slots = Array.from({ length: 6 }, (_, index) => {
     const item = quick[index] ?? null;
     const amount = item ? itemCount(s, item) : 0;
     const occupied = !!item && amount > 0;
-    const description = occupied ? itemDescription(item!) : "";
-    const label = occupied ? itemTitle(item!) + " ×" + amount + "。" + description : "空快捷格";
-    const isSelectedSlot = selected && selectedSlot === index;
-    return '<button type="button" class="hud-bag-slot' + (occupied ? "" : " is-empty") +
-      (isSelectedSlot ? " is-selected" : "") + '" data-bag-slot="' + index + '" aria-pressed="' + isSelectedSlot +
-      '" aria-label="快捷格 ' + (index + 1) + "：" + esc(label) + '">' +
-      (occupied ? '<span>' + esc(QUICK_ITEM_NAMES[item!]) + '</span><small>×' + amount +
-        '</small><span class="hud-item-description">' + esc(description) + "</span>" : "") +
-      "</button>";
+    const keyLabel = ["5", "6", "7", "8", "9", "0"][index];
+    return '<button type="button" class="c195-slot' + (occupied ? "" : " is-empty") + (slot === index ? " is-selected" : "") +
+      '" data-bag-slot="' + index + '" aria-pressed="' + (slot === index) + '" aria-label="快捷格 ' + (index + 1) + "：" +
+      esc(occupied ? itemTitle(item!) + " ×" + amount + "。" + itemDescription(item!) : "空快捷格") + '"><kbd>' + keyLabel + "</kbd>" +
+      (occupied ? bagIcon(item, ITEM_CATEGORIES[item!]) + '<span class="c195-count">×' + amount + "</span>" : "") + "</button>";
   }).join("");
-
-  const consumables = consumableList(s).map((entry) => {
-    const description = itemDescription(entry.item);
-    const selectedClass = entry.item === selectedBagItem ? " is-selected" : "";
-    return {
-      category: entry.category,
-      markup: '<button type="button" class="hud-bag-item' + selectedClass + '" data-bag-item="' + entry.item +
-        '" aria-label="' + esc(itemTitle(entry.item) + " ×" + entry.amount + "。" + description) + '">' +
-        '<span class="hud-item-name">' + esc(itemTitle(entry.item)) + '</span><small>×' + entry.amount +
-        '</small><span class="hud-item-description">' + esc(description) + "</span></button>",
-    };
-  });
-  const machines = heldTmList(s).map((entry) => ({
-    category: "tm",
-    markup: '<div class="hud-bag-item is-readonly" role="group" aria-label="' +
-      esc("招式机 " + tmZh(entry.move) + " ×" + entry.amount) + '">' +
-      '<span>招式机 · ' + esc(tmZh(entry.move)) + '</span><small>×' +
-      entry.amount + "</small></div>",
-  }));
-  const allItems = [...consumables, ...machines];
-  const filtered = allItems.filter((entry) => activeCategory === "all" || entry.category === activeCategory);
-  const itemMarkup = filtered.length
-    ? filtered.map((entry) => entry.markup).join("")
-    : '<div class="hud-bag-empty">无物品</div>';
-  const selectedDescription = selectedBagItem
-    ? '<p class="hud-bag-selected-description" aria-live="polite"><strong>' + esc(itemTitle(selectedBagItem)) + '：</strong>' + esc(itemDescription(selectedBagItem)) + '</p>'
-    : '<p class="hud-bag-selected-description" aria-live="polite">悬停、聚焦或点选道具查看效果说明。</p>';
-  const tabs = CATEGORY_TABS.map(([id, label]) =>
-    '<button type="button" role="tab" class="hud-bag-tab' + (activeCategory === id ? " is-active" : "") +
-    '" data-bag-category="' + id + '" aria-selected="' + (activeCategory === id) + '">' +
-    label + "</button>",
-  ).join("");
-
   return '<div class="hud-bag-scrim" aria-hidden="true"></div>' +
-    '<section class="hud-bag-dialog" role="dialog" aria-label="背包" aria-modal="true">' +
-    '<header class="hud-bag-heading"><h2>背包</h2>' +
-    '<button type="button" id="bag-close" class="hud-bag-close" aria-label="关闭背包">×</button></header>' +
-    '<div class="hud-bag-quick-heading"><span>快捷物品</span>' +
-    '<button type="button" class="hud-bag-clear" data-bag-clear' +
-    (selected ? "" : " disabled") + '>清空所选快捷格</button></div>' +
-    '<div class="hud-bag-quick-grid" aria-label="快捷格">' + quickMarkup + "</div>" +
-    '<div class="hud-bag-tabs" role="tablist" aria-label="物品分类">' + tabs + "</div>" +
-    '<div class="hud-bag-item-grid" aria-label="背包物品">' + itemMarkup + "</div>" + selectedDescription + "</section>";
+    '<section class="paper-window c195 c195-bag" role="dialog" aria-label="背包" aria-modal="true"><h2 class="paper-plaque">背包</h2>' +
+    '<button type="button" id="bag-close" class="paper-close" aria-label="关闭背包">×</button>' +
+    '<div class="c195-bag-body"><div class="c195-bag-tabs" role="tablist" aria-label="物品分类">' + tabs + "</div>" +
+    '<div class="c195-bag-grid" aria-label="背包物品">' + grid + '</div><aside class="c195-bag-detail" aria-label="物品详情">' + detail + "</aside></div>" +
+    '<div class="c195-bag-quick"><span>快捷格</span><div class="c195-bag-quick-grid" aria-label="快捷格">' + slots + "</div></div>" +
+    '<p class="paper-muted c195-small">点格子选择要放的位置；快捷格上的数字键直接使用物品。</p></section>';
 }
 
 export function hudDamageEstimate(s: World, actor: string, targetId?: string, skill?: Skill): string {

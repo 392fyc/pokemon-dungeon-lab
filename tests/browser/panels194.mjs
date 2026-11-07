@@ -59,7 +59,7 @@ export async function panels194Checks({setup,startMemory,state,ready,cell,artifa
   const bossPos=(await state(p)).units.boss.pos;await cell(p,bossPos.x,bossPos.y);await ready(p); // the one-HP adjacent boss is defeated by a real map attack
   let current=await state(p);
   for(let i=0;i<30&&current.phase==='learning';i++){await p.locator('#learn-skip').click();await ready(p);current=await state(p);}
-  if(current.phase==='invitation'){await p.locator('#reject').click();await p.locator('#reject-confirm').click();await ready(p);current=await state(p);}
+  if(current.phase==='invitation'){await p.locator('#reject').click();await ready(p);current=await state(p);}
   assert.equal(await p.locator('.settlement-heading').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(44, 31, 22)','result header keeps the design wood background');
   assert.equal(current.phase,'ended');assert.equal(current.end.outcome,'won');assert.equal(current.end.boss,true);
   await p.evaluate(()=>document.fonts.ready);

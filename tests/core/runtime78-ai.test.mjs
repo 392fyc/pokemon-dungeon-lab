@@ -258,7 +258,7 @@ test('11.6 wait: never moves, but still attacks what is in reach',()=>{
 test('11.6 nomoves: only basic attacks (no PP spent), only on adjacent opponents; moves like together',()=>{
  const adj=T('nomoves',5,{F:dummy('F',6,1)});
  assert.deepEqual(skillOf(actionOf(adj,'X')),['basic','F']);
- assert.equal(actionOf(T('nomoves',1,{F:dummy('F',3,1)}),'X').type,'wait','a front2 target is out of basic range; X touches the leader, so it waits');
+ goes(actionOf(T('nomoves',1,{F:dummy('F',3,1)}),'X'),2);   // a front2 target is out of basic range; F is within 3 of the leader, so X closes in (playtest 1107 #6) instead of idling beside the leader
  goes(actionOf(T('nomoves',5,{F:dummy('F',11,1)}),'X'),4);
  assert.equal(round(adj).units.X.pp.tackle,5,'the round spent no PP');
 });

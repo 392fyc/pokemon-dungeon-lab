@@ -125,7 +125,7 @@ test('M191 two new room items can be collected once and remain in the backpack a
     const next=jumpToFloor(s,2);assert.equal(next.dungeon.level,2);assert.equal(next.prog.items[item],1);found.add(item);
   }
   assert.deepEqual([...found].sort(),['maxElixir','violentSeed']);
-  for(let seed=1;seed<=1000;seed++){const r=generateChallengeEncounter(seed,1,'normal',true,4);assert.ok(!r.rewardItem||['bigBerry','teamTonic'].includes(r.rewardItem),'new items do not enter challenge rewards');}
+  for(let seed=1;seed<=1000;seed++){const r=generateChallengeEncounter(seed,1,'normal',true,4);assert.ok(!r.rewardItem||['bigBerry','teamTonic','slumberOrb','totterOrb','luminousOrb','rollcallOrb','reviverSeed'].includes(r.rewardItem),'the Violent Seed and Max Elixir do not enter challenge rewards');}
 });
 test('M191 the v4 pool preserves v3 and all six new machines can be learned, saved, equipped and brought into the next expedition',async()=>{
   assert.deepEqual(TM_MOVES_V4,[...TM_MOVES_V3,'calmmind','toxic','bulkup','willowisp','thunderwave','swordsdance']);

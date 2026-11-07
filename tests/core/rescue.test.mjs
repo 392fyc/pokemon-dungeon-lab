@@ -177,7 +177,7 @@ function shopRun(){
 }
 const buy=(s,item)=>applyCommand(s,{type:'buy',item});
 test('R14 shop: stock and prices stay fixed; purchases use the purse and remain in the live World',async()=>{
- const s=shopRun();assert.deepEqual(s.shop,{level:1,stock:{berry:2,tonic:1,pechaBerry:1,healSeed:1,tm:'whirlwind'},trades:[]});   // 8.8 (G9.4): stock adds one Pecha Berry and one Heal Seed
+ const s=shopRun();assert.deepEqual(s.shop,{level:1,stock:{berry:2,tonic:1,pechaBerry:1,healSeed:1,slumberOrb:1,totterOrb:1,luminousOrb:1,rollcallOrb:1,reviverSeed:1,tm:'whirlwind'},trades:[]});   // 8.8 (G9.4): stock adds one Pecha Berry and one Heal Seed
  assert.equal(serviceRoll(2,2).shop.level,1);
  let r=buy(s,'berry');assert.equal(r.ok,true);
  assert.equal(r.state.purse,80);assert.equal(r.state.prog.items.berry,1);assert.equal(r.state.shop.stock.berry,1);assert.equal(r.state.round,0);
@@ -190,7 +190,7 @@ test('R14 shop: stock and prices stay fixed; purchases use the purse and remain 
  assert.equal(buy(bought,'tm').ok,false);
  const port=memory(),live=new TrialStore(port);assert.equal(await live.start(s),true);
  const writes=port.writes();assert.equal((await live.dispatch({type:'buy',item:'berry'})).ok,true);assert.equal(port.writes(),writes);
- assert.deepEqual(live.state.shop,{level:1,stock:{berry:1,tonic:1,pechaBerry:1,healSeed:1,tm:'whirlwind'},trades:[{item:'berry',price:20}]});assert.equal(live.state.purse,80);
+ assert.deepEqual(live.state.shop,{level:1,stock:{berry:1,tonic:1,pechaBerry:1,healSeed:1,slumberOrb:1,totterOrb:1,luminousOrb:1,rollcallOrb:1,reviverSeed:1,tm:'whirlwind'},trades:[{item:'berry',price:20}]});assert.equal(live.state.purse,80);
  assert.equal((await live.dispatch({type:'buy',item:'tonic'})).ok,true);assert.equal(port.writes(),writes);
  assert.equal((await live.dispatch({type:'buy',item:'tonic'})).ok,false);assert.equal(port.writes(),writes,'a refusal writes nothing');
  assert.equal(new TrialStore(port).status,'empty');

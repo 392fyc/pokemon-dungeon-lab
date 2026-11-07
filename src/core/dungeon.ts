@@ -347,6 +347,8 @@ export function generateLiquid(seed:number,level:number,params:FloorParams,floor
 }
 /** Wall cells kept between ground pieces (rooms and corridor stretches) except at doors and junctions, and around the boss room. */
 const BUFFER=2;
+/** Candidate room pairs tried in turn-only mode before a link may stay straight (#200). */
+const TURN_EDGE_TRIES=4;
 /** Layout redraw limit; redraws come from failed connections, ground shapes, or liquid shaping. */
 const MAX_LAYOUT_ATTEMPTS=64;
 export function generateFloor(seed:number,level:number,params:FloorParams=DEFAULT_PARAMS):GeneratedFloor {
@@ -465,13 +467,24 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       ...(at.y===q.y?[]:[{x:0,y:Math.sign(q.y-at.y)}])
     ];
     const sameDir=(a:Cell,b:Cell)=>a.x===b.x&&a.y===b.y;
+    // #200: a route never stands on the same position twice. The search states carry a direction and a flag, so one position can be
+    // reached again by a different state; walking the chain of parent states keeps each found route a simple walk.
+    const onChain=(previous:Map<string,string|null>,positions:Map<string,{p:Cell}>,from:string,cell:Cell):boolean=>{
+      for(let at:string|null=from;at!==null;at=previous.get(at)??null){
+        const seen=positions.get(at)!.p;
+        if(seen.x===cell.x&&seen.y===cell.y)return true;
+      }
+      return false;
+    };
     const hallwayPosition=(p:Cell,a:number,b:number)=>
       brush(p.x,p.y).some(c=>!inRect(c,rooms[a]))&&brush(p.x,p.y).some(c=>!inRect(c,rooms[b]));
     const hasHallwayTurn=(path:Cell[],a:number,b:number):boolean=>{
       let previous:Cell|null=null;
       for(let i=1;i<path.length;i++){
         const direction={x:path[i].x-path[i-1].x,y:path[i].y-path[i-1].y};
-        if(previous&&!sameDir(previous,direction)&&hallwayPosition(path[i-1],a,b)&&hallwayPosition(path[i],a,b))return true;
+        // #200: stepping straight back (a U-turn on the spot) is not a bend.
+        if(previous&&!sameDir(previous,direction)&&!(previous.x+direction.x===0&&previous.y+direction.y===0)
+          &&hallwayPosition(path[i-1],a,b)&&hallwayPosition(path[i],a,b))return true;
         previous=direction;
       }
       return false;
@@ -492,8 +505,9 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
           (Math.abs(current.p.x+u.x-q.x)+Math.abs(current.p.y+u.y-q.y))-
           (Math.abs(current.p.x+v.x-q.x)+Math.abs(current.p.y+v.y-q.y)));
         for(const d of directions){
+          if(d.x===-current.dx&&d.y===-current.dy&&(current.dx!==0||current.dy!==0))continue;
           const next={x:current.p.x+d.x,y:current.p.y+d.y};
-          if(!footprintLegal(next,a,b,current.p))continue;
+          if(!footprintLegal(next,a,b,current.p)||onChain(previous,positions,currentKey,next))continue;
           const nextEntered=touchesBoss(next);
           if(oneWayBossEntry&&current.entered&&!nextEntered)continue;
           const turned=current.turned||((current.dx!==0||current.dy!==0)
@@ -628,7 +642,13 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       }
       return true;
     };
+    // #200: the turn quota counts real bends only. In turn-only mode a link accepts nothing but a route that bends, so a candidate edge
+    // that cannot bend is skipped without carving anything and the generator can try another edge instead.
+    let turnOnly=false;
+    const turnedCount=()=>corridors.filter(route=>hasHallwayTurn(route.path,route.fromRoom,route.toRoom)).length;
+    const behindQuota=()=>turnedCount()*2<corridors.length+2;
     const acceptPath=(a:number,b:number,path:Cell[]):boolean=>{
+      if(turnOnly&&!hasHallwayTurn(path,a,b))return false;
       if(path.some((c,i)=>!footprintLegal(c,a,b,i?path[i-1]:null))||crossesBoss(path,a,b)||!spacingOk(path))return false;
       for(const c of brushPath(path))carve(c);
       corridors.push({fromRoom:a,toRoom:b,path:path.map(c=>({x:c.x,y:c.y}))});
@@ -636,7 +656,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     };
     const link=(a:number,b:number):boolean=>{
       const p=anchor(rooms[a]),q=anchor(rooms[b]);
-      const needsTurn=corridors.filter(route=>hasHallwayTurn(route.path,route.fromRoom,route.toRoom)).length*2<corridors.length+1;
+      const needsTurn=behindQuota();
       if(bossFloor&&(a===bossRoom||b===bossRoom)){
         const ordinary=a===bossRoom?b:a,from=anchor(rooms[ordinary]),to=anchor(rooms[bossRoom]);
         const orderedRoute=(path:Cell[])=>a===bossRoom?path.slice().reverse():path;
@@ -696,14 +716,25 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       for(const room of ordinaryRooms)if(!connectedRooms.has(room))for(const other of connectedRooms)candidates.push([room,other]);
       candidates.sort(([a,b],[c,d])=>centerDistance(a,b)-centerDistance(c,d)||a-c||b-d);
       let added=false;
-      for(const [room,other] of candidates)if(link(room,other)){
+      if(behindQuota()){
+        turnOnly=true;
+        for(const [room,other] of candidates.slice(0,TURN_EDGE_TRIES))if(link(room,other)){
+          treeEdges.add(roomKey(room,other));connectedRooms.add(room);added=true;break;
+        }
+        turnOnly=false;
+      }
+      if(!added)for(const [room,other] of candidates)if(link(room,other)){
         treeEdges.add(roomKey(room,other));connectedRooms.add(room);added=true;break;
       }
       if(!added)return retryConnection();
     }
     if(bossFloor){
       const closest=ordinaryRooms.slice().sort((a,b)=>centerDistance(bossRoom,a)-centerDistance(bossRoom,b)||a-b);
-      if(!closest.some(other=>link(bossRoom,other)))return retryConnection();
+      let bossLinked=false;
+      if(behindQuota()){
+        turnOnly=true;bossLinked=closest.slice(0,TURN_EDGE_TRIES).some(other=>link(bossRoom,other));turnOnly=false;
+      }
+      if(!bossLinked&&!closest.some(other=>link(bossRoom,other)))return retryConnection();
     }
     const loopCandidates:[number,number][]=[];
     for(let i=0;i<ordinaryRooms.length;i++)for(let j=i+1;j<ordinaryRooms.length;j++){
@@ -713,6 +744,10 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     let loops=0;
     while(loops<2&&loopCandidates.length){
       const pair=loopCandidates.splice(corridorInt(0,loopCandidates.length-1),1)[0];
+      if(behindQuota()){
+        turnOnly=true;const linked=link(pair[0],pair[1]);turnOnly=false;
+        if(linked){loops++;continue;}
+      }
       if(link(pair[0],pair[1]))loops++;
     }
     if(loops<2)return retryConnection();
@@ -747,8 +782,10 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
         const current=queue[i],currentKey=stateKey(current.p,current.dx,current.dy,current.turned);
         if(current.p.x===goal.x&&current.p.y===goal.y&&(!requireHallwayTurn||current.turned)){found=currentKey;break;}
         for(const d of DIRS){
+          // #200: no U-turn on the spot. Stepping back to the cell just left is not a bend of the corridor.
+          if(d.x===-current.dx&&d.y===-current.dy&&(current.dx!==0||current.dy!==0))continue;
           const next={x:current.p.x+d.x,y:current.p.y+d.y};
-          if(!validBrush(next)||!footprintLegal(next,from,to,current.p))continue;
+          if(!validBrush(next)||!footprintLegal(next,from,to,current.p)||onChain(previous,positions,currentKey,next))continue;
           const hallway=(current.dx!==0||current.dy!==0)
             &&hallwayPosition(current.p,from,to)&&hallwayPosition(next,from,to);
           const turned=current.turned||(hallway&&(current.dx!==d.x||current.dy!==d.y));
@@ -767,6 +804,8 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       if(!path)return retryConnection();
       route.path=path;
     }
+    // G3: at least half of the routes bend, counted on the rebuilt routes that the tests and the game report (#200).
+    if(turnedCount()*2<corridors.length)return retryConnection();
     // Final shape check on the real ground: no one-cell wall between two ground cells (this includes single-wall pillars) and no ground cell pair that only touches diagonally.
     const shapeBad=()=>{
       for(let y=0;y<H;y++)for(let x=0;x<W;x++){

@@ -220,7 +220,7 @@ test('8.3 R7: evolution choice precedes opening and an independent preselected T
 });
 
 test('8.3 R1/R2/R13/R14/R16: 600 floors retain the fixed 8.2 content and independently valid room sites',()=>{
- assert.equal(baseline.source,'generateFloor after #185 pocket removal (base 0eafd81)');
+ assert.equal(baseline.source,'generateFloor after #200 real-turn corridors (base f46e363)');
  assert.equal(baseline.samples.length,600);
  for(const b of baseline.samples){
   const {seed,level}=b,g=generateFloor(seed,level),label=`seed ${seed} floor ${level}`;
@@ -251,8 +251,8 @@ test('8.3 R1/R2/R13/R14/R16: 600 floors retain the fixed 8.2 content and indepen
   }
   if(b.goalAnchor)for(const e of g.enemies.filter(e=>!e.post&&!e.boss))assert.ok(distance(e.pos,b.goalAnchor)>=2,`${label}: hidden goal remains an enemy placement anchor`);
  }
- const collision=generateFloor(1,3).adventureRooms.find(a=>a.room===7);
- assert.deepEqual(collision.interaction,{x:16,y:2},'R14: w3e at 16,3 forces the y-first adjacent cell');
+ const collision=generateFloor(7,3).adventureRooms.find(a=>a.room===7);
+ assert.deepEqual(collision.interaction,{x:31,y:2},'R14: w3c at 31,3 forces the y-first adjacent cell');
 });
 
 test('8.3 R3: 3000 official floors have the exact independently observed reference allocation',()=>{
@@ -260,13 +260,14 @@ test('8.3 R3: 3000 official floors have the exact independently observed referen
  for(let seed=1;seed<=1000;seed++)for(let level=1;level<=3;level++)for(const a of generateFloor(seed,level).adventureRooms)counts[a.type]++;
  // 8.8（#178）布局；期望值由独立维护的 tools/verify/rooms-83.mjs assignRooms 在 3000 层上逐层复算，与生成器的分配逐层一致后冻结（旧值 79dd47e：1822／2622／1793／1267）。
  // #185：清除袋形地面后少数层重画或到达房变化，由生成器重算冻结，没有再用独立脚本复算（旧值 1860／2581／1799／1264）。
- assert.deepEqual(counts,{challenge:1861,commission:2580,blessing:1799,item:1264});
+ // #200：通道改为真实转弯后，地面与到达房随之变化，由生成器重算冻结，没有再用独立脚本复算（旧值 1861／2580／1799／1264）。
+ assert.deepEqual(counts,{challenge:1849,commission:2605,blessing:1783,item:1267});
 });
 
 test('8.3 compatibility: legacy generator keeps goal and exchange, with no adventure-room state',()=>{
  const params={width:36,height:24,floors:3,boss:true};
  const g=generateFloor(12345,1,params);
- assert.deepEqual(g.points,[{pos:{x:5,y:9},kind:'down',used:false},{pos:{x:31,y:22},kind:'goal',used:false}]);
+ assert.deepEqual(g.points,[{pos:{x:5,y:20},kind:'down',used:false},{pos:{x:22,y:22},kind:'goal',used:false}]);
  assert.equal(g.adventureRooms,undefined);
  let found=false;
  for(let seed=1;seed<=30;seed++)for(let level=1;level<=3;level++)if(generateFloor(seed,level,params).services.some(p=>p.kind==='exchange'))found=true;

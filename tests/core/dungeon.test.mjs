@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {generateFloor,mulberry32,WILD_SPECIES} from '../../src/core/dungeon.ts';
+import {speciesMaxHp} from '../../src/core/roster.ts';
 const roster=JSON.parse(readFileSync(new URL('../../src/data/roster.json',import.meta.url),'utf8'));
 const speciesById=new Map(roster.species.map(s=>[s.id,s]));
 const ordinaryEnemyLevels=[[5,6],[8,11],[12,20]];
@@ -79,7 +80,7 @@ test('D6 one-way stairs, points and six enemies sit on legal, distinct cells',()
 });
 test('D7 enemy HP comes from the shared roster and developer floors use Lv5',()=>{
  const g=generateFloor(3,2,{width:36,height:24,floors:2,boss:false}),by=Object.fromEntries(roster.species.map(s=>[s.id,s]));
- for(const e of g.enemies){assert.equal(e.level,5);assert.equal(e.hp,Math.round(by[e.species].maxHp*0.4)); // user-confirmed normal enemy HP multiplier
+ for(const e of g.enemies){assert.equal(e.level,5);assert.equal(e.hp,speciesMaxHp(e.species,5,0.4)); // user-confirmed normal enemy HP multiplier on the level-based HP
  assert.equal(e.damage,undefined);assert.equal(e.ai,undefined);}
  for(const [id,dex] of Object.entries(WILD_SPECIES))assert.equal(by[id].dex,dex);
  assert.ok('arcanine' in WILD_SPECIES);

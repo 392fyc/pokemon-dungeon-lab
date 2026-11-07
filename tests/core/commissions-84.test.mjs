@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyCommand,estimateAttackDamage,PROG,rngStep,createExpedition} from '../../src/core/engine.ts';
+import {applyCommand,estimateAttackDamage,damageStage,PROG,rngStep,createExpedition} from '../../src/core/engine.ts';
 import {generateFloor,BOSS} from '../../src/core/dungeon.ts';
 import {friend,enemy,world,row,pos} from '../acceptance/fixtures.mjs';
 
@@ -179,7 +179,8 @@ test('C2/C3: hunter counts three post-acceptance defeats, pays the floor reward,
   }
   assert.equal(active.commissions.length,0);assert.equal(active.prog.exp-control.prog.exp,commissionXp.hunter[1]);
   assert.equal(active.prog.exp-control.prog.exp,33);
-  assert.equal(estimateAttackDamage(active,'probe','A','tackle'),withoutPenalty,'the penalty ends as soon as the commission completes');
+  // the commission paid experience, so A is a higher level now and its numbers differ; compare the penalty itself (the defence stage), not the damage
+  assert.equal(damageStage(active,active.units.A,'def'),0,'the penalty ends as soon as the commission completes');
   assert.equal(enemyUnit.hp,20);
 });
 
@@ -199,10 +200,10 @@ test('main176: repeated hunters progress independently and share one defense red
   }
   assert.equal(s.commissions.length,1);assert.equal(s.commissions[0].progress,2);
   assert.equal(s.prog.exp-control.prog.exp,commissionXp.hunter[1]);
-  assert.equal(estimateAttackDamage(s,'damage-probe','A','tackle'),baseline+1,'the remaining hunter keeps the single reduction');
+  assert.equal(damageStage(s,s.units.A,'def'),damageStage(control,control.units.A,'def')-1,'the remaining hunter keeps the single reduction');
   addEnemy(s,'fourth-kill',2,1,1);addEnemy(control,'fourth-kill',2,1,1);s=killOne(s,'fourth-kill');control=killOne(control,'fourth-kill');
   assert.equal(s.commissions?.length??0,0);assert.equal(s.prog.exp-control.prog.exp,2*commissionXp.hunter[1]);
-  assert.equal(estimateAttackDamage(s,'damage-probe','A','tackle'),baseline,'the penalty ends when the last hunter finishes');
+  assert.equal(damageStage(s,s.units.A,'def'),damageStage(control,control.units.A,'def'),'the penalty ends when the last hunter finishes');
 });
 
 test('C2: collector counts a picked item once, ignores a shop purchase, and awards 11 XP on floor 1',()=>{
@@ -415,7 +416,7 @@ test('C7/C13: a challenge TM opens a three-choice panel; a blessing reward opens
   assert.equal(s.phase,'tmChoice','the blessing opens the three-choice panel at once');assert.equal(pending(s,'tmChoice').source,'blessing');
   assert.equal(pending(s,'tmChoice').options.length,3);assert.equal(new Set(pending(s,'tmChoice').options).size,3);
   const picked=pending(s,'tmChoice').options[0];s=apply(s,{type:'tmChoice',move:picked});
-  assert.deepEqual(s.tms,[{move:picked,source:'target',fate:'held'}]);
+  assert.deepEqual(s.tms,[{move:picked,source:'blessing',fate:'held'}]);
   let shop=structuredClone(s);shop.points=[{pos:structuredClone(shop.units.A.pos),kind:'shop',used:false}];
   shop.shop={level:1,stock:{berry:0,tonic:0,tm:'protect'},trades:[]};shop.purse=100;
   shop=apply(shop,{type:'buy',item:'tm'});assert.deepEqual(shop.tms[1],{move:'protect',source:'shop',fate:'held'});

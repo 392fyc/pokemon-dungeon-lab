@@ -109,7 +109,8 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
   const styleFor=(move:string|null,target:string,actualDamage=0):EffectStyle|null=>{
     const style=effectForMove(move);if(!style||move===null||actualDamage<=0||!isDamageMove(move))return style;
     const species=SPECIES[a.units[target]?.species??b.units[target]?.species??''];
-    return typeEffectiveness(move,species?.types??[])>1?{...style,superEffective:true}:style;
+    const effectiveness=typeEffectiveness(move,species?.types??[]);
+    return effectiveness>1?{...style,superEffective:true}:effectiveness>0&&effectiveness<1?{...style,resisted:true}:style;
   };
 
   // Protect's shield log has no position of its own, so place the effect by queue order.
@@ -254,7 +255,8 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       const o = head(`${rest.slice(1, -2)}。`)?.id ?? null;
       if (o && pos[id] && pos[o]) { const pa = pos[id]!, pb = pos[o]!; emit({k:'swap', by:id, a:id, b:o, pa, pb}); used.add(o); pos[id] = pb; pos[o] = pa; }
     } else if ((m = rest.match(/^受到(\d+)伤害，HP (\d+)$/))) {
-      const at = pos[id], dead = Number(m[2])===0;
+      // A Reviver Seed answers the same blow in the next line: the unit stays on the map at its restored HP and is not shown as fallen.
+      const at = pos[id], revived = Number(m[2])===0 && lines.slice(i+1,i+3).some(l=>l.startsWith(id+'倒下的瞬间，')), dead = Number(m[2])===0 && !revived;
       const remaining=Number(m[2]),amount=remaining>0?Number(m[1]):Math.min(Number(m[1]),Math.max(0,hp[id]??0));
       hp[id] = remaining;
       const collision=collisionVictims.get(id);
@@ -282,6 +284,8 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       if (dead) pos[id] = null;
     } else if ((m = rest.match(/^因.+损失\d+HP，HP (\d+)$/))) {
       hp[id]=Number(m[1]);if(hp[id]===0)pos[id]=null;
+    } else if ((m = rest.match(/^倒下的瞬间，.+发动，HP恢复到(\d+)$/))) {
+      hp[id]=Number(m[1]);
     } else if ((m = rest.match(/^(?:回复HP|吸取生命，HP) (\d+)→(\d+)$/))) {
       hp[id]=Number(m[2]);
     } else if ((m = rest.match(/^对(.+?)使用(橙橙果|PP多项小补剂)，(?:HP (\d+)→(\d+)|每招PP\+(\d+))/))) {

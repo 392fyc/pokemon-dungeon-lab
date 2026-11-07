@@ -1,6 +1,7 @@
 /* Playtest 1107: new items (orbs, Reviver Seed, berry formulas), drop and shop tables, and the 14 blessings, all through the real applyCommand. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {inferEvents} from '../../src/render/animation.ts';
 import {applyCommand,BLESSINGS,ITEM_NAMES,PROG,buyProblem,speciesUnit,jumpToFloor} from '../../src/core/engine.ts';
 import {FLOOR_ITEM_WEIGHTS} from '../../src/core/dungeon.ts';
 import {ECON} from '../../src/core/economy.ts';
@@ -71,7 +72,10 @@ test('Reviver Seed is spent automatically when a member falls, brings it back at
  const foe=foeOf('E','geodude',2,1,300,{tackle:30});
  let s=scene({extra:[foe]});s.units.A.hp=1;s.units.A.maxHp=40;s.prog.items.reviverSeed=1;
  assert.match(refuse(s,{type:'round',action:{type:'use',item:'reviverSeed',target:'A'}}),/不能主动使用/);
- s=act(s,wait);
+ const before=s;s=act(s,wait);
+ // the animation shows the blow but not a fall: the member is not removed from the map and no hit is marked dead
+ const events=inferEvents(before,s,{type:'round',action:wait}),hitsOnA=events.filter(e=>e.k==='hit'&&e.target==='A');
+ assert.ok(hitsOnA.length>=1&&hitsOnA.every(e=>!e.dead),'the revived member is not shown as fallen');
  assert.equal(s.prog.items.reviverSeed,0,'the seed was consumed');assert.equal(s.units.A.hp,20,'half of 40');assert.deepEqual(s.units.A.pos,pos(1),'it stands where it fell');
  assert.ok(s.queue.includes('A')&&s.phase!=='ended');
  // Two members fall in the same enemy phase with one seed: exactly one is saved, the other stays down.
@@ -207,7 +211,6 @@ test('orbs are refused, and not spent, when they would do nothing',()=>{
  assert.match(refuse(adjacent,{type:'round',action:{type:'use',item:'rollcallOrb',target:'A'}}),/已在身边/);
  let asleep=scene({extra:[dummy('E1',4,1)]});asleep.units.E1.status={slp:{left:4}};asleep.prog.items.slumberOrb=1;
  assert.match(refuse(asleep,{type:'round',action:{type:'use',item:'slumberOrb',target:'A'}}),/没有|不会有效果/);
- let immune=scene({extra:[foeOf('E1','gastly',4,1,40)]});immune.units.E1.waitOnly=true;immune.prog.items.totterOrb=1;
  let confused=scene({extra:[dummy('E1',4,1)]});confused.units.E1.status={confusion:{left:4}};confused.prog.items.totterOrb=1;
  assert.match(refuse(confused,{type:'round',action:{type:'use',item:'totterOrb',target:'A'}}),/没有|不会有效果/);
  let ok=scene({extra:[dummy('E1',4,1),dummy('E2',5,1)]});ok.units.E1.status={slp:{left:4}};ok.prog.items.slumberOrb=1;ok=use(ok,'slumberOrb');

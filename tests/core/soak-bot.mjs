@@ -510,13 +510,13 @@ function backpackCommands(s,memo){
  const ppCapacity=members.reduce((n,m)=>n+m.learned.reduce((v,k)=>v+(m.maxPp[k]??0),0),0);
  const hasEmptyMove=members.some(m=>m.learned.some(k=>(m.pp[k]??0)===0));
  if(!memo.reckless&&hasEmptyMove&&ppCapacity>0&&ppTotal<ppCapacity/2&&(s.prog.items.teamTonic??0)>0)act({type:'use',item:'teamTonic',target:L.id});
- // Playtest 1107 orbs: sleep or confuse a crowd when the team is hurt; light the map when no stairs are known yet; call the team in when it is scattered.
+ // Playtest 1107 orbs: sleep or confuse a crowd when the team is hurt; light the map only after a good part of the floor is seen and still no stairs are known; call the team in only when someone is far away and a fight or a hurt member makes it matter.
  {const items=s.prog.items,room=(s.rooms??[]).find(r=>L.pos.x>=r.x&&L.pos.x<r.x+r.w&&L.pos.y>=r.y&&L.pos.y<r.y+r.h);
   const foes=s.enemies.map(i=>s.units[i]).filter(e=>aliveU(e)&&e.pos&&s.seen.includes(key(e.pos))&&(room?e.pos.x>=room.x&&e.pos.x<room.x+room.w&&e.pos.y>=room.y&&e.pos.y<room.y+room.h:dist(L.pos,e.pos)<=2));
   const awake=foes.filter(e=>!e.asleep&&!e.status?.slp&&!e.status?.nap),teamLow=members.some(m=>low(m)<0.6);
   if(!memo.reckless&&awake.length>=2&&teamLow){if((items.slumberOrb??0)>0)act({type:'use',item:'slumberOrb',target:L.id});else if((items.totterOrb??0)>0&&foes.filter(e=>!e.status?.confusion).length>=2)act({type:'use',item:'totterOrb',target:L.id});}
-  if((items.luminousOrb??0)>0&&!s.mapRevealed&&!s.points.some(p=>p.kind==='down'&&s.seen.includes(key(p.pos))))act({type:'use',item:'luminousOrb',target:L.id});
-  if((items.rollcallOrb??0)>0&&members.length>1&&members.some(m=>m.id!==L.id&&m.pos&&dist(m.pos,L.pos)>3))act({type:'use',item:'rollcallOrb',target:L.id});}
+  if((items.luminousOrb??0)>0&&!s.mapRevealed&&s.seen.length>=s.floor.length*0.4&&!s.points.some(p=>p.kind==='down'&&s.seen.includes(key(p.pos))))act({type:'use',item:'luminousOrb',target:L.id});
+  if((items.rollcallOrb??0)>0&&members.length>1&&(awake.length>0||teamLow)&&members.some(m=>m.id!==L.id&&m.pos&&dist(m.pos,L.pos)>4))act({type:'use',item:'rollcallOrb',target:L.id});}
  return out;
 }
 /**

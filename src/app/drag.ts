@@ -15,7 +15,7 @@ export type DragRule={
   drop:(source:HTMLElement,target:HTMLElement)=>void;
 };
 const THRESHOLD=8,HOLD_MS=250;
-type Active={rule:DragRule;source:HTMLElement;x:number;y:number;id:number;touch:boolean;armed:boolean;timer:ReturnType<typeof setTimeout>|null;ghost:HTMLElement|null;originX:number;originY:number;hover:HTMLElement|null;valid:HTMLElement[]};
+type Active={rule:DragRule;source:HTMLElement;x:number;y:number;id:number;touch:boolean;moved:boolean;timer:ReturnType<typeof setTimeout>|null;ghost:HTMLElement|null;originX:number;originY:number;hover:HTMLElement|null;valid:HTMLElement[]};
 let active:Active|null=null,installed=false,afterRelease:number|null=null;
 const legal=(rule:DragRule,source:HTMLElement):HTMLElement[]=>Array.from(document.querySelectorAll<HTMLElement>(rule.targets)).filter(t=>t!==source&&!source.contains(t)&&(rule.accept?.(source,t)??true));
 function targetAt(a:Active,x:number,y:number):HTMLElement|null{
@@ -47,7 +47,7 @@ function finish(pointerStillDown:boolean):void{
 function begin(a:Active,x:number,y:number):void{
   const box=a.source.getBoundingClientRect(),ghost=a.source.cloneNode(true) as HTMLElement;
   ghost.removeAttribute('id');ghost.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));
-  ghost.classList.add('drag-ghost');
+  ghost.classList.remove('drop-ok','drop-hover','is-dragging');ghost.querySelectorAll('.drop-ok,.drop-hover').forEach(n=>n.classList.remove('drop-ok','drop-hover'));ghost.classList.add('drag-ghost');
   Object.assign(ghost.style,{position:'fixed',left:'0',top:'0',width:box.width+'px',height:box.height+'px',margin:'0',pointerEvents:'none',zIndex:'2147483647',opacity:'.9',transform:'translate(0px,0px)'});
   // Inside the source's own dialog, so a modal window cannot cover it (the top layer ignores z-index of body children).
   (a.source.closest('dialog')??document.body).append(ghost);
@@ -71,9 +71,10 @@ export function installDrag(rules:DragRule[]):void{
     for(const rule of rules){
       const source=from.closest<HTMLElement>(rule.source);
       if(source&&!source.hasAttribute('disabled')&&legal(rule,source).length){
-        const a:Active={rule,source,x:e.clientX,y:e.clientY,id:e.pointerId,touch:e.pointerType==='touch',armed:false,timer:null,ghost:null,originX:0,originY:0,hover:null,valid:[]};
+        afterRelease=null;   // a fresh press starts clean, whatever happened to the last release
+        const a:Active={rule,source,x:e.clientX,y:e.clientY,id:e.pointerId,touch:e.pointerType==='touch',moved:false,timer:null,ghost:null,originX:0,originY:0,hover:null,valid:[]};
         // A finger must press and hold before the drag starts, so a swipe along a list still scrolls it.
-        if(a.touch)a.timer=setTimeout(()=>{if(active===a&&!a.ghost){a.armed=true;begin(a,a.x,a.y);}},HOLD_MS);
+        if(a.touch)a.timer=setTimeout(()=>{if(active===a&&!a.ghost)begin(a,a.x,a.y);},HOLD_MS);
         active=a;return;
       }
     }
@@ -89,6 +90,7 @@ export function installDrag(rules:DragRule[]):void{
       }else if(moved<THRESHOLD)return;
       begin(a,e.clientX,e.clientY);
     }
+    if(Math.hypot(e.clientX-a.x,e.clientY-a.y)>=THRESHOLD)a.moved=true;
     e.preventDefault();place(a,e.clientX,e.clientY);
   },{passive:false});
   // Once a long press armed the drag the page must not scroll under the finger.
@@ -96,15 +98,16 @@ export function installDrag(rules:DragRule[]):void{
   const end=(e:PointerEvent,cancelled:boolean)=>{
     if(afterRelease===e.pointerId){afterRelease=null;swallowNextClick();return;}
     const a=active;if(!a||e.pointerId!==a.id)return;
-    if(!a.ghost){clear();return;}   // never became a drag: let the click through
+    if(!a.ghost||(!a.moved&&!cancelled)){clear();return;}   // never became a drag, or a long press released in place: it is a click, let it through
     const connected=a.source.isConnected,target=cancelled||!connected?null:targetAt(a,e.clientX,e.clientY),rule=a.rule,source=a.source;
     finish(false);
     if(target)rule.drop(source,target);
   };
   document.addEventListener('pointerup',e=>end(e,false));
-  window.addEventListener('pointerup',e=>end(e,false));
   document.addEventListener('pointercancel',e=>end(e,true));
-  window.addEventListener('blur',()=>clear());
+  window.addEventListener('blur',()=>{afterRelease=null;clear();});
+  // A long press must not open the browser's context menu over a draggable item.
+  document.addEventListener('contextmenu',e=>{const t=e.target as HTMLElement|null;if(active||(t?.closest&&rules.some(r=>t.closest(r.source))&&(e as MouseEvent&{pointerType?:string}).pointerType!=='mouse'&&navigator.maxTouchPoints>0))e.preventDefault();});
   // Esc cancels a drag, and must not also close the window the drag happens in (keydown default, and the dialog's own cancel event).
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&active?.ghost){e.preventDefault();e.stopPropagation();finish(true);}},true);
   document.addEventListener('cancel',e=>{if(active?.ghost)e.preventDefault();},true);

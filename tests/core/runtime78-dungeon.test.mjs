@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {generateFloor,THEME_FLOORS,themeCandidates,eligibleSpecies,WILD_SPECIES,BOSS,BOSS_CONFIG,streamSeed} from '../../src/core/dungeon.ts';
-import {SPECIES} from '../../src/core/roster.ts';
+import {SPECIES,speciesMaxHp} from '../../src/core/roster.ts';
 
 test('7.8 boss.json has exactly the four typed modifiers and only roster species',()=>{
  const data=JSON.parse(readFileSync(new URL('../../src/data/boss.json',import.meta.url),'utf8'));
  for(const [id,row] of Object.entries(data.bosses)){
-  assert.ok(SPECIES[id]);assert.deepEqual(Object.keys(row).sort(),['canBeBlownAway','canMove','hpMultiplier','levelBonus']);
+  assert.ok(SPECIES[id]);assert.deepEqual(Object.keys(row).sort(),['canBeBlownAway','canMove','hpBase','hpMultiplier','levelBonus']);
   assert.ok(Number.isInteger(row.levelBonus)&&row.levelBonus>=0);
   assert.ok(typeof row.hpMultiplier==='number'&&Number.isFinite(row.hpMultiplier)&&row.hpMultiplier>0);
   assert.equal(typeof row.canMove,'boolean');assert.equal(typeof row.canBeBlownAway,'boolean');
@@ -41,7 +41,7 @@ test('7.8 independent streams, six enemies per floor, level bands and boss HP ar
   for(const e of ordinary){
    const sp=SPECIES[e.species];assert.ok(eligibleSpecies(level).includes(e.species));
    assert.ok(e.level>=Math.max(bands[level-1][0],sp.evoLevel)&&e.level<=bands[level-1][1]);
-   assert.equal(e.hp,Math.round((sp.maxHp+Math.max(0,e.level-5))*0.4)); // user-confirmed normal enemy HP multiplier
+   assert.equal(e.hp,speciesMaxHp(e.species,e.level,0.4)); // user-confirmed normal enemy HP multiplier
    assert.equal(typeof e.asleep,'boolean');
   }
   assert.equal(g.enemyAiRng,(streamSeed(seed,level,'enemy-ai')+6*0x6D2B79F5)>>>0);

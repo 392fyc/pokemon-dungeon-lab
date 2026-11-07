@@ -1,10 +1,11 @@
 import {THEME_FLOORS} from '../core/dungeon.ts';
 import {SPECIES} from '../core/roster.ts';
 import {TACTICS,TACTIC_LABELS,type Tactic} from '../core/tactics.ts';
-import {stageOf,type Unit,type World} from '../core/engine.ts';
+import {BLESSINGS,type Unit,type World} from '../core/engine.ts';
 import {rankLevel,rankThreshold,type Profile,type SettleSummary} from '../core/base.ts';
 import {moveZh,speciesZh,typeZh} from '../core/names.ts';
-import {unitLabel} from '../core/describe.ts';
+import {unitLabel,statSheet,moveBaseDamage} from '../core/describe.ts';
+import {hpAtLevel,statAtLevel} from '../core/stats.ts';
 import {starterMoveFields,hudStatusMarkup} from './hud.ts';
 import {portraitMarkup} from './portrait.ts';
 import {skinFor} from './sprites.ts';
@@ -40,30 +41,42 @@ export function typeChips(types:readonly string[]):string {
   return types.map(t=>'<span class="paper-type" style="background:'+(TYPES[t]??'#5f5e50')+'">'+esc(typeZh(t))+'</span>').join('');
 }
 const AXES=[['hp','HP','#3f8f3a'],['atk','攻击','#c2491f'],['def','防御','#a07a10'],['spa','特攻','#2b6fb0'],['spd','特防','#2f8f7f'],['spe','速度','#b0417f']] as const;
-function detailChart(u:Unit):string {
-  const stats=u.species?SPECIES[u.species]?.baseStats:undefined;
-  if(!stats)return '<p class="paper-muted">暂无种族值记录</p>';
+const arrow=(n:number)=>n?(n>0?' ↑':' ↓')+Math.abs(n):'';
+/** The ability table, radar and the two lines that say how damage is worked out. Everything shown is read from the same numbers the damage rule uses (currentStats, damageStage). */
+function detailStats(s:World,u:Unit):string {
+  const rows=statSheet(s,u);
+  if(!rows)return '<p class="paper-muted">暂无能力值记录</p>';
+  const level=u.level??s.prog?.level??5,cap=(key:string)=>key==='hp'?hpAtLevel(130,level):statAtLevel(130,level);
   const point=(i:number,k:number)=>{const a=-Math.PI/2+i*Math.PI/3;return [125+Math.cos(a)*78*k,128+Math.sin(a)*78*k];};
   const ring=(k:number)=>AXES.map((_,i)=>point(i,k).join(',')).join(' ');
-  const shape=AXES.map(([k],i)=>point(i,Math.min(1,stats[k]/120)).join(',')).join(' ');
+  const shape=rows.map((r,i)=>point(i,Math.min(1,r.value/cap(r.key))).join(',')).join(' ');
   const labels=AXES.map(([k,n,c],i)=>{
-    const [x,y]=point(i,1.3),[dx,dy]=point(i,1);
-    const stage=k==='hp'||k==='spe'?0:stageOf(u,k);
-    return '<circle cx="'+dx+'" cy="'+dy+'" r="4" fill="'+c+'"/><text x="'+x+'" y="'+(y-3)+'" fill="'+c+'">'+n+'</text><text class="stat-value" x="'+x+'" y="'+(y+13)+'">'+stats[k]+(stage?(stage>0?' ↑':' ↓')+Math.abs(stage):'')+'</text>';
+    const [x,y]=point(i,1.3),[dx,dy]=point(i,1),r=rows[i];
+    return '<circle cx="'+dx+'" cy="'+dy+'" r="4" fill="'+c+'"/><text x="'+x+'" y="'+(y-3)+'" fill="'+c+'">'+n+'</text><text class="stat-value" x="'+x+'" y="'+(y+13)+'">'+r.value+arrow(r.stage)+'</text>';
   }).join('');
-  return '<svg class="detail-stat-chart" viewBox="0 0 250 250" role="img" aria-label="'+esc(AXES.map(([k,n])=>n+' '+stats[k]).join('，'))+'"><polygon points="'+ring(1)+'" fill="#e0cfa4" stroke="#b89a56" stroke-width="2"/><polygon points="'+ring(.66)+'" fill="none" stroke="#cdb985"/><polygon points="'+ring(.33)+'" fill="none" stroke="#cdb985"/><polygon points="'+shape+'" fill="#d9622b73" stroke="#a64217" stroke-width="2"/>'+labels+'</svg>';
+  const table='<table class="detail-stat-table" aria-label="能力值"><tbody>'+rows.map(r=>'<tr data-stat="'+r.key+'"><th>'+r.label+'</th><td class="now">'+(r.key==='hp'?u.hp+'/'+r.value:r.value)+'</td><td class="stage">'+(r.key==='hp'||r.key==='spe'?'':(r.stage?'阶段 '+(r.stage>0?'+':'')+r.stage:'阶段 0'))+'</td><td class="base">种族值 '+r.base+(r.doesNotAffectAction?'；不影响行动':'')+'</td></tr>').join('')+'</tbody></table>';
+  return '<svg class="detail-stat-chart" viewBox="0 0 250 250" role="img" aria-label="'+esc(rows.map(r=>r.label+' '+r.value).join('，'))+'"><polygon points="'+ring(1)+'" fill="#e0cfa4" stroke="#b89a56" stroke-width="2"/><polygon points="'+ring(.66)+'" fill="none" stroke="#cdb985"/><polygon points="'+ring(.33)+'" fill="none" stroke="#cdb985"/><polygon points="'+shape+'" fill="#d9622b73" stroke="#a64217" stroke-width="2"/>'+labels+'</svg>'+table+
+    '<p class="paper-muted detail-chart-note">能力值按等级换算，种族值只是基础。</p>'+
+    '<details class="detail-howto"><summary>数字怎么来、伤害怎么算</summary><div class="detail-howto-body"><p>能力值等于（2×种族值×等级除以100，取整数部分）＋5。HP 是（2×种族值×等级除以100，取整数部分）＋等级＋10，再乘体质天赋；所以和种族值不同，也随等级增长。</p><p>第一步：招式基础伤害为 6＋威力的一半（向上取整）＋等级加成；再乘 攻方能力值除以守方能力值（物理用攻击对防御，特殊用特攻对特防，比值限制在 0.5 到 2 倍）。</p><p>第二步：加上攻方的攻击阶段、减去守方的防御阶段（每级 1 点，最多 3 级）；屏障减半，灼伤变为 0.8 倍；最后乘本系加成和属性相性。</p></div></details>';
+}
+function blessingsPage(s:World,tabs:string):string {
+  const list=(s.blessings??[]).map(id=>'<li data-blessing="'+esc(id)+'"><strong>'+esc(BLESSINGS[id]?.name??id)+'</strong><span>'+esc(BLESSINGS[id]?.description??'')+'</span></li>').join('');
+  return '<dialog id="unit-details-dialog" class="paper-window detail194 is-blessings" role="dialog" aria-labelledby="detail-heading"><h2 class="paper-plaque" id="detail-heading">祝福</h2><div class="detail-tabs" aria-label="成员和本局祝福">'+tabs+'</div><button type="button" class="paper-close" id="unit-detail-close" aria-label="关闭详情">×</button><div class="detail-blessings">'+(list?'<ul id="detail-blessing-list">'+list+'</ul>':'<p class="paper-muted" id="detail-blessing-empty">本局还没有祝福</p>')+'</div></dialog>';
 }
 /** Read-only member/enemy view; only the six existing tactic commands are actionable. */
 export function unitDetails(s:World,id:string,choices:readonly string[],disabled:boolean):string {
-  const u=s.units[id],sp=u.species?SPECIES[u.species]:undefined,tactic=u.tactic??'together';
-  const tabs=choices.map(k=>'<button type="button" id="detail-unit-'+esc(k)+'" data-detail-unit="'+esc(k)+'" aria-label="'+esc(unitLabel(s.units[k],k))+'" aria-pressed="'+(k===id)+'">'+unitPortrait(s.units[k],'detail-tab-portrait')+'</button>').join('');
+  const tactic=s.units[id]?.tactic??'together';
+  const blessingsTab='<button type="button" id="detail-unit-__blessings" data-detail-unit="__blessings" class="detail-blessings-tab" aria-label="本局祝福" aria-pressed="'+(id==='__blessings')+'"><span>祝福</span></button>';
+  const tabs=choices.map(k=>'<button type="button" id="detail-unit-'+esc(k)+'" data-detail-unit="'+esc(k)+'" aria-label="'+esc(unitLabel(s.units[k],k))+'" aria-pressed="'+(k===id)+'">'+unitPortrait(s.units[k],'detail-tab-portrait')+'</button>').join('')+blessingsTab;
+  if(id==='__blessings')return blessingsPage(s,tabs);
+  const u=s.units[id],sp=u.species?SPECIES[u.species]:undefined;
   const moves=u.learned.slice(0,4).map(move=>{
     const f=starterMoveFields(move);
-    return '<button type="button" class="paper-move" id="detail-skill-'+esc(move)+'" data-detail-skill="'+esc(move)+'"><span class="paper-move-type" style="background:'+(TYPES[f.type]??'#5f5e50')+'">'+esc(typeZh(f.type))+'</span><strong>'+esc(moveZh(move))+'</strong><span>'+esc(f.category)+'</span><b>'+ (u.pp[move]??0)+'/'+(u.maxPp[move]??0)+'</b></button>';
+    return '<button type="button" class="paper-move" id="detail-skill-'+esc(move)+'" data-detail-skill="'+esc(move)+'"><span class="paper-move-type" style="background:'+(TYPES[f.type]??'#5f5e50')+'">'+esc(typeZh(f.type))+'</span><strong>'+esc(moveZh(move))+'</strong><span>'+esc(f.category)+'</span><b>'+ (u.pp[move]??0)+'/'+(u.maxPp[move]??0)+'</b><small class="paper-move-numbers">'+(moveBaseDamage(s,u,move)!==null?'基础伤害 '+moveBaseDamage(s,u,move)+' · ':'')+'命中 '+esc(String(f.accuracy).replace('基础 ',''))+'</small></button>';
   });
   while(moves.length<4)moves.push('<div class="paper-move is-empty" aria-hidden="true"></div>');
   const tactics=u.side==='friend'?'<section class="detail-tactics"><h3>作战方针</h3><div class="paper-tactics">'+TACTICS.map(t=>'<button type="button" id="detail-tactic-'+t+'" data-detail-tactic="'+t+'" aria-pressed="'+(tactic===t)+'"'+(disabled?' disabled':'')+'><svg viewBox="0 0 12 12" aria-hidden="true" fill="currentColor">'+ICONS[t]+'</svg><span>'+TACTIC_LABELS[t]+'</span></button>').join('')+'</div><p id="detail-tactic-description">'+TACTIC_TEXT[tactic]+'</p></section>':'';
-  return '<dialog id="unit-details-dialog" class="paper-window detail194'+(u.side==='enemy'?' is-enemy':'')+'" role="dialog" aria-labelledby="detail-heading"><h2 class="paper-plaque" id="detail-heading">详情</h2><div class="detail-tabs" aria-label="成员与已揭示的敌人">'+tabs+'</div><button type="button" class="paper-close" id="unit-detail-close" aria-label="关闭详情">×</button><div class="detail-body"><section class="detail-identity"><div class="detail-portrait-pad">'+unitPortrait(u)+'</div><h3>'+esc(unitLabel(u,id))+'</h3><div>'+typeChips(sp?.types??[])+' <b>Lv'+(u.level??s.prog?.level??'—')+'</b></div><div class="detail-hp"><span>HP</span><b>'+u.hp+'/'+u.maxHp+'</b></div><div class="paper-bar"><i style="width:'+Math.max(0,Math.min(100,u.hp/Math.max(1,u.maxHp)*100))+'%"></i></div><div class="detail-status">'+hudStatusMarkup(u)+'</div></section>'+(u.side==='enemy'?'':'<div class="detail-chart"><h3 class="detail-chart-title">种族值</h3>'+detailChart(u)+'<p class="paper-muted detail-chart-note">种族值不随等级变化；升级增加最大 HP，能力变化看箭头。</p></div>')+'<div class="detail-moves">'+moves.join('')+'</div></div>'+tactics+'<div id="detail-tooltip" role="tooltip" hidden></div></dialog>';
+  return '<dialog id="unit-details-dialog" class="paper-window detail194'+(u.side==='enemy'?' is-enemy':'')+'" role="dialog" aria-labelledby="detail-heading"><h2 class="paper-plaque" id="detail-heading">详情</h2><div class="detail-tabs" aria-label="成员与已揭示的敌人">'+tabs+'</div><button type="button" class="paper-close" id="unit-detail-close" aria-label="关闭详情">×</button><div class="detail-body"><section class="detail-identity"><div class="detail-portrait-pad">'+unitPortrait(u)+'</div><h3>'+esc(unitLabel(u,id))+'</h3><div>'+typeChips(sp?.types??[])+' <b>Lv'+(u.level??s.prog?.level??'—')+'</b></div><div class="detail-hp"><span>HP</span><b>'+u.hp+'/'+u.maxHp+'</b></div><div class="paper-bar"><i style="width:'+Math.max(0,Math.min(100,u.hp/Math.max(1,u.maxHp)*100))+'%"></i></div><div class="detail-status">'+hudStatusMarkup(u)+'</div></section>'+(u.side==='enemy'?'':'<div class="detail-chart"><h3 class="detail-chart-title">当前能力值</h3>'+detailStats(s,u)+'</div>')+'<div class="detail-moves">'+moves.join('')+'</div></div>'+tactics+'<div id="detail-tooltip" role="tooltip" hidden></div></dialog>';
 }
 const keycap=(k:string)=>'<kbd>'+k+'</kbd>';
 /** All controls retain their existing storage handlers and identifiers. */
@@ -85,7 +98,7 @@ export function settlement(s:World,summary:SettleSummary|null,ready:boolean,pers
   const end=s.end!,won=end.outcome==='won',rank=summary?.rank,{partners,shards}=resultLoot(s,summary);
   const tms=end.tms??[],newPartnerTiles=partners.map(p=>'<li class="loot-tile"><span class="loot-tag">新伙伴</span>'+speciesPortrait(p.species)+'<span>'+esc(speciesZh(p.species))+'</span></li>'),
     shardTiles=shards.map(p=>'<li class="loot-tile">'+speciesPortrait(p.species)+'<span>'+esc(speciesZh(p.species))+'碎片</span><b class="loot-count">×'+p.count+'</b></li>');
-  const tmTiles=tms.map(t=>{const f=starterMoveFields(t.move),lost=t.fate==='lost';return '<li class="loot-tile'+(lost?' is-lost':'')+'">'+(lost?'<span class="loot-tag">丢失</span>':'')+'<span class="tm-disc" aria-hidden="true" style="background:'+(TYPES[f.type]??'#5f5e50')+'"></span><span>'+esc(moveZh(t.move))+'</span><small>'+({target:'成果 T',shop:'商店',boss:'区域首领',challenge:'挑战奖励'}[t.source])+'</small></li>';}).join('');
+  const tmTiles=tms.map(t=>{const f=starterMoveFields(t.move),lost=t.fate==='lost';return '<li class="loot-tile'+(lost?' is-lost':'')+'">'+(lost?'<span class="loot-tag">丢失</span>':'')+'<span class="tm-disc" aria-hidden="true" style="background:'+(TYPES[f.type]??'#5f5e50')+'"></span><span>'+esc(moveZh(t.move))+'</span><small>'+({target:'成果 T',shop:'商店',boss:'区域首领',challenge:'挑战奖励',blessing:'祝福奖励'}[t.source])+'</small></li>';}).join('');
   const rows=rank?[['到达第 '+s.dungeon!.level+' 层',rank.depth],['击败首领',rank.boss],['完成委托 '+(s.completedCommissions??0)+' 个',rank.commissions],['新伙伴经验',rank.recruits],['招式机经验',rank.tms]].filter(([,v])=>Number(v)>0):[];
   const level=rank?.levelAfter??1,after=rank?.after??0,base=rankThreshold(level),next=rankThreshold(level+1),required=next-base,progress=after-base,up=rank?rank.levelAfter-rank.levelBefore:0;
   const xp=rank?'<div class="settlement-xp-top"><h3>探险队经验</h3><strong id="rank-gain" aria-label="探险队经验 +'+rank.total+'，累计 '+rank.before+' → '+rank.after+'">+'+rank.total+'</strong></div><div class="settlement-tally-wrap"><ul class="settlement-tally" id="rank-breakdown" tabindex="0" aria-label="经验明细">'+rows.map(([label,value])=>'<li data-xp-row><span title="'+esc(label)+'">'+esc(label)+'</span><b>+'+value+'</b></li>').join('')+'</ul><div id="rank-more" class="settlement-more" hidden></div></div><div class="settlement-level"><b>探险队 Lv'+level+'</b><b>'+progress+'/'+required+'</b></div><div class="paper-bar"><i style="width:'+Math.min(100,progress/required*100)+'%"></i></div>'+(up?'<div class="settlement-levelup" id="rank-level-change" aria-label="探险队升级：Lv'+rank.levelBefore+' → Lv'+level+'，获得 '+up+' 个天赋点"><span>升至 Lv'+level+'</span><span>天赋点 +'+up+'</span></div>':'<span id="rank-level-change" hidden>探险队 Lv'+level+'</span>'):'<h3>探险队经验</h3><p>本局无此项奖励</p>';

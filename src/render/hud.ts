@@ -25,7 +25,7 @@ import { damageEstimateText, moveRangeLabel } from "../core/describe.ts";
 import { itemDescription } from "../core/item-descriptions.ts";
 import { skinFor } from "./sprites.ts";
 import { terrainKnown } from "./point-visuals.ts";
-import { itemIconImg } from "./item-icons.ts";
+import { itemIconImg, tmDisc } from "./item-icons.ts";
 import { portraitMarkup } from "./portrait.ts";
 import "./portrait.css";
 import moveTypeSnapshot from "../data/move-types.json" with { type: "json" };
@@ -425,9 +425,11 @@ export function hudTracking(s: World): string {
     (blessings || '<li class="hud-track-empty">无</li>') + "</ul></section></div>";
 }
 
-function bagIcon(item: Item | null, category: string): string {
+/** The technique-machine disc in the colour of the move's type (CSS only, same look as the camp's machine tiles). */
+export const tmDiscOf = (move: string, cls = "tm-disc-icon"): string => tmDisc(moveType(move as Skill), cls);
+function bagIcon(item: Item | null, category: string, move?: string): string {
   if (item) return '<span class="c195-icon">' + itemIconImg(item, "c195-icon-img") + "</span>";
-  return '<span class="c195-icon cat-' + category + '" aria-hidden="true">盘</span>';
+  return '<span class="c195-icon cat-' + category + '">' + (move ? tmDiscOf(move) : "") + "</span>";
 }
 
 /** Backpack window: category tabs, item grid, an always-visible detail panel and the six quick slots. Clicking an item only selects it. */
@@ -448,15 +450,16 @@ export function hudBag(
   ].filter((e) => activeCategory === "all" || e.category === activeCategory);
   const current = entries.find((e) => e.key === selectedItem || e.key === "tm:" + selectedItem) ?? entries[0] ?? null;
   const tabs = CATEGORY_TABS.map(([id, label]) =>
-    '<button type="button" role="tab" class="hud-bag-tab' + (activeCategory === id ? " is-active" : "") +
+    '<button type="button" role="tab" id="bag-category-' + id + '" class="hud-bag-tab' + (activeCategory === id ? " is-active" : "") +
     '" data-bag-category="' + id + '" aria-selected="' + (activeCategory === id) + '">' + label + "</button>",
   ).join("");
   const cells = entries.map((e) => {
     const name = e.item ? itemTitle(e.item) : "招式机 · " + tmZh(e.move!);
-    const attrs = e.item ? ' data-bag-item="' + e.item + '"' : ' data-bag-tm="' + esc(e.move) + '"';
+    // A stable id lets the window put the focus back on the same button after every redraw (Enter keeps working on the selected item).
+    const attrs = e.item ? ' id="bag-item-' + e.item + '" data-bag-item="' + e.item + '"' : ' id="bag-tm-' + esc(e.move) + '" data-bag-tm="' + esc(e.move) + '"';
     return '<button type="button" class="c195-bag-item' + (current && e.key === current.key ? " is-selected" : "") + '"' + attrs +
       ' aria-pressed="' + (!!current && e.key === current.key) + '" aria-label="' + esc(name + " ×" + e.amount) + '">' +
-      bagIcon(e.item, e.category) + '<span class="c195-name">' + esc(name) + '</span><b class="c195-count">×' + e.amount + "</b></button>";
+      bagIcon(e.item, e.category, e.move) + '<span class="c195-name">' + esc(name) + '</span><b class="c195-count">×' + e.amount + "</b></button>";
   });
   const grid = cells.length ? cells.join("") : '<div class="hud-bag-empty c195-bag-empty">无物品</div>';
   let detail: string;
@@ -472,7 +475,7 @@ export function hudBag(
       if (current.item !== "reviverSeed" && pinnedAt !== slot) buttons.push('<button type="button" id="bag-pin" class="paper-button" data-bag-pin="' + current.item + '">放入快捷格 ' + (slot + 1) + "</button>");
       if (current.item !== "reviverSeed" && pinnedAt >= 0) buttons.push('<button type="button" id="bag-unpin" class="paper-button" data-bag-unpin="' + current.item + '">移出快捷格</button>');
     }
-    detail = '<div class="c195-bag-detail-head">' + bagIcon(current.item, current.category) + "<div><strong>" + esc(name) + "</strong><small>数量 ×" + current.amount +
+    detail = '<div class="c195-bag-detail-head">' + bagIcon(current.item, current.category, current.move) + "<div><strong>" + esc(name) + "</strong><small>数量 ×" + current.amount +
       (pinnedAt >= 0 ? " · 在快捷格 " + (pinnedAt + 1) : "") + '</small></div></div><p class="c195-bag-text" aria-live="polite">' + esc(text) +
       '</p><div class="c195-bag-actions">' + buttons.join("") + "</div>";
   }
@@ -481,7 +484,7 @@ export function hudBag(
     const amount = item ? itemCount(s, item) : 0;
     const occupied = !!item && amount > 0;
     const keyLabel = ["5", "6", "7", "8", "9", "0"][index];
-    return '<button type="button" class="c195-slot' + (occupied ? "" : " is-empty") + (slot === index ? " is-selected" : "") +
+    return '<button type="button" id="bag-slot-' + index + '" class="c195-slot' + (occupied ? "" : " is-empty") + (slot === index ? " is-selected" : "") +
       '" data-bag-slot="' + index + '" aria-pressed="' + (slot === index) + '" aria-label="快捷格 ' + (index + 1) + "：" +
       esc(occupied ? itemTitle(item!) + " ×" + amount + "。" + itemDescription(item!) : "空快捷格") + '"><kbd>' + keyLabel + "</kbd>" +
       (occupied ? bagIcon(item, ITEM_CATEGORIES[item!]) + '<span class="c195-count">×' + amount + "</span>" : "") + "</button>";

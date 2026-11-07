@@ -1,6 +1,7 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
 import {generateFloor,generateChallengeEncounter,serviceRoll,ENEMY_DIFFICULTY,DIFFICULTY,isDifficulty,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,mulberry32,type Difficulty,type GeneratedFloor,type AdventureRoom} from './dungeon.ts';
 import {ECON} from './economy.ts';
+import {currentStats} from './stats.ts';
 import {SPECIES,speciesOf,tmPool,learnableMove,speciesMaxHp,movesAtLevel,type KitMove} from './roster.ts';
 import {typeEffectiveness,stabMultiplier} from './type-chart.ts';
 import {TACTICS,isTactic,type Tactic} from './tactics.ts';
@@ -106,7 +107,7 @@ export type StoredFloor={floor:Pos[];liquid?:string[];arrival?:Pos;seen:string[]
 /** `boss` (7.3): themed floors and a regional boss on the last floor. `roguelike` marks the new one-way rules; absent means a legacy run. */
 export type Dungeon={seed:number;width:number;height:number;floors:number;level:number;stored:Record<string,StoredFloor>;base?:true;services?:true;boss?:true;tmPool?:3|4|5;roguelike?:true};
 /** A technique machine obtained in this run; `sent` remains a possible in-run fate, while final rogue fate is decided by win or wipe. */
-export type TmItem={move:string;source:'target'|'shop'|'boss'|'challenge';fate:'held'|'brought'|'sent'|'lost'};
+export type TmItem={move:string;source:'target'|'shop'|'boss'|'challenge'|'blessing';fate:'held'|'brought'|'sent'|'lost'};
 /** 7.2 the shop of this run: fixed stock decided at the start, and every sale so far. `tm` is null once sold. */
 export type Shop={level:number;stock:{berry:number;tonic:number;tm:string|null;pechaBerry?:number;healSeed?:number;slumberOrb?:number;totterOrb?:number;luminousOrb?:number;rollcallOrb?:number;reviverSeed?:number};trades:{item:ShopItem;price:number}[]};
 /** 7.2 the exchanger of this run: used at most once; `sent` is the companion it took home. */
@@ -1056,10 +1057,10 @@ function healUnit(s:World,id:string,n:number,why:string):void {
 }
 /** Enemies inside the user's room (corridor: 2 cells), the reach of the sleep and confusion orbs. */
 function orbFoes(s:World,u:Unit):Unit[] {return s.enemies.map(i=>s.units[i]).filter(e=>alive(e)&&!!u.pos&&inRoomReach(s,u.pos,e.pos));}
-/** The enemies a sleep or confusion orb would really change: in reach, not type-immune, not already in that condition. */
+/** The enemies a sleep or confusion orb would really change: in reach and not already in that condition. */
 function orbAffected(s:World,u:Unit,item:Item):Unit[] {
   const kind:StatusId=item==='slumberOrb'?'slp':'confusion';
-  return orbFoes(s,u).filter(e=>!statusTypeBlockReason(item,e,kind)&&(kind==='slp'?!(hasStatus(e,'slp')||hasStatus(e,'nap')):!hasStatus(e,'confusion')));
+  return orbFoes(s,u).filter(e=>kind==='slp'?!(hasStatus(e,'slp')||hasStatus(e,'nap')):!hasStatus(e,'confusion'));   // no type is immune to sleep or confusion in this game
 }
 /** Berry heal for one target: 30% of max HP (at least 8), +50% with the berry blessing, plus the supplies talent; guardian halves the lot. */
 function berryHealAmount(s:World,t:Unit):number {
@@ -1101,11 +1102,17 @@ function basicCategory(u:Unit):'Physical'|'Special' {
   const b=u.species?speciesOf(u.species)?.baseStats:undefined;
   return b&&b.spa>b.atk?'Special':'Physical';
 }
-export const STAT_DAMAGE_RATIO=Object.freeze({min:0.8,max:1.25} as const);
-/** Shared, side-effect-free damage calculation. An absent target represents an ordinary opposing ratio-1 target. */
+/** G5.3 step 2: attacker's current ability value divided by the defender's, kept inside this range. */
+export const STAT_DAMAGE_RATIO=Object.freeze({min:0.5,max:2} as const);
+/** The ability stage the damage rule really uses for one stat: attack stages as they are; defence stages minus the hunter commission's penalty on the player's side, kept in ±3. */
+export function damageStage(s:World,u:Unit,key:'atk'|'def'|'spa'|'spd'):number {
+  if(key==='atk'||key==='spa')return stageOf(u,key);
+  const penalty=u.side==='friend'&&activeCommission(s,'hunter')?1:0;
+  return Math.max(-3,Math.min(3,stageOf(u,key)-penalty));
+}
+/** Shared, side-effect-free damage calculation. An absent target represents an ordinary opposing ratio-1 target. The ratio uses the units' current ability values (stats.ts), clamped to 0.5-2. */
 function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>,thaw=false,skill?:Skill):number {
-  const attackStats=source.species?speciesOf(source.species)?.baseStats:undefined;
-  const defenceStats=target?.species?speciesOf(target.species)?.baseStats:undefined;
+  const attackStats=currentStats(source),defenceStats=target?currentStats(target):null;
   const ratio=attackStats&&defenceStats&&category!=='Status'
     ?Math.max(STAT_DAMAGE_RATIO.min,Math.min(STAT_DAMAGE_RATIO.max,category==='Special'?attackStats.spa/defenceStats.spd:attackStats.atk/defenceStats.def)):1;
   const afterSpeciesRatio=Math.max(1,Math.round(baseDamage*ratio));
@@ -1115,9 +1122,8 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
   const attackDistance=source.pos&&target?.pos?chebyshev(source.pos,target.pos):0;
   const base=source.side==='enemy'?Math.max(1,Math.round(scaled*DIFFICULTY[s.difficulty??'normal'])):scaled;
   const special=category==='Special';
-  const raw=base+stageOf(source,special?'spa':'atk');
-  const hunterPenalty=target?.side==='friend'&&activeCommission(s,'hunter')?1:0;
-  const defenceStage=Math.max(-3,Math.min(3,(target?stageOf(target,special?'spd':'def'):0)-hunterPenalty));
+  const raw=base+damageStage(s,source,special?'spa':'atk');
+  const defenceStage=target?damageStage(s,target,special?'spd':'def'):0;
   let amount=raw<=0?0:Math.max(0,raw-defenceStage);
   if(opposing&&amount>0){
     if(category==='Physical'&&(target!.reflect??0)>0)amount=Math.floor(amount/2);
@@ -1400,8 +1406,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     }else if(a.item==='slumberOrb'||a.item==='totterOrb'){
       const kind:StatusId=a.item==='slumberOrb'?'slp':'confusion',foes=orbAffected(s,u,a.item);
       note(s,`${id}使用${ITEM_NAMES[a.item]}，房间里的${foes.length}个敌人受到影响`);
-      for(const e of foes){const blocked=statusTypeBlockReason(a.item,e,kind);if(blocked){note(s,e.id+'免疫'+STATUS_NAMES[kind]);continue;}
-        if(kind==='slp'&&(hasStatus(e,'slp')||hasStatus(e,'nap')))continue;applyStatus(s,e.id,kind);}
+      for(const e of foes)applyStatus(s,e.id,kind);
     }else if(a.item==='luminousOrb'){
       s.mapRevealed=true;note(s,`${id}使用${ITEM_NAMES.luminousOrb}，本层的地形全部显现`);
     }else if(a.item==='rollcallOrb'){
@@ -1983,7 +1988,7 @@ export function applyCommand(original:World,cmd:Command):Result {
     const pending=original.pendingChoices?.[0];if(original.phase!=='tmChoice'||pending?.type!=='tmChoice')return fail('当前没有待处理的招式机选择');
     if(!pending.options.includes(cmd.move))return fail('所选招式不在本次选项中');
     const s=clone(original),choice=s.pendingChoices!.shift() as Extract<PendingChoice,{type:'tmChoice'}>;
-    (s.tms??=[]).push({move:cmd.move,source:choice.source==='blessing'?'target':choice.source,fate:'held'});note(s,`取得${choice.source==='challenge'?'挑战奖励':choice.source==='boss'?'首领掉落':choice.source==='blessing'?'祝福奖励':'目标奖励'}招式机：${cmd.move}`);
+    (s.tms??=[]).push({move:cmd.move,source:choice.source,fate:'held'});note(s,`取得${choice.source==='challenge'?'挑战奖励':choice.source==='boss'?'首领掉落':choice.source==='blessing'?'祝福奖励':'目标奖励'}招式机：${cmd.move}`);
     resumeAfterChoice(s);return {ok:true,state:s};
   }
   if(cmd.type==='abandon'){

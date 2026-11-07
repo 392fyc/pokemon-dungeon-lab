@@ -8,11 +8,13 @@ import {readFileSync} from 'node:fs';
 import {speciesUnit,recruitUnit,applyCommand,closeOut} from '../../src/core/engine.ts';
 import {settleRun} from '../../src/core/base.ts';
 import {SPECIES} from '../../src/core/roster.ts';
+import {hpAtLevel} from '../../src/core/stats.ts';
 import {world,row,pos,doCmd} from '../acceptance/fixtures.mjs';
 import {foeOf} from './foe-fixture.mjs';
 
 const roster=JSON.parse(readFileSync(new URL('../../src/data/roster.json',import.meta.url),'utf8')).species;
-const rosterHp=id=>roster.find(s=>s.id===id).maxHp;
+/** Level-based max HP of a species (stats.test.mjs checks the formula itself by hand). */
+const hpOf=(id,level)=>hpAtLevel(SPECIES[id].baseStats.hp,level);
 
 test('13.4 evolution levels: first stages 1, level evolutions at the original level, item/trade stages 20 and 36',()=>{
  const lv=id=>roster.find(s=>s.id===id).evoLevel;
@@ -41,12 +43,12 @@ test('13.4 reaching an evolution level evolves at the round end: new max HP by t
  // all three are Lv15 with 95 exp; one Lv8 kill is 16 exp, 95+16=111 exp = Lv16, the level of ivysaur, charmeleon and wartortle
  const s0=run({level:15,exp:95,foeLevel:8,hp:{C:12}});
  assert.deepEqual(['A','B','C'].map(i=>s0.units[i].species),['charmander','squirtle','bulbasaur']);
- assert.deepEqual(['A','B','C'].map(i=>s0.units[i].maxHp),[19+10,20+10,21+10]);
+ assert.deepEqual(['A','B','C'].map(i=>s0.units[i].maxHp),[hpOf('charmander',15),hpOf('squirtle',15),hpOf('bulbasaur',15)]);
  const s=kill(s0);
  assert.equal(s.prog.level,16);
  assert.deepEqual(['A','B','C'].map(i=>s.units[i].species),['charmeleon','wartortle','ivysaur']);
- assert.deepEqual(['A','B','C'].map(i=>s.units[i].maxHp),[rosterHp('charmeleon')+11,rosterHp('wartortle')+11,rosterHp('ivysaur')+11],'max HP follows the new species at Lv16');
- assert.deepEqual(['A','B','C'].map(i=>s.units[i].hp),[29,30,12],'current HP is not healed by evolving');
+ assert.deepEqual(['A','B','C'].map(i=>s.units[i].maxHp),[hpOf('charmeleon',16),hpOf('wartortle',16),hpOf('ivysaur',16)],'max HP follows the new species at Lv16');
+ assert.deepEqual(['A','B','C'].map(i=>s.units[i].hp),[hpOf('charmander',15),hpOf('squirtle',15),12],'current HP is not healed by evolving');
  assert.deepEqual(['A','B','C'].map(i=>s.units[i].entrySpecies),['charmander','squirtle','bulbasaur'],'the form it joined the run as is remembered');
  assert.deepEqual(s.units.C.learned,s0.units.C.learned,'no new moves are learned by evolving');
  // below the level nothing evolves: Lv15 stays
@@ -63,7 +65,7 @@ test('13.4 evolution is at most one stage per round-end settlement',()=>{
  const s2=idle(s1);
  assert.equal(s2.units.A.species,'charizard','second stage at the next settlement');
  assert.equal(s2.units.A.hp,s1.units.A.hp,'HP unchanged across both steps');
- assert.equal(s2.units.A.maxHp,rosterHp('charizard')+31);
+ assert.equal(s2.units.A.maxHp,hpOf('charizard',36));
  assert.equal(idle(s2).units.A.species,'charizard','nothing further');
 });
 
@@ -86,7 +88,7 @@ test('13.4 Eevee: the choice is asked after the level-up and before recruiting; 
  s=kill(s);
  assert.equal(s.prog.level,21);assert.equal(s.phase,'evolution');
  s=doCmd(s,{type:'evolve',species:'jolteon'});
- assert.equal(s.units.A.species,'jolteon');assert.equal(s.units.A.hp,10,'HP stays at 10');assert.equal(s.units.A.maxHp,rosterHp('jolteon')+16);
+ assert.equal(s.units.A.species,'jolteon');assert.equal(s.units.A.hp,10,'HP stays at 10');assert.equal(s.units.A.maxHp,hpOf('jolteon',21));
  assert.equal(s.phase,'playing');
 });
 
@@ -101,7 +103,7 @@ test('13.4 a recruit already above its evolution level evolves one stage at the 
  assert.equal(s.units.N1.species,'pikachu');
  const hpBefore=s.units.N1.hp;
  s=idle(s);
- assert.equal(s.units.N1.species,'raichu');assert.equal(s.units.N1.hp,hpBefore);assert.equal(s.units.N1.maxHp,rosterHp('raichu')+15);
+ assert.equal(s.units.N1.species,'raichu');assert.equal(s.units.N1.hp,hpBefore);assert.equal(s.units.N1.maxHp,hpOf('raichu',20));
  assert.equal(s.units.N1.entrySpecies,'pikachu');
  // a recruit that was already evolved when it was recruited joins as that species
  const joined=recruitUnit('N2','raichu',20);

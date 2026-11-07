@@ -66,6 +66,24 @@ const slotItems=p=>p.evaluate(()=>[...document.querySelectorAll('.c195-slot')].m
  assert.deepEqual(p.errs,[]);await ctx.close();
 }
 {
+ // a long press that is released in place is a plain click (selects the item); no context menu opens; a cancelled touch leaves nothing behind
+ const {ctx,p}=await openRun(true);const cdp=await ctx.newCDPSession(p);
+ const send=(type,x,y)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'||type==='touchCancel'?[]:[{x,y,id:1}]});
+ await p.evaluate(()=>{window.__menus=[];document.addEventListener('contextmenu',e=>window.__menus.push(e.defaultPrevented),true);});
+ await p.waitForSelector('.c195-bag');   // openRun leaves the bag open
+ const at=await centre(p.locator('#bag-item-tonic'));
+ await send('touchStart',at.x,at.y);await p.waitForTimeout(450);await send('touchEnd',at.x,at.y);await p.waitForTimeout(250);
+ assert.equal(await p.locator('#bag-item-tonic.is-selected').count(),1,'a long press released in place selects the item like a click');
+ assert.equal(await p.locator('.drag-ghost').count(),0);assert.ok((await p.evaluate(()=>window.__menus)).every(Boolean),'a long press never opens the browser context menu');
+ const slot=await centre(p.locator('#bag-slot-3'));
+ await send('touchStart',at.x,at.y);await p.waitForTimeout(380);for(let i=1;i<=5;i++){await send('touchMove',at.x+(slot.x-at.x)*i/10,at.y+(slot.y-at.y)*i/10);await p.waitForTimeout(16);}
+ assert.equal(await p.locator('.drag-ghost').count(),1,'the drag is under way');
+ await send('touchCancel',0,0);await p.waitForTimeout(250);
+ assert.equal(await p.locator('.drag-ghost').count(),0,'a cancelled touch removes the ghost');assert.ok((await slotItems(p)).every(l=>/空/.test(l)),'and pins nothing');
+ await p.locator('#bag-slot-3').click();await p.locator('#bag-pin').click();assert.match((await slotItems(p))[3],/PP/,'the bag still works after a cancelled drag');
+ assert.deepEqual(p.errs,[]);await ctx.close();
+}
+{
  const {ctx,p}=await openRun(true,{width:900,height:520});const cdp=await ctx.newCDPSession(p);
  await p.evaluate(()=>{const s=window.trial.store.world;Object.assign(s.prog.items,{pechaBerry:1,rawstBerry:1,cheriBerry:1,chestoBerry:1,healSeed:1,violentSeed:1,maxElixir:1,slumberOrb:1,totterOrb:1,luminousOrb:1,rollcallOrb:1,teamTonic:1});window.dispatchEvent(new Event('blur'));});
  await p.waitForTimeout(300);

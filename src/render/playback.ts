@@ -68,7 +68,7 @@ function groupedEffects(batch:AnimEvent[]):Map<AnimEvent,EffectPlaybackOptions>{
  const out=new Map<AnimEvent,EffectPlaybackOptions>();
  for(const group of groups.values()){
   if(group.events.length<2)continue;
-  const style={...group.styles[0],superEffective:group.styles.some(item=>item.superEffective===true)};
+  const style={...group.styles[0],superEffective:group.styles.some(item=>item.superEffective===true),resisted:group.styles.every(item=>item.resisted===true)};
   group.events.forEach((ev,index)=>out.set(ev,index===0?{effect:style,impactPositions:group.points}:{skipEffect:true,sharedCast:true}));
  }
  return out;
@@ -90,8 +90,9 @@ async function play(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise
     const impact=ev.collision?d(280):ev.effect?d(effectImpactDelay(ev.effect,ev.effect.template==='blow'?BASE_MS.blowaway:BASE_MS.hit)):d(110);
     const duration=ev.cast||ev.effect?500:BASE_MS.hit;
     if(T){if(ev.from)face(T,ev.at,ev.from);ps.push(hurt(st,T,d(170),impact,!!ev.effect&&ev.amount>0,ev.effect?.template!=='blow'));}
-    ps.push(floatText(st,to,'-'+ev.amount,ev.effect?.superEffective?'#ffd24a':ev.effect?'#ffffff':'#ff9c88',ev.effect||ev.cast?Math.max(1,d(duration)-impact):d(220),impact));
+    ps.push(floatText(st,to,ev.amount>0?'-'+ev.amount:'没有效果',ev.amount<=0?'#c8d0d0':ev.effect?.superEffective?'#ffd24a':ev.effect?'#ffffff':'#ff9c88',ev.effect||ev.cast?Math.max(1,d(duration)-impact):d(220),impact));
     if(ev.effect?.superEffective)ps.push(floatText(st,{x:to.x,y:to.y-st.cell*.3},'效果绝佳','#ffd24a',Math.max(1,d(duration)-impact),impact));
+    else if(ev.effect?.resisted&&ev.amount>0)ps.push(floatText(st,{x:to.x,y:to.y-st.cell*.3},'效果不好','#9fb4c8',Math.max(1,d(duration)-impact),impact));
     if(ev.dead&&T)ps.push(wait(st,d(ev.effect||ev.cast?duration-140:220)).then(()=>tween(st,{targets:[T.sprite,...T.labels.map(l=>l.t)],alpha:0,duration:Math.max(1,d(140))})));
     await Promise.all(ps);}
   else if(ev.k==='protect'){const A=V(ev.by);if(A)face(A,ev.from,ev.at);if(A)idle(st,A);

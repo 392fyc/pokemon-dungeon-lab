@@ -231,24 +231,24 @@ test('K4 vitality applies at departure, level-up, evolution, and the half-HP rec
   const profile=initialProfile();profile.rankExp=rankThreshold(4);profile.talents={vitality:3};
   const squad=squadOf(profile),boosted=createExpedition('rank-vitality',77,3,squad,0,true,3,'normal');
   const plain=createExpedition('rank-vitality-plain',77,3,squadOf(initialProfile()),0,true,3,'normal');
-  assert.deepEqual(['A','B','C'].map(id=>boosted.units[id].maxHp),[22,23,24]);
-  assert.deepEqual(['A','B','C'].map(id=>boosted.units[id].hp),[22,23,24]);
+  assert.deepEqual(['A','B','C'].map(id=>boosted.units[id].maxHp),[21,22,22]);   // Lv5 level-based HP 18 / 19 / 19 x vitality 1.15, rounded
+  assert.deepEqual(['A','B','C'].map(id=>boosted.units[id].hp),[21,22,22]);
   const enemyState=s=>s.enemies.map(id=>[s.units[id].species,s.units[id].hp,s.units[id].maxHp]);
   assert.deepEqual(enemyState(boosted),enemyState(plain),'the same seed and difficulty leave enemy HP unchanged');
 
   const leveled=command(progressWorld({level:5,exp:0,foeLevel:3}),{type:'basic',target:'W'});
   assert.equal(leveled.prog.level,6);
-  assert.deepEqual(['A','B','C'].map(id=>leveled.units[id].maxHp),[23,24,25]);
+  assert.deepEqual(['A','B','C'].map(id=>leveled.units[id].maxHp),[23,24,24]);   // Lv6 HP 20 / 21 / 21 x 1.15
 
   const evolved=command(progressWorld({level:15,exp:95,foeLevel:8}),{type:'basic',target:'W'});
   assert.equal(evolved.prog.level,16);
   assert.deepEqual(['A','B','C'].map(id=>evolved.units[id].species),['charmeleon','wartortle','ivysaur']);
-  assert.deepEqual(['A','B','C'].map(id=>evolved.units[id].maxHp),[39,39,40]);
+  assert.deepEqual(['A','B','C'].map(id=>evolved.units[id].maxHp),[51,51,52]);   // Lv16 HP 44 / 44 / 45 (Charmeleon, Wartortle, Ivysaur) x 1.15
   assert.deepEqual(['A','B','C'].map(id=>evolved.units[id].hp),[33,35,36],'recomputing max HP does not heal current HP');
 
   const invited=command(progressWorld({level:5,exp:0,foeLevel:3,foeSpecies:'pidgey',rng:7}),{type:'basic',target:'W'});
   assert.equal(invited.phase,'invitation');
-  assert.deepEqual([invited.invitations[0].unit.hp,invited.invitations[0].unit.maxHp],[12,24],'Lv6 Pidgey uses the same enhanced max HP before halving');
+  assert.deepEqual([invited.invitations[0].unit.hp,invited.invitations[0].unit.maxHp],[11,23],'Lv6 Pidgey uses the same enhanced max HP before halving');
 });
 
 test('K4/K5 integer talent percentages round exact halves up for all base values 1..300 and ranks 0..5',()=>{
@@ -257,8 +257,8 @@ test('K4/K5 integer talent percentages round exact halves up for all base values
     const expected=Number(numerator/100n+(numerator%100n>=50n?1n:0n));
     assert.equal(applyTalentBonus(value,step*rank),expected,`${value}, rank ${rank}, step ${step}`);
   }
-  assert.equal(speciesUnit('A','charmander',36).maxHp,50);
-  const recruited=recruitUnit('N','charmander',36,3);
+  assert.equal(speciesUnit('A','charmander',23).maxHp,50)   // Lv23 Charmander: floor(2 x 39 x 23 / 100) + 23 + 10 = 50, the exact-half case for x1.15;
+  const recruited=recruitUnit('N','charmander',23,3);
   assert.deepEqual([recruited.maxHp,recruited.hp],[58,29],'50 HP with vitality 3 rounds 57.5 to 58 before halving');
 
   const original=MOVE_DEFS.scratch;
@@ -389,7 +389,7 @@ test('K8 the developer expedition uses its fixed profile even when TrialStore ha
   const port=memoryPort(),store=new TrialStore(port,'rank-developer');
   assert.equal(await store.start(fixedWorld,camp),true,store.error);
   const s=store.state;
-  assert.deepEqual(['A','B','C'].map(id=>s.units[id].maxHp),[19,20,21]);
+  assert.deepEqual(['A','B','C'].map(id=>s.units[id].maxHp),[18,19,19]);
   assert.equal(s.prog.items.berry,0);
   assert.equal(s.talents.vitality??0,0);assert.equal(s.talents.offense??0,0);assert.equal(s.talents.supplies??0,0);
   assert.equal(port.writes(),0,'the developer scene does not read or write the camp save');

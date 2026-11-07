@@ -8,6 +8,7 @@ import {TrialStore,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 import {generateFloor,THEME_FLOORS,themeOfLevel,eligibleSpecies,WILD_SPECIES,BOSS,serviceRoll} from '../../src/core/dungeon.ts';
 import {LEGACY_TM_MOVES,TM_MOVES,tmPool,BOSS_SPECIES,SPECIES,learnableMove} from '../../src/core/roster.ts';
 import {NAME_TABLE,speciesZh,moveZh,tmZh} from '../../src/core/names.ts';
+import {hpAtLevel} from '../../src/core/stats.ts';
 import {enemyInfo,localizeLog} from '../../src/core/describe.ts';
 import {friend,enemy,pos,row} from '../acceptance/fixtures.mjs';
 import legacyBossSeed4 from './fixtures/map122-legacy-boss-seed4.json' with {type:'json'};
@@ -172,7 +173,7 @@ test('B1 defeating the boss draws a machine then a normal Arcanine recruitment o
  s.prog.rng=1;const after=round(s,{type:'basic',target:'boss'});
  assert.equal(after.units.boss.hp,0);assert.equal(after.prog.rng,rngStep(rngStep(1).state).state);
  const offer=after.invitations[0];assert.ok(offer);assert.equal(offer.unit.species,'arcanine');assert.equal(offer.unit.boss,undefined);
- assert.equal(offer.unit.maxHp,30+after.prog.level-5);assert.equal(offer.unit.hp,Math.floor(offer.unit.maxHp/2));
+ assert.equal(offer.unit.maxHp,hpAtLevel(90,after.prog.level),'a recruited Arcanine has the level-based HP of the run level');assert.equal(offer.unit.hp,Math.floor(offer.unit.maxHp/2));
  assert.equal(s.prog.rng,1);
 });
 test('B2 push on the boss is refused with the Chinese reason and costs no PP',()=>{

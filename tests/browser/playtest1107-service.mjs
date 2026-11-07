@@ -27,8 +27,10 @@ for(const [w,h] of [[1280,720],[900,520]]){
  assert.ok(await p.locator('.shop-row .shop-icon').count()>=9,'items show their icons');
  // unaffordable goods are greyed and say how much is missing
  await p.locator('#shop-pick-reviverSeed').click();
- assert.equal(await p.locator('#buy-reviverSeed').isDisabled(),true);assert.match(await p.locator('.shop-detail').innerText(),/钱袋不足，还差30/);
- assert.ok(await p.locator('#shop-pick-reviverSeed.is-short').count()===1&&/还差30/.test(await p.locator('#shop-pick-reviverSeed').innerText()));
+ assert.equal(await p.locator('#buy-reviverSeed').isDisabled(),true);assert.doesNotMatch(await p.locator('#shop-panel').innerText(),/钱袋不足|还差/,'no wording about the shortfall');
+ assert.equal(await p.locator('#shop-pick-reviverSeed.is-short').count(),1);
+ assert.equal(await p.locator('#shop-pick-reviverSeed .shop-price').evaluate(el=>getComputedStyle(el).color),'rgb(192, 48, 30)','an unaffordable price is red');
+ assert.notEqual(await p.locator('#shop-pick-berry .shop-price').evaluate(el=>getComputedStyle(el).color),'rgb(192, 48, 30)','an affordable price is not'); 
  // buying: select, then buy
  await p.locator('#shop-pick-berry').click();await p.locator('#buy-berry').click();await p.waitForTimeout(300);
  assert.deepEqual(await p.evaluate(()=>[window.trial.getState().purse,window.trial.getState().prog.items.berry]),[30,1]);

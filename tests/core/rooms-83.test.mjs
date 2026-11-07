@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {speciesMaxHp} from '../../src/core/roster.ts';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
@@ -227,7 +228,7 @@ test('8.3 R1/R2/R13/R14/R16: 600 floors retain the fixed 8.2 content and indepen
   assert.equal(JSON.stringify(g),JSON.stringify(generateFloor(seed,level)),`${label}: deterministic whole floor`);
   // 8.8 (#165): item points were extended (2-4 per floor, kinds redrawn); the original cells and their order are kept, so the old pickups are the first one (berry) and the floor-2 tonic.
   const originalPickups=g.pickups.slice(0,level===2?2:1).map((p,i)=>({...p,kind:i===0?'berry':p.kind}));
-  for(const [field,expected] of Object.entries(b.hashes))assert.equal(hash(field==='pickups'?originalPickups:g[field]),expected,`${label}: unchanged original ${field}`);
+  for(const [field,expected] of Object.entries(b.hashes))assert.equal(hash(field==='pickups'?originalPickups:field==='enemies'?g.enemies.map(({hp,maxHp,...e})=>e):g[field]),expected,`${label}: unchanged original ${field}`);
   assert.deepEqual(g.points,b.points,`${label}: only goal removed from original points`);
   assert.deepEqual(g.services,b.services,`${label}: only exchanger removed from original services`);
   assert.deepEqual(g.goalAnchor,b.goalAnchor,`${label}: hidden goal anchor matches the frozen sample`);
@@ -283,7 +284,7 @@ test('8.3 R20: 600 challenge draws on all three difficulties use the correct spe
   for(const e of encounter.enemies){const s=roster.find(s=>s.id===e.species),[lo,hi]=bands[level-1];
    assert.ok(s&&!s.legendary&&s.availability!=='暂不出场'&&themes[level-1].includes(s.types[0])&&s.evoLevel<=hi);
    assert.ok(Number.isInteger(e.level)&&e.level>=Math.max(lo,s.evoLevel)&&e.level<=hi);
-   assert.equal(e.hp,Math.max(1,Math.round((s.maxHp+Math.max(0,e.level-5))*multiplier)));
+   assert.equal(e.hp,Math.max(1,speciesMaxHp(e.species,e.level,multiplier)));
    assert.equal(e.asleep,false);
   }
  }

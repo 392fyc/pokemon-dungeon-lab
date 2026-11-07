@@ -1947,3 +1947,17 @@ body.dungeon-mode #recent-events:focus-visible {
 @media (max-height: 620px) {
   body.dungeon-mode #dungeon-hud #recent-events { max-height: 64px; width: min(340px, calc(100vw - 20px)); }
 }
+
+/* Playtest round 3: choosing the target of an item from the party list. */
+body.dungeon-mode .hud-target-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 6px; padding: 6px 10px; border: 2px solid #ffd45a; border-radius: 8px; background: rgba(40, 32, 8, 0.94); color: #fff1b8; font-size: 13px; }
+body.dungeon-mode .hud-target-hint span { flex: 1; color: #e4efb0; }
+body.dungeon-mode .hud-target-hint small { flex-basis: 100%; font-size: 12px; color: #e4efb0; }
+body.dungeon-mode .hud-target-hint #target-none { color: #ffb4a8; }
+body.dungeon-mode .hud-target-hint button { min-height: 26px; padding: 0 10px; border: 1px solid #e8d48a; border-radius: 6px; background: transparent; color: #fff1b8; cursor: pointer; }
+body.dungeon-mode .hud-party-card.is-target { position: relative; outline: 3px solid #ffd45a; box-shadow: 0 0 14px rgba(255, 212, 90, 0.55); }
+body.dungeon-mode .hud-party-card.is-target .hud-party-main { cursor: pointer; }
+body.dungeon-mode .hud-party-card.is-dim { opacity: 0.38; filter: grayscale(0.6); }
+body.dungeon-mode .hud-target-arrow { position: absolute; top: 50%; right: -26px; transform: translateY(-50%); width: 0; height: 0; border-top: 11px solid transparent; border-bottom: 11px solid transparent; border-right: 18px solid #ffd45a; filter: drop-shadow(0 0 4px #000); pointer-events: none; animation: hud-target-nudge 0.8s ease-in-out infinite alternate; }
+body.dungeon-mode .hud-target-key { position: absolute; top: 4px; right: 6px; padding: 0 5px; border-radius: 4px; background: #ffd45a; color: #2a1c14; font: 700 12px/16px sans-serif; pointer-events: none; }
+@keyframes hud-target-nudge { from { right: -26px; } to { right: -20px; } }
+@media (prefers-reduced-motion: reduce) { body.dungeon-mode .hud-target-arrow { animation: none; } }

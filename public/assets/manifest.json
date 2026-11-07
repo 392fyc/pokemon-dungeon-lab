@@ -23775,60 +23775,6 @@
       },
       "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
     },
-    "props/prop-altar.png": {
-      "bytes": 786,
-      "sha256": "c79bbda1298fa1eaabf72457433758f3822fba3ec50adf4ed69b030ab39c6748",
-      "source": "generated",
-      "model": "gpt-image-2.5-flare",
-      "card": "prop-altar",
-      "prompt": "A single small round white stone shrine pedestal with a floating glowing pale-violet crystal above it and a few sparkles, centred on a plain transparent background, readable at small size, seen from a slight top-down angle. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, bold simple silhouette with a thick dark outline, few colours, light values that stand out strongly against a dark mossy grey stone floor, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
-      "rawSha256": "70c71af57824310dbed30ba508b4fae16503d0a78fe86760612b3c1685c07d99",
-      "postprocess": {
-        "crop": null,
-        "trim": true,
-        "size": 24,
-        "colors": 16,
-        "resample": "box",
-        "quantize": "mediancut"
-      },
-      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
-    },
-    "props/prop-board.png": {
-      "bytes": 877,
-      "sha256": "7c63b224b3f6974fc6ae6bafb33cc549c1c54e45fe1a1cfd6f6a1e8afbce9b64",
-      "source": "generated",
-      "model": "gpt-image-2.5-flare",
-      "card": "prop-board",
-      "prompt": "A single small wooden notice board on two short posts, light tan wood with a pinned parchment scroll and a bright red wax seal, centred on a plain transparent background, readable at small size, seen from a slight top-down angle. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, bold simple silhouette with a thick dark outline, few colours, light values that stand out strongly against a dark mossy grey stone floor, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
-      "rawSha256": "73883a0aac3b644fc34f83b424d5d282179ff6a0560f54f5a234a39a842888b8",
-      "postprocess": {
-        "crop": null,
-        "trim": true,
-        "size": 24,
-        "colors": 16,
-        "resample": "box",
-        "quantize": "mediancut"
-      },
-      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
-    },
-    "props/prop-stele.png": {
-      "bytes": 690,
-      "sha256": "c19a02e3429bc84dce1b6157e010ab4b9d8e105c133b0c5b783f575dd84c8a71",
-      "source": "generated",
-      "model": "gpt-image-2.5-flare",
-      "card": "prop-stele-v2",
-      "prompt": "A single short standing stone tablet made of pale cream-white limestone on a small square base, a large bright golden crossed-swords emblem carved on its face with a soft warm glow, centred on a plain transparent background, readable at small size, seen from a slight top-down angle. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, bold simple silhouette with a thick dark outline, few colours, light values that stand out strongly against a dark mossy grey stone floor, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
-      "rawSha256": "e0b9053aff00601df1de1f0353f755f5ca2d510fcacc1e7e16fc6f1c91571714",
-      "postprocess": {
-        "crop": null,
-        "trim": true,
-        "size": 24,
-        "colors": 16,
-        "resample": "box",
-        "quantize": "mediancut"
-      },
-      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
-    },
     "props/room-blessing.png": {
       "bytes": 4855,
       "sha256": "76034e07fb2ad37fe0f3ba2e8ad55d407345184511e5df109df5a10d61ee9dc4",

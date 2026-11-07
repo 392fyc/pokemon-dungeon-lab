@@ -2,7 +2,7 @@ import {moveCategory, moveOf} from '../core/moves.ts';
 import {moveType} from '../core/type-chart.ts';
 
 export type EffectTemplate='melee'|'special'|'shot'|'beam'|'around'|'room'|'up'|'down'|'status'|'heal'|'guard'|'blow';
-export type EffectStyle={move:string|null;template:EffectTemplate;type:string;superEffective?:boolean};
+export type EffectStyle={move:string|null;template:EffectTemplate;type:string;superEffective?:boolean;resisted?:boolean};
 
 /** Pure presentation lookup. It reads the existing move rules and never changes them. */
 export function effectForMove(move:string|null):EffectStyle|null {

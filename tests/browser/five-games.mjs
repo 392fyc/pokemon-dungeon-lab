@@ -55,7 +55,7 @@ const click=async id=>{
   const itemButton=bag.locator('[data-bag-item="'+item+'"]');
   assert.equal(await itemButton.count(),1,'the held consumable must appear in the all-items category');
   const itemName=(await itemButton.locator('.c195-name').innerText()).trim();
-  await itemButton.click();await bag.locator('#bag-pin').click();await ready();
+  await itemButton.click();if(await bag.locator('#bag-pin').count())await bag.locator('#bag-pin').click();await ready();   // a second use of an item that is already in slot 1 has no pin button
   const slotLabel=await bag.locator('[data-bag-slot="0"]').getAttribute('aria-label');
   assert.ok(slotLabel?.includes(itemName),'the selected item must appear in the assigned quick slot');
   await page.locator('#bag-close').click();await ready();
@@ -138,7 +138,7 @@ async function command(c){
  else if(a.type==='skill'){await click('skill-'+a.skill);await cell(a.targetPos);}
  else if(a.type==='wait')await click('wait');
  else if(a.type==='swap'){await click('swap');await click('partner-'+a.target);await click('submit');}
- else if(a.type==='use'){await click('use-'+a.item);await click(a.item==='teamTonic'?'item-use-teamTonic':a.item==='bigBerry'?'item-target-bigBerry-'+a.target:'item-target-'+a.target);}
+ else if(a.type==='use'){await click('use-'+a.item);if(a.item==='teamTonic'||['slumberOrb','totterOrb','luminousOrb','rollcallOrb'].includes(a.item))await click('item-use-'+a.item);else{await page.locator('#target-hint').waitFor();await page.locator('#unit-card-'+a.target+' .hud-party-main').click();}}
  else if(a.type==='rest')await click('rest');
  else if(a.type==='interact'){
   if(a.exit){await click('take-exit');await click('exit-confirm');}else await click('take');

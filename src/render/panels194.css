@@ -169,3 +169,31 @@ body.dungeon-mode #flow #result-settings{position:absolute;right:12px;top:12px;z
 .detail-chart-title{margin:0;font-size:16px;letter-spacing:2px}
 .detail-chart-note{margin:0;max-width:250px;font-size:12px;line-height:1.4;text-align:center}
 .detail194 .detail-stat-chart{width:230px;height:230px}
+
+/* Playtest round 3: current ability values (table + radar), how damage is worked out, base damage and accuracy on move rows, and the blessings tab. */
+.detail194 .detail-stat-chart{width:136px;height:136px}.detail194 .detail-stat-chart text{font-size:24px}.detail194 .detail-stat-chart .stat-value{display:none}   /* the table beside it carries every number */
+.detail-stat-table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.25}
+.detail-stat-table th{text-align:left;font-weight:900;padding:1px 4px 1px 0;white-space:nowrap}
+.detail-stat-table td{padding:1px 3px}
+.detail-stat-table .now{font-weight:900;font-size:14px}
+.detail-stat-table .stage{color:var(--paper-muted)}
+.detail-stat-table .base{color:var(--paper-muted);font-size:11px}
+.detail194 .detail-chart-note{max-width:none;font-size:11px;line-height:1.3;text-align:left}
+.detail-howto{width:100%;margin:0;padding:0;border:0;font-size:12px}
+.detail-howto summary{margin:0;padding:2px 0;line-height:1.2;cursor:pointer;font-weight:900;color:var(--paper-wood-dark)}
+/* Opening the explanation swaps it in for the numbers, so the column never grows into the tactics row. */
+.detail-chart:has(.detail-howto[open]) > :is(svg,table,.detail-chart-note){display:none}
+.detail-howto-body{padding:2px 0}.detail-howto-body p{color:var(--paper-ink)}
+.detail-howto p{margin:3px 0;line-height:1.35}
+.detail194 .paper-move{height:auto;min-height:42px;grid-template-rows:auto auto;padding-top:2px;padding-bottom:2px}
+.paper-move-numbers{grid-column:2/-1;font-size:11px;color:var(--paper-muted);font-weight:400}
+.detail-blessings-tab{display:grid;place-items:center;font-size:15px;font-weight:900}
+.detail194.is-blessings{height:auto;min-height:300px}
+.detail-blessings{margin-top:22px}
+.detail-blessings ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.detail-blessings li{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;align-items:center;padding:6px 10px;background:var(--paper-2);box-shadow:0 0 0 2px var(--paper-ink)}
+.detail-blessings li strong{font-size:16px}
+.detail-blessings li span{font-size:14px}
+.detail-blessings .paper-muted{font-size:16px}
+.detail194 .detail-body{grid-template-columns:216px 262px minmax(0,1fr)}
+@media (max-height:620px){.detail194 .detail-stat-chart{display:none}.detail194 .detail-chart{max-height:none}}

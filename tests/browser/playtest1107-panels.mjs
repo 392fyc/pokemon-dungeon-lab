@@ -6,11 +6,11 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const out=process.env.SHOT_DIR||'.artifacts/trial/';
 const base=process.env.TRIAL_URL;if(!base)throw Error('Set TRIAL_URL to the local running trial.');
 const b=await chromium.launch({...(process.env.BROWSER_EXECUTABLE?{executablePath:process.env.BROWSER_EXECUTABLE}:{channel:'msedge'}),headless:true});
-async function open(w,h,notFull){
+async function open(w,h,anim=false){
  const ctx=await b.newContext({viewport:{width:w,height:h}});
- await ctx.addInitScript(()=>{window.__trialNoAutoSleep=true;window.__trialNoAnim=true;});
+ await ctx.addInitScript(a=>{window.__trialNoAutoSleep=true;if(!a)window.__trialNoAnim=true;},anim);
  const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));
- await p.goto(base+'/?dev=1&seed=7');
+ await p.goto(base+'/?dev=1&seed=7'+(anim?'&anim=on':''));
  await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
  await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
  return {ctx,p};
@@ -25,9 +25,8 @@ for(const [w,h] of [[1280,720],[900,520]]){
  await fit(p,'#learning-choice','learning');
  assert.equal(await p.locator('#learn-confirm').isDisabled(),true);
  assert.ok(await p.locator('#learning-choice .c195-learner-types .paper-type').count()>=1,'the learner types are shown beside the portrait');
- {const own=await p.evaluate(()=>{const s=window.trial.getState(),u=s.units[s.pendingLearnMoves[0].actor];return {types:window.trial.view()&&u.species,marks:[...document.querySelectorAll('#learning-choice .c195-same')].map(e=>e.closest('.c195-move').querySelector('strong').textContent)};});
-  assert.ok(own.marks.length>=1&&own.marks.length<5,'moves of the learner own type carry a same-type mark: '+JSON.stringify(own.marks));
-  assert.ok(!own.marks.includes('撞击'),'a Normal move on a Grass learner is not marked');}
+ assert.equal(await p.locator('#learning-choice .c195-same').count(),0,'the own-type mark is gone: the learner types and each move type are shown, nothing more');
+ assert.doesNotMatch(await p.locator('#learning-choice').innerText(),/本系/);
  assert.equal(await p.evaluate(()=>document.activeElement?.className.includes('c195-move')),true,'the window opens with the focus on its first card (the main button is still disabled)');
  {const boxes=await p.locator('.c195-old .c195-move').evaluateAll(n=>n.map(el=>{const r=el.getBoundingClientRect();return {y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),r:r.right,b:r.bottom};}));
   assert.equal(boxes.length,4);assert.ok(boxes.every(r=>Math.abs(r.w-boxes[0].w)<=1&&r.r<=w+1&&r.b<=h+1),'the four replacement cards share one width and stay on screen');
@@ -46,6 +45,11 @@ for(const [w,h] of [[1280,720],[900,520]]){
  await p.locator('#bag-open').click();await p.waitForSelector('.c195-bag');
  assert.equal(await p.evaluate(()=>document.activeElement?.className.includes('c195-bag-item')),true,'the bag opens with the focus on the first item');
  await fit(p,'.c195-bag','bag');
+ // Enter on a bag item keeps the focus on that same item after the window redraws (stable ids); tabs and slots have ids too
+ await p.locator('#bag-item-tonic').focus();await p.keyboard.press('Enter');
+ assert.equal(await p.evaluate(()=>document.activeElement?.id),'bag-item-tonic','focus stays on the item after Enter');assert.equal(await p.locator('#bag-item-tonic.is-selected').count(),1);
+ await p.locator('#bag-item-berry').focus();await p.keyboard.press('Enter');assert.equal(await p.evaluate(()=>document.activeElement?.id),'bag-item-berry');
+ assert.ok(await p.locator('#bag-category-all').count()===1&&await p.locator('#bag-slot-0').count()===1);
  console.log('detail:',(await p.locator('.c195-bag-detail').innerText()).replace(/\n/g,' | '));
  await p.locator('[data-bag-item="tonic"]').click();assert.equal(await p.evaluate(()=>window.trial.getState().prog.items.tonic),2);
  assert.deepEqual(await p.evaluate(()=>[...document.querySelectorAll('.c195-bag-quick-grid button.is-empty')].length),[6].length&&6,'click does not pin');
@@ -81,5 +85,13 @@ for(const [w,h] of [[1280,720],[900,520]]){
   else{await p.locator('#accept').click();await p.waitForTimeout(400);const r=await p.evaluate(()=>window.trial.getState());assert.equal(r.phase,'playing');assert.equal(r.queue.length,3);}
   await ctx.close();
  }
+}
+// the default (animation on) path: the learning window gets the same focus once it shows
+{
+ const {ctx,p}=await open(1280,720,true);
+ await p.evaluate(()=>{const s=window.trial.store.world;const u=s.units[s.leader];u.learned=['tackle','quickattack','ember','absorb'];u.pp={tackle:20,quickattack:15,ember:10,absorb:12};u.maxPp={...u.pp};s.phase='learning';s.pendingLearnMoves=[{actor:s.leader,move:'flamethrower',pp:8}];window.dispatchEvent(new Event('blur'));});
+ await p.waitForSelector('#learning-choice',{state:'visible'});await p.waitForTimeout(300);
+ assert.equal(await p.evaluate(()=>document.activeElement?.className.includes('c195-move')),true,'with animation on, the learning window also opens with the focus on its first card');
+ assert.deepEqual(p.errs,[]);await ctx.close();
 }
 await b.close();console.log('done');

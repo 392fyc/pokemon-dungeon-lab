@@ -9,6 +9,7 @@ import {portrait} from '../ui/title.ts';
 import {standingSprite,starterStandee} from '../ui/title-shell.ts';
 import {sheet} from './sprites.ts';
 import {starterMoveFields} from './hud.ts';
+import {TYPE_COLORS} from './item-icons.ts';
 import './camp.css';
 
 export const CAMP_BUILDINGS = {
@@ -40,7 +41,6 @@ const CAMP_SPOTS = {
   records: [862, 462, 221, 162],
 } as const;
 const KEEPER_VISIBLE_HEIGHT = {chansey:26, snorlax:38} as const;
-const TYPE_COLORS:Record<string,string>={Normal:'#5f5e50',Water:'#2b5f8a',Fire:'#a8482a',Grass:'#3f7a3a',Electric:'#9a7a24',Ice:'#4f8196',Fighting:'#963f45',Poison:'#765196',Ground:'#86643b',Flying:'#54799b',Psychic:'#a25891',Bug:'#55753a',Rock:'#776749',Ghost:'#5b4e81',Dragon:'#4f4c9b',Dark:'#49413b',Steel:'#627381',Fairy:'#9d6688'};
 const DIFFICULTY_LABEL:Record<Difficulty,string>={easy:'简单',normal:'普通',hard:'困难'};
 
 function spotPosition(x:number,y:number):string {

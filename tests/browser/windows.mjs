@@ -624,7 +624,7 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   assert.match(await p.locator('#goal-label').innerText(),/橙橙果×1/);assert.equal(await p.locator('#take').count(),0);
   // refusal: everyone is still at full HP (or the user is healthy), so the berry is refused with its reason
   const full=s.queue.every(i=>s.units[i].hp===s.units[i].maxHp);
-  if(full){await click(p,'use-berry');await p.locator('#item-target-C').click();await ready(p);assert.match(await p.locator('#message').innerText(),/HP已满.*本轮未执行/);assert.deepEqual(await state(p),s);}
+  if(full){await click(p,'use-berry');await p.locator('#target-hint').waitFor();assert.match(await p.locator('#target-none').innerText(),/HP已满.*本轮未执行/,'with nobody to heal every card is dimmed and the reason is shown');assert.equal(await p.locator('.hud-party-card.is-target').count(),0);await p.locator('#target-cancel').click();assert.deepEqual(await state(p),s);}
   // get hurt: walk next to the melee enemy and hold the line until someone is below max HP
     await go(await (async()=>{const t=await state(p);const lp=t.units[t.leader].pos,f=t.units[t.enemies.filter(i=>t.units[i].hp>0&&t.units[i].pos).sort((x,y)=>Math.abs(t.units[x].pos.x-lp.x)+Math.abs(t.units[x].pos.y-lp.y)-Math.abs(t.units[y].pos.x-lp.x)-Math.abs(t.units[y].pos.y-lp.y))[0]].pos;const floor=new Set(t.floor.map(q=>q.x+','+q.y));return [{x:f.x+1,y:f.y},{x:f.x-1,y:f.y},{x:f.x,y:f.y+1},{x:f.x,y:f.y-1}].find(c=>floor.has(c.x+','+c.y));})());
   for(let i=0;i<8;i++){await settlePrompt();s=await state(p);if(s.queue.some(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp))break;await key(p,'.');}
@@ -633,7 +633,7 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   const lead=s.units[s.leader].pos,near=hurt.find(id=>Math.abs(s.units[id].pos.x-lead.x)+Math.abs(s.units[id].pos.y-lead.y)<=1);
   assert.ok(near,'hurt member within reach of the leader: '+JSON.stringify({hurt,lead}));
   const before=s.units[near].hp,max=s.units[near].maxHp,rounds=s.round;
-  await click(p,'use-berry');await p.locator('#hud-item-targets').waitFor({state:'visible'});assert.ok(await p.locator('#item-target-'+near).isVisible());await p.locator('#item-target-'+near).click();await ready(p);
+  await click(p,'use-berry');await p.locator('#target-hint').waitFor();assert.ok(await p.locator('#unit-card-'+near+'.is-target').count(),'the hurt member is lit as a target');await p.locator('#unit-card-'+near+' .hud-party-main').click();await ready(p);
   const after=await state(p);assert.equal(after.prog.items.berry,0);assert.equal(after.round,rounds+1);
   assert.ok(after.log.some(t=>t.includes('使用橙橙果')&&t.includes(`HP ${before}→${Math.min(max,before+8)}`)),'berry restores 8 HP up to the maximum (an enemy hit in the same round is separate)');
   await p.screenshot({path:artifact+'windows-expedition-items.png',fullPage:true});
@@ -767,14 +767,15 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
  try{
   await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,full,profile);await p.locator('#rest').waitFor();
   const s0=await state(p);assert.equal(s0.points.find(q=>q.kind==='rest').used,false);
-  assert.equal(await p.locator('#rest').innerText(),'整理招式补给（休整点，每招恢复'+PROG.restPp+' PP，每局一次）','rest text uses the current shared PP amount');
+  assert.equal(await p.locator('#rest-panel h2').innerText(),'休息点');assert.equal(await p.locator('#rest-panel #rest').innerText(),'休息','the rest point is a shop-style panel with one button');
+  assert.equal(await p.locator('#rest-text').innerText(),'每名存活队员的每个招式恢复 '+PROG.restPp+' PP；每个休息点只能用一次。','rest text uses the current shared PP amount');
   await click(p,'rest');          // PP are full: refused with the reason, nothing changes
   assert.deepEqual(await state(p),s0);assert.match(await p.locator('#message').innerText(),/PP都已满.*没有消耗/);
   // Reload discards the first developer world; create a second in-memory fixture with one PP spent.
   await p.reload();await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,spent,profile);
   await click(p,'rest');const s1=await state(p);
   assert.equal(s1.units.C.pp[spentMove],Math.min(5,s0.units.C.maxPp[spentMove]));assert.equal(s1.points.find(q=>q.kind==='rest').used,true);assert.equal(s1.round,s0.round+1);   // 8.8 (#165, G9.2): the rest point restores 5 PP per move
-  assert.equal(await p.locator('#rest').isDisabled(),true);
+  assert.equal(await p.locator('#rest').isDisabled(),true);assert.equal(await p.locator('#rest').innerText(),'已使用');
   assert.equal(await raw(p),null);assert.deepEqual(errors,[]);
   return {refusedWhenFull:true,usedOnce:true,fixturesMemoryOnly:true};
  }finally{await context.close();}
@@ -838,7 +839,7 @@ await test('服务点7.2：商店购买不占回合；交换机送回伙伴与�
   assert.deepEqual(s.shop.stock,{...initialStock,berry:initialStock.berry-1},'buying one berry changes only berry inventory');
   await click(p,'shop-pick-tm');await click(p,'buy-tm');s=await state(p);assert.equal(s.purse,0);assert.deepEqual(s.tms.map(t=>[t.move,t.source,t.fate]),[['protect','target','held'],['roar','shop','held']]);
   assert.deepEqual(s.shop.stock,{...initialStock,berry:initialStock.berry-1,tm:null},'buying the TM removes only the TM stock after the berry purchase');
-  await click(p,'shop-pick-tonic');assert.equal(await p.locator('#buy-tonic').isDisabled(),true);assert.match(await p.locator('#shop-panel').innerText(),/钱袋不足，还差30/);
+  await click(p,'shop-pick-tonic');assert.equal(await p.locator('#buy-tonic').isDisabled(),true);assert.doesNotMatch(await p.locator('#shop-panel').innerText(),/钱袋不足|还差/,'an unaffordable item shows no explanation, only a red price and a disabled button');
   await p.screenshot({path:artifact+'windows-service-1-shop.png',fullPage:true});
   assert.equal(await raw(p),null);const purchasedStock=structuredClone(s.shop.stock);
   await click(p,'wait');s=await state(p);assert.equal(s.round,1,'waiting at the shop consumes one round');
@@ -1087,11 +1088,13 @@ await test('162 新果实：八种背包物品、分类分配、真实使用与�
     }
    }
    assert.deepEqual(await state(p),before,'browsing and assigning inventory do not mutate the world or spend a turn');
-   await click(p,'bag-close');await slot.click();await ready(p);await click(p,'item-target-A');
-   assert.deepEqual(await state(p),before,'an item with no matching condition is refused without consuming inventory or an action');
-   const refusedMessage=await p.locator('#message').innerText();
-   assert.ok(refusedMessage.includes('没有'+ITEM_NAMES[item]+'能治好的状态')&&refusedMessage.includes('本轮未执行'));
-   await slot.click();await ready(p);await click(p,'item-target-B');
+   await click(p,'bag-close');await slot.click();await ready(p);await p.locator('#target-hint').waitFor();
+   // choosing the item opens the target state: a member without the matching condition is dimmed and cannot be clicked, so nothing is spent
+   assert.equal(await p.locator('#unit-card-A.is-dim').count(),1,'a member without the matching condition is dimmed');assert.equal(await p.locator('#unit-card-A .hud-party-main').isDisabled(),true);
+   assert.equal(await p.locator('#unit-card-B.is-target').count(),1,'the member with the condition is lit');
+   await p.locator('#unit-card-A .hud-party-main').click({force:true,timeout:2000}).catch(()=>{});
+   assert.deepEqual(await state(p),before,'an item with no matching condition is not used on that member and costs nothing');
+   await p.locator('#unit-card-B .hud-party-main').click();await ready(p);
    const after=await state(p);
    assert.equal(after.round,before.round+1,'a real item use advances exactly one round');
    assert.equal(after.prog.items[item],0,'the used item is consumed once');
@@ -1101,7 +1104,7 @@ await test('162 新果实：八种背包物品、分类分配、真实使用与�
    assert.equal(await slot.isDisabled(),true);
    assert.doesNotMatch(await slot.innerText(),/×0|桃桃果|木子果|莓莓果|樱子果|零余果|治愈之种/);
    await p.screenshot({path:artifact+'windows-hud-new-fruit-'+item+'-used.png',fullPage:false});
-   checks.push({item,category,status,assignedSlot:index,refusedWithoutCondition:true,curedCompanion:true,round:after.round});
+   checks.push({item,category,status,assignedSlot:index,dimmedWithoutCondition:true,curedCompanion:true,round:after.round});
   }
   assert.deepEqual(errors,[]);
   return {checks,allConsumables:8,quickNamesOneLine:true,fixtureBoundary:'初始内存夹具注入本队背包与相邻伙伴状态，并将队员方针和敌人设为等待以隔离治疗效果；分类、快捷分配、无效拒绝和治疗均走真实界面输入，不代表自然探索路线。'};
@@ -1339,7 +1342,7 @@ await test('#112 能力值：悬停目标与草稿成员即时改变招式估算
  try{
   const {createScenario}=await import('../../src/core/scenarios.ts');
   const fixture=createScenario('K1','stat-damage-preview');
-  fixture.units.A.species='mudkip';fixture.units.B.species='treecko';
+  fixture.units.A.species='mudkip';fixture.units.B.species='charmander';
   fixture.units.B.learned=['tackle'];fixture.units.B.pp={tackle:3};fixture.units.B.maxPp={tackle:3};
   fixture.units.H.species='pidgey';fixture.units.H.hp=200;fixture.units.H.maxHp=200;fixture.units.H.waitOnly=true;
   await startMemory(p,fixture);const before=await state(p);
@@ -1347,21 +1350,21 @@ await test('#112 能力值：悬停目标与草稿成员即时改变招式估算
   await click(p,'skill-tackle');await card.hover();await preview.waitFor();
   assert.equal(await preview.innerText(),'约9点');
   await hoverCell(p,fixture.units.H.pos.x,fixture.units.H.pos.y);await card.hover();
-  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('约11点'));
-  assert.match(await preview.innerText(),/约11点/,'Mudkip atk70 / Pidgey def40 is clamped to 1.25, so round(9*1.25)=11');
+  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('约12点'));
+  assert.match(await preview.innerText(),/约12点/,'Lv5 Mudkip atk 12 / Pidgey def 9: round(9*12/9)=12');
   await p.screenshot({path:artifact+'windows-stat-damage-hover.png',fullPage:true});
   await hoverCell(p,before.units.A.pos.x,before.units.A.pos.y);await card.hover();
   await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent==='约9点');
   await click(p,'arrange');await click(p,'partner-B');await click(p,'edit-partner');
-  const partnerDraftText=await p.locator('#controls .draft').innerText();assert.match(partnerDraftText,/正在编辑 木守宫/,'the visible draft identifies the edited partner by species');
+  const partnerDraftText=await p.locator('#controls .draft').innerText();assert.match(partnerDraftText,/正在编辑 小火龙/,'the visible draft identifies the edited partner by species');
   await click(p,'actions-open');await hoverCell(p,before.units.H.pos.x,before.units.H.pos.y);await card.hover();
-  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('约11点'));
-  assert.match(await preview.innerText(),/约11点/,'the bottom HUD still estimates for leader A while B is being edited');
+  await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('约12点'));
+  assert.match(await preview.innerText(),/约12点/,'the bottom HUD still estimates for leader A while B is being edited');
   await click(p,'actions-open');const partnerCard=p.locator('#draft-skill-tackle');await partnerCard.hover();
   await p.waitForFunction(()=>document.querySelector('#hud-tooltip [data-move-preview="tackle"]')?.textContent.includes('约10点'));
-  const displayedPartnerEstimate=await preview.innerText();assert.match(displayedPartnerEstimate,/约10点/,'Treecko atk45 / Pidgey def40 => round(9*1.125)=10 for the draft actor');
+  const displayedPartnerEstimate=await preview.innerText();assert.match(displayedPartnerEstimate,/约10点/,'Lv5 Charmander atk 10 / Pidgey def 9: round(9*10/9)=10 for the draft actor');
   assert.deepEqual(await state(p),before);assert.deepEqual(errors,[]);
-  return {uiFixture:true,hoverDamage:11,draftPartnerDamage:10,ordinaryTargetFallback:true,previewDoesNotAct:true,leaderBefore:before.leader,partnerDraftText,displayedPartnerEstimate};
+  return {uiFixture:true,hoverDamage:12,draftPartnerDamage:10,ordinaryTargetFallback:true,previewDoesNotAct:true,leaderBefore:before.leader,partnerDraftText,displayedPartnerEstimate};
  }finally{await context.close();}
 });
 /* UI-only fixture: this starts directly at the legal evolution prompt so the browser check
@@ -1561,6 +1564,7 @@ await test('8.3 挑战房：真实按钮开始、封门战斗、清场开门与�
   await click(p,'start-challenge');let s=await state(p),ar=s.adventureRooms.find(r=>r.room===room.room);
   assert.equal(ar.state,'sealed');assert.equal(s.round,1);assert.ok(ar.enemyIds.some(id=>id.startsWith('c1')));
   assert.ok(ar.sealedCells.every(q=>!s.floor.some(c=>c.x===q.x&&c.y===q.y)));
+  assert.equal(await p.locator('#adventure-room-panel').count(),0,'no room panel pops up in the middle of the challenge fight');
   await p.screenshot({path:artifact+'windows-rooms83-challenge-sealed.png',fullPage:true});
   let rounds=0,prompts=0;
   while((s=await state(p)).adventureRooms.find(r=>r.room===room.room).state!=='cleared'){
@@ -1606,7 +1610,7 @@ await test('8.9a 道具房：实际拾取四种道具、分类分配、使用与
     assert.equal((await p.locator('[data-hud-quick="2"]').getAttribute('aria-label')),'空快捷格','duplicate item assignment clears its original quick slot');
     assert.match(await p.locator('[data-bag-slot="2"]').getAttribute('aria-label'),/空快捷格/,'the backpack also shows the duplicate slot as empty');
     assert.deepEqual(await state(p),beforeAssign,'assigning a collected item does not advance or mutate the run');
-    await click(p,'bag-close');await p.locator('[data-hud-quick="4"]').click();await ready(p);await click(p,'item-target-bigBerry-A');
+    await click(p,'bag-close');await p.locator('[data-hud-quick="4"]').click();await ready(p);await p.locator('#target-hint').waitFor();await p.locator('#unit-card-A .hud-party-main').click();
    }else if(item==='teamTonic')await click(p,'use-'+item);
    else{
     const category=item==='maxElixir'?'drink':'other',beforeAssign=await state(p);
@@ -1616,7 +1620,7 @@ await test('8.9a 道具房：实际拾取四种道具、分类分配、使用与
     assert.equal(await p.locator('#hud-bottom [data-hud-quick]').count(),6);
     assert.deepEqual(await state(p),beforeAssign,'category and quick assignment do not spend an action');
     await p.screenshot({path:artifact+'windows-rooms191-'+item+'-bag.png',fullPage:false});
-    await click(p,'bag-close');await p.locator('[data-hud-quick="5"]').click();await ready(p);await click(p,'item-target-A');
+    await click(p,'bag-close');await p.locator('[data-hud-quick="5"]').click();await ready(p);await p.locator('#target-hint').waitFor();await p.locator('#unit-card-A .hud-party-main').click();
    }
    s=await state(p);assert.equal(s.prog.items[item],0);
    if(item==='bigBerry')assert.equal(s.units.A.hp,s.units.A.maxHp);
@@ -2094,7 +2098,7 @@ await test('#194 手机触屏 '+touchWidth+'px 全部快捷物品先选中看说
   for(const [index,item] of Object.keys(ITEM_NAMES).filter(i=>i!=='reviverSeed').entries()){
    const slot=index%6;await assign(item,slot);const quick=p.locator('[data-hud-quick="'+slot+'"]');await quick.tap();
    assert.equal(await quick.getAttribute('aria-pressed'),'true');assert.ok(await p.locator('[data-selected-item-description]').isVisible(),item+' has a stable selected description after a real touch');
-   assert.equal(await p.locator('#hud-item-targets strong').innerText(),ITEM_NAMES[item]);
+   assert.equal(await p.locator(['teamTonic','slumberOrb','totterOrb','luminousOrb','rollcallOrb'].includes(item)?'#hud-item-targets strong':'#target-hint span').innerText(),ITEM_NAMES[item]);
    const descriptions=await p.locator('.hud-quick-slot .hud-item-description:visible,[data-selected-item-description]').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight};}));
    assert.ok(descriptions.every(r=>r.left>=0&&r.right<=r.width&&r.top>=0&&r.bottom<=r.height),'selected effects stay inside the phone viewport: '+item+' '+JSON.stringify(descriptions));
    if(item==='teamTonic')await p.screenshot({path:artifact+'playtest194-touch-'+touchWidth+'-item-selected.png'});

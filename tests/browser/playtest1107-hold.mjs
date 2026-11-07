@@ -51,4 +51,22 @@ assert.ok(results.wait.seenBanner&&results.wait.flowAt>=1200,'the banner holds t
 assert.ok(results['skip-key'].flowAt<results.wait.flowAt-500&&results['skip-click'].flowAt<results.wait.flowAt-500,'any key or click skips the pause');
 assert.ok(results['held-key'].flowAt>=1200,'a held key does not cut the pause short: '+results['held-key'].flowAt);
 assert.equal(results.noanim.seenBanner,false,'with animation off there is no pause and no banner');
+// A redraw that throws while the pause ends must not leave the run stuck in the pause: the banner is gone, input is released, and the next redraw shows the invitation window.
+{
+ const {ctx,p}=await open(true);await clickEnemy(p);
+ for(let i=0;i<60&&!(await p.evaluate(()=>!document.getElementById('result-banner').hidden));i++)await p.waitForTimeout(50);
+ assert.equal(await p.evaluate(()=>!document.getElementById('result-banner').hidden),true,'the pause began');
+ await p.evaluate(()=>{const o=document.getElementById.bind(document);let armed=false,fired=false;   // the next keypress arms one failure of the first redraw it triggers
+  document.addEventListener('keydown',()=>{armed=true;},{capture:true,once:true});
+  document.getElementById=id=>{if(id==='party'&&armed&&!fired){fired=true;document.getElementById=o;throw Error('forced redraw failure');}return o(id);};});
+ await p.keyboard.press('x');await p.waitForTimeout(200);
+ assert.ok(p.errs.some(e=>/forced redraw failure/.test(e)),'the redraw really failed while the pause ended: '+JSON.stringify(p.errs));
+ assert.equal(await p.evaluate(()=>document.getElementById('result-banner').hidden),true,'the banner is gone even though the redraw failed');
+ await p.evaluate(()=>window.dispatchEvent(new Event('blur')));   // any later redraw
+ await p.waitForFunction(()=>!document.getElementById('flow').hidden&&/想加入/.test(document.getElementById('flow').innerText),null,{timeout:3000});
+ if(await p.locator('#accept').isDisabled())await p.locator('#out-0').click();
+ await p.locator('#accept').click();await p.waitForTimeout(500);
+ assert.equal(await p.evaluate(()=>window.trial.getState().phase),'playing','the invitation can be answered: the run is not stuck');
+ assert.deepEqual(p.errs.filter(e=>!/forced redraw failure/.test(e)),[]);await ctx.close();
+}
 await b.close();console.log('hold checks passed');

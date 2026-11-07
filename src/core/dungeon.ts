@@ -9,7 +9,7 @@ export type Cell={x:number;y:number};
 export type FloorParams={width:number;height:number;floors:number;boss?:boolean;roguelike?:true;difficulty?:Difficulty;enemySleepChance?:number};
 export const DEFAULT_PARAMS:FloorParams={width:36,height:24,floors:3,boss:true,roguelike:true};
 import {ECON} from './economy.ts';
-import {SPECIES,BOSS_CONFIG,speciesMaxHp,tmPool} from './roster.ts';
+import {SPECIES,BOSS_CONFIG,speciesMaxHp,bossMaxHp,tmPool} from './roster.ts';
 import rooms83 from '../data/rooms-83.json' with {type:'json'};
 import terrainThemesJson from '../data/terrain-themes.json' with {type:'json'};
 export {BOSS_CONFIG} from './roster.ts';
@@ -957,7 +957,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     bossPos=center(rooms[bossRoom]);
     used.add(k(bossPos));
     enemies.push({id:BOSS.id,species:BOSS.species,level:enemyLevel,
-      hp:speciesMaxHp(BOSS.species,enemyLevel,traits.hpMultiplier*difficulty),pos:bossPos,boss:true,asleep:false});
+      hp:bossMaxHp(BOSS.species,enemyLevel,traits.hpMultiplier*difficulty),pos:bossPos,boss:true,asleep:false});
   }
 
   const prng=mulberry32((Math.imul(seed>>>0,0x7FEB352D)^Math.imul(level,0x846CA68B)^0x1B873593)>>>0);

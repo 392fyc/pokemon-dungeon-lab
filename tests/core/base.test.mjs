@@ -133,9 +133,9 @@ test('B7 departure: the squad in selection order, full HP and PP, carried moves 
  assert.deepEqual(s.queue,['A','B']);assert.equal(s.leader,'B');
  assert.deepEqual([s.units.A.species,s.units.B.species],['bulbasaur','charmander']);
  assert.deepEqual([s.units.A.inst,s.units.B.inst],['P3','P1']);
- assert.deepEqual([s.units.B.hp,s.units.B.maxHp,s.units.B.learned,s.units.B.moves],[19,19,['scratch','protect'],['scratch','protect']]);
+ assert.deepEqual([s.units.B.hp,s.units.B.maxHp,s.units.B.learned,s.units.B.moves],[18,18,['scratch','protect'],['scratch','protect']]);
  assert.deepEqual([s.units.B.pp,s.units.B.maxPp],[{scratch:28,protect:10},{scratch:28,protect:10}]);// 8.8: official PP
- assert.deepEqual([s.units.A.hp,s.units.A.pp],[21,{tackle:30,seedbomb:11}]);// 8.8: official PP
+ assert.deepEqual([s.units.A.hp,s.units.A.pp],[19,{tackle:30,seedbomb:11}]);// 8.8: official PP
  assert.equal(s.prog.level,5);assert.equal(s.prog.exp,0);assert.equal(s.dungeon.base,true);
 });
 

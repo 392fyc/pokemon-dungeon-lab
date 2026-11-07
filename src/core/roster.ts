@@ -25,11 +25,14 @@ export const TM_MOVES_V5=[...TM_MOVES_V4,'rest','sleeptalk'] as const;
 export const ALL_TM_MOVES=TM_MOVES_V5;
 /** Missing tmPool preserves old saves: ordinary runs use three, old boss runs six; marked pools 3/4/5 use nine/fifteen/seventeen. */
 export const tmPool=(d?:{boss?:boolean;tmPool?:3|4|5}|null):readonly string[]=>d?.boss?(d.tmPool===5?TM_MOVES_V5:d.tmPool===4?TM_MOVES_V4:d.tmPool===3?TM_MOVES_V3:TM_MOVES):LEGACY_TM_MOVES;
-export type BossTraits={levelBonus:number;hpMultiplier:number;canMove:boolean;canBeBlownAway:boolean};
+export type BossTraits={levelBonus:number;hpBase:number;hpMultiplier:number;canMove:boolean;canBeBlownAway:boolean};
 export const BOSS_CONFIG:Record<string,BossTraits>=bosses.bosses;
 /** Bosses share the ordinary roster; recruited partners do not inherit boss traits. */
 export const BOSS_SPECIES:Record<string,string>=Object.fromEntries(Object.keys(BOSS_CONFIG).map(id=>[id,SPECIES[id].dex]));
-export const speciesMaxHp=(id:string,level:number,multiplier=1)=>Math.max(1,Math.round((SPECIES[id].maxHp+Math.max(0,level-5))*multiplier));
+/** Max HP of a species at a level (playtest round 3): floor(2 x base HP x level / 100) + level + 10, times the multiplier (stamina talent, difficulty). */
+export const speciesMaxHp=(id:string,level:number,multiplier=1)=>Math.max(1,Math.round((Math.floor(2*SPECIES[id].baseStats!.hp*level/100)+level+10)*multiplier));
+/** Boss HP stays on the 7.7 fixed rule (hpBase + levels above 5, times multipliers: 53 / 75 / 105 at Lv22), not on the ability-value formula. */
+export const bossMaxHp=(id:string,level:number,multiplier=1)=>Math.max(1,Math.round((BOSS_CONFIG[id].hpBase+Math.max(0,level-5))*multiplier));
 /** The move and its max PP from the roster's learnable list, or undefined when the species cannot learn it. */
 export function learnableMove(speciesId:string,move:string):KitMove|undefined {
   const sp=speciesOf(speciesId);

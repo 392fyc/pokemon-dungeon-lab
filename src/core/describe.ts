@@ -1,6 +1,7 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
-import {ITEM_NAMES,ORB_ITEMS,SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
+import {damageStage,levelDamageBonus,ITEM_NAMES,ORB_ITEMS,SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
 import {SPECIES} from './roster.ts';
+import {currentStats,type StatKey} from './stats.ts';
 import {MOVE_DEFS,moveOf,moveEffects,type StageKey,type StatusId,type MoveRange} from './moves.ts';
 import {adventureRoomMark,adventureRoomStateZh,adventureRoomTypeZh,speciesZh,moveZh,typeZh,itemZh,type AdventureRoomType} from './names.ts';
 import {TACTIC_LABELS,isTactic,type Tactic} from './tactics.ts';
@@ -89,6 +90,22 @@ export function stepRows(s:World,steps:TraceStep[]):{id:string;text:string}[] {
   return steps.map(t=>({id:t.id,text:`${unitLabel(s.units[t.id],t.id)}：${t.failed?`原定“${actionText(s,t.id,t.action)}”已不成立，改为等待`:actionText(s,t.id,t.action)}${t.explicit?'':'（默认行为）'}`}));
 }
 
+/** One line of the details window's ability table. `value` is exactly what the damage rule divides (hp: the unit's real max HP); `stage` is the flat damage adjustment the rule applies for that stat. */
+export type StatRow={key:'hp'|StatKey;label:string;value:number;base:number;stage:number;doesNotAffectAction?:true};
+const STAT_LABELS:Record<'hp'|StatKey,string>={hp:'HP',atk:'攻击',def:'防御',spa:'特攻',spd:'特防',spe:'速度'};
+export function statSheet(s:World,u:Unit):StatRow[]|null {
+  const sp=u.species?SPECIES[u.species]:undefined,cur=currentStats(u),base=sp?.baseStats;if(!cur||!base)return null;
+  const rows:StatRow[]=[{key:'hp',label:STAT_LABELS.hp,value:u.maxHp,base:base.hp,stage:0}];
+  for(const k of ['atk','def','spa','spd'] as const)rows.push({key:k,label:STAT_LABELS[k],value:cur[k],base:base[k],stage:damageStage(s,u,k)});
+  rows.push({key:'spe',label:STAT_LABELS.spe,value:cur.spe,base:base.spe,stage:0,doesNotAffectAction:true});
+  return rows;
+}
+/** The base damage a move does before any ratio: 6 + half the power (rounded up) + the level bonus, the same numbers estimateAttackDamage starts from. */
+export function moveBaseDamage(s:World,u:Unit,move:string):number|null {
+  const spec=moveOf(move);if(!spec||!spec.effects.includes('damage')||spec.power===null)return null;
+  const level=u.side==='friend'?(s.prog?.level??u.level??5):(u.level??5);
+  return 6+Math.ceil(spec.power/2)+levelDamageBonus(level);
+}
 export type EnemyMoveRow={id:string;name:string;type:string;pp:number;maxPp:number;detail:string};
 export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];moveRows:EnemyMoveRow[];note:string;statuses:string[]};
 export type TeammateInfo={id:string;name:string;level:number|null;tactic:Tactic;moves:string[]};
@@ -127,6 +144,21 @@ export function playerText(text:string):string {
  let value=text.replace(/向-?\d+,-?\d+挥空/g,'普通攻击挥空');
  for(const [from,to] of [["普攻","普通攻击"],["朝前","向前"],["回到","返回"],["带上","携带"],["教给","学习"],["贴住","紧跟"],["贴身","相邻"],["追最近","追击最近"],["没打中","没有命中"],["打不到","无法攻击"],["打空","挥空"],["倒下退图","倒下了"]])value=value.split(from).join(to);
  return value;
+}
+/**
+ * Display-only merge of the engine's separate type note into its damage line (the engine log keeps its own format; animation.ts and the tests parse it):
+ * "X受到N伤害，HP h" + "效果绝佳"/"效果不好" -> "X受到N伤害，效果绝佳"/"……效果不好"; "X受到0伤害，HP h" -> "X受到0伤害，没有效果".
+ * `merged` maps a line index to its replacement text; `skipped` holds the indexes of note lines that were folded in.
+ */
+export function mergeLogLines(lines:readonly string[]):{merged:Map<number,string>;skipped:Set<number>} {
+  const merged=new Map<number,string>(),skipped=new Set<number>();
+  lines.forEach((t,i)=>{
+    const hit=/^(.+)受到(\d+)伤害，HP \d+$/.exec(t);if(!hit)return;
+    const note=lines[i+1];
+    if(note==='效果绝佳'||note==='效果不好'){merged.set(i,`${hit[1]}受到${hit[2]}伤害，${note}`);skipped.add(i+1);}
+    else if(hit[2]==='0')merged.set(i,`${hit[1]}受到0伤害，没有效果`);
+  });
+  return {merged,skipped};
 }
 /** Turns unit, species and move ids in a log line into readable player-facing names. */
 export function localizeLog(s:World,line:string):string {

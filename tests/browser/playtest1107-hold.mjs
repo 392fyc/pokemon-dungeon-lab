@@ -23,13 +23,15 @@ async function open(anim,skipKey){
 }
 const clickEnemy=async p=>{const pt=await p.evaluate(()=>{const v=window.trial.view().units.w1a,c=window.trial.camera();return {x:v.x-c.x,y:v.y-c.y-20};});await p.mouse.move(pt.x,pt.y);await p.waitForTimeout(150);await p.mouse.move(pt.x+1,pt.y);await p.waitForTimeout(150);await p.mouse.click(pt.x+1,pt.y);};
 const results={};
-for(const mode of ['wait','skip-key','skip-click','noanim']){
+for(const mode of ['wait','held-key','skip-key','skip-click','noanim']){
  const {ctx,p,info}=await open(mode!=='noanim');console.log(mode,'invite rng',info);
+ if(mode==='held-key')await p.keyboard.down('x');   // a key already held when the enemy falls keeps auto-repeating
  const t0=Date.now();await clickEnemy(p);
  let seenBanner=false,flowAt=null,bannerGoneAt=null,shot=false;
  for(let i=0;i<60;i++){
   const st=await p.evaluate(()=>({b:!document.getElementById('result-banner').hidden,t:document.getElementById('result-banner').textContent,f:!document.getElementById('flow').hidden&&/想加入/.test(document.getElementById('flow').innerText),ph:window.trial.getState().phase,an:window.trial.animating()}));
-  if(st.b){seenBanner=st.t;if(!shot){shot=true;await p.screenshot({path:out+'banner.png'});if(mode==='skip-key')await p.keyboard.press('x');if(mode==='skip-click')await p.mouse.click(300,300);}}
+  if(st.b){seenBanner=st.t;if(!shot){shot=true;await p.screenshot({path:out+'banner.png'});if(mode==='held-key'){for(let r=0;r<4;r++){await p.keyboard.down('x');await p.waitForTimeout(120);}assert.equal(await p.evaluate(()=>!document.getElementById('result-banner').hidden),true,'key auto-repeat must not skip the pause');await p.keyboard.up('x');}
+   if(mode==='skip-key')await p.keyboard.press('x');if(mode==='skip-click')await p.mouse.click(300,300);}}
   if(st.b&&st.f)throw Error('panel visible together with banner');
   if(!st.b&&seenBanner&&bannerGoneAt===null)bannerGoneAt=Date.now()-t0;
   if(st.f&&flowAt===null){flowAt=Date.now()-t0;break;}
@@ -39,5 +41,6 @@ for(const mode of ['wait','skip-key','skip-click','noanim']){
 }
 assert.ok(results.wait.seenBanner&&results.wait.flowAt>=1200,'the banner holds the panel back for the full pause');
 assert.ok(results['skip-key'].flowAt<results.wait.flowAt-500&&results['skip-click'].flowAt<results.wait.flowAt-500,'any key or click skips the pause');
+assert.ok(results['held-key'].flowAt>=1200,'a held key does not cut the pause short: '+results['held-key'].flowAt);
 assert.equal(results.noanim.seenBanner,false,'with animation off there is no pause and no banner');
 await b.close();console.log('hold checks passed');

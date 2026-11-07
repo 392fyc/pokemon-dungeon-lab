@@ -33,3 +33,18 @@ test('together: an opponent more than 3 from the leader is still not chased',()=
  let s=world(units,{floor:open(9),leader:'A',queue:['A','X'],enemies:['F']});s.rooms=[{x:1,y:1,w:9,h:9}];s.enemyAiRng=1;sureHit(s);
  s=round(s);assert.ok(chebyshev(s.units.X.pos,s.units.A.pos)<=1,'X stays with the leader');
 });
+
+/* PR 214 review: corridors (2-step sight) and enemies the partner cannot see. */
+function corridor(partnerX,foeX){
+ const units={A:mate('A',5,1,'wait'),X:mate('X',partnerX,1,'together'),F:dummy('F',foeX,1)};
+ const s=world(units,{floor:Array.from({length:14},(_,x)=>({x,y:1})),leader:'A',queue:['A','X'],enemies:['F']});
+ s.enemyAiRng=1;return sureHit(s);   // no rooms: corridor sight, 2 steps
+}
+test('together in a corridor: a visible opponent inside the leader zone is approached',()=>{
+ let s=corridor(6,8);   // F is 3 from the leader and 2 from X
+ s=round(s);assert.equal(s.units.X.pos.x,7,'X steps toward F instead of waiting beside the leader');
+});
+test('together in a corridor: an opponent X cannot see is not chased, even inside the leader zone',()=>{
+ let s=corridor(4,8);   // F is 3 from the leader but 4 from X, beyond the 2-step sight
+ s=round(s);assert.equal(s.units.X.pos.x,4,'X keeps its place beside the leader');
+});

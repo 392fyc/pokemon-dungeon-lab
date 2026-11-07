@@ -40,8 +40,9 @@ export async function step193Checks({setup,startMemory,state,ready,cell,artifact
   assert.equal(await p.locator('#learn-confirm').isDisabled(),true,'nothing is forgotten before a card is chosen');
   const dialog=await p.locator('#learning-choice').boundingBox();assert.ok(dialog.x>=0&&dialog.x+dialog.width<=width+1);
   assert.ok(dialog.y>=0&&dialog.y+dialog.height<=height+1,'the complete learning choice remains inside the viewport');
-  const choiceBoxes=await p.locator('.c195-old .c195-move').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,right:r.right,bottom:r.bottom};}));
+  const choiceBoxes=await p.locator('.c195-old .c195-move').evaluateAll(nodes=>nodes.map(el=>{const r=el.getBoundingClientRect();return {top:Math.round(r.top),width:r.width,height:r.height,right:r.right,bottom:r.bottom};}));
   assert.ok(choiceBoxes.every(r=>Math.abs(r.width-choiceBoxes[0].width)<=1&&r.right<=width+1),'all four replacement cards use equal widths and stay inside the viewport');
+  for(const top of new Set(choiceBoxes.map(r=>r.top)))assert.equal(new Set(choiceBoxes.filter(r=>r.top===top).map(r=>Math.round(r.height))).size,1,'replacement cards in one row share one height (equivalent of the old equal-size check)');
   await p.screenshot({path:artifact+'step193-'+width+'-learning.png'});
   assert.equal(await p.locator('#hud-tooltip').isVisible(),false,'the global pointer-transparent card is not used for learning');
   const overlaps=(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y;

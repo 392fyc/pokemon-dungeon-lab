@@ -24,16 +24,23 @@ for(const [w,h] of [[1280,720],[900,520]]){
  await p.waitForSelector('#learning-choice');await p.waitForTimeout(200);
  await fit(p,'#learning-choice','learning');
  assert.equal(await p.locator('#learn-confirm').isDisabled(),true);
+ assert.equal(await p.evaluate(()=>document.activeElement?.className.includes('c195-move')),true,'the window opens with the focus on its first card (the main button is still disabled)');
+ {const boxes=await p.locator('.c195-old .c195-move').evaluateAll(n=>n.map(el=>{const r=el.getBoundingClientRect();return {y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),r:r.right,b:r.bottom};}));
+  assert.equal(boxes.length,4);assert.ok(boxes.every(r=>Math.abs(r.w-boxes[0].w)<=1&&r.r<=w+1&&r.b<=h+1),'the four replacement cards share one width and stay on screen');
+  for(const y of new Set(boxes.map(r=>r.y)))assert.equal(new Set(boxes.filter(r=>r.y===y).map(r=>r.h)).size,1,'cards in one row have equal height');}
  await p.keyboard.press('2');assert.equal(await p.locator('#learn-replace-quickattack[aria-pressed=true]').count(),1);assert.equal(await p.locator('#learn-confirm').isDisabled(),false);
- console.log('confirm text:',await p.locator('#learn-confirm').innerText());
+ assert.match(await p.locator('#learn-confirm').innerText(),/忘掉.*学会/);
+ await p.locator('#learn-confirm').focus();
  await p.screenshot({path:out+`learning-${w}x${h}.png`});
  await p.keyboard.press('Enter');await p.waitForTimeout(400);
- console.log('after enter learned',await p.evaluate(()=>{const s=window.trial.getState();return JSON.stringify([s.phase,s.units[s.leader].learned])}));
+ {const r=await p.evaluate(()=>{const s=window.trial.getState();return {phase:s.phase,learned:s.units[s.leader].learned};});
+  assert.equal(r.phase,'playing');assert.deepEqual(r.learned,['tackle','flamethrower','ember','absorb'],'Enter on the confirm button forgot Quick Attack and learned Flamethrower');}
  await ctx.close();
  // bag
  ({ctx,p}=await open(w,h));
  await p.evaluate(()=>{const s=window.trial.store.world;Object.assign(s.prog.items,{berry:3,tonic:2,chestoBerry:1,healSeed:1,bigBerry:1});s.tms=[{move:'tackle',fate:'held'}];window.dispatchEvent(new Event('blur'));});
  await p.locator('#bag-open').click();await p.waitForSelector('.c195-bag');
+ assert.equal(await p.evaluate(()=>document.activeElement?.className.includes('c195-bag-item')),true,'the bag opens with the focus on the first item');
  await fit(p,'.c195-bag','bag');
  console.log('detail:',(await p.locator('.c195-bag-detail').innerText()).replace(/\n/g,' | '));
  await p.locator('[data-bag-item="tonic"]').click();assert.equal(await p.evaluate(()=>window.trial.getState().prog.items.tonic),2);
@@ -59,9 +66,15 @@ for(const [w,h] of [[1280,720],[900,520]]){
   await p.waitForSelector('#invitation-choice');await p.waitForTimeout(300);
   await fit(p,'#invitation-choice','invite-'+(full?'full':'notfull'));
   console.log('buttons:',await p.locator('.c195-foot button').allInnerTexts());
-  if(full){assert.equal(await p.locator('#accept').isDisabled(),true);await p.locator('#out-1').click();console.log('accept text:',await p.locator('#accept').innerText());await fit(p,'#invitation-choice','invite-full-selected');}
+  if(full){assert.equal(await p.locator('#accept').isDisabled(),true);assert.equal(await p.evaluate(()=>document.activeElement?.id),'out-0','full team: focus starts on the first member card');
+   await p.keyboard.press('2');assert.equal(await p.locator('#out-1[aria-pressed=true]').count(),1,'the number key picks the member');assert.equal(await p.evaluate(()=>document.activeElement?.id),'accept','after the number key the focus moves to the accept button, so Enter confirms');
+   assert.match(await p.locator('#accept').innerText(),/回营.*上场/);await fit(p,'#invitation-choice','invite-full-selected');}
+  else assert.equal(await p.evaluate(()=>document.activeElement?.id),'accept','team not full: focus starts on the accept button');
   await p.screenshot({path:out+`invite-${full?'full':'notfull'}-${w}x${h}.png`});
-  if(full){await p.locator('#accept').click();await p.waitForTimeout(400);console.log('after accept',await p.evaluate(()=>{const s=window.trial.getState();return JSON.stringify([s.phase,s.queue])}));}
+  if(full){const out1=await p.evaluate(()=>window.trial.getState().queue[1]);await p.keyboard.press('Enter');await p.waitForTimeout(400);
+   const r=await p.evaluate(()=>{const s=window.trial.getState();return {phase:s.phase,queue:s.queue};});
+   assert.equal(r.phase,'playing');assert.ok(!r.queue.includes(out1),'the chosen member went back to camp');assert.equal(r.queue.length,3);assert.ok(r.queue.some(id=>id.startsWith('N')),'the newcomer joined');}
+  else{await p.locator('#accept').click();await p.waitForTimeout(400);const r=await p.evaluate(()=>window.trial.getState());assert.equal(r.phase,'playing');assert.equal(r.queue.length,3);}
   await ctx.close();
  }
 }

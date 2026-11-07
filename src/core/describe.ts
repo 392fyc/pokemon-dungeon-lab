@@ -1,5 +1,5 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
-import {SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
+import {ITEM_NAMES,ORB_ITEMS,SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
 import {SPECIES} from './roster.ts';
 import {MOVE_DEFS,moveOf,moveEffects,type StageKey,type StatusId,type MoveRange} from './moves.ts';
 import {adventureRoomMark,adventureRoomStateZh,adventureRoomTypeZh,speciesZh,moveZh,typeZh,itemZh,type AdventureRoomType} from './names.ts';
@@ -60,7 +60,7 @@ export function adventureRoomMarkers(s:World):AdventureRoomMarker[] {
       label:room.state==='sealed'?'封闭':typeLabel,typeLabel,stateLabel,dimmed});
     if(seen.has(key(room.interaction)))markers.push({room:room.room,at:{...room.interaction},kind:'interaction',roomType:room.type,state:room.state,
       label:room.type==='challenge'&&room.state==='sealed'?'战':adventureRoomMark(room.type,room.item),typeLabel,stateLabel,dimmed,
-      ...(room.item?{itemLabel:itemZh(room.item)}:{})});
+      ...(room.item?{itemLabel:ITEM_NAMES[room.item]}:{})});
   }
   return markers;
 }
@@ -74,7 +74,7 @@ export function actionText(s:World,actor:string,a:Action):string {
     case 'basicForward':return '向前普通攻击';
     case 'skill':return `${skillLabel(s.units[actor],a.skill)} → ${a.target===actor?'自身':who(a.target)}`;
     case 'swap':return `与${who(a.target)}换位`;
-    case 'use':return a.item==='teamTonic'?`使用${itemZh(a.item)}恢复在场同行的PP`:`使用${itemZh(a.item)} → ${who(a.target)}`;
+    case 'use':return a.item==='teamTonic'?`使用${ITEM_NAMES[a.item]}恢复在场同行的PP`:ORB_ITEMS.includes(a.item)?`使用${ITEM_NAMES[a.item]}`:`使用${ITEM_NAMES[a.item]} → ${who(a.target)}`;
     case 'interact':return a.exit?'交互并请求跨层':'取得并继续';
     case 'exchange':return `启动交换机，把${who(a.target)}送回基地，运走${a.cargo.length}份招式机`;
     default:return '等待';

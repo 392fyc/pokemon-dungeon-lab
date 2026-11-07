@@ -403,7 +403,7 @@ test('C10: rally changes only the invite threshold, while preserving the recruit
   const targeted=14,draw=rngStep(targeted).value;
   assert.ok(draw>=0.30&&draw<0.45,`fixed RNG state ${targeted} draws ${draw} in the rally-only range`);
   let withRally=getBlessing('rally',{seed:912}).state;
-  let withoutRally=structuredClone(withRally);withoutRally.blessings=[];withoutRally.tmChoiceReady=false;
+  let withoutRally=structuredClone(withRally);withoutRally.blessings=[];
   for(const s of [withRally,withoutRally]){s.prog.rng=targeted;s.units.A.pos=pos(1);addEnemy(s,'recruit-test',2,1,1);}
   withRally=act(withRally,basic('recruit-test'));withoutRally=act(withoutRally,basic('recruit-test'));
   assert.equal(withRally.phase,'invitation');assert.notEqual(withoutRally.phase,'invitation');
@@ -415,7 +415,7 @@ test('C7/C13: a challenge TM opens a three-choice panel; a blessing reward opens
   assert.equal(s.phase,'tmChoice','the blessing opens the three-choice panel at once');assert.equal(pending(s,'tmChoice').source,'blessing');
   assert.equal(pending(s,'tmChoice').options.length,3);assert.equal(new Set(pending(s,'tmChoice').options).size,3);
   const picked=pending(s,'tmChoice').options[0];s=apply(s,{type:'tmChoice',move:picked});
-  assert.deepEqual(s.tms,[{move:picked,source:'target',fate:'held'}]);assert.notEqual(s.tmChoiceReady,true);
+  assert.deepEqual(s.tms,[{move:picked,source:'target',fate:'held'}]);
   let shop=structuredClone(s);shop.points=[{pos:structuredClone(shop.units.A.pos),kind:'shop',used:false}];
   shop.shop={level:1,stock:{berry:0,tonic:0,tm:'protect'},trades:[]};shop.purse=100;
   shop=apply(shop,{type:'buy',item:'tm'});assert.deepEqual(shop.tms[1],{move:'protect',source:'shop',fate:'held'});
@@ -446,7 +446,7 @@ test('C11: terminal win and wipe discard the run-only contract state without add
   win=killOne(win,BOSS.id);const controlEnd=killOne(winControl,BOSS.id);
   assert.equal(win.phase,'ended');assert.equal(win.end.outcome,'won');assert.equal(win.prog.exp,controlEnd.prog.exp,'an unfinished mission adds no experience to the ordinary boss award');
   const next=createExpedition('fresh-after-win',991,3,{members:[{inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}]}],leader:0},0,true,3);
-  assert.deepEqual(next.commissions??[],[]);assert.deepEqual(next.blessings??[],[]);assert.notEqual(next.lullabyPending,true);assert.notEqual(next.tmChoiceReady,true);
+  assert.deepEqual(next.commissions??[],[]);assert.deepEqual(next.blessings??[],[]);
 
   let wipe=fixture({roomTypes:[],downX:8,partySize:3});wipe.queue=['A','B','C'];
   wipe.units.A.hp=1;wipe.units.B.hp=wipe.units.C.hp=0;wipe.units.B.pos=wipe.units.C.pos=null;
@@ -472,15 +472,13 @@ test('C11: a room choice followed by a same-round wipe ends immediately and clea
 
   let win=fixture({seed:1711,level:3,roomTypes:[],partySize:1});
   win.queue=['A'];win.units.A.pos=pos(1);win.units.A.hp=1;
-  win.blessings=['tmChoice'];win.tmChoiceReady=true;
+  win.blessings=['tmChoice'];
   win.enemies=[BOSS.id,'wipe-attacker'];
   const boss=enemy(BOSS.id,2,1,1,'melee',{waitOnly:true});boss.boss=true;boss.species=BOSS.species;boss.hp=boss.maxHp=1;boss.level=22;
   const attacker=enemy('wipe-attacker',0,1,50,'melee');attacker.pp.tackle=50;attacker.maxPp.tackle=50;
   win.units[BOSS.id]=boss;win.units[attacker.id]=attacker;
   win=act(win,basic(BOSS.id));
-  assert.equal(win.phase,'tmChoice');assert.equal(win.pendingEnd,'won');assert.equal(win.end,null);
-  assert.equal(pending(win,'tmChoice').source,'boss');assert.equal(pending(win,'tmChoice').options.length,3);
-  win=apply(win,{type:'tmChoice',move:pending(win,'tmChoice').options[0]});
+  // The Select-TM blessing is spent when it is taken (an immediate choice), so the boss drop is an ordinary machine and the run ends at once.
   assert.equal(win.phase,'ended');assert.equal(win.end.outcome,'won');assert.equal(win.pendingChoices,undefined);
   assert.equal(win.tms.length,1);assert.equal(win.tms[0].source,'boss');assert.equal(win.tms[0].fate,'brought');
 });

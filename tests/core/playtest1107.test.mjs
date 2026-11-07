@@ -27,3 +27,15 @@ test('the internal defeat wording is replaced in what the player reads, not in t
  const s=world({},{floor:[{x:1,y:1}],queue:[],enemies:[]});
  assert.equal(localizeLog(s,'走路草倒下退图'),'走路草倒下了');
 });
+
+test('item names in player text come from ITEM_NAMES, never an English id (PR 214 review)',async()=>{
+ const {actionText,adventureRoomMarkers}=await import('../../src/core/describe.ts');
+ const {ITEM_NAMES}=await import('../../src/core/engine.ts');
+ const s=world({A:speciesUnit('A','mudkip',5,{x:1,y:1})},{floor:[{x:1,y:1},{x:2,y:1}],queue:['A'],enemies:[],leader:'A'});
+ for(const item of Object.keys(ITEM_NAMES)){
+  const text=actionText(s,'A',{type:'use',item,target:'A'});
+  assert.ok(text.includes(ITEM_NAMES[item]),item+': '+text);assert.ok(!text.includes(item)||item===ITEM_NAMES[item],item+' leaks its id: '+text);
+ }
+ s.adventureRooms=[{room:0,type:'item',state:'idle',interaction:{x:2,y:1},doors:[],sealedCells:[],enemyIds:[],reward:null,rewardCurrency:null,item:'rollcallOrb',rewardItem:null,rewardMove:null}];
+ const marker=adventureRoomMarkers(s).find(m=>m.kind==='interaction');assert.equal(marker?.itemLabel,'邀回宝珠');
+});

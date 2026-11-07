@@ -2,12 +2,13 @@ import type Phaser from 'phaser';
 import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate} from '../render/hud.ts';
 import '../render/hud.css';
 import {itemIconImg} from '../render/item-icons.ts';
+import {resultBanner} from '../render/result-banner.ts';
 import {unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
 import '../render/panels194.css';
 import {learningPanel,invitationPanel} from '../render/choice-panels.ts';
 import '../render/choice-panels.css';
 import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
-import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
+import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,ORB_ITEMS,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
@@ -90,7 +91,7 @@ let selectedConfig='main-invite';
 let draft:{partner:string;action:Action|null;main:Action|null;editor:string;swap:boolean}|null=null;
 let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
-let inviteChoice:string|undefined,inviteReject=false,notice='',detailsId:string|null=null,detailsOpenerId:string|null=null;
+let inviteChoice:string|undefined,notice='',detailsId:string|null=null,detailsOpenerId:string|null=null;
 let learnChoice:string|null=null,learnKeyShown='';
 let campSelected:string|null=null,departureOpen=false;
 let vaultState:VaultState={tab:'tm',by:'type',filter:'all',move:null,learner:null,shard:null};
@@ -114,31 +115,23 @@ const anim={active:false,shift:false};
 /** Playtest 1107: after a defeat or an invitation the board keeps the last frame and a centre banner for a moment before the invitation or settlement panel opens; any key or click skips it. */
 let hold:{end:()=>void}|null=null;
 const holdBanner=document.createElement('div');holdBanner.id='result-banner';holdBanner.setAttribute('role','status');holdBanner.hidden=true;document.body.append(holdBanner);
-function resultBanner(before:World,after:World):{text:string;ms:number}|null{
- if(!animationEnabled()||before.phase!=='playing'||(after.phase!=='invitation'&&after.phase!=='ended'))return null;
- const bossDown=before.enemies.some(id=>before.units[id]?.boss&&before.units[id].hp>0)&&!after.enemies.some(id=>after.units[id]?.boss&&after.units[id].hp>0);
- if(bossDown||(after.phase==='ended'&&after.end?.outcome==='won'))return {text:'击败了首领',ms:2000};
- if(after.phase==='ended')return after.end?.outcome==='wipe'?{text:'队伍全灭',ms:2000}:null;
- const pending=after.invitations.find(i=>i.status==='pending');
- return pending?{text:`${unitLabel(pending.unit,pending.unit.id)}想加入队伍`,ms:1200}:null;
-}
 function startHold(b:{text:string;ms:number}):Promise<void>{
  return new Promise<void>(resolve=>{
   holdBanner.textContent=b.text;holdBanner.hidden=false;anim.active=true;
   const timer=setTimeout(()=>hold?.end(),b.ms);
-  hold={end:()=>{clearTimeout(timer);hold=null;holdBanner.hidden=true;anim.active=false;render();resolve();}};
+  hold={end:()=>{clearTimeout(timer);hold=null;holdBanner.hidden=true;anim.active=false;try{render();}finally{resolve();}}};
  });
 }
 let sleepTimer:ReturnType<typeof setTimeout>|null=null,sleepTurn='';
 const sleepAutoEnabled=()=>!(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep;
 function cancelSleepAdvance(){if(sleepTimer!==null)clearTimeout(sleepTimer);sleepTimer=null;sleepTurn='';}
 function syncSleepAdvance(){
- const s=live(),eligible=screen==='play'&&s?.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!detailsId&&sleepAutoEnabled()&&sleeping(s.units[s.leader]);
+ const s=live(),eligible=screen==='play'&&s?.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!logDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(s.units[s.leader]);
  if(!eligible||!s){cancelSleepAdvance();return;}
  const turn=s.runId+'|'+s.round+'|'+s.leader;if(sleepTimer!==null&&sleepTurn===turn)return;
  cancelSleepAdvance();sleepTurn=turn;sleepTimer=setTimeout(()=>{
   sleepTimer=null;sleepTurn='';const current=live();
-  if(current&&current.runId+'|'+current.round+'|'+current.leader===turn&&screen==='play'&&current.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!detailsId&&sleepAutoEnabled()&&sleeping(current.units[current.leader]))void send({type:'round',action:{type:'wait'}});
+  if(current&&current.runId+'|'+current.round+'|'+current.leader===turn&&screen==='play'&&current.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!logDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(current.units[current.leader]))void send({type:'round',action:{type:'wait'}});
  },600);
 }
 
@@ -169,9 +162,9 @@ async function send(command:Parameters<typeof applyCommand>[1],keepMovement=fals
  let playing:Promise<void>|null=null;{const after=live();
   // Animation is presentation only: any failure here must leave the input lock released and the real state drawn.
   try{if(after){freshCount=newLines(before.log,after.log).length;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshCount=0;}
-  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){anim.active=true;const banner=after?resultBanner(before,after):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
+  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){anim.active=true;const banner=after?resultBanner(before,after,animationEnabled()):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
   catch{anim.active=false;playing=null;render();}}
- clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;inviteReject=false;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
+ clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
 async function setTactic(actor:string,value:string){
  if(anim.active||store.status!=='ready'||!live()||live()!.phase!=='playing'||!isTactic(value))return;
  const pending=store.dispatch({type:'tactic',actor,tactic:value});
@@ -246,13 +239,27 @@ function adventureRoomPanel(s:World,room:AdventureRoom,editor:string,ready:boole
  if(room.type==='commission')return `<section class="service" id="adventure-room-panel" data-room-type="commission" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以查看本层试炼，选择接下或拒绝；拒绝会完成此房间。':'此房间已处理；进行中的委托进度与效果显示在右侧。'}</p>${room.state==='idle'?button('interact-commission','查看本层委托',!canAct,'data-action="interact-commission"'):''}</section>`;
  return `<section class="service" id="adventure-room-panel" data-room-type="blessing" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以选择一项祝福，也可以放弃。':`此房间已处理；已获得的祝福显示在右侧。`}</p>${room.state==='idle'?button('interact-blessing','查看祝福选项',!canAct,'data-action="interact-blessing"'):''}</section>`;
 }
-function render(){document.body.classList.toggle('camp-mode',screen==='play'&&store.atBase);syncDungeonLayout();for(const id of ['context-actions','hud-bottom','hud-item-targets'])$(id).replaceChildren();renderOverlay();renderMain();renderExtras();renderDungeonHud();refreshTransfer();syncSleepAdvance();if(screen==='play')void ensureBoard();}
+/** Panel focus: the learn, invitation and bag windows put the focus on their main control when they open, and keep it through re-renders. */
+let panelFocusKey='';
+function applyPanelFocus(previousId:string):void{
+ const s=live();let key='',first='';
+ if(screen==='play'&&s&&s.phase==='learning'){key='learn|'+s.runId+'|'+(s.pendingLearnMoves?.[0]?.move??'');first='#learn-confirm:not(:disabled), .c195-old .c195-move:not(:disabled)';}
+ else if(screen==='play'&&s&&s.phase==='invitation'){key='invite|'+(s.invitations.find(i=>i.status==='pending')?.id??'');first='#accept:not(:disabled), #out-0:not(:disabled)';}
+ else if(screen==='play'&&bagOpen){key='bag';first='.c195-bag-item.is-selected, .c195-bag-item';}
+ if(!key){panelFocusKey='';return;}
+ if(key!==panelFocusKey){panelFocusKey=key;document.querySelector<HTMLElement>(first)?.focus({preventScroll:true});return;}
+ const el=previousId?document.getElementById(previousId) as HTMLButtonElement|null:null;
+ if(el&&!el.disabled)el.focus({preventScroll:true});
+}
+function render(){const active=document.activeElement as HTMLElement|null,previousId=active&&active.id&&($('flow').contains(active)||$('hud-bag').contains(active))?active.id:'';try{renderAll();}finally{applyPanelFocus(previousId);}}
+function renderAll(){document.body.classList.toggle('camp-mode',screen==='play'&&store.atBase);syncDungeonLayout();for(const id of ['context-actions','hud-bottom','hud-item-targets'])$(id).replaceChildren();renderOverlay();renderMain();renderExtras();renderDungeonHud();refreshTransfer();syncSleepAdvance();if(screen==='play')void ensureBoard();}
 
 function confirmLearn(){const s=live();if(!s||s.phase!=='learning'||!learnChoice||store.status!=='ready'||anim.active)return;const replace=learnChoice;learnChoice=null;void send({type:'learnMove',replace});}
 function chooseHudSkill(skill:Skill){cancelMoveInput();selectedSkill=selectedSkill===skill?null:skill;choosingItem=null;bagOpen=false;actionsOpen=false;render();}
 function chooseHudItem(item:Item){
  cancelMoveInput();const s=live();if(!s||s.phase!=='playing'||store.status!=='ready'||anim.active)return;
  if((s.prog?.items[item]??0)<1){notice=`背包里没有${itemName(item)}；本轮未执行`;render();return;}
+ if(item==='reviverSeed'){notice='复活种子不能手动使用：队员倒下的瞬间会自动用掉。';render();return;}
  bagOpen=false;actionsOpen=false;selectedSkill=null;
  choosingItem=choosingItem===item?null:item;render();
 }
@@ -310,7 +317,7 @@ function renderDungeonHud(){
  const targetBox=$('hud-item-targets');targetBox.hidden=!choosingItem;targetBox.innerHTML='';
  if(choosingItem){
   const item=choosingItem,actor=draft?.editor??s.leader;
-  const targets=item==='teamTonic'?button('item-use-teamTonic','使用（全队）',disabled,`data-hud-item-target="${esc(actor)}"`):s.queue.filter(id=>{const u=s.units[id],a=s.units[actor];return u.hp>0&&u.pos&&a.pos&&(selfOrAdjacentReachable(s.floor,a.pos,u.pos));}).map(id=>button(item==='bigBerry'?`item-target-bigBerry-${id}`:`item-target-${id}`,esc(unitLabel(s.units[id],id)),disabled,`data-hud-item-target="${esc(id)}"`)).join('');
+  const targets=item==='teamTonic'?button('item-use-teamTonic','使用（全队）',disabled,`data-hud-item-target="${esc(actor)}"`):ORB_ITEMS.includes(item)?button('item-use-'+item,'使用',disabled,`data-hud-item-target="${esc(actor)}"`):s.queue.filter(id=>{const u=s.units[id],a=s.units[actor];return u.hp>0&&u.pos&&a.pos&&(selfOrAdjacentReachable(s.floor,a.pos,u.pos));}).map(id=>button(item==='bigBerry'?`item-target-bigBerry-${id}`:`item-target-${id}`,esc(unitLabel(s.units[id],id)),disabled,`data-hud-item-target="${esc(id)}"`)).join('');
    targetBox.innerHTML=`<strong>${esc(itemName(item))}</strong><p data-selected-item-description>${esc(itemDescription(item))}</p><div>${targets}</div>`;
   targetBox.querySelectorAll<HTMLButtonElement>('[data-hud-item-target]').forEach(b=>b.onclick=()=>act({type:'use',item,target:b.dataset.hudItemTarget!}));
  }
@@ -320,7 +327,7 @@ function renderDungeonHud(){
  $('flow').querySelectorAll('.muted').forEach(el=>el.remove());
  $('flow').hidden=!$('flow').innerHTML.trim();
  if(s.phase==='playing'&&!confirmExit)$('flow').hidden=true;
- if(anim.active&&(s.phase==='invitation'||s.phase==='ended'))$('flow').hidden=true;
+ if(anim.active&&s.phase!=='playing'&&s.phase!=='exit'&&s.phase!=='transit')$('flow').hidden=true;
  if(s.phase==='ended'&&store.status==='failed'){($('flow').querySelector('#settlement-save')??$('flow')).prepend($('save'));$('hud-actions').hidden=true;}
  $('hud-bag').hidden=!bagOpen;
  $('hud-bag').innerHTML=bagOpen?hudBag(s,quickItems,bagCategory,bagSlot,bagSelectedItem,!unavailable&&!anim.active):'';
@@ -921,7 +928,7 @@ $('save-file').addEventListener('change',async()=>{
   }
   const pending=store.importRecord(raw,true);render();
   const ok=await pending;
-  if(ok){clear();campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;inviteChoice=undefined;inviteReject=false;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
+  if(ok){clear();campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;inviteChoice=undefined;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
    $('transfer-message').textContent='存档已导入并保存，关闭设置后可继续游戏。';
   }else $('transfer-message').textContent=store.importError;
   render();
@@ -975,7 +982,7 @@ document.addEventListener('keyup',e=>{
 });
 document.addEventListener('click',e=>{if(hold){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary')){e.stopPropagation();e.preventDefault();}},true);
 document.addEventListener('keydown',e=>{
- if(hold&&e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='r')){e.preventDefault();e.stopPropagation();hold.end();return;}
+ if(hold&&e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='r')){e.preventDefault();e.stopPropagation();if(!e.repeat)hold.end();return;}
  if(logDialog.open)return;
  if(settings.open||(document.getElementById('unit-details-dialog') as HTMLDialogElement|null)?.open||screen!=='play'||store.atBase)return;
  if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}
@@ -985,13 +992,17 @@ document.addEventListener('keydown',e=>{
  {const ls=live();if(ls?.phase==='learning'&&store.status==='ready'){const unit=ls.pendingLearnMoves?.[0]?ls.units[ls.pendingLearnMoves[0].actor]:undefined;
   if(unit&&['1','2','3','4'].includes(e.key)&&unit.learned[Number(e.key)-1]){e.preventDefault();learnChoice=unit.learned[Number(e.key)-1];render();return;}
   if(e.key==='Enter'&&learnChoice&&!target.matches('button:not([data-confirm])')){e.preventDefault();confirmLearn();return;}}}
- if(e.key==='Enter'){if(target.matches('button[data-confirm]')&&!target.hasAttribute('disabled')){e.preventDefault();target.click();}else e.preventDefault();return;}
+ {const is=live();if(is?.phase==='invitation'&&store.status==='ready'&&is.queue.length>=3){
+  const index=['1','2','3'].indexOf(e.key);if(index>=0&&is.queue[index]){e.preventDefault();inviteChoice=inviteChoice===is.queue[index]?undefined:is.queue[index];render();(document.getElementById('accept') as HTMLButtonElement|null)?.focus({preventScroll:true});return;}
+  const accept=document.getElementById('accept') as HTMLButtonElement|null;
+  if(e.key==='Enter'&&inviteChoice&&accept&&!accept.disabled&&!target.matches('button:not([data-confirm])')){e.preventDefault();accept.click();return;}}}
+ if(e.key==='Enter'){if(target.matches('button')&&!target.hasAttribute('disabled')&&(target.hasAttribute('data-confirm')||target.closest('#flow,#hud-bag'))){e.preventDefault();target.click();}else e.preventDefault();return;}
  if(e.key==='Escape'){
   if(inspectShown()){e.preventDefault();closeInspect();return;}
   if(bagOpen){bagOpen=false;render();return;}
   if(live()?.phase==='learning'){e.preventDefault();void send({type:'learnMove',replace:null});return;}
   if(live()?.phase==='evolution'){e.preventDefault();void send({type:'evolve',species:null});return;}
-  if(live()?.phase==='invitation'&&inviteReject){inviteReject=false;notice='已取消拒绝，返回邀请比较。';}else{clear();actionsOpen=false;notice='';}render();return;
+  clear();actionsOpen=false;notice='';render();return;
  }
  const s=live();if(!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
  const k=e.key.toLowerCase();

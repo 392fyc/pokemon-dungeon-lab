@@ -124,7 +124,7 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   /** 8.3 room state stays in the in-memory expedition (current World or StoredFloor) and is never saved. */
   adventureRooms?:AdventureRoom[];pendingAdventureStart?:{room:number;actor:string;pos:Pos};
   /** 8.4 contract and blessing state is run-only and is never serialized. */
-  commissions?:ActiveCommission[];blessings?:BlessingId[];pendingChoices?:PendingChoice[];lullabyPending?:boolean;tmChoiceReady?:boolean;pendingEnd?:'won'|'wipe'|'normal';
+  commissions?:ActiveCommission[];blessings?:BlessingId[];pendingChoices?:PendingChoice[];pendingEnd?:'won'|'wipe'|'normal';
   /** 8.5: only a new camp expedition has these; missing completedCommissions marks a legacy/developer world with no new score. */
   talents?:ExpeditionTalents;completedCommissions?:number;
   /** 8.8 (#165): state of the separate battle random stream (hits, secondary effects, status durations, confusion). Derived from the dungeon seed on first use; never saved. */
@@ -553,16 +553,13 @@ function tmChoiceOptions(s:World,source:Extract<PendingChoice,{type:'tmChoice'}>
 }
 function addPendingTmChoice(s:World,source:'target'|'challenge'|'boss'|'blessing',room:number|null,salt=''):boolean {
   const options=tmChoiceOptions(s,source,room,salt);if(!options.length)return false;
-  (s.pendingChoices??=[]).push({type:'tmChoice',source,options});s.tmChoiceReady=false;return true;
+  (s.pendingChoices??=[]).push({type:'tmChoice',source,options});return true;
 }
 function setPendingChoicePhase(s:World):boolean {
   const next=s.pendingChoices?.[0];if(!next)return false;
   s.phase=next.type==='tmChoice'?'tmChoice':next.type;return true;
 }
-function queueTmItem(s:World,move:string,source:TmItem['source'],room:number|null=null,salt=''):void {
-  if(s.tmChoiceReady&&source!=='shop'){
-    if(addPendingTmChoice(s,source,room,salt)){note(s,`${BLESSINGS.tmChoice.name}生效：招式机提供${BLESSINGS.tmChoice.choiceCount??3}个选项`);return;}
-  }
+function queueTmItem(s:World,move:string,source:TmItem['source']):void {
   (s.tms??=[]).push({move,source,fate:'held'});
 }
 function activeCommission(s:World,id:CommissionId):ActiveCommission|undefined{return s.commissions?.find(c=>c.id===id);}
@@ -965,9 +962,9 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
     if(a.item==='reviverSeed')return '复活种子不能主动使用，队员倒下的瞬间会自动用掉';
     if(ORB_ITEMS.includes(a.item)){
       if(a.target!==id)return `${ITEM_NAMES[a.item]}由使用者发动，目标必须是使用者自己`;
-      if((a.item==='slumberOrb'||a.item==='totterOrb')&&!orbFoes(s,u).length)return `房间范围内没有敌人，${ITEM_NAMES[a.item]}不会有效果`;
+      if((a.item==='slumberOrb'||a.item==='totterOrb')&&!orbAffected(s,u,a.item).length)return `房间范围内没有能被影响的敌人，${ITEM_NAMES[a.item]}不会有效果`;
       if(a.item==='luminousOrb'&&s.mapRevealed)return '本层的地形已经显现';
-      if(a.item==='rollcallOrb'&&!s.queue.some(m=>m!==id&&alive(s.units[m])))return '没有其他存活同行';
+      if(a.item==='rollcallOrb'&&!s.queue.some(m=>m!==id&&alive(s.units[m])&&!adjacent(s,u.pos,s.units[m].pos)))return '所有存活同行都已在身边，邀回宝珠不会有效果';
       return null;
     }
     if(a.item==='teamTonic'&&a.target!==id)return '全员PP补剂由使用者发动，目标必须是使用者自己';
@@ -1052,6 +1049,11 @@ function healUnit(s:World,id:string,n:number,why:string):void {
 }
 /** Enemies inside the user's room (corridor: 2 cells), the reach of the sleep and confusion orbs. */
 function orbFoes(s:World,u:Unit):Unit[] {return s.enemies.map(i=>s.units[i]).filter(e=>alive(e)&&!!u.pos&&inRoomReach(s,u.pos,e.pos));}
+/** The enemies a sleep or confusion orb would really change: in reach, not type-immune, not already in that condition. */
+function orbAffected(s:World,u:Unit,item:Item):Unit[] {
+  const kind:StatusId=item==='slumberOrb'?'slp':'confusion';
+  return orbFoes(s,u).filter(e=>!statusTypeBlockReason(item,e,kind)&&(kind==='slp'?!(hasStatus(e,'slp')||hasStatus(e,'nap')):!hasStatus(e,'confusion')));
+}
 /** Berry heal for one target: 30% of max HP (at least 8), +50% with the berry blessing, plus the supplies talent; guardian halves the lot. */
 function berryHealAmount(s:World,t:Unit):number {
   let raw=berryBaseHeal(t.maxHp);if(hasBless(s,'berryBoost'))raw=Math.floor(raw*(1+(BLESSINGS.berryBoost.berryHealRate??0.5)));
@@ -1169,17 +1171,18 @@ function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number
   const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
   const amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill);
   if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,targetId+'受到火系招式或热水攻击后解冻');emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
-  const hpBefore=target.hp,effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
-  const previousKiller=currentKiller;currentKiller=opposing?sourceId:null;
-  try{hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});}finally{currentKiller=previousKiller;}
-  const actual=hpBefore-target.hp;
+  const effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
+  const previousKiller=currentKiller;currentKiller=opposing?sourceId:null;let actual=0;
+  try{actual=hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});}finally{currentKiller=previousKiller;}
+  // `actual` is the HP the hit really took; Last Stand or a Reviver Seed may have raised target.hp afterwards.
   if(opposing&&actual>0&&target.hp>0&&!suppressSleepTrigger)onDirectDamageToSleeper(s,target,source,quickguard,createdGuard);
-  if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos))hit(s,sourceId,actual);
+  if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos)){const keep=currentKiller;currentKiller=targetId;try{hit(s,sourceId,actual);}finally{currentKiller=keep;}}
   return actual;
 }
-function collide(s:World,targetId:string):void {
-  // The specification fixes blowaway impact at five damage; defence stages do not change collision damage.
-  hit(s,targetId,5);
+function collide(s:World,targetId:string,killer:string):void {
+  // The specification fixes blowaway impact at five damage; defence stages do not change collision damage. The pusher gets the credit for a kill.
+  const keep=currentKiller;currentKiller=s.units[targetId]?.side!==s.units[killer]?.side?killer:null;
+  try{hit(s,targetId,5);}finally{currentKiller=keep;}
 }
 function blowAway(s:World,actor:Unit,target:Unit):void {
   if(!alive(actor)||!alive(target))return;
@@ -1197,8 +1200,8 @@ function blowAway(s:World,actor:Unit,target:Unit):void {
   target.pos=at;
   if(!same(start,at))reveal(s);
   note(s,`${actor.id}吹飞${target.id}到${key(at)}`);
-  if(wall)collide(s,target.id);
-  else if(blocker){collide(s,target.id);collide(s,blocker.id);}
+  if(wall)collide(s,target.id,actor.id);
+  else if(blocker){collide(s,target.id,actor.id);collide(s,blocker.id,actor.id);}
 }
 const stageEffect=(effect:string):{stat:StageKey;change:number}|null=>{
   const m=effect.match(/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/);
@@ -1296,7 +1299,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
     if((effect==='damage'||(effect==='snore'&&suppressSleepTrigger))&&spec.power!==null){
       const base=6+Math.ceil(spec.power/2)+levelDamageBonus(actor.side==='friend'?(s.prog?.level??actor.level??INITIAL_LEVEL):(actor.level??INITIAL_LEVEL));
       for(const target of landed)if(alive(target)){
-        const hpBefore=target.hp;resolveDamage(s,id,target.id,base,moveCategory(a.skill),blockingGuard,!!fx?.thaw,a.skill,suppressSleepTrigger,createdGuard);dealt+=hpBefore-target.hp;
+        dealt+=resolveDamage(s,id,target.id,base,moveCategory(a.skill),blockingGuard,!!fx?.thaw,a.skill,suppressSleepTrigger,createdGuard);
       }
       continue;
     }
@@ -1388,7 +1391,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
       for(const k of t.learned)t.pp[k]=t.maxPp[k]??0;
       note(s,`${id}对${t.id}使用${ITEM_NAMES.maxElixir}，所有招式PP回满`);
     }else if(a.item==='slumberOrb'||a.item==='totterOrb'){
-      const kind:StatusId=a.item==='slumberOrb'?'slp':'confusion',foes=orbFoes(s,u);
+      const kind:StatusId=a.item==='slumberOrb'?'slp':'confusion',foes=orbAffected(s,u,a.item);
       note(s,`${id}使用${ITEM_NAMES[a.item]}，房间里的${foes.length}个敌人受到影响`);
       for(const e of foes){const blocked=statusTypeBlockReason(a.item,e,kind);if(blocked){note(s,e.id+'免疫'+STATUS_NAMES[kind]);continue;}
         if(kind==='slp'&&(hasStatus(e,'slp')||hasStatus(e,'nap')))continue;applyStatus(s,e.id,kind);}
@@ -1443,8 +1446,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     if(isPickupKind(p.kind)){if(s.prog)tryPickup(s,id);else p.used=true;return;}
     if(!stairs&&!p.used){if(p.kind==='goal'){s.goal=true;if(s.prog)gainExp(s,PROG.goalExp);}
       if(p.kind==='item'){s.bag++;if(s.prog){
-        if(s.tmChoiceReady){if(addPendingTmChoice(s,'target',s.dungeon?.level??null,key(p.pos)))note(s,`${id}取得招式机，${BLESSINGS.tmChoice.name}提供选择`);}
-        else{const r=rngStep(s.prog.rng);s.prog.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];queueTmItem(s,move,'target');note(s,`${id}取得招式机：${move}`);}
+        {const r=rngStep(s.prog.rng);s.prog.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];queueTmItem(s,move,'target');note(s,`${id}取得招式机：${move}`);}
       }}
       p.used=true;}
     if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
@@ -1679,7 +1681,7 @@ export function closeOut(s:World,outcome:End['outcome'],draw=true):End {
 function end(s:World,outcome:End['outcome']):void {
   clearCombatState(s);
   s.end=closeOut(s,outcome);
-  s.commissions=undefined;s.pendingChoices=undefined;s.lullabyPending=undefined;s.tmChoiceReady=undefined;s.pendingEnd=undefined;
+  s.commissions=undefined;s.pendingChoices=undefined;s.pendingEnd=undefined;
   s.phase='ended';s.request=null;s.anchor=null;note(s,outcome==='won'?'首领被击败，本局胜利':outcome==='normal'?'正常撤离':'全队倒下，本局结束');
 }
 function clearUnitCombatState(u:Unit):void {
@@ -1754,8 +1756,7 @@ function drawRecruitmentAndBossTm(s:World):void {
   const p=s.prog,settlement=s.pendingSettlement;if(!settlement)return;
   if(!p){s.pendingSettlement=undefined;return;}
   if(settlement.bossDrop){
-    if(s.tmChoiceReady){if(addPendingTmChoice(s,'boss',s.dungeon?.level??null,'boss-drop'))note(s,`区域首领被讨伐，${BLESSINGS.tmChoice.name}提供招式机选择`);}
-    else{const r=rngStep(p.rng);p.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];
+    {const r=rngStep(p.rng);p.rng=r.state;const pool=tmPool(s.dungeon),move=pool[Math.floor(r.value*pool.length)];
       (s.tms??=[]).push({move,source:'boss',fate:'held'});note(s,`区域首领被讨伐，掉落招式机：${move}（持有中）`);}
   }
   for(const sp of settlement.kills){
@@ -1807,8 +1808,8 @@ function awardAdventureChallenge(s:World,room:AdventureRoom):void{
     const item=room.rewardItem,count=(s.prog.items[item]??0)+1;s.prog.items[item]=count;
     note(s,`挑战奖励：道具${ITEM_NAMES[item]}入包（共${count}件）`);progressCommission(s,'collector');
   }else if(room.reward==='tm'&&room.rewardMove){
-    const waiting=s.tmChoiceReady;queueTmItem(s,room.rewardMove,'challenge',room.room);
-    note(s,waiting?`挑战奖励：招式机${BLESSINGS.tmChoice.name}提供选择`:`挑战奖励：招式机${room.rewardMove}入包`);
+    queueTmItem(s,room.rewardMove,'challenge');
+    note(s,`挑战奖励：招式机${room.rewardMove}入包`);
   }
 }
 /** Returns true only when a challenge reward invitation has just been issued and must be answered first. */

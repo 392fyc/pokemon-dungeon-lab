@@ -892,7 +892,8 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
   assert.equal(await p.locator('.starter-option').count(),8);assert.equal(await p.locator('#pick-deputy-treecko').count(),0);
   const deputyPortraits=await visiblePortraits(p,'.starter-option .portrait');assert.equal(deputyPortraits.length,8);assertPortraitsCentered(deputyPortraits,'eight deputy option icons');
-  assert.equal(await p.locator('#newgame-start').isDisabled(),true);
+  // Since commit 6a5f59f the second step starts with the first other starter already chosen as deputy, so the start button is enabled.
+  assert.equal(await p.locator('#pick-deputy-bulbasaur[aria-pressed=true]').count(),1);assert.equal(await p.locator('#newgame-start').isDisabled(),false);
   await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();
   await p.locator('#depart').waitFor();await ready(p);
    assert.equal(await p.locator('#base .camp-building').count(),4);
@@ -1662,15 +1663,15 @@ await test('8.4 选机：真实三选一按钮、一次消费与挑战奖励来�
   const fixture=createExpedition('browser-84-tm',1,3,{members:[
    {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'}],leader:0},0,true,3);
   const at={...fixture.units.A.pos};fixture.points=[{kind:'item',pos:at,used:false}];
-  fixture.adventureRooms=[];fixture.blessings=['tmChoice'];fixture.tmChoiceReady=true;
+  fixture.adventureRooms=[];fixture.phase='blessing';fixture.pendingChoices=[{type:'blessing',source:'challenge',room:null,options:['tmChoice','scholar','regen']}];
   fixture.tms=[{move:'protect',source:'challenge',fate:'held'}];
   for(const id of fixture.enemies)fixture.units[id].waitOnly=true;
   await startMemory(p,fixture);
-  await click(p,'take');const offered=await state(p);assert.equal(offered.phase,'tmChoice');
+  await click(p,'blessing-tmChoice');const offered=await state(p);assert.equal(offered.phase,'tmChoice');
   const options=offered.pendingChoices[0].options;assert.equal(options.length,3);assert.equal(new Set(options).size,3);
   await p.screenshot({path:artifact+'windows-84-tm-choice.png',fullPage:true});
   await click(p,'tm-choice-'+options[1]);const s=await state(p);
-  assert.equal(s.phase,'playing');assert.equal(s.round,offered.round);assert.equal(!!s.tmChoiceReady,false);
+  assert.equal(s.phase,'playing');assert.equal(s.round,offered.round);
   assert.equal(s.tms.length,2);assert.deepEqual(s.tms[1],{move:options[1],source:'target',fate:'held'});
   assert.equal(await raw(p),null);
   const {closeOut}=await import('../../src/core/engine.ts');
@@ -2083,7 +2084,8 @@ await test('#194 手机触屏 '+touchWidth+'px 全部快捷物品先选中看说
   const leader=w.units[w.leader],move=leader.learned[0];leader.pp[move]=leader.maxPp[move]-7;
   await startMemory(p,w);const before=await state(p);
   const assign=async (item,slot=0)=>{await p.locator('#bag-open').tap();await p.locator('[data-bag-slot="'+slot+'"]').tap();await p.locator('[data-bag-category="all"]').tap();await p.locator('[data-bag-item="'+item+'"]').tap();await p.locator('#bag-pin').tap();await p.locator('#bag-close').tap();};
-  for(const [index,item] of Object.keys(ITEM_NAMES).entries()){
+  // The Reviver Seed is automatic: it has no use or pin button (PR 214), so it is not part of the quick-slot walk.
+  for(const [index,item] of Object.keys(ITEM_NAMES).filter(i=>i!=='reviverSeed').entries()){
    const slot=index%6;await assign(item,slot);const quick=p.locator('[data-hud-quick="'+slot+'"]');await quick.tap();
    assert.equal(await quick.getAttribute('aria-pressed'),'true');assert.ok(await p.locator('[data-selected-item-description]').isVisible(),item+' has a stable selected description after a real touch');
    assert.equal(await p.locator('#hud-item-targets strong').innerText(),ITEM_NAMES[item]);
@@ -2096,7 +2098,7 @@ await test('#194 手机触屏 '+touchWidth+'px 全部快捷物品先选中看说
   await assign('teamTonic');await p.locator('[data-hud-quick="0"]').tap();assert.deepEqual(await state(p),before);
   await p.locator('#item-use-teamTonic').tap();await ready(p);const after=await state(p);
   assert.equal(after.round,before.round+1);assert.equal(after.prog.items.teamTonic,0);assert.equal(after.units[after.leader].pp[move],before.units[before.leader].pp[move]+5);
-  await p.screenshot({path:artifact+'playtest194-touch-'+touchWidth+'x844.png'});assert.deepEqual(errors,[]);return {touch:true,selectedItems:Object.keys(ITEM_NAMES).length,selectionConsumesNothing:true,teamTonicConfirm:true};
+  await p.screenshot({path:artifact+'playtest194-touch-'+touchWidth+'x844.png'});assert.deepEqual(errors,[]);return {touch:true,selectedItems:Object.keys(ITEM_NAMES).length-1,selectionConsumesNothing:true,teamTonicConfirm:true};
  }finally{await context.close();}
 });
 

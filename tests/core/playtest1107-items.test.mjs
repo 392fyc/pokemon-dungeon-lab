@@ -50,7 +50,7 @@ test('Sleep and Totter Orbs affect every enemy in the user room, not the ones ou
   assert.equal(s.prog.items[orb],0,'one action, one orb');
  }
  let none=scene({extra:[dummy('E3',10,1)]});none.prog.items.slumberOrb=1;
- assert.match(refuse(none,{type:'round',action:{type:'use',item:'slumberOrb',target:'A'}}),/没有敌人/);
+ assert.match(refuse(none,{type:'round',action:{type:'use',item:'slumberOrb',target:'A'}}),/没有.*敌人|不会有效果/);
  let corridor=scene({extra:[dummy('E4',3,1),dummy('E5',9,1)],rooms:[]});corridor.prog.items.slumberOrb=1;corridor=use(corridor,'slumberOrb');
  assert.ok(corridor.units.E4.status?.slp,'corridor: 2 cells around the user');assert.equal(corridor.units.E5.status?.slp,undefined);
 });
@@ -74,9 +74,13 @@ test('Reviver Seed is spent automatically when a member falls, brings it back at
  s=act(s,wait);
  assert.equal(s.prog.items.reviverSeed,0,'the seed was consumed');assert.equal(s.units.A.hp,20,'half of 40');assert.deepEqual(s.units.A.pos,pos(1),'it stands where it fell');
  assert.ok(s.queue.includes('A')&&s.phase!=='ended');
- let two=scene({extra:[foeOf('E','geodude',2,1,300,{tackle:30})]});two.units.A.hp=1;two.units.A.maxHp=40;two.units.B.hp=1;two.units.B.maxHp=40;two.prog.items.reviverSeed=1;
+ // Two members fall in the same enemy phase with one seed: exactly one is saved, the other stays down.
+ let two=scene({extra:[foeOf('E1','geodude',2,1,300,{tackle:30}),foeOf('E2','geodude',9,1,300,{tackle:30})]});
+ two.units.A.hp=1;two.units.A.maxHp=40;two.units.B.pos=pos(8);two.units.B.hp=1;two.units.B.maxHp=40;two.prog.items.reviverSeed=1;
  two=act(two,wait);assert.equal(two.prog.items.reviverSeed,0);
- assert.equal(two.units.A.hp>1,true,'one seed saves exactly one member');
+ const standing=['A','B'].filter(id=>two.units[id].hp>0&&two.units[id].pos);
+ assert.equal(standing.length,1,'one seed saves exactly one of the two fallen members');
+ assert.equal(two.units[standing[0]].hp,20);
 });
 
 test('damage blessings: Nemesis +10% on afflicted enemies, Headhunter +15% on the boss, Full Power +8% above 80% HP',()=>{
@@ -152,4 +156,60 @@ test('every new pickup kind can be picked up from the floor and enters the backp
   let s=scene();s.points=[{pos:pos(2),kind,used:false}];s.units.A.pos=pos(1);
   s=act(s,{type:'move',to:pos(2)});assert.equal(s.prog.items[kind],1,kind);assert.ok(s.points[0].used);
  }
+});
+
+/* ---- PR 214 review: B4 actual damage, B5 kill heal sources, orb refusals ---- */
+test('B4 a last-stand heal does not hide the hit: a sleeping member still gets the wake-up check and the drain still heals the attacker',()=>{
+ const attackOf=blessings=>{
+  const foe=foeOf('E','geodude',2,1,300,{tackle:30,snore:5});
+  let s=scene({extra:[foe]});s.blessings=blessings;s.units.A.hp=36;s.units.A.status={slp:{left:6}};s.units.A.learned=['tackle','snore'];s.units.A.pp={tackle:20,snore:5};s.units.A.maxPp={tackle:20,snore:5};
+  return act(s,wait);
+ };
+ const plain=attackOf([]),stand=attackOf(['laststand']);
+ const reacted=s=>s.log.some(l=>/被攻击后醒来|使用打鼾/.test(l));
+ assert.ok(reacted(plain),'baseline: the sleeper reacts to the hit');
+ assert.ok(stand.units.A.standUsed&&reacted(stand),'with Last Stand the sleeper still reacts (the heal must not cancel the damage)');
+ const drainFoe=blessings=>{
+  const foe=foeOf('E','oddish',2,1,40,{absorb:5});foe.hp=10;
+  let s=scene({extra:[foe]});s.blessings=blessings;s.units.A.hp=36;return act(s,wait);
+ };
+ assert.ok(drainFoe([]).units.E.hp>10,'baseline: absorb heals the attacker');
+ assert.ok(drainFoe(['laststand']).units.E.hp>10,'absorb heals by the damage actually dealt even when Last Stand heals the target afterwards');
+});
+
+test('B4 a Reviver Seed does not erase the damage: the drain attacker heals by the damage that downed the member',()=>{
+ const foe=foeOf('E','oddish',2,1,40,{absorb:5});foe.hp=10;
+ let s=scene({extra:[foe]});s.units.A.hp=1;s.units.A.maxHp=40;s.prog.items.reviverSeed=1;s=act(s,wait);
+ assert.equal(s.prog.items.reviverSeed,0);assert.ok(s.units.E.hp>10,'the attacker still drained');
+});
+
+test('B5 Kill Heal also counts a counter-attack kill and a blow-away collision kill, healing the unit that defeated the enemy',()=>{
+ const countered=blessings=>{
+  const foe=foeOf('E','geodude',2,1,1,{tackle:30});let s=scene({extra:[foe]});s.blessings=blessings;s.prog.exp=-5000;
+  s.units.A.hp=50;s.units.A.counter=3;return act(s,wait);
+ };
+ const base=countered([]),healed=countered(['killheal']);
+ assert.equal(base.units.E.hp,0,'the counter killed the enemy');assert.equal(healed.units.A.hp-base.units.A.hp,8);
+ const pushed=(blessings,enemyHp)=>{
+  const foe=dummy('E',6,1,enemyHp);let s=scene({extra:[foe]});s.blessings=blessings;s.prog.exp=-5000;
+  s.units.A.pos=pos(5);s.units.A.learned=['dragontail'];s.units.A.pp={dragontail:5};s.units.A.maxPp={dragontail:5};s.units.A.hp=50;s.units.B.pos=pos(0);s.units.C.pos=pos(2);
+  s.floor=row(12);s.rooms=[{x:0,y:0,w:13,h:3}];
+  return act(s,{type:'skill',skill:'dragontail',target:'E'});
+ };
+ const big=pushed([],500),lost=500-big.units.E.hp;
+ assert.ok(lost>5,'the move hits and the push collides (loss '+lost+')');
+ const attackPart=lost-5,low=pushed([],attackPart+3),lowHeal=pushed(['killheal'],attackPart+3);
+ assert.equal(low.units.E.hp,0,'the collision finished the enemy');assert.equal(lowHeal.units.A.hp-low.units.A.hp,8);
+});
+
+test('orbs are refused, and not spent, when they would do nothing',()=>{
+ let adjacent=scene({floor:open(8),rooms:[{x:1,y:1,w:8,h:8}]});adjacent.units.A.pos=pos(4,4);adjacent.units.B.pos=pos(5,4);adjacent.units.C.pos=pos(3,4);adjacent.prog.items.rollcallOrb=1;
+ assert.match(refuse(adjacent,{type:'round',action:{type:'use',item:'rollcallOrb',target:'A'}}),/已在身边/);
+ let asleep=scene({extra:[dummy('E1',4,1)]});asleep.units.E1.status={slp:{left:4}};asleep.prog.items.slumberOrb=1;
+ assert.match(refuse(asleep,{type:'round',action:{type:'use',item:'slumberOrb',target:'A'}}),/没有|不会有效果/);
+ let immune=scene({extra:[foeOf('E1','gastly',4,1,40)]});immune.units.E1.waitOnly=true;immune.prog.items.totterOrb=1;
+ let confused=scene({extra:[dummy('E1',4,1)]});confused.units.E1.status={confusion:{left:4}};confused.prog.items.totterOrb=1;
+ assert.match(refuse(confused,{type:'round',action:{type:'use',item:'totterOrb',target:'A'}}),/没有|不会有效果/);
+ let ok=scene({extra:[dummy('E1',4,1),dummy('E2',5,1)]});ok.units.E1.status={slp:{left:4}};ok.prog.items.slumberOrb=1;ok=use(ok,'slumberOrb');
+ assert.ok(ok.units.E2.status?.slp,'one effective enemy is enough to use the orb');
 });

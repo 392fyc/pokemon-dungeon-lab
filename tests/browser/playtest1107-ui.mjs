@@ -45,6 +45,14 @@ for(const [w,h] of [[1280,720],[900,520]]){
  await p.keyboard.press('d');await p.waitForTimeout(300);assert.equal(await p.evaluate(()=>JSON.stringify(window.trial.getState().units[window.trial.getState().leader].pos)),pos0,'no movement while log open');
  await p.keyboard.press('Escape');assert.equal(await p.locator('#log-dialog[open]').count(),0);
  await p.keyboard.press('l');assert.equal(await p.locator('#log-dialog[open]').count(),1);await p.locator('#log-close').click();assert.equal(await p.locator('#log-dialog[open]').count(),0);
+ // PR 214: an open log window must not let the sleep auto-advance take a round
+ await p.evaluate(()=>{window.trial.autoSleep(true);});
+ await p.evaluate(()=>{const s=window.trial.store.world;s.units[s.leader].status={slp:{left:9}};window.dispatchEvent(new Event('blur'));});
+ await p.locator('#log-open').click();const sleepRound=await p.evaluate(()=>window.trial.getState().round);await p.waitForTimeout(1500);
+ assert.equal(await p.evaluate(()=>window.trial.getState().round),sleepRound,'no automatic wait while the log window is open');
+ await p.keyboard.press('Escape');await p.waitForTimeout(1500);
+ assert.ok(await p.evaluate(()=>window.trial.getState().round)>sleepRound,'after closing it, the sleeper advances again');
+ await p.evaluate(()=>{window.trial.autoSleep(false);const s=window.trial.store.world;delete s.units[s.leader].status;window.dispatchEvent(new Event('blur'));});
  // blessing
  await p.evaluate(()=>{const s=window.trial.store.world;s.phase='blessing';s.pendingChoices=[{type:'blessing',source:'room',room:null,options:['berryBoost','floorHeal','battleSpirit']}];window.dispatchEvent(new Event('blur'));});
  await p.waitForTimeout(300);

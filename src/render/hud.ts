@@ -355,56 +355,7 @@ export function hudBottom(
     "</div>";
 }
 
-export function hudMinimap(s: World): string {
-  const known = terrainKnown(s);
-  const seen = new Set(known.seen);
-  const floorCells = s.floor.filter((pos) => seen.has(pos.x + "," + pos.y));
-  const wallCells = known.seenWalls.map((value) => {
-    const [x, y] = value.split(",").map(Number);
-    return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
-  }).filter((pos): pos is { x: number; y: number } => !!pos);
-  const floorXs = s.floor.map((pos) => pos.x);
-  const floorYs = s.floor.map((pos) => pos.y);
-  const minX = s.dungeon ? 0 : Math.min(0, ...floorXs) - 1;
-  const minY = s.dungeon ? 0 : Math.min(0, ...floorYs) - 1;
-  const maxX = s.dungeon ? s.dungeon.width : Math.max(0, ...floorXs) + 2;
-  const maxY = s.dungeon ? s.dungeon.height : Math.max(0, ...floorYs) + 2;
-  const width = Math.max(1, maxX - minX);
-  const height = Math.max(1, maxY - minY);
-  const floorMarkup = floorCells.map((pos) =>
-    '<rect class="hud-map-floor" x="' + pos.x + '" y="' + pos.y + '" width="1" height="1"></rect>',
-  ).join("");
-  const wallMarkup = wallCells.map((pos) =>
-    '<rect class="hud-map-wall" x="' + pos.x + '" y="' + pos.y + '" width="1" height="1"></rect>',
-  ).join("");
-  const pointMarkup = s.points.filter((point) => !point.used && seen.has(point.pos.x + "," + point.pos.y)).map((point) =>
-    '<rect class="hud-map-point is-' + esc(point.kind) + '" x="' + point.pos.x +
-    '" y="' + point.pos.y + '" width="1" height="1"></rect>',
-  ).join("");
-  const friends = s.queue.map((id) => s.units[id]).filter((unit): unit is Unit & { pos: NonNullable<Unit["pos"]> } =>
-    !!unit && !!unit.pos && unit.hp > 0 && seen.has(unit.pos.x + "," + unit.pos.y),
-  );
-  const enemies = s.enemies.map((id) => s.units[id]).filter((unit): unit is Unit & { pos: NonNullable<Unit["pos"]> } =>
-    !!unit && !!unit.pos && unit.hp > 0 && seen.has(unit.pos.x + "," + unit.pos.y),
-  );
-  const friendMarkup = friends.map((unit) =>
-    '<circle class="hud-map-unit' + (unit.id === s.leader ? " is-leader" : "") +
-    '" cx="' + (unit.pos!.x + 0.5) + '" cy="' + (unit.pos!.y + 0.5) + '" r="0.36"></circle>',
-  ).join("");
-  const enemyMarkup = enemies.map((unit) =>
-    '<circle class="hud-map-unit is-enemy" cx="' + (unit.pos!.x + 0.5) +
-    '" cy="' + (unit.pos!.y + 0.5) + '" r="0.32"></circle>',
-  ).join("");
-  const theme = s.dungeon ? themeOfLevel(s.dungeon.boss, s.dungeon.level) : null;
-  const mazeName = theme ? THEME_FLOORS.find((floor) => floor.theme === theme)?.name ?? "迷宫" : "固定地图";
-  const floorLabel = s.dungeon ? mazeName + " " + s.dungeon.level + "F" : mazeName;
-  const roundLabel = "第 " + s.round + " 轮";
-  return '<section class="hud-minimap-panel" aria-label="小地图">' +
-    '<div class="hud-minimap-heading"><span>' + esc(floorLabel) + '</span><span>' + esc(roundLabel) + "</span></div>" +
-    '<svg class="hud-minimap-map" viewBox="' + minX + " " + minY + " " + width + " " + height +
-    '" role="img" aria-label="已探索区域">' + wallMarkup + floorMarkup + pointMarkup +
-    friendMarkup + enemyMarkup + "</svg></section>";
-}
+export { hudMinimap } from "./minimap.ts";
 
 function blessingEffectLabel(id: BlessingId): string {
   const definition = BLESSINGS[id];
@@ -414,7 +365,7 @@ function blessingEffectLabel(id: BlessingId): string {
     case "battleSpirit": return "攻击 +" + (definition.attackStage ?? 0) + "，换层清除";
     case "lullaby": return "新楼层敌人睡眠 " + Math.round((definition.sleepChance ?? 0) * 100) + "%";
     case "rally": return "招募概率 " + Math.round((definition.recruitChance ?? 0) * 100) + "%";
-    case "tmChoice": return "招式机 " + (definition.choiceCount ?? 0) + " 选 1";
+    case "tmChoice": return "立即从 " + (definition.choiceCount ?? 0) + " 张招式机里选 1 张";
     case "nemesis": return "对异常敌人伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
     case "headhunter": return "对首领伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
     case "fullpower": return "HP>" + Math.round((definition.threshold ?? 0) * 100) + "% 时伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
@@ -518,8 +469,8 @@ export function hudBag(
     const buttons: string[] = [];
     if (current.item) {
       if (current.item !== "reviverSeed") buttons.push('<button type="button" id="bag-use" class="paper-button is-primary" data-bag-use="' + current.item + '"' + (canUse ? "" : " disabled") + ">使用</button>");
-      if (pinnedAt !== slot) buttons.push('<button type="button" id="bag-pin" class="paper-button" data-bag-pin="' + current.item + '">放入快捷格 ' + (slot + 1) + "</button>");
-      if (pinnedAt >= 0) buttons.push('<button type="button" id="bag-unpin" class="paper-button" data-bag-unpin="' + current.item + '">移出快捷格</button>');
+      if (current.item !== "reviverSeed" && pinnedAt !== slot) buttons.push('<button type="button" id="bag-pin" class="paper-button" data-bag-pin="' + current.item + '">放入快捷格 ' + (slot + 1) + "</button>");
+      if (current.item !== "reviverSeed" && pinnedAt >= 0) buttons.push('<button type="button" id="bag-unpin" class="paper-button" data-bag-unpin="' + current.item + '">移出快捷格</button>');
     }
     detail = '<div class="c195-bag-detail-head">' + bagIcon(current.item, current.category) + "<div><strong>" + esc(name) + "</strong><small>数量 ×" + current.amount +
       (pinnedAt >= 0 ? " · 在快捷格 " + (pinnedAt + 1) : "") + '</small></div></div><p class="c195-bag-text" aria-live="polite">' + esc(text) +

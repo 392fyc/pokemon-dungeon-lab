@@ -65,4 +65,25 @@ for(const via of ['settings','menu']){
  assert.equal(end.outcome,'wipe');assert.ok(end.tms.every(f=>f==='lost'));
  assert.deepEqual(p.errs,[]);await ctx.close();
 }
+// ---- B2: with the leader asleep and the sleep auto-advance ON, an open confirmation window does not let rounds run by themselves
+{
+ const ctx=await b.newContext({viewport:{width:1280,height:720}});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));   // note: no __trialNoAutoSleep
+ await ctx.addInitScript(()=>{window.__trialNoAnim=true;});
+ await p.goto(base+'/?dev=1&seed=7');await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+ await p.evaluate(()=>{const s=window.trial.store.world;s.enemies.forEach(id=>{s.units[id].waitOnly=true;});window.trial.autoSleep(true);});
+ await p.locator('#hud-settings').click();await p.waitForSelector('#settings[open]');await p.locator('#abandon-run').click();await p.waitForSelector('#abandon-dialog[open]');
+ await p.evaluate(()=>{const s=window.trial.store.world;s.units[s.leader].status={slp:{left:9}};window.dispatchEvent(new Event('blur'));});
+ const r0=await p.evaluate(()=>window.trial.getState().round);await p.waitForTimeout(1800);
+ assert.equal(await p.evaluate(()=>window.trial.getState().round),r0,'no round runs while the abandon window is open');
+ await p.locator('#abandon-cancel').click();await p.waitForTimeout(1800);
+ assert.ok(await p.evaluate(()=>window.trial.getState().round)>r0,'after cancelling, the sleeper advances again');
+ // B1: a run that is already won cannot be abandoned from the settings or the menu
+ await p.evaluate(()=>{const s=window.trial.store.world;s.units[s.leader].status=undefined;s.pendingEnd='won';window.trial.autoSleep(false);});
+ await p.locator('#hud-settings').click();await p.waitForSelector('#settings[open]');
+ assert.equal(await p.locator('#settings-run').isHidden(),true,'no abandon button once the run is won');
+ await p.keyboard.press('Escape');
+ assert.equal(await p.locator('#abandon-open').count(),0,'and none in the menu');
+ assert.deepEqual(errs,[]);await ctx.close();
+}
 await b.close();console.log('run checks passed');

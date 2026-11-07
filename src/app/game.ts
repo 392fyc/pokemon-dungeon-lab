@@ -2,14 +2,14 @@ import type Phaser from 'phaser';
 import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate} from '../render/hud.ts';
 import '../render/hud.css';
 import {itemIconImg} from '../render/item-icons.ts';
-import {installDrag} from './drag.ts';
+import {installDrag,reconcileDrag} from './drag.ts';
 import {resultBanner} from '../render/result-banner.ts';
 import {typeChips,unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
 import '../render/panels194.css';
 import {learningPanel,invitationPanel,moveCard,isOwnType} from '../render/choice-panels.ts';
 import '../render/choice-panels.css';
 import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
-import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,ORB_ITEMS,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
+import {applyCommand,bossDefeated,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,ORB_ITEMS,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
@@ -129,12 +129,12 @@ let sleepTimer:ReturnType<typeof setTimeout>|null=null,sleepTurn='';
 const sleepAutoEnabled=()=>!(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep;
 function cancelSleepAdvance(){if(sleepTimer!==null)clearTimeout(sleepTimer);sleepTimer=null;sleepTurn='';}
 function syncSleepAdvance(){
- const s=live(),eligible=screen==='play'&&s?.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!logDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(s.units[s.leader]);
+ const s=live(),eligible=screen==='play'&&s?.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!logDialog.open&&!abandonDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(s.units[s.leader]);
  if(!eligible||!s){cancelSleepAdvance();return;}
  const turn=s.runId+'|'+s.round+'|'+s.leader;if(sleepTimer!==null&&sleepTurn===turn)return;
  cancelSleepAdvance();sleepTurn=turn;sleepTimer=setTimeout(()=>{
   sleepTimer=null;sleepTurn='';const current=live();
-  if(current&&current.runId+'|'+current.round+'|'+current.leader===turn&&screen==='play'&&current.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!logDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(current.units[current.leader]))void send({type:'round',action:{type:'wait'}});
+  if(current&&current.runId+'|'+current.round+'|'+current.leader===turn&&screen==='play'&&current.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!logDialog.open&&!abandonDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(current.units[current.leader]))void send({type:'round',action:{type:'wait'}});
  },600);
 }
 
@@ -256,7 +256,7 @@ function applyPanelFocus(previousId:string):void{
  const el=previousId?document.getElementById(previousId) as HTMLButtonElement|null:null;
  if(el&&!el.disabled)el.focus({preventScroll:true});
 }
-function render(){const active=document.activeElement as HTMLElement|null,previousId=active&&active.id&&($('flow').contains(active)||$('hud-bag').contains(active))?active.id:'';try{renderAll();}finally{applyPanelFocus(previousId);}}
+function render(){const active=document.activeElement as HTMLElement|null,previousId=active&&active.id&&($('flow').contains(active)||$('hud-bag').contains(active))?active.id:'';try{renderAll();}finally{applyPanelFocus(previousId);reconcileDrag();}}
 function renderAll(){document.body.classList.toggle('camp-mode',screen==='play'&&store.atBase);syncDungeonLayout();for(const id of ['context-actions','hud-bottom','hud-item-targets'])$(id).replaceChildren();renderOverlay();renderMain();renderExtras();renderDungeonHud();refreshTransfer();syncSleepAdvance();if(screen==='play')void ensureBoard();}
 
 function confirmLearn(){const s=live();if(!s||s.phase!=='learning'||!learnChoice||store.status!=='ready'||anim.active)return;const replace=learnChoice;learnChoice=null;void send({type:'learnMove',replace});}
@@ -723,7 +723,7 @@ const learnableMoveMaxPp=(species:string,move:string):number=>learnableMove(spec
 /** Give up the run (settings and the "…" menu): a confirmation first, naming what is lost; the engine then settles it exactly like a wipe. */
 const abandonDialog=document.createElement('dialog');abandonDialog.id='abandon-dialog';abandonDialog.className='paper-window c195';abandonDialog.setAttribute('aria-labelledby','abandon-heading');document.body.append(abandonDialog);
 abandonDialog.addEventListener('cancel',e=>{e.preventDefault();abandonDialog.close();syncSleepAdvance();});
-function runCanBeAbandoned():boolean{const s=live();return screen==='play'&&!store.atBase&&!!s&&!!s.prog&&s.phase!=='ended';}
+function runCanBeAbandoned():boolean{const s=live();return screen==='play'&&!store.atBase&&!!s&&!!s.prog&&s.phase!=='ended'&&s.pendingEnd!=='won'&&!(s.dungeon?.roguelike&&bossDefeated(s));}
 function openAbandon(){
  const s=live();if(!runCanBeAbandoned()||!s||anim.active||store.status!=='ready')return;
  if(settings.open)settings.close();cancelMoveInput();cancelSleepAdvance();
@@ -735,6 +735,7 @@ function openAbandon(){
 }
 function openLog(){
  const s=live();if(!s||screen!=='play'||store.atBase||logDialog.open||settings.open)return;
+ hold?.end();   // the pause is over once the record is open: the next click is the window's, not a skip
  cancelMoveInput();cancelSleepAdvance();
  const rows=visibleLogEntries(s).map(r=>`<li>${esc(r.text)}</li>`);
  $('log-list').innerHTML=rows.join('')||'<li class="muted">还没有记录。</li>';
@@ -1052,8 +1053,9 @@ document.addEventListener('keyup',e=>{
  }
  const opposed=!(dx||dy);heldDirections.delete(k);if(!heldDirections.size)cancelMoveInput();else if(opposed&&!moveInFlight&&!anim.active&&moveTimer===null&&moveFrame===null)void flushMoveInput();
 });
-document.addEventListener('click',e=>{if(hold){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary, #log-open, #recent-events, #log-dialog')){e.stopPropagation();e.preventDefault();}},true);
+document.addEventListener('click',e=>{if(hold&&!(e.target as HTMLElement).closest('dialog')){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary, #log-open, #recent-events, #log-dialog, #abandon-dialog, #learn-carry-dialog')){e.stopPropagation();e.preventDefault();}},true);
 document.addEventListener('keydown',e=>{
+ if(logDialog.open||abandonDialog.open)return;
  if(hold&&e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='r')){e.preventDefault();e.stopPropagation();if(!e.repeat)hold.end();return;}
  if(logDialog.open||abandonDialog.open)return;
  if(settings.open||(document.getElementById('unit-details-dialog') as HTMLDialogElement|null)?.open||screen!=='play'||store.atBase)return;
@@ -1071,9 +1073,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&inviteChoice&&accept&&!accept.disabled&&!target.matches('button:not([data-confirm])')){e.preventDefault();accept.click();return;}}}
  if(e.key==='Enter'){if(target.matches('button')&&!target.hasAttribute('disabled')&&(target.hasAttribute('data-confirm')||target.closest('#flow,#hud-bag'))){e.preventDefault();target.click();}else e.preventDefault();return;}
  if(e.key==='Escape'){
-  if(inspectShown()){e.preventDefault();closeInspect();return;}
+  if(bagOpen){e.preventDefault();bagOpen=false;render();return;}
   if(document.querySelector('#context-actions .service-close')){e.preventDefault();(document.querySelector('#context-actions .service-close') as HTMLElement).click();return;}
-  if(bagOpen){bagOpen=false;render();return;}
+  if(inspectShown()){e.preventDefault();closeInspect();return;}
   if(live()?.phase==='learning'){e.preventDefault();void send({type:'learnMove',replace:null});return;}
   if(live()?.phase==='evolution'){e.preventDefault();void send({type:'evolve',species:null});return;}
   clear();actionsOpen=false;notice='';render();return;
@@ -1129,9 +1131,14 @@ installDrag([
   drop:(src,target)=>{const a=quickIndex(src);if(target.matches('.c195-bag-grid')){quickItems[a]=null;render();return;}const b=quickIndex(target);[quickItems[a],quickItems[b]]=[quickItems[b],quickItems[a]];bagSlot=b;render();}},
  // Camp: roster card or team slot onto the team slots (add, replace, reorder); a team slot onto the roster to send it back to camp.
  {source:'.camp194-roster-select[data-camp-member]',targets:'.camp194-team-slot',drop:(src,target)=>dropMember(src.dataset.campMember!,target)},
- {source:'.camp194-team-slot[data-camp-member]',targets:'.camp194-team-slot,#camp-party-roster,.camp194-roster-block',drop:(src,target)=>dropMember(src.dataset.campMember!,target)},
+ {source:'.camp194-team-slot[data-camp-member]',targets:'.camp194-team-slot,#camp-party-roster,.camp194-roster-block',accept:(_src,t)=>!t.matches('#camp-party-roster,.camp194-roster-block')||(campDragCtx?.p.team.length??0)>1,drop:(src,target)=>dropMember(src.dataset.campMember!,target)},
  // Camp: moves between the learned list and the carried four, and the order of the carried four.
- {source:'.camp194-move-tile[data-camp-move]',targets:'#camp-party-carry,#camp-party-learned,#camp-party-carry .camp194-move-tile',drop:dropMove},
+ {source:'.camp194-move-tile[data-camp-move]',targets:'#camp-party-carry,#camp-party-learned,#camp-party-carry .camp194-move-tile',accept:(src,t)=>{
+   const carried=!!src.closest('#camp-party-carry'),inst=campDragCtx?.p.roster.find(i=>i.id===campSelected);
+   if(t.matches('#camp-party-learned'))return carried;                                   // only a carried move can be set down there
+   if(t.matches('#camp-party-carry .camp194-move-tile'))return t.dataset.campMove!==src.dataset.campMove;   // replace or swap with another carried move
+   return carried||(inst?inst.carry.length<4:false);                                      // the empty part of the list: only while there is room
+  },drop:dropMove},
 ]);
 // Read-only state inspection and the same dispatch API for private browser acceptance.
 Object.assign(window,{trial:{store,autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});

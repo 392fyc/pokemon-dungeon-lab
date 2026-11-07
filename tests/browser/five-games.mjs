@@ -560,7 +560,8 @@ try{
     assert.equal(afterLearn.vault[trainedMove]??0,p.vault[trainedMove]-1,'training consumes exactly one of the selected TM');
     if(!askedWhich&&removed)await click('carry-'+trainedInst+'-'+removed);   // the machine move was already carried; take the chosen old move off
     const equipped=(await envelope()).profile.roster.find(u=>u.id===trainedInst);
-    assert.deepEqual([...(equipped?.carry??[])].sort(),[...unit.carry.filter(move=>move!==removed),trainedMove].sort(),'the trained move replaces only the selected slot');
+    const expectedCarry=askedWhich?unit.carry.map(move=>move===removed?trainedMove:move):[...unit.carry.filter(move=>move!==removed),trainedMove];
+    assert.deepEqual(equipped?.carry,expectedCarry,'the trained move replaces only the selected slot, in that slot');
     report.training={inst:trainedInst,move:trainedMove,removed:removed??null,consumed:true,equipped:true};
     learned=true;
    }

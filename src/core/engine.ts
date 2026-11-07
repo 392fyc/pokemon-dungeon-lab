@@ -1988,6 +1988,7 @@ export function applyCommand(original:World,cmd:Command):Result {
   }
   if(cmd.type==='abandon'){
     if(original.phase==='ended'||!original.prog)return fail('当前没有可以放弃的探险');
+    if(original.pendingEnd==='won'||(original.dungeon?.roguelike&&bossDefeated(original)))return fail('首领已经倒下，本局会以胜利结算，不能再放弃');
     const s=clone(original);note(s,'队伍放弃了探险');
     s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});
     s.prog!.kills=[];s.pendingSettlement=undefined;s.pendingLearnMoves=undefined;s.pendingEvolutions=undefined;s.pendingEnd=undefined;

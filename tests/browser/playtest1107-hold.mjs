@@ -23,10 +23,17 @@ async function open(anim,skipKey){
 }
 const clickEnemy=async p=>{const pt=await p.evaluate(()=>{const v=window.trial.view().units.w1a,c=window.trial.camera();return {x:v.x-c.x,y:v.y-c.y-20};});await p.mouse.move(pt.x,pt.y);await p.waitForTimeout(150);await p.mouse.move(pt.x+1,pt.y);await p.waitForTimeout(150);await p.mouse.click(pt.x+1,pt.y);};
 const results={};
-for(const mode of ['wait','held-key','skip-key','skip-click','noanim']){
+for(const mode of ['wait','held-key','skip-key','skip-click','log-open','noanim']){
  const {ctx,p,info}=await open(mode!=='noanim');console.log(mode,'invite rng',info);
  if(mode==='held-key')await p.keyboard.down('x');   // a key already held when the enemy falls keeps auto-repeating
  const t0=Date.now();await clickEnemy(p);
+ if(mode==='log-open'){   // item 6: the record is opened during the animation; when the pause begins, one click on its × closes it
+  await p.locator('#log-open').click();assert.equal(await p.locator('#log-dialog[open]').count(),1);
+  for(let i=0;i<40&&!(await p.evaluate(()=>!document.getElementById('result-banner').hidden));i++)await p.waitForTimeout(50);
+  assert.equal(await p.evaluate(()=>!document.getElementById('result-banner').hidden),true,'the pause began while the record was open');
+  await p.locator('#log-close').click();await p.waitForTimeout(120);
+  assert.equal(await p.locator('#log-dialog[open]').count(),0,'one click on × closes the record');
+ }
  let seenBanner=false,flowAt=null,bannerGoneAt=null,shot=false;
  for(let i=0;i<60;i++){
   const st=await p.evaluate(()=>({b:!document.getElementById('result-banner').hidden,t:document.getElementById('result-banner').textContent,f:!document.getElementById('flow').hidden&&/想加入/.test(document.getElementById('flow').innerText),ph:window.trial.getState().phase,an:window.trial.animating()}));

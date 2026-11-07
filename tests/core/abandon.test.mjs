@@ -40,3 +40,13 @@ test('through the store: abandoning settles once into the saved camp like a wipe
  assert.deepEqual(saved.vault,before.vault,'the lost machine did not reach the vault');
  assert.deepEqual(saved.team,before.team);
 });
+
+test('B1: once the boss is down, abandoning is refused so a win is never turned into a wipe',()=>{
+ let s=jumpToFloor(jumpToFloor(start(),2),3);
+ const boss=s.enemies.map(id=>s.units[id]).find(u=>u.boss);assert.ok(boss,'floor 3 has a boss');
+ assert.equal(applyCommand(s,{type:'abandon'}).ok,true,'with the boss alive it is allowed');
+ boss.hp=0;boss.pos=null;
+ const r=applyCommand(s,{type:'abandon'});assert.equal(r.ok,false);assert.match(r.error,/首领/);
+ const pending=jumpToFloor(jumpToFloor(start(),2),3);pending.pendingEnd='won';pending.phase='tmChoice';
+ assert.equal(applyCommand(pending,{type:'abandon'}).ok,false,'a won run waiting on a choice cannot be abandoned either');
+});

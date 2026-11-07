@@ -230,7 +230,7 @@ body.dungeon-mode #context-actions .shop-row.is-sold { opacity: .4; }
 }
 
 /* Drag and drop: what can be picked up, the ghost, and the drop targets. */
-.c195-bag-item[data-bag-item], .c195-slot:not(.is-empty), .camp194-roster-select, .camp194-team-slot[data-camp-member], .camp194-move-tile { touch-action: none; -webkit-user-select: none; user-select: none; cursor: grab; }
+.c195-bag-item[data-bag-item], .c195-slot:not(.is-empty), .camp194-roster-select, .camp194-team-slot[data-camp-member], .camp194-move-tile { touch-action: pan-y; -webkit-user-select: none; user-select: none; cursor: grab; }
 body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
 .is-dragging { opacity: .4; }
 .drop-ok { outline: 3px dashed #d9a22b; outline-offset: 2px; }

@@ -185,7 +185,7 @@ export function campParty194(profile:Profile,ready:boolean,selectedId:string):st
     return learned?moveTile(move,learned.pp,selected.id,true,!ready):'';
   }).join('');
   const pool=selected.learned.filter(item=>!selected.carry.includes(item.move)).map(item=>
-    moveTile(item.move,item.pp,selected.id,false,!ready||selected.carry.length>=MAX_CARRY)
+    moveTile(item.move,item.pp,selected.id,false,!ready)
   ).join('');
   const tacticButtons=TACTICS.map(tactic=>'<button type="button" id="camp-tactic-'+escape(selected.id)+'-'+tactic+'" class="camp194-tactic" data-camp-tactic="'+tactic+'" aria-pressed="'+(selected.tactic===tactic?'true':'false')+'" '+(ready?'':'disabled')+'>'+
     tacticIcon(tactic)+'<span>'+escape(TACTIC_LABELS[tactic])+'</span></button>').join('');

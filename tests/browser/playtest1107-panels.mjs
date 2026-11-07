@@ -24,6 +24,10 @@ for(const [w,h] of [[1280,720],[900,520]]){
  await p.waitForSelector('#learning-choice');await p.waitForTimeout(200);
  await fit(p,'#learning-choice','learning');
  assert.equal(await p.locator('#learn-confirm').isDisabled(),true);
+ assert.ok(await p.locator('#learning-choice .c195-learner-types .paper-type').count()>=1,'the learner types are shown beside the portrait');
+ {const own=await p.evaluate(()=>{const s=window.trial.getState(),u=s.units[s.pendingLearnMoves[0].actor];return {types:window.trial.view()&&u.species,marks:[...document.querySelectorAll('#learning-choice .c195-same')].map(e=>e.closest('.c195-move').querySelector('strong').textContent)};});
+  assert.ok(own.marks.length>=1&&own.marks.length<5,'moves of the learner own type carry a same-type mark: '+JSON.stringify(own.marks));
+  assert.ok(!own.marks.includes('撞击'),'a Normal move on a Grass learner is not marked');}
  assert.equal(await p.evaluate(()=>document.activeElement?.className.includes('c195-move')),true,'the window opens with the focus on its first card (the main button is still disabled)');
  {const boxes=await p.locator('.c195-old .c195-move').evaluateAll(n=>n.map(el=>{const r=el.getBoundingClientRect();return {y:Math.round(r.y),w:Math.round(r.width),h:Math.round(r.height),r:r.right,b:r.bottom};}));
   assert.equal(boxes.length,4);assert.ok(boxes.every(r=>Math.abs(r.w-boxes[0].w)<=1&&r.r<=w+1&&r.b<=h+1),'the four replacement cards share one width and stay on screen');

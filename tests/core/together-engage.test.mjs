@@ -28,8 +28,8 @@ for(const tactic of ['together','nomoves']){
   assert.ok(s.units.F.hp<hp,'F takes damage in round 2 from the partners');
  });
 }
-test('together: an opponent more than 3 from the leader is still not chased',()=>{
- const units={A:mate('A',2,3,'wait'),X:mate('X',3,4,'together'),F:dummy('F',7,3)};
+test('together: an opponent more than 6 from the leader is still not chased',()=>{
+ const units={A:mate('A',2,3,'wait'),X:mate('X',3,4,'together'),F:dummy('F',9,3)};
  let s=world(units,{floor:open(9),leader:'A',queue:['A','X'],enemies:['F']});s.rooms=[{x:1,y:1,w:9,h:9}];s.enemyAiRng=1;sureHit(s);
  s=round(s);assert.ok(chebyshev(s.units.X.pos,s.units.A.pos)<=1,'X stays with the leader');
 });
@@ -47,4 +47,22 @@ test('together in a corridor: a visible opponent inside the leader zone is appro
 test('together in a corridor: an opponent X cannot see is not chased, even inside the leader zone',()=>{
  let s=corridor(4,8);   // F is 3 from the leader but 4 from X, beyond the 2-step sight
  s=round(s);assert.equal(s.units.X.pos.x,4,'X keeps its place beside the leader');
+});
+
+/* Playtest round 2 #8: the zone is six cells and counts what the leader can see too. */
+test('together: an opponent five cells from the leader at the far end of a room is approached and then attacked',()=>{
+ const units={A:mate('A',1,1,'wait'),X:mate('X',2,1,'together'),F:dummy('F',6,1)};
+ let s=world(units,{floor:Array.from({length:14},(_,x)=>({x,y:1})),leader:'A',queue:['A','X'],enemies:['F']});s.rooms=[{x:0,y:0,w:14,h:3}];s.enemyAiRng=1;sureHit(s);
+ for(let i=0;i<3;i++)s=round(s);
+ assert.equal(chebyshev(s.units.X.pos,s.units.F.pos),1,'X walked up to F');
+ const hp=s.units.F.hp;s=round(s);assert.ok(s.units.F.hp<hp,'and attacks it');
+});
+test('together: seven cells from the leader is outside the zone, and an opponent only the leader can see still counts',()=>{
+ const far={A:mate('A',1,1,'wait'),X:mate('X',2,1,'together'),F:dummy('F',8,1)};
+ let s=world(far,{floor:Array.from({length:14},(_,x)=>({x,y:1})),leader:'A',queue:['A','X'],enemies:['F']});s.rooms=[{x:0,y:0,w:14,h:3}];s.enemyAiRng=1;sureHit(s);
+ s=round(s);assert.equal(s.units.X.pos.x,2,'F is 7 cells from the leader: X stays');
+ // corridor: the leader sees F (2 steps) though X, three steps away, does not
+ const seen={A:mate('A',5,1,'wait'),X:mate('X',3,1,'together'),F:dummy('F',7,1)};
+ let c=world(seen,{floor:Array.from({length:14},(_,x)=>({x,y:1})),leader:'A',queue:['A','X'],enemies:['F']});c.enemyAiRng=1;sureHit(c);
+ c=round(c);assert.equal(c.units.X.pos.x,4,'the leader sees F, so X moves toward the fight');
 });

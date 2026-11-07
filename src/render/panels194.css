@@ -160,3 +160,12 @@ body.dungeon-mode #flow .settlement-foot .paper-button{font-family:var(--ui-body
 .settlement-foot #settlement-save:empty{display:none}.settlement-foot #settlement-save{position:absolute;bottom:74px;left:0;right:0;z-index:3}.settlement-foot #save{background:#f0e4c6;color:#7b2c16;border-radius:0;border-color:#a64217}.settlement-foot #save .error{color:#7b2c16}
 
 body.dungeon-mode #flow #result-settings{position:absolute;right:12px;top:12px;z-index:2;width:36px;height:36px;min-height:0;margin:0;padding:0;border:2px solid #2a1c14;border-radius:0;background:#e0cfa4;color:#2a1c14;font:900 22px/1 var(--ui-body)}
+
+/* Playtest round 2: enemy details show no stat chart; ally details label the chart; the close button never covers the move list. */
+.detail194.is-enemy .detail-body{grid-template-columns:216px minmax(0,1fr)}
+.detail194 .detail-moves{padding-top:52px}
+.detail194.is-enemy .detail-moves{padding-top:52px}
+.detail-chart{display:flex;flex-direction:column;align-items:center;gap:2px}
+.detail-chart-title{margin:0;font-size:16px;letter-spacing:2px}
+.detail-chart-note{margin:0;max-width:250px;font-size:12px;line-height:1.4;text-align:center}
+.detail194 .detail-stat-chart{width:230px;height:230px}

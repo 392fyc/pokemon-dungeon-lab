@@ -232,9 +232,10 @@ test('4.* the same algorithm drives an enemy: highest gain, never an ally, never
 const T=(tactic,x,rest={},moves={tackle:5,quickattack:5},leaderAt=0)=>W({A:mate('A',leaderAt,1,{moves:{tackle:5}}),X:mate('X',x,1,{moves,tactic}),...rest},{rooms:bigRoom});
 const goes=(a,x)=>assert.deepEqual(a,{type:'move',to:{x,y:1}});
 
-test('11.6 together: hits opponents within 3 of the leader (even at range), never one farther away unless adjacent; otherwise walks to the leader',()=>{
+test('11.6 together: hits opponents the member or leader can see within 6 of the leader (even at range), never one farther away unless adjacent; otherwise walks to the leader',()=>{
  assert.deepEqual(skillOf(actionOf(T('together',1,{F:dummy('F',3,1)}),'X')),['quickattack','F'],'F is 3 from the leader and 2 from X: quickattack');
- goes(actionOf(T('together',2,{F:dummy('F',4,1)}),'X'),1);   // F is 4 from the leader: out of the allowed zone, X is not adjacent to F, so it follows the leader
+ assert.deepEqual(skillOf(actionOf(T('together',2,{F:dummy('F',4,1)}),'X')),['quickattack','F'],'F is 4 from the leader: inside the six-cell zone since playtest round 2');
+ goes(actionOf(T('together',2,{F:dummy('F',9,1)}),'X'),1);   // F is 9 from the leader: out of the zone, X is not adjacent to F, so it follows the leader
  assert.deepEqual(skillOf(actionOf(T('together',5,{F:dummy('F',6,1)}),'X')),['tackle','F'],'an adjacent opponent is always fair game, even 6 from the leader');
  goes(actionOf(T('together',5,{F:dummy('F',11,1)}),'X'),4);  // far opponent, X far from the leader: walk toward the leader, do not chase
 });

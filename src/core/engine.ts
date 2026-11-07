@@ -48,7 +48,9 @@ export type Command = {type:'switch';actor:string}|{type:'round';action:Action;o
   |{type:'invite';choice:'accept'|'reject'|'camp';outgoing?:string}|{type:'finishExit'}|{type:'finishTransit'}
   |{type:'commissionChoice';choice:'accept'|'reject'}|{type:'blessingChoice';blessing:BlessingId|null}|{type:'tmChoice';move:string}
   /** 7.2 shop purchase: needs the leader on the shop cell; takes no round. */
-  |{type:'buy';item:ShopItem}|{type:'learnMove';replace:string|null};
+  |{type:'buy';item:ShopItem}|{type:'learnMove';replace:string|null}
+  /** Playtest round 2: give up the run; it settles exactly like a wipe. */
+  |{type:'abandon'};
 export type Invitation = {id:string;unit:Unit;status:'pending'|'accepted'|'rejected'|'cancelled'};
 /** `to` is set only for a stairs request (the target floor number); a plain exit request has no `to`. */
 export type ExitRequest = {actor:string;pos:Pos;locked:boolean;to?:number};
@@ -650,6 +652,11 @@ function towardLeader(s:World,id:string,avoid:Pos[]=[]):Action {
 function attackableTargets(s:World,id:string,spec:MoveSpec):Unit[] {
   return moveTargetsInReach(s,id,spec).filter(t=>alive(t)&&t.side!==s.units[id].side);
 }
+/** Playtest round 2: "together" and "no moves" members fight what the member or the leader can see within this many cells of the leader. */
+export const TOGETHER_ZONE=6;
+function inLeaderZone(s:World,actor:Unit,anchorPos:Pos,target:Unit):boolean {
+  return chebyshev(anchorPos,target.pos!)<=TOGETHER_ZONE&&(currentlyVisible(s,actor.pos!,target.pos!)||currentlyVisible(s,anchorPos,target.pos!));
+}
 function tacticalTargetAllowed(s:World,actor:Unit,target:Unit,tactic:Tactic):boolean {
   if(tactic==='avoid')return false;
   if(tactic==='followme')return chebyshev(actor.pos!,target.pos!)===1;
@@ -657,7 +664,7 @@ function tacticalTargetAllowed(s:World,actor:Unit,target:Unit,tactic:Tactic):boo
     // The leader may already have fallen during this phase: fall back to the first living queue member, then to no restriction.
     const anchor=alive(s.units[s.leader])?s.units[s.leader]:s.queue.map(i=>s.units[i]).find(alive);
     const anchorPos=anchor?.pos;
-    return chebyshev(actor.pos!,target.pos!)===1||!anchorPos||chebyshev(anchorPos,target.pos!)<=3;
+    return chebyshev(actor.pos!,target.pos!)===1||!anchorPos||inLeaderZone(s,actor,anchorPos,target);
   }
   return true;
 }
@@ -791,10 +798,10 @@ function chooseAllyAction(s:World,id:string,blockingGuard:ReadonlySet<string>=ne
   const basic=legalBasicTarget(s,id,tactic,visible);if(basic)return {type:'basic',target:basic.id};
   if(tactic==='wait')return {type:'wait'};
   if(tactic==='together'||tactic==='nomoves'){
-    // Nothing to attack from here: close in on the nearest visible opponent inside the leader's 3-cell zone (the same zone tacticalTargetAllowed uses), else rejoin the leader.
+    // Nothing to attack from here: close in on the nearest opponent the member or the leader can see inside the leader's zone (the same zone tacticalTargetAllowed uses), else rejoin the leader.
     const anchor=alive(s.units[s.leader])?s.units[s.leader]:s.queue.map(i=>s.units[i]).find(alive);
     if(anchor?.pos){
-      const target=opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&currentlyVisible(s,actorPos,t.pos!)&&chebyshev(anchor.pos!,t.pos!)<=3).sort((a,b)=>chebyshev(actorPos,a.pos!)-chebyshev(actorPos,b.pos!))[0];
+      const target=opponentIds(s,actor.side).map(i=>s.units[i]).filter(t=>alive(t)&&inLeaderZone(s,actor,anchor.pos!,t)).sort((a,b)=>chebyshev(actorPos,a.pos!)-chebyshev(actorPos,b.pos!))[0];
       const step=target?firstStepTo(s,actorPos,target.pos!,true):null;
       if(step&&!occupied(s,step))return {type:'move',to:step};
     }
@@ -1978,6 +1985,13 @@ export function applyCommand(original:World,cmd:Command):Result {
     const s=clone(original),choice=s.pendingChoices!.shift() as Extract<PendingChoice,{type:'tmChoice'}>;
     (s.tms??=[]).push({move:cmd.move,source:choice.source==='blessing'?'target':choice.source,fate:'held'});note(s,`取得${choice.source==='challenge'?'挑战奖励':choice.source==='boss'?'首领掉落':choice.source==='blessing'?'祝福奖励':'目标奖励'}招式机：${cmd.move}`);
     resumeAfterChoice(s);return {ok:true,state:s};
+  }
+  if(cmd.type==='abandon'){
+    if(original.phase==='ended'||!original.prog)return fail('当前没有可以放弃的探险');
+    const s=clone(original);note(s,'队伍放弃了探险');
+    s.invitations.forEach(i=>{if(i.status==='pending')i.status='cancelled';});
+    s.prog!.kills=[];s.pendingSettlement=undefined;s.pendingLearnMoves=undefined;s.pendingEvolutions=undefined;s.pendingEnd=undefined;
+    end(s,'wipe');return {ok:true,state:s};
   }
   if(cmd.type==='tactic'){
     const unit=original.units[cmd.actor];

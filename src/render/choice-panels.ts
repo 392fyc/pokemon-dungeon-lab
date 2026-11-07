@@ -7,11 +7,14 @@ import {starterMoveFields} from './hud.ts';
 import {TYPES,typeChips,unitPortrait} from './panels194.ts';
 
 const esc=(v:unknown)=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-type CardOptions={tag?:string;key?:number;selected?:boolean;button?:{id:string;disabled:boolean}};
+type CardOptions={tag?:string;key?:number;selected?:boolean;same?:boolean;button?:{id:string;disabled:boolean}};
+/** The learner's own types, lower-case; a move of one of these types is marked "本系" (same-type attack bonus). */
+export const ownTypes=(species:string|undefined):string[]=>(species?SPECIES[species]?.types??[]:[]).map(t=>t.toLowerCase());
+export const isOwnType=(move:string,species:string|undefined):boolean=>{const type=starterMoveFields(move).type;return !!type&&ownTypes(species).includes(String(type).toLowerCase());};
 /** One move card: type colour, category, power, accuracy, PP, range and the one-line effect text. */
 export function moveCard(move:string,pp:number,maxPp:number,side:Unit['side'],o:CardOptions={}):string {
   const f=starterMoveFields(move),chip='<span class="paper-move-type" style="background:'+(TYPES[f.type]??'#5f5e50')+'">'+esc(typeZh(f.type))+'</span>';
-  const inner=(o.tag?'<em class="c195-tag">'+esc(o.tag)+'</em>':'')+'<span class="c195-move-top">'+(o.key?'<kbd>'+o.key+'</kbd>':'')+chip+'<strong>'+esc(moveZh(move))+'</strong><span class="c195-cat">'+esc(f.category)+'</span></span>'+
+  const inner=(o.tag?'<em class="c195-tag">'+esc(o.tag)+'</em>':'')+(o.same?'<em class="c195-same" title="与学习者的属性相同">本系</em>':'')+'<span class="c195-move-top">'+(o.key?'<kbd>'+o.key+'</kbd>':'')+chip+'<strong>'+esc(moveZh(move))+'</strong><span class="c195-cat">'+esc(f.category)+'</span></span>'+
    '<span class="c195-move-stats"><span>威力 <b>'+esc(f.power)+'</b></span><span>命中 <b>'+esc(f.accuracy.replace('基础 ',''))+'</b></span><span>PP <b>'+pp+'/'+maxPp+'</b></span><span>范围 <b>'+esc(f.range)+'</b></span></span>'+
    '<span class="c195-move-text">'+esc(moveSummary(move,undefined,side))+'</span>';
   const cls='c195-move'+(o.selected?' is-selected':'')+(o.tag?' is-new':'');
@@ -19,10 +22,10 @@ export function moveCard(move:string,pp:number,maxPp:number,side:Unit['side'],o:
 }
 export function learningPanel(s:World,pending:NonNullable<World['pendingLearnMoves']>[number],unit:Unit,selected:string|null,ready:boolean):string {
   const name=unitLabel(unit,pending.actor),old=selected&&unit.learned.includes(selected)?selected:null;
-  const cards=unit.learned.map((m,i)=>moveCard(m,unit.pp[m]??0,unit.maxPp[m]??0,unit.side,{key:i+1,selected:m===old,button:{id:'learn-replace-'+m,disabled:!ready}})).join('');
+  const cards=unit.learned.map((m,i)=>moveCard(m,unit.pp[m]??0,unit.maxPp[m]??0,unit.side,{key:i+1,selected:m===old,same:isOwnType(m,unit.species),button:{id:'learn-replace-'+m,disabled:!ready}})).join('');
   return '<section class="paper-window c195 c195-learn" id="learning-choice" role="dialog" aria-labelledby="learning-heading"><h2 class="paper-plaque">新的招式</h2>'+
-   '<header class="c195-head">'+unitPortrait(unit,'c195-portrait')+'<div><h3 id="learning-heading" class="c195-title">'+esc(name)+'想学会'+esc(moveZh(pending.move))+'，要忘掉哪个招式？</h3><p class="paper-muted">点一个现有招式选中（键盘 1—'+unit.learned.length+'），再确认。Esc 等于不学。</p></div></header>'+
-   '<div class="c195-learn-grid"><div class="c195-col"><h4>新招式</h4>'+moveCard(pending.move,pending.pp,pending.pp,unit.side,{tag:'新'})+'</div><div class="c195-col"><h4>现有招式</h4><div class="c195-old">'+cards+'</div></div></div>'+
+   '<header class="c195-head">'+unitPortrait(unit,'c195-portrait')+'<div><div class="c195-learner-types" aria-label="学习者的属性">'+(unit.species&&SPECIES[unit.species]?typeChips(SPECIES[unit.species].types??[]):'')+'</div><h3 id="learning-heading" class="c195-title">'+esc(name)+'想学会'+esc(moveZh(pending.move))+'，要忘掉哪个招式？</h3><p class="paper-muted">点一个现有招式选中（键盘 1—'+unit.learned.length+'），再确认。Esc 等于不学。</p></div></header>'+
+   '<div class="c195-learn-grid"><div class="c195-col"><h4>新招式</h4>'+moveCard(pending.move,pending.pp,pending.pp,unit.side,{tag:'新',same:isOwnType(pending.move,unit.species)})+'</div><div class="c195-col"><h4>现有招式</h4><div class="c195-old">'+cards+'</div></div></div>'+
    '<footer class="c195-foot"><button type="button" id="learn-confirm" class="paper-button is-primary" data-confirm'+(!ready||!old?' disabled':'')+'>'+(old?'忘掉'+esc(moveZh(old))+'，学会'+esc(moveZh(pending.move)):'先选一个要忘掉的招式')+'</button><button type="button" id="learn-skip" class="paper-button"'+(ready?'':' disabled')+'>不学</button></footer></section>';
 }
 /** A unit card for the invitation window: portrait, name, types, level, HP and each move with a one-line effect. */

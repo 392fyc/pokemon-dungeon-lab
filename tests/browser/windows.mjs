@@ -465,7 +465,11 @@ async function walkTo(p,target,{mouseFirst=false}={}){
  }
  throw Error('route not finished');
 }
-async function viaStairs(p){await click(p,'take-exit');await click(p,'exit-confirm');await p.waitForFunction(()=>window.trial.getState()?.phase==='playing');}
+async function viaStairs(p){await click(p,'take-exit');await click(p,'exit-confirm');
+ // Partners now chase enemies up to six cells from the leader, so the stairs round may end with an invitation or a level-up to answer first.
+ for(let i=0;i<12;i++){const phase=(await state(p))?.phase;if(phase==='playing')return;
+  if(phase==='invitation')await click(p,'reject');else if(phase==='learning')await click(p,'learn-skip');else if(phase==='evolution')await click(p,'evolution-close');else await p.waitForTimeout(300);}
+ await p.waitForFunction(()=>window.trial.getState()?.phase==='playing');}
 await test('远征：随机楼层真实键鼠，只能下楼，无上楼或撤离；进度只在内存',async()=>{
  const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addInitScript(()=>{window.__trialNoAnim=true;});const p=await context.newPage();const errors=[];p.on('pageerror',e=>errors.push(e.message));
  try{
@@ -710,10 +714,12 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
   await p.locator('.camp194-learn-button').evaluate(el=>el.click());assert.equal(await raw(p),exhaustedBytes,'attempting to confirm an exhausted machine preserves the exact save');
   // Carry four real learned moves, reject a fifth without writing, then swap seedbomb for protect.
   for(const m of extraCarry)await click(p,'carry-P3-'+m.move);assert.equal((await prof()).roster[2].carry.length,4);
-  const before=await raw(p),fifthMove=p.locator('#carry-P3-protect');
-  assert.equal(await fifthMove.isDisabled(),true,'four carried moves disable the fifth choice');
-  await fifthMove.evaluate(el=>el.click());await ready(p);assert.equal(await raw(p),before,'a disabled fifth move cannot write a different carry list');
-  for(const m of extraCarry)await click(p,'carry-P3-'+m.move);await click(p,'carry-P3-seedbomb');await click(p,'carry-P3-protect');pr=await prof();assert.deepEqual(pr.roster[2].carry,['tackle','protect']);
+  // The machine move (protect) was carried at once when learned; pick a learned move that is not carried as the fifth.
+  const p3=(await prof()).roster[2],notCarried=p3.learned.map(m=>m.move).find(m=>!p3.carry.includes(m));assert.ok(notCarried,'a learned move outside the carried four');
+  const before=await raw(p),fifthMove=p.locator('#carry-P3-'+notCarried);
+  // The fifth move stays draggable onto a carried one (replace), so its tile is no longer disabled; the engine still refuses a fifth carried move.
+  await fifthMove.evaluate(el=>el.click());await ready(p);assert.equal(await raw(p),before,'a fifth carried move is refused without writing a different carry list');
+  for(const m of (await prof()).roster[2].carry.filter(m=>m!=='tackle'))await click(p,'carry-P3-'+m);await click(p,'carry-P3-protect');pr=await prof();assert.deepEqual(pr.roster[2].carry,['tackle','protect']);
   // team: remove and re-add P1 so the order becomes P2, P3, P1; P3 stays the leader; "设为主控" is disabled for the current leader
   await click(p,'team-P1');await click(p,'team-P1');pr=await prof();
   assert.deepEqual(pr.team,['P2','P3','P1']);assert.equal(pr.leader,'P3');await openCampRoster(p,'P3');assert.equal(await p.locator('#lead-P3').isDisabled(),true);await click(p,'lead-P1');assert.equal((await prof()).leader,'P1');await click(p,'lead-P3');
@@ -830,16 +836,16 @@ await test('服务点7.2：商店购买不占回合；交换机送回伙伴与�
   await click(p,'buy-berry');
   s=await state(p);assert.equal(s.purse,80);assert.equal(s.prog.items.berry,1);assert.equal(s.round,0);assert.deepEqual(s.shop.trades,[{item:'berry',price:20}]);
   assert.deepEqual(s.shop.stock,{...initialStock,berry:initialStock.berry-1},'buying one berry changes only berry inventory');
-  await click(p,'buy-tm');s=await state(p);assert.equal(s.purse,0);assert.deepEqual(s.tms.map(t=>[t.move,t.source,t.fate]),[['protect','target','held'],['roar','shop','held']]);
+  await click(p,'shop-pick-tm');await click(p,'buy-tm');s=await state(p);assert.equal(s.purse,0);assert.deepEqual(s.tms.map(t=>[t.move,t.source,t.fate]),[['protect','target','held'],['roar','shop','held']]);
   assert.deepEqual(s.shop.stock,{...initialStock,berry:initialStock.berry-1,tm:null},'buying the TM removes only the TM stock after the berry purchase');
-  assert.equal(await p.locator('#buy-tonic').isDisabled(),true);assert.match(await p.locator('#shop-panel').innerText(),/钱袋不足，还差30/);
+  await click(p,'shop-pick-tonic');assert.equal(await p.locator('#buy-tonic').isDisabled(),true);assert.match(await p.locator('#shop-panel').innerText(),/钱袋不足，还差30/);
   await p.screenshot({path:artifact+'windows-service-1-shop.png',fullPage:true});
   assert.equal(await raw(p),null);const purchasedStock=structuredClone(s.shop.stock);
   await click(p,'wait');s=await state(p);assert.equal(s.round,1,'waiting at the shop consumes one round');
   if(s.phase==='invitation'){await click(p,'reject');s=await state(p);}
   else if(s.phase==='evolution'){await click(p,'evolution-close');s=await state(p);}
   assert.equal(s.round,1);assert.deepEqual(s.shop.stock,purchasedStock,'a later round does not refresh the shop inventory');
-  const rows=await p.locator('#shop-panel li').allInnerTexts();assert.equal(rows.length,10,'berry, tonic, TM, plus the cure berry, heal seed, four orbs and the Reviver Seed');
+  const rows=await p.locator('#shop-panel .shop-list li').allInnerTexts();assert.equal(rows.length,10,'berry, tonic, TM, plus the cure berry, heal seed, four orbs and the Reviver Seed');
   assert.match(rows[0],/橙橙果.*价格 20.*库存 1/s,'the shop shows the one remaining berry after the wait');
   assert.match(rows[2],/招式机.*库存 0/s,'the purchased TM remains out of stock after the wait');
   assert.equal(await raw(p),null,'the shop and wait remain expedition-only state');
@@ -1501,9 +1507,9 @@ await test('7.7b 仓库：三招可见、学习、配招，新远征使用新版
    await click(p,'tm-'+move);await click(p,'learn-'+inst);
    assert.ok((await p.evaluate(()=>window.trial.profile())).roster.find(i=>i.id===inst).learned.some(l=>l.move===move));
   }
-  await click(p,'carry-P1-pound');await click(p,'carry-P1-quickguard');
+  // Since playtest round 2 a learned machine is carried at once when there is room, so only the two old moves need to come off.
+  await click(p,'carry-P1-pound');
   await click(p,'carry-P2-tackle');await click(p,'carry-P2-magicalleaf');
-  await click(p,'carry-P2-reflect');await click(p,'carry-P2-lightscreen');
   const prepared=await p.evaluate(()=>window.trial.profile());
   assert.deepEqual(prepared.roster[0].carry,['leafage','quickguard']);
   assert.deepEqual(prepared.roster[1].carry,['reflect','lightscreen']);

@@ -45,6 +45,22 @@ for(const [w,h] of [[1280,720],[900,520]]){
  assert.ok(await p.locator('.hud-quick-slot .hud-quick-icon').count()>=1,'the bottom quick bar shows the icon');
  const broken=await p.evaluate(()=>[...document.images].filter(i=>i.complete&&i.naturalWidth===0).map(i=>i.src));assert.deepEqual(broken,[]);
  const view=await p.evaluate(()=>window.trial.view());assert.ok(view.tiles.includes('room-challenge')&&view.tiles.includes('room-treasure')&&view.tiles.includes('room-commission')&&view.tiles.includes('room-blessing')&&view.tiles.includes('room-shop')&&view.tiles.includes('item2-orb-slumber'),'room props and drop icons are drawn: '+view.tiles.join());
+ // Playtest round 2 #10: a picked-up drop leaves no ghost; a seen drop that is out of sight right now is dimmer
+ await p.evaluate(()=>{
+  const s=window.trial.store.world,L=s.units[s.leader],k=(x,y)=>x+','+y,taken=new Set(s.points.map(q=>k(q.pos.x,q.pos.y)));
+  const free=s.floor.filter(f=>!taken.has(k(f.x,f.y))&&!Object.values(s.units).some(u=>u.pos&&u.pos.x===f.x&&u.pos.y===f.y));
+  const dist=f=>Math.abs(f.x-L.pos.x)+Math.abs(f.y-L.pos.y);
+  const nearCells=free.filter(f=>dist(f)>=1&&dist(f)<=3),far=free.filter(f=>dist(f)>=14).sort((a,b)=>dist(b)-dist(a))[0];
+  s.points=s.points.filter(q=>!['rawstBerry','pechaBerry','chestoBerry'].includes(q.kind));
+  s.points.push({pos:nearCells[0],kind:'rawstBerry',used:true},{pos:nearCells[1],kind:'pechaBerry',used:false},{pos:far,kind:'chestoBerry',used:false});
+  for(const c of [nearCells[0],nearCells[1],far])if(!s.seen.includes(k(c.x,c.y)))s.seen.push(k(c.x,c.y));
+  window.dispatchEvent(new Event('blur'));window.trial.repaint(s);
+ });
+ await p.waitForTimeout(400);
+ {const drops=await p.evaluate(()=>window.trial.view().drops),by=Object.fromEntries(drops.map(d=>[d.texture,d.alpha]));
+  assert.ok(!('item2-rawst' in by),'a picked-up item is not drawn at all (no ghost)');
+  assert.equal(by['item2-pecha'],1,'an unpicked item in sight is drawn at full strength');
+  assert.equal(by['item2-chesto'],.55,'a seen but currently invisible item is dimmer: '+JSON.stringify(drops));}
  // PR 214 B3: an orb has one use button and targets its user; a refused orb is not spent; the Reviver Seed cannot be pinned or used
  await p.locator('#bag-open').click();await p.waitForSelector('.c195-bag');
  await p.locator('[data-bag-item="reviverSeed"]').click();assert.equal(await p.locator('#bag-pin').count(),0,'no pin button for the Reviver Seed');assert.equal(await p.locator('#bag-use').count(),0);

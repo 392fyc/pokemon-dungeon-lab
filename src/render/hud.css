@@ -1914,3 +1914,36 @@ body.dungeon-mode #flow #blessing-choice .button-row {
 #result-banner[hidden] {
   display: none;
 }
+
+/* Playtest round 2: the lower-left log box scrolls back with the wheel, opens the full record on click, and says so in its corner. */
+body.dungeon-mode #dungeon-hud #recent-events {
+  pointer-events: auto;
+  cursor: pointer;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 112px;
+  scrollbar-width: thin;
+}
+
+body.dungeon-mode #recent-events .log-hint {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: block;
+  margin: -2px 0 2px;
+  padding: 0 0 1px;
+  background: rgba(10, 15, 12, 0.92);
+  color: #e8d48a;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+body.dungeon-mode #recent-events:focus-visible {
+  outline: 2px solid #fff1b8;
+}
+
+/* Short windows: the interactive log box stays small so it does not sit on the map. */
+@media (max-height: 620px) {
+  body.dungeon-mode #dungeon-hud #recent-events { max-height: 64px; width: min(340px, calc(100vw - 20px)); }
+}

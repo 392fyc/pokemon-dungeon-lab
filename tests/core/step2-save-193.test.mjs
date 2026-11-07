@@ -65,7 +65,7 @@ test('trial-rules-5 content-5 and content-6 camp records migrate to the active v
   assert.equal(store.envelope.content,CONTENT_VERSION);
   assert.equal(store.envelope.sequence,8);
   assert.deepEqual(store.profile,expected,'migration preserves the roster, both move lists, permanent TM knowledge, and vault');
-  assert.deepEqual(store.profile.roster[0].carry,['scratch','ember'],'old two-move instances remain unchanged');
+  assert.deepEqual(store.profile.roster[0].carry,['scratch','ember','protect','roar'],'migration keeps the carried list as saved (both machines were learned with room to carry them)');
   assert.deepEqual(store.profile.vault,{protect:1,roar:1});
   assert.equal(port.writes(),1,'a valid old camp is upgraded and written once');
  }

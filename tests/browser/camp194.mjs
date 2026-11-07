@@ -169,7 +169,9 @@ export async function camp194Checks({setup,ready,emptyReady,state,artifact}){
       if(width>=761)assert.equal(memberHeader.paddingRight,'52px','the desktop member heading reserves space for the corner close button');
       const teamCloseOverlap=memberHeader.team.left<memberHeader.close.right&&memberHeader.team.right>memberHeader.close.left&&memberHeader.team.top<memberHeader.close.bottom&&memberHeader.team.bottom>memberHeader.close.top;
       assert.equal(teamCloseOverlap,false,'the selected member control stays clear of the dialog close button: '+JSON.stringify(memberHeader));
-      assert.equal(await p.locator('#carry-P1-'+fixture.overflowMove).isDisabled(),true,'the fifth learned move cannot exceed the four-move carry limit');
+      // The fifth learned move stays enabled so it can be dragged onto a carried move to replace it; clicking it is refused by the engine (checked in the camp-learn and drag tests).
+      assert.equal(await p.locator('#carry-P1-'+fixture.overflowMove).count(),1,'the fifth learned move is listed among the learned moves, not the carried four');
+      assert.equal(await p.locator('#camp-party-carry .camp194-move-tile').count(),4,'the carried list holds four');
       await selectMember(p,'P4');
       assert.equal(await p.locator('#team-P4').isDisabled(),true,'a full three-member team cannot take a fourth member');
       assert.equal(await p.locator('#lead-P4').isDisabled(),true,'a member outside the team cannot become its lead');
@@ -257,7 +259,9 @@ export async function camp194Checks({setup,ready,emptyReady,state,artifact}){
       await p.locator('[data-vault-learner="P1"]').click();
       await p.locator('#learn-P1').waitFor();
       assert.equal(await p.locator('#learn-P1').isDisabled(),false,'a compatible partner can confirm learning');
-      await p.locator('#learn-P1').click();await ready(p);
+      await p.locator('#learn-P1').click();
+      // P1 already carries four moves, so the window asks; "only learn" keeps the carried list as it was.
+      await p.locator('#learn-carry-dialog[open]').waitFor();await p.locator('#carry-only-learn').click();await ready(p);
       const learned=await savedProfile(p),learnedP1=learned.roster.find(member=>member.id==='P1');
       assert.equal(learned.vault[fixture.learnMove],inventoryBefore-1,'learning consumes exactly one machine');
       assert.ok(learnedP1.learned.some(move=>move.move===fixture.learnMove),'the learned move is added to the real profile');

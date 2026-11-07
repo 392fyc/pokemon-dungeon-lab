@@ -2,10 +2,11 @@ import type Phaser from 'phaser';
 import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate} from '../render/hud.ts';
 import '../render/hud.css';
 import {itemIconImg} from '../render/item-icons.ts';
+import {installDrag} from './drag.ts';
 import {resultBanner} from '../render/result-banner.ts';
-import {unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
+import {typeChips,unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
 import '../render/panels194.css';
-import {learningPanel,invitationPanel} from '../render/choice-panels.ts';
+import {learningPanel,invitationPanel,moveCard,isOwnType} from '../render/choice-panels.ts';
 import '../render/choice-panels.css';
 import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
 import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,ORB_ITEMS,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
@@ -94,6 +95,8 @@ let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,conf
 let inviteChoice:string|undefined,notice='',detailsId:string|null=null,detailsOpenerId:string|null=null;
 let learnChoice:string|null=null,learnKeyShown='';
 let campSelected:string|null=null,departureOpen=false;
+/** Set by the camp panel on every render so the drag rules below act on the profile the player sees. */
+let campDragCtx:{edit:(a:BaseAction)=>Promise<void>;p:NonNullable<typeof store.profile>}|null=null;
 let vaultState:VaultState={tab:'tm',by:'type',filter:'all',move:null,learner:null,shard:null};
 let campPanel:CampPanel|null=null;
 let campWindowCycle=0;
@@ -314,7 +317,14 @@ function renderDungeonHud(){
  const context=$('context-actions');context.replaceChildren();
  for(const b of Array.from($('controls').querySelectorAll<HTMLButtonElement>(':scope > #take,:scope > #rest,:scope > #take-exit'))){context.append(b);}
  for(const panel of Array.from($('controls').querySelectorAll<HTMLElement>('#adventure-room-panel,#shop-panel,#exchange-panel'))){
-  panel.querySelectorAll('p:not(#purse-line):not(#challenge-reward-result):not(#exchange-result),h2 small').forEach(el=>el.remove());context.append(panel);
+  if(!panel.classList.contains('panel195'))panel.querySelectorAll('p:not(#purse-line):not(#challenge-reward-result):not(#exchange-result),h2 small').forEach(el=>el.remove());context.append(panel);
+ }
+ {// Services, rooms and the shop open as a centred panel; × closes it until the leader moves, and a small button brings it back.
+  const lp=s.units[s.leader]?.pos,svcKey=lp?`${s.runId}|${s.dungeon?.level??0}|${lp.x},${lp.y}`:'',panels=Array.from(context.querySelectorAll<HTMLElement>('.service'));
+  if(serviceClosedKey&&serviceClosedKey!==svcKey)serviceClosedKey='';
+  if(panels.length&&serviceClosedKey===svcKey){const label=panels[0].id==='shop-panel'?'打开商店':panels[0].id==='exchange-panel'?'打开伙伴交换机':'打开房间面板';panels.forEach(el=>el.remove());context.insertAdjacentHTML('beforeend','<button type="button" id="service-reopen" class="service-reopen">'+label+'</button>');bind('service-reopen',()=>{serviceClosedKey='';render();});}
+  else if(panels.length){for(const el of panels){if(!el.querySelector('.service-close'))el.insertAdjacentHTML('afterbegin','<button type="button" class="paper-close service-close" aria-label="关闭面板（Esc）">×</button>');}
+   context.querySelectorAll<HTMLButtonElement>('.service-close').forEach(b=>b.onclick=()=>{serviceClosedKey=svcKey;render();});}
  }
  const targetBox=$('hud-item-targets');targetBox.hidden=!choosingItem;targetBox.innerHTML='';
  if(choosingItem){
@@ -326,6 +336,7 @@ function renderDungeonHud(){
  renderDetailsPanel(s,disabled);
  $('hud-actions').hidden=store.status==='ready'&&(!actionsOpen||!!detailsId);
  $('hud-actions').classList.toggle('has-draft',!!draft);
+ {const menu=$('hud-actions'),existing=document.getElementById('abandon-open');if(runCanBeAbandoned()){if(!existing)menu.insertAdjacentHTML('beforeend','<button id="abandon-open" type="button" class="abandon-open">放弃探险…</button>');bind('abandon-open',openAbandon);}else existing?.remove();}
  $('flow').querySelectorAll('.muted').forEach(el=>el.remove());
  $('flow').hidden=!$('flow').innerHTML.trim();
  if(s.phase==='playing'&&!confirmExit)$('flow').hidden=true;
@@ -349,10 +360,9 @@ function renderDungeonHud(){
  document.querySelector<HTMLButtonElement>('[data-bag-use]')?.addEventListener('click',e=>{chooseHudItem((e.currentTarget as HTMLElement).dataset.bagUse as Item);});
  $('actions-open').onclick=()=>{actionsOpen=!actionsOpen;detailsId=null;render();};$('hud-settings').onclick=openSettings;
  if(anim.active)document.querySelectorAll<HTMLButtonElement|HTMLSelectElement>('#controls button,#controls select,#party button,#hud-bottom button').forEach(el=>{if(!unavailable&&!el.disabled&&el.matches('[data-hud-leader],[data-hud-details],[data-hud-skill],[data-hud-quick],#bag-open'))el.dataset.animationLocked='true';el.disabled=true;});
- $('recent-events').querySelector('h2')?.remove();
- const rows=Array.from($('recent-events').querySelectorAll('li'));rows.slice(0,-3).forEach(el=>el.remove());
  // Runtime details and source IDs stay in developer diagnostics, not in the player's messages.
  if(!dev){for(const el of $('recent-events').querySelectorAll('li'))el.textContent=el.textContent?.replace(/（推断）/g,'')??'';}
+ $('recent-events').scrollTop=Math.min($('recent-events').scrollHeight,$('recent-events').scrollTop);
 }
 
 function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend-items').hidden=!s?.prog||roguelike;$('legend-items-roguelike').hidden=!s?.prog||!roguelike;$('legend-goal').hidden=roguelike;$('legend-adventures').hidden=!roguelike||!s?.adventureRooms?.length;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 轮 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'尚未出发');const runSummary=s?`${roguelike?'':`目标 ${s.goal?'已完成':'未完成'} · `}背包 ${s.bag}${s.prog?` · ${experienceProgress(s)} · 橙橙果×${s.prog.items.berry} PP多项小补剂×${s.prog.items.tonic}${roguelike?` · ${ITEM_NAMES.bigBerry}×${s.prog.items.bigBerry??0} · ${itemName('teamTonic')}×${s.prog.items.teamTonic??0}`:''}${s.dungeon?.base?` · 钱袋 ${s.purse??0}`:''}`:''}`:'';$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:runSummary;
@@ -511,6 +521,7 @@ function renderBase(){
    if(target&&openDialog?.contains(target))target.focus({preventScroll:true});
   }
  };
+ campDragCtx={edit:a=>edit(a),p};
  for(const talent of ['vitality','offense','supplies'] as TalentId[])bind('talent-add-'+talent,()=>void edit({type:'talent',talent}));
  bind('talent-reset',()=>void edit({type:'resetTalents'}));
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-camp-member]'))el.onclick=()=>{campSelected=el.dataset.campMember!;notice='';render();};
@@ -519,7 +530,10 @@ function renderBase(){
   for(const l of i.learned)bind('carry-'+i.id+'-'+l.move,()=>void edit({type:'carry',inst:i.id,moves:i.carry.includes(l.move)?i.carry.filter(n=>n!==l.move):[...i.carry,l.move]}));
   bind('team-'+i.id,()=>{const team=p.team.includes(i.id)?p.team.filter(t=>t!==i.id):[...p.team,i.id];void edit({type:'team',team,leader:team.includes(p.leader)?p.leader:team[0]??p.leader});});
   bind('lead-'+i.id,()=>void edit({type:'team',team:p.team,leader:i.id}));
-  bind('learn-'+i.id,()=>{const move=vaultState.move;if(move)void edit({type:'learn',inst:i.id,move});});
+  bind('learn-'+i.id,()=>{const move=vaultState.move;if(!move)return;
+   // Four moves already carried: ask which one to replace (or learn without carrying), like the in-run learning window.
+   if(i.carry.length>=4&&!i.learned.some(l=>l.move===move)){void askLearnCarry(i,move).then(choice=>{if(choice)void edit({type:'learn',inst:i.id,move,replace:choice.replace});});return;}
+   void edit({type:'learn',inst:i.id,move});});
  }
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-tab]'))el.onclick=()=>{vaultState.tab=el.dataset.vaultTab==='shards'?'shards':'tm';notice='';render();};
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-by]'))el.onclick=()=>{vaultState.by=el.dataset.vaultBy==='category'?'category':'type';vaultState.filter='all';vaultState.move=null;vaultState.learner=null;render();};
@@ -567,14 +581,21 @@ function resultDetails(s:World):string{
 }
 /** Shop and exchanger panels, shown when the leader stands on the cell. Buying takes no round; the exchanger takes the leader's action. */
 /** Shop stock beyond the three fixed rows: the cure berry, heal seed (stock existed, never listed), the four orbs and the Reviver Seed. */
+let shopSelected:ShopItem='berry',serviceClosedKey='';
 const SHOP_EXTRA=['pechaBerry','healSeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb','reviverSeed'] as const;
 function servicePanel(s:World,point:Point|undefined,ready:boolean):string{
  if(!point||!s.prog)return '';
  if(point.kind==='shop'&&s.shop){
   const sh=s.shop,purse=s.purse??0;
-  const row=(item:ShopItem,label:string,left:number)=>{const price=ECON.price[item];const short=purse<price;
-   return `<li>${item!=='tm'?itemIconImg(item as Item,'shop-icon'):''}${esc(label)} · 价格 ${price} · 库存 ${left}${button('buy-'+item,left<1?'售罄':'购买',!ready||left<1||short)}${left>0&&short?`<small>钱袋不足，还差${price-purse}</small>`:''}</li>`;};
-  return `<div class="service" id="shop-panel"><h2>商店 <small>只能用钱袋付款；买东西不占回合；本次远征期间库存固定；关闭或刷新会返回出发前；不收购</small></h2><p id="purse-line">钱袋余额：${purse}</p><ul>${row('berry',ITEM_NAMES.berry,sh.stock.berry)}${row('tonic',ITEM_NAMES.tonic,sh.stock.tonic)}${row('tm',sh.stock.tm?`招式机：${tmName(sh.stock.tm)}`:'招式机',sh.stock.tm?1:0)}${SHOP_EXTRA.map(item=>row(item,ITEM_NAMES[item],sh.stock[item]??0)).join('')}</ul></div>`;
+  const goods:ShopItem[]=['berry','tonic','tm',...SHOP_EXTRA];
+  const stockOf=(item:ShopItem)=>item==='tm'?(sh.stock.tm?1:0):(sh.stock[item]??0);
+  const nameOf=(item:ShopItem)=>item==='tm'?(sh.stock.tm?`招式机：${tmName(sh.stock.tm)}`:'招式机'):ITEM_NAMES[item];
+  const picked=goods.includes(shopSelected)?shopSelected:'berry',price=ECON.price[picked],left=stockOf(picked),short=purse<price;
+  const iconOf=(item:ShopItem,big=false)=>item!=='tm'?itemIconImg(item as Item,big?'shop-icon is-big':'shop-icon'):`<span class="shop-icon tm-disc" aria-hidden="true">盘</span>`;
+  const rows=goods.map(item=>{const pr=ECON.price[item],lf=stockOf(item),sh2=purse<pr&&lf>0;
+   return `<li><button type="button" id="shop-pick-${item}" class="shop-row${item===picked?' is-selected':''}${lf<1?' is-sold':''}${sh2?' is-short':''}" aria-pressed="${item===picked}">${iconOf(item)}<span class="shop-name">${esc(nameOf(item))}</span><span class="shop-price">价格 ${pr}</span><span class="shop-stock">库存 ${lf}</span>${sh2?`<small class="shop-short">还差${pr-purse}</small>`:''}</button></li>`;}).join('');
+  const description=picked==='tm'?(sh.stock.tm?moveSummary(sh.stock.tm):'已经卖完了。'):itemDescription(picked as Item);
+  return `<div class="service panel195 shop195" id="shop-panel" role="dialog" aria-labelledby="shop-heading"><h2 class="paper-plaque" id="shop-heading">商店</h2><p id="purse-line" class="shop-purse">钱袋余额：<strong>${purse}</strong></p><div class="shop-body"><ul class="shop-list" aria-label="商品">${rows}</ul><aside class="shop-detail" aria-label="商品详情"><div class="shop-detail-head">${iconOf(picked,true)}<div><strong>${esc(nameOf(picked))}</strong><small>价格 ${price} · 库存 ${left}</small></div></div><p class="shop-detail-text">${esc(description)}</p>${left>0&&short?`<p class="shop-short-line">钱袋不足，还差${price-purse}</p>`:''}${button('buy-'+picked,left<1?'售罄':'购买',!ready||left<1||short,'class="paper-button is-primary"')}</aside></div><p class="paper-muted shop-note">只能用钱袋付款；买东西不占回合；本次远征期间库存固定；不收购。</p></div>`;
  }
  if(point.kind==='exchange'&&s.exchange){
   const ex=s.exchange;
@@ -589,7 +610,7 @@ function servicePanel(s:World,point:Point|undefined,ready:boolean):string{
  return '';
 }
 function bindService(s:World){
- for(const item of ['berry','tonic','tm',...SHOP_EXTRA] as ShopItem[])bind('buy-'+item,()=>void buyItem(item));
+ for(const item of ['berry','tonic','tm',...SHOP_EXTRA] as ShopItem[]){bind('buy-'+item,()=>void buyItem(item));bind('shop-pick-'+item,()=>{shopSelected=item;render();});}
  for(const id of s.queue)bind('ex-target-'+id,()=>{exTarget=exTarget===id?null:id;render();});
  (s.tms??[]).forEach((_,i)=>bind('ex-cargo-'+i,()=>{exCargo=exCargo.includes(i)?exCargo.filter(n=>n!==i):exCargo.length<ECON.exchangeCargo?[...exCargo,i]:exCargo;if(exCargo.length===ECON.exchangeCargo&&!exCargo.includes(i))notice=`最多运送${ECON.exchangeCargo}份`;render();}));
  bind('ex-confirm',()=>{if(exTarget)void send({type:'round',action:{type:'exchange',target:exTarget,cargo:[...exCargo]}});});
@@ -650,28 +671,72 @@ async function startNewGame(){
  clear();notice='';vaultState.move=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
 }
 /** View-only event rows; the engine log remains intact for animation and saving. */
-let displayedLogRun="",displayedLogRows:string[]=[];
-function visibleLogEntries(s:World):{t:string;fromEnd:number}[]{
- const run=s.runId+"|"+(s.dungeon?.level??0);if(displayedLogRun!==run){displayedLogRun=run;displayedLogRows=[];}
+/** The whole run's log, kept by the interface (the engine's note() keeps only 80 lines). Lines are filtered and turned into player text when they arrive, so they stay readable after a floor change. */
+type LogRow={t:string;text:string;seq:number};
+const RUN_LOG_LIMIT=2000;
+let runLogId="",runLogRows:LogRow[]=[],runLogSeen:string[]=[],runLogTotal=0;
+function trackRunLog(s:World):void{
  const hidden=s.enemies.filter(id=>{const u=s.units[id];return u.pos&&!s.seen.includes(key(u.pos));});
  // Match the raw note format independently of the current floor's actor dictionary.
  const routine=/^[A-Za-z0-9_:-]+(?:移动到-?\d+,-?\d+|与[A-Za-z0-9_:-]+换位|(?:无路可走，)?等待)$/;
  // Floor enemies use w<level><a-f> or challenge c<level><a-d>; removed-floor rows cannot be localized safely.
  const retiredEnemy=(t:string)=>[...t.matchAll(/(?:^|[^A-Za-z0-9_:-])(w\d+[a-f]|c\d+[a-d])(?=$|[^A-Za-z0-9_:-])/g)].some(m=>!s.units[m[1]]);
- const rows=s.log.map((t,i)=>({t,fromEnd:s.log.length-i})).filter(({t})=>!hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??" "))&&!routine.test(t)&&!retiredEnemy(t));
- if(rows.length){displayedLogRows=rows.map(r=>r.t);return rows;}
- return displayedLogRows.map(t=>({t,fromEnd:Infinity}));
+ let fresh:string[];
+ if(s.runId!==runLogId){runLogId=s.runId;runLogRows=[];runLogTotal=0;fresh=s.log;}else fresh=newLines(runLogSeen,s.log);
+ runLogSeen=[...s.log];
+ for(const t of fresh){
+  runLogTotal++;
+  if(hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??" "))||routine.test(t)||retiredEnemy(t))continue;
+  runLogRows.push({t,text:localizeLog(s,t).replace(/（推断）/g,''),seq:runLogTotal});
+ }
+ if(runLogRows.length>RUN_LOG_LIMIT)runLogRows.splice(0,runLogRows.length-RUN_LOG_LIMIT);
 }
-function visibleLog(s:World):string[]{return visibleLogEntries(s).map(r=>r.t);}
+/** `fromEnd` counts from the newest raw line (1 = newest), the same scale as `freshCount`. */
+function visibleLogEntries(s:World):{t:string;text:string;fromEnd:number}[]{
+ trackRunLog(s);return runLogRows.map(r=>({t:r.t,text:r.text,fromEnd:runLogTotal-r.seq+1}));
+}
+function visibleLog(s:World):string[]{return visibleLogEntries(s).map(r=>r.text);}
 /** Full log window (L): every kept entry of this run, newest last, opened scrolled to the bottom. The engine keeps at most 80 raw entries (note() in engine.ts). */
 const logDialog=document.createElement('dialog');logDialog.id='log-dialog';logDialog.setAttribute('aria-labelledby','log-title');
 logDialog.innerHTML='<div class="log-head"><h2 id="log-title">本局记录</h2><button type="button" id="log-close" aria-label="关闭记录（Esc）">×</button></div><ol id="log-list"></ol>';document.body.append(logDialog);
 logDialog.addEventListener('cancel',e=>{e.preventDefault();closeLog();});
 logDialog.querySelector('#log-close')!.addEventListener('click',()=>closeLog());
+/** Camp: the same replace-a-move window as the in-run one, for a machine used on a member that already carries four moves. Resolves null when cancelled. */
+function askLearnCarry(inst:{id:string;species:string;carry:string[];learned:{move:string;pp:number}[]},move:string):Promise<{replace:string|null}|null>{
+ return new Promise(resolve=>{
+  const dialog=document.createElement('dialog');dialog.id='learn-carry-dialog';dialog.className='paper-window c195 c195-learn';dialog.setAttribute('aria-labelledby','learn-carry-heading');
+  let chosen:string|null=null;const finish=(v:{replace:string|null}|null)=>{dialog.close();dialog.remove();resolve(v);};
+  const ppOf=(m:string)=>inst.learned.find(l=>l.move===m)?.pp??0,side='friend' as const,name=speciesZh(inst.species);
+  const draw=()=>{dialog.innerHTML=`<h2 class="paper-plaque">带哪些招式</h2><header class="c195-head"><div><div class="c195-learner-types">${SPECIES[inst.species]?typeChips(SPECIES[inst.species].types??[]):''}</div><h3 id="learn-carry-heading" class="c195-title">${esc(name)}学会了${esc(moveZh(move))}，但已经带了 4 个招式</h3><p class="paper-muted">选一个携带的招式让位，或者只学会、这一趟不带。</p></div></header>
+   <div class="c195-learn-grid"><div class="c195-col"><h4>新招式</h4>${moveCard(move,ppOf(move)||learnableMoveMaxPp(inst.species,move),learnableMoveMaxPp(inst.species,move),side,{tag:'新',same:isOwnType(move,inst.species)})}</div><div class="c195-col"><h4>现在携带的招式</h4><div class="c195-old">${inst.carry.map((m,n)=>moveCard(m,ppOf(m),ppOf(m),side,{key:n+1,selected:m===chosen,same:isOwnType(m,inst.species),button:{id:'carry-replace-'+m,disabled:false}})).join('')}</div></div></div>
+   <footer class="c195-foot"><button type="button" id="carry-confirm" class="paper-button is-primary"${chosen?'':' disabled'}>${chosen?`让${esc(moveZh(chosen))}让位，带上${esc(moveZh(move))}`:'先选一个要让位的招式'}</button><button type="button" id="carry-only-learn" class="paper-button">只学不带</button><button type="button" id="carry-cancel" class="paper-button">取消</button></footer>`;
+   for(const m of inst.carry)(dialog.querySelector('#carry-replace-'+CSS.escape(m)) as HTMLElement).onclick=()=>{chosen=m;draw();(dialog.querySelector('#carry-confirm') as HTMLElement).focus();};
+   (dialog.querySelector('#carry-confirm') as HTMLElement).onclick=()=>{if(chosen)finish({replace:chosen});};
+   (dialog.querySelector('#carry-only-learn') as HTMLElement).onclick=()=>finish({replace:null});
+   (dialog.querySelector('#carry-cancel') as HTMLElement).onclick=()=>finish(null);};
+  dialog.addEventListener('cancel',e=>{e.preventDefault();finish(null);});
+  dialog.addEventListener('keydown',e=>{const n=Number(e.key);if(n>=1&&n<=inst.carry.length){e.preventDefault();chosen=inst.carry[n-1];draw();(dialog.querySelector('#carry-confirm') as HTMLElement).focus();}});
+  draw();document.body.append(dialog);dialog.showModal();(dialog.querySelector('.c195-old .c195-move') as HTMLElement|null)?.focus();
+ });
+}
+const learnableMoveMaxPp=(species:string,move:string):number=>learnableMove(species,move)?.pp??0;
+/** Give up the run (settings and the "…" menu): a confirmation first, naming what is lost; the engine then settles it exactly like a wipe. */
+const abandonDialog=document.createElement('dialog');abandonDialog.id='abandon-dialog';abandonDialog.className='paper-window c195';abandonDialog.setAttribute('aria-labelledby','abandon-heading');document.body.append(abandonDialog);
+abandonDialog.addEventListener('cancel',e=>{e.preventDefault();abandonDialog.close();syncSleepAdvance();});
+function runCanBeAbandoned():boolean{const s=live();return screen==='play'&&!store.atBase&&!!s&&!!s.prog&&s.phase!=='ended';}
+function openAbandon(){
+ const s=live();if(!runCanBeAbandoned()||!s||anim.active||store.status!=='ready')return;
+ if(settings.open)settings.close();cancelMoveInput();cancelSleepAdvance();
+ const level=Math.max(1,Math.min(3,s.dungeon?.level??1));
+ abandonDialog.innerHTML=`<h2 class="paper-plaque">放弃探险</h2><h3 id="abandon-heading" class="c195-title">要放弃这一局探险吗？</h3><ul class="c195-consequences"><li>这一局<strong>立刻结束</strong>，按“全队倒下”结算，不能继续。</li><li>本局取得的<strong>招式机全部丢失</strong>，没有带出的物品和钱袋也作废。</li><li>参加这局的伙伴都会回到营地，不会走失。</li><li>探险队经验照样结算：按到达的<strong>第 ${level} 层</strong>发放，没有击败首领的奖励。</li></ul><footer class="c195-foot"><button type="button" id="abandon-cancel" class="paper-button is-primary">继续探险</button><button type="button" id="abandon-confirm" class="paper-button">确认放弃</button></footer>`;
+ (abandonDialog.querySelector('#abandon-cancel') as HTMLElement).onclick=()=>{abandonDialog.close();syncSleepAdvance();};
+ (abandonDialog.querySelector('#abandon-confirm') as HTMLElement).onclick=()=>{abandonDialog.close();clear();notice='';void send({type:'abandon'});};
+ abandonDialog.showModal();(abandonDialog.querySelector('#abandon-cancel') as HTMLElement).focus();
+}
 function openLog(){
- const s=live();if(!s||screen!=='play'||store.atBase||anim.active||logDialog.open||settings.open)return;
+ const s=live();if(!s||screen!=='play'||store.atBase||logDialog.open||settings.open)return;
  cancelMoveInput();cancelSleepAdvance();
- const rows=visibleLogEntries(s).map(r=>`<li>${esc(localizeLog(s,r.t))}</li>`);
+ const rows=visibleLogEntries(s).map(r=>`<li>${esc(r.text)}</li>`);
  $('log-list').innerHTML=rows.join('')||'<li class="muted">还没有记录。</li>';
  logDialog.showModal();const list=$('log-list');list.scrollTop=list.scrollHeight;
 }
@@ -683,12 +748,14 @@ function renderExtras(){
  const box=$('recent-events');
  if(!s)box.innerHTML='';
  else{
-  const rows=visibleLogEntries(s).slice(-6).map(({t,fromEnd})=>{
+  const rows=visibleLogEntries(s).slice(-60).map(({t,text,fromEnd})=>{
    let extra='';const m=/^([^\s受]+)受到(\d+)伤害/.exec(t);
    if(m&&fromEnd<=freshCount){const a=attrib.get(`${m[1]}|${m[2]}`);
     if(a){const u=s.units[a];extra=u&&u.pos&&s.seen.includes(key(u.pos))?` ← ${unitLabel(u,a)}（推断）`:' ← 视野外的敌人';}}
-   return `<li>${esc(localizeLog(s,t))}${esc(extra)}</li>`;});
-  box.innerHTML=`<h2>最近事件 <small>最新的在最下面；“←”后是推断的攻击者</small></h2><ol id="recent-list">${rows.join('')||'<li class="muted">还没有事件。</li>'}</ol>`;
+   return `<li>${esc(text)}${esc(extra)}</li>`;});
+  const stick=box.scrollTop+box.clientHeight>=box.scrollHeight-4;
+  box.innerHTML=`<span class="log-hint" aria-hidden="true">滚轮翻看 · 点击或按 L 打开完整记录</span><ol id="recent-list">${rows.join('')||'<li class="muted">还没有事件。</li>'}</ol>`;
+  if(stick||!box.dataset.touched)box.scrollTop=box.scrollHeight;
  }
   updateInspect();
  $('guide').innerHTML='';
@@ -788,7 +855,7 @@ class BoardScene extends Phaser.Scene {
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,(this.scale.width-80)/(maxX-minX+1),(this.scale.height-80)/(maxY-minY+1));return {minX,minY,cell,ox:(this.scale.width-(maxX-minX+1)*cell)/2,oy:(this.scale.height-(maxY-minY+1)*cell)/2,dungeon:false,w:this.scale.width,h:this.scale.height};}
  paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());v.zs?.forEach(z=>z.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
  this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
- const g=this.geometry(s);const fog=g.dungeon;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
+ const g=this.geometry(s);const fog=g.dungeon;const nowVisible=s.dungeon?playerVisibleCells(s):null;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
  // 7.3 floor themes: boss-marked runs use the theme tiles of the floor (moss: the original stone). A missing texture falls back to the stone tile with a theme tint.
  const theme=themeOfLevel(s.dungeon?.boss,s.dungeon?.level??1),themeCfg=THEME_FLOORS.find(t=>t.theme===theme)!;
@@ -815,7 +882,8 @@ class BoardScene extends Phaser.Scene {
     pg.fillStyle(visual.color,alpha*.4);pg.fillCircle(c.x,c.y,g.cell*.28);pg.lineStyle(2,visual.color,alpha);pg.strokeCircle(c.x,c.y,g.cell*.28);
     text(c.x,c.y,'换','#edf7f4',Math.min(20,g.cell*.3)).setAlpha(alpha);
    }else if(visual.icon==='drop'){
-    this.tiles.push(this.add.image(c.x,c.y,visual.texture!).setScale(g.cell*.62/32).setAlpha(alpha).setDepth(2));
+    // A picked-up drop is gone. One that was seen but is out of sight right now is drawn dimmer, so it is not mistaken for a live item.
+    if(!point.used)this.tiles.push(this.add.image(c.x,c.y,visual.texture!).setScale(g.cell*.62/32).setAlpha(!nowVisible||nowVisible.has(key(p))?1:.55).setDepth(2));
    }else{
     img(visual.icon,c,alpha,2,visual.icon==='exit'||visual.icon.startsWith('stairs')?1:.8);
     text(c.x,c.y+g.cell*.38,visual.name,'#e4efb0',Math.max(10,Math.min(13,g.cell/6))).setAlpha(alpha).setWordWrapWidth(g.cell*1.6,true);
@@ -868,7 +936,7 @@ class BoardScene extends Phaser.Scene {
  exportTerrain(theme:TerrainThemeKey,layer:TerrainLayer|'floor'){exportTerrainArt(this,theme,layer);}
  skip(){this.skipNow?.();}
  /** Read-only view of what is drawn, for the browser checks: the tile textures in use, and the boss sprite's scale next to a normal unit's, with its labels. */
- debug(){const terrainImages=[...this.tiles,...this.dtefLayer.images,...this.painterLayer.images];const unit=(id:string)=>{const v=this.views.get(id);return v?{whiteFlash:v.sprite.tintMode===Phaser.TintModes.FILL&&v.sprite.tintTopLeft===0xffffff,scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{centerY:v.gfx.y,y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text),sleepMarks:(v.zs??[]).map(z=>({text:z.text,x:z.x,y:z.y,alpha:z.alpha})),spritePaused:v.sprite.anims.isPaused,labelPositions:v.labels.map(l=>({text:l.t.text,x:l.t.x,y:l.t.y,width:l.t.width,height:l.t.height,originX:l.t.originX,originY:l.t.originY}))}:null;};const worldView=this.cameras.main.worldView;return {combatEffects:[...this.temp].flatMap(object=>{const effect=object.getData?.('combatEffect');return effect?[effect]:[];}),temporaryObjects:this.temp.size,terrainCache:terrainSource()==='dtef'?this.dtefLayer.debug():this.painterLayer.debug(),darkness:this.darkness.debug(),tiles:[...new Set(terrainImages.map(t=>t.texture.key))].sort(),terrain:terrainImages.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:terrainImages.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},cameraPosition:{x:this.cameras.main.x,y:this.cameras.main.y},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
+ debug(){const terrainImages=[...this.tiles,...this.dtefLayer.images,...this.painterLayer.images];const unit=(id:string)=>{const v=this.views.get(id);return v?{whiteFlash:v.sprite.tintMode===Phaser.TintModes.FILL&&v.sprite.tintTopLeft===0xffffff,scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{centerY:v.gfx.y,y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text),sleepMarks:(v.zs??[]).map(z=>({text:z.text,x:z.x,y:z.y,alpha:z.alpha})),spritePaused:v.sprite.anims.isPaused,labelPositions:v.labels.map(l=>({text:l.t.text,x:l.t.x,y:l.t.y,width:l.t.width,height:l.t.height,originX:l.t.originX,originY:l.t.originY}))}:null;};const worldView=this.cameras.main.worldView;return {drops:this.tiles.filter(t=>t.texture.key.startsWith('item2-')).map(t=>({texture:t.texture.key,alpha:t.alpha})),combatEffects:[...this.temp].flatMap(object=>{const effect=object.getData?.('combatEffect');return effect?[effect]:[];}),temporaryObjects:this.temp.size,terrainCache:terrainSource()==='dtef'?this.dtefLayer.debug():this.painterLayer.debug(),darkness:this.darkness.debug(),tiles:[...new Set(terrainImages.map(t=>t.texture.key))].sort(),terrain:terrainImages.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:terrainImages.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},cameraPosition:{x:this.cameras.main.x,y:this.cameras.main.y},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
 }
 return BoardScene;
 }
@@ -903,10 +971,12 @@ function refreshTransfer(){
 }
 function openSettings(){
  if(anim.active)return;
+ ($('settings-run') as HTMLElement).hidden=!runCanBeAbandoned();
  $('transfer-message').textContent=store.status==='blocked'?`${store.error}。请先导出原记录保留备份，再导入其他存档。`:store.status==='failed'?'当前改动尚未保存，请先重试保存。':'';
  refreshTransfer();setSettingsTab(store.status==='blocked'||store.status==='failed'?'save':settingsTab);settings.showModal();cancelSleepAdvance();
 }
-bind('open-settings',openSettings);bind('log-open',openLog);
+bind('open-settings',openSettings);
+{const box=document.getElementById('recent-events')!;box.addEventListener('click',()=>openLog());box.addEventListener('wheel',()=>{box.dataset.touched='1';},{passive:true});box.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();openLog();}});box.tabIndex=0;box.setAttribute('role','button');box.setAttribute('aria-label','最近事件；点击打开完整记录');}bind('log-open',openLog);bind('abandon-run',openAbandon);
 bind('settings-close',()=>{settings.close();syncSleepAdvance();});
 settings.addEventListener('cancel',e=>{if(transferBusy)e.preventDefault();});
 settings.addEventListener('close',()=>syncSleepAdvance());
@@ -982,11 +1052,12 @@ document.addEventListener('keyup',e=>{
  }
  const opposed=!(dx||dy);heldDirections.delete(k);if(!heldDirections.size)cancelMoveInput();else if(opposed&&!moveInFlight&&!anim.active&&moveTimer===null&&moveFrame===null)void flushMoveInput();
 });
-document.addEventListener('click',e=>{if(hold){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary')){e.stopPropagation();e.preventDefault();}},true);
+document.addEventListener('click',e=>{if(hold){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary, #log-open, #recent-events, #log-dialog')){e.stopPropagation();e.preventDefault();}},true);
 document.addEventListener('keydown',e=>{
  if(hold&&e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='r')){e.preventDefault();e.stopPropagation();if(!e.repeat)hold.end();return;}
- if(logDialog.open)return;
+ if(logDialog.open||abandonDialog.open)return;
  if(settings.open||(document.getElementById('unit-details-dialog') as HTMLDialogElement|null)?.open||screen!=='play'||store.atBase)return;
+ if((e.key==='l'||e.key==='L')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!(e.target as HTMLElement).matches('input,select,textarea')){e.preventDefault();if(!e.repeat)openLog();return;}   // also while an animation plays
  if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}
  if(e.repeat){e.preventDefault();return;}
  if(anim.active){const direction=e.key.length===1?e.key.toLowerCase():e.key;if(heldDirections.size&&['w','a','s','d','ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(direction)&&!(e.target as HTMLElement).matches('input,select,textarea'))heldDirections.add(direction);if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}
@@ -1001,6 +1072,7 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Enter'){if(target.matches('button')&&!target.hasAttribute('disabled')&&(target.hasAttribute('data-confirm')||target.closest('#flow,#hud-bag'))){e.preventDefault();target.click();}else e.preventDefault();return;}
  if(e.key==='Escape'){
   if(inspectShown()){e.preventDefault();closeInspect();return;}
+  if(document.querySelector('#context-actions .service-close')){e.preventDefault();(document.querySelector('#context-actions .service-close') as HTMLElement).click();return;}
   if(bagOpen){bagOpen=false;render();return;}
   if(live()?.phase==='learning'){e.preventDefault();void send({type:'learnMove',replace:null});return;}
   if(live()?.phase==='evolution'){e.preventDefault();void send({type:'evolve',species:null});return;}
@@ -1029,6 +1101,38 @@ document.addEventListener('keydown',e=>{
 window.addEventListener('blur',()=>{cancelMoveInput();anim.shift=false;selectedSkill=null;render();});
 {const box=document.getElementById('anim-toggle') as HTMLInputElement;box.checked=animationEnabled();box.disabled=params.get('anim')!==null||!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim;
  box.addEventListener('change',()=>{try{window.localStorage.setItem(PREF_KEY,box.checked?'on':'off');}catch{/* preference is optional */}if(!box.checked)scene?.skip();refreshTransfer();});for(const [id,value] of [['anim-on',true],['anim-off',false]] as const)bind(id,()=>{if(!box.disabled){box.checked=value;box.dispatchEvent(new Event('change'));}});}
+/* ---- Drag and drop (pointer events; mouse and touch). Clicking stays available for every action below. ---- */
+function pinQuick(item:Item,slot:number){quickItems=quickItems.map((v,i)=>i===slot?item:v===item?null:v);bagSlot=slot;bagSelectedItem=item;render();}
+const quickIndex=(el:HTMLElement)=>Number(el.dataset.bagSlot??el.dataset.hudQuick);
+function dropMember(id:string,target:HTMLElement){
+ const ctx=campDragCtx;if(!ctx)return;const p=ctx.p;let team=[...p.team];
+ const keepLeader=(t:string[])=>({type:'team' as const,team:t,leader:t.includes(p.leader)?p.leader:t[0]});
+ if(target.matches('#camp-party-roster,.camp194-roster-block')){if(team.includes(id)&&team.length>1)void ctx.edit(keepLeader(team.filter(t=>t!==id)));return;}
+ const over=target.dataset.campMember;
+ if(over&&over!==id){const at=team.indexOf(over);if(team.includes(id)){const from=team.indexOf(id);[team[from],team[at]]=[team[at],team[from]];}else team[at]=id;void ctx.edit(keepLeader(team));}
+ else if(!over){if(team.includes(id))team=[...team.filter(t=>t!==id),id];else if(team.length<3)team.push(id);else return;void ctx.edit(keepLeader(team));}
+}
+function dropMove(source:HTMLElement,target:HTMLElement){
+ const ctx=campDragCtx;if(!ctx||!campSelected)return;const inst=ctx.p.roster.find(i=>i.id===campSelected);if(!inst)return;
+ const move=source.dataset.campMove!,carried=!!source.closest('#camp-party-carry');let carry=[...inst.carry];
+ if(target.matches('#camp-party-learned')){if(carried)carry=carry.filter(m=>m!==move);else return;}
+ else if(target.matches('#camp-party-carry .camp194-move-tile')){const over=target.dataset.campMove!;if(over===move)return;
+  if(carried){const a=carry.indexOf(move),b=carry.indexOf(over);[carry[a],carry[b]]=[carry[b],carry[a]];}else carry=carry.map(m=>m===over?move:m);}
+ else{if(carried)carry=[...carry.filter(m=>m!==move),move];else if(carry.length<4)carry.push(move);else return;}
+ void ctx.edit({type:'carry',inst:inst.id,moves:carry});
+}
+installDrag([
+ // Backpack: drag an item onto a quick slot (in the bag or on the bottom bar) to pin it.
+ {source:'.c195-bag-item[data-bag-item]:not([data-bag-item="reviverSeed"])',targets:'.c195-slot,.hud-quick-slot[data-hud-quick]',drop:(src,target)=>pinQuick(src.dataset.bagItem as Item,quickIndex(target))},
+ // ...move or swap a pinned item between slots, or drag it off onto the item grid to unpin it.
+ {source:'.c195-slot:not(.is-empty)',targets:'.c195-slot,.hud-quick-slot[data-hud-quick],.c195-bag-grid',accept:(src,t)=>t.matches('.c195-bag-grid')||quickIndex(t)!==quickIndex(src),
+  drop:(src,target)=>{const a=quickIndex(src);if(target.matches('.c195-bag-grid')){quickItems[a]=null;render();return;}const b=quickIndex(target);[quickItems[a],quickItems[b]]=[quickItems[b],quickItems[a]];bagSlot=b;render();}},
+ // Camp: roster card or team slot onto the team slots (add, replace, reorder); a team slot onto the roster to send it back to camp.
+ {source:'.camp194-roster-select[data-camp-member]',targets:'.camp194-team-slot',drop:(src,target)=>dropMember(src.dataset.campMember!,target)},
+ {source:'.camp194-team-slot[data-camp-member]',targets:'.camp194-team-slot,#camp-party-roster,.camp194-roster-block',drop:(src,target)=>dropMember(src.dataset.campMember!,target)},
+ // Camp: moves between the learned list and the carried four, and the order of the carried four.
+ {source:'.camp194-move-tile[data-camp-move]',targets:'#camp-party-carry,#camp-party-learned,#camp-party-carry .camp194-move-tile',drop:dropMove},
+]);
 // Read-only state inspection and the same dispatch API for private browser acceptance.
 Object.assign(window,{trial:{store,autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
 render();void store.whenReady.then(()=>{render();const next=finishing();if(next)void transition(store.dispatch(next));});

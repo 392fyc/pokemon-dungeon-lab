@@ -127,7 +127,7 @@ async function command(c){
   assert.notEqual((await state()).invitations.find(i=>i.id===pending.id)?.status,'pending','the chosen invitation must be resolved');
   return;
  }
- if(c.type==='buy'){await click('buy-'+c.item);return;}
+ if(c.type==='buy'){await click('shop-pick-'+c.item);await click('buy-'+c.item);return;}
  assert.equal(c.type,'round');
  const a=c.action,movementBefore=a.type==='move'?await state():null;
  if(a.type==='move'){
@@ -550,15 +550,17 @@ try{
     assert.ok(choice,'real vault TMs are present but no departing member can learn them: '+moves.join(', '));
     ({move:trainedMove,inst:trainedInst}=choice);
     const unit=p.roster.find(u=>u.id===trainedInst);
+    const removed=unit.carry.includes(t.removeMove)?t.removeMove:unit.carry[0];
     await click('learn-'+trainedInst);
+    // Playtest round 2: with room the machine move is carried at once; with four carried moves a window asks which one gives way.
+    const askedWhich=await page.locator('#learn-carry-dialog[open]').count()>0;
+    if(askedWhich){if(removed){await click('carry-replace-'+removed);await click('carry-confirm');}else await click('carry-only-learn');}
     const afterLearn=(await envelope()).profile;
     assert.ok(afterLearn.roster.find(u=>u.id===trainedInst)?.learned.some(k=>k.move===trainedMove),'training actually adds the move');
     assert.equal(afterLearn.vault[trainedMove]??0,p.vault[trainedMove]-1,'training consumes exactly one of the selected TM');
-    const removed=unit.carry.includes(t.removeMove)?t.removeMove:unit.carry[0];
-    if(removed)await click('carry-'+trainedInst+'-'+removed);
-    await click('carry-'+trainedInst+'-'+trainedMove);
+    if(!askedWhich&&removed)await click('carry-'+trainedInst+'-'+removed);   // the machine move was already carried; take the chosen old move off
     const equipped=(await envelope()).profile.roster.find(u=>u.id===trainedInst);
-    assert.deepEqual(equipped?.carry,[...unit.carry.filter(move=>move!==removed),trainedMove],'the trained move replaces only the selected slot');
+    assert.deepEqual([...(equipped?.carry??[])].sort(),[...unit.carry.filter(move=>move!==removed),trainedMove].sort(),'the trained move replaces only the selected slot');
     report.training={inst:trainedInst,move:trainedMove,removed:removed??null,consumed:true,equipped:true};
     learned=true;
    }

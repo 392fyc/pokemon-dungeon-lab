@@ -170,3 +170,71 @@ body.dungeon-mode #hud-bag .c195 .c195-slot .c195-icon:has(.c195-icon-img) { wid
 }
 #map-hint { position: fixed; z-index: 60; padding: 3px 8px; border-radius: 6px; background: rgba(10, 15, 12, .92); border: 1px solid #e8d48a; color: #fff1b8; font-size: 13px; pointer-events: none; white-space: nowrap; }
 #map-hint[hidden] { display: none; }
+
+/* Camp and run dialogs built on the paper window: keep them centred (the .c195 position rule would otherwise pull them to the corner). */
+dialog.c195 { position: fixed; inset: 0; margin: auto; width: min(820px, calc(100vw - 24px)); height: fit-content; max-height: calc(100dvh - 24px); overflow: auto; }
+dialog.c195::backdrop { background: rgba(12, 10, 8, 0.62); }
+dialog#abandon-dialog { width: min(560px, calc(100vw - 24px)); }
+.c195-consequences { margin: 4px 0 8px; padding-left: 20px; font-size: 15px; line-height: 1.65; }
+.abandon-open { margin: 8px 0 0; padding: 6px 12px; border: 1px solid #a8483a; border-radius: 6px; background: rgba(168, 72, 58, 0.18); color: #ffb7a7; font: inherit; cursor: pointer; }
+.settings-run { margin-top: 10px; text-align: right; }
+.settings-run button { background: #d8b8a8; color: #7a2418; }
+
+/* Learner types and the same-type mark. */
+.c195-learner-types { margin: 0 0 4px; }
+.c195-learner-types .paper-type { font-size: 14px; padding: 2px 10px; }
+.c195-same { position: absolute; top: -8px; right: 6px; padding: 0 8px; background: #3c7f3a; color: #fff; font: 900 12px/18px var(--ui-body); font-style: normal; z-index: 1; }
+
+/* Service panels (shop, exchanger, rest, adventure rooms): a centred paper panel instead of loose text over the map. */
+body.dungeon-mode #context-actions:has(.service) {
+  position: fixed; top: 50%; left: 50%; bottom: auto; z-index: 44; display: block;
+  width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; box-sizing: border-box;
+  padding: 28px 22px 14px; transform: translate(-50%, -50%);
+  background: var(--paper); color: var(--paper-ink); font-family: var(--ui-body);
+  border: 4px solid var(--paper-wood-dark); box-shadow: 0 0 0 3px var(--paper-ink), inset 0 0 0 2px var(--paper-wood), 8px 12px 0 #0006;
+}
+body.dungeon-mode #context-actions:has(.service) .service { position: static; padding: 0; background: none; border: 0; color: inherit; }
+body.dungeon-mode #context-actions:has(.service) .service h2 { margin: 0 0 8px; font: 900 20px var(--ui-body); color: var(--paper-wood-dark); }
+body.dungeon-mode #context-actions:has(.service) .service p { margin: 6px 0; font-size: 14px; color: var(--paper-ink); }
+body.dungeon-mode #context-actions:has(.service) .paper-plaque { position: static; display: inline-block; margin: -8px 0 8px -4px; padding: 3px 22px 5px; background: var(--paper-wood); color: #fff4d8; font: 900 22px/1.3 var(--ui-body); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--paper-wood-dark); }
+body.dungeon-mode #context-actions:has(.service) button:not(.paper-close):not(.shop-row) { margin: 4px 6px 4px 0; padding: 8px 16px; border: 0; border-radius: 0; background: var(--paper-wood-light); color: var(--paper-ink); font: 900 15px var(--ui-body); box-shadow: 0 0 0 2px var(--paper-ink); cursor: pointer; }
+body.dungeon-mode #context-actions:has(.service) button.primary, body.dungeon-mode #context-actions:has(.service) button.is-primary { background: #d9622b; color: #fff; }
+body.dungeon-mode #context-actions:has(.service) button:disabled { opacity: .5; cursor: not-allowed; }
+body.dungeon-mode #context-actions:has(.service) .paper-close { position: absolute; right: 12px; top: 12px; width: 36px; height: 36px; padding: 0; border: 0; background: var(--paper-2); color: var(--paper-ink); font-size: 22px; box-shadow: 0 0 0 2px var(--paper-ink); cursor: pointer; }
+.shop-purse { margin: 0 0 8px; font-size: 18px; font-weight: 900; }
+.shop-purse strong { color: #a64217; }
+.shop-body { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 12px; }
+.shop-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin: 0; padding: 3px; list-style: none; max-height: 330px; overflow-y: auto; }
+body.dungeon-mode #context-actions .shop-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; width: 100%; padding: 4px 10px; text-align: left; border: 0; background: var(--paper-2); color: var(--paper-ink); font: 700 14px var(--ui-body); box-shadow: 0 0 0 2px var(--paper-ink); cursor: pointer; }
+body.dungeon-mode #context-actions .shop-row.is-selected { background: #fff0b8; box-shadow: 0 0 0 3px #d9622b; }
+body.dungeon-mode #context-actions .shop-row.is-short { opacity: .55; filter: grayscale(.85); }
+body.dungeon-mode #context-actions .shop-row.is-sold { opacity: .4; }
+.shop-row .shop-short { grid-column: 2 / -1; color: #a83c2c; font-size: 12px; font-weight: 700; }
+.shop-icon { image-rendering: pixelated; width: 32px; height: 32px; margin: 0; vertical-align: middle; }
+.shop-icon.is-big { width: 64px; height: 64px; }
+.shop-icon.tm-disc { display: inline-grid; place-items: center; border-radius: 50%; background: #765196; color: #fff; font-weight: 900; }
+.shop-detail { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--paper-2); box-shadow: 0 0 0 2px var(--paper-ink); }
+.shop-detail-head { display: flex; align-items: center; gap: 10px; }
+.shop-detail-head strong { font-size: 17px; }
+.shop-detail-head small { display: block; font-size: 13px; color: var(--paper-muted); }
+.shop-detail .shop-detail-text { min-height: 60px; line-height: 1.5; }
+.shop-short-line { color: #a83c2c !important; font-weight: 700; }
+.shop-note { font-size: 12px !important; }
+.service-reopen { position: fixed; left: 50%; bottom: 252px; transform: translateX(-50%); z-index: 36; padding: 8px 18px; border: 2px solid #e8d48a; border-radius: 8px; background: rgba(12, 18, 15, .94); color: #fff1b8; font: 700 15px sans-serif; cursor: pointer; }
+@media (max-width: 700px), (max-height: 560px) {
+  body.dungeon-mode #context-actions:has(.service) { padding: 20px 12px 10px; }
+  .shop-body { grid-template-columns: minmax(0, 1fr) 190px; }
+  .shop-list { max-height: 210px; }
+  .shop-detail .shop-detail-text { min-height: 0; font-size: 12px; }
+  .shop-icon.is-big { width: 32px; height: 32px; }
+}
+
+/* Drag and drop: what can be picked up, the ghost, and the drop targets. */
+.c195-bag-item[data-bag-item], .c195-slot:not(.is-empty), .camp194-roster-select, .camp194-team-slot[data-camp-member], .camp194-move-tile { touch-action: none; -webkit-user-select: none; user-select: none; cursor: grab; }
+body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
+.is-dragging { opacity: .4; }
+.drop-ok { outline: 3px dashed #d9a22b; outline-offset: 2px; }
+.drop-hover { outline: 3px solid #3f8f3a !important; outline-offset: 2px; background-color: #e9f5c9 !important; }
+.hud-quick-slot.drop-ok, .hud-quick-slot.drop-hover { position: relative; z-index: 60; }
+.drag-ghost { box-shadow: 0 10px 22px rgba(0, 0, 0, .45); border-radius: 6px; }
+body.dungeon-mode #context-actions:has(.service) .service h2.paper-plaque { color: #fff4d8; font: 900 22px/1.3 var(--ui-body); }

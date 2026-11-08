@@ -28,7 +28,7 @@ async function openRun(touch,size={width:1280,height:720}){
  await ctx.addInitScript(()=>{window.__trialNoAutoSleep=true;window.__trialNoAnim=true;});
  const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));
  await p.goto(base+'/?dev=1&seed=7');await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
- await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
  await p.evaluate(()=>{const s=window.trial.store.world;Object.assign(s.prog.items,{berry:3,tonic:2,bigBerry:1,pechaBerry:1,reviverSeed:1});window.dispatchEvent(new Event('blur'));});
  await p.locator('#bag-open').click();await p.waitForSelector('.c195-bag');
  return {ctx,p};

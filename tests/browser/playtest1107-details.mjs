@@ -15,7 +15,7 @@ for(const [w,h] of [[1280,720],[900,520]]){
  const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
  await p.goto(base+'/?dev=1&seed=7');
  await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
- await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
  await p.evaluate(()=>{const s=window.trial.store.world,e=s.units.w1a,k=(x,y)=>x+','+y;
   for(let dx=-4;dx<=4;dx++)for(let dy=-4;dy<=4;dy++){const x=e.pos.x+dx,y=e.pos.y+dy;if(s.floor.some(f=>f.x===x&&f.y===y)&&!s.seen.includes(k(x,y)))s.seen.push(k(x,y));}
   window.dispatchEvent(new Event('blur'));});

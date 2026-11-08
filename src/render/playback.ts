@@ -117,6 +117,10 @@ async function play(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise
     await Promise.all([ev.effect?drawEffect(st,ev,opts):flash(st,'fx-heal',at(ev.at),d(BASE_MS.heal),0,{grow:1.3}),floatText(st,at(ev.at),ev.item==='berry'?'+'+ev.amount:'PP+'+ev.amount,'#62e06f',ev.effect?Math.max(1,d(BASE_MS.heal)-delay):d(220),delay),...(ev.hpAfter!==undefined&&st.onHp?[wait(st,delay).then(()=>st.onHp!(ev.target,ev.hpAfter!))]:[])]);}
   else if(ev.k==='hpchange'){const to=at(ev.at),loss=ev.delta<0;   // status damage, recoil or a drain: the HP moves when it happens
     await Promise.all([floatText(st,to,loss?String(-ev.delta):'+'+ev.delta,loss?'#ff9c88':'#62e06f',d(BASE_MS.hpchange),d(30)),wait(st,d(30)).then(()=>st.onHp?.(ev.target,ev.hpAfter)),wait(st,d(BASE_MS.hpchange))]);}
+  else if(ev.k==='tags'){   // stage and status words: above the damage numbers, a unit's words one after another so they never overlap
+    const count=new Map<string,number>();
+    await Promise.all(ev.items.map(item=>{const n=count.get(item.target)??0;count.set(item.target,n+1);
+      const to=at(item.at);return floatText(st,{x:to.x,y:to.y-st.cell*.34-n*st.cell*.2},item.text,item.color,d(BASE_MS.tags),d(30+n*110),{size:14});}));}
   else if(ev.k==='effect'){const A=V(ev.by);if(A)face(A,ev.from,ev.at);if(A)idle(st,A);
     const ps:Promise<void>[]=[drawEffect(st,ev,opts)],duration=(BASE_MS as Record<string,number>).effect??320;
     if(ev.effect.template==='heal'&&ev.amount!==undefined&&ev.amount>0)ps.push(floatText(st,at(ev.at),'+'+ev.amount,'#62e06f',d(duration),d(effectImpactDelay(ev.effect,duration))));

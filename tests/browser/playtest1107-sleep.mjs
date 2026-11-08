@@ -11,7 +11,7 @@ await ctx.addInitScript(()=>{window.__trialNoAutoSleep=true;});
 const p=await ctx.newPage();p.on('pageerror',e=>console.log('ERR',e.message));
 await p.goto(base+'/?dev=1&seed=7&anim=on');
 await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
-await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
 await p.evaluate(()=>{const s=window.trial.store.world;const e=s.units.w1a;const k=(x,y)=>x+','+y;
  for(let dx=-4;dx<=4;dx++)for(let dy=-4;dy<=4;dy++){const x=e.pos.x+dx,y=e.pos.y+dy;if(s.floor.some(f=>f.x===x&&f.y===y)&&!s.seen.includes(k(x,y)))s.seen.push(k(x,y));}
  s.units[s.leader].pos={x:e.pos.x+2,y:e.pos.y};e.asleep=true;s.units.w1e.asleep=true;window.dispatchEvent(new Event('blur'));});

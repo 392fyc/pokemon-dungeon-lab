@@ -12,7 +12,7 @@ async function open(w,h,anim=false){
  const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));
  await p.goto(base+'/?dev=1&seed=7'+(anim?'&anim=on':''));
  await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
- await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
  return {ctx,p};
 }
 const fit=async(p,sel,name)=>{const r=await p.locator(sel).first().evaluate(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,r:r.right,b:r.bottom,sh:el.scrollHeight,ch:el.clientHeight,sw:el.scrollWidth,cw:el.clientWidth,vw:innerWidth,vh:innerHeight};});console.log(name,JSON.stringify(r));

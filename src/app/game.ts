@@ -4,6 +4,7 @@ import '../render/hud.css';
 import {itemIconImg} from '../render/item-icons.ts';
 import {installDrag,reconcileDrag} from './drag.ts';
 import {resultBanner} from '../render/result-banner.ts';
+import {applyHpBar,syncHpBars,hpTextColor} from '../render/hpbar.ts';
 import {typeChips,unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
 import '../render/panels194.css';
 import {learningPanel,invitationPanel,moveCard,noticePanel,noticeTag} from '../render/choice-panels.ts';
@@ -21,14 +22,14 @@ import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
 import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from '../core/save.ts';
 import {createScenario,scenarioProfile,SCENARIOS,SCENARIO_LABEL,type ScenarioId} from '../core/scenarios.ts';
 import {THEME_FLOORS,themeOfLevel,ARENA_TILE,isDifficulty,type Difficulty} from '../core/dungeon.ts';
-import {preloadArt,createAnims,createTerrainArt,exportTerrainArt,skinFor,facingRow,animKey,groundOriginY,UNIT_GROUND_FRACTION,TILE} from '../render/sprites.ts';
+import {preloadArt,ensureCharacters,characterReady,characterFailed,characterDrawable,charactersPending,worldDex,nextFloorDex,createTerrainArt,exportTerrainArt,skinFor,facingRow,animKey,groundOriginY,UNIT_GROUND_FRACTION,TILE} from '../render/sprites.ts';
 import {terrainSource} from '../render/dtef.ts';
 import {DtefTerrainLayer} from '../render/dtef-scene.ts';
 import {PainterTerrainLayer} from '../render/painter-scene.ts';
 import {BOARD_BACKGROUND,darknessBackground,DungeonDarkness} from '../render/darkness.ts';
 import {prepareTerrainMap,type TerrainThemeKey,type TerrainLayer} from '../render/terrain.ts';
 import {inferEvents,plan,newLines,type AnimEvent} from '../render/animation.ts';
-import {selfOrAdjacentReachable,adjacentReachable,floorIndex} from '../render/reach.ts';
+import {selfOrAdjacentReachable,adjacentReachable,floorIndex,walkPath} from '../render/reach.ts';
 import {POINT_VISUALS,dungeonCellSize,terrainKnown} from '../render/point-visuals.ts';
 import {itemDescription} from '../core/item-descriptions.ts';
 import {playEvents,type Stage,type UnitView} from '../render/playback.ts';
@@ -194,7 +195,8 @@ function act(action:Action){cancelMoveInput();if(anim.active||!live()||(store.st
  if(action.type==='interact'&&action.exit){const s0=live();if(s0&&stairsKeyOf(s0)){stairsClosedKey='';render();return;}confirmExit=true;render();return;}
  void send({type:'round',action});
 }
-function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
+function clickCell(p:Pos){if(performance.now()<swallowClickUntil){swallowClickUntil=0;return;}   // this very click just stopped a walk: it does nothing else
+ const s=live();if(anim.active||!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
  if(targetMode()){const mate=s.queue.find(i=>s.units[i].hp>0&&same(s.units[i].pos,p));if(mate)useOn(mate);return;}   // choosing a target: a click on a partner uses the item, anything else does nothing
  const id=draft?.editor??s.leader;const target=[...s.queue,...s.enemies].find(i=>s.units[i].hp>0&&same(s.units[i].pos,p)&&s.seen.includes(key(p)));
  if(selectedSkill){
@@ -213,8 +215,39 @@ function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'
   }else{notice='该招式需要存活的合法目标；本轮未执行。';render();}
   return;
  }
+ if(!target&&!draft&&s.units[s.leader].pos&&Math.max(Math.abs(p.x-s.units[s.leader].pos!.x),Math.abs(p.y-s.units[s.leader].pos!.y))>1){void autoWalk(p);return;}   // a far, empty, revealed cell: walk there
  if(target&&s.enemies.includes(target))act({type:'basic',target});else act({type:'move',to:p});
 }
+/* Click-to-walk (roguelike "travel" and Mystery Dungeon's touch movement): every step is an ordinary round, and the walk stops the moment something needs the player. */
+let walkToken=0,swallowClickUntil=0,walkMarker:Pos|null=null;
+const walkActive=()=>walkMarker!==null;
+function stopWalk(fromMapClick=false){if(walkMarker===null)return;walkToken++;walkMarker=null;if(fromMapClick)swallowClickUntil=performance.now()+400;if(!anim.active)scene?.paint(live());}
+/** A confused leader walks in a random direction (engine), so a walk is neither started nor continued. */
+const confusedLeader=(s:World):boolean=>!!s.units[s.leader]?.status?.confusion;
+/** Cells that ask for the player's attention: items, stairs and other points, adventure-room interactions. */
+function attentionCells(s:World):Set<string>{const out=new Set<string>();for(const p of s.points)if(!p.used||p.kind==='down'||p.kind==='up'||p.kind==='exit'||p.kind==='shop'||p.kind==='rest'||p.kind==='exchange')out.add(key(p.pos));for(const r of s.adventureRooms??[])if(r.state!=='done')out.add(key(r.interaction));return out;}
+async function autoWalk(target:Pos){
+ const first=live();if(!first||first.phase!=='playing'||store.status!=='ready'||draft||choosingItem||selectedSkill||bagOpen||settings.open||screen!=='play'||anim.active||confusedLeader(first))return;
+ const token=++walkToken;cancelMoveInput();
+ const plan0=(s:World)=>{const L=s.units[s.leader];if(!L?.pos)return null;const blocked=new Set(s.enemies.filter(id=>s.units[id].hp>0&&s.units[id].pos).map(id=>key(s.units[id].pos!)));return walkPath(floorIndex(s.floor),new Set(s.seen),L.pos,target,blocked,attentionCells(s));};
+ if(!plan0(first))return;   // not reachable (wall, unrevealed, occupied): nothing happens
+ walkMarker={x:target.x,y:target.y};scene?.paint(live());
+ while(token===walkToken){
+  const s=live();if(!s||s.phase!=='playing'||store.status!=='ready'||anim.active||bagOpen||settings.open||screen!=='play'||draft||sleeping(s.units[s.leader])||confusedLeader(s))break;
+  const path=plan0(s);if(!path||!path.length)break;
+  const run=s.runId,level=s.dungeon?.level,round=s.round,leader=s.leader,enemiesBefore=movementEnemies(s),hpBefore=new Map(s.queue.map(id=>[id,s.units[id].hp] as const)),watched=attentionCells(s);   // read before the step: walking onto an item picks it up and clears its marker
+  await send({type:'round',action:{type:'move',to:path[0]}},true);
+  if(token!==walkToken)return;
+  const after=live();if(!after||after.runId!==run||after.dungeon?.level!==level||after.round===round||after.phase!=='playing'||store.status!=='ready'||after.leader!==leader)break;
+  {const at=after.units[leader].pos;if(!at||!same(at,path[0]))break;}   // the leader did not land where planned (confusion, blown away, swapped elsewhere)
+  if([...movementEnemies(after)].some(id=>!enemiesBefore.has(id)))break;   // a new enemy came into view
+  if(after.queue.some(id=>(after.units[id]?.hp??0)<(hpBefore.get(id)??0)))break;   // someone was hurt
+  const here=after.units[leader].pos;if(!here||same(here,target)||watched.has(key(here))||attentionCells(after).has(key(here)))break;   // arrived, or stepped on something to look at
+ }
+ if(token===walkToken){walkMarker=null;walkToken++;scene?.paint(live());}
+}
+document.addEventListener('pointerdown',e=>stopWalk((e.target as HTMLElement|null)?.tagName==='CANVAS'),true);
+document.addEventListener('keydown',()=>stopWalk(false),true);
 const itemName=(id:Item)=>id==='teamTonic'?itemZh(id):ITEM_NAMES[id];
 function actionLabel(a:Action|null,actor?:string){const target=(id:string)=>id===actor?'自身':unitLabel(live()?.units[id],id);if(!a)return '尚未选择';if(a.type==='move')return '移动';if(a.type==='skill')return `${moveZh(a.skill)} → ${target(a.target)}`;if(a.type==='basic')return `普通攻击 → ${target(a.target)}`;if(a.type==='basicForward')return '向前普通攻击';if(a.type==='swap')return `与${target(a.target)}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${target(a.target)}`;if(a.type==='interact')return a.exit?'前进或撤离':'取得并继续';return '等待';}
 type AdventureRoom=NonNullable<World['adventureRooms']>[number];
@@ -377,6 +410,7 @@ function renderDungeonHud(){
  placeInspectBelowParty();
  $('hud-bottom').innerHTML=hudBottom(s,quickItems,unavailable||sleeping(s.units[s.leader]),draft&&draft.editor!==s.leader?null:selectedSkill,choosingItem);
  $('hud-map').innerHTML=hudMinimap(s);
+ syncHpBars(document,k=>{const u=s.units[k.slice(2)];return u?{hp:u.hp,max:u.maxHp}:undefined;},hpAnimated());
  $('activity-status').innerHTML=hudTracking(s);$('activity-status').hidden=!s.dungeon?.roguelike;
  $('hud-tooltip').hidden=true;$('hud-tooltip').innerHTML='';
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-leader]'))b.onclick=()=>{if(targetMode()){useOn(b.dataset.hudLeader!);return;}actionsOpen=false;void send({type:'switch',actor:b.dataset.hudLeader!});};
@@ -402,6 +436,7 @@ function renderDungeonHud(){
  }
  {// closed with "不前进": a small button next to the bag button reopens the prompt while the leader still stands on the stairs
   const here=stairsKeyOf(s);
+  if(here&&!anim.active&&s.points.some(q=>q.kind==='down'&&same(q.pos,s.units[s.leader].pos!)))scene?.flushPrefetch(s);   // not while a step animates: decoding sheets there would hitch the camera
   if(here&&stairsClosedKey===here&&!anim.active)document.querySelector('#hud-bottom .hud-bag-button-wrap')?.insertAdjacentHTML('afterbegin','<button type="button" id="stairs-reopen" class="hud-bag-open hud-service-open">楼梯</button>');
   bind('stairs-reopen',()=>{stairsClosedKey='';render();});
  }
@@ -866,18 +901,19 @@ function showMapHint(s:World,cell:Pos,e:MouseEvent|undefined){
 }
 function enemyAt(p:Pos):string|null{const s=live();if(!s)return null;return s.enemies.find(id=>{const u=s.units[id];return u.hp>0&&same(u.pos,p)&&s.seen.includes(key(p));})??null;}
 /** A hit or heal lands in the middle of an animation: only the HP numbers and bars change (party cards, the bottom bar, the enemy card), not a whole redraw, so the animation keeps its frame budget. */
+/** The damage trail runs only while animations play: off, skipped (Shift) or reduced motion leave the bar without it. */
+const hpAnimated=():boolean=>animationEnabled()&&!anim.shift&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 function patchHpDisplays():void{
  const s=live();if(!s)return;
- const pct=(u:Unit)=>(Math.max(0,Math.min(1,u.hp/Math.max(1,u.maxHp)))*100).toFixed(2)+'%';
  for(const id of s.queue){
   const u=s.units[id],card=document.getElementById('unit-card-'+id);if(!u||!card)continue;
   const text=card.querySelector('.hud-party-hp');if(text)text.textContent=u.hp+'/'+u.maxHp;
-  const fill=card.querySelector<HTMLElement>('.hud-hp-fill');if(fill){fill.style.width=pct(u);fill.classList.toggle('is-empty',u.hp<=0);}
+  const track=card.querySelector<HTMLElement>('.hud-hp-track');if(track)applyHpBar(track,u.hp,u.maxHp,hpAnimated());
  }
  const leader=s.units[s.leader];
  if(leader){
   const value=document.querySelector('#hud-bottom .hud-current-hp-value');if(value)value.textContent='HP '+leader.hp+'/'+leader.maxHp;
-  const big=document.querySelector<HTMLElement>('#hud-bottom .hud-hp-track-large .hud-hp-fill');if(big){big.style.width=pct(leader);big.classList.toggle('is-empty',leader.hp<=0);}
+  const big=document.querySelector<HTMLElement>('#hud-bottom .hud-hp-track-large');if(big)applyHpBar(big,leader.hp,leader.maxHp,hpAnimated());
  }
  if(inspectShown())updateInspect();
 }
@@ -935,6 +971,36 @@ class BoardScene extends Phaser.Scene {
   const s=this.lightWorld,g=this.lastGeometry;if(!s||!g)return [];
   return s.queue.flatMap(id=>{const u=s.units[id],v=this.views.get(id);return u?.hp>0&&u.pos&&v?.sprite.visible?[{x:(v.sprite.x-g.ox)/g.cell+g.minX-.5,y:(v.sprite.y-g.oy)/g.cell+g.minY-.5,primary:id===s.leader}]:[];});
  }
+ /** Sprites load on demand: what this world shows now first (units are drawn only once their sheets are ready, so none flashes blank), then the next floor's planned enemies while the player is busy elsewhere. */
+ private prefetched='';
+ /** The next floor's species arrive one at a time while the player is idle (decoding a sheet costs a few milliseconds, which must never land in the middle of a walk or an animation). */
+ private drip:string[]=[];private dripTimer:ReturnType<typeof setTimeout>|null=null;
+ private dripNext(){
+  if(this.dripTimer!==null||!this.drip.length)return;
+  this.dripTimer=setTimeout(()=>{this.dripTimer=null;if(!this.graphics?.scene)return;
+   if(anim.active||heldDirections.size||moveInFlight||walkActive()){this.dripNext();return;}
+   const d=this.drip.shift()!;void ensureCharacters(this,[d]).then(()=>this.dripNext());},900);
+ }
+ /** Sheets still missing: the picture is drawn at once without those units (a gap of a moment), one repaint follows when they are in, and a unit still without its sheet after 1.2 s is drawn as a shadow and a dot. A slow load is retried every 3 s. */
+ private waitingSince=0;private everShown=false;private repaintScheduled=false;private placeholders:string[]=[];private placeholderTimer:ReturnType<typeof setTimeout>|null=null;
+ private fetchSprites(s:World|null,force=false):void{
+  if(!s)return;
+  const next=nextFloorDex(s),mark=s.runId+'|'+(s.dungeon?.level??0);
+  if(next.length&&this.prefetched!==mark){this.prefetched=mark;for(const d of next)if(!characterReady(d)&&!this.drip.includes(d))this.drip.push(d);this.dripNext();}
+  const missing=worldDex(s).filter(d=>!characterReady(d));
+  const canvas=this.game.canvas;
+  if(!missing.length){this.waitingSince=0;this.everShown=true;canvas.style.opacity='';return;}
+  if(!this.waitingSince)this.waitingSince=performance.now();
+  canvas.style.opacity=this.everShown||performance.now()-this.waitingSince>1200?'':'0';   // only the very first picture of the session waits invisibly, and for 1.2 s at most (the camera has no leader to follow yet); later floors just show a short gap
+  const again=(ms:number)=>{if(this.placeholderTimer!==null)clearTimeout(this.placeholderTimer);this.placeholderTimer=setTimeout(()=>{this.placeholderTimer=null;if(this.graphics?.scene)this.paint(live()??s,force);},ms);};
+  again(1300);
+  void ensureCharacters(this,missing).then(()=>{   // many repaints may queue on the same load chain: they are merged into one catch-up repaint
+   if(this.repaintScheduled)return;this.repaintScheduled=true;
+   queueMicrotask(()=>{this.repaintScheduled=false;if(!this.graphics?.scene)return;this.paint(force?s:live()??s,force);if(worldDex(live()??s).some(d=>!characterReady(d)))again(3000);});
+  });   // an explicit repaint of a given world (force) draws that world; an ordinary one draws whatever is current
+ }
+ /** Standing on the stairs down (the question is on screen): the next floor's species are fetched now, all at once, instead of one by one. */
+ flushPrefetch(s:World){const need=nextFloorDex(s).filter(d=>!characterReady(d));if(need.length){this.drip=[];void ensureCharacters(this,need);}}
  private showDarkness(s:World,durationMs=0){
   if(!s.dungeon||!this.lastGeometry)return;const g=this.lastGeometry,theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),map=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:terrainKnown(s).seen,seenWalls:terrainKnown(s).seenWalls,onlyRevealed:true});
   const wallColor=terrainSource()==='dtef'?this.dtefLayer.wallColor():this.painterLayer.wallColor();const staticLights=s.points.filter(p=>(p.kind==='down'||p.kind==='up')&&s.seen.includes(key(p.pos))).map(p=>({...p.pos,inner:.3,outer:1.25,strength:.45}));
@@ -942,7 +1008,7 @@ class BoardScene extends Phaser.Scene {
   this.darkness.show([s.runId,s.dungeon.level,theme,map.width,map.height].join(':'),theme,g.cell,{width:map.width,height:map.height,known:map.known,litRooms:litRoomsOf(s),lights:this.partyLights(),seed:s.dungeon.seed,wallColor,staticLights},durationMs>0);
   this.cameras.main.setBackgroundColor(darknessBackground(theme,wallColor));
  }
- create(){createAnims(this);this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.dtefLayer=new DtefTerrainLayer(this);this.painterLayer=new PainterTerrainLayer(this);this.events.once('shutdown',()=>{this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();});this.graphics=this.add.graphics().setDepth(0);this.pointGraphics=this.add.graphics().setDepth(2);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
+ create(){this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.dtefLayer=new DtefTerrainLayer(this);this.painterLayer=new PainterTerrainLayer(this);this.events.once('shutdown',()=>{this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();});this.graphics=this.add.graphics().setDepth(0);this.pointGraphics=this.add.graphics().setDepth(2);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
   // worldX/worldY already include the camera scroll, so clicks stay correct while the camera follows the leader.
   const x=Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX;const y=Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY;pinnedId=enemyAt({x,y});updateInspect();clickCell({x,y});});
   this.input.on('pointermove',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);const cell={x:Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX,y:Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY};const id=enemyAt(cell);if(id!==hoverId){hoverId=id;updateInspect();}showMapHint(s,cell,pointer.event as MouseEvent);});scene=this;this.scale.on('resize',()=>{if(!anim.active)this.paint(live());});this.paint(live());}
@@ -959,7 +1025,7 @@ class BoardScene extends Phaser.Scene {
  }
  geometry(s:World){if(s.dungeon){const d=s.dungeon,cell=dungeonCellSize(this.scale.height);return {minX:0,minY:0,cell,ox:0,oy:0,dungeon:true,w:d.width*cell,h:d.height*cell};}
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,(this.scale.width-80)/(maxX-minX+1),(this.scale.height-80)/(maxY-minY+1));return {minX,minY,cell,ox:(this.scale.width-(maxX-minX+1)*cell)/2,oy:(this.scale.height-(maxY-minY+1)*cell)/2,dungeon:false,w:this.scale.width,h:this.scale.height};}
- paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());v.zs?.forEach(z=>z.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
+ paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.fetchSprites(s,force);this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());v.zs?.forEach(z=>z.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.placeholders=[];this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
  this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));return;}
  const g=this.geometry(s);const fog=g.dungeon;const nowVisible=s.dungeon?playerVisibleCells(s):null;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
@@ -1002,7 +1068,11 @@ class BoardScene extends Phaser.Scene {
   const label=text(c.x,c.y,marker.label,color,marker.kind==='door'?(marker.label==='封闭'?12:14):15);if(marker.dimmed)label.setAlpha(.45);
  }
  const shown=new Set<string>();const visible=(id:string)=>{const u=s.units[id];return u.pos&&u.hp>0&&s.seen.includes(key(u.pos))?u:null;};
- for(const id of [...s.enemies,...s.queue]){const u=visible(id);if(!u||!u.pos)continue;shown.add(id);const c=center(u.pos);
+ for(const id of [...s.enemies,...s.queue]){const u=visible(id);if(!u||!u.pos)continue;if(!characterDrawable(this,skinFor(id,u.side,u.species))){   // sheets not here yet: nothing for the first moments, then a shadow and a dot, so a unit that exists is never invisible
+   const waited=this.waitingSince>0&&performance.now()-this.waitingSince>1200;
+   if(waited||characterFailed(skinFor(id,u.side,u.species))){const pc=center(u.pos);this.placeholders.push(id);this.overlay.fillStyle(0x000000,.35);this.overlay.fillEllipse(pc.x,pc.y+g.cell*UNIT_GROUND_FRACTION,g.cell*.55,g.cell*.2);this.overlay.fillStyle(u.side==='enemy'?0xff7a6a:0x7fe0c0,1);this.overlay.fillCircle(pc.x,pc.y,g.cell*.13);this.overlay.lineStyle(2,0x0b1312);this.overlay.strokeCircle(pc.x,pc.y,g.cell*.13);}
+   continue;}
+  shown.add(id);const c=center(u.pos);
   // Shadow and leader ring live in a per-unit Graphics (local origin = cell centre, depth 3: above floor tiles and props, below sprites, highlights and labels) so animation can move them with the sprite.
   const ug=this.add.graphics().setDepth(3).setPosition(c.x,c.y);  // above floor tiles (1-2), below sprites (4)
  ug.fillStyle(0x000000,.35);ug.fillEllipse(0,g.cell*UNIT_GROUND_FRACTION,g.cell*.55,g.cell*.2);if(id===s.leader){ug.lineStyle(3,0xf3d997);ug.strokeEllipse(0,g.cell*UNIT_GROUND_FRACTION,g.cell*.86,g.cell*.34);}
@@ -1013,7 +1083,7 @@ class BoardScene extends Phaser.Scene {
   const asleep=!!u.asleep||sleeping(u);if(asleep)sp.anims.pause(sp.anims.currentAnim?.frames[0]);else if(sp.anims.isPaused)sp.anims.resume();
   const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:Math.max(10,Math.round(g.cell*.12)),color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
   // Only HP sits beside the model; species names remain in the HUD and information cards.
-  const hp=ut(0,0,`${u.hp}`,'#73ff7a');hp.t.setStyle({fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(16,Math.round(g.cell*.22))});placeHp(sp,hp.t,g.cell,c.y);hp.dx=hp.t.x-c.x;hp.dy=hp.t.y-c.y;
+  const hp=ut(0,0,`${u.hp}`,hpTextColor(u.hp,u.maxHp));hp.t.setStyle({fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(16,Math.round(g.cell*.22))});placeHp(sp,hp.t,g.cell,c.y);hp.dx=hp.t.x-c.x;hp.dy=hp.t.y-c.y;
   const view:UnitView={sprite:sp,gfx:ug,labels:[hp,...(u.boss?[ut(0,-g.cell*.78,'首领','#ffd37a')]:[])],dex,row};
   if(asleep){const moving=animationEnabled()&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;view.zMoving=moving;
    view.zs=Array.from({length:moving?3:1},()=>this.add.text(c.x,c.y,moving?'Z':'Zz',{fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(14,Math.round(g.cell*.26)),color:'#cfe8ff',stroke:'#16304f',strokeThickness:3}).setOrigin(.5).setDepth(7));
@@ -1022,6 +1092,7 @@ class BoardScene extends Phaser.Scene {
  this.sprites.forEach((sp,id)=>{if(!shown.has(id))sp.setVisible(false);});this.lastGeometry=g;
  if(g.dungeon)this.followSprites();else this.cameras.main.setScroll(0,0);
  if(dungeonMap)this.showDarkness(s);
+ if(walkMarker&&s.phase==='playing'){const c=center(walkMarker);this.overlay.lineStyle(2,0x9fe3ff);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(1,0x9fe3ff,.55);this.overlay.strokeCircle(c.x,c.y,g.cell*.2);}
  if(selectedSkill&&s.phase==='playing'&&!draft?.swap){const editor=draft?.editor??s.leader;for(const target of skillTargets(s,editor,selectedSkill)){const u=s.units[target];if(!u?.pos||!s.seen.includes(key(u.pos)))continue;const c=center(u.pos);this.overlay.lineStyle(2,0xf1d88e);this.overlay.strokeCircle(c.x,c.y,g.cell*.46);}}
  }
  /** Paints the state before the round, then plays the inferred steps on top; resolves when finished, skipped or timed out. */
@@ -1030,7 +1101,7 @@ class BoardScene extends Phaser.Scene {
   if(!p||!g)return Promise.resolve();
   const center=(q:Pos)=>({x:g.ox+(q.x-g.minX+.5)*g.cell,y:g.oy+(q.y-g.minY+.5)*g.cell});
   this.lightWorld=after;let revealed=false;const terrainAtStart=!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway'),seenBefore=new Set(before.seen),seenAfter=new Set(after.seen),camera=this.cameras.main,cameraX=camera.x,cameraY=camera.y;
-  const st:Stage={scene:this,views:this.views,onHp:(id,hp)=>{this.views.get(id)?.labels[0]?.t.setText(String(hp));hpShown?.set(id,hp);hpShownVer++;patchHpDisplays();},center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;this.showTerrain(after,g);this.showDarkness(after,duration);}};
+  const st:Stage={scene:this,views:this.views,onHp:(id,hp)=>{const hpLabel=this.views.get(id)?.labels[0]?.t;if(hpLabel){hpLabel.setText(String(hp));const max=after.units[id]?.maxHp??before.units[id]?.maxHp;if(max)hpLabel.setColor(hpTextColor(hp,max));}hpShown?.set(id,hp);hpShownVer++;patchHpDisplays();},center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;this.showTerrain(after,g);this.showDarkness(after,duration);}};
   if(!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway')){this.showTerrain(after,g);this.showDarkness(after);}
   return new Promise<void>(resolve=>{
    let done=false;st.cancelled=()=>done;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();resetCombatShake(this);camera.setPosition(cameraX,cameraY);try{this.paint(store.state,true);}finally{resolve();}};
@@ -1043,7 +1114,7 @@ class BoardScene extends Phaser.Scene {
  skip(){this.skipNow?.();}
  /** Read-only view of what is drawn, for the browser checks: the tile textures in use, and the boss sprite's scale next to a normal unit's, with its labels. */
  darknessAlpha(x:number,y:number){return this.darkness.alphaAt(x,y);}
- debug(){const terrainImages=[...this.tiles,...this.dtefLayer.images,...this.painterLayer.images];const unit=(id:string)=>{const v=this.views.get(id);return v?{whiteFlash:v.sprite.tintMode===Phaser.TintModes.FILL&&v.sprite.tintTopLeft===0xffffff,scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{centerY:v.gfx.y,y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text),sleepMarks:(v.zs??[]).map(z=>({text:z.text,x:z.x,y:z.y,alpha:z.alpha})),spritePaused:v.sprite.anims.isPaused,labelPositions:v.labels.map(l=>({text:l.t.text,x:l.t.x,y:l.t.y,width:l.t.width,height:l.t.height,originX:l.t.originX,originY:l.t.originY}))}:null;};const worldView=this.cameras.main.worldView;return {drops:this.tiles.filter(t=>t.texture.key.startsWith('item2-')).map(t=>({texture:t.texture.key,alpha:t.alpha})),combatEffects:[...this.temp].flatMap(object=>{const effect=object.getData?.('combatEffect');return effect?[effect]:[];}),temporaryObjects:this.temp.size,terrainCache:terrainSource()==='dtef'?this.dtefLayer.debug():this.painterLayer.debug(),darkness:this.darkness.debug(),tiles:[...new Set(terrainImages.map(t=>t.texture.key))].sort(),terrain:terrainImages.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:terrainImages.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},cameraPosition:{x:this.cameras.main.x,y:this.cameras.main.y},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
+ debug(){const terrainImages=[...this.tiles,...this.dtefLayer.images,...this.painterLayer.images];const unit=(id:string)=>{const v=this.views.get(id);return v?{texture:v.sprite.texture.key,whiteFlash:v.sprite.tintMode===Phaser.TintModes.FILL&&v.sprite.tintTopLeft===0xffffff,scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{centerY:v.gfx.y,y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text),labelColors:v.labels.map(l=>l.t.style.color),sleepMarks:(v.zs??[]).map(z=>({text:z.text,x:z.x,y:z.y,alpha:z.alpha})),spritePaused:v.sprite.anims.isPaused,labelPositions:v.labels.map(l=>({text:l.t.text,x:l.t.x,y:l.t.y,width:l.t.width,height:l.t.height,originX:l.t.originX,originY:l.t.originY}))}:null;};const worldView=this.cameras.main.worldView;return {drops:this.tiles.filter(t=>t.texture.key.startsWith('item2-')).map(t=>({texture:t.texture.key,alpha:t.alpha})),placeholders:[...this.placeholders],floatTexts:[...this.temp].flatMap(o=>{const t=o as Phaser.GameObjects.Text;return t.type==='Text'?[{text:t.text,color:t.style.color,x:Math.round(t.x),y:Math.round(t.y)}]:[];}),combatEffects:[...this.temp].flatMap(object=>{const effect=object.getData?.('combatEffect');return effect?[effect]:[];}),temporaryObjects:this.temp.size,terrainCache:terrainSource()==='dtef'?this.dtefLayer.debug():this.painterLayer.debug(),darkness:this.darkness.debug(),tiles:[...new Set(terrainImages.map(t=>t.texture.key))].sort(),terrain:terrainImages.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:terrainImages.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},cameraPosition:{x:this.cameras.main.x,y:this.cameras.main.y},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
 }
 return BoardScene;
 }
@@ -1251,5 +1322,5 @@ installDrag([
   },drop:dropMove},
 ]);
 // Read-only state inspection and the same dispatch API for private browser acceptance.
-Object.assign(window,{trial:{store,autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),reveal:(w:World)=>reveal(w),maskAlpha:(x:number,y:number)=>scene?.darknessAlpha(x,y)??0,repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
+Object.assign(window,{trial:{store,walking:walkActive,render,spritesReady:()=>!charactersPending()&&document.querySelector<HTMLElement>('#board canvas')?.style.opacity!=='0',autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),reveal:(w:World)=>reveal(w),maskAlpha:(x:number,y:number)=>scene?.darknessAlpha(x,y)??0,repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
 render();void store.whenReady.then(()=>{render();const next=finishing();if(next)void transition(store.dispatch(next));});

@@ -20,7 +20,7 @@ p.on('response',r=>{
 p.on('requestfailed',r=>failed.push(r.url()));
 p.setDefaultTimeout(15000);
 const raw=()=>p.evaluate(()=>localStorage.getItem('dungeon-trial.player.v1'));
-const readyOn=page=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+const readyOn=page=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
 const ready=()=>readyOn(p);
 async function clickUI(page,id){
  if(id==='open-settings'&&await page.locator('#hud-settings').isVisible())id='hud-settings';

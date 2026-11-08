@@ -214,6 +214,34 @@ body.dungeon-mode .hud-hp-fill.is-empty {
   background: #b64949;
 }
 
+/* Pokémon-style colours: green above half, yellow at half or below, red at a fifth or below. A loss leaves a pale trail that shrinks afterwards. */
+body.dungeon-mode .hud-hp-track {
+  position: relative;
+}
+
+body.dungeon-mode .hud-hp-fill {
+  position: relative;
+  z-index: 1;
+}
+
+body.dungeon-mode .hud-hp-fill.is-mid {
+  background: #e8c53a;
+}
+
+body.dungeon-mode .hud-hp-fill.is-low {
+  background: #d9503f;
+}
+
+body.dungeon-mode .hud-hp-trail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: block;
+  border-radius: inherit;
+  background: rgba(255, 244, 214, 0.7);
+}
+
 body.dungeon-mode .hud-unit-status {
   display: flex;
   flex-wrap: wrap;
@@ -646,6 +674,58 @@ body.dungeon-mode .hud-skill-name {
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+body.dungeon-mode .hud-skill-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+body.dungeon-mode .hud-skill-key {
+  flex: 0 0 auto;
+  min-width: 16px;
+  padding: 0 3px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.32);
+  color: #fff6d8;
+  font: 700 11px/15px Verdana, Arial, sans-serif;
+  text-align: center;
+}
+
+body.dungeon-mode .hud-skill-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+body.dungeon-mode .hud-skill-power {
+  font-weight: 700;
+}
+
+body.dungeon-mode .hud-skill-power[data-power="—"] {
+  opacity: 0.6;
+}
+
+body.dungeon-mode .hud-skill-reach {
+  display: inline-flex;
+  align-items: center;
+}
+
+body.dungeon-mode .hud-skill-reach svg {
+  fill: #fff;
+  stroke: #fff;
+}
+
+body.dungeon-mode .hud-skill-reach .r-self {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.5;
 }
 
 body.dungeon-mode .hud-skill-meta {

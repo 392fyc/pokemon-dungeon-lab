@@ -27,6 +27,7 @@ import { skinFor } from "./sprites.ts";
 import { terrainKnown } from "./point-visuals.ts";
 import { itemIconImg, tmDisc } from "./item-icons.ts";
 import { portraitMarkup } from "./portrait.ts";
+import { hpTrackMarkup } from "./hpbar.ts";
 import "./portrait.css";
 import moveTypeSnapshot from "../data/move-types.json" with { type: "json" };
 import moveDescriptionSnapshot from "../data/move-desc-zh.json" with { type: "json" };
@@ -75,11 +76,6 @@ function esc(value: unknown): string {
 
 function unitName(unit: Unit): string {
   return unit.species ? speciesZh(unit.species) : unit.side === "enemy" ? "敌人" : "队员";
-}
-
-function hpPercent(unit: Unit): number {
-  if (unit.maxHp <= 0) return 0;
-  return Math.max(0, Math.min(100, (unit.hp / unit.maxHp) * 100));
 }
 
 function spriteMarkup(unit: Unit, label: string): string {
@@ -207,6 +203,28 @@ function compactRange(range: MoveRange | undefined): string {
   }
 }
 
+/** Small pictograms of a move's reach (the cell grid of the hover card, boiled down to one glyph): dots are the cells hit, the ring is the user. Wording lives in the hover card and the title. */
+const REACH_GLYPHS: Record<MoveRange, string> = {
+  front: '<circle cx="4" cy="8" r="2" class="r-self"/><circle cx="11" cy="8" r="2.4"/>',
+  front2: '<circle cx="2.5" cy="8" r="1.8" class="r-self"/><circle cx="8" cy="8" r="2.2"/><circle cx="13" cy="8" r="2.2"/>',
+  line10: '<circle cx="2" cy="8" r="1.6" class="r-self"/><path d="M5 8h8" stroke-width="2" stroke-linecap="round"/><path d="M11 5l3 3-3 3" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  around: '<circle cx="8" cy="8" r="1.8" class="r-self"/><circle cx="8" cy="2.6" r="1.5"/><circle cx="8" cy="13.4" r="1.5"/><circle cx="2.6" cy="8" r="1.5"/><circle cx="13.4" cy="8" r="1.5"/><circle cx="4.2" cy="4.2" r="1.3"/><circle cx="11.8" cy="4.2" r="1.3"/><circle cx="4.2" cy="11.8" r="1.3"/><circle cx="11.8" cy="11.8" r="1.3"/>',
+  room: '<rect x="2" y="2" width="12" height="12" rx="2" fill="none" stroke-width="1.8"/><circle cx="8" cy="8" r="2"/>',
+  user: '<circle cx="8" cy="8" r="3" class="r-self"/><circle cx="8" cy="8" r="6" fill="none" stroke-width="1.4"/>',
+};
+function reachIcon(skill: Skill): string {
+  const range = moveOf(skill)?.range;
+  if (!range) return "";
+  return '<span class="hud-skill-reach" data-reach="' + range + '" title="' + esc(moveRangeLabel(skill)) +
+    '"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">' + REACH_GLYPHS[range] + "</svg></span>";
+}
+/** Power as the cards show it: the number for a damaging move, a dash for a status move or one without a base power. */
+function powerLabel(skill: Skill): string {
+  const spec = moveOf(skill);
+  const damaging = !!spec && (spec.effects.includes("damage") || skill === "snore") && spec.power !== null;
+  return damaging ? String(spec!.power) : "—";
+}
+
 function scopeGrid(range: MoveRange | undefined): string {
   const rangeCells = new Set<string>();
   const directions = new Set<string>();
@@ -271,7 +289,6 @@ export function hudParty(s: World, disabled: boolean): string {
     const unit = s.units[id];
     if (!unit) return "";
     const name = unitName(unit);
-    const percent = hpPercent(unit);
     const chosen = id === s.leader;
     const status = statusMarkup(unit);
     return '<article class="hud-party-card' + (chosen ? " is-leader" : "") + '" id="unit-card-' + esc(id) + '">' +
@@ -281,9 +298,8 @@ export function hudParty(s: World, disabled: boolean): string {
       spriteMarkup(unit, name) +
       '<span class="hud-party-info"><span class="hud-party-name-row"><strong class="hud-party-name">' +
       esc(name) + '</strong><span class="hud-party-hp">' + unit.hp + "/" + unit.maxHp +
-      '</span></span><span class="hud-hp-track"><span class="hud-hp-fill' +
-      (unit.hp <= 0 ? " is-empty" : "") + '" style="width:' + percent.toFixed(2) +
-      '%"></span></span><span class="hud-unit-status" data-unit-status="' + esc(id) +
+      '</span></span>' + hpTrackMarkup("p:" + id, unit.hp, unit.maxHp) +
+      '<span class="hud-unit-status" data-unit-status="' + esc(id) +
       '">' + status + "</span></span></button>" +
       '<button type="button" class="hud-party-details" id="detail-' + index +
       '" data-hud-details="' + esc(id) + '" aria-label="查看' + esc(name) + '详情">详情</button></article>';
@@ -301,7 +317,6 @@ export function hudBottom(
   const leader = s.units[s.leader];
   if (!leader) return "";
   const name = unitName(leader);
-  const percent = hpPercent(leader);
   const skills = Array.from({ length: 4 }, (_, index) => {
     const skill = leader.learned[index];
     if (!skill) {
@@ -318,7 +333,8 @@ export function hudBottom(
       '" data-move-type="' + esc(typeId) + '" aria-pressed="' +
       (selectedSkill === skill) + '" aria-label="' + esc(moveZh(skill) + "，" + moveTypeLabel(skill) +
       "，PP " + current + "/" + maximum) + '"' + (unavailable ? " disabled" : "") + ">" +
-      '<span class="hud-skill-name">' + esc(moveZh(skill)) + '</span>' +
+      '<span class="hud-skill-head"><kbd class="hud-skill-key" aria-hidden="true">' + (index + 1) + '</kbd><span class="hud-skill-name">' + esc(moveZh(skill)) + '</span></span>' +
+      '<span class="hud-skill-stats"><span class="hud-skill-power" data-power="' + powerLabel(skill) + '" title="威力">' + powerLabel(skill) + "</span>" + reachIcon(skill) + "</span>" +
       '<span class="hud-skill-meta"><span class="hud-skill-type">' + esc(moveTypeLabel(skill)) +
       '</span><span class="hud-skill-pp">PP ' + current + "/" + maximum + "</span></span></button>";
   }).join("");
@@ -332,9 +348,8 @@ export function hudBottom(
     '<section class="hud-current-unit" aria-label="当前操控队员">' +
     experienceMarkup(s) +
     '<div class="hud-current-member">' + spriteMarkup(leader, name) +
-    '<span class="hud-current-info"><strong>' + esc(name) + '</strong><span class="hud-hp-track hud-hp-track-large">' +
-    '<span class="hud-hp-fill' + (leader.hp <= 0 ? " is-empty" : "") +
-    '" style="width:' + percent.toFixed(2) + '%"></span></span><span class="hud-current-hp"><span class="hud-current-hp-value">HP ' +
+    '<span class="hud-current-info"><strong>' + esc(name) + '</strong>' +
+    hpTrackMarkup("b:" + s.leader, leader.hp, leader.maxHp, "hud-hp-track-large") + '<span class="hud-current-hp"><span class="hud-current-hp-value">HP ' +
     leader.hp + "/" + leader.maxHp + "</span>" + sleepNotice + "</span></span></div></section>" +
     '<div class="hud-skills" aria-label="招式">' + skills + "</div>" +
     '<div class="hud-quick-grid" aria-label="快捷物品">' + quickMarkup + "</div>" +

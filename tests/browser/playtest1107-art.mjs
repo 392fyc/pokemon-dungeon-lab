@@ -13,7 +13,7 @@ for(const [w,h] of [[1280,720],[900,520]]){
  const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('response',r=>{if(r.status()>=400&&/assets/.test(r.url()))errs.push('HTTP '+r.status()+' '+r.url());});
  await p.goto(base+'/?dev=1&seed=7');
  await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
- await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
  await p.evaluate(()=>{
   const s=window.trial.store.world,L=s.units[s.leader],k=(x,y)=>x+','+y;
   Object.assign(s.prog.items,{berry:3,bigBerry:1,tonic:2,teamTonic:1,pechaBerry:1,healSeed:1,violentSeed:1,maxElixir:1,slumberOrb:2,totterOrb:1,luminousOrb:1,rollcallOrb:1,reviverSeed:1});

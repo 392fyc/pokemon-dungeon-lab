@@ -12,7 +12,7 @@ await ctx.addInitScript(()=>{window.__trialNoAutoSleep=true;});   // animations 
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
 await p.goto(base+'/?dev=1&seed=7&anim=on');
 await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
-await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
 const animating=()=>p.evaluate(()=>window.trial.animating());
 // 1. during a round's animation both the button and the L key open the record
 await p.keyboard.press('Escape');

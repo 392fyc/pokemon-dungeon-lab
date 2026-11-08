@@ -13,7 +13,7 @@ for(const [w,h] of [[1280,720],[900,520]]){
  const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
  await p.goto(base+'/?dev=1&seed=7');
  await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
- await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
  await p.evaluate(()=>{const s=window.trial.store.world,L=s.units[s.leader];s.enemies.forEach(id=>{s.units[id].waitOnly=true;});
   s.points=s.points.filter(q=>!(q.pos.x===L.pos.x&&q.pos.y===L.pos.y));s.points.push({pos:{...L.pos},kind:'shop',used:false});
   s.shop={level:s.dungeon.level,stock:{berry:2,tonic:1,tm:'protect',pechaBerry:1,healSeed:1,slumberOrb:1,totterOrb:1,luminousOrb:1,rollcallOrb:1,reviverSeed:1},trades:[]};s.purse=50;

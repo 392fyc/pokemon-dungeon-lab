@@ -39,7 +39,7 @@ page.setDefaultTimeout(15000);
 page.on('pageerror',e=>errors.push(e.message));
 page.on('requestfailed',r=>errors.push(r.url()));
 page.on('response',r=>{if(r.status()>=400)errors.push(r.status()+' '+r.url());});
-const ready=()=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+const ready=()=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
 const state=()=>page.evaluate(()=>window.trial.getState());
 const envelope=()=>page.evaluate(()=>window.trial.store.envelope);
 const raw=()=>page.evaluate(()=>localStorage.getItem(window.trial.store.key));

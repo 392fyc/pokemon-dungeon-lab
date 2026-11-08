@@ -108,7 +108,7 @@ async function setup(fixture,mode='pass',animate=false,source='painter',contextO
  return {context,page,errors};
 }
 // 7.5: entering play loads Phaser on demand; canvas assertions also need the scene ready.
-const ready=p=>p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+const ready=p=>p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());   // sprites load on demand: wait until the board shows every unit
 const emptyReady=p=>p.waitForFunction(()=>window.trial?.store.status==='empty'&&window.trial.view());
 const state=p=>p.evaluate(()=>window.trial.getState());
 const raw=p=>p.evaluate(()=>localStorage.getItem(window.trial.store.key));
@@ -1930,7 +1930,8 @@ await test('8.8 #166：两种图源的未知墙与水像素一致，三主题暗
    const sx=bounds.width/cameraView.width,sy=bounds.height/cameraView.height,c=geometry.cell;
    const clip={x:Math.floor(bounds.x+((hidden.x-1)*c-cameraView.x)*sx),y:Math.floor(bounds.y+(hidden.y*c-cameraView.y)*sy),width:Math.ceil(2*c*sx),height:Math.ceil(c*sy)};
    const repaint=async world=>{
-    await p.evaluate(world=>{window.trial.repaint(world);return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));},world);
+    await p.evaluate(world=>{window.trial.repaint(world);},world);await p.waitForFunction(()=>window.trial.spritesReady());   // a species nobody loaded yet is fetched first
+    await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     return p.screenshot({clip});
    };
    const wall=await repaint(w);
@@ -2163,6 +2164,7 @@ await test('#194 水跃鱼、木守宫与进化形态的脚底贴住阴影，移
   const {SPECIES}=await import('../../src/core/roster.ts'),allSpecies=Object.keys(SPECIES),minimumRows=[];
   for(let offset=0;offset<allSpecies.length;offset+=w.queue.length){const species=allSpecies.slice(offset,offset+w.queue.length),actors=w.queue.slice(0,species.length);
    await p.evaluate(async({species,actors})=>{for(const [i,id] of actors.entries()){const u=window.trial.store.world.units[id];u.species=species[i];u.entrySpecies=species[i];}for(const direction of [{x:0,y:-1},{x:0,y:1}]){for(const actor of actors){await window.trial.store.dispatch({type:'switch',actor});await window.trial.store.dispatch({type:'face',direction});}await window.trial.store.dispatch({type:'switch',actor:'A'});window.dispatchEvent(new Event('blur'));}},{species,actors});
+   await p.waitForFunction(()=>window.trial.spritesReady(),null,{polling:100,timeout:20000});   // the species changed above load on demand
    const rows=await probe(actors,false,true);for(const row of rows){assert.equal(row.cell,48);assert.equal(row.row,0);assert.equal(row.frame.x,0);assert.equal(row.frame.y,0);assert.ok(row.animation.startsWith(SPECIES[row.species].dex+'-Idle-'));hpFits(row);row.unclampedBottomOverflow=row.hp.y+(1-row.hp.originY)*row.hp.height-row.hpGapY+1-(row.ownerY+row.cell/2-1);}minimumRows.push(...rows);
   }
   assert.equal(minimumRows.length,allSpecies.length);assert.ok(minimumRows.some(r=>r.unclampedBottomOverflow>.51),'the runtime check includes models that would cross the lower cell edge without the clamp');

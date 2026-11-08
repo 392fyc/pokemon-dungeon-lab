@@ -48,7 +48,7 @@ const fresh=async(w=1280,h=720)=>{const ctx=await b.newContext({viewport:{width:
 for(const via of ['settings','menu']){
  const {ctx,p}=await fresh();
  await p.goto(base+'/?dev=1&seed=7');await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
- await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
  await p.evaluate(()=>{const s=window.trial.store.world;s.tms=[{move:'protect',fate:'held',source:'target'}];window.dispatchEvent(new Event('blur'));});
  if(via==='settings'){await p.locator('#hud-settings').click();await p.waitForSelector('#settings[open]');await p.locator('#abandon-run').click();}
  else{await p.locator('#actions-open').click();await p.locator('#abandon-open').click();}
@@ -70,7 +70,7 @@ for(const via of ['settings','menu']){
  const ctx=await b.newContext({viewport:{width:1280,height:720}});const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));   // note: no __trialNoAutoSleep
  await ctx.addInitScript(()=>{window.__trialNoAnim=true;});
  await p.goto(base+'/?dev=1&seed=7');await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
- await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
  await p.evaluate(()=>{const s=window.trial.store.world;s.enemies.forEach(id=>{s.units[id].waitOnly=true;});window.trial.autoSleep(true);});
  await p.locator('#hud-settings').click();await p.waitForSelector('#settings[open]');await p.locator('#abandon-run').click();await p.waitForSelector('#abandon-dialog[open]');
  await p.evaluate(()=>{const s=window.trial.store.world;s.units[s.leader].status={slp:{left:9}};window.dispatchEvent(new Event('blur'));});

@@ -14,7 +14,7 @@ const ctx=await b.newContext({viewport:{width:1280,height:720}});
 await ctx.addInitScript(()=>{window.__trialNoAutoSleep=true;window.__trialNoAnim=true;});
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
 await p.goto(base+'/?dev=1&seed=7');await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
-await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
 // walk the leader down a corridor by state, revealing as it goes, so there is explored ground behind it
 const info=await p.evaluate(async()=>{
  const e={reveal:window.trial.reveal};const s=window.trial.store.world;for(const id of s.enemies)s.units[id].waitOnly=true;

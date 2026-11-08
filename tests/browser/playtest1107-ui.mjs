@@ -12,7 +12,7 @@ async function open(w,h,anim){
  const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));
  await p.goto(base+'/?dev=1&seed=7');
  await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
- await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
  await p.evaluate(()=>{const s=window.trial.store.world;const e=s.units.w1a;const k=(x,y)=>x+','+y;
   const cells=[];for(let dx=-4;dx<=4;dx++)for(let dy=-4;dy<=4;dy++){const x=e.pos.x+dx,y=e.pos.y+dy;if(s.floor.some(f=>f.x===x&&f.y===y)){cells.push({x,y});if(!s.seen.includes(k(x,y)))s.seen.push(k(x,y));}}
   const free=cells.filter(c=>!Object.values(s.units).some(u=>u.pos&&u.pos.x===c.x&&u.pos.y===c.y)&&Math.max(Math.abs(c.x-e.pos.x),Math.abs(c.y-e.pos.y))===2);

@@ -68,6 +68,13 @@ export const eligibleSpecies=(level:number,boss=true):string[]=>{
   return themeCandidates(config.theme).filter(sp=>sp.evoLevel<=config.levels[1]).map(sp=>sp.id);
 };
 export const WILD_SPECIES:Record<string,string>=Object.fromEntries([...new Set([...THEME_FLOORS.flatMap((_,i)=>eligibleSpecies(i+1)), 'geodude','pidgey','growlithe'])].map(id=>[id,SPECIES[id].dex]));
+/** The ordinary enemies a floor will draw, from the same species stream as generateFloor (one draw per enemy slot), so the interface can preload their sprites before the floor exists. */
+export function plannedEnemySpecies(seed:number,level:number,bossEnabled:boolean):string[] {
+  const themed=THEME_FLOORS[bossEnabled?Math.min(Math.max(level,1),THEME_FLOORS.length)-1:0],pool=eligibleSpecies(level,bossEnabled);
+  if(!pool.length)return [];
+  const rng=mulberry32(streamSeed(seed,level,'enemy-species'));
+  return Array.from({length:themed.count},()=>pool[Math.floor(rng()*pool.length)]);
+}
 /** Only identity lives here. All boss modifiers come from main-owned boss.json. */
 export const BOSS={id:'boss',species:'arcanine'} as const;
 export type EnemyStream='enemy-ai'|'enemy-level'|'enemy-species';

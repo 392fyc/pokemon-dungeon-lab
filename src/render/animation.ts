@@ -1,4 +1,4 @@
-import {key,plus,same,SKILL_CN,type Command,type Item,type Pos,type World} from '../core/engine.ts';
+import {key,plus,same,SKILL_CN,stageOf,STAGE_NAMES,STATUS_NAMES,type StageKey,type StatusId,type Command,type Item,type Pos,type World} from '../core/engine.ts';
 import {moveOf} from '../core/moves.ts';
 import {typeEffectiveness} from '../core/type-chart.ts';
 import {SPECIES} from '../core/roster.ts';
@@ -23,7 +23,33 @@ export type AnimEvent =
   | {k:'heal'; by:string; target:string; item:Item; amount:number; at:Pos; actorAt:Pos; effect?:EffectStyle; hpAfter?:number}
   | {k:'effect'; by:string; from:Pos; at:Pos; target:string; effect:EffectStyle; amount?:number; hpAfter?:number}
   /** HP lost to a status or recoil, or regained by draining: shown (and the HP updated) when it happens, not at the end of the round. */
-  | {k:'hpchange'; by:string; target:string; at:Pos; delta:number; hpAfter:number};
+  | {k:'hpchange'; by:string; target:string; at:Pos; delta:number; hpAfter:number}
+  /** Short words over units whose ability stages or statuses changed in this round ("攻击↑", "麻痹", "睡眠×"), all shown together once the round's other steps are done. */
+  | {k:'tags'; by:string; items:StageTag[]};
+export type StageTag={target:string; at:Pos; text:string; color:string};
+
+/** Colours: a raised stage is warm, a lowered one cool (the arrows of the main games are red and blue); each status keeps its usual colour, and a status that ended is pale. */
+export const TAG_COLORS={up:'#ff9a62',down:'#6fb7ff',ended:'#c8d0d0',psn:'#c985f0',tox:'#c985f0',brn:'#ffa24a',par:'#ffe14d',frz:'#8fe6ff',slp:'#cdd6e6',nap:'#cdd6e6',confusion:'#ff85d4',flinch:'#e4e4e4'} as const;
+/** What changed on each living, visible unit between the two states: ability-stage steps (one arrow per step, at most three) and statuses that appeared or ended. */
+export function stageTags(b:World,a:World,visible:(p:Pos|null)=>boolean):StageTag[] {
+  const tags:StageTag[]=[];
+  for(const id of [...a.queue,...a.enemies]){
+    const was=b.units[id],now=a.units[id];
+    if(!was||!now||now.hp<=0||!now.pos||(now.side!=='friend'&&!visible(now.pos)))continue;
+    const at={...now.pos},seen=new Set<string>(),add=(text:string,color:string)=>{if(seen.has(text))return;seen.add(text);tags.push({target:id,at,text,color});};
+    for(const k of Object.keys(STAGE_NAMES) as StageKey[]){
+      const d=stageOf(now,k)-stageOf(was,k);
+      if(d!==0)add(STAGE_NAMES[k]+(d>0?'↑':'↓').repeat(Math.min(3,Math.abs(d))),d>0?TAG_COLORS.up:TAG_COLORS.down);
+    }
+    for(const k of Object.keys(STATUS_NAMES) as StatusId[]){
+      const had=!!was.status?.[k],has=!!now.status?.[k];
+      if(has&&!had)add(STATUS_NAMES[k],TAG_COLORS[k]);
+      else if(had&&!has)add(STATUS_NAMES[k]+'×',TAG_COLORS.ended);
+    }
+    if(was.asleep&&!now.asleep&&!now.status?.slp&&!now.status?.nap)add('睡眠×',TAG_COLORS.ended);
+  }
+  return tags;
+}
 
 /** Log lines added by the last command. The log keeps only the last 80 lines, so the old and new logs may be shifted. */
 export function newLines(before:string[], after:string[]):string[] {
@@ -356,11 +382,13 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
 
   flush(Infinity);
   for(const e of airAttacks){if(!vis(e.from))continue;const event:AnimEvent={k:'airAttack',by:e.actor,actor:e.actor,from:e.from,to:e.to};const index=events.findIndex(v=>order(v.by)>order(e.actor));if(index<0)events.push(event);else events.splice(index,0,event);}
+  const changes=stageTags(b,a,vis);
+  if(changes.length)events.push({k:'tags',by:changes[0].target,items:changes});
   return events;
 }
 
 /** Base duration of each step in ms; the whole round is scaled down together if it would exceed the cap. */
-export const BASE_MS:Record<AnimEvent['k'], number> = {airAttack:260, move:180, swap:200, hit:320, protect:240, blowaway:220, heal:260, effect:320, hpchange:240};
+export const BASE_MS:Record<AnimEvent['k'], number> = {airAttack:260, move:180, swap:200, hit:320, protect:240, blowaway:220, heal:260, effect:320, hpchange:240, tags:560};
 export const ROUND_CAP_MS = 1500;
 /** Below this speed-up the round is not played at all, which keeps pathological rounds from being unreadably fast. */
 export const MIN_SCALE = 0.3;
@@ -402,6 +430,8 @@ export function animationDuration(event:AnimEvent):number {
  if(('cast' in event&&event.cast)||(event.k==='hit'&&event.effect))return 500;
  // A fatal plain hit fades out for 140ms after 220ms, so it really lasts 360ms; a non-fatal one keeps the legacy 320ms.
  if(event.k==='hit')return event.dead?360:BASE_MS.hit;
+ // The words of one unit start 110 ms apart after a 30 ms lead (playback.ts), so the step lasts until the unit with the most words has shown its last one. The round plan scales every delay with the step, which keeps the whole round under its cap.
+ if(event.k==='tags'){const count=new Map<string,number>();let most=1;for(const item of event.items){const n=(count.get(item.target)??0)+1;count.set(item.target,n);if(n>most)most=n;}return BASE_MS.tags+30+(most-1)*110;}
  return BASE_MS[event.k];
 }
 

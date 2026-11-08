@@ -2,14 +2,23 @@
   "berryBoost": {
     "name": "树果加量",
     "description": "橙橙果的回复量增加50%。",
-    "floors": [1, 2, 3],
+    "rarity": "common",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "berryBoost",
     "berryHealRate": 0.5
   },
   "floorHeal": {
     "name": "换层回复",
     "description": "进入下一层时，在场存活同行各回复最大HP的20%（至少4点）。",
-    "floors": [1, 2],
+    "rarity": "epic",
+    "floors": [
+      1,
+      2
+    ],
     "effect": "floorHeal",
     "floorHealRate": 0.2,
     "floorHealMin": 4
@@ -17,49 +26,83 @@
   "battleSpirit": {
     "name": "战意",
     "description": "全队攻击阶段立即提高1级，到换层时清除。",
-    "floors": [1, 2, 3],
+    "rarity": "common",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "battleSpirit",
     "attackStage": 1
   },
   "lullaby": {
     "name": "安眠",
     "description": "之后每个新楼层，普通敌人出生时处于睡眠状态的概率提高到40%。",
-    "floors": [1, 2],
+    "rarity": "common",
+    "floors": [
+      1,
+      2
+    ],
     "effect": "lullaby",
     "sleepChance": 0.4
   },
   "rally": {
     "name": "号召",
     "description": "之后的招募成功概率提高到45%。",
-    "floors": [1, 2, 3],
+    "rarity": "common",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "rally",
     "recruitChance": 0.45
   },
   "tmChoice": {
     "name": "选机",
     "description": "立即从三张招式机里选一张带走。",
-    "floors": [1, 2, 3],
+    "rarity": "epic",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "tmChoice",
     "choiceCount": 3
   },
   "nemesis": {
     "name": "克星",
     "description": "对处于异常状态（含睡眠）的敌人，造成的伤害增加10%。",
-    "floors": [1, 2, 3],
+    "rarity": "rare",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "nemesis",
     "value": 0.1
   },
   "headhunter": {
     "name": "猎首",
     "description": "对首领造成的伤害增加15%。",
-    "floors": [1, 2, 3],
+    "rarity": "rare",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "headhunter",
     "value": 0.15
   },
   "fullpower": {
     "name": "满血爆发",
     "description": "出手的队员HP高于80%时，造成的伤害增加8%。",
-    "floors": [1, 2, 3],
+    "rarity": "rare",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "fullpower",
     "value": 0.08,
     "threshold": 0.8
@@ -67,21 +110,36 @@
   "scholar": {
     "name": "学者",
     "description": "全队获得的经验增加15%。",
-    "floors": [1, 2, 3],
+    "rarity": "common",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "scholar",
     "value": 0.15
   },
   "killheal": {
     "name": "击倒回复",
     "description": "打倒敌人的队员回复最大HP的8%（至少1点）。",
-    "floors": [1, 2, 3],
+    "rarity": "rare",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "killheal",
     "value": 0.08
   },
   "regen": {
     "name": "再生",
     "description": "每经过10轮，全队存活成员回复最大HP的5%（至少1点）。",
-    "floors": [1, 2, 3],
+    "rarity": "common",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "regen",
     "value": 0.05,
     "every": 10
@@ -89,13 +147,23 @@
   "thickskin": {
     "name": "厚皮",
     "description": "每层每名队员第一次受到的直接伤害减半（至少1点）；中毒、灼伤和反作用不算。",
-    "floors": [1, 2, 3],
+    "rarity": "rare",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "thickskin"
   },
   "laststand": {
     "name": "背水",
     "description": "每层每名队员第一次HP低于35%时，立刻回复最大HP的25%。",
-    "floors": [1, 2, 3],
+    "rarity": "epic",
+    "floors": [
+      1,
+      2,
+      3
+    ],
     "effect": "laststand",
     "value": 0.25,
     "threshold": 0.35

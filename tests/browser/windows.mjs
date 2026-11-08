@@ -1954,7 +1954,7 @@ await test('8.8 #166：两种图源的未知墙与水像素一致，三主题暗
     await repaint(lamp);
     const ordinary=await probe(2.2),ordinaryFar=await probe(3.2);
     lamp.units[lamp.leader].species='charmander';await repaint(lamp);
-    assert.ok(!ordinary.equals(await probe(2.2)),'fire lights floor beyond the ordinary light radius, without changing the floor or camera');
+    assert.ok(ordinary.equals(await probe(2.2)),'round 9: every party member lights the same circle, a fire type included (the old wider fire light is gone)');
     assert.ok(ordinaryFar.equals(await probe(3.2)),'floor beyond both light radii is unchanged');
     for(const [i,theme] of ['moss','wet','ash'].entries()){
      await p.reload();await p.locator('#start').waitFor();await startMemory(p,forPhoto(i+1));

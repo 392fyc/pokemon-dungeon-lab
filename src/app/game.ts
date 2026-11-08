@@ -9,7 +9,7 @@ import '../render/panels194.css';
 import {learningPanel,invitationPanel,moveCard,noticePanel,noticeTag} from '../render/choice-panels.ts';
 import '../render/choice-panels.css';
 import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
-import {applyCommand,bossDefeated,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,ORB_ITEMS,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
+import {applyCommand,bossDefeated,traceRound,playerVisibleCells,reveal,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,ORB_ITEMS,PROG,COMMISSIONS,BLESSING_RARITY,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
@@ -94,6 +94,8 @@ let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
 /** The stairs prompt opens by itself when the leader stands on a staircase; "不前进" closes it for that cell and a small button in the bottom bar brings it back. */
 let stairsClosedKey='',stairsPromptShown=false;
+/** Rooms holding the leader or a living companion: each is lit as one whole rounded rectangle (the room and the ring around it). */
+const litRoomsOf=(s:World)=>(s.rooms??[]).filter(r=>s.queue.some(id=>{const u=s.units[id];return !!u&&u.hp>0&&!!u.pos&&u.pos.x>=r.x&&u.pos.x<r.x+r.w&&u.pos.y>=r.y&&u.pos.y<r.y+r.h;})).map(r=>({x:r.x,y:r.y,w:r.w,h:r.h}));
 const stairsKeyOf=(s:World):string=>{const L=s.units[s.leader],p=L?.pos&&s.points.find(q=>same(q.pos,L.pos!));return p&&(p.kind==='down'||p.kind==='up')?`${s.runId}|${s.dungeon?.level??0}|${L.pos!.x},${L.pos!.y}`:'';};
 let inviteChoice:string|undefined,notice='',detailsId:string|null=null,detailsOpenerId:string|null=null;
 let learnChoice:string|null=null,learnKeyShown='';
@@ -475,10 +477,10 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  if(s.phase==='blessing'){
   $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
   if(!pending||pending.type!=='blessing'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的祝福选择。</p></div>';return;}
-  const source=pending.source==='challenge'?'挑战奖励':'祝福';
+  const source=pending.source==='challenge'?'挑战奖励':'祝福',refreshes=s.blessingRefreshes??0;
   // The blessing choice is a paper notice panel like the commission offer: one card per blessing (name and effect), then a way out.
-  $('flow').innerHTML=noticePanel({id:'blessing-choice',kind:source,asDialog:true,rows:[{label:'',html:'<span class="notice-cards">'+pending.options.map(id=>{const blessing=BLESSINGS[id];return button(`blessing-${id}`,`<strong>${esc(blessing.name)}</strong><span>${esc(blessingEffectLabel(id))}</span>`,!ready,'class="paper-button notice-card"');}).join('')+'</span>'}],buttons:button('blessing-skip','放弃',!ready,'class="paper-button"')});
-  for(const id of pending.options)bind(`blessing-${id}`,()=>void send({type:'blessingChoice',blessing:id}));bind('blessing-skip',()=>void send({type:'blessingChoice',blessing:null}));return;
+  $('flow').innerHTML=noticePanel({id:'blessing-choice',kind:source,asDialog:true,rows:[{label:'',html:'<span class="notice-cards">'+pending.options.map(id=>{const blessing=BLESSINGS[id];return button(`blessing-${id}`,`<strong>${esc(blessing.name)}<em class="rarity-tag">${esc(BLESSING_RARITY.names[blessing.rarity])}</em></strong><span>${esc(blessingEffectLabel(id))}</span>`,!ready,`class="paper-button notice-card" data-rarity="${blessing.rarity}"`);}).join('')+'</span>'}],buttons:button('blessing-refresh',`刷新（${refreshes}）`,!ready||refreshes<=0,'class="paper-button"')+button('blessing-skip','放弃',!ready,'class="paper-button"')});
+  for(const id of pending.options)bind(`blessing-${id}`,()=>void send({type:'blessingChoice',blessing:id}));bind('blessing-refresh',()=>void send({type:'blessingRefresh'}));bind('blessing-skip',()=>void send({type:'blessingChoice',blessing:null}));return;
  }
  if(s.phase==='tmChoice'){
   $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
@@ -931,13 +933,13 @@ class BoardScene extends Phaser.Scene {
  private floatZs(time:number){for(const view of this.views.values()){if(!view.zs||!view.zMoving)continue;view.zs.forEach((_,i)=>this.zPlace(view,i,((time/2400)+i/3)%1));}}
  private partyLights(){
   const s=this.lightWorld,g=this.lastGeometry;if(!s||!g)return [];
-  return s.queue.flatMap(id=>{const u=s.units[id],v=this.views.get(id);return u?.hp>0&&u.pos&&v?.sprite.visible?[{x:(v.sprite.x-g.ox)/g.cell+g.minX-.5,y:(v.sprite.y-g.oy)/g.cell+g.minY-.5,primary:id===s.leader,fire:!!(u.species&&SPECIES[u.species]?.types?.includes('Fire'))}]:[];});
+  return s.queue.flatMap(id=>{const u=s.units[id],v=this.views.get(id);return u?.hp>0&&u.pos&&v?.sprite.visible?[{x:(v.sprite.x-g.ox)/g.cell+g.minX-.5,y:(v.sprite.y-g.oy)/g.cell+g.minY-.5,primary:id===s.leader}]:[];});
  }
  private showDarkness(s:World,durationMs=0){
   if(!s.dungeon||!this.lastGeometry)return;const g=this.lastGeometry,theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),map=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:terrainKnown(s).seen,seenWalls:terrainKnown(s).seenWalls,onlyRevealed:true});
   const wallColor=terrainSource()==='dtef'?this.dtefLayer.wallColor():this.painterLayer.wallColor();const staticLights=s.points.filter(p=>(p.kind==='down'||p.kind==='up')&&s.seen.includes(key(p.pos))).map(p=>({...p.pos,inner:.3,outer:1.25,strength:.45}));
   if(theme==='ash')for(const cell of s.liquid??[]){const pos=typeof cell==='string'?{x:Number(cell.split(',')[0]),y:Number(cell.split(',')[1])}:cell;if(map.known.has(key(pos)))staticLights.push({...pos,inner:.4,outer:1.7,strength:.55});}
-  this.darkness.show([s.runId,s.dungeon.level,theme,map.width,map.height].join(':'),theme,g.cell,{width:map.width,height:map.height,known:map.known,visible:playerVisibleCells(s),lights:this.partyLights(),seed:s.dungeon.seed,wallColor,staticLights},durationMs>0,durationMs);
+  this.darkness.show([s.runId,s.dungeon.level,theme,map.width,map.height].join(':'),theme,g.cell,{width:map.width,height:map.height,known:map.known,litRooms:litRoomsOf(s),lights:this.partyLights(),seed:s.dungeon.seed,wallColor,staticLights},durationMs>0);
   this.cameras.main.setBackgroundColor(darknessBackground(theme,wallColor));
  }
  create(){createAnims(this);this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.dtefLayer=new DtefTerrainLayer(this);this.painterLayer=new PainterTerrainLayer(this);this.events.once('shutdown',()=>{this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();});this.graphics=this.add.graphics().setDepth(0);this.pointGraphics=this.add.graphics().setDepth(2);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
@@ -1027,11 +1029,11 @@ class BoardScene extends Phaser.Scene {
   const p=plan(events);this.paint(before,true);const g=this.lastGeometry;
   if(!p||!g)return Promise.resolve();
   const center=(q:Pos)=>({x:g.ox+(q.x-g.minX+.5)*g.cell,y:g.oy+(q.y-g.minY+.5)*g.cell});
-  this.lightWorld=after;let revealed=false,movingFog=false;const terrainAtStart=!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway'),seenBefore=new Set(before.seen),seenAfter=new Set(after.seen),camera=this.cameras.main,cameraX=camera.x,cameraY=camera.y;
-  const st:Stage={scene:this,views:this.views,onHp:(id,hp)=>{this.views.get(id)?.labels[0]?.t.setText(String(hp));hpShown?.set(id,hp);hpShownVer++;patchHpDisplays();},center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;movingFog=true;this.darkness.setMovementProgress(0);this.showTerrain(after,g);this.showDarkness(after,duration);},onMovementProgress:progress=>{if(!movingFog)return;this.darkness.setMovementProgress(progress);if(progress>=1)movingFog=false;}};
+  this.lightWorld=after;let revealed=false;const terrainAtStart=!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway'),seenBefore=new Set(before.seen),seenAfter=new Set(after.seen),camera=this.cameras.main,cameraX=camera.x,cameraY=camera.y;
+  const st:Stage={scene:this,views:this.views,onHp:(id,hp)=>{this.views.get(id)?.labels[0]?.t.setText(String(hp));hpShown?.set(id,hp);hpShownVer++;patchHpDisplays();},center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;this.showTerrain(after,g);this.showDarkness(after,duration);}};
   if(!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway')){this.showTerrain(after,g);this.showDarkness(after);}
   return new Promise<void>(resolve=>{
-   let done=false;st.cancelled=()=>done;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.darkness.setMovementProgress(undefined);this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();resetCombatShake(this);camera.setPosition(cameraX,cameraY);try{this.paint(store.state,true);}finally{resolve();}};
+   let done=false;st.cancelled=()=>done;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();resetCombatShake(this);camera.setPosition(cameraX,cameraY);try{this.paint(store.state,true);}finally{resolve();}};
    const timer=setTimeout(finish,3000); // safety net, e.g. a hidden tab where Phaser's clock is paused
    this.skipNow=finish;
    void playEvents(st,events).then(finish,finish);
@@ -1040,6 +1042,7 @@ class BoardScene extends Phaser.Scene {
  exportTerrain(theme:TerrainThemeKey,layer:TerrainLayer|'floor'){exportTerrainArt(this,theme,layer);}
  skip(){this.skipNow?.();}
  /** Read-only view of what is drawn, for the browser checks: the tile textures in use, and the boss sprite's scale next to a normal unit's, with its labels. */
+ darknessAlpha(x:number,y:number){return this.darkness.alphaAt(x,y);}
  debug(){const terrainImages=[...this.tiles,...this.dtefLayer.images,...this.painterLayer.images];const unit=(id:string)=>{const v=this.views.get(id);return v?{whiteFlash:v.sprite.tintMode===Phaser.TintModes.FILL&&v.sprite.tintTopLeft===0xffffff,scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{centerY:v.gfx.y,y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text),sleepMarks:(v.zs??[]).map(z=>({text:z.text,x:z.x,y:z.y,alpha:z.alpha})),spritePaused:v.sprite.anims.isPaused,labelPositions:v.labels.map(l=>({text:l.t.text,x:l.t.x,y:l.t.y,width:l.t.width,height:l.t.height,originX:l.t.originX,originY:l.t.originY}))}:null;};const worldView=this.cameras.main.worldView;return {drops:this.tiles.filter(t=>t.texture.key.startsWith('item2-')).map(t=>({texture:t.texture.key,alpha:t.alpha})),combatEffects:[...this.temp].flatMap(object=>{const effect=object.getData?.('combatEffect');return effect?[effect]:[];}),temporaryObjects:this.temp.size,terrainCache:terrainSource()==='dtef'?this.dtefLayer.debug():this.painterLayer.debug(),darkness:this.darkness.debug(),tiles:[...new Set(terrainImages.map(t=>t.texture.key))].sort(),terrain:terrainImages.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:terrainImages.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},cameraPosition:{x:this.cameras.main.x,y:this.cameras.main.y},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
 }
 return BoardScene;
@@ -1248,5 +1251,5 @@ installDrag([
   },drop:dropMove},
 ]);
 // Read-only state inspection and the same dispatch API for private browser acceptance.
-Object.assign(window,{trial:{store,autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
+Object.assign(window,{trial:{store,autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),reveal:(w:World)=>reveal(w),maskAlpha:(x:number,y:number)=>scene?.darknessAlpha(x,y)??0,repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
 render();void store.whenReady.then(()=>{render();const next=finishing();if(next)void transition(store.dispatch(next));});

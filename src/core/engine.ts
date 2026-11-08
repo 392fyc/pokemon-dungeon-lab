@@ -9,6 +9,7 @@ import {moveOf,moveCategory,moveEffects,type MoveSpec,type StageKey,type StageCh
 import names from '../data/names-zh.json' with {type:'json'};
 import commissionData from '../data/commissions.json' with {type:'json'};
 import blessingData from '../data/blessings.json' with {type:'json'};
+import rarityData from '../data/blessing-rarity.json' with {type:'json'};
 export type Pos = {x:number;y:number};
 export type {StatusId,StageKey} from './moves.ts';
 export type StatusState={left?:number;tick?:number;fresh?:boolean};
@@ -47,7 +48,7 @@ export type Action = {type:'move';to:Pos}|{type:'basic';target:string}|{type:'sk
 export type Command = {type:'switch';actor:string}|{type:'round';action:Action;override?:{actor:string;action:Action}}
   |{type:'tactic';actor:string;tactic:Tactic}|{type:'face';direction:Pos}|{type:'evolve';species:string|null}
   |{type:'invite';choice:'accept'|'reject'|'camp';outgoing?:string}|{type:'finishExit'}|{type:'finishTransit'}
-  |{type:'commissionChoice';choice:'accept'|'reject'}|{type:'blessingChoice';blessing:BlessingId|null}|{type:'tmChoice';move:string}
+  |{type:'commissionChoice';choice:'accept'|'reject'}|{type:'blessingChoice';blessing:BlessingId|null}|{type:'blessingRefresh'}|{type:'tmChoice';move:string}
   /** 7.2 shop purchase: needs the leader on the shop cell; takes no round. */
   |{type:'buy';item:ShopItem}|{type:'learnMove';replace:string|null}
   /** Playtest round 2: give up the run; it settles exactly like a wipe. */
@@ -78,9 +79,12 @@ export const STAGE_NAMES:Record<StageKey,string>={atk:'攻击',def:'防御',spa:
 export type CommissionId='hunter'|'collector'|'scout'|'guardian'|'speedrun';
 export type BlessingId='berryBoost'|'floorHeal'|'battleSpirit'|'lullaby'|'rally'|'tmChoice'|'nemesis'|'headhunter'|'fullpower'|'scholar'|'killheal'|'regen'|'thickskin'|'laststand';
 export type CommissionDefinition={name:string;description:string;progressTarget:number|null;equivalentEnemies:number;penalty:'defenseMinusOne'|'berryHealHalf'|null;floors:number[];speedMultiplier?:number;requiresRoomTypes?:AdventureRoom['type'][]};
-export type BlessingDefinition={name:string;description:string;floors:number[];effect:BlessingId;berryHealBonus?:number;berryHealRate?:number;floorHealHp?:number;floorHealRate?:number;floorHealMin?:number;value?:number;every?:number;threshold?:number;attackStage?:number;sleepChance?:number;recruitChance?:number;choiceCount?:number};
+export const INITIAL_BLESSING_REFRESHES=1;
+export type BlessingRarity='common'|'rare'|'epic';
+export type BlessingDefinition={name:string;description:string;rarity:BlessingRarity;floors:number[];effect:BlessingId;berryHealBonus?:number;berryHealRate?:number;floorHealHp?:number;floorHealRate?:number;floorHealMin?:number;value?:number;every?:number;threshold?:number;attackStage?:number;sleepChance?:number;recruitChance?:number;choiceCount?:number};
 export const COMMISSIONS=commissionData as Record<CommissionId,CommissionDefinition>;
 export const BLESSINGS=blessingData as Record<BlessingId,BlessingDefinition>;
+export const BLESSING_RARITY=rarityData as {weights:Record<BlessingRarity,number>;order:BlessingRarity[];names:Record<BlessingRarity,string>};
 export type ActiveCommission={id:CommissionId;floor:number;acceptedRound:number;progress:number;progressTarget:number;speedLimit:number|null};
 export type PendingChoice=
   |{type:'commission';room:number;commission:CommissionId}
@@ -127,7 +131,7 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   /** 8.3 room state stays in the in-memory expedition (current World or StoredFloor) and is never saved. */
   adventureRooms?:AdventureRoom[];pendingAdventureStart?:{room:number;actor:string;pos:Pos};
   /** 8.4 contract and blessing state is run-only and is never serialized. */
-  commissions?:ActiveCommission[];blessings?:BlessingId[];pendingChoices?:PendingChoice[];pendingEnd?:'won'|'wipe'|'normal';
+  commissions?:ActiveCommission[];blessings?:BlessingId[];/** Refreshes of the blessing choice left this run (shared by every choice; talents and floor content will add to it) and how many were used (the salt of the next draw). */blessingRefreshes?:number;blessingRefreshUsed?:number;pendingChoices?:PendingChoice[];pendingEnd?:'won'|'wipe'|'normal';
   /** 8.5: only a new camp expedition has these; missing completedCommissions marks a legacy/developer world with no new score. */
   talents?:ExpeditionTalents;completedCommissions?:number;
   /** 8.8 (#165): state of the separate battle random stream (hits, secondary effects, status durations, confusion). Derived from the dungeon seed on first use; never saved. */
@@ -536,9 +540,21 @@ function eligibleBlessings(s:World):BlessingId[] {
   const level=currentFloorLevel(s),owned=new Set(s.blessings??[]);
   return (Object.keys(BLESSINGS) as BlessingId[]).filter(id=>BLESSINGS[id].floors.includes(level)&&!owned.has(id));
 }
-function blessingOffer(s:World,source:'room'|'challenge',room:number|null):BlessingId[] {
-  const available=eligibleBlessings(s),random=choiceRandom(s,`blessing:${source}`,room);
-  return sampleWithoutReplacement(available,Math.min(3,available.length),random);
+/** Three slots, each: draw a rarity by weight (common 60, rare 30, epic 10) among the rarities that still have a pick left, then one blessing of that rarity
+ *  with equal chance. A rarity with nothing left drops out and the weights of the others apply as they are. Fewer than three picks: as many as exist. */
+export function drawBlessings(available:readonly BlessingId[],random:()=>number,count=3):BlessingId[] {
+  const pools=new Map<BlessingRarity,BlessingId[]>(BLESSING_RARITY.order.map(r=>[r,available.filter(id=>BLESSINGS[id].rarity===r)]));
+  const out:BlessingId[]=[];
+  while(out.length<count){
+    const open=BLESSING_RARITY.order.filter(r=>pools.get(r)!.length>0);if(!open.length)break;
+    const total=open.reduce((n,r)=>n+BLESSING_RARITY.weights[r],0);let roll=random()*total,tier=open[open.length-1];
+    for(const r of open){if(roll<BLESSING_RARITY.weights[r]){tier=r;break;}roll-=BLESSING_RARITY.weights[r];}
+    const pool=pools.get(tier)!;out.push(pool.splice(Math.floor(random()*pool.length),1)[0]);
+  }
+  return out;
+}
+function blessingOffer(s:World,source:'room'|'challenge',room:number|null,salt=''):BlessingId[] {
+  return drawBlessings(eligibleBlessings(s),choiceRandom(s,`blessing:${source}`,room,salt));
 }
 function queueBlessingChoice(s:World,source:'room'|'challenge',room:number|null):boolean {
   const options=blessingOffer(s,source,room);if(!options.length)return false;
@@ -2006,6 +2022,15 @@ export function applyCommand(original:World,cmd:Command):Result {
     if(cmd.blessing===null)note(s,'放弃祝福');else applyBlessing(s,cmd.blessing);
     resumeAfterChoice(s);return {ok:true,state:s};
   }
+  if(cmd.type==='blessingRefresh'){
+    const pending=original.pendingChoices?.[0];if(original.phase!=='blessing'||pending?.type!=='blessing')return fail('当前没有待处理的祝福选择');
+    if((original.blessingRefreshes??0)<=0)return fail('没有刷新次数了');
+    const s=clone(original),choice=s.pendingChoices![0] as Extract<PendingChoice,{type:'blessing'}>;
+    s.blessingRefreshes=(s.blessingRefreshes??0)-1;s.blessingRefreshUsed=(s.blessingRefreshUsed??0)+1;
+    choice.options=blessingOffer(s,choice.source,choice.room,`refresh${s.blessingRefreshUsed}`);
+    note(s,`刷新祝福，还剩${s.blessingRefreshes}次`);
+    return {ok:true,state:s};
+  }
   if(cmd.type==='tmChoice'){
     const pending=original.pendingChoices?.[0];if(original.phase!=='tmChoice'||pending?.type!=='tmChoice')return fail('当前没有待处理的招式机选择');
     if(!pending.options.includes(cmd.move))return fail('所选招式不在本次选项中');
@@ -2182,7 +2207,7 @@ export function createExpedition(runId:string,seed:number,floors=2,squad?:{membe
     queue:squad?squad.members.map((_,i)=>'ABC'[i]):['A','B','C'],enemies:f.enemies,camp:[],leader:squad?'ABC'[squad.leader]:'C',points:f.points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],dungeon:d,
     rooms:f.rooms,...(f.adventureRooms?{adventureRooms:clone(f.adventureRooms)}:{}),...(f.bossRoom!==undefined?{bossRoom:f.bossRoom}:{}),enemyAiRng:f.enemyAiRng,difficulty:selectedDifficulty,
     ...(squad?.talents!==undefined?{talents:{...squad.talents},completedCommissions:0}:{}),
-    prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:(squad?.talents?.supplies??0)>=3?1:0,tonic:0}},purse:0,tms:[]};
+    prog:{level:INITIAL_LEVEL,exp:0,rng:(seed^0xA5A5F00D)>>>0,made:0,kills:[],items:{berry:(squad?.talents?.supplies??0)>=3?1:0,tonic:0}},purse:0,tms:[],blessingRefreshes:INITIAL_BLESSING_REFRESHES};
   if(squad){
     const roll=serviceRoll(d.seed,floors);
     if(roll.shop)s.shop={level:roll.shop.level,stock:{berry:ECON.stock.berry,tonic:ECON.stock.tonic,pechaBerry:ECON.stock.pechaBerry,healSeed:ECON.stock.healSeed,slumberOrb:ECON.stock.slumberOrb,totterOrb:ECON.stock.totterOrb,luminousOrb:ECON.stock.luminousOrb,rollcallOrb:ECON.stock.rollcallOrb,reviverSeed:ECON.stock.reviverSeed,tm:tmPool(d)[Math.floor(roll.shop.tmDraw*tmPool(d).length)]},trades:[]};

@@ -1,0 +1,17 @@
+{
+  "weights": {
+    "common": 60,
+    "rare": 30,
+    "epic": 10
+  },
+  "order": [
+    "common",
+    "rare",
+    "epic"
+  ],
+  "names": {
+    "common": "普通",
+    "rare": "稀有",
+    "epic": "史诗"
+  }
+}

@@ -1,7 +1,7 @@
 import {THEME_FLOORS} from '../core/dungeon.ts';
 import {SPECIES} from '../core/roster.ts';
 import {TACTICS,TACTIC_LABELS,type Tactic} from '../core/tactics.ts';
-import {BLESSINGS,type Unit,type World} from '../core/engine.ts';
+import {BLESSINGS,BLESSING_RARITY,type Unit,type World} from '../core/engine.ts';
 import {rankLevel,rankThreshold,type Profile,type SettleSummary} from '../core/base.ts';
 import {moveZh,speciesZh,typeZh} from '../core/names.ts';
 import {unitLabel,statSheet,moveBaseDamage,moveShortEffect,moveRangeTag} from '../core/describe.ts';
@@ -66,7 +66,7 @@ function detailStats(s:World,u:Unit):string {
 }
 /** The run's blessings as a column attached to the right of the window (always there, empty state "无", scrolls inside when it is long): a small sigil, the name and a one-line effect. */
 function blessingColumn(s:World):string {
-  const rows=(s.blessings??[]).map(id=>'<li data-blessing="'+esc(id)+'"><i class="bless-sigil" aria-hidden="true"></i><span class="bless-text"><strong>'+esc(BLESSINGS[id]?.name??id)+'</strong><small>'+esc(blessingEffectLabel(id))+'</small></span></li>').join('');
+  const rows=(s.blessings??[]).map(id=>'<li data-blessing="'+esc(id)+'" data-rarity="'+(BLESSINGS[id]?.rarity??'common')+'"><i class="bless-sigil" aria-hidden="true"></i><span class="bless-text"><strong>'+esc(BLESSINGS[id]?.name??id)+'<em class="rarity-tag">'+esc(BLESSING_RARITY.names[BLESSINGS[id]?.rarity??'common'])+'</em></strong><small>'+esc(blessingEffectLabel(id))+'</small></span></li>').join('');
   return '<aside class="paper-window detail-blessings" aria-label="本局祝福"><h3>祝福</h3>'+(rows?'<ul id="detail-blessing-list">'+rows+'</ul>':'<p id="detail-blessing-empty">无</p>')+'</aside>';
 }
 /** Read-only member view (the party only: enemies have their own info card); only the six existing tactic commands are actionable. */

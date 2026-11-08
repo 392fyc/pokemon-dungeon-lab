@@ -1,6 +1,10 @@
 import {moveCategory, moveOf} from '../core/moves.ts';
 import {moveType} from '../core/type-chart.ts';
 
+/** Type chip colours (camp chips, machine discs) and the lighter variant used for damage numbers over the map. */
+export const TYPE_COLORS:Record<string,string>={Normal:'#5f5e50',Water:'#2b5f8a',Fire:'#a8482a',Grass:'#3f7a3a',Electric:'#9a7a24',Ice:'#4f8196',Fighting:'#963f45',Poison:'#765196',Ground:'#86643b',Flying:'#54799b',Psychic:'#a25891',Bug:'#55753a',Rock:'#776749',Ghost:'#5b4e81',Dragon:'#4f4c9b',Dark:'#49413b',Steel:'#627381',Fairy:'#9d6688'};
+const lighten=(hex:string,k:number)=>'#'+[1,3,5].map(i=>Math.round(parseInt(hex.slice(i,i+2),16)*(1-k)+255*k).toString(16).padStart(2,'0')).join('');
+export const damageNumberColor=(type:string)=>TYPE_COLORS[type]?lighten(TYPE_COLORS[type],.5):'#ffffff';
 export type EffectTemplate='melee'|'special'|'shot'|'beam'|'around'|'room'|'up'|'down'|'status'|'heal'|'guard'|'blow';
 export type EffectStyle={move:string|null;template:EffectTemplate;type:string;superEffective?:boolean;resisted?:boolean};
 

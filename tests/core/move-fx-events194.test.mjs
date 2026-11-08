@@ -193,7 +193,7 @@ test('属性免疫的群体施放不会认领后续普通攻击',()=>{
  const command={type:'round',action:{type:'skill',skill:'thunderbolt',target:'H'},override:{actor:'B',action:{type:'basic',target:'H'}}};
  const result=applyCommand(before,command);assert.equal(result.ok,true,result.error);
  assert.ok(result.state.log.some(line=>line.includes('没有效果')),'the real Electric move is immune on the Ground target');
- const hit=inferEvents(before,result.state,command).find(event=>event.k==='hit');
+ const hit=inferEvents(before,result.state,command).find(event=>event.k==='hit'&&!event.immune);   // the immune target has its own do-nothing hit; the claim test is about the next real hit
  assert.equal(hit?.attacker,'B');assert.deepEqual(hit?.effect,{move:null,template:'melee',type:'Normal'});
 });
 
@@ -391,4 +391,38 @@ test('房间招式中受击者的打鼾反应结束后，后面的目标仍属�
  const t2=events.find(event=>event.target==='T2'),back=events.find(event=>event.target==='A');
  assert.equal(t2?.attacker,'A');assert.equal(t2?.effect?.move,'blizzard');
  assert.equal(back?.attacker,'T1');assert.equal(back?.effect?.move,'snore');
+});
+
+/* Immunity and a miss are different things: an immune target is hit by the move and takes nothing (a round event and a do-nothing hit on the board); a miss has neither. */
+const withSpecies=(unit,species)=>{unit.species=species;unit.entrySpecies=species;unit.hp=unit.maxHp=100;return unit;};
+test('an Electric move on a Ground target: an immune event and a do-nothing hit, no damage, no miss, PP spent',()=>{
+ const before=world({moves:['thunderbolt'],targets:[withSpecies(enemy('H',2,1,100,'melee',0),'geodude')]});
+ const {after,command}=play(before,'thunderbolt','H');
+ assert.deepEqual(after.events.filter(e=>e.type==='immune'),[{type:'immune',actor:'A',target:'H',skill:'thunderbolt'}]);
+ assert.equal(after.events.filter(e=>e.type==='miss').length,0,'immune is not a miss');
+ assert.equal(after.units.H.hp,100);assert.equal(after.units.A.pp.thunderbolt,1,'the PP is spent');
+ const hits=inferEvents(before,after,command).filter(e=>e.k==='hit');
+ assert.equal(hits.length,1);assert.equal(hits[0].target,'H');assert.equal(hits[0].attacker,'A');
+ assert.equal(hits[0].immune,true);assert.equal(hits[0].amount,0);assert.equal(hits[0].dead,false);assert.ok(hits[0].effect,'the move effect still travels to the target');
+});
+test('an around move with one immune and one ordinary target: both are shown, only the ordinary one takes damage',()=>{
+ const before=world({moves:['thunderbolt'],targets:[withSpecies(enemy('H',2,1,100,'melee',0),'geodude'),withSpecies(enemy('P',1,2,100,'melee',0),'pidgey')]});
+ const {after,command}=play(before,'thunderbolt','H');
+ assert.equal(after.units.H.hp,100);assert.ok(after.units.P.hp<100,'the ordinary target is hurt');
+ const hits=inferEvents(before,after,command).filter(e=>e.k==='hit');
+ assert.deepEqual(hits.map(h=>[h.target,!!h.immune,h.amount>0]).sort(),[['H',true,false],['P',false,true]]);
+});
+test('a missed move is not shown as immune; a plain attack is never immune', ()=>{
+ let sample;
+ for(let seed=1;seed<=200&&!sample;seed++){
+  const before=world({moves:['thunderbolt'],targets:[withSpecies(enemy('P',2,1,100,'melee',0),'pidgey')]});before.battleRng=seed;before.units.A.stages.acc=-3;
+  const {after,command}=play(before,'thunderbolt','P');if(after.events.some(e=>e.type==='miss'))sample={before,after,command};
+ }
+ assert.ok(sample,'a real deterministic miss is found');
+ assert.equal(sample.after.events.filter(e=>e.type==='immune').length,0);
+ assert.equal(inferEvents(sample.before,sample.after,sample.command).filter(e=>e.k==='hit'&&e.immune).length,0);
+ // a plain attack has no type, so even a Ghost takes it
+ const ghost=world({moves:[],targets:[withSpecies(enemy('G',2,1,100,'melee',0),'gastly')]});
+ const basic=applyCommand(ghost,{type:'round',action:{type:'basic',target:'G'}});assert.equal(basic.ok,true,basic.error);const after=basic.state;
+ assert.equal((after.events??[]).filter(e=>e.type==='immune').length,0);
 });

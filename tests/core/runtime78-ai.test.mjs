@@ -79,7 +79,7 @@ test('3.c an enemy helps another enemy: helping hand raises that enemy\'s attack
  const s0=W({A:withoutSpecies(mate('A',3,1,{moves:{tackle:5}})),E1:foeOf('E1','geodude',6,1,40,{helpinghand:3}),E2:foeOf('E2','geodude',4,1,40,{tackle:5})},{rooms:bigRoom});
  const s=round(s0);
  assert.equal(s.units.E2.stages.atk,1);assert.equal(s.units.A.stages.atk,0);
- assert.equal(s.units.A.hp,35,'A takes the boosted 5 (round(tackle 9 x 0.4) = 4, +1 attack stage)');
+ assert.equal(s.units.A.hp,36,'A takes round(9 x 307/256 = 10.8 -> 11) x 0.4 = 4.4 -> 4 with the +1 attack stage (the old flat +1 made it 5)');
  // the stage is capped at +2 for the choice: with E2 already at +2 there is nothing to help
  const capped=W({A:withoutSpecies(mate('A',3,1,{moves:{tackle:5}})),E1:foeOf('E1','geodude',6,1,40,{helpinghand:3}),E2:foeOf('E2','geodude',4,1,40,{tackle:5})},{rooms:bigRoom});
  capped.units.E2.stages.atk=2;

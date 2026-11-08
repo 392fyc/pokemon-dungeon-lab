@@ -69,10 +69,10 @@ test('#112 任一方无物种时比例为1，缺目标用于普通目标说明',
 test('#112 比例取整后乘难度，再处理阶段、屏障与反击；AI估算与实际一致',()=>{
  const s=duel('mudkip','pidgey',{side:'enemy'});
  s.units.A.stages.atk=2;s.units.D.stages.def=1;s.units.D.reflect=3;s.units.D.counter=3;
- // round(9*12/9)=12; round(12*.4)=5; +2-1=6; floor(6/2)=3.
- assert.equal(estimateAttackDamage(s,'A','D','tackle'),3);
+ // round(9*12/9 x 332/256 attack +2 / 332/256 defence +1)=12; round(12*.4)=5; floor(5/2)=2 under the screen.
+ assert.equal(estimateAttackDamage(s,'A','D','tackle'),2);
  const after=strike(s,'tackle');
- assert.equal(after.units.D.hp,197);assert.equal(after.units.A.hp,197,'counter reflects actual lost HP');
+ assert.equal(after.units.D.hp,198);assert.equal(after.units.A.hp,198,'counter reflects actual lost HP');
  const guarded=structuredClone(s);guarded.units.D.protect=3;
  assert.equal(estimateAttackDamage(guarded,'A','D','tackle'),0);
  assert.equal(strike(guarded,'tackle').units.D.hp,200);

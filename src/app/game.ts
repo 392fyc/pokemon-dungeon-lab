@@ -1,12 +1,12 @@
 import type Phaser from 'phaser';
-import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate,tmDiscOf} from '../render/hud.ts';
+import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate,tmDiscOf,blessingEffectLabel} from '../render/hud.ts';
 import '../render/hud.css';
 import {itemIconImg} from '../render/item-icons.ts';
 import {installDrag,reconcileDrag} from './drag.ts';
 import {resultBanner} from '../render/result-banner.ts';
 import {typeChips,unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
 import '../render/panels194.css';
-import {learningPanel,invitationPanel,moveCard} from '../render/choice-panels.ts';
+import {learningPanel,invitationPanel,moveCard,noticePanel,noticeTag} from '../render/choice-panels.ts';
 import '../render/choice-panels.css';
 import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
 import {applyCommand,bossDefeated,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,ORB_ITEMS,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
@@ -47,7 +47,7 @@ const experienceProgress=(s:World)=>{
  const level=Math.min(p.level,PROG.maxLevel),currentThreshold=PROG.thresholds[level]??0,nextThreshold=PROG.thresholds[level+1];
  if(nextThreshold===undefined)return `Lv${level} · 升级经验已满（累计 ${p.exp}）`;
  const required=nextThreshold-currentThreshold,progress=Math.max(0,Math.min(required,p.exp-currentThreshold));
- return `Lv${level} · 升级经验 ${progress}/${required}（升到下一级需当前等级经验；击倒敌人获得其等级×${PROG.expMultiplier}的经验）`;
+ return `Lv${level} · 升级经验 ${progress}/${required}`;
 };
 const FATE:Record<TmItem['fate'],string>={held:'持有中',brought:'已带回',sent:'已由伙伴运送',lost:'已取得、未带出'};
 const SRC:Record<TmItem['source'],string>={target:'成果 T',shop:'商店',boss:'区域首领',challenge:'挑战奖励',blessing:'祝福奖励'};
@@ -65,7 +65,7 @@ legend.innerHTML='<span><i class="friend"></i>同行</span><span><i class="enemy
 const activityStatusRoot=document.createElement('section');activityStatusRoot.id='activity-status';activityStatusRoot.setAttribute('aria-live','polite');document.getElementById('save')!.after(activityStatusRoot);
 // Stateful panels return to their original positions at camp.
 const dungeonLayout=document.createElement('div');dungeonLayout.id='dungeon-layout';dungeonLayout.hidden=true;
-dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="shortcut-card"><span>WASD</span><span>移动</span><span>W+D 等</span><span>斜向移动</span><span>1—4</span><span>招式</span><span>5—0</span><span>快捷物品</span><span>Tab</span><span>切换操控</span><span>B</span><span>背包</span><span>F</span><span>向前普通攻击</span><span>.</span><span>等待</span><span>L</span><span>完整记录</span><span>Esc</span><span>关闭窗口</span></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button><button id="log-open" aria-label="打开完整记录（L）" title="完整记录（L）">记录</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div><div id="unit-details-layer"></div></div>`;
+dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="shortcut-card"><span>WASD</span><span>移动</span><span>W+D 等</span><span>斜向移动</span><span>1—4</span><span>招式</span><span>5—0</span><span>快捷物品</span><span>Tab</span><span>切换操控</span><span>B</span><span>背包</span><span>F</span><span>向前普通攻击</span><span>.</span><span>等待</span><span>L</span><span>日志</span><span>Esc</span><span>关闭窗口</span></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button><button id="log-open" aria-label="打开完整记录（L）" title="完整记录（L）">记录</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div><div id="unit-details-layer"></div></div>`;
 app.append(dungeonLayout);
 const panelHomes=new Map<HTMLElement,Comment>();
 for(const id of ['board','party','activity-status','recent-events','message','inspect','controls','flow','save',...(dev?['developer-tools']:[])]){const el=document.getElementById(id)!;const home=document.createComment(id);el.before(home);panelHomes.set(el,home);}
@@ -92,6 +92,9 @@ let selectedConfig='main-invite';
 let draft:{partner:string;action:Action|null;main:Action|null;editor:string;swap:boolean}|null=null;
 let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
+/** The stairs prompt opens by itself when the leader stands on a staircase; "不前进" closes it for that cell and a small button in the bottom bar brings it back. */
+let stairsClosedKey='',stairsPromptShown=false;
+const stairsKeyOf=(s:World):string=>{const L=s.units[s.leader],p=L?.pos&&s.points.find(q=>same(q.pos,L.pos!));return p&&(p.kind==='down'||p.kind==='up')?`${s.runId}|${s.dungeon?.level??0}|${L.pos!.x},${L.pos!.y}`:'';};
 let inviteChoice:string|undefined,notice='',detailsId:string|null=null,detailsOpenerId:string|null=null;
 let learnChoice:string|null=null,learnKeyShown='';
 let campSelected:string|null=null,departureOpen=false;
@@ -146,7 +149,13 @@ const animationEnabled=():boolean=>{const q=params.get('anim');if(q==='off')retu
 const $=(id:string)=>document.getElementById(id)!;
 const esc=(s:unknown)=>String(s).replaceAll('主控','操控者').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const button=(id:string,label:string,disabled=false,extra='')=>`<button id="${id}" ${disabled?'disabled':''} ${extra}>${label}</button>`;
-const live=()=>store.state;
+/** While an animation plays, the interface shows each unit's HP as it was before the round and lowers or raises it at the moment each hit or heal lands (the engine state is already final). */
+let hpShown:Map<string,number>|null=null,hpShownSrc:World|null=null,hpShownView:World|null=null,hpShownVer=0,hpShownViewVer=-1;
+const live=():World|null=>{
+ const s=store.state;if(!s||!anim.active||!hpShown)return s;
+ if(hpShownSrc!==s||hpShownViewVer!==hpShownVer){hpShownSrc=s;hpShownViewVer=hpShownVer;const shown=hpShown;hpShownView={...s,units:Object.fromEntries(Object.entries(s.units).map(([id,u])=>[id,shown.has(id)&&shown.get(id)!==u.hp?{...u,hp:shown.get(id)!}:u]))};}
+ return hpShownView;
+};
 const combatStatus=(u:Unit):string=>[
  u.protect>0?`守住：剩余${u.protect}个敌方阶段`:'',
  u.counter>0?`反击：剩余${u.counter}个敌方阶段`:'',
@@ -165,8 +174,8 @@ async function send(command:Parameters<typeof applyCommand>[1],keepMovement=fals
  let playing:Promise<void>|null=null;{const after=live();
   // Animation is presentation only: any failure here must leave the input lock released and the real state drawn.
   try{if(after){freshCount=newLines(before.log,after.log).length;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshCount=0;}
-  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){anim.active=true;const banner=after?resultBanner(before,after,animationEnabled()):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
-  catch{anim.active=false;playing=null;render();}}
+  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){hpShown=new Map(Object.entries(before.units).map(([id,u])=>[id,u.hp]));hpShownVer++;anim.active=true;const banner=after?resultBanner(before,after,animationEnabled()):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;hpShown=null;if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
+  catch{anim.active=false;hpShown=null;playing=null;render();}}
  clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
 async function setTactic(actor:string,value:string){
  if(anim.active||store.status!=='ready'||!live()||live()!.phase!=='playing'||!isTactic(value))return;
@@ -180,7 +189,7 @@ function act(action:Action){cancelMoveInput();if(anim.active||!live()||(store.st
  selectedSkill=null;choosingItem=null;
  if(draft?.swap){notice='换位已占双方动作卡；要改成其他动作，请先取消组合。';render();return;}
  if(draft){if(draft.editor===live()!.leader)draft.main=action;else draft.action=action;render();return;}
- if(action.type==='interact'&&action.exit){confirmExit=true;render();return;}
+ if(action.type==='interact'&&action.exit){const s0=live();if(s0&&stairsKeyOf(s0)){stairsClosedKey='';render();return;}confirmExit=true;render();return;}
  void send({type:'round',action});
 }
 function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
@@ -205,15 +214,8 @@ function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'
  if(target&&s.enemies.includes(target))act({type:'basic',target});else act({type:'move',to:p});
 }
 const itemName=(id:Item)=>id==='teamTonic'?itemZh(id):ITEM_NAMES[id];
-function actionLabel(a:Action|null,actor?:string){const target=(id:string)=>id===actor?'自身':unitLabel(live()?.units[id],id);if(!a)return '尚未选择';if(a.type==='move')return '移动';if(a.type==='skill')return `${moveZh(a.skill)} → ${target(a.target)}`;if(a.type==='basic')return `普通攻击 → ${target(a.target)}`;if(a.type==='basicForward')return '向前普通攻击';if(a.type==='swap')return `与${target(a.target)}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${target(a.target)}`;if(a.type==='interact')return a.exit?'交互并请求跨层':'取得并继续';return '等待';}
+function actionLabel(a:Action|null,actor?:string){const target=(id:string)=>id===actor?'自身':unitLabel(live()?.units[id],id);if(!a)return '尚未选择';if(a.type==='move')return '移动';if(a.type==='skill')return `${moveZh(a.skill)} → ${target(a.target)}`;if(a.type==='basic')return `普通攻击 → ${target(a.target)}`;if(a.type==='basicForward')return '向前普通攻击';if(a.type==='swap')return `与${target(a.target)}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${target(a.target)}`;if(a.type==='interact')return a.exit?'前进或撤离':'取得并继续';return '等待';}
 type AdventureRoom=NonNullable<World['adventureRooms']>[number];
-const challengeRewardPool=()=>[
- `${challengeRewardZh('currency')}（30%）`,
- `${challengeRewardZh('item')}（25%：${ITEM_NAMES.bigBerry}、${itemZh('teamTonic')}、四种宝珠或${ITEM_NAMES.reviverSeed}）`,
- `${challengeRewardZh('invite')}（15%）`,
- `${challengeRewardZh('tm')}（15%）`,
- `${challengeRewardZh('blessing')}（15%；清场后从可用选项中选一项）`,
-].join('、');
 function commissionPenaltyText(penalty:typeof COMMISSIONS[CommissionId]['penalty']):string{
  return penalty==='defenseMinusOne'?'全队防御阶段 −1（委托生效期间）':penalty==='berryHealHalf'?'树果回复减半（委托生效期间）':'无';
 }
@@ -226,22 +228,36 @@ function activityStatus(s:World):string{
  const blessings=(s.blessings??[]).map(id=>{const blessing=BLESSINGS[id];return `<li><strong>${esc(blessing.name)}</strong>：${esc(blessing.description)}</li>`;}).join('');
  return `<section class="unit" id="commission-status"><h2>进行中的委托（${(s.commissions??[]).length}/3）</h2>${commissions?`<ul>${commissions}</ul>`:'<p>暂无进行中的委托。</p>'}</section><section class="unit" id="blessing-status"><h2>已获得的祝福</h2>${blessings?`<ul>${blessings}</ul>`:'<p>尚未获得祝福。</p>'}</section>`;
 }
+/** What a commission asks, in one short line. */
+const COMMISSION_GOAL:Record<CommissionId,string>={hunter:'击倒 3 只敌人',collector:'取得 1 件道具',scout:'先进祝福房或道具房，再下楼',guardian:'下楼时全队存活',speedrun:'限定轮数内下楼'};
+const commissionPenaltyTag=(penalty:typeof COMMISSIONS[CommissionId]['penalty']):string=>penalty==='defenseMinusOne'?'全队防御 −1':penalty==='berryHealHalf'?'树果回复减半':'';
+/** The commission offer as a notice board: name, goal, reward (icon and number), the penalty while it runs and the floor limit, then accept or reject. */
+function commissionNotice(spec:typeof COMMISSIONS[CommissionId],id:CommissionId,full:boolean,ready:boolean):string{
+ const penalty=commissionPenaltyTag(spec.penalty);
+ return noticePanel({id:'commission-choice',kind:'委托',title:spec.name,asDialog:true,rows:[
+  {label:'目标',html:esc(COMMISSION_GOAL[id])},
+  {label:'奖励',html:'<i class="notice-icon exp" aria-hidden="true"></i><b>×'+spec.equivalentEnemies+'</b>',id:'commission-reward'},
+  ...(penalty?[{label:'生效期间',html:noticeTag(penalty,'bad')}]:[]),
+  {label:'期限',html:esc('本层')+(full?noticeTag('已有 3 条委托','bad'):'')},
+ ],buttons:button('commission-accept','接下',!ready||full,'class="paper-button is-primary" data-confirm')+button('commission-reject','拒绝',!ready,'class="paper-button"')});
+}
+let autoInteractKey='';
 function adventureRoomPanel(s:World,room:AdventureRoom,editor:string,ready:boolean,draftActive:boolean):string{
- const typeName=adventureRoomTypeZh(room.type),stateName=adventureRoomStateZh(room.type,room.state),canAct=ready&&editor===s.leader&&!draft?.swap;
- const heading=`${typeName}房 · ${stateName}`;
+ const canAct=ready&&editor===s.leader&&!draft?.swap;
+ const attrs=(type:string)=>`data-room-type="${type}" data-room-state="${room.state}"`;
+ const id='adventure-room-panel';
  if(room.type==='challenge'){
-  if(room.state==='idle')return `<section class="service" id="adventure-room-panel" data-room-type="challenge" data-room-state="idle"><h2>${heading}</h2><p>奖励池：${challengeRewardPool()}。具体奖励在清场后公布。</p>${draftActive&&editor!==s.leader?'<p class="muted">请先切回操控者，再安排开始挑战。</p>':''}${button('start-challenge','开始挑战',!canAct,'data-action="start-challenge" class="primary"')}</section>`;
-  if(room.state==='sealed')return `<section class="service" id="adventure-room-panel" data-room-type="challenge" data-room-state="sealed"><h2>${heading}</h2><p>门已封闭；击倒房间里的全部挑战敌人后会开门并发放奖励。</p></section>`;
+  if(room.state==='idle')return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'目标',html:esc('打倒房内全部敌人')},{label:'奖励（其一）',html:['钱袋','道具','招式机','邀请','祝福'].map(t=>noticeTag(t)).join('')}],buttons:button('start-challenge','开始挑战',!canAct,'data-action="start-challenge" class="primary"')});
+  if(room.state==='sealed')return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'目标',html:esc('打倒房内全部敌人')}]});
   const reward=[...s.log].reverse().find(line=>line.startsWith('挑战奖励：'));
-  return `<section class="service" id="adventure-room-panel" data-room-type="challenge" data-room-state="cleared"><h2>${heading}</h2><p id="challenge-reward-result">${reward?`实际奖励：${esc(localizeLog(s,reward.replace(/^挑战奖励：/,'')))}`:'奖励已发放；具体内容见最近事件与本轮记录。'}</p></section>`;
+  return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'奖励',html:esc(reward?localizeLog(s,reward.replace(/^挑战奖励：/,'')):'已发放'),id:'challenge-reward-result'}]});
  }
  if(room.type==='item'){
-  const item=room.item?itemName(room.item):'道具';
-  return room.state==='done'?`<section class="service" id="adventure-room-panel" data-room-type="item" data-room-state="done"><h2>${heading}</h2><p>${esc(item)}已拾取，门口标记已变暗。</p></section>`:
-   `<section class="service" id="adventure-room-panel" data-room-type="item" data-room-state="idle"><h2>${heading}</h2><p>交互格上有${esc(item)}，拾取后会放入本局背包。</p>${button('take-adventure-item',`拾取${esc(item)}`,!canAct,'data-action="take-adventure-item" class="primary"')}</section>`;
+  const item=room.item?itemName(room.item):'道具',icon=room.item?itemIconImg(room.item,'notice-icon-img'):'';
+  return room.state==='done'?noticePanel({id,kind:'道具',attrs:attrs('item'),rows:[{label:'',html:icon+esc(item)+noticeTag('已取得')}]}):
+   noticePanel({id,kind:'道具',attrs:attrs('item'),rows:[{label:'',html:icon+esc(item)}],buttons:button('take-adventure-item',`拾取`,!canAct,'data-action="take-adventure-item" class="primary"')});
  }
- if(room.type==='commission')return `<section class="service" id="adventure-room-panel" data-room-type="commission" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以查看本层试炼，选择接下或拒绝；拒绝会完成此房间。':'此房间已处理；进行中的委托进度与效果显示在右侧。'}</p>${room.state==='idle'?button('interact-commission','查看本层委托',!canAct,'data-action="interact-commission"'):''}</section>`;
- return `<section class="service" id="adventure-room-panel" data-room-type="blessing" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以选择一项祝福，也可以放弃。':`此房间已处理；已获得的祝福显示在右侧。`}</p>${room.state==='idle'?button('interact-blessing','查看祝福选项',!canAct,'data-action="interact-blessing"'):''}</section>`;
+ return '';   // commission and blessing rooms open their choice at once (see the arrival handling in renderMain), so they have no panel
 }
 /** Panel focus: the learn, invitation and bag windows put the focus on their main control when they open, and keep it through re-renders. */
 let panelFocusKey='';
@@ -289,7 +305,12 @@ function chooseHudItem(item:Item){
  if((s.prog?.items[item]??0)<1){notice=`背包里没有${itemName(item)}；本轮未执行`;render();return;}
  if(item==='reviverSeed'){notice='复活种子不能手动使用：队员倒下的瞬间会自动用掉。';render();return;}
  bagOpen=false;actionsOpen=false;selectedSkill=null;
- choosingItem=choosingItem===item?null:item;render();
+ if(choosingItem===item){choosingItem=null;render();return;}
+ const actor=draft?.editor??s.leader;
+ // No second confirmation: the whole-team and self items (orbs, team tonic) act at once, and so does a target item with exactly one usable target; several targets open the choice.
+ if(item==='teamTonic'||ORB_ITEMS.includes(item)){choosingItem=null;act({type:'use',item,target:actor});return;}
+ if(isTargetedItem(item)){const ok=itemTargets(s,item);if(ok.size===1){choosingItem=null;act({type:'use',item,target:[...ok][0]});return;}}
+ choosingItem=item;render();
 }
 function showMoveTip(skill:Skill,actor:string){
  const s=live();if(!s||bagOpen||anim.active)return;const pending=s.phase==='learning'?s.pendingLearnMoves?.find(p=>p.actor===actor&&p.move===skill):undefined,unit=s.units[actor];
@@ -304,13 +325,27 @@ function renderDetailsPanel(s:World,disabled:boolean){
  const host=$('unit-details-layer'),previous=document.getElementById('unit-details-dialog');
  const focusId=previous?.contains(document.activeElement)?(document.activeElement as HTMLElement).id:null,scrollTop=previous?.scrollTop??0;
  host.replaceChildren();
- if(!detailsId||(detailsId!=='__blessings'&&!s.units[detailsId])||s.phase!=='playing')return;
- const selected=detailsId,choices=[...s.queue,...s.enemies.filter(id=>!!enemyInfo(s,id))];
+ if(!detailsId||!s.units[detailsId]||s.phase!=='playing')return;
+ const selected=detailsId,choices=[...s.queue];
  host.innerHTML=unitDetails(s,selected,choices,disabled);const dialog=$('unit-details-dialog') as HTMLDialogElement;
  const close=()=>{const opener=detailsOpenerId;detailsId=null;detailsOpenerId=null;actionsOpen=false;render();if(opener)document.querySelector<HTMLButtonElement>('[data-hud-details="'+CSS.escape(opener)+'"]')?.focus({preventScroll:true});};bind('unit-detail-close',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-unit]'))b.onclick=()=>{detailsId=b.dataset.detailUnit!;render();};
  for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-tactic]'))b.onclick=()=>{const tactic=b.dataset.detailTactic;if(isTactic(tactic))void setTactic(selected,tactic);};
  for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-skill]')){const show=()=>showMoveTip(b.dataset.detailSkill!,selected),hide=()=>{const active=host.querySelector<HTMLButtonElement>('[data-detail-skill]:focus')??host.querySelector<HTMLButtonElement>('[data-detail-skill]:hover');if(active)showMoveTip(active.dataset.detailSkill!,selected);else{const tip=document.getElementById('detail-tooltip');if(tip)tip.hidden=true;}};b.onmouseenter=show;b.onfocus=show;b.onmouseleave=hide;b.onblur=hide;}
+ {const tip=dialog.querySelector<HTMLElement>('#stat-tip')!;let current:HTMLElement|null=null;
+  const hideTip=()=>{current=null;tip.hidden=true;for(const r of dialog.querySelectorAll('[data-stat-tip]'))r.removeAttribute('aria-describedby');};
+  const showTip=(row:HTMLElement)=>{current=row;tip.textContent=row.dataset.statTip??'';tip.hidden=false;row.setAttribute('aria-describedby','stat-tip');
+   const d=dialog.getBoundingClientRect(),r=row.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight,vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;
+   const lo=Math.max(d.left,0)+8,hi=Math.min(d.right,vw)-8,top0=Math.max(d.top,0)+8,bot0=Math.min(d.bottom,vh)-8;
+   let x=r.right+8;if(x+w>hi)x=r.left-8-w;x=Math.max(lo,Math.min(x,hi-w));
+   const y=Math.max(top0,Math.min(r.top+r.height/2-h/2,bot0-h));
+   tip.style.left=(x-d.left)+'px';tip.style.top=(y-d.top)+'px';};
+  for(const row of dialog.querySelectorAll<HTMLElement>('[data-stat-tip]')){
+   row.addEventListener('mouseenter',()=>showTip(row));row.addEventListener('mouseleave',()=>{if(document.activeElement!==row)hideTip();});
+   row.addEventListener('focus',()=>showTip(row));row.addEventListener('blur',hideTip);
+   row.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){e.stopPropagation();if(current===row)hideTip();else showTip(row);}});}
+  dialog.addEventListener('pointerdown',()=>{if(current&&document.activeElement!==current)hideTip();});
+  dialog.addEventListener('keydown',e=>{if(e.key==='Escape'&&current)hideTip();});}
  dialog.showModal();dialog.scrollTop=scrollTop;if(focusId&&dialog.contains(document.getElementById(focusId)))document.getElementById(focusId)?.focus({preventScroll:true});cancelSleepAdvance();
 }
 function refreshSettlementOverflow(){
@@ -357,24 +392,25 @@ function renderDungeonHud(){
  {// Services, rooms and the shop open as a centred panel; × closes it until the leader moves, and a small button brings it back.
   const lp=s.units[s.leader]?.pos,svcKey=lp?`${s.runId}|${s.dungeon?.level??0}|${lp.x},${lp.y}`:'',panels=Array.from(context.querySelectorAll<HTMLElement>('.service'));
   if(serviceClosedKey&&serviceClosedKey!==svcKey)serviceClosedKey='';
-  if(panels.length&&serviceClosedKey===svcKey){const label=panels[0].id==='shop-panel'?'打开商店':panels[0].id==='exchange-panel'?'打开伙伴交换机':panels[0].id==='rest-panel'?'打开休整点':'打开房间面板';panels.forEach(el=>el.remove());context.insertAdjacentHTML('beforeend','<button type="button" id="service-reopen" class="service-reopen">'+label+'</button>');bind('service-reopen',()=>{serviceClosedKey='';render();});}
+  if(panels.length&&serviceClosedKey===svcKey){const kind=panels[0].id==='shop-panel'?'商店':panels[0].id==='exchange-panel'?'交换机':panels[0].id==='rest-panel'?'休整点':({challenge:'挑战',item:'道具',commission:'委托',blessing:'祝福'} as Record<string,string>)[panels[0].dataset.roomType??'']??'房间';
+   panels.forEach(el=>el.remove());   // closed with ×: an ordinary button next to the bag button brings it back (no floating bar)
+   document.querySelector('#hud-bottom .hud-bag-button-wrap')?.insertAdjacentHTML('afterbegin','<button type="button" id="service-reopen" class="hud-bag-open hud-service-open">'+kind+'</button>');bind('service-reopen',()=>{serviceClosedKey='';render();});}
   else if(panels.length){for(const el of panels){if(!el.querySelector('.service-close'))el.insertAdjacentHTML('afterbegin','<button type="button" class="paper-close service-close" aria-label="关闭面板（Esc）">×</button>');}
    context.querySelectorAll<HTMLButtonElement>('.service-close').forEach(b=>b.onclick=()=>{serviceClosedKey=svcKey;render();});}
  }
- const targetBox=$('hud-item-targets');targetBox.hidden=!choosingItem||targetMode();targetBox.innerHTML='';
- if(choosingItem&&!targetMode()){
-  const item=choosingItem,actor=draft?.editor??s.leader;
-  const targets=item==='teamTonic'?button('item-use-teamTonic','使用（全队）',disabled,`data-hud-item-target="${esc(actor)}"`):ORB_ITEMS.includes(item)?button('item-use-'+item,'使用',disabled,`data-hud-item-target="${esc(actor)}"`):s.queue.filter(id=>{const u=s.units[id],a=s.units[actor];return u.hp>0&&u.pos&&a.pos&&(selfOrAdjacentReachable(s.floor,a.pos,u.pos));}).map(id=>button(item==='bigBerry'?`item-target-bigBerry-${id}`:`item-target-${id}`,esc(unitLabel(s.units[id],id)),disabled,`data-hud-item-target="${esc(id)}"`)).join('');
-   targetBox.innerHTML=`<strong>${esc(itemName(item))}</strong><p data-selected-item-description>${esc(itemDescription(item))}</p><div>${targets}</div>`;
-  targetBox.querySelectorAll<HTMLButtonElement>('[data-hud-item-target]').forEach(b=>b.onclick=()=>act({type:'use',item,target:b.dataset.hudItemTarget!}));
+ {// closed with "不前进": a small button next to the bag button reopens the prompt while the leader still stands on the stairs
+  const here=stairsKeyOf(s);
+  if(here&&stairsClosedKey===here&&!anim.active)document.querySelector('#hud-bottom .hud-bag-button-wrap')?.insertAdjacentHTML('afterbegin','<button type="button" id="stairs-reopen" class="hud-bag-open hud-service-open">楼梯</button>');
+  bind('stairs-reopen',()=>{stairsClosedKey='';render();});
  }
+ $('hud-item-targets').hidden=true;   // items act at once or open the party target state; there is no separate confirm bar
  renderDetailsPanel(s,disabled);
  $('hud-actions').hidden=store.status==='ready'&&(!actionsOpen||!!detailsId);
  $('hud-actions').classList.toggle('has-draft',!!draft);
  {const menu=$('hud-actions'),existing=document.getElementById('abandon-open');if(runCanBeAbandoned()){if(!existing)menu.insertAdjacentHTML('beforeend','<button id="abandon-open" type="button" class="abandon-open">放弃探险…</button>');bind('abandon-open',openAbandon);}else existing?.remove();}
  $('flow').querySelectorAll('.muted').forEach(el=>el.remove());
  $('flow').hidden=!$('flow').innerHTML.trim();
- if(s.phase==='playing'&&!confirmExit)$('flow').hidden=true;
+ if(s.phase==='playing'&&!confirmExit&&!stairsPromptShown)$('flow').hidden=true;
  if(anim.active&&s.phase!=='playing'&&s.phase!=='exit'&&s.phase!=='transit')$('flow').hidden=true;
  if(s.phase==='ended'&&store.status==='failed'){($('flow').querySelector('#settlement-save')??$('flow')).prepend($('save'));$('hud-actions').hidden=true;}
  $('hud-bag').hidden=!bagOpen;
@@ -433,14 +469,15 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
   if(!pending||pending.type!=='commission'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的委托选择。</p></div>';return;}
   const spec=COMMISSIONS[pending.commission],full=(s.commissions?.length??0)>=3;
-  $('flow').innerHTML=`<div class="result" id="commission-choice" role="dialog" aria-labelledby="commission-heading"><small>本层委托</small><h2 id="commission-heading">${esc(spec.name)}</h2><p>${esc(spec.description)}</p><p>完成后经验折合 ${spec.equivalentEnemies} 只敌人。</p><p>接下后立即生效的负面效果：${commissionPenaltyText(spec.penalty)}。</p><p>委托须在本层完成；未完成时成功下楼会使委托失败并移除，不发奖励、不另加惩罚。</p>${full?'<p class="error">同时进行的委托已达 3 条，无法接下；拒绝本条后此房间完成。</p>':'<p>选择接下后，本层完成即可领取奖励；也可以拒绝并完成此房间。</p>'}<div class="button-row">${button('commission-accept','接下委托',!ready||full,'class="primary"')}${button('commission-reject','拒绝并完成房间',!ready)}</div></div>`;
+  $('flow').innerHTML=commissionNotice(spec,pending.commission,full,ready);
   bind('commission-accept',()=>void send({type:'commissionChoice',choice:'accept'}));bind('commission-reject',()=>void send({type:'commissionChoice',choice:'reject'}));return;
  }
  if(s.phase==='blessing'){
   $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
   if(!pending||pending.type!=='blessing'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的祝福选择。</p></div>';return;}
-  const source=pending.source==='challenge'?'挑战奖励':'祝福房';
-  $('flow').innerHTML=`<div class="result" id="blessing-choice" role="dialog" aria-labelledby="blessing-heading"><small>${source} · 可选 ${pending.options.length} 项</small><h2 id="blessing-heading">选择一项祝福</h2><div class="choice-grid">${pending.options.map(id=>{const blessing=BLESSINGS[id];return button(`blessing-${id}`,`<strong class="choice-title">${esc(blessing.name)}</strong><span class="choice-desc">${esc(blessing.description)}</span>`,!ready,'class="primary choice-card"');}).join('')}</div><div class="button-row">${button('blessing-skip','放弃祝福',!ready)}</div></div>`;
+  const source=pending.source==='challenge'?'挑战奖励':'祝福';
+  // The blessing choice is a paper notice panel like the commission offer: one card per blessing (name and effect), then a way out.
+  $('flow').innerHTML=noticePanel({id:'blessing-choice',kind:source,asDialog:true,rows:[{label:'',html:'<span class="notice-cards">'+pending.options.map(id=>{const blessing=BLESSINGS[id];return button(`blessing-${id}`,`<strong>${esc(blessing.name)}</strong><span>${esc(blessingEffectLabel(id))}</span>`,!ready,'class="paper-button notice-card"');}).join('')+'</span>'}],buttons:button('blessing-skip','放弃',!ready,'class="paper-button"')});
   for(const id of pending.options)bind(`blessing-${id}`,()=>void send({type:'blessingChoice',blessing:id}));bind('blessing-skip',()=>void send({type:'blessingChoice',blessing:null}));return;
  }
  if(s.phase==='tmChoice'){
@@ -470,17 +507,21 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   s.queue.forEach((id,i)=>bind('out-'+i,()=>{inviteChoice=inviteChoice===id?undefined:id;render();}));
   bind('accept',()=>void send({type:'invite',choice:'accept',outgoing:inviteChoice}));bind('invite-to-camp',()=>void send({type:'invite',choice:'camp'}));bind('reject',()=>void send({type:'invite',choice:'reject'}));return;
  }
- if(s.phase==='exit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮撤离请求已成立；正在完成终局处理。</p>';return;}
- if(s.phase==='transit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮跨层请求已成立；正在切换楼层。</p>';return;}
+ if(s.phase==='exit'){$('controls').innerHTML='';$('flow').innerHTML='';return;}
+ if(s.phase==='transit'){$('controls').innerHTML='';$('flow').innerHTML='';return;}
  const leaderPoint=s.points.find(p=>same(p.pos,s.units[s.leader].pos)),onStairs=leaderPoint?.kind==='down'||leaderPoint?.kind==='up';
- $('flow').innerHTML=confirmExit?`<h2>${onStairs?'本轮请求跨层？':'本轮请求撤离？'}</h2><p>消耗操控者行动，敌人仍会行动。使用者轮末存活且仍在交互格才成立。</p>${button('exit-confirm',onStairs?'确认本轮跨层':'确认本轮撤离',!ready,'data-confirm="true" class="primary"')}${button('cancel-exit','继续查看')}`:'';
+ const stairsKey=stairsKeyOf(s);if(stairsClosedKey&&stairsClosedKey!==stairsKey)stairsClosedKey='';
+ stairsPromptShown=!!stairsKey&&stairsClosedKey!==stairsKey&&!draft&&!confirmExit;
+ const stairsUp=(()=>{const L=s.units[s.leader],p=L?.pos&&s.points.find(q=>same(q.pos,L.pos!));return p?.kind==='up';})();
+ $('flow').innerHTML=stairsPromptShown?`<section class="paper-window c195 c195-stairs" id="stairs-prompt" role="dialog" aria-label="楼梯"><p class="stairs-ask">${stairsUp?'要回到上一层吗？':'要前进到下一层吗？'}</p><footer class="c195-foot">${button('stairs-go',stairsUp?'返回':'前进',!ready,'class="paper-button is-primary" data-confirm="true"')}${button('stairs-stay',stairsUp?'不返回':'不前进',!ready,'class="paper-button"')}</footer></section>`:confirmExit?`<section class="paper-window c195 c195-stairs" id="exit-prompt" role="dialog" aria-label="撤离"><p class="stairs-ask">要撤离吗？</p><footer class="c195-foot">${button('exit-confirm','撤离',!ready,'class="paper-button is-primary" data-confirm="true"')}${button('cancel-exit','不撤离',false,'class="paper-button"')}</footer></section>`:'';
+ bind('stairs-go',()=>{stairsClosedKey=stairsKey;void send({type:'round',action:{type:'interact',exit:true}});});bind('stairs-stay',()=>{stairsClosedKey=stairsKey;render();});
  bind('exit-confirm',()=>void send({type:'round',action:{type:'interact',exit:true}}));bind('cancel-exit',()=>{confirmExit=false;render();});
  const editor=draft?.editor??s.leader;const u=s.units[editor];
  const point=s.points.find(p=>same(p.pos,u.pos));const stairKind=point?.kind==='down'||point?.kind==='up';const restPoint=point?.kind==='rest';const serviceCell=point?.kind==='shop'||point?.kind==='exchange';const canCollect=!!point&&!point.used&&point.kind!=='exit'&&!stairKind&&!restPoint&&!serviceCell;const pickup=point?.kind==='berry'||point?.kind==='tonic';
  let draftText='';if(draft){const valid=draft.main&&(draft.swap||draft.action)?applyCommand(s,{type:'round',action:draft.main,...(!draft.swap?{override:{actor:draft.partner,action:draft.action!}}:{})}):null;
  draftText=`<div class="draft"><strong>本轮草稿中 · 正在编辑 ${esc(unitLabel(s.units[editor],editor))}</strong><p>${button('edit-main',`${unitLabel(s.units[s.leader],s.leader)}：${actionLabel(draft.main,s.leader)}`,draft.swap)}${button('edit-partner',`${unitLabel(s.units[draft.partner],draft.partner)}：${draft.swap?'换位（双方行动）':actionLabel(draft.action,draft.partner)}`,draft.swap)}</p><p>之后：敌方阶段</p>${draftOrder(s,draft)}${valid&&!valid.ok?`<p class="error">${esc(playerText(valid.error))}</p>`:''}${button('submit',draft.main?.type==='interact'&&draft.main.exit?'提交整轮并交互':'提交整轮',!ready||!valid?.ok,'data-confirm="true" class="primary"')}${button('cancel-draft','取消组合')}</div>`;
  }
- $('controls').innerHTML=`<h2>${draft?'组合安排':'操控者行动'} <small>${esc(unitLabel(s.units[editor],editor))}</small></h2>${draftText}<div class="button-row">${button('wait','等待（.）',!editable||(!ready&&!draft)||!!draft?.swap)}${button('arrange','安排伙伴',!editable||!!draft)}${button('swap','换位',!editable||!!draft)}</div>${choosingPartner||choosingSwap?`<p>选择另一名伙伴：</p>${s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0).map(id=>button('partner-'+id,unitLabel(s.units[id],id),!editable)).join('')}`:''}<div class="skills">${u.learned.map(k=>button('skill-'+k,`${esc(skillLabel(u,k))} ${u.pp[k]??0}/${u.maxPp[k]??0}<small data-move-preview="${esc(k)}" style="display:block">${esc(moveSummary(k,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</small>`,!editable||(!ready&&!draft)||!!draft?.swap||(u.pp[k]??0)<1,selectedSkill===k?'class="selected"':'')).join('')}</div>${s.prog?`<div class="items"><p class="muted">背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）。占该成员一次行动，对自己或相邻同行。</p>${(['berry','tonic'] as Item[]).map(k=>button('use-'+k,`使用${ITEM_NAMES[k]}`,!editable||(!ready&&!draft)||!!draft?.swap,choosingItem===k?'class="selected"':'')).join('')}${choosingItem&&u.pos?`<p>对谁使用${ITEM_NAMES[choosingItem]}？</p>${s.queue.filter(id=>s.units[id].hp>0&&s.units[id].pos&&(selfOrAdjacentReachable(s.floor,u.pos!,s.units[id].pos!))).map(id=>button('item-target-'+id,id===editor?`${id}（自己）`:id,!editable)).join('')}`:''}</div>`:''}<p class="muted">${selectedSkill?`已选${esc(skillLabel(u,selectedSkill))}：<span id="selected-move-preview">${esc(moveSummary(selectedSkill,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</span>。消耗1PP；金圈标出合法目标${moveOf(selectedSkill)?.range==='user'||moveOf(selectedSkill)?.range==='room'?'（自身）':''}。`:draft?'点地图或方向键只编辑动作，尚未执行。':'方向键移动；点相邻敌人普通攻击；K选招式。'}</p>${point&&editor===s.leader&&!restPoint&&!serviceCell?(canCollect?button('take',pickup?`拾取${ITEM_NAMES[point!.kind as Item]}`:'取得并继续',!editable||(!ready&&!draft)||!!draft?.swap):'')+(pickup||(s.dungeon?.roguelike&&!stairKind)?'':button('take-exit',stairKind?(point!.kind==='down'?'走下楼梯（请求跨层）':'走上楼梯（请求跨层）'):canCollect?'取得／请求撤离':'请求撤离',!editable||(!ready&&!draft)||!!draft?.swap)):''}`;
+ $('controls').innerHTML=`<h2>${draft?'组合安排':'操控者行动'} <small>${esc(unitLabel(s.units[editor],editor))}</small></h2>${draftText}<div class="button-row">${button('wait','等待（.）',!editable||(!ready&&!draft)||!!draft?.swap)}${button('arrange','安排伙伴',!editable||!!draft)}${button('swap','换位',!editable||!!draft)}</div>${choosingPartner||choosingSwap?`<p>选择另一名伙伴：</p>${s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0).map(id=>button('partner-'+id,unitLabel(s.units[id],id),!editable)).join('')}`:''}<div class="skills">${u.learned.map(k=>button('skill-'+k,`${esc(skillLabel(u,k))} ${u.pp[k]??0}/${u.maxPp[k]??0}<small data-move-preview="${esc(k)}" style="display:block">${esc(moveSummary(k,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</small>`,!editable||(!ready&&!draft)||!!draft?.swap||(u.pp[k]??0)<1,selectedSkill===k?'class="selected"':'')).join('')}</div>${s.prog?`<div class="items"><p class="muted">背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）。占该成员一次行动，对自己或相邻同行。</p>${(['berry','tonic'] as Item[]).map(k=>button('use-'+k,`使用${ITEM_NAMES[k]}`,!editable||(!ready&&!draft)||!!draft?.swap,choosingItem===k?'class="selected"':'')).join('')}${choosingItem&&u.pos?`<p>对谁使用${ITEM_NAMES[choosingItem]}？</p>${s.queue.filter(id=>s.units[id].hp>0&&s.units[id].pos&&(selfOrAdjacentReachable(s.floor,u.pos!,s.units[id].pos!))).map(id=>button('item-target-'+id,id===editor?`${id}（自己）`:id,!editable)).join('')}`:''}</div>`:''}<p class="muted">${selectedSkill?`已选${esc(skillLabel(u,selectedSkill))}：<span id="selected-move-preview">${esc(moveSummary(selectedSkill,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</span>。消耗1PP；金圈标出合法目标${moveOf(selectedSkill)?.range==='user'||moveOf(selectedSkill)?.range==='room'?'（自身）':''}。`:draft?'点地图或方向键只编辑动作，尚未执行。':'方向键移动；点相邻敌人普通攻击；K选招式。'}</p>${point&&editor===s.leader&&!restPoint&&!serviceCell?(canCollect?button('take',pickup?`拾取${ITEM_NAMES[point!.kind as Item]}`:'取得并继续',!editable||(!ready&&!draft)||!!draft?.swap):'')+(pickup||stairKind||(s.dungeon?.roguelike&&!stairKind)?'':button('take-exit',canCollect?'取得（继续）':'撤离',!editable||(!ready&&!draft)||!!draft?.swap)):''}`;
  if(choosingItem==='bigBerry')document.querySelectorAll<HTMLElement>('#controls [id^="item-target-"]').forEach(el=>{const id=el.id.slice('item-target-'.length);el.id=`item-target-bigBerry-${id}`;el.dataset.action=`item-target-bigBerry-${id}`;});
  const backpack=$('controls').querySelector<HTMLElement>('.items');
  if(backpack&&s.prog&&s.dungeon?.roguelike){
@@ -488,15 +529,19 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   backpack.insertAdjacentHTML('beforeend',button('use-bigBerry',`使用${ITEM_NAMES.bigBerry}`,!editable||(!ready&&!draft)||!!draft?.swap,`data-action="use-bigBerry" ${choosingItem==='bigBerry'?'class="selected"':''}`)+button('use-teamTonic',`使用${itemName('teamTonic')}`,!editable||(!ready&&!draft)||!!draft?.swap,`data-action="use-teamTonic"`));
  }
  const leaderPos=s.units[s.leader]?.pos??null,activeAdventure=(s.adventureRooms??[]).find(room=>same(room.interaction,leaderPos));
- if(activeAdventure&&!(activeAdventure.type==='challenge'&&activeAdventure.state==='sealed')){   // no room panel in the middle of a challenge fight
+ // A commission or blessing room opens its choice as soon as the leader stands on the cell: no panel with a single button in between.
+ if(activeAdventure&&(activeAdventure.type==='commission'||activeAdventure.type==='blessing')&&activeAdventure.state==='idle'&&!draft&&editor===s.leader&&ready&&!(window as unknown as {__trialNoAutoInteract?:boolean}).__trialNoAutoInteract){   // the flag lets a test that proves one key = one round keep the step and the choice apart
+  const arrival=`${s.runId}|${s.dungeon?.level??0}|${activeAdventure.room}`;
+  if(autoInteractKey!==arrival){autoInteractKey=arrival;setTimeout(()=>{const now=live();if(now&&now.phase==='playing'&&!anim.active&&!draft&&store.status==='ready'&&same(now.units[now.leader]?.pos??null,activeAdventure.interaction))act({type:'interact',exit:false});},0);}
+ }
+ if(activeAdventure&&!(activeAdventure.type==='challenge'&&activeAdventure.state==='sealed')&&!(activeAdventure.type==='commission'||activeAdventure.type==='blessing')){   // no room panel in the middle of a challenge fight, and none for the rooms that open their choice at once
   $('controls').insertAdjacentHTML('beforeend',adventureRoomPanel(s,activeAdventure,editor,ready,!!draft));
-  bind('start-challenge',()=>act({type:'interact',exit:false}));bind('take-adventure-item',()=>act({type:'interact',exit:false}));
-  bind('interact-commission',()=>act({type:'interact',exit:false}));bind('interact-blessing',()=>act({type:'interact',exit:false}));}
+  bind('start-challenge',()=>act({type:'interact',exit:false}));bind('take-adventure-item',()=>act({type:'interact',exit:false}));}
  if(editor===s.leader&&(!draft||point?.kind==='rest')){$('controls').insertAdjacentHTML('beforeend',servicePanel(s,point,ready||!!draft,!!draft?.swap));bindService(s);}   // the rest point stays reachable while a combination is being arranged
  bind('wait',()=>act({type:'wait'}));bind('arrange',()=>{actionsOpen=true;choosingPartner=true;choosingSwap=false;selectedSkill=null;render();});bind('swap',()=>{actionsOpen=true;choosingSwap=true;choosingPartner=false;selectedSkill=null;render();});
  for(const id of s.queue.filter(id=>id!==s.leader))bind('partner-'+id,()=>{const swap=choosingSwap;draft={partner:id,action:null,main:swap?{type:'swap',target:id}:null,editor:swap?s.leader:id,swap};choosingPartner=false;choosingSwap=false;render();});
  u.learned.forEach(k=>bind('skill-'+k,()=>{selectedSkill=k;choosingItem=null;render();}));
- for(const k of (s.dungeon?.roguelike?['berry','tonic','bigBerry']:['berry','tonic']) as Item[]){bind('use-'+k,()=>{if((s.prog?.items[k]??0)<1){notice=`背包里没有${ITEM_NAMES[k]}；本轮未执行`;choosingItem=null;render();return;}choosingItem=choosingItem===k?null:k;selectedSkill=null;choosingPartner=false;choosingSwap=false;render();});
+ for(const k of (s.dungeon?.roguelike?['berry','tonic','bigBerry']:['berry','tonic']) as Item[]){bind('use-'+k,()=>{choosingPartner=false;choosingSwap=false;chooseHudItem(k);});
   for(const id of s.queue)bind(k==='bigBerry'?`item-target-bigBerry-${id}`:'item-target-'+id,()=>{if(choosingItem===k)act({type:'use',item:k,target:id});});}bind('take',()=>act({type:'interact',exit:false}));bind('rest',()=>act({type:'interact',exit:false}));bind('take-exit',()=>act({type:'interact',exit:true}));bind('edit-main',()=>{if(draft){draft.editor=s.leader;selectedSkill=null;render();}});bind('edit-partner',()=>{if(draft){draft.editor=draft.partner;selectedSkill=null;render();}});bind('cancel-draft',()=>{clear();render();});
  if(s.dungeon?.roguelike)bind('use-teamTonic',()=>{if((s.prog?.items.teamTonic??0)<1){notice=`背包里没有${itemName('teamTonic')}；本轮未执行`;render();return;}act({type:'use',item:'teamTonic',target:editor});});
  bind('submit',()=>{if(draft?.main){const cmd={type:'round' as const,action:draft.main,...(!draft.swap?{override:{actor:draft.partner,action:draft.action!}}:{})};void send(cmd);}});
@@ -597,23 +642,23 @@ function resultDetails(s:World):string{
   const brought=summary?.brought??[...s.queue,...s.camp,...(s.exchange?.sent?[s.exchange.sent]:[])].map(id=>({id,species:s.units[id].entrySpecies??s.units[id].species??''}));
   const shards=summary?.shards??[];
   const rank=summary?.rank;
-  const rankRewards=rank?`<ul id="rank-breakdown"><li>深度：+${rank.depth}</li><li>击败首领：+${rank.boss}</li><li>完成委托：+${rank.commissions}（最多 3）</li><li>新招募伙伴：+${rank.recruits}（最多 2，碎片不计）</li><li>带回招式机：+${rank.tms}（最多 4）</li></ul><p id="rank-gain"><strong>探险队经验 +${rank.total}</strong> · 累计 ${rank.before} → ${rank.after}</p><p id="rank-level-change">${rank.levelAfter>rank.levelBefore?`探险队升级：Lv${rank.levelBefore} → Lv${rank.levelAfter}，获得 ${rank.levelAfter-rank.levelBefore} 个天赋点`:`探险队 Lv${rank.levelAfter}`}</p><p class="muted">三档难度的探险队经验计算相同。</p>`:'<p>本局无此项奖励</p>';
+  const rankRewards=rank?`<ul id="rank-breakdown"><li>深度：+${rank.depth}</li><li>击败首领：+${rank.boss}</li><li>完成委托：+${rank.commissions}（最多 3）</li><li>新招募伙伴：+${rank.recruits}（最多 2，碎片不计）</li><li>带回招式机：+${rank.tms}（最多 4）</li></ul><p id="rank-gain"><strong>探险队经验 +${rank.total}</strong> · 累计 ${rank.before} → ${rank.after}</p><p id="rank-level-change">${rank.levelAfter>rank.levelBefore?`探险队升级：Lv${rank.levelBefore} → Lv${rank.levelAfter}，获得 ${rank.levelAfter-rank.levelBefore} 个天赋点`:`探险队 Lv${rank.levelAfter}`}</p>`:'<p>本局无此项奖励</p>';
   return `<div id="settle"><section id="depth-rewards"><h2>深度和难度奖励</h2><p>到达第 ${s.dungeon.level} 层 · ${DIFFICULTY_LABEL[s.difficulty??'normal']}</p>${rankRewards}</section><section id="harvest-rewards"><h2>收获型奖励</h2><h3>带回的伙伴</h3><ul id="brought-partners">${brought.length?brought.map(i=>`<li>${esc(spName(i.species)||i.id)}</li>`).join(''):'<li>无新增伙伴</li>'}</ul><h3>伙伴碎片</h3><ul id="brought-shards">${shards.length?shards.map(i=>`<li>${esc(spName(i.species))}碎片 ×${i.count}</li>`).join(''):'<li>无</li>'}</ul><h3>招式机（${won?'已带回':'全队倒下，未带回'}）</h3><ul id="tm-list">${s.end.tms?.length?s.end.tms.map(t=>`<li>${esc(tmLine(t))}</li>`).join(''):'<li>本局没有取得招式机。</li>'}</ul></section><section id="camp-task-rewards"><h2>营地任务奖励</h2><p>本局无此项奖励</p></section></div>`;
  }
 
  const end=s.end!;
- if(!s.prog||end.effective===undefined)return `<p>报酬／救援未启用。${end.outcome==='wipe'?'普通背包已取得但未带出，不进入跨局库存。':''}</p>`;
+ if(!s.prog||end.effective===undefined)return `<p>报酬／救援未启用。</p>`;
  const label=(id:string)=>esc(unitLabel(s.units[id],id));
  const sum=s.scenario==='expedition'?store.settlementSummary:null;
  const savedSettlement=!!store.envelope&&store.status==='ready';
  const sp=(x:{id:string;species:string})=>`${esc(x.id)} ${esc(spName(x.species))}`;
- const pool=sum?`<ul id="pool-change">${sum.returned.length?`<li>回归名册：${sum.returned.map(sp).join('、')}</li>`:''}${sum.gone.length?`<li>永久失去（期限用完且未付费）：${sum.gone.map(sp).join('、')}</li>`:''}${sum.missing.length?`<li>本局走失、进入救援池（期限 ${ECON.window} 次有效探险，从下一局起计）：${sum.missing.map(sp).join('、')}</li>`:''}${sum.advanced.map(a=>`<li>${sp(a)}：${a.paid?'等待':'期限'} ${a.from} → ${a.to}</li>`).join('')}${!sum.returned.length&&!sum.gone.length&&!sum.missing.length&&!sum.advanced.length?'<li>救援池没有变化。</li>':''}</ul><p>账户：${sum.account.before} → ${sum.account.after}（${savedSettlement?'终局已入账':store.envelope?'保存成功后入账':'仅本次内存场景结算'}）</p>`:'';
+ const pool=sum?`<ul id="pool-change">${sum.returned.length?`<li>回归名册：${sum.returned.map(sp).join('、')}</li>`:''}${sum.gone.length?`<li>永久失去：${sum.gone.map(sp).join('、')}</li>`:''}${sum.missing.length?`<li>走失：${sum.missing.map(sp).join('、')}</li>`:''}${sum.advanced.map(a=>`<li>${sp(a)}：${a.paid?'等待':'期限'} ${a.from} → ${a.to}</li>`).join('')}${!sum.returned.length&&!sum.gone.length&&!sum.missing.length&&!sum.advanced.length?'<li>救援池没有变化。</li>':''}</ul><p>账户：${sum.account.before} → ${sum.account.after}（${savedSettlement?'终局已入账':store.envelope?'保存成功后入账':'仅本次内存场景结算'}）</p>`:'';
  return `<div id="settle"><h2>结算</h2>
- <p id="eff-line">本局${end.effective?'算':'不算'}有效探险${end.reasons!.length?`：${end.reasons!.map(r=>REASON[r]).join('；')}`:'：没有完成基础目标，也没有保留新成果'}。${end.effective?'出发前就在救援池里的伙伴，等待次数各减1。':'救援池的等待次数不变。'}</p>
+ <p id="eff-line">本局${end.effective?'算':'不算'}有效探险${end.reasons!.length?`：${end.reasons!.map(r=>REASON[r]).join('；')}`:''}</p>
  <p id="reward-line">基础报酬：${end.reward}${end.reward?'（完成了 G，全灭也照付）':'（没有完成 G，不发）'}。钱袋余额 ${end.purse}：${end.outcome==='normal'?`退回账户 ${end.refund}`:'全灭，丢失'}。</p>
- <p id="lost-line">走失的伙伴：${end.lost!.length?end.lost!.map(label).join('、'):'无'}${end.outcome==='wipe'?`（初始成员不会走失；其余伙伴各以一半概率走失，${savedSettlement?'结果已随终局保存，之后打开仍保留':store.envelope?'保存成功后会保留':'结果只保存在开发场景内存中'}）`:''}。</p>
+ <p id="lost-line">走失的伙伴：${end.lost!.length?end.lost!.map(label).join('、'):'无'}</p>
  <ul id="tm-list">${end.tms!.length?end.tms!.map(t=>`<li>${esc(tmLine(t))}</li>`).join(''):'<li>本局没有取得招式机。</li>'}</ul>
- <h2>救援池的变化</h2>${pool||'<p class="muted">没有基地档案，无救援池。</p>'}</div>`;
+ <h2>救援池的变化</h2>${pool||'<p class="muted">无</p>'}</div>`;
 }
 /** Shop and exchanger panels, shown when the leader stands on the cell. Buying takes no round; the exchanger takes the leader's action. */
 /** Shop stock beyond the three fixed rows: the cure berry, heal seed (stock existed, never listed), the four orbs and the Reviver Seed. */
@@ -631,20 +676,20 @@ function servicePanel(s:World,point:Point|undefined,ready:boolean,swapping=false
   const rows=goods.map(item=>{const pr=ECON.price[item],lf=stockOf(item),sh2=purse<pr&&lf>0;
    return `<li><button type="button" id="shop-pick-${item}" class="shop-row${item===picked?' is-selected':''}${lf<1?' is-sold':''}${sh2?' is-short':''}" aria-pressed="${item===picked}">${iconOf(item)}<span class="shop-name">${esc(nameOf(item))}</span><span class="shop-price">价格 ${pr}</span><span class="shop-stock">库存 ${lf}</span></button></li>`;}).join('');
   const description=picked==='tm'?(sh.stock.tm?moveSummary(sh.stock.tm,undefined,undefined,unitMoveLevel(s,s.units[s.leader])):'已经卖完了。'):itemDescription(picked as Item);
-  return `<div class="service panel195 shop195" id="shop-panel" role="dialog" aria-labelledby="shop-heading"><h2 class="paper-plaque" id="shop-heading">商店</h2><p id="purse-line" class="shop-purse">钱袋余额：<strong>${purse}</strong></p><div class="shop-body"><ul class="shop-list" aria-label="商品">${rows}</ul><aside class="shop-detail" aria-label="商品详情"><div class="shop-detail-head">${iconOf(picked,true)}<div><strong>${esc(nameOf(picked))}</strong><small class="${left>0&&short?'is-short':''}">价格 <b class="shop-price-num">${price}</b> · 库存 ${left}</small></div></div><p class="shop-detail-text">${esc(description)}</p>${button('buy-'+picked,left<1?'售罄':'购买',!ready||left<1||short,'class="paper-button is-primary"')}</aside></div><p class="paper-muted shop-note">只能用钱袋付款；买东西不占回合；本次远征期间库存固定；不收购。</p></div>`;
+  return `<div class="service panel195 shop195" id="shop-panel" role="dialog" aria-labelledby="shop-heading"><h2 class="paper-plaque" id="shop-heading">商店</h2><p id="purse-line" class="shop-purse">钱袋余额：<strong>${purse}</strong></p><div class="shop-body"><ul class="shop-list" aria-label="商品">${rows}</ul><aside class="shop-detail" aria-label="商品详情"><div class="shop-detail-head">${iconOf(picked,true)}<div><strong>${esc(nameOf(picked))}</strong><small class="${left>0&&short?'is-short':''}">价格 <b class="shop-price-num">${price}</b> · 库存 ${left}</small></div></div><p class="shop-detail-text">${esc(description)}</p>${button('buy-'+picked,left<1?'售罄':'购买',!ready||left<1||short,'class="paper-button is-primary"')}</aside></div></div>`;
  }
  if(point.kind==='rest'){   // a centred paper panel like the shop: what the rest does, one button; a used point shows nothing
   if(point.used)return '';
-  return `<div class="service panel195 rest195" id="rest-panel" role="dialog" aria-labelledby="rest-heading"><h2 class="paper-plaque" id="rest-heading">休整点</h2><p id="rest-text">每名存活队员的每个招式恢复 ${PROG.restPp} PP；每个休整点只能用一次。</p>${button('rest','休整',!ready||swapping,'class="primary"')}</div>`;
+  return `<div class="service panel195 rest195" id="rest-panel" role="dialog" aria-labelledby="rest-heading"><h2 class="paper-plaque" id="rest-heading">休整点</h2><p id="rest-text">每个招式 PP +${PROG.restPp}</p>${button('rest','休整',!ready||swapping,'class="primary"')}</div>`;
  }
  if(point.kind==='exchange'&&s.exchange){
   const ex=s.exchange;
   if(ex.used)return `<div class="service" id="exchange-panel"><h2>伙伴交换机</h2><p id="exchange-result">本局已经使用：${esc(unitLabel(s.units[ex.sent!],ex.sent!))}安全返回基地。</p></div>`;
   const cands=s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0);
   const held=(s.tms??[]).map((t,i)=>({t,i})).filter(x=>x.t.fate==='held');
-  return `<div class="service" id="exchange-panel"><h2>伙伴交换机 <small>每局只能用一次；占操控者一次行动；不回血、不补PP；被送回的伙伴本局不再参战，空位只能靠再次击败敌人、触发邀请来补</small></h2>
-  <p>选择送回基地的同行伙伴（须存活，不能是操控者）：</p>${cands.length?cands.map(id=>button('ex-target-'+id,esc(unitLabel(s.units[id],id)),!ready,exTarget===id?'class="selected"':'')).join(''):'<p class="muted">没有可送回的伙伴。</p>'}
-  <p>随行运送招式机（最多${ECON.exchangeCargo}份；${s.dungeon?.roguelike?'击败首领后才带回，全队倒下仍会丢失':'送回后全灭也不丢'}）：</p>${held.length?held.map(x=>button('ex-cargo-'+x.i,esc(tmLine(x.t).split('：')[0]),!ready,exCargo.includes(x.i)?'class="selected"':'')).join(''):'<p class="muted">本局没有持有的招式机。</p>'}
+  return `<div class="service" id="exchange-panel"><h2>伙伴交换机</h2>
+  <p>送回基地：</p>${cands.length?cands.map(id=>button('ex-target-'+id,esc(unitLabel(s.units[id],id)),!ready,exTarget===id?'class="selected"':'')).join(''):'<p class="muted">无</p>'}
+  <p>随行招式机（最多${ECON.exchangeCargo}份）：</p>${held.length?held.map(x=>button('ex-cargo-'+x.i,esc(tmLine(x.t).split('：')[0]),!ready,exCargo.includes(x.i)?'class="selected"':'')).join(''):'<p class="muted">无</p>'}
   ${button('ex-confirm','确认送回',!ready||!exTarget,'data-confirm="true" class="primary"')}</div>`;
  }
  return '';
@@ -725,7 +770,7 @@ function trackRunLog(s:World):void{
  if(s.runId!==runLogId){runLogId=s.runId;runLogRows=[];runLogTotal=0;fresh=s.log;}else fresh=newLines(runLogSeen,s.log);
  runLogSeen=[...s.log];
  // Display only: the engine writes the type note on its own line after the damage line; the player reads one line ("X受到N伤害，效果绝佳"). Nothing here changes the engine log.
- const {merged,skipped}=mergeLogLines(fresh);
+ const {merged,skipped}=mergeLogLines(fresh,s.events??[]);
  for(const [i,t] of fresh.entries()){
   runLogTotal++;if(skipped.has(i))continue;
   if(hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??" "))||routine.test(t)||retiredEnemy(t))continue;
@@ -749,9 +794,9 @@ function askLearnCarry(inst:{id:string;species:string;carry:string[];learned:{mo
   const dialog=document.createElement('dialog');dialog.id='learn-carry-dialog';dialog.className='paper-window c195 c195-learn';dialog.setAttribute('aria-labelledby','learn-carry-heading');
   let chosen:string|null=null;const finish=(v:{replace:string|null}|null)=>{dialog.close();dialog.remove();resolve(v);};
   const ppOf=(m:string)=>inst.learned.find(l=>l.move===m)?.pp??0,side='friend' as const,name=speciesZh(inst.species);
-  const draw=()=>{dialog.innerHTML=`<h2 class="paper-plaque">带哪些招式</h2><header class="c195-head"><div><div class="c195-learner-types">${SPECIES[inst.species]?typeChips(SPECIES[inst.species].types??[]):''}</div><h3 id="learn-carry-heading" class="c195-title">${esc(name)}学会了${esc(moveZh(move))}，但已经带了 4 个招式</h3><p class="paper-muted">选一个携带的招式让位，或者只学会、这一趟不带。</p></div></header>
+  const draw=()=>{dialog.innerHTML=`<h2 class="paper-plaque">带哪些招式</h2><header class="c195-head"><div><div class="c195-learner-types">${SPECIES[inst.species]?typeChips(SPECIES[inst.species].types??[]):''}</div><h3 id="learn-carry-heading" class="c195-title">${esc(name)}学会了${esc(moveZh(move))}，但已经带了 4 个招式</h3></div></header>
    <div class="c195-learn-grid"><div class="c195-col"><h4>新招式</h4>${moveCard(move,ppOf(move)||learnableMoveMaxPp(inst.species,move),learnableMoveMaxPp(inst.species,move),side,{tag:'新'})}</div><div class="c195-col"><h4>现在携带的招式</h4><div class="c195-old">${inst.carry.map((m,n)=>moveCard(m,ppOf(m),ppOf(m),side,{key:n+1,selected:m===chosen,button:{id:'carry-replace-'+m,disabled:false}})).join('')}</div></div></div>
-   <footer class="c195-foot"><button type="button" id="carry-confirm" class="paper-button is-primary"${chosen?'':' disabled'}>${chosen?`让${esc(moveZh(chosen))}让位，带上${esc(moveZh(move))}`:'先选一个要让位的招式'}</button><button type="button" id="carry-only-learn" class="paper-button">只学不带</button><button type="button" id="carry-cancel" class="paper-button">取消</button></footer>`;
+   <footer class="c195-foot"><button type="button" id="carry-confirm" class="paper-button is-primary"${chosen?'':' disabled'}>${chosen?`让${esc(moveZh(chosen))}让位，带上${esc(moveZh(move))}`:'让位并带上'}</button><button type="button" id="carry-only-learn" class="paper-button">只学不带</button><button type="button" id="carry-cancel" class="paper-button">取消</button></footer>`;
    for(const m of inst.carry)(dialog.querySelector('#carry-replace-'+CSS.escape(m)) as HTMLElement).onclick=()=>{chosen=m;draw();(dialog.querySelector('#carry-confirm') as HTMLElement).focus();};
    (dialog.querySelector('#carry-confirm') as HTMLElement).onclick=()=>{if(chosen)finish({replace:chosen});};
    (dialog.querySelector('#carry-only-learn') as HTMLElement).onclick=()=>finish({replace:null});
@@ -797,7 +842,7 @@ function renderExtras(){
     if(a){const u=s.units[a];extra=u&&u.pos&&s.seen.includes(key(u.pos))?` ← ${unitLabel(u,a)}（推断）`:' ← 视野外的敌人';}}
    return `<li>${esc(text)}${esc(extra)}</li>`;});
   const stick=box.scrollTop+box.clientHeight>=box.scrollHeight-4;
-  box.innerHTML=`<span class="log-hint" aria-hidden="true">滚轮翻看 · 点击或按 L 打开完整记录</span><ol id="recent-list">${rows.join('')||'<li class="muted">还没有事件。</li>'}</ol>`;
+  box.innerHTML=`<ol id="recent-list">${rows.join('')||'<li class="muted">还没有事件。</li>'}</ol>`;
   if(stick||!box.dataset.touched)box.scrollTop=box.scrollHeight;
  }
   updateInspect();
@@ -818,6 +863,22 @@ function showMapHint(s:World,cell:Pos,e:MouseEvent|undefined){
  mapHint.textContent=name;mapHint.style.left=Math.min(innerWidth-160,e.clientX+14)+'px';mapHint.style.top=Math.max(8,e.clientY-30)+'px';mapHint.hidden=false;
 }
 function enemyAt(p:Pos):string|null{const s=live();if(!s)return null;return s.enemies.find(id=>{const u=s.units[id];return u.hp>0&&same(u.pos,p)&&s.seen.includes(key(p));})??null;}
+/** A hit or heal lands in the middle of an animation: only the HP numbers and bars change (party cards, the bottom bar, the enemy card), not a whole redraw, so the animation keeps its frame budget. */
+function patchHpDisplays():void{
+ const s=live();if(!s)return;
+ const pct=(u:Unit)=>(Math.max(0,Math.min(1,u.hp/Math.max(1,u.maxHp)))*100).toFixed(2)+'%';
+ for(const id of s.queue){
+  const u=s.units[id],card=document.getElementById('unit-card-'+id);if(!u||!card)continue;
+  const text=card.querySelector('.hud-party-hp');if(text)text.textContent=u.hp+'/'+u.maxHp;
+  const fill=card.querySelector<HTMLElement>('.hud-hp-fill');if(fill){fill.style.width=pct(u);fill.classList.toggle('is-empty',u.hp<=0);}
+ }
+ const leader=s.units[s.leader];
+ if(leader){
+  const value=document.querySelector('#hud-bottom .hud-current-hp-value');if(value)value.textContent='HP '+leader.hp+'/'+leader.maxHp;
+  const big=document.querySelector<HTMLElement>('#hud-bottom .hud-hp-track-large .hud-hp-fill');if(big){big.style.width=pct(leader);big.classList.toggle('is-empty',leader.hp<=0);}
+ }
+ if(inspectShown())updateInspect();
+}
 function updateInspect(){
  const box=$('inspect');const s=live();
  if(!s){box.innerHTML='';return;}
@@ -897,7 +958,7 @@ class BoardScene extends Phaser.Scene {
  geometry(s:World){if(s.dungeon){const d=s.dungeon,cell=dungeonCellSize(this.scale.height);return {minX:0,minY:0,cell,ox:0,oy:0,dungeon:true,w:d.width*cell,h:d.height*cell};}
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,(this.scale.width-80)/(maxX-minX+1),(this.scale.height-80)/(maxY-minY+1));return {minX,minY,cell,ox:(this.scale.width-(maxX-minX+1)*cell)/2,oy:(this.scale.height-(maxY-minY+1)*cell)/2,dungeon:false,w:this.scale.width,h:this.scale.height};}
  paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());v.zs?.forEach(z=>z.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
- this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
+ this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));return;}
  const g=this.geometry(s);const fog=g.dungeon;const nowVisible=s.dungeon?playerVisibleCells(s):null;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
  // 7.3 floor themes: boss-marked runs use the theme tiles of the floor (moss: the original stone). A missing texture falls back to the stone tile with a theme tint.
@@ -929,7 +990,7 @@ class BoardScene extends Phaser.Scene {
     if(!point.used)this.tiles.push(this.add.image(c.x,c.y,visual.texture!).setScale(g.cell*.62/32).setAlpha(!nowVisible||nowVisible.has(key(p))?1:.55).setDepth(2));
    }else{
     img(visual.icon,c,alpha,2,visual.icon==='exit'||visual.icon.startsWith('stairs')?1:.8);
-    text(c.x,c.y+g.cell*.38,visual.name,'#e4efb0',Math.max(10,Math.min(13,g.cell/6))).setAlpha(alpha).setWordWrapWidth(g.cell*1.6,true);
+    if(!visual.icon.startsWith('stairs'))text(c.x,c.y+g.cell*.38,visual.name,'#e4efb0',Math.max(10,Math.min(13,g.cell/6))).setAlpha(alpha).setWordWrapWidth(g.cell*1.6,true);
    }
   }
   if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,p.x+','+p.y,'#8fa89c',9);
@@ -967,10 +1028,10 @@ class BoardScene extends Phaser.Scene {
   if(!p||!g)return Promise.resolve();
   const center=(q:Pos)=>({x:g.ox+(q.x-g.minX+.5)*g.cell,y:g.oy+(q.y-g.minY+.5)*g.cell});
   this.lightWorld=after;let revealed=false,movingFog=false;const terrainAtStart=!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway'),seenBefore=new Set(before.seen),seenAfter=new Set(after.seen),camera=this.cameras.main,cameraX=camera.x,cameraY=camera.y;
-  const st:Stage={scene:this,views:this.views,center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;movingFog=true;this.darkness.setMovementProgress(0);this.showTerrain(after,g);this.showDarkness(after,duration);},onMovementProgress:progress=>{if(!movingFog)return;this.darkness.setMovementProgress(progress);if(progress>=1)movingFog=false;}};
+  const st:Stage={scene:this,views:this.views,onHp:(id,hp)=>{this.views.get(id)?.labels[0]?.t.setText(String(hp));hpShown?.set(id,hp);hpShownVer++;patchHpDisplays();},center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;movingFog=true;this.darkness.setMovementProgress(0);this.showTerrain(after,g);this.showDarkness(after,duration);},onMovementProgress:progress=>{if(!movingFog)return;this.darkness.setMovementProgress(progress);if(progress>=1)movingFog=false;}};
   if(!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway')){this.showTerrain(after,g);this.showDarkness(after);}
   return new Promise<void>(resolve=>{
-   let done=false;st.cancelled=()=>done;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.darkness.setMovementProgress(undefined);this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();resetCombatShake(this);camera.setPosition(cameraX,cameraY);try{this.paint(live(),true);}finally{resolve();}};
+   let done=false;st.cancelled=()=>done;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.darkness.setMovementProgress(undefined);this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();resetCombatShake(this);camera.setPosition(cameraX,cameraY);try{this.paint(store.state,true);}finally{resolve();}};
    const timer=setTimeout(finish,3000); // safety net, e.g. a hidden tab where Phaser's clock is paused
    this.skipNow=finish;
    void playEvents(st,events).then(finish,finish);

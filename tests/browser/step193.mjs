@@ -35,7 +35,7 @@ export async function step193Checks({setup,startMemory,state,ready,cell,artifact
   const learning=await state(p),pending=learning.pendingLearnMoves[0];assert.equal(pending.actor,'A');assert.equal(pending.move,row.move);
   assert.equal(learning.round,before.round+1);assert.equal(await p.locator('.c195-old .c195-move').count(),4);
   assert.equal(await p.locator('#learning-choice').isVisible(),true);assert.ok((await p.locator('#learning-heading').innerText()).includes('想学会'));
-  const panelText=await p.locator('#learning-choice').innerText();for(const label of ['威力','命中','PP','范围'])assert.ok(panelText.includes(label),'every move card shows '+label+' without hovering');
+  const panelText=await p.locator('#learning-choice').innerText();for(const label of ['威力','命中','PP'])assert.ok(panelText.includes(label),'every move card shows '+label+' without hovering');assert.ok(!panelText.includes('范围')&&!panelText.includes('相邻'),'no default-range wording on a card');
   assert.ok(panelText.includes(pending.pp+'/'+pending.pp),'the new move card shows its PP');
   assert.equal(await p.locator('#learn-confirm').isDisabled(),true,'nothing is forgotten before a card is chosen');
   const dialog=await p.locator('#learning-choice').boundingBox();assert.ok(dialog.x>=0&&dialog.x+dialog.width<=width+1);

@@ -30,16 +30,17 @@ test('M191 frozen kits: all 175 species retain the exact pre-expansion move ids 
 });
 test('M191 primary debuff hits, misses, clamps, affects a boss, and respects Protect',()=>{
   const s=world({faketears:5});s.units.E.boss=true;s.units.E.stages.spd=-2;
-  assert.equal(stageOf(cast(s,'faketears').units.E,'spd'),-3);
+  assert.equal(stageOf(cast(s,'faketears').units.E,'spd'),-4,'special defence runs to -10 now (-2 then -2 more)');
+  {const deep=world({faketears:5});deep.units.E.stages.spd=-9;assert.equal(stageOf(cast(deep,'faketears').units.E,'spd'),-10,'and is held at -10');}
   const guarded=world({faketears:5});guarded.units.E.protect=2;
   assert.equal(stageOf(cast(guarded,'faketears').units.E,'spd'),0);
   const missed=world({sandattack:5});missed.units.A.stages.acc=-3;missed.units.E.stages.acc=0;
   for(let seed=1;seed<10000;seed++)if(rngStep(seed).value>.99){missed.battleRng=seed;break;}
   const r=cast(missed,'sandattack');assert.equal(stageOf(r.units.E,'acc'),0);assert.equal(r.units.A.pp.sandattack,4);assert.ok(r.events.some(e=>e.type==='miss'));
 });
-test('M191 multi-stat self buffs use special/accuracy/evasion stages and stop at +3',()=>{
+test('M191 multi-stat self buffs use special/accuracy/evasion stages; accuracy stops at +3, the others at +10',()=>{
   const s=world({coil:4});s.units.A.stages={atk:3,def:2,acc:2};
-  const r=cast(s,'coil','A');assert.deepEqual(r.units.A.stages,{atk:3,def:3,acc:3});
+  const r=cast(s,'coil','A');assert.deepEqual(r.units.A.stages,{atk:4,def:3,acc:3});   // attack and defence go on past 3; accuracy is held at +3
   const d=cast(world({dragondance:2}),'dragondance','A');assert.equal(d.units.A.stages.atk,1);assert.equal(d.units.A.stages.spe,undefined);
   assert.equal(stageOf(cast(world({nastyplot:2}),'nastyplot','A').units.A,'spa'),2);
 });
@@ -96,6 +97,14 @@ test('M191 no useful support: existing status, capped stages and half-or-higher 
   const s=world({}, {toxic:5,leer:5,recover:5,calmmind:5});delete s.units.E.waitOnly;
   s.units.A.status={tox:{tick:2}};s.units.A.stages.def=-3;s.units.E.stages={atk:0,def:0,spa:3,spd:3};s.units.E.hp=40;
   assert.equal(play(s,wait).units.E.lastMove,null,'falls back to basic attack rather than spending support PP');
+});
+test('Violent seed raises each of attack and special attack to at least +3 and never lowers one; with both at +3 or more it is refused and kept',()=>{
+  const mk=(atk,spa)=>{const s=world({tackle:5});s.units.A.stages={atk,def:0,spa};s.prog.items.violentSeed=1;return s;};
+  const r=play(mk(6,0),{type:'use',item:'violentSeed',target:'A'});
+  assert.equal(stageOf(r.units.A,'atk'),6,'the +6 attack stays');assert.equal(stageOf(r.units.A,'spa'),3,'special attack rises to +3');assert.equal(r.prog.items.violentSeed,0);
+  const line=r.log.find(l=>l.includes('暴力种子'));assert.ok(line.includes('特攻升到+3级')&&!line.includes('攻击和'),'the log names only the stage that rose: '+line);
+  for(const [atk,spa] of [[3,3],[6,5],[10,3]]){const s=mk(atk,spa),refused=applyCommand(s,{type:'round',action:{type:'use',item:'violentSeed',target:'A'}});
+    assert.equal(refused.ok,false,`${atk}/${spa} is refused`);assert.equal(s.prog.items.violentSeed,1,'nothing is consumed');}
 });
 test('M191 violent seed maximizes both attack stages; full elixir fills every move of one adjacent ally',()=>{
   const s=world({tackle:5,protect:9});const b=friend('B',2,3,80,{tackle:5,protect:9});s.units.B=b;s.queue.push('B');

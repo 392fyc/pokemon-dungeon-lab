@@ -136,6 +136,7 @@ try{
   await runContext.addInitScript(()=>{window.__trialNoAnim=true;});const q=await runContext.newPage();
   q.on('pageerror',e=>errors.push(e.message));q.on('response',r=>{if(r.status()>=400)failed.push(r.url());});
   await q.goto(base+'?dev=1');await q.locator('#start').click();await readyOn(q);
+  await q.evaluate(()=>{window.trial.store.world.noCrit=true;});   // a critical hit would end the fixed five-round route a round early
   await q.keyboard.press('ArrowRight');await readyOn(q);
   const enemy=await q.evaluate(()=>{const s=window.trial.getState();return s.units.E.pos;});
   for(let i=0;i<2;i++)await clickCell(q,enemy);

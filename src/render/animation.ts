@@ -2,7 +2,7 @@ import {key,plus,same,SKILL_CN,type Command,type Item,type Pos,type World} from 
 import {moveOf} from '../core/moves.ts';
 import {typeEffectiveness} from '../core/type-chart.ts';
 import {SPECIES} from '../core/roster.ts';
-import {effectForMove,type EffectStyle} from './effect-spec.ts';
+import {damageNumberColor,effectForMove,type EffectStyle} from './effect-spec.ts';
 import {adjacentReachable, floorIndex, rayReachable} from './reach.ts';
 /**
  * Stage 6.4 presentation: works out what happened in one round from the two saved states and the new log lines.
@@ -17,11 +17,13 @@ export type AnimEvent =
   | {k:'move'; by:string; id:string; from:Pos; to:Pos}
   | {k:'airAttack';by:string;actor:string;from:Pos;to:Pos}
   | {k:'swap'; by:string; a:string; b:string; pa:Pos; pb:Pos}
-  | {k:'hit'; by:string; attacker:string|null; target:string; from:Pos|null; at:Pos; fx:Fx; amount:number; dead:boolean; effect?:EffectStyle; cast?:string; collision?:true;}
+  | {k:'hit'; by:string; attacker:string|null; target:string; from:Pos|null; at:Pos; fx:Fx; amount:number; dead:boolean; effect?:EffectStyle; cast?:string; collision?:true; immune?:true; /** a critical hit, from the engine's note on the line after the damage */ crit?:true; /** the colour of the damage number: the move's type colour, absent for a plain attack */ tint?:string; /** the target's HP once this hit has landed, so the interface can update it at the moment of impact */ hpAfter?:number}
   | {k:'protect'; by:string; target:string; from:Pos; at:Pos; effect?:EffectStyle}
   | {k:'blowaway'; by:string; target:string; actorAt:Pos; from:Pos; to:Pos; effect?:EffectStyle; cast?:string}
-  | {k:'heal'; by:string; target:string; item:Item; amount:number; at:Pos; actorAt:Pos; effect?:EffectStyle}
-  | {k:'effect'; by:string; from:Pos; at:Pos; target:string; effect:EffectStyle; amount?:number};
+  | {k:'heal'; by:string; target:string; item:Item; amount:number; at:Pos; actorAt:Pos; effect?:EffectStyle; hpAfter?:number}
+  | {k:'effect'; by:string; from:Pos; at:Pos; target:string; effect:EffectStyle; amount?:number; hpAfter?:number}
+  /** HP lost to a status or recoil, or regained by draining: shown (and the HP updated) when it happens, not at the end of the round. */
+  | {k:'hpchange'; by:string; target:string; at:Pos; delta:number; hpAfter:number};
 
 /** Log lines added by the last command. The log keeps only the last 80 lines, so the old and new logs may be shifted. */
 export function newLines(before:string[], after:string[]):string[] {
@@ -179,6 +181,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     enemyCursor=candidates[0].index;return {id:candidates[0].id,move:candidates[0].move};
   };
 
+  const damageEvents=(a.events??[]).filter((e):e is Extract<NonNullable<World['events']>[number],{type:'damage'}>=>e.type==='damage'),usedDamage=new Set<number>();
   const collisionVictims=new Map<string,{left:number;by:string;cast?:string}>();
   type Cast={by:string;move:string;index:number;positions:Record<string,Pos|null>;health:Record<string,number>;hit:Set<string>;/** a snore or sleep-talk answer: the engine aims it at the attacker without a range check */reaction?:boolean};
   const casts:Cast[]=[];let activeCast:Cast|null=null;
@@ -194,10 +197,6 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
 
   for (let i = 0; i < lines.length; i++) {
     const strike:string|null=pendingStrike;pendingStrike=null;
-    if(activeCast){
-      const prefix=(SKILL_CN[activeCast.move]??activeCast.move)+'对';
-      if(lines[i].startsWith(prefix)&&lines[i].includes('没有效果')){const target=ids.find(id=>lines[i].startsWith(prefix+id+'没有效果'));if(target)activeCast.hit.add(target);}
-    }
     const h = head(lines[i]);
     if (!h) continue;
     const {id, rest} = h;
@@ -213,6 +212,15 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       const answer:boolean=!!move&&(move==='snore'||!!lines[i-1]?.startsWith(id+'在睡眠中使用梦话'));
       activeCast=move?{by:id,move,index:i,positions:Object.fromEntries(Object.entries(pos).map(([id,at])=>[id,at?{...at}:null])),health:{...hp},hit:new Set(),...(answer?{reaction:true}:{})}:null;
       if(activeCast){casts.push(activeCast);castActors.add(id);used.add(id);}
+      // A target the move cannot affect (immune) is still hit by the move: the engine says so with an `immune` event, shown as a hit that does nothing (never as a miss).
+      if(activeCast&&move)for(const ev of a.events??[]){
+        if(ev.type!=='immune'||ev.actor!==id||ev.skill!==move)continue;
+        const at=pos[ev.target],from=pos[id],tUnit=a.units[ev.target]??b.units[ev.target];if(!at||!tUnit)continue;
+        activeCast.hit.add(ev.target);
+        if(tUnit.side!=='friend'&&!vis(at))continue;
+        const shown=vis(from)?from:null,effect=shown?styleFor(move,ev.target,0)??undefined:undefined;
+        emit({k:'hit',by:id,attacker:shown?id:null,target:ev.target,from:shown,at,fx:shown?fxForMove(move):null,amount:0,dead:false,immune:true,...(effect?{effect}:{})});
+      }
     }
     if(activeCast&&id===activeCast.by){
       const prefix='的'+(SKILL_CN[activeCast.move]??activeCast.move)+'没打中';
@@ -258,11 +266,16 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       // A Reviver Seed answers the same blow in the next line: the unit stays on the map at its restored HP and is not shown as fallen.
       const at = pos[id], revived = Number(m[2])===0 && lines.slice(i+1,i+3).some(l=>l.startsWith(id+'倒下的瞬间，')), dead = Number(m[2])===0 && !revived;
       const remaining=Number(m[2]),amount=remaining>0?Number(m[1]):Math.min(Number(m[1]),Math.max(0,hp[id]??0));
+      // A Reviver Seed answers the blow: the HP shown is the restored one.
+      const reviveLine=revived?lines.slice(i+1,i+3).find(l=>l.startsWith(id+'倒下的瞬间，')):undefined,hpAfter=reviveLine?Number(/HP恢复到(\d+)/.exec(reviveLine)?.[1]??remaining):remaining;
+      // The engine's damage event carries the critical flag: take the first unused one for this target and amount.
+      const damageIndex=damageEvents.findIndex((e,n)=>!usedDamage.has(n)&&e.target===id&&e.amount===Number(m![1]));if(damageIndex>=0)usedDamage.add(damageIndex);
+      const crit=damageIndex>=0&&!!damageEvents[damageIndex].crit;
       hp[id] = remaining;
       const collision=collisionVictims.get(id);
       if(collision){if(collision.left<=1)collisionVictims.delete(id);else collisionVictims.set(id,{...collision,left:collision.left-1});}
       if (at && (unit.side === 'friend' || vis(at))) {
-        if(collision){emit({k:'hit',by:collision.by,attacker:null,target:id,from:null,at,fx:null,amount,dead,collision:true,...(collision.cast?{cast:collision.cast}:{})});if(dead)pos[id]=null;continue;}
+        if(collision){emit({k:'hit',by:collision.by,attacker:null,target:id,from:null,at,fx:null,amount,dead,hpAfter,collision:true,...(collision.cast?{cast:collision.cast}:{})});if(dead)pos[id]=null;continue;}
         let attacker:string|null = null, from:Pos|null = null, fx:Fx = 'strong', by = '', move:string|null=null;
         if(reactionStack.length&&activeCast&&!claims(activeCast,id)&&claims(reactionStack[reactionStack.length-1],id))activeCast=reactionStack.pop()!;
         const cast=activeCast;
@@ -279,20 +292,22 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
         if (!by) by = unit.side === 'enemy' ? (b.queue.find(q => !used.has(q) && b.units[q].hp > 0) ?? b.queue[0]) : b.enemies[0] ?? id;
         if (unit.side === 'friend' && !by) by = id;
         const effect=attacker?styleFor(move,id,amount):null;
-        emit({k:'hit', by, attacker, target:id, from, at, fx, amount, dead, ...(effect?{effect}:{}),...(effect?.template==='blow'&&move?{cast:move}:{})});
+        emit({k:'hit', by, attacker, target:id, from, at, fx, amount, dead, hpAfter, ...(effect&&effect.move!==null?{tint:damageNumberColor(effect.type)}:{}),...(crit?{crit:true as const}:{}),...(effect?{effect}:{}),...(effect?.template==='blow'&&move?{cast:move}:{})});
       }
       if (dead) pos[id] = null;
-    } else if ((m = rest.match(/^因.+损失\d+HP，HP (\d+)$/))) {
-      hp[id]=Number(m[1]);if(hp[id]===0&&!lines.slice(i+1,i+3).some(l=>l.startsWith(id+'倒下的瞬间，')))pos[id]=null;   // a Reviver Seed answers a recoil or status death too: the unit keeps its place
+    } else if ((m = rest.match(/^因.+损失(\d+)HP，HP (\d+)$/))) {
+      if(pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:-Number(m[1]),hpAfter:Number(m[2])});
+      hp[id]=Number(m[2]);if(hp[id]===0&&!lines.slice(i+1,i+3).some(l=>l.startsWith(id+'倒下的瞬间，')))pos[id]=null;   // a Reviver Seed answers a recoil or status death too: the unit keeps its place
     } else if ((m = rest.match(/^倒下的瞬间，.+发动，HP恢复到(\d+)$/))) {
       hp[id]=Number(m[1]);
     } else if ((m = rest.match(/^(?:回复HP|吸取生命，HP) (\d+)→(\d+)$/))) {
+      if(rest.startsWith('吸取生命')&&pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:Number(m[2])-Number(m[1]),hpAfter:Number(m[2])});
       hp[id]=Number(m[2]);
     } else if ((m = rest.match(/^对(.+?)使用(橙橙果|PP多项小补剂)，(?:HP (\d+)→(\d+)|每招PP\+(\d+))/))) {
       const t = head(`${m[1]}。`)?.id ?? null, item:Item = m[2] === '橙橙果' ? 'berry' : 'tonic';
       const at = t ? pos[t] : null, actorAt = pos[id];
       if(t&&item==='berry')hp[t]=Number(m[4]);
-      if (t && at && actorAt) emit({k:'heal', by:id, target:t, item, amount:item === 'berry' ? Number(m[4]) - Number(m[3]) : Number(m[5]), at, actorAt});
+      if (t && at && actorAt) emit({k:'heal', by:id, target:t, item, amount:item === 'berry' ? Number(m[4]) - Number(m[3]) : Number(m[5]), at, actorAt, ...(item==='berry'?{hpAfter:Number(m[4])}:{})});
     }
   }
 
@@ -328,12 +343,12 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
         const quick=spec.effects.includes('quickguard')&&castLines.some(line=>line.startsWith(id+'为')&&line.includes('开启快速防守'))&&a.quickguard?.units.includes(target);
         if(!direct&&!quick)return [];
       }else return [];
-      return [{target,at,amount}];
+      return [{target,at,amount,...(baseStyle.template==='heal'?{hpAfter:Number(targetRows.map(line=>line.match(/^回复HP (\d+)→(\d+)$/)).find(Boolean)![2])}:{})}];
     });
     if(!changed.length)continue;
     for(const choice of changed){
       const effect=styleFor(move,choice.target);if(!effect)continue;
-      const event:AnimEvent={k:'effect',by:id,from,at:choice.at,target:choice.target,effect,...(choice.amount!==undefined?{amount:choice.amount}:{})};
+      const event:AnimEvent={k:'effect',by:id,from,at:choice.at,target:choice.target,effect,...(choice.amount!==undefined?{amount:choice.amount}:{}),...(choice.hpAfter!==undefined?{hpAfter:choice.hpAfter}:{})};
       const index=events.findIndex(existing=>order(existing.by)>order(id));
       if(index<0)events.push(event);else events.splice(index,0,event);
     }
@@ -345,7 +360,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
 }
 
 /** Base duration of each step in ms; the whole round is scaled down together if it would exceed the cap. */
-export const BASE_MS:Record<AnimEvent['k'], number> = {airAttack:260, move:180, swap:200, hit:320, protect:240, blowaway:220, heal:260, effect:320};
+export const BASE_MS:Record<AnimEvent['k'], number> = {airAttack:260, move:180, swap:200, hit:320, protect:240, blowaway:220, heal:260, effect:320, hpchange:240};
 export const ROUND_CAP_MS = 1500;
 /** Below this speed-up the round is not played at all, which keeps pathological rounds from being unreadably fast. */
 export const MIN_SCALE = 0.3;

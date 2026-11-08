@@ -61,10 +61,12 @@ export async function fx194Checks({setup,startMemory,ready,state,cell,artifact})
    const hitAt=HIT_SHOT[template]??240;
    while(elapsed<hitAt){await p.clock.runFor(10);elapsed+=10;if(heavy&&await p.evaluate(()=>{const c=window.trial.view().cameraPosition;return c.x!==0||c.y!==0;}))shifted=true;}
    await p.screenshot({path:artifact+'fx194-'+template+'-'+move+'-impact.png'});
-   while(elapsed<560){await p.clock.runFor(10);elapsed+=10;if(heavy&&await p.evaluate(()=>{const c=window.trial.view().cameraPosition;return c.x!==0||c.y!==0;}))shifted=true;}
+   // A poison or burn tick at the end of the round is its own short step now (the HP moves when it happens), so the round may last one such step longer.
+   const tick=(await state(p)).log.some(line=>/因.+损失\d+HP/.test(line)),limit=tick?830:560;
+   while(elapsed<limit){await p.clock.runFor(10);elapsed+=10;if(heavy&&await p.evaluate(()=>{const c=window.trial.view().cameraPosition;return c.x!==0||c.y!==0;}))shifted=true;}
    if(heavy)assert.equal(shifted,true,move+' is super effective, so the main camera shakes');
    assert.deepEqual(await p.evaluate(()=>window.trial.view().cameraPosition),{x:0,y:0},'the camera is back in place after '+move);
-   assert.equal(await p.evaluate(()=>window.trial.animating()),false,move+' completes within the 500ms budget plus one render frame');
+   assert.equal(await p.evaluate(()=>window.trial.animating()),false,move+' completes within the 500ms budget plus one render frame'+(tick?' and the 240ms status-damage step':''));
    await p.clock.resume();
    await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:5000});await ready(p);
    const after=await state(p),finished=await p.evaluate(()=>window.trial.view());

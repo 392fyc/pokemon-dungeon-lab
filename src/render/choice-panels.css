@@ -221,7 +221,6 @@ body.dungeon-mode #context-actions .shop-row.is-sold { opacity: .4; }
 .shop-detail-head small { display: block; font-size: 13px; color: var(--paper-muted); }
 .shop-detail .shop-detail-text { min-height: 60px; line-height: 1.5; }
 .shop-note { font-size: 12px !important; }
-.service-reopen { position: fixed; left: 50%; bottom: 252px; transform: translateX(-50%); z-index: 36; padding: 8px 18px; border: 2px solid #e8d48a; border-radius: 8px; background: rgba(12, 18, 15, .94); color: #fff1b8; font: 700 15px sans-serif; cursor: pointer; }
 @media (max-width: 700px), (max-height: 560px) {
   body.dungeon-mode #context-actions:has(.service) { padding: 20px 12px 10px; }
   .shop-body { grid-template-columns: minmax(0, 1fr) 190px; }
@@ -239,3 +238,31 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
 .hud-quick-slot.drop-ok, .hud-quick-slot.drop-hover { position: relative; z-index: 60; }
 .drag-ghost { box-shadow: 0 10px 22px rgba(0, 0, 0, .45); border-radius: 6px; }
 body.dungeon-mode #context-actions:has(.service) .service h2.paper-plaque { color: #fff4d8; font: 900 22px/1.3 var(--ui-body); }
+
+/* Playtest round 4: notice-board panels (commission offer, challenge, item and blessing rooms): labelled rows, tags, no sentences. */
+.notice-body { display: grid; gap: 10px; margin: 12px 0 8px; }
+.notice-row { display: grid; grid-template-columns: 118px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 30px; }
+.notice-k { color: var(--paper-wood-dark, #6b4a28); font-size: 14px; font-weight: 900; letter-spacing: 2px; }
+.notice-v { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--paper-ink, #2a1c14); font-size: 17px; font-weight: 800; }
+.notice-tag { padding: 1px 10px; background: var(--paper-2, #e8dab4); box-shadow: 0 0 0 2px var(--paper-ink, #2a1c14); color: var(--paper-ink, #2a1c14); font-size: 14px; font-weight: 800; }
+.notice-tag.is-bad { background: #c2491f; color: #fff; }
+.notice-tag.is-good { background: #3f8f3a; color: #fff; }
+.notice-icon { display: inline-block; width: 22px; height: 22px; background: #d9a63a; box-shadow: 0 0 0 2px var(--paper-ink, #2a1c14); clip-path: polygon(50% 0, 62% 36%, 100% 38%, 70% 60%, 80% 100%, 50% 76%, 20% 100%, 30% 60%, 0 38%, 38% 36%); }
+.notice-icon-img { width: 28px; height: 28px; image-rendering: pixelated; }
+.notice-actions { display: flex; gap: 10px; margin-top: 10px; }
+.c195-notice { width: min(440px, calc(100vw - 32px)); }
+
+.notice-cards { display: flex; gap: 10px; width: 100%; }
+.notice-card { display: grid; flex: 1 1 0; align-content: start; gap: 6px; min-height: 96px; padding: 10px; text-align: left; }
+.notice-card strong { font-size: 17px; color: var(--paper-ink, #2a1c14); }
+.notice-card span { font-size: 13px; font-weight: 600; color: var(--paper-muted, #6d5a44); }
+.c195-notice:has(.notice-cards) { width: min(640px, calc(100vw - 32px)); }
+.notice-row.is-bare { grid-template-columns: minmax(0, 1fr); }
+
+/* The stairs prompt: one question and two buttons. */
+.c195-stairs { width: min(380px, calc(100vw - 32px)); padding-bottom: 14px; }
+.stairs-ask { margin: 26px 12px 16px; text-align: center; font-size: 21px; font-weight: 900; color: var(--paper-ink, #2a1c14); }
+.c195-stairs .c195-foot { display: flex; justify-content: center; gap: 12px; }
+
+/* Every pop-up sits in the middle of the screen: panels inside #flow (stairs, exit, commission, blessing, invitation, learn) are centred in it, whatever their own width. */
+body.dungeon-mode #flow:has(.c195) > .c195 { margin-left: auto; margin-right: auto; }

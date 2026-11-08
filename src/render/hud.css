@@ -870,8 +870,10 @@ body.dungeon-mode .hud-bag-open {
 
 body.dungeon-mode .hud-bag-button-wrap {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 }
 
 body.dungeon-mode #hud-tooltip {
@@ -1868,15 +1870,35 @@ body.dungeon-mode #flow #blessing-choice .button-row {
 }
 
 #log-dialog #log-close {
+  position: relative;
+  flex: none;
   width: 30px;
   height: 30px;
+  padding: 0;
   border: 1px solid rgba(125, 143, 127, 0.7);
   border-radius: 6px;
   background: rgba(26, 38, 30, 0.9);
-  color: #f2eee0;
-  font: 700 18px/1 sans-serif;
+  color: transparent;
+  font-size: 0;
   cursor: pointer;
 }
+/* The cross is drawn with two bars, so it sits exactly in the middle of the square whatever the font does. */
+#log-dialog #log-close::before,
+#log-dialog #log-close::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 2px;
+  margin: -1px 0 0 -7px;
+  background: #f2eee0;
+  transform: rotate(45deg);
+}
+#log-dialog #log-close::after { transform: rotate(-45deg); }
+#log-dialog #log-close:hover { border-color: #e8d48a; }
+#log-dialog .log-head { flex: none; min-height: 30px; padding: 14px 16px 12px 18px; }
+#log-dialog h2 { line-height: 30px; }
 
 #log-dialog #log-list {
   margin: 0;
@@ -1957,3 +1979,16 @@ body.dungeon-mode .hud-target-arrow { position: absolute; top: 50%; right: -26px
 body.dungeon-mode .hud-target-key { position: absolute; top: 4px; right: 6px; padding: 0 5px; border-radius: 4px; background: #ffd45a; color: #2a1c14; font: 700 12px/16px sans-serif; pointer-events: none; }
 @keyframes hud-target-nudge { from { right: -26px; } to { right: -20px; } }
 @media (prefers-reduced-motion: reduce) { body.dungeon-mode .hud-target-arrow { animation: none; } }
+
+/* Thin scrollbars in the panel colours for the log box and the record window (no system grey bar). */
+#log-dialog #log-list,
+body.dungeon-mode #dungeon-hud #recent-events {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 212, 138, 0.55) transparent;
+}
+#log-dialog #log-list::-webkit-scrollbar,
+body.dungeon-mode #dungeon-hud #recent-events::-webkit-scrollbar { width: 6px; }
+#log-dialog #log-list::-webkit-scrollbar-track,
+body.dungeon-mode #dungeon-hud #recent-events::-webkit-scrollbar-track { background: transparent; }
+#log-dialog #log-list::-webkit-scrollbar-thumb,
+body.dungeon-mode #dungeon-hud #recent-events::-webkit-scrollbar-thumb { background: rgba(232, 212, 138, 0.55); border-radius: 3px; }

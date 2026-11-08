@@ -8,7 +8,7 @@ import {moveCategory,moveOf} from '../core/moves.ts';
 import {portrait} from '../ui/title.ts';
 import {standingSprite,starterStandee} from '../ui/title-shell.ts';
 import {sheet} from './sprites.ts';
-import {starterMoveFields} from './hud.ts';
+import {starterMoveFields,moveFactPairs} from './hud.ts';
 import {TYPE_COLORS} from './item-icons.ts';
 import './camp.css';
 
@@ -177,7 +177,7 @@ export function campParty194(profile:Profile,ready:boolean,selectedId:string):st
   const rosterGrid=roster+Array(Math.max(0,21-profile.roster.length)).fill('<div class="camp194-roster-placeholder" aria-hidden="true"></div>').join('');
   if(!selected){
     return '<div class="camp194-party"><div class="camp194-greeting">'+memberMarkup('chansey','camp194-greeting-portrait')+
-      '<p>大家都在这里休息。要带谁出发呢？</p></div><p class="camp194-empty">档案中没有伙伴。</p></div>';
+      '<p>大家都在这里休息。要带谁出发呢？</p></div><p class="camp194-empty">无</p></div>';
   }
   const inTeam=profile.team.includes(selected.id),leader=profile.leader===selected.id;
   const carry=selected.carry.map(move=>{
@@ -279,9 +279,8 @@ function moveDetail(profile:Profile,move:string,state:VaultState,ready:boolean):
     '<header class="camp194-vault-title"><h3>'+escape(moveZh(move))+'</h3><span class="paper-type" style="background:'+typeColor(fields.type)+'">'+escape(typeZh(fields.type))+'</span><span class="camp194-category">'+escape(fields.category)+'</span></header>'+
     '<div class="camp194-move-facts"><div class="camp194-scope">'+fields.scope+'</div><dl>'+
       '<div><dt>属性</dt><dd>'+escape(typeZh(fields.type))+'</dd></div><div><dt>分类</dt><dd>'+escape(fields.category)+'</dd></div>'+
-      '<div><dt>威力</dt><dd>'+escape(fields.power)+'</dd></div><div><dt>命中</dt><dd>'+escape(fields.accuracy)+'</dd></div>'+
-      '<div><dt>PP上限</dt><dd>'+(maximum??'—')+'</dd></div><div><dt>射程</dt><dd>'+escape(fields.range)+'</dd></div>'+
-      '<div><dt>范围</dt><dd>'+escape(fields.target)+'</dd></div></dl></div>'+
+      moveFactPairs(fields,undefined).map(([k,v])=>'<div><dt>'+k+'</dt><dd>'+escape(v)+'</dd></div>').join('')+
+      '<div><dt>PP上限</dt><dd>'+(maximum??'—')+'</dd></div></dl></div>'+
     '<p class="camp194-move-description">'+escape(fields.description||'没有招式说明。')+'</p>'+
     '<section class="camp194-learners" aria-label="学习对象"><div class="camp194-section-heading"><h3>学习对象</h3><span>库存 ×'+stock+'</span></div>'+
       '<div class="camp194-learner-list" id="camp-vault-learners" data-camp-scroll>'+vaultLearningChoices(profile,move,state.learner)+'</div></section>'+
@@ -290,12 +289,11 @@ function moveDetail(profile:Profile,move:string,state:VaultState,ready:boolean):
   '</section>';
 }
 function shardDetail(profile:Profile,shard:string|null):string {
-  if(!shard)return '<section class="camp194-vault-detail"><p class="camp194-empty">目前没有伙伴碎片。</p></section>';
+  if(!shard)return '<section class="camp194-vault-detail"><p class="camp194-empty">无</p></section>';
   const count=profile.shards[shard]??0;
   return '<section class="camp194-vault-detail" aria-label="'+escape(speciesZh(shard))+'碎片详情">'+
     '<header class="camp194-vault-title">'+memberMarkup(shard,'camp194-shard-detail-portrait')+'<h3>'+escape(speciesZh(shard))+'碎片</h3></header>'+
     '<dl class="camp194-shard-facts"><div><dt>持有</dt><dd>×'+count+'</dd></div><div><dt>来源</dt><dd>重复招募已有伙伴</dd></div></dl>'+
-    '<p class="camp194-move-description">伙伴碎片目前只记录数量。</p>'+
   '</section>';
 }
 export function campVault194(profile:Profile,ready:boolean,state:VaultState):string {
@@ -306,9 +304,9 @@ export function campVault194(profile:Profile,ready:boolean,state:VaultState):str
     return '<button type="button" id="camp-vault-filter-'+escape(value)+'" class="camp194-filter-chip" data-vault-filter="'+escape(value)+'" aria-pressed="'+(view.filter===value?'true':'false')+'"'+color+'>'+escape(name)+'</button>';
   }).join('');
   const types=filteredMoves(view.by,view.filter);
-  const tmList=types.length?types.map(move=>vaultMoveTile(profile,move,view.move===move)).join(''):'<p class="camp194-empty">没有符合条件的招式机。</p>';
-  const shardList=shards.length?shards.map(([species,count])=>shardTile(species,count,view.shard===species)).join(''):'<p class="camp194-empty">目前没有伙伴碎片。</p>';
-  const detail=view.tab==='tm'&&view.move?moveDetail(profile,view.move,view,ready):view.tab==='shards'?shardDetail(profile,view.shard):'<section class="camp194-vault-detail"><p class="camp194-empty">没有可显示的招式机。</p></section>';
+  const tmList=types.length?types.map(move=>vaultMoveTile(profile,move,view.move===move)).join(''):'<p class="camp194-empty">无</p>';
+  const shardList=shards.length?shards.map(([species,count])=>shardTile(species,count,view.shard===species)).join(''):'<p class="camp194-empty">无</p>';
+  const detail=view.tab==='tm'&&view.move?moveDetail(profile,view.move,view,ready):view.tab==='shards'?shardDetail(profile,view.shard):'<section class="camp194-vault-detail"><p class="camp194-empty">无</p></section>';
   return '<div class="camp194-vault">'+
     '<div class="camp194-vault-left">'+
       '<div class="camp194-greeting">'+memberMarkup('snorlax','camp194-greeting-portrait')+'<p>……呼噜……带回来的东西都放好了……</p></div>'+
@@ -350,7 +348,7 @@ function recordLoot(report:CampReport):string {
     ...shards.map(item=>'<li class="camp194-loot-tile">'+memberMarkup(item.species,'camp194-loot-portrait')+'<strong>'+escape(speciesZh(item.species))+'碎片 ×'+item.count+'</strong></li>'),
     ...tms.map(item=>'<li class="camp194-loot-tile'+(item.fate==='lost'?' is-lost':'')+'"><span class="camp194-tm-disc" aria-hidden="true" style="--tm-color:'+typeColor(moveFields(item.move).type)+'"></span><strong>'+escape(moveZh(item.move))+'招式机</strong><span>'+(item.fate==='lost'?'本局丢失':'带回营地')+'</span></li>'),
   ];
-  return rows.length?rows.join(''):'<li class="camp194-record-empty">本局没有带回新伙伴、碎片或招式机。</li>';
+  return rows.length?rows.join(''):'<li class="camp194-record-empty">无</li>';
 }
 export function campRecords194(profile:Profile,report:CampReport):string {
   const shardCount=shardsOf(profile).reduce((sum,row)=>sum+row[1],0);
@@ -392,7 +390,7 @@ export function campDeparture194(profile:Profile,ready:boolean,difficultyMarkup:
     '<div class="camp194-departure-shell">'+
       '<h2 id="camp-departure-heading" class="camp194-plaque">出发</h2>'+
       '<button type="button" id="depart-cancel" class="camp194-close" aria-label="取消出发">×</button>'+
-            '<section class="camp194-depart-team" aria-label="出发阵容">'+(team||'<p class="camp194-empty">当前没有可出发的伙伴。</p>')+'</section>'+
+            '<section class="camp194-depart-team" aria-label="出发阵容">'+(team||'<p class="camp194-empty">无</p>')+'</section>'+
       '<section class="camp194-depart-difficulty" aria-label="远征难度"><h3>远征难度</h3>'+difficultyMarkup+'</section>'+
       '<button type="button" id="depart-confirm" class="camp194-depart-confirm" '+(ready?'':'disabled')+'>进入迷宫</button>'+feedback+
     '</div>'+
@@ -409,7 +407,7 @@ export function campMoveTooltip194(move:string,pp?:number):string {
   return '<section class="camp194-move-tip" aria-label="'+escape(moveZh(move))+'招式信息" style="--camp-move-color:'+typeColor(fields.type)+'">'+
     '<div class="camp194-tip-top">'+fields.scope+
       '<div class="camp194-tip-info"><header><strong>'+escape(moveZh(move))+'</strong><span class="paper-type" style="background:'+typeColor(fields.type)+'">'+escape(typeZh(fields.type))+'</span><span class="camp194-category">'+escape(fields.category)+'</span></header>'+
-        '<dl><div><dt>威力</dt><dd>'+escape(fields.power)+'</dd></div><div><dt>命中</dt><dd>'+escape(fields.accuracy)+'</dd></div><div><dt>PP上限</dt><dd>'+maximum+'</dd></div><div><dt>射程</dt><dd>'+escape(fields.range)+'</dd></div><div><dt>范围</dt><dd>'+escape(fields.target)+'</dd></div></dl>'+
+        '<dl>'+moveFactPairs(fields,undefined).map(([k,v])=>'<div><dt>'+k+'</dt><dd>'+escape(v)+'</dd></div>').join('')+'<div><dt>PP上限</dt><dd>'+maximum+'</dd></div></dl>'+
         '<p>'+escape(description)+'</p></div>'+
     '</div>'+
   '</section>';

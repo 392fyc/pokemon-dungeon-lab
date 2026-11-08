@@ -41,9 +41,12 @@ for(const [w,h] of [[1280,720],[900,520]]){
  await p.locator('[data-bag-slot="0"]').click();await p.locator('#bag-pin').click();
  await p.locator('[data-bag-item="reviverSeed"]').click();assert.equal(await p.locator('#bag-use').count(),0,'the Reviver Seed has no manual use');
  await p.screenshot({path:out+`bag-icons-${w}x${h}.png`});
+ await p.waitForFunction(()=>[...document.images].every(i=>i.complete),null,{timeout:5000});
+ {const imgs=await p.evaluate(()=>({bag:[...document.querySelectorAll('.c195-bag img')].map(i=>i.naturalWidth),quick:[...document.querySelectorAll('.hud-quick-slot img')].map(i=>i.naturalWidth),all:[...document.images].map(i=>[i.src,i.naturalWidth])}));
+  assert.ok(imgs.bag.length>=1&&imgs.bag.every(w=>w>0),'every backpack icon loaded: '+JSON.stringify(imgs.bag));assert.ok(imgs.quick.length>=1&&imgs.quick.every(w=>w>0),'every quick-slot icon loaded');
+  assert.deepEqual(imgs.all.filter(([,w])=>w===0),[],'no broken image anywhere on the page');}
  await p.locator('#bag-close').click();
  assert.ok(await p.locator('.hud-quick-slot .hud-quick-icon').count()>=1,'the bottom quick bar shows the icon');
- const broken=await p.evaluate(()=>[...document.images].filter(i=>i.complete&&i.naturalWidth===0).map(i=>i.src));assert.deepEqual(broken,[]);
  const view=await p.evaluate(()=>window.trial.view());assert.ok(view.tiles.includes('room-challenge')&&view.tiles.includes('room-treasure')&&view.tiles.includes('room-commission')&&view.tiles.includes('room-blessing')&&view.tiles.includes('room-shop')&&view.tiles.includes('item2-orb-slumber'),'room props and drop icons are drawn: '+view.tiles.join());
  // Playtest round 2 #10: a picked-up drop leaves no ghost; a seen drop that is out of sight right now is dimmer
  await p.evaluate(()=>{
@@ -64,10 +67,9 @@ for(const [w,h] of [[1280,720],[900,520]]){
  // PR 214 B3: an orb has one use button and targets its user; a refused orb is not spent; the Reviver Seed cannot be pinned or used
  await p.locator('#bag-open').click();await p.waitForSelector('.c195-bag');
  await p.locator('[data-bag-item="reviverSeed"]').click();assert.equal(await p.locator('#bag-pin').count(),0,'no pin button for the Reviver Seed');assert.equal(await p.locator('#bag-use').count(),0);
- await p.locator('[data-bag-item="slumberOrb"]').click();await p.locator('#bag-use').click();
- assert.equal(await p.locator('#item-use-slumberOrb').count(),1,'one use button');assert.equal(await p.locator('#hud-item-targets [data-hud-item-target]').count(),1,'no list of party members to pick from');
  const roundBefore=await p.evaluate(()=>window.trial.getState().round);
- await p.locator('#item-use-slumberOrb').click();await p.waitForTimeout(300);
+ await p.locator('[data-bag-item="slumberOrb"]').click();await p.locator('#bag-use').click();await p.waitForTimeout(300);   // an orb acts at once: no confirm button, no list of party members
+ assert.equal(await p.locator('#item-use-slumberOrb').count(),0,'no second confirmation button');assert.equal(await p.locator('#hud-item-targets [data-hud-item-target]').count(),0);
  const after=await p.evaluate(()=>({round:window.trial.getState().round,orbs:window.trial.getState().prog.items.slumberOrb,msg:document.getElementById('message').textContent}));
  assert.equal(after.round,roundBefore,'a refused orb does not take the round');assert.equal(after.orbs,2,'and is not spent');assert.match(after.msg,/没有.*敌人|不会有效果/);
  // PR 214 B1: after a Luminous Orb the small map and the canvas still hide unexplored enemies and points

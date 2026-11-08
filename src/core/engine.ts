@@ -132,6 +132,8 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   talents?:ExpeditionTalents;completedCommissions?:number;
   /** 8.8 (#165): state of the separate battle random stream (hits, secondary effects, status durations, confusion). Derived from the dungeon seed on first use; never saved. */
   battleRng?:number;
+  /** Test fixtures that need exact damage numbers set this to switch critical hits off; real runs never do. */
+  noCrit?:boolean;
   /** Luminous Orb: the whole floor's terrain is drawn (not units); cleared on every floor change. */
   mapRevealed?:boolean;
   /** 8.8 (#165): latest round events (misses, air swings, status changes, status damage, pickups) for the interface; reset by each round command. */
@@ -142,6 +144,10 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   purse?:number;tms?:TmItem[];shop?:Shop;exchange?:Exchange};
 export type RoundEvent=
   |{type:'miss';actor:string;target:string;skill:string|null}
+  /** The move reached the target but cannot affect it (type immunity and the like): shown as a hit that does nothing, never as a miss. */
+  |{type:'immune';actor:string;target:string;skill:string}
+  /** One per damage line written for a hit: who was hit, for how much, and whether it was a critical hit. The log lines and the animation read `crit` from here. */
+  |{type:'damage';actor:string;target:string;amount:number;crit?:true}
   |{type:'airAttack';actor:string;from:Pos;to:Pos}
   |{type:'status';target:string;status:StatusId;change:'apply'|'refresh'|'cure'|'expire'|'unchanged'}
   |{type:'statusDamage';target:string;status:'psn'|'tox'|'brn';amount:number}
@@ -598,7 +604,7 @@ function onRoomEntry(s:World,from:Pos,to:Pos):void {
 function applyBlessing(s:World,id:BlessingId):void {
   const def=BLESSINGS[id];(s.blessings??=[]).push(id);
   if(def.effect==='battleSpirit')for(const member of s.queue)if(alive(s.units[member]))changeStage(s,member,'atk',def.attackStage??1);
-  note(s,`获得祝福：${def.name}。${def.description}`);
+  note(s,`获得祝福：${def.name}`);
   if(def.effect==='tmChoice'){if(addPendingTmChoice(s,'blessing',s.dungeon?.level??null,'blessing'))note(s,`${def.name}：立即从${def.choiceCount??3}张招式机里选一张`);else note(s,`${def.name}：没有可选的招式机`);}
 }
 function updateLevelsAfterCommissionReward(s:World):boolean {
@@ -949,7 +955,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
     if(id!==s.leader||!point)return '主控必须站在交互点';
     if(point.kind==='down'||point.kind==='up'){
       if(a.exit&&s.dungeon?.roguelike&&point.kind==='up')return '本局只能向下跨层';
-      return a.exit?null:'楼梯只能请求跨层，不能取得';
+      return a.exit?null:'楼梯上只能前进，不能取得';
     }
     if(s.dungeon?.roguelike&&a.exit){
       if(point.kind==='goal')return '目标G不是撤离点';
@@ -990,7 +996,7 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
       const w=s.units[a.target];
       if(!alive(w)||w.side!=='friend'||!s.queue.includes(w.id))return '物品只能对存活同行使用';
       if(w.id!==id&&!adjacent(s,u.pos,w.pos))return '物品只能对自己或相邻同行使用';
-      return stageOf(w,'atk')>=3&&stageOf(w,'spa')>=3?'攻击和特攻阶段已满，暴力种子不会有效果':null;
+      return stageOf(w,'atk')>=3&&stageOf(w,'spa')>=3?'攻击和特攻已在+3以上，暴力种子不会有效果':null;
     }
     const cures=ITEM_CURES[a.item];
     if(cures){
@@ -1068,12 +1074,12 @@ function berryHealAmount(s:World,t:Unit):number {
   raw+=s.talents?.supplies??0;return activeCommission(s,'guardian')?Math.floor(raw/2):raw;
 }
 /** Applies HP loss and returns the HP actually lost. `cause` marks status damage (poison, burn), which has its own log line and does not wake a sleeper. A frozen unit takes no damage at all (8.8). */
-function hit(s:World,id:string,n:number,cause?:string,afterDamage?:(actual:number)=>void):number {
+function hit(s:World,id:string,n:number,cause?:string,afterDamage?:(actual:number,shown:number)=>void):number {
   const u=s.units[id],before=u.hp;
   if(n>0&&hasStatus(u,'frz')){note(s,`${id}冰冻中，不受伤害`);return 0;}
   if(n>0&&!cause&&u.side==='friend'&&s.queue.includes(id)&&hasBless(s,'thickskin')&&!u.thickUsed){u.thickUsed=true;const halved=Math.max(1,Math.floor(n/2));note(s,`厚皮：${id}本层第一次受到的伤害减半（${n}→${halved}）`);n=halved;}
   u.hp=Math.max(0,u.hp-n);const actual=before-u.hp;note(s,cause?`${id}因${cause}损失${n}HP，HP ${u.hp}`:`${id}受到${n}伤害，HP ${u.hp}`);
-  afterDamage?.(actual);
+  afterDamage?.(actual,n);   // `n` is the number in the log line (after Thick Skin halving), so the event and the line pair up
   if(!cause&&u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
   if(before>0&&u.hp===0&&u.side==='friend'&&s.prog&&s.queue.includes(id)&&(s.prog.items.reviverSeed??0)>0){
     s.prog.items.reviverSeed=(s.prog.items.reviverSeed??0)-1;u.hp=Math.max(1,Math.floor(u.maxHp/2));
@@ -1103,33 +1109,46 @@ function basicCategory(u:Unit):'Physical'|'Special' {
   return b&&b.spa>b.atk?'Special':'Physical';
 }
 /** G5.3 step 2: attacker's current ability value divided by the defender's, kept inside this range. */
+/** Critical hits (main-series values, working numbers): 1 in 24 per target, damage x1.5. */
+export const CRIT_CHANCE=1/24,CRIT_MULTIPLIER=1.5;
 export const STAT_DAMAGE_RATIO=Object.freeze({min:0.5,max:2} as const);
-/** The ability stage the damage rule really uses for one stat: attack stages as they are; defence stages minus the hunter commission's penalty on the player's side, kept in ±3. */
+/** Ability stages of attack, special attack, defence and special defence run -10...+10 (Mystery Dungeon, Bulbapedia "Stat (Mystery Dungeon)"); accuracy and evasion keep their own -3...+3 rule. */
+export const STAGE_LIMIT=10;
+/** Stage multipliers in 256ths, index = stage + 10. Attack and special attack (attacker side), defence and special defence (defender side: the defence value is multiplied, so damage is divided). */
+const ATTACK_STAGE_256=[128,133,138,143,148,153,161,171,179,204,256,307,332,358,384,409,422,435,448,460,473] as const;
+const DEFENCE_STAGE_256=[7,12,25,38,51,64,76,102,128,179,256,332,409,486,537,588,640,691,742,793,844] as const;
+const clampStage=(n:number)=>Math.max(-STAGE_LIMIT,Math.min(STAGE_LIMIT,Math.round(n)));
+export const attackStageMultiplier=(stage:number):number=>ATTACK_STAGE_256[clampStage(stage)+STAGE_LIMIT]/256;
+export const defenceStageMultiplier=(stage:number):number=>DEFENCE_STAGE_256[clampStage(stage)+STAGE_LIMIT]/256;
+/** The ability stage the damage rule really uses for one stat: the stored stage, minus the hunter commission's penalty on the defence of the player's side, kept in -10...+10. */
 export function damageStage(s:World,u:Unit,key:'atk'|'def'|'spa'|'spd'):number {
-  if(key==='atk'||key==='spa')return stageOf(u,key);
+  if(key==='atk'||key==='spa')return clampStage(stageOf(u,key));
   const penalty=u.side==='friend'&&activeCommission(s,'hunter')?1:0;
-  return Math.max(-3,Math.min(3,stageOf(u,key)-penalty));
+  return clampStage(stageOf(u,key)-penalty);
 }
 /** Shared, side-effect-free damage calculation. An absent target represents an ordinary opposing ratio-1 target. The ratio uses the units' current ability values (stats.ts), clamped to 0.5-2. */
-function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>,thaw=false,skill?:Skill):number {
+function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:number,category:'Physical'|'Special'|'Status',quickguard:ReadonlySet<string>,thaw=false,skill?:Skill,crit=false):number {
   const attackStats=currentStats(source),defenceStats=target?currentStats(target):null;
   const ratio=attackStats&&defenceStats&&category!=='Status'
     ?Math.max(STAT_DAMAGE_RATIO.min,Math.min(STAT_DAMAGE_RATIO.max,category==='Special'?attackStats.spa/defenceStats.spd:attackStats.atk/defenceStats.def)):1;
-  const afterSpeciesRatio=Math.max(1,Math.round(baseDamage*ratio));
+  const special=category==='Special';
+  // Stages sit outside the 0.5-2 clamp, so a boost is never eaten by it. A critical hit counts a negative attack stage and a positive defence stage as 0.
+  const attackStage=category==='Status'?0:damageStage(s,source,special?'spa':'atk'),defenceStageRaw=target&&category!=='Status'?damageStage(s,target,special?'spd':'def'):0;
+  const stageFactor=attackStageMultiplier(crit?Math.max(0,attackStage):attackStage)/defenceStageMultiplier(crit?Math.min(0,defenceStageRaw):defenceStageRaw);
+  const afterSpeciesRatio=Math.max(1,Math.round(baseDamage*ratio*stageFactor));
   const offense=source.side==='friend'&&(!target||target.side==='enemy')&&category!=='Status'?3*(s.talents?.offense??0):0;
   const scaled=Math.max(1,applyTalentBonus(afterSpeciesRatio,offense));
   const opposing=!!target&&source.side!==target.side;
   const attackDistance=source.pos&&target?.pos?chebyshev(source.pos,target.pos):0;
   const base=source.side==='enemy'?Math.max(1,Math.round(scaled*DIFFICULTY[s.difficulty??'normal'])):scaled;
-  const special=category==='Special';
-  const raw=base+damageStage(s,source,special?'spa':'atk');
-  const defenceStage=target?damageStage(s,target,special?'spd':'def'):0;
-  let amount=raw<=0?0:Math.max(0,raw-defenceStage);
+  const raw=base;   // the stage step is inside the ratio line above; there is no flat +-1 per stage any more
+  let amount=raw<=0?0:raw;
   if(opposing&&amount>0){
-    if(category==='Physical'&&(target!.reflect??0)>0)amount=Math.floor(amount/2);
-    if(category==='Special'&&(target!.lightscreen??0)>0)amount=Math.floor(amount/2);
+    if(!crit&&category==='Physical'&&(target!.reflect??0)>0)amount=Math.floor(amount/2);   // a critical hit goes through both screens
+    if(!crit&&category==='Special'&&(target!.lightscreen??0)>0)amount=Math.floor(amount/2);
   }
   if(amount>0&&hasStatus(source,'brn'))amount=Math.max(1,Math.floor(amount*4/5));
+  if(crit&&amount>0)amount=Math.max(1,Math.round(amount*CRIT_MULTIPLIER));   // before the type step
   const effectiveness=skill&&target?typeEffectiveness(skill,speciesTypes(target)):1;
   const stab=skill?stabMultiplier(skill,speciesTypes(source)):1;
   const immune=effectiveness===0;
@@ -1182,11 +1201,14 @@ function onDirectDamageToSleeper(s:World,owner:Unit,attacker:Unit,blockingGuard:
 }
 function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set(),thaw=false,skill?:Skill,suppressSleepTrigger=false,createdGuard:Set<string>=new Set()):number {
   const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
-  const amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill);
+  let amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill);
   if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,targetId+'受到火系招式或热水攻击后解冻');emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
   const effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
+  // One roll per target on the battle stream, only for a hit that deals damage and is not immune (G5.3 step 7 comes first); a critical hit is rolled again through the same rule with its own stage handling.
+  const crit=!s.noCrit&&category!=='Status'&&amount>0&&effectiveness>0&&battleRandom(s)<CRIT_CHANCE;
+  if(crit)amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill,true);
   const previousKiller=currentKiller;currentKiller=opposing?sourceId:null;let actual=0;
-  try{actual=hit(s,targetId,amount,undefined,actual=>{if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});}finally{currentKiller=previousKiller;}
+  try{actual=hit(s,targetId,amount,undefined,(actual,shown)=>{emit(s,{type:'damage',actor:sourceId,target:targetId,amount:shown,...(crit?{crit:true as const}:{})});if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});}finally{currentKiller=previousKiller;}
   // `actual` is the HP the hit really took; Last Stand or a Reviver Seed may have raised target.hp afterwards.
   if(opposing&&actual>0&&target.hp>0&&!suppressSleepTrigger)onDirectDamageToSleeper(s,target,source,quickguard,createdGuard);
   if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos)){const keep=currentKiller;currentKiller=targetId;try{hit(s,sourceId,actual);}finally{currentKiller=keep;}}
@@ -1226,7 +1248,8 @@ function effectBlocked(s:World,actor:Unit,target:Unit,guard:ReadonlySet<string>)
 function changeStage(s:World,targetId:string,stat:StageKey,change:number):void {
   if(stat==='spe')return; // the game has no speed: speed changes do not take effect (8.8, 4)
   const target=s.units[targetId],before=stageOf(target,stat);
-  target.stages[stat]=Math.max(-3,Math.min(3,before+change));
+  const limit=stat==='acc'||stat==='eva'?3:STAGE_LIMIT;
+  target.stages[stat]=Math.max(-limit,Math.min(limit,before+change));
   note(s,`${targetId}${STAGE_NAMES[stat]}阶段变为${target.stages[stat]}`);
 }
 const applyStageChange=(s:World,targetId:string,change:StageChange)=>{for(const [k,v] of Object.entries(change))changeStage(s,targetId,k as StageKey,v as number);};
@@ -1270,7 +1293,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
   const eligible=targets.filter(t=>{
     if(!alive(t)||!needsHitRoll(spec))return alive(t);
     const reason=noEffectReason(a.skill,t,spec);
-    if(reason){note(s,(SKILL_CN[a.skill]??a.skill)+'对'+t.id+'没有效果（'+reason+'）');return false;}
+    if(reason){note(s,(SKILL_CN[a.skill]??a.skill)+'对'+t.id+'没有效果（'+reason+'）');emit(s,{type:'immune',actor:id,target:t.id,skill:a.skill});return false;}   // no hit roll, no damage or side effect, PP already spent; the event lets the board show the move arriving
     return true;
   });
   const landed=eligible.filter(t=>{
@@ -1356,7 +1379,7 @@ function sendHome(s:World,a:Extract<Action,{type:'exchange'}>):void {
   for(const i of a.cargo)s.tms![i].fate='sent';
   s.exchange!.used=true;s.exchange!.sent=a.target;
   const point=s.points.find(p=>p.kind==='exchange');if(point)point.used=true;
-  note(s,`${s.leader}启动交换机：${a.target}安全回到基地，运走${a.cargo.length}份招式机；本局不再参战`);
+  note(s,`${s.leader}启动交换机：${a.target}回到基地，运走${a.cargo.length}份招式机`);
 }
 function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>):void {
   const u=s.units[id],level=u.side==='friend'?(s.prog?.level??u.level??INITIAL_LEVEL):(u.level??INITIAL_LEVEL),bonus=levelDamageBonus(level);
@@ -1398,8 +1421,9 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     }else if(a.item==='berry'){
       const before=t.hp,heal=berryHealAmount(s,t);t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
     }else if(a.item==='violentSeed'){
-      changeStage(s,t.id,'atk',3-stageOf(t,'atk'));changeStage(s,t.id,'spa',3-stageOf(t,'spa'));
-      note(s,`${id}对${t.id}使用${ITEM_NAMES.violentSeed}，攻击和特攻升到最高`);
+      const raised:string[]=[];   // each stage rises to at least +3 and never drops; only the ones that really rose are logged
+      for(const [k,name] of [['atk','攻击'],['spa','特攻']] as const){const cur=stageOf(t,k);if(cur<3){changeStage(s,t.id,k,3-cur);raised.push(name);}}
+      note(s,`${id}对${t.id}使用${ITEM_NAMES.violentSeed}，${raised.join('和')}升到+3级`);
     }else if(a.item==='maxElixir'){
       for(const k of t.learned)t.pp[k]=t.maxPp[k]??0;
       note(s,`${id}对${t.id}使用${ITEM_NAMES.maxElixir}，所有招式PP回满`);
@@ -1435,17 +1459,15 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     if(room){
       if(room.type==='challenge'){
         s.pendingAdventureStart={room:room.room,actor:id,pos:clone(u.pos!)};
-        note(s,'挑战石碑已启动，轮末检查主控是否仍在石碑上');
       }else if(room.type==='item'&&room.item){
         const item=room.item,amount=(s.prog!.items[item]??0)+1;
         s.prog!.items[item]=amount;room.state='done';
         note(s,`道具房：取得${ITEM_NAMES[item]}，背包共${amount}`);progressCommission(s,'collector');
       }else if(room.type==='commission'){
         const commission=commissionOffer(s,room);
-        if(commission){(s.pendingChoices??=[]).push({type:'commission',room:room.room,commission});
-          note(s,`委托房提出「${COMMISSIONS[commission].name}」：${COMMISSIONS[commission].description}`);}
+        if(commission)(s.pendingChoices??=[]).push({type:'commission',room:room.room,commission});
       }else if(room.type==='blessing'){
-        if(queueBlessingChoice(s,'room',room.room))note(s,'祝福房提供三选一；也可放弃');
+        queueBlessingChoice(s,'room',room.room);   // nothing is written when the room is entered: the log keeps what happens (the pick, the give-up)
       }
       return;
     }
@@ -1462,7 +1484,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
       }}
       p.used=true;}
     if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
-    note(s,stairs?`${id}请求${p.kind==='down'?'下':'上'}楼梯跨层`:`${id}交互${a.exit?'并请求撤离':''}`);
+    note(s,stairs?`${id}走${p.kind==='down'?'下':'上'}楼梯`:`${id}交互${a.exit?'并请求撤离':''}`);
   }else note(s,`${id}等待`);
 }
 type MovePlan={id:string;pos:Pos};
@@ -1539,7 +1561,7 @@ function startAdventureChallenge(s:World,room:AdventureRoom):boolean{
   for(const p of plan.sealed){const k=key(p);if(seen.delete(k))walls.add(k);}
   s.seen=[...seen].sort();s.seenWalls=[...walls].sort();
   reveal(s);
-  note(s,`挑战开始：${encounter.enemies.length}只敌人进入房间，出入口封闭`);
+  note(s,`挑战开始：${encounter.enemies.length}只敌人`);
   return true;
 }
 function resolveAdventureStart(s:World):void{
@@ -1547,9 +1569,9 @@ function resolveAdventureStart(s:World):void{
   s.pendingAdventureStart=undefined;
   const room=s.adventureRooms?.find(r=>r.room===pending.room),actor=s.units[pending.actor];
   if(!room||room.type!=='challenge'||room.state!=='idle'||!alive(actor)||!same(actor.pos,pending.pos)){
-    note(s,'挑战未成立：轮末主控已倒下或不在石碑上，行动不返还');return;
+    note(s,'挑战未成立：主控已倒下或不在石碑上');return;
   }
-  if(!startAdventureChallenge(s,room))note(s,'挑战未成立：房间没有足够的空格安排入房队友或敌人，行动不返还');
+  if(!startAdventureChallenge(s,room))note(s,'挑战未成立：房间没有足够的空格');
 }
 /** One member's turn in a round, as the rules would run it (stage 7.1 preview). `explicit` is false for the default behaviour; `failed` means the action no longer applied and the member waited. */
 export type TraceStep={id:string;action:Action;explicit:boolean;failed:boolean;swapWith?:string};
@@ -1814,7 +1836,7 @@ function awardAdventureChallenge(s:World,room:AdventureRoom):void{
   if(room.reward==='currency'){
     s.purse=(s.purse??0)+amount;note(s,`挑战奖励：钱袋+${amount}（当前零钱${s.purse}）`);
   }else if(room.reward==='blessing'){
-    if(queueBlessingChoice(s,'challenge',room.room))note(s,'挑战奖励：祝福三选一；也可放弃');
+    if(queueBlessingChoice(s,'challenge',room.room))note(s,'挑战奖励：祝福');
     else note(s,'挑战奖励：没有尚未拥有且适用于本层的祝福可选');
   }else if(room.reward==='item'&&room.rewardItem&&s.prog){
     const item=room.rewardItem,count=(s.prog.items[item]??0)+1;s.prog.items[item]=count;
@@ -1968,8 +1990,8 @@ export function applyCommand(original:World,cmd:Command):Result {
       if(choice.commission==='speedrun'&&speedLimit===null)return fail('委托点与楼梯之间没有可走路线');
       const progress=choice.commission==='speedrun'?1:0,progressTarget=speedLimit??def.progressTarget??1;
       (s.commissions??=[]).push({id:choice.commission,floor:currentFloorLevel(s),acceptedRound:s.round,progress,progressTarget,speedLimit});
-      note(s,`接下${def.name}委托${speedLimit===null?'':`，限${speedLimit}轮（接下本轮计1轮）`}`);
-    }else note(s,`拒绝${COMMISSIONS[choice.commission].name}委托，委托房已完成`);
+      note(s,`接下委托：${def.name}${speedLimit===null?'':`，限${speedLimit}轮`}`);
+    }else note(s,'拒绝委托');
     resumeAfterChoice(s);return {ok:true,state:s};
   }
   if(cmd.type==='blessingChoice'){
@@ -1981,7 +2003,7 @@ export function applyCommand(original:World,cmd:Command):Result {
     }
     const s=clone(original),choice=s.pendingChoices!.shift() as Extract<PendingChoice,{type:'blessing'}>;
     if(choice.source==='room')s.adventureRooms!.find(r=>r.room===choice.room)!.state='done';
-    if(cmd.blessing===null)note(s,'放弃本次祝福，房间已完成');else applyBlessing(s,cmd.blessing);
+    if(cmd.blessing===null)note(s,'放弃祝福');else applyBlessing(s,cmd.blessing);
     resumeAfterChoice(s);return {ok:true,state:s};
   }
   if(cmd.type==='tmChoice'){
@@ -2127,7 +2149,6 @@ function transit(original:World):World {
   if(!placeTeam(s,entry))return cancelled('目标层入口附近没有合法位置');
   delete d.stored[to];d.stored[String(from)]=cur;clearCombatState(s);d.level=to;s.request=null;s.phase='playing';
   s.mapRevealed=undefined;for(const id of s.queue){const m=s.units[id];if(m){m.thickUsed=undefined;m.standUsed=undefined;}}
-  if(hasBless(s,'lullaby')&&generating)note(s,'安眠：本层普通敌人出生时更容易睡着');
   if(hasBless(s,'floorHeal'))for(const id of s.queue){const u=s.units[id];if(!alive(u))continue;const before=u.hp;u.hp=Math.min(u.maxHp,u.hp+Math.max(BLESSINGS.floorHeal.floorHealMin??4,Math.floor(u.maxHp*(BLESSINGS.floorHeal.floorHealRate??0.2))));note(s,`换层回复：${id} HP ${before}→${u.hp}`);}
   note(s,`同行抵达第${to}层`);return s;
 }

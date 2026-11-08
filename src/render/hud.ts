@@ -21,7 +21,7 @@ import {
 import { moveCategory, moveEffects, moveOf, type MoveRange } from "../core/moves.ts";
 import { THEME_FLOORS, themeOfLevel } from "../core/dungeon.ts";
 import { itemZh, moveZh, speciesZh, tmZh, typeZh } from "../core/names.ts";
-import { damageEstimateText, moveRangeLabel } from "../core/describe.ts";
+import { damageEstimateText, moveRangeLabel, moveShortEffect } from "../core/describe.ts";
 import { itemDescription } from "../core/item-descriptions.ts";
 import { skinFor } from "./sprites.ts";
 import { terrainKnown } from "./point-visuals.ts";
@@ -196,27 +196,14 @@ function moveCategoryLabel(skill: Skill): string {
   return "—";
 }
 
+/** Only a non-default reach gets a tag; an adjacent single target (and self) is left unsaid. */
 function compactRange(range: MoveRange | undefined): string {
   switch (range) {
-    case "front": return "1格";
     case "front2": return "2格";
-    case "line10": return "10格";
-    case "around": return "周围1格";
-    case "room": return "同房间";
-    case "user": return "自身";
-    default: return "—";
-  }
-}
-
-function rangeCategory(range: MoveRange | undefined): string {
-  switch (range) {
-    case "front":
-    case "front2":
-    case "line10": return "单体";
+    case "line10": return "直线 10 格";
     case "around": return "周围";
-    case "room": return "房间";
-    case "user": return "自身";
-    default: return "—";
+    case "room": return "同房间";
+    default: return "";
   }
 }
 
@@ -357,7 +344,7 @@ export function hudBottom(
 
 export { hudMinimap } from "./minimap.ts";
 
-function blessingEffectLabel(id: BlessingId): string {
+export function blessingEffectLabel(id: BlessingId): string {
   const definition = BLESSINGS[id];
   switch (id) {
     case "berryBoost": return "橙橙果回复 +" + Math.round((definition.berryHealRate ?? 0) * 100) + "%";
@@ -464,10 +451,10 @@ export function hudBag(
   const grid = cells.length ? cells.join("") : '<div class="hud-bag-empty c195-bag-empty">无物品</div>';
   let detail: string;
   if (!current) {
-    detail = '<p class="c195-bag-text">背包里还没有物品。</p>';
+    detail = '';
   } else {
     const name = current.item ? itemTitle(current.item) : "招式机 · " + tmZh(current.move!);
-    const text = current.item ? itemDescription(current.item) : "本局无法使用，带回营地后再用。";
+    const text = current.item ? itemDescription(current.item) : "";
     const pinnedAt = current.item ? quick.findIndex((q) => q === current.item) : -1;
     const buttons: string[] = [];
     if (current.item) {
@@ -494,8 +481,7 @@ export function hudBag(
     '<button type="button" id="bag-close" class="paper-close" aria-label="关闭背包">×</button>' +
     '<div class="c195-bag-body"><div class="c195-bag-tabs" role="tablist" aria-label="物品分类">' + tabs + "</div>" +
     '<div class="c195-bag-grid" aria-label="背包物品">' + grid + '</div><aside class="c195-bag-detail" aria-label="物品详情">' + detail + "</aside></div>" +
-    '<div class="c195-bag-quick"><span>快捷格</span><div class="c195-bag-quick-grid" aria-label="快捷格">' + slots + "</div></div>" +
-    '<p class="paper-muted c195-small">点格子选择要放的位置；快捷格上的数字键直接使用物品。</p></section>';
+    '<div class="c195-bag-quick"><span>快捷格</span><div class="c195-bag-quick-grid" aria-label="快捷格">' + slots + "</div></div></section>";
 }
 
 export function hudDamageEstimate(s: World, actor: string, targetId?: string, skill?: Skill): string {
@@ -530,7 +516,8 @@ export function hudMoveTip(s: World, skill: Skill): string {
   const category = moveCategoryLabel(skill);
   const power = spec?.power === null || spec?.power === undefined ? "—" : String(spec.power);
   const range = compactRange(spec?.range);
-  const target = rangeCategory(spec?.range);
+  const damaging = !!spec && (spec.effects.includes("damage") || skill === "snore") && spec.power !== null;
+  const effect = moveShortEffect(skill);
   const fullRange = spec ? moveRangeLabel(skill) : "未知射程";
   const cells = scopeGrid(spec?.range);
   const typeId = type ? esc(type) : "";
@@ -544,14 +531,13 @@ export function hudMoveTip(s: World, skill: Skill): string {
     typeId + '">' + esc(type ? typeZh(type) : "—") + '</span>' +
     '<span class="hud-tip-category">' + esc(category) + "</span></header>" +
     '<div class="hud-tip-fields">' +
-    '<div class="hud-tip-field"><span>威力</span><strong>' + power + "</strong></div>" +
-    '<div class="hud-tip-field"><span>命中</span><strong data-move-accuracy="' +
-    esc(skill) + '">' + esc(accuracy) + "</strong></div>" +
+    (damaging ? '<div class="hud-tip-field"><span>威力</span><strong>' + power + "</strong></div>" : "") +
+    (accuracy !== "不检定" ? '<div class="hud-tip-field"><span>命中</span><strong data-move-accuracy="' + esc(skill) + '">' + esc(accuracy) + "</strong></div>" : "") +
+    (effect ? '<div class="hud-tip-field"><span>效果</span><strong>' + esc(effect) + "</strong></div>" : "") +
     '<div class="hud-tip-field"><span>PP</span><strong>' + current + "/" + maximum + "</strong></div>" +
-    '<div class="hud-tip-field" data-move-range="' + esc(spec?.range ?? "") + '"><span>射程</span><strong aria-label="' + esc(fullRange) + '">' + esc(range) + "</strong></div>" +
-    '<div class="hud-tip-field"><span>范围</span><strong>' + esc(target) + "</strong></div></div>" +
-    '<div class="hud-tip-preview"><span>预计伤害</span><strong data-move-preview="' +
-    esc(skill) + '">' + esc(hudDamageEstimate(s, s.leader, undefined, skill)) + '</strong></div>' +
+    (range ? '<div class="hud-tip-field" data-move-range="' + esc(spec?.range ?? "") + '"><span>射程</span><strong title="' + esc(fullRange) + '">' + esc(range) + "</strong></div>" : "") + "</div>" +
+    (damaging ? '<div class="hud-tip-preview"><span>预计伤害</span><strong data-move-preview="' +
+    esc(skill) + '">' + esc(hudDamageEstimate(s, s.leader, undefined, skill)) + '</strong></div>' : "") +
     '<p class="hud-tip-description" data-move-description>' + esc(description) + '</p></div></div></section>';
 }
 
@@ -564,13 +550,24 @@ export function starterMoveFields(skill: Skill) {
   return {
     type,
     category: moveCategoryLabel(skill),
-    power: spec?.power ?? "—",
-    accuracy: checksAccuracy ? formatAccuracy(baseAccuracy) : "不检定",
+    power: spec?.power ?? "",
+    accuracy: checksAccuracy ? formatAccuracy(baseAccuracy) : "",
+    effect: moveShortEffect(skill),
     range: compactRange(spec?.range),
-    target: rangeCategory(spec?.range),
     scope: scopeGrid(spec?.range),
     description: MOVE_DESCRIPTIONS[skill]?.desc ?? "",
   };
+}
+
+/** The facts a move card or hover card shows, left out when empty: power and hit chance for a damage move, the short effect for a status move, PP, and a range tag only for a non-default reach. */
+export function moveFactPairs(f: { power: unknown; accuracy: string; effect: string; range: string }, pp?: string | number): [string, string][] {
+  const out: [string, string][] = [];
+  if (f.power !== "" && f.power !== "—" && f.power !== null && f.power !== undefined) out.push(["威力", String(f.power)]);
+  if (f.accuracy) out.push(["命中", f.accuracy.replace("基础 ", "")]);
+  if (f.effect) out.push(["效果", f.effect]);
+  if (pp !== undefined) out.push(["PP", String(pp)]);
+  if (f.range) out.push(["射程", f.range]);
+  return out;
 }
 
 export {statusMarkup as hudStatusMarkup};

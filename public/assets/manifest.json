@@ -24858,40 +24858,22 @@
       "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
     },
     "tiles/stairs-down.png": {
-      "bytes": 967,
-      "sha256": "892a91ac218f120081bd13f3ef03b36659b41ea34224c134876fc60d70fba5d9",
-      "source": "generated",
-      "model": "gpt-image-2.5-flare",
-      "card": "stairs-down",
-      "prompt": "A single square floor tile that fills the whole image: a dark stone stairway descending downward into shadow, seen from above, framed by worn stone, a faint cool blue tint. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
-      "rawSha256": "25ac75346792f5a85c55162191241cab12c06a7f88a8fc97311cb8fec8c90f99",
-      "postprocess": {
-        "crop": null,
-        "trim": false,
-        "size": 24,
-        "colors": 16,
-        "resample": "box",
-        "quantize": "mediancut"
-      },
-      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+      "bytes": 394,
+      "sha256": "81c1b10132c43a615ef9122d00b34d4e112ed0937bfcff3d91a99b0e479304bc",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "Object/Stairs_Down.None.png",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/blob/03c80dad937911572f8fb19903771a47956fc696/Object/Stairs_Down.None.png",
+      "licence": "Original game object sprite extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Used in the private build under the 2026-10-30 private-build authorization for third-party assets (AGENTS.md current scope); handled like the D-20261103-12 terrain tiles, though that decision itself covers only TileDtef. Replace before any public release."
     },
     "tiles/stairs-up.png": {
-      "bytes": 1139,
-      "sha256": "b80330782177238c931b2e106d594c7b67537e1a6032593b8ae9beb5d0799f36",
-      "source": "generated",
-      "model": "gpt-image-2.5-flare",
-      "card": "stairs-up",
-      "prompt": "A single square floor tile that fills the whole image: a stone stairway rising upward toward a faint warm light, seen from above, framed by worn stone. Top-down 2D dungeon game asset in the style of chunky 16-bit pixel art, large visible pixel blocks as if drawn on a 24x24 pixel grid, dark outlines, muted earthy palette with a few saturated accent colours, soft ambient light from the top-left. No text, no letters, no characters, no creatures.",
-      "rawSha256": "d939393c7d330460d913ea8d32617b765cede69bc339e0faa39ca62b75c44a36",
-      "postprocess": {
-        "crop": null,
-        "trim": false,
-        "size": 24,
-        "colors": 16,
-        "resample": "box",
-        "quantize": "mediancut"
-      },
-      "licence": "Original image generated for this project with OpenAI gpt-image; private build only."
+      "bytes": 378,
+      "sha256": "155741f3e638ef22994d0780cabe1a5a4ae3b84e64bff89f717590fe41084d20",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "Object/Stairs_Up.None.png",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/blob/03c80dad937911572f8fb19903771a47956fc696/Object/Stairs_Up.None.png",
+      "licence": "Original game object sprite extracted from the Pokemon Mystery Dungeon series; rights belong to Spike Chunsoft, Nintendo and others. The PMDCollab/RawAsset repository carries no licence text. Used in the private build under the 2026-10-30 private-build authorization for third-party assets (AGENTS.md current scope); handled like the D-20261103-12 terrain tiles, though that decision itself covers only TileDtef. Replace before any public release."
     },
     "tiles/wall-basalt.png": {
       "bytes": 1295,

@@ -50,12 +50,12 @@ test('the details table shows the numbers the damage rule uses, and follows an a
  a.level=50;a.maxHp=hpAtLevel(BULB.hp,50);s.prog.level=50;
  assert.equal(statSheet(s,a).find(r=>r.key==='atk').value,statAtLevel(BULB.atk,50));
  assert.ok(estimateAttackDamage(s,'A','T','tackle')>before,'the damage reads the same, raised number');
- // an attack stage is a flat adjustment: the table shows it and the damage changes by exactly that many points
+ // an attack stage multiplies the damage through the stage table (stages.test.mjs checks every step); the table shows the stage and the multiplied value
  const s2=duel(20,5);const base=estimateAttackDamage(s2,'A','T','tackle');
- s2.units.A.stages.atk=2;assert.equal(statSheet(s2,s2.units.A).find(r=>r.key==='atk').stage,2);assert.equal(damageStage(s2,s2.units.A,'atk'),2);
- assert.equal(estimateAttackDamage(s2,'A','T','tackle')-base,2,'+2 attack = +2 damage');
+ s2.units.A.stages.atk=2;{const r=statSheet(s2,s2.units.A).find(r=>r.key==='atk');assert.equal(r.stage,2);assert.equal(r.value,Math.round(currentStats(s2.units.A).atk*332/256),'the shown attack is the stage-multiplied value');}assert.equal(damageStage(s2,s2.units.A,'atk'),2);
+ assert.ok(estimateAttackDamage(s2,'A','T','tackle')>base,'+2 attack hits harder');
  s2.units.A.stages.atk=0;s2.units.T.stages.def=1;assert.equal(statSheet(s2,s2.units.T).find(r=>r.key==='def').stage,1);
- assert.equal(base-estimateAttackDamage(s2,'A','T','tackle'),1,'+1 defence = -1 damage');
+ assert.ok(estimateAttackDamage(s2,'A','T','tackle')<base,'+1 defence takes less');
  // the hunter commission's penalty is part of the stage the details show
  s2.units.T.stages.def=0;const mate=s2.units.A;s2.commissions=[{id:'hunter',floor:1,acceptedRound:0,progress:0,progressTarget:3,speedLimit:null}];
  assert.equal(damageStage(s2,mate,'def'),-1);assert.equal(statSheet(s2,mate).find(r=>r.key==='def').stage,-1);

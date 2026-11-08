@@ -112,7 +112,7 @@ test('X11 R09 step 4 then 5: an invitation raised in the same round is handled f
  assert.deepEqual(coords(s),[pos(4),pos(3),pos(2)]);assert.equal(s.units.B.pos,null);
 });
 test('X12 illegal or misplaced stairs input is refused before any action',()=>{
- const r=reject(expedition(),{type:'round',action:interact(false)});assert.match(r.error,/楼梯只能请求跨层/);
+ const r=reject(expedition(),{type:'round',action:interact(false)});assert.match(r.error,/楼梯上只能前进/);
  reject(expedition({c:pos(4)}),{type:'round',action:interact(true)});
 });
 test('X13 finishTransit works once and only from the pending phase',()=>{

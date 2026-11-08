@@ -25,36 +25,55 @@ for(const [w,h] of [[1280,720],[900,520]]){
  const close=await rect('#unit-detail-close'),skills=await p.locator('[data-detail-skill]').evaluateAll(n=>n.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};}));
  assert.ok(skills.length>=2,'the ally has move rows');for(const r of skills)assert.ok(!overlaps(close,r),`close button must not cover a move row at ${w}x${h}: ${JSON.stringify({close,r})}`);
  const dlg=await rect('#unit-details-dialog');assert.ok(dlg.x>=0&&dlg.y>=0&&dlg.x+dlg.width<=w+1&&dlg.y+dlg.height<=h+1,'the window fits the viewport');
- assert.equal(await p.locator('.detail-chart-title').innerText(),'当前能力值');assert.match(await p.locator('.detail-chart-note').innerText(),/能力值按等级换算，种族值只是基础/);
+ assert.equal(await p.locator('.detail-chart-title').innerText(),'能力值');
  {const st=await p.evaluate(()=>window.trial.getState()),idOf=await p.locator('[data-hud-details]').first().getAttribute('data-hud-details'),u=st.units[idOf]??st.units[st.leader],c=currentStats(u);
-  for(const k of ['atk','def','spa','spd','spe'])assert.equal(Number(await p.locator(`.detail-stat-table [data-stat=${k}] .now`).innerText()),c[k],'the table shows the same number the damage rule reads: '+k);
-  assert.match(await p.locator('.detail-stat-table [data-stat=hp] .now').innerText(),new RegExp('^'+u.hp+'/'+u.maxHp+'$'));
-  assert.match(await p.locator('.detail-stat-table [data-stat=atk] .base').innerText(),/种族值 \d+/,'the base value is small text beside the current one');
-  assert.ok(await p.locator('.detail-howto summary').isVisible(),'the damage formula explanation is there');
-  await p.locator('.detail-howto summary').click();assert.match(await p.locator('.detail-howto').innerText(),/招式基础伤害.*攻方能力值除以守方能力值/s);
-  {const box=await p.locator('.detail-howto-body').boundingBox(),dl=await p.locator('#unit-details-dialog').boundingBox();assert.ok(box.x>=dl.x&&box.y>=dl.y&&box.x+box.width<=dl.x+dl.width&&box.y+box.height<=dl.y+dl.height,'the opened explanation stays inside the window: '+JSON.stringify({box,dl}));const tac=await rect('.detail-tactics'),ch=await rect('.detail-chart');assert.ok(ch.y+ch.height<=tac.y,'and the column still ends above the tactics row');}
-  await p.screenshot({path:out+`details-howto-${w}x${h}.png`});await p.locator('.detail-howto summary').click();
-  assert.match(await p.locator('.paper-move-numbers').first().innerText(),/命中/,'move rows show the hit chance');}
+  const KEYS=['hp','atk','def','spa','spd','spe'],shown=async()=>Object.fromEntries(await Promise.all(KEYS.map(async k=>[k,Number((await p.locator(`.detail-stat-chart [data-stat=${k}] .axis-value`).textContent()).trim().split(/\s/)[0])])));
+  const expected=u=>{const cc=currentStats(u);return {hp:u.maxHp,atk:cc.atk,def:cc.def,spa:cc.spa,spd:cc.spd,spe:cc.spe};};
+  assert.deepEqual(await shown(),expected(u),'each radar label carries the actual value the damage rule reads (HP is the maximum)');
+  assert.equal(await p.locator('.detail-stat-table, .detail-stat-chart .axis-base, .detail-howto, .detail-chart-note').count(),0,'the table, the base-value labels and notes are gone');
+  {const bad=await p.evaluate(()=>{const d=document.getElementById('unit-details-dialog');return {text:/种族/.test(d.innerHTML),titles:[...d.querySelectorAll('.detail-chart [title]')].length};});assert.equal(bad.text,false,'no species value wording anywhere in the details window (text, aria, hidden)');assert.equal(bad.titles,0);}
+  {const mate=st.queue.find(id=>id!==idOf&&st.units[id]);if(mate){await p.locator(`[data-detail-unit="${mate}"]`).click();await p.waitForTimeout(200);assert.deepEqual(await shown(),expected(st.units[mate]),'switching member updates every number');assert.notDeepEqual(expected(st.units[mate]),expected(u),'the two members differ');await p.locator(`[data-detail-unit="${idOf}"]`).click();await p.waitForTimeout(200);}}
+  {const HINTS={hp:/降到 0 就倒下/,atk:/物理招式和普通攻击/,def:/减少受到的物理伤害/,spa:/特殊招式造成/,spd:/减少受到的特殊伤害/,spe:/不影响行动/};
+   assert.equal(await p.locator('#unit-details-dialog [data-stat][title]').count(),0,'no native title is left on the labels');
+   const tip=p.locator('#stat-tip');assert.equal(await tip.isVisible(),false,'the hint is hidden until asked for');
+   for(const [k,re] of Object.entries(HINTS)){const row=p.locator(`.detail-stat-chart [data-stat=${k}]`);await row.hover();await tip.waitFor({state:'visible'});
+    assert.match(await tip.innerText(),re,'hover text for '+k);const tb=await tip.boundingBox(),d=await rect('#unit-details-dialog'),rb=await row.boundingBox();
+    assert.ok(tb.x>=d.x&&tb.y>=d.y&&tb.x+tb.width<=d.x+d.width&&tb.y+tb.height<=d.y+d.height,`the hint stays inside the details window (${k}) at ${w}x${h}`);
+    assert.ok(tb.x>=0&&tb.y>=0&&tb.x+tb.width<=w&&tb.y+tb.height<=h,'and inside the screen');
+    assert.ok(!(tb.x<rb.x+rb.width&&tb.x+tb.width>rb.x&&tb.y<rb.y+rb.height&&tb.y+tb.height>rb.y),`the hint does not cover its own label (${k})`);
+    if(k==='atk')await p.screenshot({path:out+`r8-details-hover-${w}x${h}.png`});
+    await p.mouse.move(5,5);await tip.waitFor({state:'hidden'});}
+   await p.locator('.detail-stat-chart [data-stat=def]').focus();await tip.waitFor({state:'visible'});assert.match(await tip.innerText(),HINTS.def,'keyboard focus shows it');
+   await p.locator('.detail-stat-chart [data-stat=def]').blur();await tip.waitFor({state:'hidden'});}
+  {const box=await p.locator('.detail-stat-chart').boundingBox();assert.ok(box.width>=190&&box.height>=210,'the radar is shown at a readable size at '+w+'x'+h);}
+  assert.match(await p.locator('.paper-move-numbers').first().innerText(),/基础伤害|命中|攻击|防御/,'move rows show base damage and hit chance, or the effect');}
  const chart=await rect('.detail-chart'),dialogBox=dlg;assert.ok(chart.y+chart.height<=dialogBox.y+dialogBox.height+1,'the chart and its note stay inside the window');
  {const tac=await rect('.detail-tactics');assert.ok(chart.y+chart.height<=tac.y,`the ability block ends above the tactics row at ${w}x${h}: ${chart.y+chart.height} vs ${tac.y}`);const mv=await rect('.detail-moves');assert.ok(mv.y+mv.height<=tac.y,'the move list ends above the tactics row');}
- assert.equal(await p.locator('.detail-stat-chart').isVisible(),h>=700,'the radar shows when there is room (the table always carries the numbers)');
+ assert.equal(await p.locator('.detail-stat-chart').isVisible(),true,'the radar is the only stat display and always shows');
  await p.screenshot({path:out+`details-ally-${w}x${h}.png`});
- // enemy details
- await p.locator('#detail-unit-w1a').click();await p.waitForTimeout(200);
- assert.equal(await p.locator('.detail-stat-chart').count(),0,'no stat chart for an enemy');assert.equal(await p.locator('.detail-chart').count(),0);
- const text=await p.locator('#unit-details-dialog').innerText();assert.ok(/Lv\d+/.test(text)&&/\d+\/\d+/.test(text),'name level and HP remain');
- assert.equal(await p.locator('.detail-stat-table').count(),0,'no ability table for an enemy');
- assert.ok(!/攻击\s*\d+|防御\s*\d+|速度\s*\d+|种族值/.test(text),'no stat numbers for an enemy');
- const close2=await rect('#unit-detail-close'),skills2=await p.locator('[data-detail-skill]').evaluateAll(n=>n.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};}));
- for(const r of skills2)assert.ok(!overlaps(close2,r),'enemy window: the close button stays off the moves');
- await p.screenshot({path:out+`details-enemy-${w}x${h}.png`});
- // blessings tab: empty first, then a listed blessing
- await p.locator('#detail-unit-__blessings').click();await p.waitForTimeout(150);
- assert.equal(await p.locator('#detail-blessing-empty').innerText(),'本局还没有祝福');
- await p.keyboard.press('Escape');await p.evaluate(()=>{const s=window.trial.store.world;s.blessings=['berryBoost'];window.dispatchEvent(new Event('blur'));});
- await p.locator('[data-hud-details]').first().click();await p.waitForSelector('#unit-details-dialog[open]');await p.locator('#detail-unit-__blessings').click();await p.waitForTimeout(150);
- assert.equal(await p.locator('#detail-blessing-list [data-blessing=berryBoost]').count(),1,'a held blessing is listed with its description');assert.ok((await p.locator('#detail-blessing-list').innerText()).length>10);
- await p.screenshot({path:out+`details-blessings-${w}x${h}.png`});
+ // the window shows the party only: no tab for an enemy in view, and no way into an enemy's details (the enemy info card stays)
+ assert.equal(await p.locator('#detail-unit-w1a').count(),0,'no enemy tab');assert.equal(await p.locator('[data-detail-unit]').count(),3,'one tab per party member');
+ assert.equal(await p.locator('.detail194.is-enemy').count(),0);
+ // the blessing column is always there: empty state first, window and column centred together, the same size for every member
+ assert.equal(await p.locator('#detail-blessing-empty').innerText(),'无');assert.equal(await p.locator('.detail-blessings').isVisible(),true);
+ const boxOf=async()=>{const d=await rect('#unit-details-dialog'),c=await rect('.detail-blessings');return {d,c,left:Math.min(d.x,c.x),right:Math.max(d.x+d.width,c.x+c.width)};};
+ const empty=await boxOf();assert.ok(Math.abs((empty.left+empty.right)/2-w/2)<=2,`window and blessing column are centred together at ${w}x${h}: ${JSON.stringify({l:empty.left,r:empty.right})}`);
+ assert.ok(empty.left>=0&&empty.right<=w+1&&empty.d.y>=0&&empty.d.y+empty.d.height<=h+1,'everything fits the viewport');
+ assert.ok(Math.abs(empty.c.height-empty.d.height)<=1&&empty.c.x>=empty.d.x+empty.d.width,'the column is as tall as the window and sits to its right');
+ await p.screenshot({path:out+`r5-details-blessings-0-${w}x${h}.png`});
+ await p.locator('#detail-unit-'+(await p.locator('[data-detail-unit]').nth(1).getAttribute('data-detail-unit'))).click();await p.waitForTimeout(150);
+ const other=await boxOf();assert.deepEqual([Math.round(other.d.x),Math.round(other.d.y),Math.round(other.d.width),Math.round(other.d.height)],[Math.round(empty.d.x),Math.round(empty.d.y),Math.round(empty.d.width),Math.round(empty.d.height)],'switching member does not move or resize the window');
+ await p.keyboard.press('Escape');
+ for(const count of [1,7,14]){
+  await p.evaluate(n=>{const s=window.trial.store.world;s.blessings=['berryBoost','floorHeal','battleSpirit','lullaby','rally','tmChoice','nemesis','headhunter','fullpower','scholar','killheal','regen','thickskin','laststand'].slice(0,n);window.dispatchEvent(new Event('blur'));},count);
+  await p.locator('[data-hud-details]').first().click();await p.waitForSelector('#unit-details-dialog[open]');
+  assert.equal(await p.locator('#detail-blessing-list li').count(),count);
+  const now=await boxOf();assert.deepEqual([Math.round(now.d.x),Math.round(now.d.y),Math.round(now.d.width),Math.round(now.d.height),Math.round(now.c.x),Math.round(now.c.height)],[Math.round(empty.d.x),Math.round(empty.d.y),Math.round(empty.d.width),Math.round(empty.d.height),Math.round(empty.c.x),Math.round(empty.c.height)],count+' blessings do not change the size or the place of the window');
+  assert.match(await p.locator('#detail-blessing-list li').first().innerText(),/树果加量[\s\S]*橙橙果回复 \+\d+%/,'name and a one-line effect');
+  if(count===7)await p.screenshot({path:out+`r5-details-blessings-many-${w}x${h}.png`});
+  if(count===14)assert.ok(await p.locator('#detail-blessing-list').evaluate(el=>el.scrollHeight>el.clientHeight),'a long list scrolls inside the column');
+  await p.keyboard.press('Escape');
+ }
  assert.deepEqual(errs,[]);await ctx.close();
 }
 await b.close();console.log('details checks passed');

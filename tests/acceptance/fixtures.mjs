@@ -20,7 +20,7 @@ export const enemy=(id,x,y,hp,role,{waitOnly=false}={})=>{
 };
 export function world(units,{floor=row(),leader='A',queue=['A','B','C'],enemies=[],camp=[],points=[]}={}){
  return {runId:'acceptance',scenario:'independent-fixture',round:0,floor,seen:floor.map(p=>p.x+','+p.y),
- units,queue,enemies,camp,leader,points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[]};
+ units,queue,enemies,camp,leader,points,goal:false,bag:0,phase:'playing',invitations:[],anchor:null,request:null,end:null,log:[],noCrit:true};   // hand-built fixtures keep exact damage numbers; the critical-hit tests turn it back on
 }
 export function invite(s,ids=['N']){
  s.phase='invitation';s.anchor=structuredClone(s.units[s.leader].pos);

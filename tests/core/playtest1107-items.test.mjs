@@ -127,7 +127,7 @@ test('Floor Heal is 20% of max HP (at least 4) per new floor; the once-per-floor
  let weak=scene({hp:10});weak.blessings=['floorHeal'];weak.units.A.hp=1;weak.units.A.pos=pos(11);weak=act(weak,{type:'interact',exit:true});weak=apply(weak,{type:'finishTransit'});
  assert.equal(weak.units.A.hp,5,'20% of 10 is 2, the minimum 4 applies');
  let lull=scene();lull.blessings=['lullaby'];lull.units.A.pos=pos(11);lull=act(lull,{type:'interact',exit:true});lull=apply(lull,{type:'finishTransit'});
- assert.ok(lull.log.some(l=>l.includes('安眠')),'the persistent effect is announced on a freshly generated floor');
+ assert.ok(lull.blessings.includes('lullaby'),'the persistent effect stays on a freshly generated floor');assert.ok(!lull.log.some(l=>l.includes('安眠')),'no explanation line is written when a floor is generated');
 });
 
 test('Select-TM blessing opens the three-choice panel at once; all 14 blessings exist with floors; Floor Heal and Lullaby only on floors 1 and 2',()=>{

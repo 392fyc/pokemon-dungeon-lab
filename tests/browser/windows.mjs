@@ -23,6 +23,8 @@ browserDeadline.unref();
 browser=await chromium.launch({...(process.env.BROWSER_EXECUTABLE ? {executablePath:process.env.BROWSER_EXECUTABLE} : {channel:'msedge'}),headless:true});
 const results=[];
 const base=process.env.TRIAL_URL;
+/** An item with several usable targets opens the party target state; with exactly one it is used at once. Click the card only when the state is open. */
+const pickTarget=async(p,id)=>{await p.waitForTimeout(300);if(await p.locator('#target-hint').count())await p.locator('#unit-card-'+id+' .hud-party-main').click();};
 if(!base) throw Error('Set TRIAL_URL to the local running trial.');
 async function campPanelFits(page) {
  const size=await page.locator('#camp-dialog[open]').evaluate(el=>({
@@ -110,11 +112,11 @@ const ready=p=>p.waitForFunction(()=>window.trial?.store.status==='ready'&&windo
 const emptyReady=p=>p.waitForFunction(()=>window.trial?.store.status==='empty'&&window.trial.view());
 const state=p=>p.evaluate(()=>window.trial.getState());
 const raw=p=>p.evaluate(()=>localStorage.getItem(window.trial.store.key));
-async function startMemory(p,world,profile=null){await p.evaluate(({world,profile})=>window.trial.store.start(world,profile),{world,profile});await p.evaluate(()=>window.dispatchEvent(new Event('blur')));await ready(p);}
+async function startMemory(p,world,profile=null){world.noCrit??=true;await p.evaluate(({world,profile})=>window.trial.store.start(world,profile),{world,profile});await p.evaluate(()=>window.dispatchEvent(new Event('blur')));await ready(p);}
 async function start(p){await p.locator('#start').click();await ready(p);await sureHit(p);}
 // 8.8 (#165): moves can miss now, and a shipped dev scenario gets a random runId (crypto.randomUUID) while it has no dungeon seed, so its battle random stream differs from page load to page load (M2, S1 once failed 16 !== 12 and passed on rerun for exactly this reason). `start` therefore applies this to every journey. Journeys that count exact HP give every unit accuracy +3 (doubles any hit chance, so even 50% becomes 100%) in the live in-memory world;
 // this is the browser counterpart of tests/core/sure-hit.mjs. New floors create fresh units, so it must be applied again after a floor change.
-const sureHit=p=>p.evaluate(()=>{const w=window.trial.store.world;for(const u of Object.values(w.units))u.stages={...u.stages,acc:3};});
+const sureHit=p=>p.evaluate(()=>{const w=window.trial.store.world;w.noCrit=true;for(const u of Object.values(w.units))u.stages={...u.stages,acc:3};});   // critical hits are out of these journeys too (they shift the battle draws)
 async function key(p,k){await p.keyboard.press(k);await ready(p);}
 async function chord(p,first,second){
  await p.evaluate(()=>{const trace=[];window.__trialChordTrace=trace;const record=e=>{trace.push({key:e.key,at:e.timeStamp});if(trace.length===2)document.removeEventListener('keydown',record,true);};document.addEventListener('keydown',record,true);});
@@ -139,7 +141,7 @@ async function click(p,id,settle=true){
   await p.locator('[data-bag-category="all"]').click();await ready(p);
   await p.locator('[data-bag-item="'+item+'"]').click();await p.locator('#bag-pin').click();await ready(p);
   await p.locator('#bag-close').click();await ready(p);
-  await p.locator('[data-hud-quick="'+slot+'"]').click();if(settle)await ready(p);if(item==='teamTonic'){await p.locator('#item-use-teamTonic').click();if(settle)await ready(p);}return;
+  await p.locator('[data-hud-quick="'+slot+'"]').click();if(settle)await ready(p);return;
  }
  id=await campControl(p,id);
  const target=p.locator('#'+id),actions=p.locator('#hud-actions'),actionsOpen=p.locator('#actions-open');
@@ -178,8 +180,9 @@ async function clearR(p){
  const s=await state(p);assert.equal(s.units.R.hp,0);assert.equal(s.units.C.hp,12);
 }
 async function defeatMainEAndRecordG(p){
- for(let attack=0;attack<2;attack++){await click(p,'skill-quickattack');const e=(await state(p)).units.E;await cell(p,e.pos.x,e.pos.y);}
- assert.equal((await state(p)).units.E.hp,0); // Two resisted Quick Attacks deal 4 each to the actual 8-HP Rock/Ground target.
+ // Resisted Quick Attacks deal 4 to the actual 8-HP Rock/Ground target; if it curls up in between (defence +1 now multiplies by 256/332 instead of taking 1 off) a third one finishes it.
+ for(let attack=0;attack<4&&(await state(p)).units.E.hp>0;attack++){if(((await state(p)).units.C.pp.quickattack??0)>0)await click(p,'skill-quickattack');const e=(await state(p)).units.E;await cell(p,e.pos.x,e.pos.y);}   // the 2 PP of Quick Attack may run out: then a plain attack finishes it
+ assert.equal((await state(p)).units.E.hp,0);
  await key(p,'ArrowRight');await key(p,'ArrowRight'); // walk onto G after E is gone
  await click(p,'take'); // record G; R walks to x=5 beside C
 }
@@ -203,7 +206,7 @@ await test('M3：电光一闪两格射程、合法目标提示与T撤离',async(
  const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
   // This route needs a one-hit E; Normal Quick Attack is now resisted by Rock, so use a literal 4-HP target.
   await p.evaluate(()=>{const e=window.trial.store.world.units.E;e.hp=e.maxHp=4;});
-  await click(p,'skill-quickattack');const card=p.locator('#skill-quickattack'),tip=p.locator('#hud-tooltip');await hoverCell(p,4,1);await card.hover();await tip.waitFor({state:'visible'});let label=await tip.innerText();assert.match(label,/电光一闪/);for(const field of ['威力','命中','PP','射程','范围'])assert.ok(label.includes(field),`hover card exposes the independent ${field} field`);const rangeField=tip.locator('.hud-tip-field').filter({hasText:'射程'}),rangeValue=rangeField.locator('strong');assert.equal(await rangeValue.innerText(),'2格','Quick Attack retains its two-cell reach');assert.equal(await rangeValue.getAttribute('aria-label'),'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角','Quick Attack exposes its actual eight-direction ray and corner restrictions');assert.match(label,/约4点/,'the live hover estimate preserves Quick Attack damage against the real nearby target');assert.doesNotMatch(await card.innerText(),/同排|同列|斜线|造成约/,'details belong in the hover card, not the compact move card');
+  await click(p,'skill-quickattack');const card=p.locator('#skill-quickattack'),tip=p.locator('#hud-tooltip');await hoverCell(p,4,1);await card.hover();await tip.waitFor({state:'visible'});let label=await tip.innerText();assert.match(label,/电光一闪/);for(const field of ['威力','命中','PP','射程'])assert.ok(label.includes(field),`hover card exposes the independent ${field} field`);assert.ok(!label.includes('范围'),'the redundant 范围 field is gone');const rangeField=tip.locator('.hud-tip-field').filter({hasText:'射程'}),rangeValue=rangeField.locator('strong');assert.equal(await rangeValue.innerText(),'2格','Quick Attack retains its two-cell reach');assert.equal(await rangeValue.getAttribute('title'),'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角','Quick Attack exposes its actual eight-direction ray and corner restrictions on hover');assert.match(label,/约4点/,'the live hover estimate preserves Quick Attack damage against the real nearby target');assert.doesNotMatch(await card.innerText(),/同排|同列|斜线|造成约/,'details belong in the hover card, not the compact move card');
   await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.pp.quickattack,1); // E's 4 HP are defeated by round(8 × 0.5)=4 Quick Attack from two cells away
   await key(p,'ArrowRight');s=await state(p);assert.equal(s.units.C.pos.x,3); // kill E before the remaining Quick Attack PP is used on R
   for(let i=0;i<4;i++)await key(p,'.');s=await state(p);assert.equal(s.round,6);assert.equal(s.units.R.hp,8);assert.deepEqual(s.units.R.pos,{x:4,y:1});assert.equal(s.units.C.hp,14); // R walks from 9 to 4, then deals one 6-point STAB Tackle
@@ -465,7 +468,8 @@ async function walkTo(p,target,{mouseFirst=false}={}){
  }
  throw Error('route not finished');
 }
-async function viaStairs(p){await click(p,'take-exit');await click(p,'exit-confirm');
+async function viaStairs(p){   // the prompt opens by itself on the stairs; after "不前进" the bottom-bar button brings it back
+ await p.waitForTimeout(150);if(!(await p.locator('#stairs-go').count()))await click(p,'stairs-reopen');await click(p,'stairs-go');
  // Partners now chase enemies up to six cells from the leader, so the stairs round may end with an invitation or a level-up to answer first.
  for(let i=0;i<12;i++){const phase=(await state(p))?.phase;if(phase==='playing')return;
   if(phase==='invitation')await click(p,'reject');else if(phase==='learning')await click(p,'learn-skip');else if(phase==='evolution')await click(p,'evolution-close');else await p.waitForTimeout(300);}
@@ -633,7 +637,7 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   const lead=s.units[s.leader].pos,near=hurt.find(id=>Math.abs(s.units[id].pos.x-lead.x)+Math.abs(s.units[id].pos.y-lead.y)<=1);
   assert.ok(near,'hurt member within reach of the leader: '+JSON.stringify({hurt,lead}));
   const before=s.units[near].hp,max=s.units[near].maxHp,rounds=s.round;
-  await click(p,'use-berry');await p.locator('#target-hint').waitFor();assert.ok(await p.locator('#unit-card-'+near+'.is-target').count(),'the hurt member is lit as a target');await p.locator('#unit-card-'+near+' .hud-party-main').click();await ready(p);
+  await click(p,'use-berry');await pickTarget(p,near);await ready(p);
   const after=await state(p);assert.equal(after.prog.items.berry,0);assert.equal(after.round,rounds+1);
   assert.ok(after.log.some(t=>t.includes('使用橙橙果')&&t.includes(`HP ${before}→${Math.min(max,before+8)}`)),'berry restores 8 HP up to the maximum (an enemy hit in the same round is separate)');
   await p.screenshot({path:artifact+'windows-expedition-items.png',fullPage:true});
@@ -691,7 +695,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
    let s=await state(p);assert.equal(s,null);
   await openCampRoster(p,'P3');
   await p.locator('[data-camp-move]').first().focus();await p.locator('#camp-move-tooltip').waitFor({state:'visible'});
-  const baseMoves=await p.locator('#camp-move-tooltip').innerText();assert.match(baseMoves,/射程\s*1格/);assert.match(baseMoves,/威力\s*6/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
+  const baseMoves=await p.locator('#camp-move-tooltip').innerText();assert.doesNotMatch(baseMoves,/射程/,'an adjacent single target says nothing about range');assert.match(baseMoves,/威力\s*6/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
   assert.equal(await p.locator('#camp-move-tooltip .hud-range-cell.is-active').count(),1);
   assert.equal(await p.locator('#camp-move-tooltip .hud-range-cell.is-active,#camp-move-tooltip .hud-range-cell.is-direction').count(),8,'the front move diagram retains all eight adjacent directions');
   const prof=()=>p.evaluate(()=>window.trial.profile());
@@ -768,7 +772,7 @@ await test('基地6.5：休整点按钮只用一次，PP已满时被拒且不消
   await p.goto(base+'?dev=1');await p.locator('#start').waitFor();await emptyReady(p);await startMemory(p,full,profile);await p.locator('#rest').waitFor();
   const s0=await state(p);assert.equal(s0.points.find(q=>q.kind==='rest').used,false);
   assert.equal(await p.locator('#rest-panel h2').innerText(),'休整点');assert.equal(await p.locator('#rest-panel #rest').innerText(),'休整','the rest point is a shop-style panel with one button');
-  assert.equal(await p.locator('#rest-text').innerText(),'每名存活队员的每个招式恢复 '+PROG.restPp+' PP；每个休整点只能用一次。','rest text uses the current shared PP amount');
+  assert.equal(await p.locator('#rest-text').innerText(),'每个招式 PP +'+PROG.restPp,'rest text uses the current shared PP amount, in a few words');
   await click(p,'rest');          // PP are full: refused with the reason, nothing changes
   assert.deepEqual(await state(p),s0);assert.match(await p.locator('#message').innerText(),/PP都已满.*没有消耗/);
   // Reload discards the first developer world; create a second in-memory fixture with one PP spent.
@@ -891,7 +895,7 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   assert.match(await p.locator('.starter-stats').getAttribute('aria-label'),/HP 44.*攻击 48.*防御 65.*特攻 50.*特防 64.*速度 43/);
   await p.screenshot({path:artifact+'windows-starter-aligned-1280.png'});
   const water=p.locator('[data-starter-move=watergun]');
-  assert.deepEqual(await water.locator('dt').allTextContents(),['威力','命中','PP','射程','范围']);
+  assert.deepEqual(await water.locator('dt').allTextContents(),['威力','命中','PP'],'only what is not the default: no range for an adjacent target, no 范围 row');
   assert.equal(await water.locator('.hud-range-cell').count(),25);
   assert.equal(await water.locator('.starter-move-description').isVisible(),false);
   await water.hover();
@@ -958,7 +962,7 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   assert.equal(await raw(p),campTextBytes,'viewing each selected partner preserves the exact camp save');
    const campBeforeRun=await raw(p);await click(p,'depart');await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
     let s=await state(p);assert.equal(s.scenario,'expedition');assert.deepEqual(s.queue,['A','B']);assert.equal(s.units.A.species,'treecko');assert.equal(s.leader,'A');assert.equal(s.units.A.tactic,'followme');assert.equal(s.units.B.tactic,'avoid');
-    assert.match(await p.locator('#goal-label').innerText(),/Lv5 · 升级经验 0\/5/);assert.match(await p.locator('#goal-label').innerText(),/升到下一级需当前等级经验/);
+    assert.match(await p.locator('#goal-label').innerText(),/Lv5 · 升级经验 0\/5/);assert.doesNotMatch(await p.locator('#goal-label').innerText(),/升到下一级需/,'no explanation next to the experience numbers');
    assert.equal(await raw(p),campBeforeRun,'departure leaves the selected camp tactics in the saved profile');
    const beforeMenu=structuredClone(s);await click(p,'detail-1');await p.locator('[data-detail-tactic="wait"]').click();await p.waitForFunction(()=>window.trial.getState().units.B.tactic==='wait');
    beforeMenu.units.B.tactic='wait';assert.deepEqual(await state(p),beforeMenu,'changing a maze tactic changes only that unit and does not advance a round');assert.equal(await raw(p),campBeforeRun);
@@ -1019,7 +1023,7 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   const units=await p.evaluate(()=>{const s=window.trial.getState(),v=window.trial.view(),g=v.geometry,c=v.cameraView,cam=window.trial.camera();return s.enemies.map(id=>s.units[id]).filter(u=>u?.hp>0&&u.pos).find(u=>{const x=g.ox+(u.pos.x-g.minX+.5)*g.cell-cam.x,y=g.oy+(u.pos.y-g.minY+.5)*g.cell-cam.y;return x>=0&&x<c.width&&y>=0&&y<c.height;})?.pos??null;});
   if(units)await hoverCell(p,units.x,units.y);
   await move.hover();const tip=p.locator('#hud-tooltip');await tip.waitFor({state:'visible'});let detail=await tip.innerText();
-  for(const field of ['威力','命中','PP','射程','范围'])assert.ok(detail.includes(field),`the move tooltip exposes ${field}`);
+  for(const field of ['威力','命中','PP'])assert.ok(detail.includes(field),`the move tooltip exposes ${field}`);assert.ok(!detail.includes('范围'));
   const moveDescription=JSON.parse(fs.readFileSync(new URL('../../src/data/move-desc-zh.json',import.meta.url),'utf8')).moves[skill].desc;
   assert.equal(await tip.locator('[data-move-description]').textContent(),moveDescription,'the hover tooltip matches the local Chinese description for the selected move');
   assert.ok((await tip.locator(`[data-move-preview="${skill}"]`).textContent())?.trim(),'the hover card carries the live move estimate');
@@ -1046,7 +1050,7 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   overflow=await p.evaluate(()=>({scrollY:window.scrollY,scrollX:window.scrollX,scrollHeight:document.documentElement.scrollHeight,scrollWidth:document.documentElement.scrollWidth,clientHeight:document.documentElement.clientHeight,clientWidth:document.documentElement.clientWidth}));
   assert.equal(overflow.scrollY,0);assert.equal(overflow.scrollX,0);assert.ok(overflow.scrollHeight<=overflow.clientHeight&&overflow.scrollWidth<=overflow.clientWidth);
   assert.deepEqual(errors,[]);
-  return {realPlayerSave:true,moves:4,quickSlots:6,firstMoveKey:true,tooltipFields:['威力','命中','PP','射程','范围'],bagCategories:['all','berry','drink','tm','other'],emptyInventory:true,tabCycle:true,guideAbsent:true,noPageOverflow:true,screenshots:['windows-hud-main-default.png','windows-hud-main-hover.png','windows-hud-main-bag.png','windows-hud-main-switch.png']};
+  return {realPlayerSave:true,moves:4,quickSlots:6,firstMoveKey:true,tooltipFields:['威力','命中','PP'],bagCategories:['all','berry','drink','tm','other'],emptyInventory:true,tabCycle:true,guideAbsent:true,noPageOverflow:true,screenshots:['windows-hud-main-default.png','windows-hud-main-hover.png','windows-hud-main-bag.png','windows-hud-main-switch.png']};
  }finally{await context.close();}
 });
 await test('162 新果实：八种背包物品、分类分配、真实使用与无效目标拒绝',async()=>{
@@ -1088,13 +1092,8 @@ await test('162 新果实：八种背包物品、分类分配、真实使用与�
     }
    }
    assert.deepEqual(await state(p),before,'browsing and assigning inventory do not mutate the world or spend a turn');
-   await click(p,'bag-close');await slot.click();await ready(p);await p.locator('#target-hint').waitFor();
-   // choosing the item opens the target state: a member without the matching condition is dimmed and cannot be clicked, so nothing is spent
-   assert.equal(await p.locator('#unit-card-A.is-dim').count(),1,'a member without the matching condition is dimmed');assert.equal(await p.locator('#unit-card-A .hud-party-main').isDisabled(),true);
-   assert.equal(await p.locator('#unit-card-B.is-target').count(),1,'the member with the condition is lit');
-   await p.locator('#unit-card-A .hud-party-main').click({force:true,timeout:2000}).catch(()=>{});
-   assert.deepEqual(await state(p),before,'an item with no matching condition is not used on that member and costs nothing');
-   await p.locator('#unit-card-B .hud-party-main').click();await ready(p);
+   // only the member with the condition can use it, so the item is used on that member at once (no second confirmation)
+   await click(p,'bag-close');await slot.click();await ready(p);
    const after=await state(p);
    assert.equal(after.round,before.round+1,'a real item use advances exactly one round');
    assert.equal(after.prog.items[item],0,'the used item is consumed once');
@@ -1303,7 +1302,7 @@ await test('162 同页替换新档：成功清空快捷分配，写入失败保�
   await p.goto(base);await p.locator('#title-new').click();await newGameClicks(p,'treecko','mudkip');
   await confirmDeparture(p);await ready(p);await injectHeldTonic();
   await click(p,'bag-open');await p.locator('[data-bag-slot="4"]').click();await p.locator('[data-bag-category="all"]').click();await p.locator('[data-bag-item="tonic"]').click();await p.locator('#bag-pin').click();await click(p,'bag-close');
-  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。给自己或相邻的队员，每个招式恢复 10 PP（不超过上限）。');
+  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。给自己或相邻队员，每个招式回复 10 PP');
   await finishThroughWipe();const original=await raw(p);assert.ok(original);
   await p.locator('#title-new').click();await p.locator('#overwrite-yes').click();
   await p.locator('#pick-main-charmander').click();await p.locator('#main-next').click();await p.locator('#pick-deputy-squirtle').click();
@@ -1311,7 +1310,7 @@ await test('162 同页替换新档：成功清空快捷分配，写入失败保�
   await p.getByText(/没有写入新存档/).waitFor();assert.equal(await raw(p),original,'a failed replacement retains the exact old camp bytes');
   await p.evaluate(()=>{window.__failNewProfile=false;});await p.locator('#deputy-back').click();await p.locator('#newgame-cancel').click();await p.locator('#title-continue').click();
   await confirmDeparture(p);await ready(p);await injectHeldTonic();
-  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。给自己或相邻的队员，每个招式恢复 10 PP（不超过上限）。','failed new-game persistence retains the old UI assignment and effect');
+  assert.equal(await p.locator('[data-hud-quick="4"]').getAttribute('aria-label'),'PP多项小补剂 ×1。给自己或相邻队员，每个招式回复 10 PP','failed new-game persistence retains the old UI assignment and effect');
   await finishThroughWipe();await p.locator('#title-new').click();await p.locator('#overwrite-yes').click();await newGameClicks(p,'charmander','squirtle');
   assert.deepEqual((await p.evaluate(()=>window.trial.profile())).roster.map(u=>u.species),['charmander','squirtle']);
   await confirmDeparture(p);await ready(p);await injectHeldTonic();const before=await state(p);
@@ -1610,7 +1609,7 @@ await test('8.9a 道具房：实际拾取四种道具、分类分配、使用与
     assert.equal((await p.locator('[data-hud-quick="2"]').getAttribute('aria-label')),'空快捷格','duplicate item assignment clears its original quick slot');
     assert.match(await p.locator('[data-bag-slot="2"]').getAttribute('aria-label'),/空快捷格/,'the backpack also shows the duplicate slot as empty');
     assert.deepEqual(await state(p),beforeAssign,'assigning a collected item does not advance or mutate the run');
-    await click(p,'bag-close');await p.locator('[data-hud-quick="4"]').click();await ready(p);await p.locator('#target-hint').waitFor();await p.locator('#unit-card-A .hud-party-main').click();
+    await click(p,'bag-close');await p.locator('[data-hud-quick="4"]').click();await ready(p);await pickTarget(p,'A');
    }else if(item==='teamTonic')await click(p,'use-'+item);
    else{
     const category=item==='maxElixir'?'drink':'other',beforeAssign=await state(p);
@@ -1620,7 +1619,7 @@ await test('8.9a 道具房：实际拾取四种道具、分类分配、使用与
     assert.equal(await p.locator('#hud-bottom [data-hud-quick]').count(),6);
     assert.deepEqual(await state(p),beforeAssign,'category and quick assignment do not spend an action');
     await p.screenshot({path:artifact+'windows-rooms191-'+item+'-bag.png',fullPage:false});
-    await click(p,'bag-close');await p.locator('[data-hud-quick="5"]').click();await ready(p);await p.locator('#target-hint').waitFor();await p.locator('#unit-card-A .hud-party-main').click();
+    await click(p,'bag-close');await p.locator('[data-hud-quick="5"]').click();await ready(p);await pickTarget(p,'A');
    }
    s=await state(p);assert.equal(s.prog.items[item],0);
    if(item==='bigBerry')assert.equal(s.units.A.hp,s.units.A.maxHp);
@@ -1643,7 +1642,8 @@ await test('8.4 委托与祝福：实际接下、拒绝、三选一、放弃及�
    const room=fixture.adventureRooms.find(r=>r.type===type);assert.ok(room);
    fixture.units.A.pos={...room.interaction};fixture.seen=fixture.floor.map(q=>q.x+','+q.y);
    for(const id of fixture.enemies)fixture.units[id].waitOnly=true;
-   await startMemory(p,fixture);await click(p,'interact-'+type);
+   await startMemory(p,fixture);   // standing on the cell opens the choice at once: no panel with a button in between
+   await p.waitForFunction(ph=>window.trial.getState().phase===ph,type,{timeout:5000});assert.equal(await p.locator('#adventure-room-panel').count(),0);await ready(p);
    const offered=await state(p);assert.equal(offered.phase,type);
    await p.screenshot({path:artifact+'windows-84-'+type+'-'+choice+'-offer.png',fullPage:true});
    if(type==='commission'){
@@ -2014,7 +2014,7 @@ await test('#194 全部物品说明、敌招分行与队友显式详情',async()
   for(const item of Object.keys(ITEM_NAMES)){
    const button=p.locator('[data-bag-item="'+item+'"]');await button.click();
    const description=p.locator('.c195-bag-text');assert.ok(await description.isVisible(),'effect stays visible in the detail panel: '+item);
-   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/最大 HP/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠.*不解除打盹/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP.*上限/,slumberOrb:/所有敌人.*睡着/,totterOrb:/所有敌人.*混乱/,luminousOrb:/全部地形/,rollcallOrb:/同行.*身边/,reviverSeed:/倒下的瞬间.*一半/};
+   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/HP.*回满/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP/,slumberOrb:/所有敌人.*睡着/,totterOrb:/所有敌人.*混乱/,luminousOrb:/全部地形/,rollcallOrb:/同行.*身边/,reviverSeed:/倒下时.*一半/};
    assert.match(text,effects[item],'visible effect matches the current item rule: '+item);assert.ok((await button.getAttribute('aria-label')).includes(ITEM_NAMES[item]),'accessible item label names the item: '+item);
    assert.match(await p.locator('.c195-bag-detail').innerText(),new RegExp(ITEM_NAMES[item]),'detail shows the selected item name');
   }
@@ -2092,12 +2092,14 @@ await test('#194 手机触屏 '+touchWidth+'px 全部快捷物品先选中看说
   await context.addInitScript(()=>{window.__trialNoAnim=true;});await p.goto(base+'?dev=1');await p.locator('#start').waitFor();
   const {ITEM_NAMES}=await import('../../src/core/engine.ts'),w=await playtest194World();for(const item of Object.keys(ITEM_NAMES))w.prog.items[item]=1;
   const leader=w.units[w.leader],move=leader.learned[0];leader.pp[move]=leader.maxPp[move]-7;
+  for(const id of w.queue)w.units[id].hp=w.units[id].maxHp;   // nobody is hurt, so a tapped item opens its target state instead of acting on the only member who could use it
   await startMemory(p,w);const before=await state(p);
   const assign=async (item,slot=0)=>{await p.locator('#bag-open').tap();await p.locator('[data-bag-slot="'+slot+'"]').tap();await p.locator('[data-bag-category="all"]').tap();await p.locator('[data-bag-item="'+item+'"]').tap();await p.locator('#bag-pin').tap();await p.locator('#bag-close').tap();};
   // The Reviver Seed is automatic: it has no use or pin button (PR 214), so it is not part of the quick-slot walk.
   for(const [index,item] of Object.keys(ITEM_NAMES).filter(i=>i!=='reviverSeed').entries()){
+   if(['teamTonic','slumberOrb','totterOrb','luminousOrb','rollcallOrb','tonic','maxElixir','violentSeed'].includes(item))continue;   // these act at once when tapped (whole-team items, and the PP items while only the leader has spent PP), so there is no selected state to look at
    const slot=index%6;await assign(item,slot);const quick=p.locator('[data-hud-quick="'+slot+'"]');await quick.tap();
-   assert.equal(await quick.getAttribute('aria-pressed'),'true');assert.ok(await p.locator('[data-selected-item-description]').isVisible(),item+' has a stable selected description after a real touch');
+   assert.equal(await quick.getAttribute('aria-pressed'),'true',item+' is selected after the tap');assert.ok(await p.locator('[data-selected-item-description]').isVisible(),item+' has a stable selected description after a real touch');
    assert.equal(await p.locator(['teamTonic','slumberOrb','totterOrb','luminousOrb','rollcallOrb'].includes(item)?'#hud-item-targets strong':'#target-hint span').innerText(),ITEM_NAMES[item]);
    const descriptions=await p.locator('.hud-quick-slot .hud-item-description:visible,[data-selected-item-description]').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight};}));
    assert.ok(descriptions.every(r=>r.left>=0&&r.right<=r.width&&r.top>=0&&r.bottom<=r.height),'selected effects stay inside the phone viewport: '+item+' '+JSON.stringify(descriptions));
@@ -2105,10 +2107,9 @@ await test('#194 手机触屏 '+touchWidth+'px 全部快捷物品先选中看说
    assert.deepEqual(await state(p),before,'viewing '+item+' does not consume it or spend a round');
    await quick.tap();assert.equal(await quick.getAttribute('aria-pressed'),'false');
   }
-  await assign('teamTonic');await p.locator('[data-hud-quick="0"]').tap();assert.deepEqual(await state(p),before);
-  await p.locator('#item-use-teamTonic').tap();await ready(p);const after=await state(p);
+  await assign('teamTonic');await p.locator('[data-hud-quick="0"]').tap();await ready(p);const after=await state(p);   // the team tonic acts at once
   assert.equal(after.round,before.round+1);assert.equal(after.prog.items.teamTonic,0);assert.equal(after.units[after.leader].pp[move],before.units[before.leader].pp[move]+5);
-  await p.screenshot({path:artifact+'playtest194-touch-'+touchWidth+'x844.png'});assert.deepEqual(errors,[]);return {touch:true,selectedItems:Object.keys(ITEM_NAMES).length-1,selectionConsumesNothing:true,teamTonicConfirm:true};
+  await p.screenshot({path:artifact+'playtest194-touch-'+touchWidth+'x844.png'});assert.deepEqual(errors,[]);return {touch:true,selectedItems:Object.keys(ITEM_NAMES).length-1,selectionConsumesNothing:true,teamTonicActsAtOnce:true};
  }finally{await context.close();}
 });
 

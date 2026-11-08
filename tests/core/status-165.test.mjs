@@ -18,7 +18,7 @@ import {sureHit} from './sure-hit.mjs';
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));
 let sequence=0;
 function world({floor=rect(0,8,0,8),friends=[friend('A',1,1,60,{tackle:5})],enemies=[],hit=true}={}){
-  const s=createMain(`status165-${++sequence}`,false);
+  const s=createMain(`status165-${++sequence}`,false);s.noCrit=true;   // exact damage and draw counts; critical hits have their own tests
   s.floor=floor;s.seen=floor.map(key);s.units=Object.fromEntries([...friends,...enemies].map(u=>[u.id,u]));
   s.queue=friends.map(u=>u.id);s.enemies=enemies.map(u=>u.id);s.leader=s.queue[0];s.camp=[];s.points=[];s.log=[];
   delete s.rooms;delete s.dungeon;delete s.prog;delete s.tms;delete s.shop;delete s.exchange;s.purse=0;
@@ -252,10 +252,10 @@ test('G1 special moves use the special attack and defence stages; physical ones 
   const mk=(move,edit)=>{const a=friend('A',1,1,60);equip(a,move,3);const e=still('E','geodude',2,1,200);edit(a,e);return skill(world({friends:[a],enemies:[e]}),'A',move,'E');};
   const none=200-mk('ember',()=>{}).units.E.hp;
   assert.equal(200-mk('ember',(a,e)=>{e.stages.def=3;}).units.E.hp,none,'defence stage does not touch a special move');
-  assert.equal(200-mk('ember',(a,e)=>{e.stages.spd=3;}).units.E.hp,none-3);
-  assert.equal(200-mk('ember',(a,e)=>{a.stages.spa=2;}).units.E.hp,none+2);
+  assert.equal(200-mk('ember',(a,e)=>{e.stages.spd=3;}).units.E.hp,Math.round(none*256/486),'+3 special defence: damage x 256/486 (10 -> 5)');
+  assert.equal(200-mk('ember',(a,e)=>{a.stages.spa=2;}).units.E.hp,Math.round(none*332/256),'+2 special attack: damage x 332/256 (10 -> 13)');
   const phys=200-mk('tackle',()=>{}).units.E.hp;
-  assert.equal(200-mk('tackle',(a,e)=>{e.stages.def=2;}).units.E.hp,phys-2);assert.equal(200-mk('tackle',(a,e)=>{e.stages.spd=3;}).units.E.hp,phys);
+  assert.equal(200-mk('tackle',(a,e)=>{e.stages.def=2;}).units.E.hp,Math.round(phys*256/409),'+2 defence: damage x 256/409 (9 -> 6)');assert.equal(200-mk('tackle',(a,e)=>{e.stages.spd=3;}).units.E.hp,phys);
   assert.equal(stageOf({stages:{atk:0,def:0}},'spa'),0);assert.equal(stageOf({stages:{atk:0,def:0}},'spe'),0);
 });
 test('G2 the 29 stat-lowering side effects map to the stages; speed changes do not take effect; the 7 self-raising ones raise the user',()=>{

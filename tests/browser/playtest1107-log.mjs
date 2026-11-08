@@ -32,7 +32,7 @@ for(const how of ['button','key']){
 await p.evaluate(()=>{const s=window.trial.store.world;for(let i=0;i<30;i++)s.log.push('测试记录第'+i+'行');window.dispatchEvent(new Event('blur'));});
 await p.waitForTimeout(400);
 const box=p.locator('#recent-events');
-assert.ok(await box.locator('.log-hint').isVisible(),'the corner hint is shown');assert.match(await box.locator('.log-hint').innerText(),/记录/);
+assert.equal(await box.locator('.log-hint').count(),0,'no instruction sentence sits in the log box');
 const before=await box.evaluate(el=>({top:el.scrollTop,max:el.scrollHeight-el.clientHeight}));assert.ok(before.max>0&&before.top>=before.max-2,'the box starts at the newest line');
 const rect=await box.boundingBox();await p.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);await p.mouse.wheel(0,-200);await p.waitForTimeout(200);
 const after=await box.evaluate(el=>el.scrollTop);assert.ok(after<before.top,'the mouse wheel scrolls back through older lines');

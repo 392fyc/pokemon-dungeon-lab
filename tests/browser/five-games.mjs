@@ -30,7 +30,8 @@ let gameTiming=null;
 const deadline=setTimeout(()=>{report.deadlineReached=true;console.error('Five-game browser check exceeded its 40-minute deadline');void browser.close();},40*60*1000);
 const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
 await context.addInitScript(()=>{
- window.__trialNoAnim=true;window.__trialNoAutoSleep=true;window.__movementInputTrace=[];
+ window.__trialNoAnim=true;window.__trialNoAutoSleep=true;window.__trialNoAutoInteract=true;   // this driver proves one key = one round, so a room choice must not open by itself in between
+ window.__movementInputTrace=[];
  for(const type of ['keydown','keyup'])addEventListener(type,event=>{if(!['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;const s=window.trial?.getState(),entry={type,key:event.key,at:event.timeStamp,round:s?.round};window.__movementInputTrace.push(entry);if(window.__movementInputTrace.length>64)window.__movementInputTrace.shift();queueMicrotask(()=>{entry.afterRound=window.trial?.getState()?.round;});},true);
 });
 const page=await context.newPage(),errors=[];
@@ -138,10 +139,10 @@ async function command(c){
  else if(a.type==='skill'){await click('skill-'+a.skill);await cell(a.targetPos);}
  else if(a.type==='wait')await click('wait');
  else if(a.type==='swap'){await click('swap');await click('partner-'+a.target);await click('submit');}
- else if(a.type==='use'){await click('use-'+a.item);if(a.item==='teamTonic'||['slumberOrb','totterOrb','luminousOrb','rollcallOrb'].includes(a.item))await click('item-use-'+a.item);else{await page.locator('#target-hint').waitFor();await page.locator('#unit-card-'+a.target+' .hud-party-main').click();}}
+ else if(a.type==='use'){await click('use-'+a.item);await page.waitForTimeout(300);if(await page.locator('#target-hint').count())await page.locator('#unit-card-'+a.target+' .hud-party-main').click();}   // one usable target (or a whole-team item) is used at once
  else if(a.type==='rest')await click('rest');
  else if(a.type==='interact'){
-  if(a.exit){await click('take-exit');await click('exit-confirm');}else await click('take');
+  if(a.exit){await page.waitForTimeout(150);if(!(await page.locator('#stairs-go').count()))await click('stairs-reopen');await click('stairs-go');}else await click('take');
  }else throw Error('Unsupported route action '+JSON.stringify(a));
  const after=await state();
  assert.ok(after.round>c.beforeRound,'UI action must advance a complete round; action: '+JSON.stringify(a)+'; notice: '+await page.locator('#message').innerText()+'; visible state: '+JSON.stringify(visibleView(after)));

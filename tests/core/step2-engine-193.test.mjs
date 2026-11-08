@@ -9,7 +9,7 @@ import {moveEffectLabel,localizeLog} from '../../src/core/describe.ts';
 import {rngStep} from '../../src/core/engine.ts';
 
 function isolatedBattle(){
-  const s=createMain('step2-engine-193',false);
+  const s=createMain('step2-engine-193',false);s.noCrit=true;   // these tests fix damage numbers and draw order; critical hits have their own tests (crit.test.mjs)
   s.queue=['A'];s.leader='A';s.enemies=['E'];
   s.units.A.pos={x:3,y:1};s.units.E.pos={x:4,y:1};s.units.E.waitOnly=true;
   for(const id of ['B','C','R']){s.units[id].hp=0;s.units[id].pos=null;}

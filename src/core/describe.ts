@@ -1,5 +1,5 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
-import {damageStage,levelDamageBonus,ITEM_NAMES,ORB_ITEMS,SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
+import {attackStageMultiplier,defenceStageMultiplier,damageStage,levelDamageBonus,ITEM_NAMES,ORB_ITEMS,SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
 import {SPECIES} from './roster.ts';
 import {currentStats,type StatKey} from './stats.ts';
 import {MOVE_DEFS,moveOf,moveEffects,type StageKey,type StatusId,type MoveRange} from './moves.ts';
@@ -15,6 +15,23 @@ export const unitLabel=(u:Unit|undefined,_id:string):string=>unitName(u);
 /** A skill is a move id, so its label is the move's Chinese name with no behavior suffix. */
 export const skillLabel=(_u:Unit|undefined,skill:Skill):string=>SKILL_CN[skill]??moveZh(skill);
 const RANGE_CN:Record<MoveRange,string>={front:'相邻1格（含斜向，斜向不穿墙角）',front2:'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角',line10:'同排、同列或斜线至多10格，命中首个单位（队友也会被命中），斜向不穿墙角',around:'使用者周围8格（斜向不穿墙角）',room:'同房间；走廊或无房间数据时周围2格',user:'自身'};
+/** The short range tag, only for a non-default reach: an adjacent single target (and self) says nothing. */
+export function moveRangeTag(id:string):string{const r=moveOf(id)?.range;return r==='front2'?'2格':r==='line10'?'直线 10 格':r==='around'?'周围':r==='room'?'同房间':'';}
+const STAT_ZH:Record<string,string>={atk:'攻击',def:'防御',spa:'特攻',spd:'特防',acc:'命中',eva:'闪避'};
+/** What a move does in a few words ("攻击 +2", "使对手睡眠"), for status moves where power and hit chance say nothing. Damage moves return ''. */
+export function moveShortEffect(id:string):string{
+  const spec=moveOf(id);if(!spec||spec.effects.includes('damage')||id==='snore')return '';
+  const foe=spec.target==='enemy'||spec.target==='all',parts:string[]=[];
+  for(const e of spec.effects){
+    const st=/^stage:(\w+):([+-]\d+)$/.exec(e);
+    if(st){parts.push((foe?'对手':'')+(STAT_ZH[st[1]]??st[1])+' '+st[2]);continue;}
+    if(e.startsWith('status:'))parts.push((foe?'使对手':'使自身')+STATUS_NAMES[e.slice(7) as StatusId]);
+    else if(e==='protect')parts.push('守住');else if(e==='counter')parts.push('反击');else if(e==='quickguard')parts.push('快速防守');
+    else if(e==='reflect')parts.push('反射壁');else if(e==='lightscreen')parts.push('光墙');else if(e==='rest')parts.push('睡眠并回满');
+    else if(e==='sleeptalk')parts.push('梦话');else if(e==='blowaway')parts.push('吹飞');else if(e.startsWith('heal:'))parts.push('回复一半 HP');
+  }
+  return parts.join('、');
+}
 export function moveRangeLabel(id:string):string{const spec=moveOf(id);return spec?RANGE_CN[spec.range]:'未知射程';}
 export type DamageSummaryContext={s:World;sourceId:string;targetId?:string};
 /** Uses the engine estimate for player-facing action previews; without context, existing reference text stays intact. */
@@ -36,7 +53,7 @@ export function moveEffectLabel(id:string,context?:DamageSummaryContext,side?:Un
     else if(effect==='rest')parts.push('自身进入打盹2—3轮；结束时回满HP并解除全部异常');
     else if(effect==='snore')parts.push(`睡眠或打盹中受到${foeUnit}直接攻击且未醒来时，对攻击者发动；不受射程限制且不造成畏缩`);
     else if(effect==='sleeptalk')parts.push(`睡眠或打盹中受到${foeUnit}直接攻击且未醒来时，随机发动一招；不受射程限制`);
-    else if(effect==='heal:1:2')parts.push(`${spec.target==='party'?'同房间全队':'自身'}回复各自最大HP的一半（四舍五入，不超过上限）`);
+    else if(effect==='heal:1:2')parts.push(`${spec.target==='party'?'同房间全队':'自身'}回复各自最大HP的一半`);
     else if(effect.startsWith('status:'))parts.push(`命中后施加${STATUS_NAMES[effect.slice(7) as StatusId]}`);
     else if(effect==='protect')parts.push(`自身受到${foe}攻击伤害为0（3个${foe}阶段）`);
     else if(effect==='counter')parts.push(`反击相邻${foeUnit}的有效伤害（3个${foe}阶段）`);
@@ -44,11 +61,11 @@ export function moveEffectLabel(id:string,context?:DamageSummaryContext,side?:Un
     else if(effect==='reflect')parts.push(`使用时范围内全队受到的物理攻击伤害减半（10个${foe}阶段）`);
     else if(effect==='lightscreen')parts.push(`使用时范围内全队受到的特殊攻击伤害减半（10个${foe}阶段）`);
     else if(effect==='blowaway')parts.push(spec.effects.includes('damage')?'伤害后沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害':'沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害');
-    else {const stage=/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/.exec(effect);if(stage){const who=spec.range==='room'&&spec.target==='teammates'?'同房间队友':spec.range==='user'?'自身':'目标';parts.push(`${who}${STAGE_NAMES[stage[1] as StageKey]}${stage[2]}（上限±3）`);}}
+    else {const stage=/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/.exec(effect);if(stage){const who=spec.range==='room'&&spec.target==='teammates'?'同房间队友':spec.range==='user'?'自身':'目标';parts.push(`${who}${STAGE_NAMES[stage[1] as StageKey]}${stage[2]}`);}}
   }
   return parts.join('；')||'无效果说明';
 }
-export const moveSummary=(id:string,context?:DamageSummaryContext,side?:Unit['side'],level?:number):string=>`${moveRangeLabel(id)} · ${moveEffectLabel(id,context,side,level)}`;
+export const moveSummary=(id:string,context?:DamageSummaryContext,side?:Unit['side'],level?:number):string=>`${moveRangeTag(id)?moveRangeTag(id)+' · ':''}${moveEffectLabel(id,context,side,level)}`;
 
 export type AdventureRoomMarker={room:number;at:Pos;kind:'door'|'interaction';roomType:AdventureRoomType;state:'idle'|'sealed'|'cleared'|'done';label:string;typeLabel:string;stateLabel:string;dimmed:boolean;itemLabel?:string};
 /** Show a room label on its first discovered door and keep the interaction marker separate. Hidden doors produce no marker. */
@@ -77,7 +94,7 @@ export function actionText(s:World,actor:string,a:Action):string {
     case 'skill':return `${skillLabel(s.units[actor],a.skill)} → ${a.target===actor?'自身':who(a.target)}`;
     case 'swap':return `与${who(a.target)}换位`;
     case 'use':return a.item==='teamTonic'?`使用${ITEM_NAMES[a.item]}恢复在场同行的PP`:ORB_ITEMS.includes(a.item)?`使用${ITEM_NAMES[a.item]}`:`使用${ITEM_NAMES[a.item]} → ${who(a.target)}`;
-    case 'interact':return a.exit?'交互并请求跨层':'取得并继续';
+    case 'interact':return a.exit?'前进或撤离':'取得并继续';
     case 'exchange':return `启动交换机，把${who(a.target)}送回基地，运走${a.cargo.length}份招式机`;
     default:return '等待';
   }
@@ -97,7 +114,8 @@ const STAT_LABELS:Record<'hp'|StatKey,string>={hp:'HP',atk:'攻击',def:'防御'
 export function statSheet(s:World,u:Unit):StatRow[]|null {
   const sp=u.species?SPECIES[u.species]:undefined,cur=currentStats(u),base=sp?.baseStats;if(!cur||!base)return null;
   const rows:StatRow[]=[{key:'hp',label:STAT_LABELS.hp,value:u.maxHp,base:base.hp,stage:0}];
-  for(const k of ['atk','def','spa','spd'] as const)rows.push({key:k,label:STAT_LABELS[k],value:cur[k],base:base[k],stage:damageStage(s,u,k)});
+  // The value shown is the one the damage rule uses: the level-based value times the stage multiplier (attack side or defence side).
+  for(const k of ['atk','def','spa','spd'] as const){const stage=damageStage(s,u,k),mult=k==='atk'||k==='spa'?attackStageMultiplier(stage):defenceStageMultiplier(stage);rows.push({key:k,label:STAT_LABELS[k],value:Math.round(cur[k]*mult),base:base[k],stage});}
   rows.push({key:'spe',label:STAT_LABELS.spe,value:cur.spe,base:base.spe,stage:0,doesNotAffectAction:true});
   return rows;
 }
@@ -148,16 +166,25 @@ export function playerText(text:string):string {
  return value;
 }
 /**
- * Display-only merge of the engine's separate type note into its damage line (the engine log keeps its own format; animation.ts and the tests parse it):
- * "X受到N伤害，HP h" + "效果绝佳"/"效果不好" -> "X受到N伤害，效果绝佳"/"……效果不好"; "X受到0伤害，HP h" + "没有效果" (an engine note written only for a type immunity) -> "X受到0伤害，没有效果". Any other 0 damage (guard, quick guard) stays as the plain line.
+ * Display-only merge of the engine's separate type note into its damage line (the engine log keeps its own format; the tests parse it):
+ * "X受到N伤害，HP h" + the engine's damage event (crit flag) + the "效果绝佳"/"效果不好" note lines -> one line "X受到N伤害，命中要害，效果绝佳". An immune target has its own log line ("<move>对X没有效果（…）") and a round event; 0 damage from a guard stays a plain line.
  * `merged` maps a line index to its replacement text; `skipped` holds the indexes of note lines that were folded in.
  */
-export function mergeLogLines(lines:readonly string[]):{merged:Map<number,string>;skipped:Set<number>} {
+export function mergeLogLines(lines:readonly string[],events:readonly {type:string;target?:string;amount?:number;crit?:true}[]=[]):{merged:Map<number,string>;skipped:Set<number>} {
   const merged=new Map<number,string>(),skipped=new Set<number>();
+  const NOTES=['效果绝佳','效果不好'];
+  const damage=events.filter(e=>e.type==='damage'),used=new Set<number>();
   lines.forEach((t,i)=>{
     const hit=/^(.+)受到(\d+)伤害，HP \d+$/.exec(t);if(!hit)return;
-    const note=lines[i+1];
-    if(note==='效果绝佳'||note==='效果不好'){merged.set(i,`${hit[1]}受到${hit[2]}伤害，${note}`);skipped.add(i+1);}
+    // The engine's damage event carries the critical flag; a line is matched to the first unused event for the same target and amount, in order.
+    const k=damage.findIndex((e,n)=>!used.has(n)&&e.target===hit[1]&&e.amount===Number(hit[2]));
+    if(k>=0)used.add(k);
+    const crit=k>=0&&!!damage[k].crit;
+    const notes:string[]=[];
+    for(let q=i+1;q<lines.length&&NOTES.includes(lines[q]);q++)notes.push(lines[q]);
+    if(!notes.length&&!crit)return;
+    merged.set(i,`${hit[1]}受到${hit[2]}伤害，${[...(crit?['命中要害']:[]),...notes].join('，')}`);
+    notes.forEach((_,q)=>skipped.add(i+1+q));
   });
   return {merged,skipped};
 }

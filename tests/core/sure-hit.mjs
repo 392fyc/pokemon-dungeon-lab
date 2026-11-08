@@ -4,6 +4,7 @@
  * Tests of the hit rules themselves do not use it.
  */
 export function sureHit(world){
+  world.noCrit=true;   // these tests fix damage numbers as well, so critical hits are out of the picture too
   for(const u of Object.values(world.units))u.stages={...u.stages,acc:3};
   for(const f of Object.values(world.dungeon?.stored??{}))for(const u of Object.values(f.units))u.stages={...u.stages,acc:3};
   return world;

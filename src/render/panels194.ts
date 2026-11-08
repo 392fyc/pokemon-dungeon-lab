@@ -4,9 +4,9 @@ import {TACTICS,TACTIC_LABELS,type Tactic} from '../core/tactics.ts';
 import {BLESSINGS,type Unit,type World} from '../core/engine.ts';
 import {rankLevel,rankThreshold,type Profile,type SettleSummary} from '../core/base.ts';
 import {moveZh,speciesZh,typeZh} from '../core/names.ts';
-import {unitLabel,statSheet,moveBaseDamage} from '../core/describe.ts';
+import {unitLabel,statSheet,moveBaseDamage,moveShortEffect,moveRangeTag} from '../core/describe.ts';
 import {hpAtLevel,statAtLevel} from '../core/stats.ts';
-import {starterMoveFields,hudStatusMarkup} from './hud.ts';
+import {starterMoveFields,hudStatusMarkup,blessingEffectLabel} from './hud.ts';
 import {portraitMarkup} from './portrait.ts';
 import {skinFor} from './sprites.ts';
 
@@ -41,48 +41,52 @@ export function typeChips(types:readonly string[]):string {
   return types.map(t=>'<span class="paper-type" style="background:'+(TYPES[t]??'#5f5e50')+'">'+esc(typeZh(t))+'</span>').join('');
 }
 const AXES=[['hp','HP','#3f8f3a'],['atk','攻击','#c2491f'],['def','防御','#a07a10'],['spa','特攻','#2b6fb0'],['spd','特防','#2f8f7f'],['spe','速度','#b0417f']] as const;
-const arrow=(n:number)=>n?(n>0?' ↑':' ↓')+Math.abs(n):'';
-/** The ability table, radar and the two lines that say how damage is worked out. Everything shown is read from the same numbers the damage rule uses (currentStats, damageStage). */
+const arrow=(n:number)=>n?' '+(n>0?'+':'-')+Math.abs(n):'';   // the stage label, +N or -N, next to the value
+/** One line per ability for the hover text of the table rows (the screen itself carries numbers only). */
+const STAT_HINT:Record<string,string>={hp:'体力。降到 0 就倒下。',atk:'攻击：影响物理招式和普通攻击造成的伤害。',def:'防御：减少受到的物理伤害。',spa:'特攻：影响特殊招式造成的伤害。',spd:'特防：减少受到的特殊伤害。',spe:'速度：这个游戏里不影响行动。'};
+/** The radar of the current ability values (HP on top, then clockwise): the numbers the damage rule reads, stage arrows included.
+ *  The scale is fixed (square-root radius up to RADAR_CAP), so the shape grows with every level and stays readable from Lv5 to Lv100. */
+const RADAR_CAP=120;
+const radarK=(v:number)=>Math.max(.05,Math.min(1,Math.sqrt(v/RADAR_CAP)));
 function detailStats(s:World,u:Unit):string {
   const rows=statSheet(s,u);
   if(!rows)return '<p class="paper-muted">暂无能力值记录</p>';
-  const level=u.level??s.prog?.level??5,cap=(key:string)=>key==='hp'?hpAtLevel(130,level):statAtLevel(130,level);
-  const point=(i:number,k:number)=>{const a=-Math.PI/2+i*Math.PI/3;return [125+Math.cos(a)*78*k,128+Math.sin(a)*78*k];};
-  const ring=(k:number)=>AXES.map((_,i)=>point(i,k).join(',')).join(' ');
-  const shape=rows.map((r,i)=>point(i,Math.min(1,r.value/cap(r.key))).join(',')).join(' ');
+  const W=250,H=272,CX=125,CY=136,R=78;   // labels sit outside the ring; the canvas is not stretched
+  const point=(i:number,k:number)=>{const a=-Math.PI/2+i*Math.PI/3;return [CX+Math.cos(a)*R*k,CY+Math.sin(a)*R*k];};
+  const r1=(n:number)=>Math.round(n*10)/10,fmt=(p:number[])=>p.map(r1).join(',');
+  const ring=(k:number)=>AXES.map((_,i)=>fmt(point(i,k))).join(' ');
+  const spokes=AXES.map((_,i)=>{const [x,y]=point(i,1);return '<line x1="'+CX+'" y1="'+CY+'" x2="'+r1(x)+'" y2="'+r1(y)+'" stroke="#cdb985"/>';}).join('');
+  const shape=rows.map((r,i)=>fmt(point(i,radarK(r.value)))).join(' ');
   const labels=AXES.map(([k,n,c],i)=>{
-    const [x,y]=point(i,1.3),[dx,dy]=point(i,1),r=rows[i];
-    return '<circle cx="'+dx+'" cy="'+dy+'" r="4" fill="'+c+'"/><text x="'+x+'" y="'+(y-3)+'" fill="'+c+'">'+n+'</text><text class="stat-value" x="'+x+'" y="'+(y+13)+'">'+r.value+arrow(r.stage)+'</text>';
+    const r=rows[i],[x,y]=point(i,1.36),[dx,dy]=point(i,radarK(r.value));
+    const stage=r.stage?'<tspan class="axis-stage" dx="3">'+arrow(r.stage).trim()+'</tspan>':'';
+    return '<circle cx="'+r1(dx)+'" cy="'+r1(dy)+'" r="4" fill="'+c+'"/><g class="axis-label" data-stat="'+k+'" data-stat-tip="'+esc(STAT_HINT[k]??'')+'" tabindex="0" role="img" aria-label="'+esc(n+' '+r.value+(r.stage?arrow(r.stage):''))+'"><rect x="'+r1(x-30)+'" y="'+r1(y-13)+'" width="60" height="44" fill="transparent"/><text class="axis-name" x="'+r1(x)+'" y="'+r1(y)+'" fill="'+c+'">'+n+'</text><text class="axis-value" x="'+r1(x)+'" y="'+r1(y+20)+'">'+r.value+stage+'</text></g>';
   }).join('');
-  const table='<table class="detail-stat-table" aria-label="能力值"><tbody>'+rows.map(r=>'<tr data-stat="'+r.key+'"><th>'+r.label+'</th><td class="now">'+(r.key==='hp'?u.hp+'/'+r.value:r.value)+'</td><td class="stage">'+(r.key==='hp'||r.key==='spe'?'':(r.stage?'阶段 '+(r.stage>0?'+':'')+r.stage:'阶段 0'))+'</td><td class="base">种族值 '+r.base+(r.doesNotAffectAction?'；不影响行动':'')+'</td></tr>').join('')+'</tbody></table>';
-  return '<svg class="detail-stat-chart" viewBox="0 0 250 250" role="img" aria-label="'+esc(rows.map(r=>r.label+' '+r.value).join('，'))+'"><polygon points="'+ring(1)+'" fill="#e0cfa4" stroke="#b89a56" stroke-width="2"/><polygon points="'+ring(.66)+'" fill="none" stroke="#cdb985"/><polygon points="'+ring(.33)+'" fill="none" stroke="#cdb985"/><polygon points="'+shape+'" fill="#d9622b73" stroke="#a64217" stroke-width="2"/>'+labels+'</svg>'+table+
-    '<p class="paper-muted detail-chart-note">能力值按等级换算，种族值只是基础。</p>'+
-    '<details class="detail-howto"><summary>数字怎么来、伤害怎么算</summary><div class="detail-howto-body"><p>能力值等于（2×种族值×等级除以100，取整数部分）＋5。HP 是（2×种族值×等级除以100，取整数部分）＋等级＋10，再乘体质天赋；所以和种族值不同，也随等级增长。</p><p>第一步：招式基础伤害为 6＋威力的一半（向上取整）＋等级加成；再乘 攻方能力值除以守方能力值（物理用攻击对防御，特殊用特攻对特防，比值限制在 0.5 到 2 倍）。我方出手再乘攻势天赋（每级加 3%）；敌方出手再乘难度倍数（简单 0.28、普通 0.4、困难 0.56）。</p><p>第二步：加上攻方的攻击阶段、减去守方的防御阶段（每级 1 点，最多 3 级）；屏障减半，灼伤变为 0.8 倍；再乘本系加成和属性相性；守住、快速防守和冰冻会让伤害变为 0。最后我方打敌人时按已有祝福加成（异常敌人加 10%、首领加 15%、自己血量高于 80% 时加 8%）。</p></div></details>';
+  return '<svg class="detail-stat-chart" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" aria-label="当前能力值"><polygon points="'+ring(1)+'" fill="#e0cfa4" stroke="#b89a56" stroke-width="2"/><polygon points="'+ring(.66)+'" fill="none" stroke="#cdb985"/><polygon points="'+ring(.33)+'" fill="none" stroke="#cdb985"/>'+spokes+'<polygon points="'+shape+'" fill="#d9622b73" stroke="#a64217" stroke-width="2"/>'+labels+'</svg>';
 }
-function blessingsPage(s:World,tabs:string):string {
-  const list=(s.blessings??[]).map(id=>'<li data-blessing="'+esc(id)+'"><strong>'+esc(BLESSINGS[id]?.name??id)+'</strong><span>'+esc(BLESSINGS[id]?.description??'')+'</span></li>').join('');
-  return '<dialog id="unit-details-dialog" class="paper-window detail194 is-blessings" role="dialog" aria-labelledby="detail-heading"><h2 class="paper-plaque" id="detail-heading">祝福</h2><div class="detail-tabs" aria-label="成员和本局祝福">'+tabs+'</div><button type="button" class="paper-close" id="unit-detail-close" aria-label="关闭详情">×</button><div class="detail-blessings">'+(list?'<ul id="detail-blessing-list">'+list+'</ul>':'<p class="paper-muted" id="detail-blessing-empty">本局还没有祝福</p>')+'</div></dialog>';
+/** The run's blessings as a column attached to the right of the window (always there, empty state "无", scrolls inside when it is long): a small sigil, the name and a one-line effect. */
+function blessingColumn(s:World):string {
+  const rows=(s.blessings??[]).map(id=>'<li data-blessing="'+esc(id)+'"><i class="bless-sigil" aria-hidden="true"></i><span class="bless-text"><strong>'+esc(BLESSINGS[id]?.name??id)+'</strong><small>'+esc(blessingEffectLabel(id))+'</small></span></li>').join('');
+  return '<aside class="paper-window detail-blessings" aria-label="本局祝福"><h3>祝福</h3>'+(rows?'<ul id="detail-blessing-list">'+rows+'</ul>':'<p id="detail-blessing-empty">无</p>')+'</aside>';
 }
-/** Read-only member/enemy view; only the six existing tactic commands are actionable. */
+/** Read-only member view (the party only: enemies have their own info card); only the six existing tactic commands are actionable. */
 export function unitDetails(s:World,id:string,choices:readonly string[],disabled:boolean):string {
   const tactic=s.units[id]?.tactic??'together';
-  const blessingsTab='<button type="button" id="detail-unit-__blessings" data-detail-unit="__blessings" class="detail-blessings-tab" aria-label="本局祝福" aria-pressed="'+(id==='__blessings')+'"><span>祝福</span></button>';
-  const tabs=blessingsTab+choices.map(k=>'<button type="button" id="detail-unit-'+esc(k)+'" data-detail-unit="'+esc(k)+'" aria-label="'+esc(unitLabel(s.units[k],k))+'" aria-pressed="'+(k===id)+'">'+unitPortrait(s.units[k],'detail-tab-portrait')+'</button>').join('');
-  if(id==='__blessings')return blessingsPage(s,tabs);
+  const tabs=choices.map(k=>'<button type="button" id="detail-unit-'+esc(k)+'" data-detail-unit="'+esc(k)+'" aria-label="'+esc(unitLabel(s.units[k],k))+'" aria-pressed="'+(k===id)+'">'+unitPortrait(s.units[k],'detail-tab-portrait')+'</button>').join('');
   const u=s.units[id],sp=u.species?SPECIES[u.species]:undefined;
   const moves=u.learned.slice(0,4).map(move=>{
     const f=starterMoveFields(move);
-    return '<button type="button" class="paper-move" id="detail-skill-'+esc(move)+'" data-detail-skill="'+esc(move)+'"><span class="paper-move-type" style="background:'+(TYPES[f.type]??'#5f5e50')+'">'+esc(typeZh(f.type))+'</span><strong>'+esc(moveZh(move))+'</strong><span>'+esc(f.category)+'</span><b>'+ (u.pp[move]??0)+'/'+(u.maxPp[move]??0)+'</b><small class="paper-move-numbers">'+(moveBaseDamage(s,u,move)!==null?'基础伤害 '+moveBaseDamage(s,u,move)+' · ':'')+'命中 '+esc(String(f.accuracy).replace('基础 ',''))+'</small></button>';
+    return '<button type="button" class="paper-move" id="detail-skill-'+esc(move)+'" data-detail-skill="'+esc(move)+'"><span class="paper-move-type" style="background:'+(TYPES[f.type]??'#5f5e50')+'">'+esc(typeZh(f.type))+'</span><strong>'+esc(moveZh(move))+'</strong><span>'+esc(f.category)+'</span><b>'+ (u.pp[move]??0)+'/'+(u.maxPp[move]??0)+'</b><small class="paper-move-numbers">'+esc([moveBaseDamage(s,u,move)!==null?'基础伤害 '+moveBaseDamage(s,u,move):moveShortEffect(move),f.accuracy?'命中 '+f.accuracy.replace('基础 ',''):'',moveRangeTag(move)].filter(Boolean).join(' · '))+'</small></button>';
   });
   while(moves.length<4)moves.push('<div class="paper-move is-empty" aria-hidden="true"></div>');
-  const tactics=u.side==='friend'?'<section class="detail-tactics"><h3>作战方针</h3><div class="paper-tactics">'+TACTICS.map(t=>'<button type="button" id="detail-tactic-'+t+'" data-detail-tactic="'+t+'" aria-pressed="'+(tactic===t)+'"'+(disabled?' disabled':'')+'><svg viewBox="0 0 12 12" aria-hidden="true" fill="currentColor">'+ICONS[t]+'</svg><span>'+TACTIC_LABELS[t]+'</span></button>').join('')+'</div><p id="detail-tactic-description">'+TACTIC_TEXT[tactic]+'</p></section>':'';
-  return '<dialog id="unit-details-dialog" class="paper-window detail194'+(u.side==='enemy'?' is-enemy':'')+'" role="dialog" aria-labelledby="detail-heading"><h2 class="paper-plaque" id="detail-heading">详情</h2><div class="detail-tabs" aria-label="成员与已揭示的敌人">'+tabs+'</div><button type="button" class="paper-close" id="unit-detail-close" aria-label="关闭详情">×</button><div class="detail-body"><section class="detail-identity"><div class="detail-portrait-pad">'+unitPortrait(u)+'</div><h3>'+esc(unitLabel(u,id))+'</h3><div>'+typeChips(sp?.types??[])+' <b>Lv'+(u.level??s.prog?.level??'—')+'</b></div><div class="detail-hp"><span>HP</span><b>'+u.hp+'/'+u.maxHp+'</b></div><div class="paper-bar"><i style="width:'+Math.max(0,Math.min(100,u.hp/Math.max(1,u.maxHp)*100))+'%"></i></div><div class="detail-status">'+hudStatusMarkup(u)+'</div></section>'+(u.side==='enemy'?'':'<div class="detail-chart"><h3 class="detail-chart-title">当前能力值</h3>'+detailStats(s,u)+'</div>')+'<div class="detail-moves">'+moves.join('')+'</div></div>'+tactics+'<div id="detail-tooltip" role="tooltip" hidden></div></dialog>';
+  const tactics='<section class="detail-tactics"><h3>作战方针</h3><div class="paper-tactics">'+TACTICS.map(t=>'<button type="button" id="detail-tactic-'+t+'" data-detail-tactic="'+t+'" title="'+esc(TACTIC_TEXT[t])+'" aria-pressed="'+(tactic===t)+'"'+(disabled?' disabled':'')+'><svg viewBox="0 0 12 12" aria-hidden="true" fill="currentColor">'+ICONS[t]+'</svg><span>'+TACTIC_LABELS[t]+'</span></button>').join('')+'</div></section>';
+  return '<dialog id="unit-details-dialog" class="paper-window detail194" role="dialog" aria-labelledby="detail-heading"><h2 class="paper-plaque" id="detail-heading">详情</h2><div class="detail-tabs" aria-label="成员">'+tabs+'</div><button type="button" class="paper-close" id="unit-detail-close" aria-label="关闭详情">×</button><div class="detail-body"><section class="detail-identity"><div class="detail-portrait-pad">'+unitPortrait(u)+'</div><h3>'+esc(unitLabel(u,id))+'</h3><div>'+typeChips(sp?.types??[])+' <b>Lv'+(u.level??s.prog?.level??'—')+'</b></div><div class="detail-hp"><span>HP</span><b>'+u.hp+'/'+u.maxHp+'</b></div><div class="paper-bar"><i style="width:'+Math.max(0,Math.min(100,u.hp/Math.max(1,u.maxHp)*100))+'%"></i></div><div class="detail-status">'+hudStatusMarkup(u)+'</div></section>'+'<div class="detail-chart"><h3 class="detail-chart-title">能力值</h3>'+detailStats(s,u)+'</div>'+'<div class="detail-moves">'+moves.join('')+'</div></div>'+tactics+'<div id="detail-tooltip" role="tooltip" hidden></div><div id="stat-tip" role="tooltip" hidden></div>'+blessingColumn(s)+'</dialog>';
 }
 const keycap=(k:string)=>'<kbd>'+k+'</kbd>';
 /** All controls retain their existing storage handlers and identifiers. */
 export function settingsMarkup():string {
   const keys=[['W A S D','移动'],['W D','同时按下 · 斜向移动'],['1 2 3 4','招式'],['5 6 7 8 9 0','快捷物品'],['F','向前普通攻击'],['Tab','切换操控'],['B','背包'],['.','等待']];
-  return '<dialog id="settings" class="paper-window settings194" aria-labelledby="settings-heading"><h2 id="settings-heading" class="paper-plaque">设置</h2><button id="settings-close" class="paper-close" aria-label="关闭设置">×</button><nav class="settings-side" aria-label="设置分类">'+[['display','画面'],['keys','键位'],['save','存档']].map(([id,label])=>'<button type="button" data-settings-tab="'+id+'" id="settings-tab-'+id+'" aria-pressed="'+(id==='display')+'">'+label+'</button>').join('')+'<span></span><button id="camp-title" hidden>返回标题</button></nav><div class="settings-pane" id="settings-pane-display"><div class="paper-option"><span>动作动画</span><input type="checkbox" id="anim-toggle" hidden><div class="paper-switch"><button type="button" id="anim-on" aria-pressed="true">开</button><button type="button" id="anim-off" aria-pressed="false">关</button></div></div><div class="paper-option"><span>按住跳过动画</span>'+keycap('Shift')+'</div><div class="settings-run" id="settings-run" hidden><button id="abandon-run" class="paper-button">放弃探险</button></div></div><div class="settings-pane" id="settings-pane-keys" hidden><div class="paper-key-grid">'+keys.map(([keys,label])=>'<div class="paper-key-group"><div class="key-caps'+(label==='移动'?' is-wasd':'')+'">'+keys.split(' ').map(keycap).join('')+'</div><b>'+label+'</b></div>').join('')+'</div></div><div class="settings-pane" id="settings-pane-save" hidden><div id="settings-profile" class="settings-profile"></div><div class="settings-transfer"><button id="save-export" class="paper-button">导出存档</button><button id="save-import" class="paper-button">导入存档</button></div><input id="save-file" type="file" accept=".json,application/json" hidden><p class="paper-muted">存档保存在当前设备的浏览器中。</p><p id="transfer-message" role="status" aria-live="polite"></p></div></dialog>';
+  return '<dialog id="settings" class="paper-window settings194" aria-labelledby="settings-heading"><h2 id="settings-heading" class="paper-plaque">设置</h2><button id="settings-close" class="paper-close" aria-label="关闭设置">×</button><nav class="settings-side" aria-label="设置分类">'+[['display','画面'],['keys','键位'],['save','存档']].map(([id,label])=>'<button type="button" data-settings-tab="'+id+'" id="settings-tab-'+id+'" aria-pressed="'+(id==='display')+'">'+label+'</button>').join('')+'<span></span><button id="camp-title" hidden>返回标题</button></nav><div class="settings-pane" id="settings-pane-display"><div class="paper-option"><span>动作动画</span><input type="checkbox" id="anim-toggle" hidden><div class="paper-switch"><button type="button" id="anim-on" aria-pressed="true">开</button><button type="button" id="anim-off" aria-pressed="false">关</button></div></div><div class="paper-option"><span>按住跳过动画</span>'+keycap('Shift')+'</div><div class="settings-run" id="settings-run" hidden><button id="abandon-run" class="paper-button">放弃探险</button></div></div><div class="settings-pane" id="settings-pane-keys" hidden><div class="paper-key-grid">'+keys.map(([keys,label])=>'<div class="paper-key-group"><div class="key-caps'+(label==='移动'?' is-wasd':'')+'">'+keys.split(' ').map(keycap).join('')+'</div><b>'+label+'</b></div>').join('')+'</div></div><div class="settings-pane" id="settings-pane-save" hidden><div id="settings-profile" class="settings-profile"></div><div class="settings-transfer"><button id="save-export" class="paper-button">导出存档</button><button id="save-import" class="paper-button">导入存档</button></div><input id="save-file" type="file" accept=".json,application/json" hidden><p id="transfer-message" role="status" aria-live="polite"></p></div></dialog>';
 }
 export function settingsProfile(p:Profile|null):string {
   if(!p)return '<p class="paper-muted">尚无营地档案</p>';

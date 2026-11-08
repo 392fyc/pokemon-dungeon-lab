@@ -68,7 +68,7 @@ function checkWorld(s,where){
    if(v.tick!==undefined)assert.ok(Number.isInteger(v.tick)&&v.tick>=1&&v.tick<=20,`${at}: ${id} ${k} tick ${v.tick}`);}
   assert.ok(!(st.frz&&st.brn),`${at}: ${id} frozen and burned together`);assert.ok(!(st.psn&&st.tox),`${at}: ${id} poisoned and badly poisoned together`);
   if(u.hp===0)assert.equal(u.pos,null,`${at}: fallen ${id} still on the map`);
-  for(const [k,v] of Object.entries(u.stages??{}))assert.ok(['atk','def','spa','spd','acc','eva'].includes(k)&&Number.isInteger(v)&&v>=-3&&v<=3,`${at}: ${id} stage ${k}=${v}`);
+  for(const [k,v] of Object.entries(u.stages??{}))assert.ok(['atk','def','spa','spd','acc','eva'].includes(k)&&Number.isInteger(v)&&Math.abs(v)<=(k==='acc'||k==='eva'?3:10),`${at}: ${id} stage ${k}=${v}`);   // attack, defence and the special pair run -10...+10; accuracy and evasion -3...+3
  }
  assert.ok(s.bag>=0,`${at}: bag ${s.bag}`);
  assert.ok(s.prog.level>=5&&s.prog.level<=PROG.maxLevel,`${at}: level ${s.prog.level}`);

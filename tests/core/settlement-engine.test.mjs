@@ -85,7 +85,7 @@ test('enemy damage estimation and the enemy action use the selected difficulty',
   const results=[];
   for(const difficulty of ['easy','normal','hard']){
     const world=makeRun(`damage-${difficulty}`,83,difficulty);
-    world.queue=['C'];world.leader='C';world.units.A.pos=null;world.units.B.pos=null;
+    world.queue=['C'];world.leader='C';world.units.A.pos=null;world.units.B.pos=null;world.noCrit=true;   // the estimate ignores critical hits (a 1 in 24 chance)
     const actor=world.units.C;actor.hp=100;actor.maxHp=100;
     const foe={id:'foe',side:'enemy',hp:100,maxHp:100,pos:null,pp:{},maxPp:{},learned:[],stages:{atk:0,def:0},protect:0,counter:0,lastMove:null,level:5,species:'rattata',tactic:'gofoes'};
     world.units.foe=foe;world.enemies=['foe'];placeAdjacent(world,'foe','C');

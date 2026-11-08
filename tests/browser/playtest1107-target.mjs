@@ -54,17 +54,18 @@ for(const [w,h] of [[1280,720],[900,520]]){
  const at=await p.evaluate(id=>{const v=window.trial.view().units[id],c=window.trial.camera();return {x:v.x-c.x,y:v.y-c.y-20};},ids.near);
  await p.mouse.move(at.x,at.y);await p.waitForTimeout(150);await p.mouse.click(at.x,at.y);await p.waitForTimeout(300);
  after=await snap();assert.equal(after.round,mid2.round+1,'clicking the partner on the map used it');assert.ok(after.hp[ids.near]>mid2.hp[ids.near]);
- // one usable target still needs a choice: nothing happens until the card is picked
+ // exactly one usable target: no second confirmation, the item is used at once
  await p.evaluate(({near})=>{const s=window.trial.store.world;s.units[near].hp=s.units[near].maxHp;window.dispatchEvent(new Event('blur'));},ids);
- const solo=await snap();await choose();assert.deepEqual(await snap(),solo,'choosing the item does not use it by itself');assert.equal(await p.locator('.hud-party-card.is-target').count(),1);
- await p.keyboard.press('Escape');
+ const solo=await snap();await p.locator('#bag-open').click();await p.locator('[data-bag-item="berry"]').click();await p.locator('#bag-use').click();await p.waitForTimeout(400);
+ {const after1=await snap();assert.equal(after1.round,solo.round+1,'the only usable target is used on at once');assert.equal(after1.berries,solo.berries-1);assert.equal(await p.locator('#target-hint').count(),0);}
  // key 4 has no card: it neither uses an item nor switches to a move; a direction key leaves the target state
- await p.evaluate(({near})=>{const s=window.trial.store.world;s.units[near].hp=5;window.dispatchEvent(new Event('blur'));},ids);
+ await p.evaluate(()=>{const s=window.trial.store.world;for(const id of s.queue)s.units[id].hp=5;window.dispatchEvent(new Event('blur'));});
  const before4=await snap();await choose();await p.keyboard.press('4');await p.waitForTimeout(150);
  assert.equal(await p.locator('#target-hint').count(),1,'key 4 leaves the target state alone');assert.deepEqual(await snap(),before4);assert.equal(await p.locator('#selected-move-preview').count(),0,'and does not select a move');
  await p.keyboard.press('d');await p.waitForTimeout(400);assert.equal(await p.locator('#target-hint').count(),0,'a direction key leaves the target state');
  // Esc in the target state closes only that state: the combination draft behind it stays
- await p.evaluate(()=>{const s=window.trial.store.world;for(const id of s.queue)s.units[id].hp=5;window.dispatchEvent(new Event('blur'));});
+ await p.evaluate(({near,leader})=>{const s=window.trial.store.world,L=s.units[leader];for(const id of s.queue)s.units[id].hp=5;   // the direction key moved the leader: put the partner next to it again so two members can use the item
+  const free=s.floor.find(f=>Math.max(Math.abs(f.x-L.pos.x),Math.abs(f.y-L.pos.y))===1&&!Object.values(s.units).some(u=>u.pos&&u.pos.x===f.x&&u.pos.y===f.y));s.units[near].pos=free;window.dispatchEvent(new Event('blur'));},ids);
  await p.locator('#actions-open').click();await p.locator('#arrange').click();await p.locator('#partner-'+ids.near).click();
  assert.equal(await p.locator('#controls .draft').count(),1,'a combination draft is open');
  await p.locator('#bag-open').click();await p.locator('[data-bag-item="berry"]').click();await p.locator('#bag-use').click();await p.waitForSelector('#target-hint');

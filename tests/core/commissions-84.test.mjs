@@ -171,7 +171,7 @@ test('C2/C3: hunter counts three post-acceptance defeats, pays the floor reward,
   const enemyUnit=addEnemy(active,'probe',2,1,20);addEnemy(control,'probe',2,1,20);
   const withPenalty=estimateAttackDamage(active,'probe','A','tackle');
   const withoutPenalty=estimateAttackDamage(control,'probe','A','tackle');
-  assert.equal(withPenalty,withoutPenalty+1,'hunter lowers the whole party defense by one stage');
+  assert.ok(withPenalty>withoutPenalty&&Math.abs(withPenalty-withoutPenalty*256/179)<=1,`hunter lowers the whole party defense by one stage: damage x 256/179 (${withoutPenalty} -> ${withPenalty})`);
   setNoInviteDraws(active,3);setNoInviteDraws(control,3);
   for(let i=0;i<3;i++){
     const id=`H${i}`;addEnemy(active,id,2,1,1);addEnemy(control,id,2,1,1);
@@ -194,7 +194,7 @@ test('main176: repeated hunters progress independently and share one defense red
   let control=structuredClone(s);control.commissions=[];
   const probe=enemy('damage-probe',20,1,20,'melee',{waitOnly:true});s.units[probe.id]=structuredClone(probe);control.units[probe.id]=structuredClone(probe);
   const baseline=estimateAttackDamage(control,'damage-probe','A','tackle');
-  assert.equal(estimateAttackDamage(s,'damage-probe','A','tackle'),baseline+1,'two identical penalties still lower defense by one stage');
+  assert.ok(Math.abs(estimateAttackDamage(s,'damage-probe','A','tackle')-baseline*256/179)<=1&&estimateAttackDamage(s,'damage-probe','A','tackle')>baseline,'two identical penalties still lower defense by one stage only');
   for(const id of ['second-kill','third-kill']){
     addEnemy(s,id,2,1,1);addEnemy(control,id,2,1,1);s=killOne(s,id);control=killOne(control,id);
   }
@@ -225,7 +225,7 @@ test('C2/C3/C9/C15: uncompleted hunter and collector both fail at the same-floor
   const probe=enemy('damage-probe',20,1,20,'melee',{waitOnly:true});s.units[probe.id]=probe;
   const noPenalty=structuredClone(s);noPenalty.commissions=[];
   const baseline=estimateAttackDamage(noPenalty,'damage-probe','A','tackle');
-  assert.equal(estimateAttackDamage(s,'damage-probe','A','tackle'),baseline+1,'hunter penalty remains active before the request');
+  {const active=estimateAttackDamage(s,'damage-probe','A','tackle');assert.ok(active>baseline&&Math.abs(active-baseline*256/179)<=1,`hunter penalty remains active before the request: damage x 256/179 (${baseline} -> ${active})`);}
   const before={exp:s.prog.exp,purse:s.purse,items:structuredClone(s.prog.items),tms:structuredClone(s.tms),queue:[...s.queue],camp:[...s.camp]};
 
   s.units.A.pos=structuredClone(s.points.find(p=>p.kind==='down').pos);s=act(s,interact(true));
@@ -460,13 +460,14 @@ test('C11: terminal win and wipe discard the run-only contract state without add
 });
 
 test('C11: a room choice followed by a same-round wipe ends immediately and clears the unprocessed offer',()=>{
-  for(const [type,seed,logText] of [['commission',107,'委托房提出'],['blessing',712,'祝福房提供']]){
+  for(const [type,seed] of [['commission',107],['blessing',712]]){
+    let control=fixture({seed,roomTypes:[type],partySize:3});control.units.B.hp=control.units.C.hp=0;control.units.B.pos=control.units.C.pos=null;control.enemies=[];
+    control=startRoom(control);assert.equal(control.pendingChoices?.[0]?.type,type,`without an attacker the interaction reaches the ${type} offer`);
     let s=fixture({seed,roomTypes:[type],partySize:3});
     s.units.B.hp=s.units.C.hp=0;s.units.B.pos=s.units.C.pos=null;s.units.A.hp=1;
     const attacker=enemy('wipe-attacker',2,1,50,'melee');attacker.pp.tackle=50;attacker.maxPp.tackle=50;s.units[attacker.id]=attacker;s.enemies=[attacker.id];
     s=startRoom(s);
     assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');
-    assert.ok(s.log.some(line=>line.includes(logText)),`the interaction reached the ${type} offer before the enemy phase`);
     assert.equal(s.pendingChoices,undefined,'the team cannot be left waiting on a choice after a wipe');
     assert.equal(s.commissions,undefined);assert.equal(s.blessings,undefined);assert.equal(s.prog.exp,0);
   }

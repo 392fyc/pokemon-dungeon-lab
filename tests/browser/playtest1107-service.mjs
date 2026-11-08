@@ -26,6 +26,8 @@ for(const [w,h] of [[1280,720],[900,520]]){
  assert.equal(await p.locator('.shop-list li').count(),10);assert.ok(await p.locator('.shop-detail').isVisible());
  assert.ok(await p.locator('.shop-row .shop-icon').count()>=9,'items show their icons');
  // unaffordable goods are greyed and say how much is missing
+ await p.waitForFunction(()=>[...document.querySelectorAll('#shop-panel img')].every(i=>i.complete),null,{timeout:5000});
+ assert.ok(await p.evaluate(()=>{const w=[...document.querySelectorAll('#shop-panel img')].map(i=>i.naturalWidth);return w.length>=4&&w.every(x=>x>0);}),'every shop icon loaded');
  await p.locator('#shop-pick-reviverSeed').click();
  assert.equal(await p.locator('#buy-reviverSeed').isDisabled(),true);assert.doesNotMatch(await p.locator('#shop-panel').innerText(),/钱袋不足|还差/,'no wording about the shortfall');
  assert.equal(await p.locator('#shop-pick-reviverSeed.is-short').count(),1);
@@ -39,9 +41,9 @@ for(const [w,h] of [[1280,720],[900,520]]){
  await p.locator('#shop-panel .service-close').click();assert.equal(await p.locator('#shop-panel').count(),0);assert.equal(await p.locator('#service-reopen').count(),1);
  await p.locator('#service-reopen').click();assert.equal(await p.locator('#shop-panel').count(),1);
  await p.keyboard.press('Escape');assert.equal(await p.locator('#shop-panel').count(),0,'Esc closes the panel');
- // a room panel (blessing room) gets the same treatment
+ // a room panel (item room) gets the same treatment; commission and blessing rooms have no panel (they open their choice at once, see the auto-interact test)
  await p.evaluate(()=>{const s=window.trial.store.world,L=s.units[s.leader];s.points=s.points.filter(q=>!(q.pos.x===L.pos.x&&q.pos.y===L.pos.y));s.shop=undefined;
-  s.adventureRooms=[{room:60,type:'blessing',state:'idle',interaction:{...L.pos},doors:[],sealedCells:[],enemyIds:[],reward:null,rewardCurrency:null,item:null,rewardItem:null,rewardMove:null}];s.rooms=[...(s.rooms??[])];window.dispatchEvent(new Event('blur'));});
+  s.adventureRooms=[{room:60,type:'item',state:'idle',interaction:{...L.pos},doors:[],sealedCells:[],enemyIds:[],reward:null,rewardCurrency:null,item:'berry',rewardItem:null,rewardMove:null}];s.rooms=[...(s.rooms??[])];window.dispatchEvent(new Event('blur'));});
  await p.locator('#service-reopen').click();   // the shop was closed with Esc on this very cell
  await p.waitForSelector('#adventure-room-panel');
  const room=await p.locator('#context-actions').boundingBox();

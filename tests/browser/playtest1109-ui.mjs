@@ -62,11 +62,11 @@ const scrollers=p=>p.evaluate(()=>[...document.querySelectorAll('*')].filter(el=
  // item 7: stage badges and the details block
  await p.evaluate(()=>{const s=window.trial.store.world,L=s.units[s.leader];L.stages={atk:8,def:-2,eva:3};window.dispatchEvent(new Event('blur'));});
  const badge=k=>p.locator(`.hud-party-card.is-leader .hud-status-badge[data-stage="${k}"]`);
- assert.match(await badge('atk').getAttribute('title'),/^攻击 \+8：造成的伤害×1\.\d+，持续到换层$/);
+ assert.match(await badge('atk').getAttribute('title'),/^攻击 \+8：物理招式造成的伤害×1\.\d+（普通攻击按[^）]*），持续到换层$/);
  assert.equal(await badge('eva').getAttribute('title'),'闪避 +3：对方招式的命中率×0.5（与对方命中阶段相抵，差值限于±3；普攻和必中招式不受影响），持续到换层','evasion +3: 3/(3+3), moves only');
- assert.equal(await badge('def').getAttribute('title'),'防御 −2：受到的伤害×2，持续到换层','defence -2: 256/128');
+ assert.equal(await badge('def').getAttribute('title'),'防御 −2：受到的物理伤害×2（受到的普通攻击按攻击者的类别取防御或特防），持续到换层','defence -2: 256/128');
  await p.locator('.hud-party-card.is-leader [data-hud-details]').click();await p.waitForSelector('#unit-details-dialog[open]');
- const rows=await p.locator('#detail-stages li').allInnerTexts();assert.equal(rows.length,3,'one row per non-zero stage: '+rows);assert.ok(rows.some(r=>/攻击 \+8/.test(r)&&/造成的伤害×/.test(r)),rows.join('|'));
+ const rows=await p.locator('#detail-stages li').allInnerTexts();assert.equal(rows.length,3,'one row per non-zero stage: '+rows);assert.ok(rows.some(r=>/攻击 \+8/.test(r)&&/物理招式造成的伤害×/.test(r)),rows.join('|'));
  const box=await p.locator('#unit-details-dialog').boundingBox(),ul=await p.locator('#detail-stages').boundingBox(),tactics=await p.locator('.detail-tactics').boundingBox();
  assert.ok(ul.y+ul.height<=tactics.y+1&&ul.x>=box.x&&ul.x+ul.width<=box.x+box.width,'the block sits inside the window above the tactics row: '+JSON.stringify({ul,tactics}));
  await check('details');await p.screenshot({path:out+'r14-details-stages.png'});
@@ -132,6 +132,36 @@ for(const mode of ['successor','tab']){
  const st=await p.evaluate(()=>{const s=window.trial.getState();return {round:s.round,seed:s.prog.items.reviverSeed,hp:s.units[s.leader].hp};});
  assert.equal(st.seed,0,'the Reviver Seed was used by the poison tick (the HP loss happened): '+JSON.stringify(st));
  assert.equal(st.round,lay.round+1,'the walk stopped after the first step: '+JSON.stringify({st,lay}));
+ assert.deepEqual(p.errs,[]);await ctx.close();
+}
+// ---- review P2: a Rollcall Orb slides the called companion (sprite, shadow, HP label) to the new cell while the round plays, not only at its end
+{
+ const ctx=await b.newContext({viewport:{width:1280,height:720}});await ctx.addInitScript(()=>{window.__trialNoAutoSleep=true;});
+ const p=await ctx.newPage();p.errs=[];p.on('pageerror',e=>p.errs.push(e.message));
+ await p.goto(base+'/?dev=1&seed=7&anim=on');await p.locator('#config').selectOption('expedition');await p.locator('#start').click();
+ await p.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());await p.waitForTimeout(500);
+ const lay=await p.evaluate(()=>{
+  const s=window.trial.store.world,L=s.units[s.leader],k=(x,y)=>x+','+y,floor=new Set(s.floor.map(f=>k(f.x,f.y)));
+  for(const id of s.enemies){s.units[id].waitOnly=true;s.units[id].asleep=true;}
+  const mates=s.queue.filter(i=>i!==s.leader),B=mates[0];for(const id of mates)s.units[id].tactic='wait';
+  const taken=new Set(Object.values(s.units).filter(u=>u.pos&&u.hp>0&&u.id!==B).map(u=>k(u.pos.x,u.pos.y)));
+  let best=null;for(const f of s.floor){let ok=true;for(let i=0;i<=4&&ok;i++)ok=floor.has(k(f.x+i,f.y))&&!taken.has(k(f.x+i,f.y));if(ok){best=f;break;}}
+  if(!best)return null;
+  for(let i=0;i<=4;i++)if(!s.seen.includes(k(best.x+i,best.y)))s.seen.push(k(best.x+i,best.y));
+  for(const id of mates)if(id!==B){s.units[id].hp=0;s.units[id].pos=null;}
+  L.pos={x:best.x,y:best.y};s.units[B].pos={x:best.x+4,y:best.y};s.units[B].hp=20;s.units[B].status={psn:{tick:1}};s.prog.items.rollcallOrb=1;
+  window.dispatchEvent(new Event('blur'));window.trial.repaint(s);return {B,from:{x:best.x+4,y:best.y}};});
+ assert.ok(lay,'a free row of 5 cells exists');await p.waitForTimeout(500);
+ const sprite=()=>p.evaluate(id=>{const u=window.trial.view().units[id];return {x:u.x,y:u.y,animating:window.trial.animating()};},lay.B);
+ const before=await sprite();
+ await p.locator('#bag-open').click();await p.waitForSelector('.c195-bag');await p.locator('[data-bag-item="rollcallOrb"]').click();await p.locator('#bag-use').click();
+ const samples=[];for(let i=0;i<40;i++){samples.push(await sprite());await p.waitForTimeout(40);}
+ const after=await p.evaluate(id=>{const s=window.trial.getState();return {pos:s.units[id].pos};},lay.B);
+ assert.notDeepEqual(after.pos,lay.from,'B was called to another cell');
+ const moving=samples.filter(q=>q.animating);
+ assert.ok(moving.length>0,'the round was animated');
+ const last=samples.at(-1);assert.ok(Math.abs(last.x-before.x)>20,'B ends at the new cell: '+JSON.stringify({before,last}));
+ assert.ok(moving.some(q=>Math.abs(q.x-before.x)>20),'while the round still plays, the sprite is already away from the old cell: '+JSON.stringify(moving.slice(0,8)));
  assert.deepEqual(p.errs,[]);await ctx.close();
 }
 await b.close();console.log('round 14 UI checks passed');

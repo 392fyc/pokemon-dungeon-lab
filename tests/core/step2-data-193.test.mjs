@@ -98,5 +98,3 @@ test('TM pool 5 adds only Rest and Sleep Talk while old pools keep their saved o
   assert.deepEqual(tmPool({boss:true,tmPool:5}),TM_MOVES_V5);
   assert.deepEqual(tmPool({boss:false,tmPool:5}),LEGACY_TM_MOVES);
 });
-
-

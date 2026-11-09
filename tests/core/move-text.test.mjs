@@ -70,16 +70,17 @@ test('Freeze-Dry still resists Water in the type chart (its card only states dat
 test('stage badges explain themselves from the engine tables (G5.1, G5.3, G5.5)',async()=>{
   const {stageEffectLabel,stageTitle}=await import('../../src/core/move-text.ts');
   const {ATTACK_STAGE_256,DEFENCE_STAGE_256,accuracyMultiplier}=await import('../../src/core/engine.ts');
-  assert.equal(stageEffectLabel('atk',1),'造成的伤害×'+Number((ATTACK_STAGE_256[11]/256).toFixed(2)));
-  assert.equal(stageEffectLabel('spa',-2),'造成的伤害×'+Number((ATTACK_STAGE_256[8]/256).toFixed(2)));
-  assert.equal(stageEffectLabel('def',3),'受到的伤害×'+Number((256/DEFENCE_STAGE_256[13]).toFixed(2)));
+  assert.equal(stageEffectLabel('atk',1),'物理招式造成的伤害×'+Number((ATTACK_STAGE_256[11]/256).toFixed(2)));
+  assert.equal(stageEffectLabel('spa',-2),'特殊招式造成的伤害×'+Number((ATTACK_STAGE_256[8]/256).toFixed(2)));
+  assert.equal(stageEffectLabel('def',3),'受到的物理伤害×'+Number((256/DEFENCE_STAGE_256[13]).toFixed(2)));
+  assert.equal(stageEffectLabel('spd',2),'受到的特殊伤害×'+Number((256/DEFENCE_STAGE_256[12]).toFixed(2)));
   assert.equal(stageEffectLabel('eva',1),'对方招式的命中率×0.75','evasion +1 multiplies the hit chance of opposing moves by 3/4');
   assert.equal(stageEffectLabel('acc',2),'招式的命中率×'+Number(accuracyMultiplier(2).toFixed(2)));
   assert.equal(stageEffectLabel('acc',-1),'招式和普攻的命中率×0.75','a negative accuracy stage also lowers basic attacks');
   assert.equal(stageEffectLabel('eva',-1),'对方招式的命中率×1.33');
   assert.match(stageTitle('eva',1),/普攻和必中招式不受影响/);assert.match(stageTitle('acc',1),/普攻不受影响/);assert.doesNotMatch(stageTitle('acc',-1),/普攻不受影响/);
   assert.match(stageTitle('def',0,-1),/猎人委托使实际生效为 −1.*×1\.43/,'the label follows the stage the engine uses (hunter commission)');
-  assert.match(stageTitle('atk',8),/^攻击 \+8：造成的伤害×1\.\d+，持续到换层$/);
+  assert.match(stageTitle('atk',8),/^攻击 \+8：物理招式造成的伤害×1\.\d+（普通攻击按[^）]*），持续到换层$/);
 });
 
 test('type immunities and boss exceptions the engine writes per move id or type are all in the text',async()=>{

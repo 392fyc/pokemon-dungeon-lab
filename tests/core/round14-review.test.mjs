@@ -37,4 +37,19 @@ test('C: a Rollcall Orb carries the new cells of the called companions, and the 
   const change=events.find(e=>e.k==='hpchange'&&e.target==='B');
   assert.ok(change,'poison floater for B: '+JSON.stringify(events));
   assert.deepEqual(change.at,after.units.B.pos,'drawn at the cell B was called to, not the old one');
+  // the sprite, its shadow and its HP label are moved by a playable event that comes before the later events of the round
+  const recall=events.findIndex(e=>e.k==='recall'&&e.id==='B'),later=events.findIndex(e=>e.k==='hpchange'&&e.target==='B');
+  assert.ok(recall>=0,'the replay has a recall (slide) event for B: '+JSON.stringify(events));
+  assert.deepEqual(events[recall].from,{x:6,y:1});assert.deepEqual(events[recall].to,after.units.B.pos);
+  assert.ok(recall<later,'and it is ordered before the poison floater (recall '+recall+', floater '+later+')');
+});
+
+test('P3: team-wide moves reach two cells in a corridor, so their text says "范围内", not "同房间"',async()=>{
+  const {moveEffectText}=await import('../../src/core/move-text.ts');
+  for(const id of ['softboiled','helpinghand','reflect','lightscreen'])assert.doesNotMatch(moveEffectText(id),/同房间/,id);
+  assert.match(moveEffectText('softboiled'),/范围内全队各自回复最大HP的一半/);
+  const corridor=(bx)=>scene(w=>{w.rooms=[];const a=w.units.A;a.learned=['softboiled'];a.pp={softboiled:5};a.maxPp={softboiled:5};w.units.B.pos={x:bx,y:1};w.units.B.hp=10;});
+  const near=run(corridor(4),{type:'skill',skill:'softboiled',target:'A'}).after,far=run(corridor(6),{type:'skill',skill:'softboiled',target:'A'}).after;
+  assert.equal(near.units.B.hp,25,'B two cells away in a corridor is healed (10 + half of 30)');
+  assert.equal(far.units.B.hp,10,'B four cells away is not');
 });

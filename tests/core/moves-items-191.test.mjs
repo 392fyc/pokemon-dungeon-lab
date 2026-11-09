@@ -153,6 +153,6 @@ test('M191 the v4 pool preserves v3 and all six new machines can be learned, sav
   }
 });
 test('M191 displayed texts come from the engine data: Soft-Boiled heals the whole room party',()=>{
-  assert.match(moveEffectText('softboiled'),/同房间全队各自回复最大HP的一半/);
+  assert.match(moveEffectText('softboiled'),/范围内全队各自回复最大HP的一半/);
   assert.match(moveEffectText('minimize'),/自身闪避\+1/);assert.match(moveEffectText('toxic'),/使对方剧毒/);
 });

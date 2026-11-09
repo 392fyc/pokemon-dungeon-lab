@@ -13,8 +13,8 @@ function whoOf(spec:MoveSpec):string {
   switch(spec.target){
     case 'user':return '自身';
     case 'enemy':return '对方';
-    case 'teammates':return '同房间队友';
-    case 'party':return '同房间全队';
+    case 'teammates':return '范围内队友';
+    case 'party':return '范围内全队';
     default:return '命中的单位';
   }
 }
@@ -92,8 +92,10 @@ const times=(n:number)=>'×'+Number(n.toFixed(2));
  *  evasion and only a negative accuracy stage lowers it; a move that always hits stays at 100%. */
 export function stageEffectLabel(stat:StageKey,stage:number):string {
   switch(stat){
-    case 'atk':case 'spa':return '造成的伤害'+times(attackStageMultiplier(stage));
-    case 'def':case 'spd':return '受到的伤害'+times(1/defenceStageMultiplier(stage));
+    case 'atk':return '物理招式造成的伤害'+times(attackStageMultiplier(stage));
+    case 'spa':return '特殊招式造成的伤害'+times(attackStageMultiplier(stage));
+    case 'def':return '受到的物理伤害'+times(1/defenceStageMultiplier(stage));
+    case 'spd':return '受到的特殊伤害'+times(1/defenceStageMultiplier(stage));
     case 'acc':return (stage<0?'招式和普攻的命中率':'招式的命中率')+times(accuracyMultiplier(stage));
     case 'eva':return '对方招式的命中率'+times(accuracyMultiplier(-stage));
     default:return '';
@@ -101,6 +103,8 @@ export function stageEffectLabel(stat:StageKey,stage:number):string {
 }
 /** The fine print of the accuracy and evasion stages, empty for the other stats. */
 export function stageEffectNote(stat:StageKey,stage:number):string {
+  if(stat==='atk'||stat==='spa')return '普通攻击按使用者种族值较高的一边归为物理或特殊，取对应的这一项';
+  if(stat==='def'||stat==='spd')return '受到的普通攻击按攻击者的类别取防御或特防';
   if(stat==='acc')return '与对方闪避阶段相抵，差值限于±'+ACCURACY_STAGE_LIMIT+'；'+(stage<0?'':'普攻不受影响；')+'必中招式不受影响';
   if(stat==='eva')return '与对方命中阶段相抵，差值限于±'+ACCURACY_STAGE_LIMIT+'；普攻和必中招式不受影响';
   return '';

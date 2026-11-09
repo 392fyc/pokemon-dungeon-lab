@@ -80,6 +80,7 @@ function groupedEffects(batch:AnimEvent[]):Map<AnimEvent,EffectPlaybackOptions>{
 async function play(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise<void>{
   const f=st.f,d=(ms:number)=>ms*f,at=(p:Pos)=>st.center(p),V=(id:string)=>st.views.get(id);
   if(ev.k==='move'){const v=V(ev.id);if(!v)return;face(v,ev.from,ev.to);useAnim(st,v,'Walk',v.row);await slide(st,v,at(ev.from),at(ev.to),d(BASE_MS.move));idle(st,v);}
+  else if(ev.k==='recall'){const v=V(ev.id);if(!v)return;face(v,ev.from,ev.to);useAnim(st,v,'Walk',v.row);await slide(st,v,at(ev.from),at(ev.to),d(BASE_MS.recall));idle(st,v);}
   else if(ev.k==='airAttack'){const v=V(ev.actor);if(v){face(v,ev.from,ev.to);useAnim(st,v,'Attack',v.row,d(BASE_MS.airAttack));await wait(st,d(BASE_MS.airAttack));idle(st,v);}}
   else if(ev.k==='swap'){const a=V(ev.a),b=V(ev.b),ps:Promise<void>[]=[];
     if(a){face(a,ev.pa,ev.pb);useAnim(st,a,'Walk',a.row);ps.push(slide(st,a,at(ev.pa),at(ev.pb),d(BASE_MS.swap)));}

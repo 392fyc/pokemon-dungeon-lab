@@ -18,6 +18,8 @@ export type AnimEvent =
   | {k:'move'; by:string; id:string; from:Pos; to:Pos}
   | {k:'airAttack';by:string;actor:string;from:Pos;to:Pos}
   | {k:'swap'; by:string; a:string; b:string; pa:Pos; pb:Pos}
+  /** A companion called next to the user (Rollcall Orb): a short slide to the new cell that plays before the later events of the round, so sprite, shadow and HP label are there when their floaters appear. */
+  | {k:'recall'; by:string; id:string; from:Pos; to:Pos}
   | {k:'hit'; by:string; attacker:string|null; target:string; from:Pos|null; at:Pos; fx:Fx; amount:number; dead:boolean; effect?:EffectStyle; cast?:string; collision?:true; immune?:true; /** a critical hit, from the engine's note on the line after the damage */ crit?:true; /** the colour of the damage number: the move's type colour, absent for a plain attack */ tint?:string; /** the target's HP once this hit has landed, so the interface can update it at the moment of impact */ hpAfter?:number}
   | {k:'protect'; by:string; target:string; from:Pos; at:Pos; effect?:EffectStyle}
   | {k:'blowaway'; by:string; target:string; actorAt:Pos; from:Pos; to:Pos; effect?:EffectStyle; cast?:string}
@@ -315,7 +317,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       if(pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:ev.to-ev.from,hpAfter:ev.to});
       hp[id]=ev.to;
     } else if (ev.type==='itemUse'&&ev.moved) {
-      for(const m of ev.moved)pos[m.unit]={...m.to};   // the called companions stand next to the user from here on: later floaters of the round are drawn there
+      for(const m of ev.moved){const from=pos[m.unit];if(from)emit({k:'recall',by:id,id:m.unit,from,to:{...m.to}});pos[m.unit]={...m.to};}   // the called companions slide to the user at once, and later floaters of the round are drawn at the new cell
     } else if (ev.type==='itemUse'&&ev.target!==undefined&&(ev.item==='berry'||ev.item==='tonic')) {
       const t = ev.target, item:Item = ev.item;
       const at = pos[t], actorAt = pos[id];
@@ -376,7 +378,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
 }
 
 /** Base duration of each step in ms; the whole round is scaled down together if it would exceed the cap. */
-export const BASE_MS:Record<AnimEvent['k'], number> = {airAttack:260, move:180, swap:200, hit:320, protect:240, blowaway:220, heal:260, effect:320, hpchange:240, tags:560};
+export const BASE_MS:Record<AnimEvent['k'], number> = {airAttack:260, move:180, swap:200, hit:320, protect:240, blowaway:220, heal:260, effect:320, hpchange:240, tags:560, recall:180};
 export const ROUND_CAP_MS = 1500;
 /** Below this speed-up the round is not played at all, which keeps pathological rounds from being unreadably fast. */
 export const MIN_SCALE = 0.3;

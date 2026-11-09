@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {ITEM_DESCRIPTIONS,itemDescription} from '../../src/core/item-descriptions.ts';
 import {moveEffectLabel} from '../../src/core/describe.ts';
 import {MOVE_DEFS} from '../../src/core/moves.ts';
-import moveDescZh from '../../src/data/move-desc-zh.json' with {type:'json'};
+import {moveEffectText} from '../../src/core/move-text.ts';
 
 const items=['berry','tonic','bigBerry','teamTonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','violentSeed','maxElixir','slumberOrb','totterOrb','luminousOrb','rollcallOrb','reviverSeed'];
 
@@ -24,6 +24,6 @@ test('every current item has a visible Chinese effect description',()=>{
 test('no move effect line or move description writes a cap or limit sentence (the screen carries no explanations)',()=>{
  for(const id of Object.keys(MOVE_DEFS))assert.ok(!moveEffectLabel(id).includes('上限'),id+' effect label has no 上限');
  assert.match(moveEffectLabel('swordsdance'),/攻击\+2$/);
- assert.ok(!JSON.stringify(moveDescZh).includes('上限'),'no move description mentions a cap');
+ for(const id of Object.keys(MOVE_DEFS))assert.ok(!moveEffectText(id).includes('上限'),id+' effect text has no 上限');
  assert.match(itemDescription('violentSeed'),/至少升到 \+3 级/);
 });

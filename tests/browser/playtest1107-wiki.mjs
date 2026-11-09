@@ -202,7 +202,7 @@ const fits=async(p,size)=>{const box=await p.locator('#wiki-dialog').boundingBox
  const size={width:800,height:600};
  const {ctx,p}=await dungeon(size);
  await p.keyboard.press('h');await p.locator('#wiki-dialog[open]').waitFor();await fits(p,size);
- for(const cat of ['controls','moves','species','status']){
+ for(const cat of ['moves','species','status']){
   await p.locator('[data-wiki-cat="'+cat+'"]').click();await p.locator('#wiki-list .wiki-row').first().click();await fits(p,size);
   const tab=await p.locator('[data-wiki-cat="'+cat+'"]').boundingBox();assert.ok(tab.x>=0&&tab.y>=0&&tab.y+tab.height<=size.height,'the tab is on screen: '+JSON.stringify(tab));
  }

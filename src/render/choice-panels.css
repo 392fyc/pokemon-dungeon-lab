@@ -232,7 +232,8 @@ body.dungeon-mode #context-actions .shop-row.is-sold { opacity: .4; }
 /* Drag and drop: what can be picked up, the ghost, and the drop targets. */
 .c195-bag-item[data-bag-item], .c195-slot:not(.is-empty), .camp194-roster-select, .camp194-team-slot[data-camp-member], .camp194-move-tile { touch-action: pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; cursor: grab; }
 body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
-.is-dragging { opacity: .4; }
+/* The dragged source dims; `body` carries the same class for the cursor rule above and must not dim with it (that made the whole screen dark while dragging). */
+.is-dragging:not(body) { opacity: .4; }
 .drop-ok { outline: 3px dashed #d9a22b; outline-offset: 2px; }
 .drop-hover { outline: 3px solid #3f8f3a !important; outline-offset: 2px; background-color: #e9f5c9 !important; }
 .hud-quick-slot.drop-ok, .hud-quick-slot.drop-hover { position: relative; z-index: 60; }

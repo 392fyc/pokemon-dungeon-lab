@@ -130,7 +130,7 @@ V.fx=()=>{const cur=TPL.find(t=>t[0]===st.fxT);
  <div class="fx-types">${Object.keys(TC).map(k=>`<button type="button" style="background:${TC[k]}" aria-pressed="${k===st.fxY}" data-a="fxy:${k}">${TZ[k]}</button>`).join('')}</div>
  <div class="fx-side"><label><input type="checkbox" id="fxsup" ${st.fxS?'checked':''}> 效果绝佳</label><button type="button" class="btn" data-a="fxp:1">重新播放</button></div>
  <div class="fx-info"><h3>${cur[1]} · ${TZ[st.fxY]}</h3><p>招式的范围和效果决定形状，属性决定颜色和粒子。例：${cur[3]}。</p><div class="steps"><div><b>启动</b>0.1 秒内</div><div><b>飞行或挥动</b>0.2 秒内</div><div><b>命中</b>白色闪光、击退、伤害数字</div><div><b>全程</b>不超过 0.5 秒</div></div></div>`;};
-const VIEWS=[['detail','详情','画内窗口。上方小头像切换成员和敌人，敌人没有方针。方针是六个图标格，招式悬停显示范围和官方说明；攻防升降标在六边图顶点上，命中和闪避的升降用状态标签。'],
+const VIEWS=[['detail','详情','画内窗口。上方小头像切换自己队伍的成员，不列敌人。方针是六个图标格，招式悬停显示范围和效果说明（G13.1，由引擎数据生成）；攻防升降标在六边图顶点上，身份栏下另有“能力变化”一栏列出全部非零阶段和实际倍率。'],
 ['settings','设置','只放游戏里真实存在的选项，分画面、键位、存档三页。标题、营地和迷宫共用这个窗口，“返回标题”只在营地显示。'],
 ['result','结算','整屏结果页：先看结果和到达的层，再看经验，最后看收获。值为 0 的项不显示。经验明细放不下时只在明细区内滚动，总经验、等级条和升级提示始终可见；收获放不下时横向滚动。'],
 ['camp','营地','第 2 批已实现：建筑牌只留名字，天赋石碑仅在有剩余天赋点且至少一条分支还能加点时亮感叹号；仓库不亮感叹号。难度放在“出发”窗口，点迷宫入口先确认阵容和难度。游戏中保留站在建筑前的吉利蛋与卡比兽。'],

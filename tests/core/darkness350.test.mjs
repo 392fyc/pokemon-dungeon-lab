@@ -12,6 +12,7 @@ import {
   ROOM_FADE_MS,
   roomLight,
   unknownDarkness,
+  deepDarkness,
 } from '../../src/render/darkness.ts';
 
 const S=6;   // texels per cell (SAMPLES_PER_CELL)
@@ -135,7 +136,7 @@ test('350 a new floor starts with its rooms already lit; tint and border follow 
   darkness.show('floor-1','moss',24,fieldOf(8,8,{seed:1,litRooms:[room]}),true,200);
   assert.ok(alphaOf(state,8,2.5,2.5)<.01,'no fade-in on arrival at a floor');
   assert.deepEqual(Array.from(state.latest.slice(0,3)),[20,16,13]);
-  assert.equal(state.borders.at(-1).alpha,unknownDarkness([...Array(3)].map(()=>0)) ,'border veil uses the same darkness as the mask when no wall colour is given or the theme default');
+  assert.equal(state.borders.at(-1).alpha,deepDarkness([...Array(3)].map(()=>0)) ,'border veil uses the deep darkness of an unknown cell when no wall colour is given or the theme default');
   darkness.show('floor-1','wet',48,fieldOf(9,8,{seed:1,litRooms:[room]}),false);
   assert.deepEqual(state.dimensions,[9*S,8*S]);
   assert.deepEqual(Array.from(state.latest.slice(0,3)),[10,17,18],'new canvas gets the wet wall[0] tint');
@@ -174,7 +175,7 @@ test('350 the outer border is four rectangles reaching 64 cells out; resizing ke
   assert.equal(darkness.debug().baseBuildCount,1);
   assert.deepEqual(state.dimensions,[width*S,height*S],'the texture covers only the map at the sample density');
   assert.equal(state.borderRects.length,4,'the map margin is four static rectangles');
-  assert.equal(state.borders[0].alpha,unknownDarkness([90,90,90]),'the outside veil uses the same darkness as an unknown cell');
+  assert.equal(state.borders[0].alpha,deepDarkness([90,90,90]),'the outside veil uses the same darkness as an unknown cell');
   assert.equal(state.borderRects[0][0],-64*24,'the border reaches 64 cells beyond the map');
   darkness.show('floor-77','moss',48,field,false);
   assert.equal(darkness.debug().baseBuildCount,1,'resizing does not rebuild the samples');

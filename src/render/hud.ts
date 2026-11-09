@@ -6,6 +6,7 @@ import {
   ITEM_NAMES,
   PROG,
   stageOf,
+  damageStage,
   sleeping,
   STATUS_NAMES,
   STAGE_NAMES,
@@ -30,12 +31,9 @@ import { portraitMarkup } from "./portrait.ts";
 import { hpTrackMarkup } from "./hpbar.ts";
 import "./portrait.css";
 import moveTypeSnapshot from "../data/move-types.json" with { type: "json" };
-import moveDescriptionSnapshot from "../data/move-desc-zh.json" with { type: "json" };
+import { moveEffectText, stageTitle } from "../core/move-text.ts";
 
 const MOVE_TYPES = (moveTypeSnapshot as unknown as { types: Record<string, string> }).types;
-const MOVE_DESCRIPTIONS = (moveDescriptionSnapshot as unknown as {
-  moves: Record<string, { desc: string }>;
-}).moves;
 const ITEM_CATEGORIES: Record<Item, string> = {
   berry: "berry",
   bigBerry: "berry",
@@ -88,17 +86,19 @@ function spriteMarkup(unit: Unit, label: string): string {
   });
 }
 
-function stageBadge(label: string, stage: number): string {
+/** `stage` is the stage the engine really uses (damageStage: the hunter commission lowers a friend's defence stages by 1); `stored` is the one on the unit. */
+function stageBadge(key: StageKey, stage: number, stored = stage): string {
   if (!stage) return "";
   const direction = stage > 0 ? "up" : "down";
   const arrow = stage > 0 ? "↑" : "↓";
-  return '<span class="hud-status-badge is-' + direction + '">' +
-    esc(label + arrow + Math.abs(stage)) + "</span>";
+  const tip = esc(stageTitle(key, stored, stage));
+  return '<span class="hud-status-badge is-' + direction + '" data-stage="' + key + '" title="' + tip + '" aria-label="' + tip + '">' +
+    esc(STAGE_NAMES[key] + arrow + Math.abs(stage)) + "</span>";
 }
 
-function statusMarkup(unit: Unit): string {
+function statusMarkup(unit: Unit, world?: World): string {
   const stageKeys: StageKey[] = ["atk", "def", "spa", "spd", "acc", "eva"];
-  const badges = stageKeys.map((key) => stageBadge(STAGE_NAMES[key], stageOf(unit, key)));
+  const badges = stageKeys.map((key) => stageBadge(key, world && (key === "atk" || key === "def" || key === "spa" || key === "spd") ? damageStage(world, unit, key) : stageOf(unit, key), stageOf(unit, key)));
   for (const kind of Object.keys(STATUS_NAMES) as StatusId[]) {
     const state: StatusState | undefined = unit.status?.[kind];
     if (!state) continue;
@@ -290,7 +290,7 @@ export function hudParty(s: World, disabled: boolean): string {
     if (!unit) return "";
     const name = unitName(unit);
     const chosen = id === s.leader;
-    const status = statusMarkup(unit);
+    const status = statusMarkup(unit, s);
     return '<article class="hud-party-card' + (chosen ? " is-leader" : "") + '" id="unit-card-' + esc(id) + '">' +
       '<button type="button" class="hud-party-main" id="leader-' + index + '" data-hud-leader="' +
       esc(id) + '" aria-pressed="' + chosen + '" aria-label="切换操控到' + esc(name) + '"' +
@@ -537,7 +537,7 @@ export function hudMoveTip(s: World, skill: Skill): string {
   const cells = scopeGrid(spec?.range);
   const typeId = type ? esc(type) : "";
   const accuracy = hudMoveAccuracy(s, s.leader, skill);
-  const description = MOVE_DESCRIPTIONS[skill]?.desc ?? "";
+  const description = moveEffectText(skill);
   return '<section class="hud-move-tip" aria-label="' + esc(moveZh(skill)) + "招式信息" +
     '" data-move-type="' + typeId + '">' +
     '<div class="hud-move-tip-main">' + cells +
@@ -570,7 +570,7 @@ export function starterMoveFields(skill: Skill) {
     effect: moveShortEffect(skill),
     range: compactRange(spec?.range),
     scope: scopeGrid(spec?.range),
-    description: MOVE_DESCRIPTIONS[skill]?.desc ?? "",
+    description: moveEffectText(skill),
   };
 }
 

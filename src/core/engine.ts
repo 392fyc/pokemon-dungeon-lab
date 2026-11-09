@@ -186,7 +186,8 @@ export type RoundEvent=
   |{type:'guard';unit:string;kind:'protect'|'counter'|'reflect'|'lightscreen'}
   |{type:'quickguard';unit:string;targets:string[]}
   /** An item used. `target` is absent for items that act on the room or the party. */
-  |{type:'itemUse';unit:string;item:Item;target?:string;from?:number;to?:number;pp?:number};
+  /** `moved` (the Rollcall Orb): the companions that were called next to the user and the cells they now stand on, so a replay moves them before later events of the round. */
+  |{type:'itemUse';unit:string;item:Item;target?:string;from?:number;to?:number;pp?:number;moved?:{unit:string;to:Pos}[]};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
 export const RULE_VERSION='trial-rules-6';
 export const CONTENT_VERSION='trial-content-7';
@@ -295,6 +296,8 @@ export const stageOf=(u:Unit,k:StageKey):number=>k==='spe'?0:((u.stages as Recor
 /** G2 (8.8): stage difference n is clamped to -3...+3; n>=0 gives (3+n)/3, n<0 gives 3/(3-n). */
 /** G5.1: accuracy and evasion stages run -3...+3. G4.3: at most three travellers. G5.13: a status without a duration range (flinch) lasts this many of its owner's action chances. */
 export const ACCURACY_STAGE_LIMIT=3,PARTY_LIMIT=3,STATUS_DEFAULT_LEFT=1;
+/** G5.6, G5.7, G5.8, G5.9: how long guard, counter and screens last (in opposing action phases), and the blow-away reach and impact. Read by the move texts. */
+export const PROTECT_PHASES=3,COUNTER_PHASES=3,SCREEN_PHASES=10,BLOWAWAY_CELLS=10,COLLISION_DAMAGE=5;
 export const accuracyMultiplier=(n:number):number=>{const c=Math.max(-ACCURACY_STAGE_LIMIT,Math.min(ACCURACY_STAGE_LIMIT,n));return c>=0?(3+c)/3:3/(3-c);};
 /** Moves are judged for a hit when they target opponents or everyone (a line attack that can also catch a companion); self buffs, guards, Helping Hand, screens and Quick Guard never roll. */
 const needsHitRoll=(spec:MoveSpec)=>spec.target==='enemy'||spec.target==='all';
@@ -349,14 +352,20 @@ function applyStatus(s:World,targetId:string,kind:StatusId):void {
   emit(s,{type:'status',target:targetId,status:kind,change:had?'refresh':'apply'});
 }
 function speciesTypes(u:Unit):readonly string[]{return u.species?speciesOf(u.species)?.types??[]:[];}
+/** Which types a status cannot be inflicted on (G5.13), which move ids have a type that cannot be hit by them, and which type shrugs off powder moves. The move texts read these tables. */
+export const STATUS_IMMUNE_TYPES:Partial<Record<StatusId,readonly string[]>>={psn:['poison','steel'],tox:['poison','steel'],brn:['fire'],frz:['ice'],par:['electric']};
+export const POWDER_IMMUNE_TYPES:readonly string[]=['grass'];
+export const MOVE_IMMUNE_TYPES:Record<string,readonly string[]>={thunderwave:['ground']};
+/** Every type (lower case) that takes no effect from this move's `status` (including powder and move-specific immunity). */
+export function statusImmuneTypes(moveId:string,status:StatusId):string[] {
+  return [...new Set([...(STATUS_IMMUNE_TYPES[status]??[]),...(moveEffects(moveId)?.powder?POWDER_IMMUNE_TYPES:[]),...(MOVE_IMMUNE_TYPES[moveId]??[])])];
+}
 function statusTypeBlockReason(moveId:string,target:Unit,status:StatusId):string|null {
   const types=speciesTypes(target).map(t=>t.toLowerCase());
-  if((status==='psn'||status==='tox')&&(types.includes('poison')||types.includes('steel')))return '属性免疫'+STATUS_NAMES[status];
-  if(status==='brn'&&types.includes('fire'))return '属性免疫灼伤';
-  if(status==='frz'&&types.includes('ice'))return '属性免疫冰冻';
-  if(status==='par'&&types.includes('electric'))return '属性免疫麻痹';
-  if(moveEffects(moveId)?.powder&&types.includes('grass'))return '草系免疫粉末招式';
-  if(moveId==='thunderwave'&&types.includes('ground'))return '地面系免疫电磁波';
+  if(types.some(t=>STATUS_IMMUNE_TYPES[status]?.includes(t)))return '属性免疫'+STATUS_NAMES[status];
+  if(moveEffects(moveId)?.powder&&types.some(t=>POWDER_IMMUNE_TYPES.includes(t)))return '草系免疫粉末招式';
+  const moveImmune=types.find(t=>MOVE_IMMUNE_TYPES[moveId]?.includes(t));
+  if(moveImmune){const zh=(names as unknown as {types:Record<string,string>}).types,typeName=Object.entries(zh).find(([k])=>k.toLowerCase()===moveImmune)?.[1]??moveImmune;return typeName+'系免疫'+(SKILL_CN[moveId as Skill]??moveId);}
   return null;
 }
 function statusMoveBlockReason(moveId:string,target:Unit,status:StatusId):string|null {
@@ -517,6 +526,8 @@ function moveTargetsInReach(s:World,actorId:string,spec:MoveSpec):Unit[] {
     }
   });
 }
+/** Boss species that cannot be blown away (BOSS_CONFIG); the move texts name them. */
+export const BLOWAWAY_IMMUNE_BOSSES:string[]=Object.entries(BOSS_CONFIG).filter(([,c])=>c.canBeBlownAway===false).map(([k])=>k);
 function bossCanBeBlownAway(target:Unit):boolean {
   return !target.boss||BOSS_CONFIG[target.species??'']?.canBeBlownAway!==false;
 }
@@ -1278,7 +1289,7 @@ function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number
 function collide(s:World,targetId:string,killer:string):void {
   // The specification fixes blowaway impact at five damage; defence stages do not change collision damage. The pusher gets the credit for a kill.
   const keep=currentKiller;currentKiller=s.units[targetId]?.side!==s.units[killer]?.side?killer:null;
-  try{hit(s,targetId,5);}finally{currentKiller=keep;}
+  try{hit(s,targetId,COLLISION_DAMAGE);}finally{currentKiller=keep;}
 }
 function blowAway(s:World,actor:Unit,target:Unit):void {
   if(!alive(actor)||!alive(target))return;
@@ -1286,7 +1297,7 @@ function blowAway(s:World,actor:Unit,target:Unit):void {
   const start=target.pos;
   const delta={x:Math.sign(target.pos.x-actor.pos.x),y:Math.sign(target.pos.y-actor.pos.y)};
   let at=target.pos,wall=false,blocker:Unit|undefined;
-  for(let i=0;i<10;i++){
+  for(let i=0;i<BLOWAWAY_CELLS;i++){
     const next=plus(at,delta);
     if(!walk(s,next)||!stepOk(s,at,next)){wall=true;break;}
     blocker=active(s).find(u=>u.id!==target.id&&same(u.pos,next));
@@ -1371,7 +1382,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
       for(const target of landed)if(alive(target)&&!effectBlocked(s,actor,target,blockingGuard)){const blocked=statusTypeBlockReason(a.skill,target,status);if(blocked){note(s,target.id+'免疫'+STATUS_NAMES[status]);continue;}applyStatus(s,target.id,status);}
       continue;
     }
-    if(effect==='rest'){actor.status??={};actor.status.nap={left:battleInt(s,2,3),fresh:true};note(s,id+'开始打盹');emit(s,{type:'rest',unit:id});continue;}
+    if(effect==='rest'){actor.status??={};actor.status.nap={left:battleInt(s,STATUS_DURATION.nap![0],STATUS_DURATION.nap![1]),fresh:true};note(s,id+'开始打盹');emit(s,{type:'rest',unit:id});continue;}
     if(effect==='heal:1:2'){
       for(const target of landed)if(alive(target)){
         const before=target.hp;target.hp=Math.min(target.maxHp,target.hp+Math.round(target.maxHp/2));
@@ -1379,8 +1390,8 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
       }
       continue;
     }
-    if(effect==='protect'){actor.protect=3;note(s,`${id}进入守住状态`);emit(s,{type:'guard',unit:id,kind:'protect'});continue;}
-    if(effect==='counter'){actor.counter=3;note(s,`${id}进入反击状态`);emit(s,{type:'guard',unit:id,kind:'counter'});continue;}
+    if(effect==='protect'){actor.protect=PROTECT_PHASES;note(s,`${id}进入守住状态`);emit(s,{type:'guard',unit:id,kind:'protect'});continue;}
+    if(effect==='counter'){actor.counter=COUNTER_PHASES;note(s,`${id}进入反击状态`);emit(s,{type:'guard',unit:id,kind:'counter'});continue;}
     if(effect==='quickguard'){
       const guarded=landed.filter(t=>alive(t)&&t.side===actor.side);
       for(const target of guarded)createdGuard.add(target.id);
@@ -1388,8 +1399,8 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
     }
     if(effect==='reflect'||effect==='lightscreen'){
       for(const target of landed)if(alive(target)&&target.side===actor.side){
-        target[effect]=10;
-        note(s,`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续10个${target.side==='enemy'?'我方':'敌方'}行动阶段`);emit(s,{type:'guard',unit:target.id,kind:effect});
+        target[effect]=SCREEN_PHASES;
+        note(s,`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续${SCREEN_PHASES}个${target.side==='enemy'?'我方':'敌方'}行动阶段`);emit(s,{type:'guard',unit:target.id,kind:effect});
       }
       continue;
     }
@@ -1499,7 +1510,8 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
       for(const mid of s.queue){if(mid===id)continue;const m=s.units[mid];if(!alive(m)||adjacent(s,u.pos!,m.pos))continue;
         const spot=DIRS8.map(d=>plus(u.pos!,d)).find(c=>walk(s,c)&&s.seen.includes(key(c))&&stepOk(s,u.pos!,c)&&!active(s).some(v=>same(v.pos,c)));
         if(!spot)continue;m.pos=clone(spot);moved.push(mid);}
-      note(s,`${id}使用${ITEM_NAMES.rollcallOrb}，${moved.length?moved.join('、')+'被召到身边':'身边没有空位，同行留在原地'}`);emit(s,{type:'itemUse',unit:id,item:'rollcallOrb'});if(moved.length)reveal(s);
+      const movedTo=moved.map(unit=>({unit,to:clone(s.units[unit].pos!)}));
+      note(s,`${id}使用${ITEM_NAMES.rollcallOrb}，${moved.length?moved.join('、')+'被召到身边':'身边没有空位，同行留在原地'}`);emit(s,{type:'itemUse',unit:id,item:'rollcallOrb',...(movedTo.length?{moved:movedTo}:{})});if(moved.length)reveal(s);
     }else if(ITEM_CURES[a.item]){
       const cured=cureStatuses(s,t,ITEM_CURES[a.item]!);
       note(s,`${id}对${t.id}使用${ITEM_NAMES[a.item]}，治好了${cured.map(k=>STATUS_NAMES[k]).join('、')}`);emit(s,{type:'itemUse',unit:id,item:a.item,target:t.id});

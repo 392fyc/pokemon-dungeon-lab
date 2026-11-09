@@ -9,7 +9,6 @@ const roster=readJson('../../src/data/roster.json');
 const moveSpecs=readJson('../../src/data/pmd-moves.json').moves;
 const moveEffects=readJson('../../src/data/move-effects.json').moves;
 const names=readJson('../../src/data/names-zh.json');
-const moveDescriptions=readJson('../../src/data/move-desc-zh.json');
 const chart=readJson('../../src/data/type-chart.json');
 
 test('fixed source and generated roster contain modern 18-type and level-up data',()=>{
@@ -101,32 +100,3 @@ test('TM pool 5 adds only Rest and Sleep Talk while old pools keep their saved o
 });
 
 
-test('eight sleep move descriptions have official page and template revision evidence',()=>{
-  const ids=['hypnosis','sleeppowder','sing','spore','lovelykiss','rest','snore','sleeptalk'];
-  assert.equal(moveDescriptions.source.site,'神奇宝贝百科 wiki.52poke.com');
-  assert.equal(moveDescriptions.source.date,'2026-11-06');
-  for(const id of ids){
-    const row=moveDescriptions.moves[id];
-    assert.ok(row,id+' description row');
-    assert.ok(row.desc.trim(),id+' description text');
-    assert.equal(row.name,names.moves[id],id+' Simplified-Chinese move name');
-    assert.match(row.page,/（招式）$/,id+' source page');
-    assert.ok(Number.isInteger(row.revid),id+' page revision');
-    assert.ok(Number.isInteger(row.tplRevid),id+' template revision');
-    assert.equal(row.game,'本作',id+' describes the approved project behavior');
-    assert.ok(row.originalDesc&&row.originalGame,id+' retains the original official text and game');
-    assert.deepEqual(row.overrideSource.rules,['G5.13'],id+' identifies the governing rule');
-    assert.equal(moveDescriptions.missing[id],undefined,id+' should not be missing');
-  }
-  assert.match(moveDescriptions.moves.rest.desc,/2—3次自身行动机会.*结束时回满HP/);
-  assert.match(moveDescriptions.moves.rest.desc,/换层.*不回复/);
-  assert.match(moveDescriptions.moves.snore.desc,/不造成畏缩.*不能主动使用/);
-  assert.match(moveDescriptions.moves.sleeptalk.desc,/只消耗梦话的PP.*不能主动使用/);
-});
-test('Freeze-Dry describes the current Ice matchup and retains the original special-case text',()=>{
-  const row=moveDescriptions.moves.freezedry;
-  assert.equal(typeEffectiveness('freezedry',['Water']),0.5);
-  assert.equal(row.game,'本作');assert.match(row.desc,/水属性会抵抗/);
-  assert.doesNotMatch(row.desc,/水属性.*效果绝佳/);assert.match(row.originalDesc,/水属性.*效果绝佳/);
-  assert.ok(row.originalGame);assert.deepEqual(row.overrideSource.rules,['G5.3','G5.13']);
-});

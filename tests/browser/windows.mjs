@@ -899,7 +899,7 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   assert.equal(await water.locator('.hud-range-cell').count(),25);
   assert.equal(await water.locator('.starter-move-description').isVisible(),false);
   await water.hover();
-  assert.match(await water.locator('.starter-move-description').innerText(),/向对手猛烈地喷射水流进行攻击/);
+  assert.match(await water.locator('.starter-move-description').innerText(),/特殊攻击，按特攻对特防结算。命中率\d+%/);
   await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
   assert.equal(await p.locator('.starter-option').count(),8);assert.equal(await p.locator('#pick-deputy-treecko').count(),0);
   const deputyPortraits=await visiblePortraits(p,'.starter-option .portrait');assert.equal(deputyPortraits.length,8);assertPortraitsCentered(deputyPortraits,'eight deputy option icons');
@@ -1024,8 +1024,9 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   if(units)await hoverCell(p,units.x,units.y);
   await move.hover();const tip=p.locator('#hud-tooltip');await tip.waitFor({state:'visible'});let detail=await tip.innerText();
   for(const field of ['威力','命中','PP'])assert.ok(detail.includes(field),`the move tooltip exposes ${field}`);assert.ok(!detail.includes('范围'));
-  const moveDescription=JSON.parse(fs.readFileSync(new URL('../../src/data/move-desc-zh.json',import.meta.url),'utf8')).moves[skill].desc;
-  assert.equal(await tip.locator('[data-move-description]').textContent(),moveDescription,'the hover tooltip matches the local Chinese description for the selected move');
+  const moveDescription=(await tip.locator('[data-move-description]').textContent())??'';
+  assert.ok(moveDescription.endsWith('。')&&moveDescription.length>4,'the hover tooltip carries the effect text built from the engine data: '+moveDescription);
+  assert.doesNotMatch(moveDescription,/建议|可以使用/,'the effect text is not an operating instruction (G13.5)');
   assert.ok((await tip.locator(`[data-move-preview="${skill}"]`).textContent())?.trim(),'the hover card carries the live move estimate');
   assert.doesNotMatch(await tip.locator('[data-move-preview]').innerText(),/对普通目标|[（）]/,'the visual estimate omits explanatory parentheses');
   assert.doesNotMatch(await move.innerText(),/同排|同列|斜线|造成约/,'compact move cards do not carry the old detailed explanation');

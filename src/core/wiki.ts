@@ -2,7 +2,7 @@
  *  Hand-written explanations live in src/data/wiki-zh.json (each entry names its rule numbers); the move, species, item and blessing lists
  *  are generated from the data the engine reads; numbers come from engine constants through {token} placeholders. */
 import wikiText from '../data/wiki-zh.json' with {type:'json'};
-import descSource from '../data/move-desc-zh.json' with {type:'json'};
+import {moveEffectLines} from './move-text.ts';
 import chartSource from '../data/type-chart.json' with {type:'json'};
 import {SPECIES,ALL_TM_MOVES} from './roster.ts';
 import {moveOf,moveEffects,MOVE_DEFS,type MoveRange,type StatusId,type StageKey,type StageChange} from './moves.ts';
@@ -60,7 +60,6 @@ const fill=(text:string,tokens:Record<string,string>):string=>text.replace(/\{([
 export const WIKI_LINK=/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 const link=(id:string,label:string)=>'[[' + id + '|' + label + ']]';
 
-const MOVE_DESCRIPTIONS=(descSource as unknown as {moves:Record<string,{desc?:string}>}).moves;
 const STAGE_LINK:Record<string,string>={atk:'stages:atk',def:'stages:def',spa:'stages:spa',spd:'stages:spd',spe:'stages:spe',acc:'stages:acc',eva:'stages:eva'};
 const CATEGORY_ZH={Physical:'物理',Special:'特殊',Status:'变化'} as const;
 /** The six reaches of the move card, in a word each; the full wording is in the range table (terms:range). */
@@ -123,7 +122,7 @@ function movePp(move:string):number|null {
 }
 function buildMove(move:string):WikiEntry {
   const spec=moveOf(move)!,type=moveType(move),category=moveCategory(move),zh=moveZh(move),effects=describeMoveEffects(move);
-  const power=spec.power===null||spec.power===undefined?'—':String(spec.power),pp=movePp(move),desc=MOVE_DESCRIPTIONS[move]?.desc??'';
+  const power=spec.power===null||spec.power===undefined?'—':String(spec.power),pp=movePp(move),effectLines=moveEffectLines(move);
   const rows=[
     {label:'属性',text:type?typeLink(type):'—'},
     {label:'类别',text:category?link('terms:category',CATEGORY_ZH[category]):'—'},
@@ -131,11 +130,11 @@ function buildMove(move:string):WikiEntry {
     {label:'射程',text:link('terms:range',RANGE_SHORT[spec.range])},
   ];
   const blocks:WikiBlock[]=[{t:'facts',rows}];
-  if(desc)blocks.push({t:'p',text:desc});
+  for(const line of effectLines)blocks.push({t:'p',text:line+'。'});
   if(effects.length)blocks.push({t:'facts',rows:[{label:'效果',text:effects.join('；')}]});
   blocks.push({t:'chips',label:'可学习的宝可梦',ids:learnersOf(move)});
   return {id:'moves:'+move,cat:'moves',key:move,title:zh,subtitle:[type?typeZh(type):'',category?CATEGORY_ZH[category]:'',power==='—'?'':'威力 '+power].filter(Boolean).join(' · '),
-    rules:['G5.1'],blocks,meta:{kind:'move',move,types:type?[type]:[]},search:[zh,move,type?typeZh(type):'',type??'',category?CATEGORY_ZH[category]:'',desc].join(' ').toLowerCase()};
+    rules:['G5.1'],blocks,meta:{kind:'move',move,types:type?[type]:[]},search:[zh,move,type?typeZh(type):'',type??'',category?CATEGORY_ZH[category]:'',effectLines.join(' ')].join(' ').toLowerCase()};
 }
 
 const STAT_ZH=[['hp','HP'],['atk','攻击'],['def','防御'],['spa','特攻'],['spd','特防'],['spe','速度']] as const;

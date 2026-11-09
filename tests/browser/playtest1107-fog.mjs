@@ -1,4 +1,4 @@
-/* Round 9: the fog is one even darkness with soft geometric holes. Measured on the real mask the game draws (window.trial.maskAlpha, cell units).
+/* Round 9: the fog is one even darkness with soft geometric holes (Round 14: unrevealed cells sit in a slightly deeper fog and revealed cells ramp into it). Measured on the real mask the game draws (window.trial.maskAlpha, cell units).
  *  - Outside every light (explored or not) neighbouring cells never differ: the largest step between two adjacent cell centres is under 0.01.
  *    A cell-patch fog would step by 0.15 to 0.3 here (the old explored 0.58 against unexplored 0.74), so 0.01 cleanly separates the two.
  *  - Across the edge of a light the alpha moves in steps of at most half of the full darkness per sixth of a cell: soft, not a cell edge.
@@ -34,12 +34,20 @@ assert.equal(view.lights.length,1,'one living party member, one circle');
 const L=view.lights[0],lx=L.centerX,ly=L.centerY;
 // 1. far from the light and outside every lit room: one even darkness, explored or not
 // (the local glow of revealed stairs is a separate, intended light: cells within 2.2 cells of a staircase are left out)
-const far=await p.evaluate(({lx,ly,w,h})=>{const glows=window.trial.store.world.points.filter(q=>q.kind==='down'||q.kind==='up').map(q=>q.pos),grid=[];for(let y=0;y<h;y++){const row=[];for(let x=0;x<w;x++){const cx=x+.5,cy=y+.5;row.push(Math.hypot(cx-lx,cy-ly)>3.6&&glows.every(g=>Math.hypot(cx-g.x-.5,cy-g.y-.5)>2.2)?window.trial.maskAlpha(cx,cy):null);}grid.push(row);}return grid;},{lx,ly,w:info.w,h:info.h});
-let samples=0,maxStep=0,value=null;
-for(let y=0;y<far.length;y++)for(let x=0;x<far[y].length;x++){const v=far[y][x];if(v===null)continue;samples++;value??=v;assert.ok(Math.abs(v-value)<.01,`cell ${x},${y} carries the one darkness (${v} vs ${value})`);
- for(const [dx,dy] of [[1,0],[0,1]]){const u=far[y+dy]?.[x+dx];if(u!=null)maxStep=Math.max(maxStep,Math.abs(u-v));}}
-assert.ok(samples>400,'a large out-of-sight area was sampled: '+samples);assert.ok(maxStep<.01,'adjacent cells outside the light differ by at most '+maxStep);
-assert.ok(value>=.7&&value<=.9,'the one darkness is the research value '+value);
+const far=await p.evaluate(({lx,ly,w,h})=>{const world=window.trial.store.world,known=new Set([...world.seen,...(world.seenWalls??[])]),glows=world.points.filter(q=>q.kind==='down'||q.kind==='up').map(q=>q.pos),grid=[];
+ const kn=(x,y)=>known.has(x+','+y);
+ for(let y=0;y<h;y++){const row=[];for(let x=0;x<w;x++){const cx=x+.5,cy=y+.5;
+  // a revealed cell counts as "inside" when its whole 3x3 neighbourhood is revealed (the ramp into the fog takes place over the last cell)
+  let inside=kn(x,y);for(let dy=-1;dy<=1&&inside;dy++)for(let dx=-1;dx<=1;dx++)if(!kn(x+dx,y+dy)){inside=false;break;}
+  const unknownDeep=!kn(x,y)&&[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]].every(([dx,dy])=>!kn(x+dx,y+dy));
+  row.push(Math.hypot(cx-lx,cy-ly)>3.6&&glows.every(g=>Math.hypot(cx-g.x-.5,cy-g.y-.5)>2.2)&&(inside||unknownDeep)?{a:window.trial.maskAlpha(cx,cy),inside}:null);}grid.push(row);}return grid;},{lx,ly,w:info.w,h:info.h});
+let samples=0,maxStep=0,value=null,fog=null;
+for(let y=0;y<far.length;y++)for(let x=0;x<far[y].length;x++){const c=far[y][x];if(c===null)continue;samples++;
+ if(c.inside){value??=c.a;assert.ok(Math.abs(c.a-value)<.01,`revealed cell ${x},${y} carries the one darkness (${c.a} vs ${value})`);}
+ else{fog??=c.a;assert.ok(Math.abs(c.a-fog)<.01,`unrevealed cell ${x},${y} carries the one fog darkness (${c.a} vs ${fog})`);}
+ for(const [dx,dy] of [[1,0],[0,1]]){const u=far[y+dy]?.[x+dx];if(u!=null&&u.inside===c.inside)maxStep=Math.max(maxStep,Math.abs(u.a-c.a));}}
+assert.ok(samples>400,'a large out-of-sight area was sampled: '+samples);assert.ok(maxStep<.01,'adjacent cells of the same kind outside the light differ by at most '+maxStep);
+assert.ok(value>=.7&&value<=.9,'the revealed darkness is the research value '+value);assert.ok(fog>=value&&fog<=.9,'unrevealed cells sit in the deeper fog (Round 14: it hides the picture edge): '+fog+' vs '+value);
 // 2. the edge of the circle: fine steps along a radius, monotone, soft
 const radius=await p.evaluate(({lx,ly})=>{const v=[];for(let i=0;i<=30;i++)v.push(window.trial.maskAlpha(lx+i/6,ly+.0));return v;},{lx,ly:ly+.4});
 let step=0;for(let i=1;i<radius.length;i++)step=Math.max(step,Math.abs(radius[i]-radius[i-1]));

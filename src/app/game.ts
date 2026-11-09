@@ -237,13 +237,13 @@ async function autoWalk(target:Pos){
  while(token===walkToken){
   const s=live();if(!s||s.phase!=='playing'||store.status!=='ready'||anim.active||bagOpen||(settings.open||wikiOpen())||screen!=='play'||draft||sleeping(s.units[s.leader])||confusedLeader(s))break;
   const path=plan0(s);if(!path||!path.length)break;
-  const run=s.runId,level=s.dungeon?.level,round=s.round,leader=s.leader,enemiesBefore=movementEnemies(s),hpBefore=new Map(s.queue.map(id=>[id,s.units[id].hp] as const)),watched=attentionCells(s);   // read before the step: walking onto an item picks it up and clears its marker
+  const run=s.runId,level=s.dungeon?.level,round=s.round,leader=s.leader,enemiesBefore=movementEnemies(s),watched=attentionCells(s);   // read before the step: walking onto an item picks it up and clears its marker
   await send({type:'round',action:{type:'move',to:path[0]}},true);
   if(token!==walkToken)return;
   const after=live();if(!after||after.runId!==run||after.dungeon?.level!==level||after.round===round||after.phase!=='playing'||store.status!=='ready'||after.leader!==leader)break;
   {const at=after.units[leader].pos;if(!at||!same(at,path[0]))break;}   // the leader did not land where planned (confusion, blown away, swapped elsewhere)
   if([...movementEnemies(after)].some(id=>!enemiesBefore.has(id)))break;   // a new enemy came into view
-  if(after.queue.some(id=>(after.units[id]?.hp??0)<(hpBefore.get(id)??0)))break;   // someone was hurt
+  if((after.events??[]).some(e=>e.type==='hpLoss'&&e.amount>0&&after.queue.includes(e.unit)))break;   // someone lost HP this round (a Reviver Seed restoring the HP in the same blow leaves no net loss, so the events are read, not the HP difference)
   const here=after.units[leader].pos;if(!here||same(here,target)||watched.has(key(here))||attentionCells(after).has(key(here)))break;   // arrived, or stepped on something to look at
  }
  if(token===walkToken){walkMarker=null;walkToken++;scene?.paint(live());}
@@ -397,6 +397,7 @@ function renderDungeonHud(){
  if(!dungeonMode())return;
  const s=live()!,unavailable=store.status!=='ready'||s.phase!=='playing',disabled=anim.active||unavailable;
  $('party').innerHTML=hudParty(s,unavailable);
+ document.getElementById('target-hint')?.remove();   // the hint floats over the map (not inside the party list), so it is cleared here on every redraw
  if(targetMode()){
   // Choose-a-target state: usable cards are lit with an arrow, the rest dimmed and not clickable; a hint line sits on top (picking a partner as in Mystery Dungeon).
   targetUsable=itemTargets(s,choosingItem!);
@@ -406,7 +407,7 @@ function renderDungeonHud(){
     card.querySelector('.hud-party-main')?.setAttribute('aria-label','对'+unitLabel(s.units[id],id)+'使用');}
    else{card.classList.add('is-dim');card.querySelectorAll<HTMLButtonElement>('button').forEach(b=>{b.disabled=true;});}});
   {const actor=draft?.editor??s.leader,why=targetUsable.size?'':(()=>{const r=applyCommand(s,draft&&draft.editor!==s.leader?{type:'round',action:draft.main??{type:'wait'},override:{actor,action:{type:'use',item:choosingItem!,target:actor}}}:{type:'round',action:{type:'use',item:choosingItem!,target:actor}});return r.ok?'现在没有可以使用的目标；本轮未执行':r.error;})();   // nobody can use it right now: say why
-   $('party').insertAdjacentHTML('afterbegin','<div class="hud-target-hint" id="target-hint"><strong>选择使用目标</strong><span>'+esc(itemName(choosingItem!))+'</span><button type="button" id="target-cancel">取消</button><small data-selected-item-description>'+esc(itemDescription(choosingItem!))+'</small>'+(why?'<small id="target-none">'+esc(why)+'</small>':'')+'</div>');}
+   document.getElementById('dungeon-hud')!.insertAdjacentHTML('beforeend','<div class="hud-target-hint" id="target-hint" role="status"><strong>选择使用目标</strong><span>'+esc(itemName(choosingItem!))+'</span><button type="button" id="target-cancel">取消</button><small data-selected-item-description>'+esc(itemDescription(choosingItem!))+'</small>'+(why?'<small id="target-none">'+esc(why)+'</small>':'')+'</div>');}
   bind('target-cancel',()=>{choosingItem=null;render();});
  }else targetUsable=new Set();
  placeInspectBelowParty();
@@ -570,8 +571,10 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  const leaderPos=s.units[s.leader]?.pos??null,activeAdventure=(s.adventureRooms??[]).find(room=>same(room.interaction,leaderPos));
  // A commission or blessing room opens its choice as soon as the leader stands on the cell: no panel with a single button in between.
  if(activeAdventure&&(activeAdventure.type==='commission'||activeAdventure.type==='blessing')&&activeAdventure.state==='idle'&&!draft&&editor===s.leader&&ready&&!(window as unknown as {__trialNoAutoInteract?:boolean}).__trialNoAutoInteract){   // the flag lets a test that proves one key = one round keep the step and the choice apart
-  const arrival=`${s.runId}|${s.dungeon?.level??0}|${activeAdventure.room}`;
-  if(autoInteractKey!==arrival){autoInteractKey=arrival;setTimeout(()=>{const now=live();if(now&&now.phase==='playing'&&!anim.active&&!draft&&store.status==='ready'&&same(now.units[now.leader]?.pos??null,activeAdventure.interaction))act({type:'interact',exit:false});},0);}
+  const arrival=`${s.runId}|${s.dungeon?.level??0}|${activeAdventure.room}|${s.leader}`;   // per room and per controller: a companion who takes over on the cell opens it too
+  // Claimed only when no animation is running, and given back when the check at the timeout fails: the first render after a step is drawn while the step's
+  // animation still plays, and a key claimed then would never fire again for this room.
+  if(autoInteractKey!==arrival&&!anim.active){autoInteractKey=arrival;setTimeout(()=>{const now=live();if(now&&now.phase==='playing'&&!anim.active&&!draft&&store.status==='ready'&&same(now.units[now.leader]?.pos??null,activeAdventure.interaction))act({type:'interact',exit:false});else autoInteractKey='';},0);}
  }
  if(activeAdventure&&!(activeAdventure.type==='challenge'&&activeAdventure.state==='sealed')&&!(activeAdventure.type==='commission'||activeAdventure.type==='blessing')){   // no room panel in the middle of a challenge fight, and none for the rooms that open their choice at once
   $('controls').insertAdjacentHTML('beforeend',adventureRoomPanel(s,activeAdventure,editor,ready,!!draft));

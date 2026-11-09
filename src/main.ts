@@ -1,5 +1,6 @@
 import {renderTitle,type TitleContext} from './ui/title-shell.ts';
 import './style.css';
+import './render/scrollbar.css';
 
 const app=document.querySelector<HTMLDivElement>('#app')!;
 const params=new URLSearchParams(location.search);

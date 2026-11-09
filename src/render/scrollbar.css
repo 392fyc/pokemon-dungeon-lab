@@ -1,0 +1,26 @@
+/* The one scrollbar of the whole game (playtest round 14, item 1). Every scrolling area uses it; no other file declares scrollbar styles.
+   Wooden thumb with a dark outline and a light top edge, on a dark inset track, so it reads on both the paper panels and the dark HUD panels. */
+:root {
+  --sb-size: 10px;
+  --sb-track: rgba(107, 67, 38, 0.3);
+  --sb-thumb: #a4703f;
+  --sb-thumb-light: #c99a62;
+  --sb-thumb-hover: #d9a95f;
+  --sb-ink: #2a1c14;
+}
+
+/* Browsers with the standard properties but no ::-webkit-scrollbar (Firefox). Chrome ignores ::-webkit-scrollbar once these are set, so keep them apart. */
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--sb-thumb) var(--sb-track); }
+}
+
+*::-webkit-scrollbar { width: var(--sb-size); height: var(--sb-size); }
+*::-webkit-scrollbar-track { background: var(--sb-track); border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(42, 28, 20, 0.35); }
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--sb-thumb-light), var(--sb-thumb) 40%, var(--sb-thumb));
+  border: 2px solid var(--sb-ink);
+  border-radius: 6px;
+}
+*::-webkit-scrollbar-thumb:hover { background: linear-gradient(#e8c07a, var(--sb-thumb-hover) 40%, var(--sb-thumb-hover)); }
+*::-webkit-scrollbar-thumb:active { background: var(--sb-thumb); }
+*::-webkit-scrollbar-corner { background: transparent; }

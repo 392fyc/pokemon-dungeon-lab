@@ -307,13 +307,15 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       if (dead) pos[id] = null;
       hp[id] = hpAfter;   // a Reviver Seed's restored HP replaces the zero
     } else if (ev.type==='hpLoss') {
-      if(pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:-ev.amount,hpAfter:ev.hp});
+      if(pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:-ev.amount,hpAfter:ev.revive??ev.hp});   // a Reviver Seed answers the same blow, so the bar shows the restored HP, as in the direct-damage path above
       hp[id]=ev.revive??ev.hp;if(hp[id]===0)pos[id]=null;   // a Reviver Seed answers a recoil or status death too: the unit keeps its place
     } else if (ev.type==='heal') {
       hp[id]=ev.to;
     } else if (ev.type==='drain') {
       if(pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:ev.to-ev.from,hpAfter:ev.to});
       hp[id]=ev.to;
+    } else if (ev.type==='itemUse'&&ev.moved) {
+      for(const m of ev.moved)pos[m.unit]={...m.to};   // the called companions stand next to the user from here on: later floaters of the round are drawn there
     } else if (ev.type==='itemUse'&&ev.target!==undefined&&(ev.item==='berry'||ev.item==='tonic')) {
       const t = ev.target, item:Item = ev.item;
       const at = pos[t], actorAt = pos[id];

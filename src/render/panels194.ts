@@ -1,7 +1,9 @@
 import {THEME_FLOORS} from '../core/dungeon.ts';
 import {SPECIES} from '../core/roster.ts';
 import {TACTICS,TACTIC_LABELS,type Tactic} from '../core/tactics.ts';
-import {BLESSINGS,BLESSING_RARITY,type Unit,type World} from '../core/engine.ts';
+import {BLESSINGS,BLESSING_RARITY,STAGE_NAMES,stageOf,damageStage,type Unit,type World} from '../core/engine.ts';
+import {stageEffectLabel,stageTitle} from '../core/move-text.ts';
+import type {StageKey} from '../core/moves.ts';
 import {rankLevel,rankThreshold,type Profile,type SettleSummary} from '../core/base.ts';
 import {moveZh,speciesZh,typeZh} from '../core/names.ts';
 import {unitLabel,statSheet,moveBaseDamage,moveShortEffect,moveRangeTag} from '../core/describe.ts';
@@ -69,6 +71,12 @@ function blessingColumn(s:World):string {
   const rows=(s.blessings??[]).map(id=>'<li data-blessing="'+esc(id)+'" data-rarity="'+(BLESSINGS[id]?.rarity??'common')+'"><i class="bless-sigil" aria-hidden="true"></i><span class="bless-text"><strong>'+esc(BLESSINGS[id]?.name??id)+'<em class="rarity-tag">'+esc(BLESSING_RARITY.names[BLESSINGS[id]?.rarity??'common'])+'</em></strong><small>'+esc(blessingEffectLabel(id))+'</small></span></li>').join('');
   return '<aside class="paper-window detail-blessings" aria-label="本局祝福"><h3>祝福</h3>'+(rows?'<ul id="detail-blessing-list">'+rows+'</ul>':'<p id="detail-blessing-empty">无</p>')+'</aside>';
 }
+/** Ability changes (stages) of one unit, only the non-zero ones, each with what it does to damage or hit chance; nothing is drawn when there are none. */
+function stageList(s:World,u:Unit):string {
+  const eff=(k:StageKey)=>k==='atk'||k==='def'||k==='spa'||k==='spd'?damageStage(s,u,k):stageOf(u,k);   // the stage the engine really uses (the hunter commission lowers defence stages)
+  const rows=(['atk','def','spa','spd','acc','eva'] as StageKey[]).filter(k=>eff(k)).map(k=>{const n=eff(k);return '<li data-stage="'+k+'" title="'+esc(stageTitle(k,stageOf(u,k),n))+'"><b>'+STAGE_NAMES[k]+' '+(n>0?'+':'−')+Math.abs(n)+'</b><span>'+esc(stageEffectLabel(k,n))+'</span></li>';});
+  return rows.length?'<ul class="detail-stages" id="detail-stages" aria-label="能力变化（持续到换层）">'+rows.join('')+'</ul>':'';
+}
 /** Read-only member view (the party only: enemies have their own info card); only the six existing tactic commands are actionable. */
 export function unitDetails(s:World,id:string,choices:readonly string[],disabled:boolean):string {
   const tactic=s.units[id]?.tactic??'together';
@@ -80,7 +88,7 @@ export function unitDetails(s:World,id:string,choices:readonly string[],disabled
   });
   while(moves.length<4)moves.push('<div class="paper-move is-empty" aria-hidden="true"></div>');
   const tactics='<section class="detail-tactics"><h3>作战方针</h3><div class="paper-tactics">'+TACTICS.map(t=>'<button type="button" id="detail-tactic-'+t+'" data-detail-tactic="'+t+'" title="'+esc(TACTIC_TEXT[t])+'" aria-pressed="'+(tactic===t)+'"'+(disabled?' disabled':'')+'><svg viewBox="0 0 12 12" aria-hidden="true" fill="currentColor">'+ICONS[t]+'</svg><span>'+TACTIC_LABELS[t]+'</span></button>').join('')+'</div></section>';
-  return '<dialog id="unit-details-dialog" class="paper-window detail194" role="dialog" aria-labelledby="detail-heading"><h2 class="paper-plaque" id="detail-heading">详情</h2><div class="detail-tabs" aria-label="成员">'+tabs+'</div><button type="button" class="paper-close" id="unit-detail-close" aria-label="关闭详情">×</button><div class="detail-body"><section class="detail-identity"><div class="detail-portrait-pad">'+unitPortrait(u)+'</div><h3>'+esc(unitLabel(u,id))+'</h3><div>'+typeChips(sp?.types??[])+' <b>Lv'+(u.level??s.prog?.level??'—')+'</b></div><div class="detail-hp"><span>HP</span><b>'+u.hp+'/'+u.maxHp+'</b></div><div class="paper-bar"><i style="width:'+Math.max(0,Math.min(100,u.hp/Math.max(1,u.maxHp)*100))+'%"></i></div><div class="detail-status">'+hudStatusMarkup(u)+'</div></section>'+'<div class="detail-chart"><h3 class="detail-chart-title">能力值</h3>'+detailStats(s,u)+'</div>'+'<div class="detail-moves">'+moves.join('')+'</div></div>'+tactics+'<div id="detail-tooltip" role="tooltip" hidden></div><div id="stat-tip" role="tooltip" hidden></div>'+blessingColumn(s)+'</dialog>';
+  return '<dialog id="unit-details-dialog" class="paper-window detail194" role="dialog" aria-labelledby="detail-heading"><h2 class="paper-plaque" id="detail-heading">详情</h2><div class="detail-tabs" aria-label="成员">'+tabs+'</div><button type="button" class="paper-close" id="unit-detail-close" aria-label="关闭详情">×</button><div class="detail-body"><section class="detail-identity"><div class="detail-portrait-pad">'+unitPortrait(u)+'</div><h3>'+esc(unitLabel(u,id))+'</h3><div>'+typeChips(sp?.types??[])+' <b>Lv'+(u.level??s.prog?.level??'—')+'</b></div><div class="detail-hp"><span>HP</span><b>'+u.hp+'/'+u.maxHp+'</b></div><div class="paper-bar"><i style="width:'+Math.max(0,Math.min(100,u.hp/Math.max(1,u.maxHp)*100))+'%"></i></div><div class="detail-status">'+hudStatusMarkup(u,s)+'</div>'+stageList(s,u)+'</section>'+'<div class="detail-chart"><h3 class="detail-chart-title">能力值</h3>'+detailStats(s,u)+'</div>'+'<div class="detail-moves">'+moves.join('')+'</div></div>'+tactics+'<div id="detail-tooltip" role="tooltip" hidden></div><div id="stat-tip" role="tooltip" hidden></div>'+blessingColumn(s)+'</dialog>';
 }
 const keycap=(k:string)=>'<kbd>'+k+'</kbd>';
 /** All controls retain their existing storage handlers and identifiers. */

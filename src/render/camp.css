@@ -492,8 +492,6 @@ body.camp-mode main {
   overflow: auto;
   padding: 5px 4px 8px 0;
   overscroll-behavior: contain;
-  scrollbar-color: #8a6a3f transparent;
-  scrollbar-width: thin;
 }
 .camp194-roster-card { position: relative; min-width: 0; min-height: 0; }
 .camp194-roster-placeholder {
@@ -630,8 +628,6 @@ body.camp-mode main {
   overflow: auto;
   padding: 3px 4px 4px 0;
   overscroll-behavior: contain;
-  scrollbar-color: #8a6a3f transparent;
-  scrollbar-width: thin;
 }
 .camp194-move-tile {
   display: grid;
@@ -751,8 +747,6 @@ body.camp-mode main {
   overflow: auto;
   padding: 4px 5px 8px 0;
   overscroll-behavior: contain;
-  scrollbar-color: #8a6a3f transparent;
-  scrollbar-width: thin;
 }
 .camp194-tm-tile {
   position: relative;
@@ -911,8 +905,6 @@ body.camp-mode main {
   overflow: auto;
   padding: 3px 4px 5px 0;
   overscroll-behavior: contain;
-  scrollbar-color: #8a6a3f transparent;
-  scrollbar-width: thin;
 }
 .camp194-learner {
   display: flex;
@@ -1043,8 +1035,6 @@ body.camp-mode main {
   padding: 4px 5px 5px 0;
   list-style: none;
   overscroll-behavior: contain;
-  scrollbar-color: #8a6a3f transparent;
-  scrollbar-width: thin;
 }
 .camp194-loot-tile {
   position: relative;

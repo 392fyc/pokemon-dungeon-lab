@@ -19,7 +19,7 @@ const ruleExists=rule=>{const [major,minor]=rule.slice(1).split('.');return mino
 const blocksText=e=>e.blocks.map(b=>b.t==='p'?b.text:b.t==='facts'?b.rows.map(r=>r.text).join(' '):'').join('\n');
 
 test('the categories are defined by the data file, in order, and each has entries',()=>{
-  assert.deepEqual(cats.map(c=>c.id),['controls','terms','moves','species','status','stages','items','blessings']);
+  assert.deepEqual(cats.map(c=>c.id),['terms','moves','species','status','stages','items','blessings']);
   for(const c of cats){assert.ok(c.entries.length>0,c.id);assert.ok(c.name&&c.intro);}
 });
 test('every species of the roster has an entry with portrait data, types, six base stats and its kit',()=>{
@@ -87,7 +87,6 @@ test('numbers in the texts come from engine and dungeon constants: difficulty, b
   assert.ok(blocksText(wikiEntry('terms:difficulty')).includes(DIFFICULTY.easy+'／'+DIFFICULTY.normal+'／'+DIFFICULTY.hard));
   assert.ok(blocksText(wikiEntry('terms:enemy')).includes(t['enemy.sleep.pct']+'%')&&blocksText(wikiEntry('terms:enemy')).includes(t['lullaby.pct']+'%'));
   assert.equal(wikiEntry('terms:exchange'),undefined,'the exchange-machine entry is gone until the rules describe it');
-  for(const id of ['controls:log','controls:wiki','controls:skip'])assert.equal(wikiData.entries.find(e=>e.id===id).todo,undefined,id+' is no longer a todo');
 });
 test('every item and blessing has an entry that quotes the game data; tactics use the game labels',()=>{
   assert.deepEqual(byCat.items.entries.map(e=>e.key).sort(),Object.keys(ITEM_DESCRIPTIONS).sort());

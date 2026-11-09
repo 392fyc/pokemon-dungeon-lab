@@ -18,7 +18,7 @@
 #unit-details-layer{pointer-events:auto}
 .detail194{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;width:776px;max-width:calc(100vw - 48px);height:526px;max-height:calc(100dvh - 64px);overflow:visible;pointer-events:auto}
 .detail194::backdrop,dialog#settings.settings194::backdrop{background:#0c0a089e}
-.detail-tabs{position:absolute;left:184px;right:76px;top:-34px;display:flex;gap:10px;overflow-x:auto;padding:4px 3px 0;scrollbar-width:thin}
+.detail-tabs{position:absolute;left:184px;right:76px;top:-34px;display:flex;gap:10px;overflow-x:auto;padding:4px 3px 0}
 .detail-tabs button{flex:none;width:60px;height:52px;display:grid;place-items:center;padding:4px;background:var(--paper-2);box-shadow:0 -3px 0 var(--paper-ink),-3px 0 0 var(--paper-ink),3px 0 0 var(--paper-ink)}
 .detail-tabs button[aria-pressed=true]{background:var(--paper)}
 .detail-tab-portrait{width:42px;height:42px}
@@ -30,6 +30,9 @@
 .detail-status{display:flex;gap:6px;flex-wrap:wrap;min-height:24px;margin-top:10px}
 .detail194 .hud-status-badge{border-radius:0;border:0;font:700 13px var(--ui-body);color:#fff;background:#6b4a96}
 .detail194 .hud-status-badge.is-up{background:#3c7f3a}.detail194 .hud-status-badge.is-down{background:#a83c2c}
+.detail-stages{list-style:none;margin:8px 0 0;padding:0;max-height:104px;overflow:auto;display:grid;gap:2px;font-size:12px;line-height:1.35}
+.detail-stages li{display:flex;justify-content:space-between;gap:6px}
+.detail-stages b{flex:none}.detail-stages span{color:var(--paper-muted);text-align:right}
 .detail-stat-chart{width:250px;height:250px;max-width:100%;overflow:visible}
 
 .detail-moves{display:flex;flex-direction:column;gap:8px;padding-top:2px}
@@ -95,7 +98,7 @@ body.dungeon-mode #flow .settlement194 .settlement-heading{position:relative;dis
 .settlement-xp-top{display:flex;align-items:center;justify-content:space-between;flex:none}
 .settlement-xp-top strong{font:400 44px/1 var(--ui-display);color:#b84a18}
 .settlement-tally-wrap{position:relative;flex:1;min-height:0;margin:6px 0 8px}
-.settlement-tally{position:relative;display:block;height:100%;overflow-y:auto;overscroll-behavior:contain;margin:0;padding:0 6px 24px 0;list-style:none;color:var(--paper-ink);font-size:16px;scrollbar-width:thin;scrollbar-color:#8a6a3f transparent}
+.settlement-tally{position:relative;display:block;height:100%;overflow-y:auto;overscroll-behavior:contain;margin:0;padding:0 6px 24px 0;list-style:none;color:var(--paper-ink);font-size:16px}
 .settlement-tally li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;min-height:27px}
 .settlement-tally li>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .settlement-tally b{text-align:right;font-weight:900;font-variant-numeric:tabular-nums}
@@ -104,7 +107,7 @@ body.dungeon-mode #flow .settlement194 .settlement-heading{position:relative;dis
 .settlement-level{display:flex;flex:none;justify-content:space-between;font-size:16px;margin-bottom:6px}
 .settlement-levelup{display:flex;flex:none;justify-content:space-between;align-items:center;margin-top:8px;padding:5px 12px;background:var(--paper-leaf);color:#fff;font-weight:900}
 .settlement-loot{grid-column:2;grid-row:1/span 2;display:grid;grid-template-rows:auto minmax(0,1fr) auto minmax(0,1fr);gap:8px;min-height:0;margin-bottom:84px;padding:14px 22px}
-.settlement-loot-row{display:flex;gap:12px;min-width:0;min-height:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior:contain;padding:0 0 6px;margin:0;list-style:none;scrollbar-width:thin;scrollbar-color:#8a6a3f transparent}
+.settlement-loot-row{display:flex;gap:12px;min-width:0;min-height:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior:contain;padding:0 0 6px;margin:0;list-style:none}
 .settlement-loot-row>ul{display:contents;margin:0;padding:0;list-style:none}
 .loot-tile{position:relative;display:flex;flex:none;flex-direction:column;align-items:center;justify-content:flex-end;width:150px;height:150px;max-height:100%;background:var(--paper-2);padding:6px;color:var(--paper-ink);font-size:14px;font-weight:700}
 .loot-tile>.panel-portrait{width:92px;height:92px;margin-bottom:8px}
@@ -185,7 +188,7 @@ body.dungeon-mode #flow #result-settings{position:absolute;right:12px;top:12px;z
 .detail-blessings{position:absolute;top:-4px;bottom:-4px;left:calc(100% + var(--bless-gap) + 4px);   /* 4px: the window's own border */
  width:var(--bless-w);display:flex;flex-direction:column;gap:8px;padding:18px 12px 12px}
 .detail-blessings h3{flex:none;text-align:center;font-size:18px;letter-spacing:4px}
-.detail-blessings ul{flex:1 1 0;min-height:0;margin:0;padding:0 4px 0 0;list-style:none;display:grid;align-content:start;gap:6px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--paper-wood-dark) transparent}
+.detail-blessings ul{flex:1 1 0;min-height:0;margin:0;padding:0 4px 0 0;list-style:none;display:grid;align-content:start;gap:6px;overflow-y:auto}
 .detail-blessings li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:center;padding:5px 6px;background:var(--paper-2);box-shadow:0 0 0 2px var(--paper-ink)}
 .bless-sigil{width:18px;height:18px;background:#d9a63a;box-shadow:0 0 0 2px var(--paper-ink);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
 .bless-text{display:grid;min-width:0}

@@ -13,6 +13,10 @@ export const ROOM_FADE_MS = 225;
 /** A party member lights a circle of about 2.5 cells (full light inside CIRCLE_INNER, none beyond CIRCLE_OUTER). */
 export const CIRCLE_INNER = 1.9;
 export const CIRCLE_OUTER = 3.0;
+/** A party circle fades out over this many cells inside the border of the revealed picture (a lit room only half a cell, so its ring stays fully lit). */
+export const CIRCLE_FEATHER = .75;
+/** The base darkness sinks into the deeper fog over this many cells inside the border of the revealed picture. */
+export const FOG_FEATHER = .85;
 export const BOARD_BACKGROUND = 0x101c1b;
 
 export type DarknessLight = {x: number; y: number; primary: boolean};
@@ -67,6 +71,10 @@ export function unknownDarkness(color: DarknessColor): number {
   return Math.min(.9, Math.max(.7, 1 - 26 / brightness));
 }
 
+/** Unrevealed cells (the picture ends there) sit in a deeper, fog-like darkness; revealed cells fade into it along the revealed-map ramp. Never below the base darkness. */
+export const UNKNOWN_DARKNESS = .88;
+export const deepDarkness = (color: DarknessColor): number => Math.max(unknownDarkness(color), UNKNOWN_DARKNESS);
+
 export function darknessBackground(theme: TerrainThemeKey, wallColor: DarknessColor = averageWallColor(theme)): number {
   const opacity = unknownDarkness(wallColor);
   const tint = darknessTint(theme);
@@ -101,10 +109,14 @@ export function composeMask(
   staticMul: Float32Array | undefined,
   out: Float32Array,
   knownMask?: Float32Array,
+  lightMask: Float32Array | undefined = knownMask,   // the (wider) ramp that shapes party circles
+  deep?: number,   // darkness of unrevealed cells: the base darkness ramps from `dark` (revealed) to `deep` along `fogMask`, so no cell edge shows
+  fogMask: Float32Array | undefined = lightMask,
 ): Float32Array {
   const S = SAMPLES_PER_CELL, pw = width * S, ph = height * S;
-  if (staticMul) for (let i = 0; i < out.length; i++) out[i] = dark * staticMul[i]!;
-  else out.fill(dark);
+  const base = (i: number) => (deep !== undefined && fogMask ? mix(deep, dark, fogMask[i]!) : dark);
+  if (staticMul) for (let i = 0; i < out.length; i++) out[i] = base(i) * staticMul[i]!;
+  else for (let i = 0; i < out.length; i++) out[i] = base(i);
   const clampX = (v: number) => Math.max(0, Math.min(pw - 1, v)), clampY = (v: number) => Math.max(0, Math.min(ph - 1, v));
   for (const {room, level} of rooms) {
     if (level <= 0) continue;
@@ -113,7 +125,7 @@ export function composeMask(
     const py0 = clampY(Math.floor((room.y - 1 - pad) * S)), py1 = clampY(Math.ceil((room.y + room.h + 1 + pad) * S));
     for (let py = py0; py <= py1; py++) {
       const y = (py + .5) / S;
-      for (let px = px0; px <= px1; px++) out[py * pw + px]! *= 1 - level * roomLight(room, (px + .5) / S, y);
+      for (let px = px0; px <= px1; px++) out[py * pw + px]! *= 1 - level * roomLight(room, (px + .5) / S, y) * (knownMask ? knownMask[py * pw + px]! : 1);
     }
   }
   for (const light of lights) {
@@ -126,24 +138,34 @@ export function composeMask(
         const dx = (px + .5) / S - lx, d2 = dx * dx + dy * dy;
         if (d2 >= CIRCLE_OUTER * CIRCLE_OUTER) continue;
         const lit = d2 <= CIRCLE_INNER * CIRCLE_INNER ? 1 : circleLight(Math.sqrt(d2));
-        out[py * pw + px]! *= 1 - lit * (knownMask ? knownMask[py * pw + px]! : 1);
+        out[py * pw + px]! *= 1 - lit * (lightMask ? lightMask[py * pw + px]! : 1);
       }
     }
   }
   return out;
 }
 
-/** How much a texel belongs to the revealed map: the known bits blended bilinearly between cell centres, then sharpened a little, so a party
- *  circle never lights up cells the player has not revealed (they stay the even darkness) and the cut-off is a soft curve, not a cell edge. */
-export function buildKnownMask(width: number, height: number, bits: Uint8Array): Float32Array {
+/** How much a texel belongs to the revealed map: 1 deep inside revealed cells, 0 in cells that are not revealed (and outside the map), and a smooth
+ *  ramp in between. The ramp follows the true distance (in cells) to the nearest unrevealed cell, so it is 0 exactly on the border of the picture and
+ *  has round corners; `feather` is how many cells inside the border the ramp takes. Light multiplied by this never reaches a cell that has no picture,
+ *  and the picture's straight cell edges never show as a lit line. */
+export function buildKnownMask(width: number, height: number, bits: Uint8Array, feather = .5): Float32Array {
   const S = SAMPLES_PER_CELL, pw = width * S, ph = height * S, out = new Float32Array(pw * ph);
-  const at = (x: number, y: number) => (x < 0 || y < 0 || x >= width || y >= height ? 0 : bits[y * width + x]!);
-  for (let py = 0; py < ph; py++) {
-    const cy = (py + .5) / S - .5, y0 = Math.floor(cy), fy = cy - y0;
-    for (let px = 0; px < pw; px++) {
-      const cx = (px + .5) / S - .5, x0 = Math.floor(cx), fx = cx - x0;
-      const b = mix(mix(at(x0, y0), at(x0 + 1, y0), fx), mix(at(x0, y0 + 1), at(x0 + 1, y0 + 1), fx), fy);
-      out[py * pw + px] = smoothstep(b);
+  const known = (x: number, y: number) => x >= 0 && y >= 0 && x < width && y < height && bits[y * width + x] === 1;
+  const reach = Math.max(1, Math.ceil(feather));
+  for (let cy = 0; cy < height; cy++) for (let cx = 0; cx < width; cx++) {
+    if (!known(cx, cy)) continue;   // an unrevealed cell stays 0
+    const unknown: [number, number][] = [];
+    for (let dy = -reach; dy <= reach; dy++) for (let dx = -reach; dx <= reach; dx++) if ((dx || dy) && !known(cx + dx, cy + dy)) unknown.push([cx + dx, cy + dy]);
+    for (let sy = 0; sy < S; sy++) for (let sx = 0; sx < S; sx++) {
+      const x = cx + (sx + .5) / S, y = cy + (sy + .5) / S;
+      let d = feather;
+      for (const [ux, uy] of unknown) {   // distance from the texel to the unrevealed cell's square
+        const ex = Math.max(ux - x, 0, x - (ux + 1)), ey = Math.max(uy - y, 0, y - (uy + 1));
+        const e = Math.hypot(ex, ey);
+        if (e < d) d = e;
+      }
+      out[(cy * S + sy) * pw + cx * S + sx] = smoothstep(d / feather);
     }
   }
   return out;
@@ -193,7 +215,10 @@ export class DungeonDarkness {
   private staticMul?: Float32Array;
   private knownBits = new Uint8Array(0);
   private knownMask?: Float32Array;
+  private lightMask?: Float32Array;
+  private fogMask?: Float32Array;
   private dark = .7;
+  private deep = .88;
   private fades = new Map<string, RoomFade>();
   private lastDrawMs = 0;
   private lastBaseBuildMs = 0;
@@ -220,6 +245,8 @@ export class DungeonDarkness {
     this.alpha = new Float32Array(0);
     this.staticMul = undefined;
     this.knownMask = undefined;
+    this.lightMask = undefined;
+    this.fogMask = undefined;
     this.knownBits = new Uint8Array(0);
     this.fades.clear();
     this.lights = [];
@@ -243,6 +270,7 @@ export class DungeonDarkness {
     const newFloor = floorKey !== this.lastFloorKey;
     const color = field.wallColor ?? averageWallColor(theme);
     this.dark = unknownDarkness(color);
+    this.deep = deepDarkness(color);
 
     if (!this.texture || changedDimensions) {
       this.destroyVisuals();
@@ -281,6 +309,8 @@ export class DungeonDarkness {
         const start = performance.now();
         this.knownBits = bits;
         this.knownMask = buildKnownMask(width, height, bits);
+        this.lightMask = buildKnownMask(width, height, bits, CIRCLE_FEATHER);
+        this.fogMask = buildKnownMask(width, height, bits, FOG_FEATHER);
         this.lastBaseBuildMs = performance.now() - start;
         this.baseBuildCount++;
       }
@@ -342,7 +372,7 @@ export class DungeonDarkness {
       }
     }
     this.transition.progress = running ? progress : 1;
-    composeMask(this.width, this.height, this.dark, [...this.fades.values()].map(f => ({room: f.room, level: f.level})), this.lights, this.staticMul, this.alpha, this.knownMask);
+    composeMask(this.width, this.height, this.dark, [...this.fades.values()].map(f => ({room: f.room, level: f.level})), this.lights, this.staticMul, this.alpha, this.knownMask, this.lightMask, this.deep, this.fogMask);
     const rgba = this.pixels.data;
     for (let i = 0; i < this.alpha.length; i++) rgba[i * 4 + 3] = this.alpha[i]! * 255 + .5;
     this.texture.getContext().putImageData(this.pixels, 0, 0);
@@ -398,7 +428,7 @@ export class DungeonDarkness {
     const mapWidth = this.width * cellSize;
     const mapHeight = this.height * cellSize;
     const margin = BORDER_CELLS * cellSize;
-    border.fillStyle(color, unknownDarkness(wallColor));
+    border.fillStyle(color, deepDarkness(wallColor));
     border.fillRect(-margin, -margin, margin, mapHeight + margin * 2);
     border.fillRect(mapWidth, -margin, margin, mapHeight + margin * 2);
     border.fillRect(0, -margin, mapWidth, margin);

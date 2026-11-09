@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {applyCommand,createMain,createExpedition,jumpToFloor,friend,key,rngStep,stageOf,CONTENT_VERSION,PROG} from '../../src/core/engine.ts';
 import {moveOf} from '../../src/core/moves.ts';
+import {moveEffectText} from '../../src/core/move-text.ts';
 import {SPECIES,TM_MOVES_V3,TM_MOVES_V4,tmPool} from '../../src/core/roster.ts';
 import {initialProfile,squadOf,newGameProfile} from '../../src/core/base.ts';
 import {generateChallengeEncounter} from '../../src/core/dungeon.ts';
@@ -151,14 +152,7 @@ test('M191 the v4 pool preserves v3 and all six new machines can be learned, sav
     assert.equal(unit.pp[move],SPECIES[species.id].learnable.find(m=>m.move===move).pp);
   }
 });
-test('M191 displayed descriptions use project effects while retaining official text and rule sources',()=>{
-  const {moves}=JSON.parse(readFileSync(new URL('../../src/data/move-desc-zh.json',import.meta.url),'utf8'));
-  for(const id of ['submission','softboiled','minimize','sweetscent','smokescreen','dragondance','quiverdance','babydolleyes','toxic','pursuit','feintattack','hyperfang']){
-    const row=moves[id];assert.equal(row.game,'本作',id);assert.ok(row.originalDesc&&row.originalGame,id);assert.ok(row.overrideSource.rules.length>0,id);
-    assert.doesNotMatch(row.desc,/无法使用|建议忘记/,id);
-  }
-  assert.match(moves.softboiled.desc,/所有存活同行/);
-  assert.match(moves.minimize.desc,/闪避1级/);assert.match(moves.sweetscent.desc,/闪避1级/);assert.match(moves.smokescreen.desc,/命中1级/);
-  assert.doesNotMatch(moves.dragondance.desc+moves.quiverdance.desc,/速度/);assert.doesNotMatch(moves.babydolleyes.desc,/先制/);
-  assert.match(moves.toxic.desc,/每2轮/);assert.match(moves.toxic.desc,/八分之一/);assert.match(moves.pursuit.desc,/反弹等量伤害/);
+test('M191 displayed texts come from the engine data: Soft-Boiled heals the whole room party',()=>{
+  assert.match(moveEffectText('softboiled'),/同房间全队各自回复最大HP的一半/);
+  assert.match(moveEffectText('minimize'),/自身闪避\+1/);assert.match(moveEffectText('toxic'),/使对方剧毒/);
 });

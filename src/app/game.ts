@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate,tmDiscOf,blessingEffectLabel} from '../render/hud.ts';
+import {hudParty,hudBottom,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate,tmDiscOf,blessingEffectLabel} from '../render/hud.ts';
 import '../render/hud.css';
 import {itemIconImg} from '../render/item-icons.ts';
 import {installDrag,reconcileDrag} from './drag.ts';
@@ -7,6 +7,7 @@ import {resultBanner} from '../render/result-banner.ts';
 import {applyHpBar,syncHpBars,hpTextColor} from '../render/hpbar.ts';
 import {typeChips,unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
 import {createWiki} from '../render/wiki.ts';
+import {updateMinimap,bigMinimapMarkup,minimapStats} from '../render/minimap.ts';
 import '../render/panels194.css';
 import {learningPanel,invitationPanel,moveCard,noticePanel,noticeTag} from '../render/choice-panels.ts';
 import '../render/choice-panels.css';
@@ -67,7 +68,7 @@ legend.innerHTML='<span><i class="friend"></i>同行</span><span><i class="enemy
 const activityStatusRoot=document.createElement('section');activityStatusRoot.id='activity-status';activityStatusRoot.setAttribute('aria-live','polite');document.getElementById('save')!.after(activityStatusRoot);
 // Stateful panels return to their original positions at camp.
 const dungeonLayout=document.createElement('div');dungeonLayout.id='dungeon-layout';dungeonLayout.hidden=true;
-dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="shortcut-card"><span>WASD</span><span>移动</span><span>W+D 等</span><span>斜向移动</span><span>1—4</span><span>招式</span><span>5—0</span><span>快捷物品</span><span>Tab</span><span>切换操控</span><span>B</span><span>背包</span><span>F</span><span>向前普通攻击</span><span>.</span><span>等待</span><span>L</span><span>日志</span><span>Esc</span><span>关闭窗口</span></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button><button id="log-open" aria-label="打开完整记录（L）" title="完整记录（L）">记录</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div><div id="unit-details-layer"></div></div>`;
+dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="shortcut-card"><span>WASD</span><span>移动</span><span>W+D 等</span><span>斜向移动</span><span>1—4</span><span>招式</span><span>5—0</span><span>快捷物品</span><span>Tab</span><span>切换操控</span><span>B</span><span>背包</span><span>F</span><span>向前普通攻击</span><span>.</span><span>等待</span><span>L</span><span>日志</span><span>H</span><span>百科</span><span>M</span><span>地图</span><span>Esc</span><span>关闭窗口</span></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button><button id="log-open" aria-label="打开完整记录（L）" title="完整记录（L）">记录</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div><div id="unit-details-layer"></div></div>`;
 app.append(dungeonLayout);
 const panelHomes=new Map<HTMLElement,Comment>();
 for(const id of ['board','party','activity-status','recent-events','message','inspect','controls','flow','save',...(dev?['developer-tools']:[])]){const el=document.getElementById(id)!;const home=document.createComment(id);el.before(home);panelHomes.set(el,home);}
@@ -410,7 +411,7 @@ function renderDungeonHud(){
  }else targetUsable=new Set();
  placeInspectBelowParty();
  $('hud-bottom').innerHTML=hudBottom(s,quickItems,unavailable||sleeping(s.units[s.leader]),draft&&draft.editor!==s.leader?null:selectedSkill,choosingItem);
- $('hud-map').innerHTML=hudMinimap(s);
+ updateMinimap($('hud-map'),s);
  syncHpBars(document,k=>{const u=s.units[k.slice(2)];return u?{hp:u.hp,max:u.maxHp}:undefined;},hpAnimated());
  $('activity-status').innerHTML=hudTracking(s);$('activity-status').hidden=!s.dungeon?.roguelike;
  $('hud-tooltip').hidden=true;$('hud-tooltip').innerHTML='';
@@ -1133,7 +1134,19 @@ async function ensureBoard():Promise<void>{
 const settings=$('settings') as HTMLDialogElement;
 /** The in-game wiki (D-20261109-03): opens from settings or H, in the camp and in the dungeon. Opening it pauses held input and the sleep auto-advance; closing resumes them. */
 const wiki=createWiki({showRules:dev,onOpen:()=>{cancelMoveInput();cancelSleepAdvance();},onClose:()=>syncSleepAdvance()});
-function wikiOpen(){return wiki.isOpen();}
+/** The big map (M, G13.1/G13.3): a centred window of the whole floor. Like the wiki it pauses held input and the sleep auto-advance and locks the board while open. */
+const bigMap=(()=>{
+ const dialog=document.createElement('dialog');dialog.id='map-dialog';dialog.className='paper-window map194';dialog.setAttribute('aria-labelledby','map-heading');
+ dialog.innerHTML='<h2 id="map-heading" class="paper-plaque">地图</h2><button type="button" id="map-close" class="paper-close" aria-label="关闭地图">×</button><div class="hud-minimap-heading map-heading-line"></div><div class="map-body"></div>';
+ document.body.append(dialog);
+ const close=()=>{if(dialog.open)dialog.close();};
+ dialog.querySelector('#map-close')!.addEventListener('click',close);
+ dialog.addEventListener('close',()=>syncSleepAdvance());
+ return {dialog,isOpen:()=>dialog.open,close,open(s:World){if(dialog.open)return;const m=bigMinimapMarkup(s);
+  dialog.querySelector('.map-heading-line')!.innerHTML=m.heading;const body=dialog.querySelector<HTMLElement>('.map-body')!;body.innerHTML=m.svg;body.style.setProperty('--map-aspect',m.width+'/'+m.height);
+  cancelMoveInput();cancelSleepAdvance();dialog.showModal();}};
+})();
+function wikiOpen(){return wiki.isOpen()||bigMap.isOpen();}   // either modal window locks the board
 function openWiki(){if(!wiki.isOpen())wiki.open();}
 bind('settings-wiki',()=>{if(transferBusy)return;settings.close();openWiki();});
 let transferBusy=false;
@@ -1237,11 +1250,13 @@ document.addEventListener('keyup',e=>{
  }
  const opposed=!(dx||dy);heldDirections.delete(k);if(!heldDirections.size)cancelMoveInput();else if(opposed&&!moveInFlight&&!anim.active&&moveTimer===null&&moveFrame===null)void flushMoveInput();
 });
-document.addEventListener('click',e=>{if(hold&&!(e.target as HTMLElement).closest('dialog')){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary, #log-open, #recent-events, #log-dialog, #wiki-dialog, #abandon-dialog, #learn-carry-dialog')){e.stopPropagation();e.preventDefault();}},true);
+document.addEventListener('click',e=>{if(hold&&!(e.target as HTMLElement).closest('dialog')){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary, #log-open, #recent-events, #log-dialog, #wiki-dialog, #map-dialog, #abandon-dialog, #learn-carry-dialog')){e.stopPropagation();e.preventDefault();}},true);
 document.addEventListener('keydown',e=>{
+ if(bigMap.isOpen()){if((e.key==='m'||e.key==='M')&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();if(!e.repeat)bigMap.close();}return;}   // Esc closes through the dialog's own cancel
  if(logDialog.open||abandonDialog.open||wikiOpen())return;
  if(hold&&e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='r')){e.preventDefault();e.stopPropagation();if(!e.repeat)hold.end();return;}
  if(logDialog.open||abandonDialog.open||wikiOpen())return;
+ if((e.key==='m'||e.key==='M')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&screen==='play'&&!store.atBase&&!settings.open&&!(e.target as HTMLElement).matches('input,select,textarea')&&!document.querySelector('dialog[open]')){const ms=live();if(ms?.dungeon&&ms.phase==='playing'&&$('flow').hidden&&!bagOpen&&!choosingItem&&!draft&&!stairsPromptShown&&!confirmExit){e.preventDefault();if(!e.repeat)bigMap.open(ms);return;}}   // the big map, also while an animation plays
  if((e.key==='h'||e.key==='H')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&screen==='play'&&!settings.open&&!(e.target as HTMLElement).matches('input,select,textarea')&&!document.querySelector('dialog[open]')){e.preventDefault();if(!e.repeat)openWiki();return;}   // the wiki, also while an animation plays and in the camp
  if((settings.open||wikiOpen())||(document.getElementById('unit-details-dialog') as HTMLDialogElement|null)?.open||screen!=='play'||store.atBase)return;
  if((e.key==='l'||e.key==='L')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!(e.target as HTMLElement).matches('input,select,textarea')){e.preventDefault();if(!e.repeat)openLog();return;}   // also while an animation plays
@@ -1330,5 +1345,5 @@ installDrag([
   },drop:dropMove},
 ]);
 // Read-only state inspection and the same dispatch API for private browser acceptance.
-Object.assign(window,{trial:{store,walking:walkActive,render,spritesReady:()=>!charactersPending()&&document.querySelector<HTMLElement>('#board canvas')?.style.opacity!=='0',autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),reveal:(w:World)=>reveal(w),maskAlpha:(x:number,y:number)=>scene?.darknessAlpha(x,y)??0,repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
+Object.assign(window,{trial:{store,minimapStats,walking:walkActive,render,spritesReady:()=>!charactersPending()&&document.querySelector<HTMLElement>('#board canvas')?.style.opacity!=='0',autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),reveal:(w:World)=>reveal(w),maskAlpha:(x:number,y:number)=>scene?.darknessAlpha(x,y)??0,repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
 render();void store.whenReady.then(()=>{render();const next=finishing();if(next)void transition(store.dispatch(next));});

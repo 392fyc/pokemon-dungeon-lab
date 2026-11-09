@@ -353,10 +353,172 @@ body.dungeon-mode .hud-map-point.is-tonic {
   fill: #b8d77a;
 }
 
-body.dungeon-mode .hud-map-point.is-exit,
-body.dungeon-mode .hud-map-point.is-down,
-body.dungeon-mode .hud-map-point.is-up {
+body.dungeon-mode .hud-map-point.is-exit {
+  fill: none;
+  stroke: #83b8e8;
+  stroke-width: 0.28;
+}
+
+body.dungeon-mode .hud-map-stairs-plate {
+  fill: #e4efb0;
+  stroke: #0b0f0d;
+  stroke-width: 0.16;
+}
+
+body.dungeon-mode .hud-map-stairs.is-up .hud-map-stairs-plate {
   fill: #83b8e8;
+}
+
+body.dungeon-mode .hud-map-stairs-arrow {
+  fill: #1b2a14;
+}
+
+body.dungeon-mode .hud-map-exit {
+  fill: #f0a040;
+  stroke: #0b0f0d;
+  stroke-width: 0.1;
+}
+
+body.dungeon-mode .hud-minimap-rooms {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #e8d48a;
+}
+
+body.dungeon-mode .hud-room-icon {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  box-sizing: border-box;
+  border: 2px solid #e8d48a;
+  border-radius: 2px;
+}
+
+dialog#map-dialog.map194 {
+  display: none;
+  width: min(900px, calc(100vw - 48px));
+  padding: 22px 18px 18px;
+  overflow: visible;
+}
+
+dialog#map-dialog.map194[open] {
+  display: block;
+}
+
+dialog#map-dialog.map194::backdrop {
+  background: #0c0a089e;
+}
+
+dialog#map-dialog .map-heading-line {
+  margin: 4px 56px 8px 0;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(10, 15, 12, 0.86);
+  font-size: 15px;
+  justify-content: flex-start;
+  gap: 18px;
+}
+
+dialog#map-dialog .map-body {
+  display: flex;
+  justify-content: center;
+}
+
+dialog#map-dialog .hud-minimap-map.is-big {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 170px);
+  aspect-ratio: var(--map-aspect, 3/2);
+  margin: 0;
+  border-radius: 6px;
+  background: #121814;
+  shape-rendering: crispEdges;
+}
+
+dialog#map-dialog .hud-map-floor {
+  fill: #8a9a7a;
+  opacity: 0.86;
+}
+
+dialog#map-dialog .hud-map-wall {
+  fill: #38453a;
+  opacity: 0.66;
+}
+
+dialog#map-dialog .hud-map-exit {
+  fill: #f0a040;
+  stroke: #0b0f0d;
+  stroke-width: 0.1;
+}
+
+dialog#map-dialog .hud-map-stairs-plate {
+  fill: #e4efb0;
+  stroke: #0b0f0d;
+  stroke-width: 0.16;
+}
+
+dialog#map-dialog .hud-map-stairs.is-up .hud-map-stairs-plate {
+  fill: #83b8e8;
+}
+
+dialog#map-dialog .hud-map-stairs-arrow {
+  fill: #1b2a14;
+}
+
+dialog#map-dialog .hud-map-point {
+  fill: #e8d48a;
+}
+
+dialog#map-dialog .hud-map-point.is-item,
+dialog#map-dialog .hud-map-point.is-berry,
+dialog#map-dialog .hud-map-point.is-tonic {
+  fill: #b8d77a;
+}
+
+dialog#map-dialog .hud-map-point.is-exit {
+  fill: none;
+  stroke: #83b8e8;
+  stroke-width: 0.28;
+}
+
+dialog#map-dialog .hud-map-unit {
+  fill: #e8d48a;
+  stroke: #0b0f0d;
+  stroke-width: 0.13;
+}
+
+dialog#map-dialog .hud-map-unit.is-leader {
+  fill: #fff1b8;
+  stroke: #e8d48a;
+  stroke-width: 0.16;
+}
+
+dialog#map-dialog .hud-map-unit.is-enemy {
+  fill: #e06060;
+}
+
+dialog#map-dialog .hud-minimap-rooms {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #e8d48a;
+}
+
+dialog#map-dialog .hud-room-icon {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 2px solid #e8d48a;
+  border-radius: 2px;
+}
+
+dialog#map-dialog .hud-minimap-heading {
+  display: flex;
+  color: #c9c4b0;
+  white-space: nowrap;
 }
 
 body.dungeon-mode .hud-map-unit {
@@ -1656,6 +1818,14 @@ body.dungeon-mode :focus-visible {
   body.dungeon-mode #recent-events,
   body.dungeon-mode #shortcut-card {
     bottom: 112px;
+  }
+
+  /* low screens: the key list runs in four columns so it stays short and clears the panels above it */
+  body.dungeon-mode #shortcut-card {
+    grid-template-columns: repeat(4, auto);
+    gap: 0 8px;
+    font-size: 10px;
+    line-height: 1.6;
   }
 
   body.dungeon-mode #hud-tooltip {

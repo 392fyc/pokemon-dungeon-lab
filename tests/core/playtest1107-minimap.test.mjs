@@ -28,3 +28,27 @@ test('without the orb the map is unchanged, and seen enemies and points do show'
  assert.equal(count(html,'hud-map-floor'),6);assert.equal(count(html,'is-enemy'),1);assert.equal(count(html,'hud-map-point'),2);
  assert.deepEqual(terrainKnown(scene()).seen,scene().seen,'terrainKnown is the plain explored set without the orb');
 });
+
+/* Round 12 review F2: an exit mark is a function of what the player knows. The cell beyond the last known ground may be a real wall or real floor;
+   the mark must be identical in both cases (an implementation that reads the real map would differ). */
+const exitCells=html=>[...html.matchAll(/class="hud-map-exit" cx="([\d.]+)" cy="([\d.]+)"/g)].map(m=>Math.floor(+m[1])+','+Math.floor(+m[2]));
+function fogScene(realBeyond){
+ const s=scene();s.mapRevealed=false;
+ s.floor=row(realBeyond==='floor'?12:3);   // ground 0..2 is known; (3,1) is real floor in one world and real wall in the other
+ s.seen=['0,1','1,1','2,1'];
+ s.seenWalls=['-1,1','0,0','1,0','2,0','0,2','1,2','2,2'];   // everything around the known ground is known except the cell at x=3
+ s.points=[];s.units.E.pos={x:2,y:1};s.units.E.hp=0;
+ return s;
+}
+test('an exit mark sits on known ground next to an unknown cell, whether that cell is really a wall or really floor',()=>{
+ for(const beyond of ['wall','floor']){
+  const html=hudMinimap(fogScene(beyond));
+  assert.deepEqual(exitCells(html),['2,1'],'real cell beyond is '+beyond+': only the ground touching the unknown cell is marked');
+ }
+ assert.equal(hudMinimap(fogScene('wall')).match(/hud-map-exit/g).length,hudMinimap(fogScene('floor')).match(/hud-map-exit/g).length);
+});
+test('once the neighbour is known the mark goes, and nothing unrevealed is drawn',()=>{
+ const s=fogScene('floor');s.seen.push('3,1');s.seenWalls.push('3,0','3,2');
+ assert.deepEqual(exitCells(hudMinimap(s)),['3,1'],'the mark moves on to the new edge of the known ground');
+ const html=hudMinimap(s);assert.equal(count(html,'hud-map-floor'),4);
+});

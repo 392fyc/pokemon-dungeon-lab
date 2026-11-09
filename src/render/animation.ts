@@ -384,11 +384,14 @@ export const ROUND_CAP_MS = 1500;
 export const MIN_SCALE = 0.3;
 
 const isMovementEvent = (event:AnimEvent) => event.k === 'move' || event.k === 'swap';
-/** Groups every ordinary move and swap at the position of the round's first one; other events keep their order. */
+const movedUnits = (event:AnimEvent):string[] => event.k === 'move' ? [event.id] : event.k === 'swap' ? [event.a, event.b] : [];
+/** Groups the ordinary moves and swaps of the round that happen together; other events keep their order. A unit's own events must stay in the order the engine
+ *  ran them, so two things stop a later move from being pulled forward: a `recall` (a Rollcall Orb puts companions on other cells) closes the group of moves
+ *  before it, and a move of a unit that was blown away earlier starts its own later group instead of joining the first one. */
 export function animationBatches(events:AnimEvent[]):AnimEvent[][] {
-  const movement = events.filter(isMovementEvent);
   const batches:AnimEvent[][] = [];
-  let placedMovement = false;
+  let main:AnimEvent[]|null = null, late:AnimEvent[]|null = null;
+  const blown = new Set<string>();
   const castMove=(event:AnimEvent):string|undefined=>{
     if('cast' in event&&event.cast)return event.cast;
     const effect='effect' in event?event.effect:undefined;
@@ -399,10 +402,20 @@ export function animationBatches(events:AnimEvent[]):AnimEvent[][] {
   for (let i=0;i<events.length;i++) {
     const event=events[i];
     if (isMovementEvent(event)) {
-      if (!placedMovement) { batches.push(movement); placedMovement = true; }
-    } else if(isAreaCast(event)){
+      if (movedUnits(event).some(id=>blown.has(id))) {
+        if (!late) { late = []; batches.push(late); }
+        late.push(event);
+      } else {
+        if (!main) { main = []; batches.push(main); }
+        main.push(event);
+      }
+      continue;
+    }
+    if (event.k==='recall') { main = null; late = null; blown.clear(); batches.push([event]); continue; }
+    if (event.k==='blowaway') blown.add(event.target);
+    if(isAreaCast(event)){
       const cast:AnimEvent[]=[event];
-      while(i+1<events.length&&sameAreaCast(cast[0],events[i+1]))cast.push(events[++i]);
+      while(i+1<events.length&&sameAreaCast(cast[0],events[i+1])){const next=events[++i];if(next.k==='blowaway')blown.add(next.target);cast.push(next);}
       batches.push(cast);
     } else batches.push([event]);
   }

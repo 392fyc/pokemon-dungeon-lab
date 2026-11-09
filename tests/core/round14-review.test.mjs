@@ -53,3 +53,32 @@ test('P3: team-wide moves reach two cells in a corridor, so their text says "范
   assert.equal(near.units.B.hp,25,'B two cells away in a corridor is healed (10 + half of 30)');
   assert.equal(far.units.B.hp,10,'B four cells away is not');
 });
+
+test('P2: a recall closes the batch of earlier moves; a later move of the called unit plays after it, and C ends on (4,3)',async()=>{
+  const {animationBatches}=await import('../../src/render/animation.ts');
+  const area=Array.from({length:55},(_,i)=>pos(i%11,Math.floor(i/11)));
+  const s=scene(w=>{
+    w.floor=area;w.seen=area.map(key);w.rooms=[{x:0,y:0,w:11,h:5}];
+    const c=engineFriend('C',9,2,30,{tackle:5});c.species='treecko';c.maxHp=30;c.tactic='gofoes';w.units.C=c;w.queue=['A','B','C'];
+    w.units.A.pos={x:1,y:2};w.units.B.pos={x:5,y:2};w.units.B.tactic='wait';
+    const e=foeOf('E','rattata',0,3,40,{tackle:5});e.waitOnly=true;e.asleep=false;w.units.E=e;w.enemies=['E'];
+    w.prog.items.rollcallOrb=1;
+  });
+  const cmd={type:'round',action:{type:'move',to:{x:2,y:2}},override:{actor:'B',action:{type:'use',item:'rollcallOrb',target:'B'}}};
+  const r=applyCommand(s,cmd);assert.equal(r.ok,true,r.error);
+  const events=inferEvents(s,r.state,cmd);
+  const order=events.filter(e=>['move','recall'].includes(e.k)).map(e=>e.k+':'+e.id);
+  assert.ok(order.includes('move:A')&&order.includes('recall:C')&&order.includes('move:C'),'the three events exist: '+order.join(' '));
+  assert.ok(order.indexOf('move:A')<order.indexOf('recall:C')&&order.indexOf('recall:C')<order.indexOf('move:C'),'event order is A move, recall C, C move: '+order.join(' '));
+  const batches=animationBatches(events),at=(pred)=>batches.findIndex(b=>b.some(pred));
+  const a=at(e=>e.k==='move'&&e.id==='A'),rec=at(e=>e.k==='recall'&&e.id==='C'),c=at(e=>e.k==='move'&&e.id==='C');
+  assert.ok(a<rec&&rec<c,'batch order A move, recall, C move: '+JSON.stringify(batches.map(b=>b.map(e=>e.k+':'+(e.id??e.target??'')))));
+  assert.deepEqual(r.state.units.C.pos,{x:4,y:3},'C ends on (4,3)');
+});
+test('P2: a unit blown away and moving later does not have its move pulled before the blow',async()=>{
+  const {animationBatches}=await import('../../src/render/animation.ts');
+  const P=(x,y)=>({x,y});
+  const events=[{k:'move',by:'A',id:'A',from:P(0,0),to:P(1,0)},{k:'blowaway',by:'F',target:'G',actorAt:P(0,0),from:P(4,0),to:P(6,0)},{k:'move',by:'G',id:'G',from:P(6,0),to:P(5,0)},{k:'move',by:'H',id:'H',from:P(0,2),to:P(1,2)}];
+  const b=animationBatches(events).map(x=>x.map(e=>e.k+':'+(e.id??e.target)));
+  assert.deepEqual(b,[['move:A','move:H'],['blowaway:G'],['move:G']],'H (unaffected) still joins the first group, G moves after its own blow: '+JSON.stringify(b));
+});

@@ -29,6 +29,8 @@ const ids=await p.locator('#blessing-choice .notice-card').evaluateAll(n=>n.map(
 assert.equal((await refresh.innerText()).replace(/\s+/g,''),'刷新（0）');assert.equal(await refresh.isDisabled(),true,'at zero the button is greyed out');
 assert.ok(Number(await refresh.evaluate(el=>getComputedStyle(el).opacity))<1,'and looks greyed');
 await p.screenshot({path:out+'r9-blessing-refreshed.png'});
+assert.deepEqual(after.options.filter(id=>before.options.includes(id)),[],'the refresh leaves out the three options shown before (D-20261109-08)');
+await p.screenshot({path:out+'r11-blessing-refresh-excl.png'});
 // picking one puts it in the details column with its tier mark
 await p.locator('#blessing-choice .notice-card').first().click();await p.waitForFunction(()=>window.trial.getState().phase==='playing',null,{timeout:4000});
 const got=await p.evaluate(()=>window.trial.getState().blessings[0]);

@@ -6,6 +6,7 @@ import {installDrag,reconcileDrag} from './drag.ts';
 import {resultBanner} from '../render/result-banner.ts';
 import {applyHpBar,syncHpBars,hpTextColor} from '../render/hpbar.ts';
 import {typeChips,unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
+import {createWiki} from '../render/wiki.ts';
 import '../render/panels194.css';
 import {learningPanel,invitationPanel,moveCard,noticePanel,noticeTag} from '../render/choice-panels.ts';
 import '../render/choice-panels.css';
@@ -135,12 +136,12 @@ let sleepTimer:ReturnType<typeof setTimeout>|null=null,sleepTurn='';
 const sleepAutoEnabled=()=>!(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep;
 function cancelSleepAdvance(){if(sleepTimer!==null)clearTimeout(sleepTimer);sleepTimer=null;sleepTurn='';}
 function syncSleepAdvance(){
- const s=live(),eligible=screen==='play'&&s?.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!logDialog.open&&!abandonDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(s.units[s.leader]);
+ const s=live(),eligible=screen==='play'&&s?.phase==='playing'&&store.status==='ready'&&!anim.active&&!(settings.open||wikiOpen())&&!logDialog.open&&!abandonDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(s.units[s.leader]);
  if(!eligible||!s){cancelSleepAdvance();return;}
  const turn=s.runId+'|'+s.round+'|'+s.leader;if(sleepTimer!==null&&sleepTurn===turn)return;
  cancelSleepAdvance();sleepTurn=turn;sleepTimer=setTimeout(()=>{
   sleepTimer=null;sleepTurn='';const current=live();
-  if(current&&current.runId+'|'+current.round+'|'+current.leader===turn&&screen==='play'&&current.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!logDialog.open&&!abandonDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(current.units[current.leader]))void send({type:'round',action:{type:'wait'}});
+  if(current&&current.runId+'|'+current.round+'|'+current.leader===turn&&screen==='play'&&current.phase==='playing'&&store.status==='ready'&&!anim.active&&!(settings.open||wikiOpen())&&!logDialog.open&&!abandonDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(current.units[current.leader]))void send({type:'round',action:{type:'wait'}});
  },600);
 }
 
@@ -227,13 +228,13 @@ const confusedLeader=(s:World):boolean=>!!s.units[s.leader]?.status?.confusion;
 /** Cells that ask for the player's attention: items, stairs and other points, adventure-room interactions. */
 function attentionCells(s:World):Set<string>{const out=new Set<string>();for(const p of s.points)if(!p.used||p.kind==='down'||p.kind==='up'||p.kind==='exit'||p.kind==='shop'||p.kind==='rest'||p.kind==='exchange')out.add(key(p.pos));for(const r of s.adventureRooms??[])if(r.state!=='done')out.add(key(r.interaction));return out;}
 async function autoWalk(target:Pos){
- const first=live();if(!first||first.phase!=='playing'||store.status!=='ready'||draft||choosingItem||selectedSkill||bagOpen||settings.open||screen!=='play'||anim.active||confusedLeader(first))return;
+ const first=live();if(!first||first.phase!=='playing'||store.status!=='ready'||draft||choosingItem||selectedSkill||bagOpen||(settings.open||wikiOpen())||screen!=='play'||anim.active||confusedLeader(first))return;
  const token=++walkToken;cancelMoveInput();
  const plan0=(s:World)=>{const L=s.units[s.leader];if(!L?.pos)return null;const blocked=new Set(s.enemies.filter(id=>s.units[id].hp>0&&s.units[id].pos).map(id=>key(s.units[id].pos!)));return walkPath(floorIndex(s.floor),new Set(s.seen),L.pos,target,blocked,attentionCells(s));};
  if(!plan0(first))return;   // not reachable (wall, unrevealed, occupied): nothing happens
  walkMarker={x:target.x,y:target.y};scene?.paint(live());
  while(token===walkToken){
-  const s=live();if(!s||s.phase!=='playing'||store.status!=='ready'||anim.active||bagOpen||settings.open||screen!=='play'||draft||sleeping(s.units[s.leader])||confusedLeader(s))break;
+  const s=live();if(!s||s.phase!=='playing'||store.status!=='ready'||anim.active||bagOpen||(settings.open||wikiOpen())||screen!=='play'||draft||sleeping(s.units[s.leader])||confusedLeader(s))break;
   const path=plan0(s);if(!path||!path.length)break;
   const run=s.runId,level=s.dungeon?.level,round=s.round,leader=s.leader,enemiesBefore=movementEnemies(s),hpBefore=new Map(s.queue.map(id=>[id,s.units[id].hp] as const)),watched=attentionCells(s);   // read before the step: walking onto an item picks it up and clears its marker
   await send({type:'round',action:{type:'move',to:path[0]}},true);
@@ -858,7 +859,7 @@ function openAbandon(){
  abandonDialog.showModal();(abandonDialog.querySelector('#abandon-cancel') as HTMLElement).focus();
 }
 function openLog(){
- const s=live();if(!s||screen!=='play'||store.atBase||logDialog.open||settings.open)return;
+ const s=live();if(!s||screen!=='play'||store.atBase||logDialog.open||(settings.open||wikiOpen()))return;
  hold?.end();   // the pause is over once the record is open: the next click is the window's, not a skip
  cancelMoveInput();cancelSleepAdvance();
  const rows=visibleLogEntries(s).map(r=>`<li>${esc(r.text)}</li>`);
@@ -1130,6 +1131,11 @@ async function ensureBoard():Promise<void>{
  return boardLoading;
 }
 const settings=$('settings') as HTMLDialogElement;
+/** The in-game wiki (D-20261109-03): opens from settings or H, in the camp and in the dungeon. Opening it pauses held input and the sleep auto-advance; closing resumes them. */
+const wiki=createWiki({showRules:dev,onOpen:()=>{cancelMoveInput();cancelSleepAdvance();},onClose:()=>syncSleepAdvance()});
+function wikiOpen(){return wiki.isOpen();}
+function openWiki(){if(!wiki.isOpen())wiki.open();}
+bind('settings-wiki',()=>{if(transferBusy)return;settings.close();openWiki();});
 let transferBusy=false;
 let settingsTab:'display'|'keys'|'save'='display';
 function setSettingsTab(tab:typeof settingsTab){settingsTab=tab;for(const name of ['display','keys','save']){$('settings-pane-'+name).hidden=name!==tab;$('settings-tab-'+name).setAttribute('aria-pressed',String(name===tab));}}
@@ -1139,6 +1145,7 @@ function refreshTransfer(){
  ($('save-export') as HTMLButtonElement).disabled=busy||!['ready','blocked'].includes(store.status);
  ($('save-import') as HTMLButtonElement).disabled=busy||store.status==='failed';
  ($('settings-close') as HTMLButtonElement).disabled=transferBusy;
+ ($('settings-wiki') as HTMLButtonElement).disabled=transferBusy;
  const campTitle=$('camp-title') as HTMLButtonElement;
  campTitle.hidden=!store.atBase||screen!=='play'||dev;campTitle.disabled=transferBusy;
  $('save-export').textContent=store.status==='blocked'?'导出原记录':'导出存档';
@@ -1204,7 +1211,7 @@ function queueHeldMove(){moveFrame=requestAnimationFrame(()=>{moveFrame=null;if(
 async function flushMoveInput(tapDirection?:Pos){
  const tap=tapDirection??moveTap;moveTap=null;
  if(moveTimer!==null)clearTimeout(moveTimer);if(moveFrame!==null)cancelAnimationFrame(moveFrame);moveTimer=null;moveFrame=null;moveCollecting=false;if(moveInFlight)return;
- const s=live();if(!s||s.phase!=='playing'||sleeping(s.units[s.leader])||anim.active||bagOpen||settings.open||screen!=='play'||store.status!=='ready'){cancelMoveInput();return;}
+ const s=live();if(!s||s.phase!=='playing'||sleeping(s.units[s.leader])||anim.active||bagOpen||(settings.open||wikiOpen())||screen!=='play'||store.status!=='ready'){cancelMoveInput();return;}
  const dx=tap?.x??(Number(heldDirections.has('d')||heldDirections.has('ArrowRight'))-Number(heldDirections.has('a')||heldDirections.has('ArrowLeft')));
  const dy=tap?.y??(Number(heldDirections.has('s')||heldDirections.has('ArrowDown'))-Number(heldDirections.has('w')||heldDirections.has('ArrowUp')));
  const u=s.units[draft?.editor??s.leader];if(!(dx||dy)||!u.pos)return;
@@ -1216,7 +1223,7 @@ async function flushMoveInput(tapDirection?:Pos){
  moveInFlight=true;let played=false;
  try{played=!!(await send({type:'round',action:{type:'move',to}},true));}
  finally{moveInFlight=false;}
- const after=live();if(!after||after.runId!==run||after.dungeon?.level!==level||after.round===round||after.phase!=='playing'||store.status!=='ready'||bagOpen||settings.open){cancelMoveInput();return;}
+ const after=live();if(!after||after.runId!==run||after.dungeon?.level!==level||after.round===round||after.phase!=='playing'||store.status!=='ready'||bagOpen||(settings.open||wikiOpen())){cancelMoveInput();return;}
  if([...movementEnemies(after)].some(id=>!beforeEnemies.has(id))){cancelMoveInput();return;}
  if(heldDirections.size){if(played)void flushMoveInput();else queueHeldMove();}
 }
@@ -1230,12 +1237,13 @@ document.addEventListener('keyup',e=>{
  }
  const opposed=!(dx||dy);heldDirections.delete(k);if(!heldDirections.size)cancelMoveInput();else if(opposed&&!moveInFlight&&!anim.active&&moveTimer===null&&moveFrame===null)void flushMoveInput();
 });
-document.addEventListener('click',e=>{if(hold&&!(e.target as HTMLElement).closest('dialog')){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary, #log-open, #recent-events, #log-dialog, #abandon-dialog, #learn-carry-dialog')){e.stopPropagation();e.preventDefault();}},true);
+document.addEventListener('click',e=>{if(hold&&!(e.target as HTMLElement).closest('dialog')){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary, #log-open, #recent-events, #log-dialog, #wiki-dialog, #abandon-dialog, #learn-carry-dialog')){e.stopPropagation();e.preventDefault();}},true);
 document.addEventListener('keydown',e=>{
- if(logDialog.open||abandonDialog.open)return;
+ if(logDialog.open||abandonDialog.open||wikiOpen())return;
  if(hold&&e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='r')){e.preventDefault();e.stopPropagation();if(!e.repeat)hold.end();return;}
- if(logDialog.open||abandonDialog.open)return;
- if(settings.open||(document.getElementById('unit-details-dialog') as HTMLDialogElement|null)?.open||screen!=='play'||store.atBase)return;
+ if(logDialog.open||abandonDialog.open||wikiOpen())return;
+ if((e.key==='h'||e.key==='H')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&screen==='play'&&!settings.open&&!(e.target as HTMLElement).matches('input,select,textarea')&&!document.querySelector('dialog[open]')){e.preventDefault();if(!e.repeat)openWiki();return;}   // the wiki, also while an animation plays and in the camp
+ if((settings.open||wikiOpen())||(document.getElementById('unit-details-dialog') as HTMLDialogElement|null)?.open||screen!=='play'||store.atBase)return;
  if((e.key==='l'||e.key==='L')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!(e.target as HTMLElement).matches('input,select,textarea')){e.preventDefault();if(!e.repeat)openLog();return;}   // also while an animation plays
  if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}
  if(e.repeat){e.preventDefault();return;}

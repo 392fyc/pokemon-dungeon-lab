@@ -81,3 +81,30 @@ test('refresh is only for a pending blessing choice, and extra refreshes (a plai
   assert.ok(new Set(seen).size>=2,'successive refreshes use new salts and give new cards: '+seen.join(' | '));
   assert.equal(applyCommand(cur,{type:'blessingRefresh'}).ok,false);
 });
+
+test('refresh leaves out the options shown before; when too few others remain it keeps all of them and fills up from the old ones (D-20261109-08)',()=>{
+  const base=inChoice('room'),level=base.dungeon.level;
+  const valid=ALL.filter(id=>BLESSINGS[id].floors.includes(level)&&!(base.blessings??[]).includes(id));
+  // plenty of others: the new three share nothing with the old three, for several seeds and salts
+  for(let i=0;i<20;i++){
+    const w=structuredClone(base);w.runId='excl'+i;w.pendingChoices[0].options=drawBlessings(valid,lcg(100+i));
+    const r=applyCommand(w,{type:'blessingRefresh'});assert.equal(r.ok,true,r.error);
+    const next=r.state.pendingChoices[0].options;assert.equal(next.length,3);assert.equal(new Set(next).size,3);
+    assert.deepEqual(next.filter(id=>w.pendingChoices[0].options.includes(id)),[],'no overlap with the offer before the refresh');
+  }
+  // only k new ones left: all k come back, the rest from the old offer; reproducible
+  for(const k of [0,1,2]){
+    const w=structuredClone(base),old=drawBlessings(valid,lcg(7)),fresh=valid.filter(id=>!old.includes(id)).slice(0,k);
+    w.blessings=ALL.filter(id=>!old.includes(id)&&!fresh.includes(id));w.pendingChoices[0].options=old;
+    const r=applyCommand(w,{type:'blessingRefresh'});assert.equal(r.ok,true,r.error);
+    const next=r.state.pendingChoices[0].options;assert.equal(next.length,3,'k='+k);assert.equal(new Set(next).size,3);
+    for(const id of fresh)assert.ok(next.includes(id),'k='+k+': the new option '+id+' is offered');
+    assert.equal(next.filter(id=>old.includes(id)).length,3-k,'k='+k+': the rest is filled from the old options');
+    assert.deepEqual(applyCommand(structuredClone(w),{type:'blessingRefresh'}).state.pendingChoices[0].options,next,'reproducible');
+  }
+  // fewer than three eligible in total: as many as exist
+  const w=structuredClone(base),old=valid.slice(0,2);w.blessings=ALL.filter(id=>!old.includes(id));w.pendingChoices[0].options=old;
+  assert.deepEqual([...applyCommand(w,{type:'blessingRefresh'}).state.pendingChoices[0].options].sort(),[...old].sort());
+  // drawBlessings itself: the fallback only fills what the main pool cannot
+  const out=drawBlessings(['regen'],lcg(1),3,['scholar','rally','regen']);assert.equal(out[0],'regen');assert.deepEqual(out.slice(1).sort(),['rally','scholar']);
+});

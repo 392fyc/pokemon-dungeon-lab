@@ -54,6 +54,8 @@ export type Difficulty='easy'|'normal'|'hard';
 export const DIFFICULTY:Readonly<Record<Difficulty,number>>=Object.freeze({easy:0.28,normal:0.4,hard:0.56});
 export const isDifficulty=(value:unknown):value is Difficulty=>typeof value==='string'&&Object.hasOwn(DIFFICULTY,value);
 export const ENEMY_DIFFICULTY=DIFFICULTY.normal;
+/** G7.6: the chance that an ordinary enemy is born asleep. */
+export const ENEMY_SLEEP_CHANCE=0.25;
 /** First-type partitions and level bands from the 7.8 working specification. */
 export const THEME_FLOORS:{theme:ThemeId;name:string;types:string[];levels:[number,number];count:number;floorTile:string;wallTile:string}[]=[
   {theme:'moss',name:'苔石洞',types:['Normal','Grass','Bug','Rock','Ground','Flying'],levels:[5,6],count:6,floorTile:'floor-stone',wallTile:'wall-rock'},
@@ -926,7 +928,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const species=speciesPool[Math.floor(speciesRng()*speciesPool.length)];
     const lower=Math.max(themed.levels[0],SPECIES[species].evoLevel),upper=themed.levels[1];
     const enemyLevel=bossEnabled?lower+Math.floor(levelRng()*(upper-lower+1)):INITIAL_LEVEL;
-    const asleep=sleepRng()<(params.enemySleepChance??0.25);
+    const asleep=sleepRng()<(params.enemySleepChance??ENEMY_SLEEP_CHANCE);
     enemyAiRng=(enemyAiRng+0x6D2B79F5)>>>0;
     return {id:'w'+level+'abcdef'[n],species,level:enemyLevel,
       hp:speciesMaxHp(species,enemyLevel,difficulty),pos,

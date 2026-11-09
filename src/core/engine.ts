@@ -261,7 +261,9 @@ const emit=(s:World,e:RoundEvent)=>{(s.events??=[]).push(e);};
 /** Stage of a unit; the missing keys of old units read as 0 and speed never has one. */
 export const stageOf=(u:Unit,k:StageKey):number=>k==='spe'?0:((u.stages as Record<string,number|undefined>|undefined)?.[k]??0);
 /** G2 (8.8): stage difference n is clamped to -3...+3; n>=0 gives (3+n)/3, n<0 gives 3/(3-n). */
-export const accuracyMultiplier=(n:number):number=>{const c=Math.max(-3,Math.min(3,n));return c>=0?(3+c)/3:3/(3-c);};
+/** G5.1: accuracy and evasion stages run -3...+3. G4.3: at most three travellers. G5.13: a status without a duration range (flinch) lasts this many of its owner's action chances. */
+export const ACCURACY_STAGE_LIMIT=3,PARTY_LIMIT=3,STATUS_DEFAULT_LEFT=1;
+export const accuracyMultiplier=(n:number):number=>{const c=Math.max(-ACCURACY_STAGE_LIMIT,Math.min(ACCURACY_STAGE_LIMIT,n));return c>=0?(3+c)/3:3/(3-c);};
 /** Moves are judged for a hit when they target opponents or everyone (a line attack that can also catch a companion); self buffs, guards, Helping Hand, screens and Quick Guard never roll. */
 const needsHitRoll=(spec:MoveSpec)=>spec.target==='enemy'||spec.target==='all';
 /**
@@ -279,8 +281,13 @@ function rollHit(s:World,sourceId:string,targetId:string,skill?:Skill):boolean {
   const chance=hitChance(s,sourceId,targetId,skill);
   return chance>=100||battleRandom(s)*100<chance;
 }
-const STATUS_DURATION:Partial<Record<StatusId,[number,number]>>={par:[2,3],frz:[1,3],slp:[3,6],nap:[2,3],confusion:[7,12]};
-const STATUS_INTERVAL:Partial<Record<StatusId,number>>={psn:20,tox:2,brn:20};
+export const STATUS_DURATION:Partial<Record<StatusId,[number,number]>>={par:[2,3],frz:[1,3],slp:[3,6],nap:[2,3],confusion:[7,12]};
+export const STATUS_INTERVAL:Partial<Record<StatusId,number>>={psn:20,tox:2,brn:20};
+/** G5.13: poison, bad poison and burn take max(1, floor(maxHp / divisor)) every STATUS_INTERVAL round ends; a burnt attacker deals BURN_DAMAGE_RATIO of its damage. */
+export const STATUS_DAMAGE_DIVISOR={psn:12,tox:8,brn:12} as const;
+export const BURN_DAMAGE_RATIO=[4,5] as const;
+/** G5.13: the chance that a sleeper wakes up when a move really costs it HP. */
+export const WAKE_ON_HIT_CHANCE=0.25;
 export const hasStatus=(u:Unit|undefined,k:StatusId):boolean=>!!u&&u.status?.[k]!==undefined;
 /** Returns true only for the slp and nap conditions; enemies born asleep use separate flags. */
 export const sleeping=(u:Unit|undefined):boolean=>hasStatus(u,'slp')||hasStatus(u,'nap');
@@ -304,7 +311,7 @@ function applyStatus(s:World,targetId:string,kind:StatusId):void {
     (t.status??={})[kind]={tick:1};
   }else{
     const range=STATUS_DURATION[kind];
-    (t.status??={})[kind]={left:range?battleInt(s,range[0],range[1]):1};
+    (t.status??={})[kind]={left:range?battleInt(s,range[0],range[1]):STATUS_DEFAULT_LEFT};
   }
   note(s,`${targetId}${had?'的':'陷入'}${name}${had?'持续时间重新计算':'状态'}`);
   emit(s,{type:'status',target:targetId,status:kind,change:had?'refresh':'apply'});
@@ -362,7 +369,7 @@ function statusRoundEnd(s:World):void {
       const u=s.units[id],st=u?.status?.[k];if(!alive(u)||!st)continue;
       st.tick=(st.tick??1)-1;if(st.tick>0)continue;
       st.tick=STATUS_INTERVAL[k]!;
-      const amount=Math.max(1,Math.floor(u.maxHp/(k==='tox'?8:12)));
+      const amount=Math.max(1,Math.floor(u.maxHp/STATUS_DAMAGE_DIVISOR[k]));
       emit(s,{type:'statusDamage',target:id,status:k,amount:hit(s,id,amount,STATUS_NAMES[k])});
     }
   }
@@ -541,20 +548,25 @@ function eligibleBlessings(s:World):BlessingId[] {
   return (Object.keys(BLESSINGS) as BlessingId[]).filter(id=>BLESSINGS[id].floors.includes(level)&&!owned.has(id));
 }
 /** Three slots, each: draw a rarity by weight (common 60, rare 30, epic 10) among the rarities that still have a pick left, then one blessing of that rarity
- *  with equal chance. A rarity with nothing left drops out and the weights of the others apply as they are. Fewer than three picks: as many as exist. */
-export function drawBlessings(available:readonly BlessingId[],random:()=>number,count=3):BlessingId[] {
-  const pools=new Map<BlessingRarity,BlessingId[]>(BLESSING_RARITY.order.map(r=>[r,available.filter(id=>BLESSINGS[id].rarity===r)]));
+ *  with equal chance. A rarity with nothing left drops out and the weights of the others apply as they are. Fewer than three picks: as many as exist.
+ *  `fallback` (a refresh: the options shown before) fills the slots the main pool could not, by the same rule and the same random stream (D-20261109-08). */
+export function drawBlessings(available:readonly BlessingId[],random:()=>number,count=3,fallback:readonly BlessingId[]=[]):BlessingId[] {
   const out:BlessingId[]=[];
-  while(out.length<count){
-    const open=BLESSING_RARITY.order.filter(r=>pools.get(r)!.length>0);if(!open.length)break;
-    const total=open.reduce((n,r)=>n+BLESSING_RARITY.weights[r],0);let roll=random()*total,tier=open[open.length-1];
-    for(const r of open){if(roll<BLESSING_RARITY.weights[r]){tier=r;break;}roll-=BLESSING_RARITY.weights[r];}
-    const pool=pools.get(tier)!;out.push(pool.splice(Math.floor(random()*pool.length),1)[0]);
+  for(const source of [available,fallback]){
+    const pools=new Map<BlessingRarity,BlessingId[]>(BLESSING_RARITY.order.map(r=>[r,source.filter(id=>BLESSINGS[id].rarity===r&&!out.includes(id))]));
+    while(out.length<count){
+      const open=BLESSING_RARITY.order.filter(r=>pools.get(r)!.length>0);if(!open.length)break;
+      const total=open.reduce((n,r)=>n+BLESSING_RARITY.weights[r],0);let roll=random()*total,tier=open[open.length-1];
+      for(const r of open){if(roll<BLESSING_RARITY.weights[r]){tier=r;break;}roll-=BLESSING_RARITY.weights[r];}
+      const pool=pools.get(tier)!;out.push(pool.splice(Math.floor(random()*pool.length),1)[0]);
+    }
   }
   return out;
 }
-function blessingOffer(s:World,source:'room'|'challenge',room:number|null,salt=''):BlessingId[] {
-  return drawBlessings(eligibleBlessings(s),choiceRandom(s,`blessing:${source}`,room,salt));
+/** `previous`: the options of a refreshed choice; they are left out of the draw and only fill what the rest of the pool cannot (D-20261109-08). */
+function blessingOffer(s:World,source:'room'|'challenge',room:number|null,salt='',previous:readonly BlessingId[]=[]):BlessingId[] {
+  const eligible=eligibleBlessings(s),fresh=eligible.filter(id=>!previous.includes(id));
+  return drawBlessings(fresh,choiceRandom(s,`blessing:${source}`,room,salt),3,eligible.filter(id=>previous.includes(id)));
 }
 function queueBlessingChoice(s:World,source:'room'|'challenge',room:number|null):boolean {
   const options=blessingOffer(s,source,room);if(!options.length)return false;
@@ -1131,8 +1143,8 @@ export const STAT_DAMAGE_RATIO=Object.freeze({min:0.5,max:2} as const);
 /** Ability stages of attack, special attack, defence and special defence run -10...+10 (Mystery Dungeon, Bulbapedia "Stat (Mystery Dungeon)"); accuracy and evasion keep their own -3...+3 rule. */
 export const STAGE_LIMIT=10;
 /** Stage multipliers in 256ths, index = stage + 10. Attack and special attack (attacker side), defence and special defence (defender side: the defence value is multiplied, so damage is divided). */
-const ATTACK_STAGE_256=[128,133,138,143,148,153,161,171,179,204,256,307,332,358,384,409,422,435,448,460,473] as const;
-const DEFENCE_STAGE_256=[7,12,25,38,51,64,76,102,128,179,256,332,409,486,537,588,640,691,742,793,844] as const;
+export const ATTACK_STAGE_256=[128,133,138,143,148,153,161,171,179,204,256,307,332,358,384,409,422,435,448,460,473] as const;
+export const DEFENCE_STAGE_256=[7,12,25,38,51,64,76,102,128,179,256,332,409,486,537,588,640,691,742,793,844] as const;
 const clampStage=(n:number)=>Math.max(-STAGE_LIMIT,Math.min(STAGE_LIMIT,Math.round(n)));
 export const attackStageMultiplier=(stage:number):number=>ATTACK_STAGE_256[clampStage(stage)+STAGE_LIMIT]/256;
 export const defenceStageMultiplier=(stage:number):number=>DEFENCE_STAGE_256[clampStage(stage)+STAGE_LIMIT]/256;
@@ -1163,7 +1175,7 @@ function damageAmount(s:World,source:Unit,target:Unit|undefined,baseDamage:numbe
     if(!crit&&category==='Physical'&&(target!.reflect??0)>0)amount=Math.floor(amount/2);   // a critical hit goes through both screens
     if(!crit&&category==='Special'&&(target!.lightscreen??0)>0)amount=Math.floor(amount/2);
   }
-  if(amount>0&&hasStatus(source,'brn'))amount=Math.max(1,Math.floor(amount*4/5));
+  if(amount>0&&hasStatus(source,'brn'))amount=Math.max(1,Math.floor(amount*BURN_DAMAGE_RATIO[0]/BURN_DAMAGE_RATIO[1]));
   if(crit&&amount>0)amount=Math.max(1,Math.round(amount*CRIT_MULTIPLIER));   // before the type step
   const effectiveness=skill&&target?typeEffectiveness(skill,speciesTypes(target)):1;
   const stab=skill?stabMultiplier(skill,speciesTypes(source)):1;
@@ -1199,7 +1211,7 @@ export function estimateAttackDamage(s:World,sourceId:string,targetId:string|und
 function onDirectDamageToSleeper(s:World,owner:Unit,attacker:Unit,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>):void {
   if(!alive(owner)||!alive(attacker)||!sleeping(owner))return;
   if(hasStatus(owner,'slp')){
-    if(battleRandom(s)<0.25){dropStatus(owner,'slp');note(s,owner.id+'被攻击后醒来');emit(s,{type:'status',target:owner.id,status:'slp',change:'expire'});return;}
+    if(battleRandom(s)<WAKE_ON_HIT_CHANCE){dropStatus(owner,'slp');note(s,owner.id+'被攻击后醒来');emit(s,{type:'status',target:owner.id,status:'slp',change:'expire'});return;}
   }
   if(!sleeping(owner)||hasStatus(owner,'par')||hasStatus(owner,'flinch'))return;
   if(owner.learned.includes('snore')){
@@ -1922,7 +1934,7 @@ export function previewInvitation(s:World,outgoing?:string):InvitationPreview {
   if(s.phase!=='invitation'||!s.anchor)return {ok:false,error:'当前没有待处理邀请'};
   const invite=s.invitations.find(i=>i.status==='pending');if(!invite)return {ok:false,error:'邀请已处理'};
   if(outgoing&&!s.queue.includes(outgoing))return {ok:false,error:'回营对象不在同行名单'};
-  if(s.queue.length>=3&&!outgoing)return {ok:false,error:'满员须选择回营对象'};
+  if(s.queue.length>=PARTY_LIMIT&&!outgoing)return {ok:false,error:'满员须选择回营对象'};
   const q=s.queue.filter(i=>i!==outgoing);const aliveUnits=[...q,...s.enemies].map(i=>s.units[i]).filter(alive);
   const pos=[s.anchor,...DIRS.map(d=>plus(s.anchor!,d))].find(p=>walk(s,p)&&s.seen.includes(key(p))&&!aliveUnits.some(u=>same(u.pos,p)));
   if(!pos)return {ok:false,error:'集结格附近没有合法位置；可改选或拒绝'};
@@ -2027,7 +2039,7 @@ export function applyCommand(original:World,cmd:Command):Result {
     if((original.blessingRefreshes??0)<=0)return fail('没有刷新次数了');
     const s=clone(original),choice=s.pendingChoices![0] as Extract<PendingChoice,{type:'blessing'}>;
     s.blessingRefreshes=(s.blessingRefreshes??0)-1;s.blessingRefreshUsed=(s.blessingRefreshUsed??0)+1;
-    choice.options=blessingOffer(s,choice.source,choice.room,`refresh${s.blessingRefreshUsed}`);
+    choice.options=blessingOffer(s,choice.source,choice.room,`refresh${s.blessingRefreshUsed}`,choice.options);
     note(s,`刷新祝福，还剩${s.blessingRefreshes}次`);
     return {ok:true,state:s};
   }
@@ -2087,7 +2099,7 @@ export function applyCommand(original:World,cmd:Command):Result {
   }
   if(original.phase!=='invitation')return fail('当前没有待处理邀请');
   const pending=original.invitations.find(i=>i.status==='pending');if(!pending)return fail('当前没有待处理邀请');
-  if(cmd.choice==='camp'&&original.queue.length<3)return fail('只有队伍满员时才能让新人回营');
+  if(cmd.choice==='camp'&&original.queue.length<PARTY_LIMIT)return fail('只有队伍满员时才能让新人回营');
   if(cmd.choice==='camp'&&cmd.outgoing!==undefined)return fail('让新人回营时不能同时指定回营伙伴');
   const preview=cmd.choice==='accept'?previewInvitation(original,cmd.outgoing):null;
   if(preview&&!preview.ok)return fail(preview.error);

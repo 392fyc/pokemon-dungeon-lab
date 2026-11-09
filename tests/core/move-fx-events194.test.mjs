@@ -327,8 +327,10 @@ test('其余“行动已结束”的日志（动作失效、无路可走、普�
  const before=world({moves:[],targets:[enemy('H',2,1,40,'ranged',0)]});before.units.H.hp=before.units.H.maxHp=300;
  before.units.B=friend('B',1,2,20,{});before.units.B.stages.acc=3;before.queue.push('B');
  const after=structuredClone(before);after.round=before.round+1;after.units.H.hp-=5;
- for(const line of ['A动作失效，等待，未扣PP','A的普通攻击未命中任何目标','A无路可走，等待','A等待','A因混乱朝右乱走，被挡住，原地不动']){
+ // The animation reads the round's structured events, not the log text: each of the five endings is the event the engine writes for that line.
+ for(const [line,reason] of [['A动作失效，等待，未扣PP','invalid'],['A的普通攻击未命中任何目标','basicNoTarget'],['A无路可走，等待','noPath'],['A等待','wait'],['A因混乱朝右乱走，被挡住，原地不动','confusedWander']]){
   after.log=[...before.log,line,'H受到5伤害，HP '+after.units.H.hp];
+  after.events=[{type:'fail',unit:'A',reason},{type:'hpLoss',unit:'H',amount:5,hp:after.units.H.hp}];
   const hit=inferEvents(before,after,{type:'round',action:{type:'basic',target:'H'},override:{actor:'B',action:{type:'basic',target:'H'}}}).find(event=>event.k==='hit'&&event.target==='H');
   assert.equal(hit?.attacker,'B',line);
  }

@@ -1,15 +1,16 @@
-import {key,plus,same,SKILL_CN,stageOf,STAGE_NAMES,STATUS_NAMES,type StageKey,type StatusId,type Command,type Item,type Pos,type World} from '../core/engine.ts';
+import {key,same,stageOf,STAGE_NAMES,STATUS_NAMES,type StageKey,type StatusId,type Command,type Item,type Pos,type RoundEvent,type World} from '../core/engine.ts';
 import {moveOf} from '../core/moves.ts';
 import {typeEffectiveness} from '../core/type-chart.ts';
 import {SPECIES} from '../core/roster.ts';
 import {damageNumberColor,effectForMove,type EffectStyle} from './effect-spec.ts';
 import {adjacentReachable, floorIndex, rayReachable} from './reach.ts';
 /**
- * Stage 6.4 presentation: works out what happened in one round from the two saved states and the new log lines.
+ * Stage 6.4 presentation: works out what happened in one round from the two saved states and the round's structured
+ * events (`World.events`, written by the engine in the same order as the log; the log text is never read here).
  * Pure data in, pure data out. It never touches rule code and never changes either state.
  *
- * Why inference: `applyCommand` returns only the final state. What each log line says is reliable (who moved, who was
- * hurt, who used an item); who dealt a hit is not logged, so it is inferred (see `friendAttacker` / `enemyAttacker`).
+ * Why inference: `applyCommand` returns only the final state. What each event says is reliable (who moved, who was
+ * hurt, who used an item); who dealt a hit is not recorded, so it is inferred (see `friendAttacker` / `enemyAttacker`).
  * A wrong guess only changes which sprite swings, never the rule result, and the final paint always shows the true state.
  */
 export type Fx = 'strong' | 'line' | null;
@@ -68,12 +69,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
   // Only a normal round on the same floor of the same run is played; every other change is shown as the final state.
   if (cmd.type !== 'round' || a.runId !== b.runId || a.round !== b.round + 1 || a.dungeon?.level !== b.dungeon?.level) return [];
   const airAttacks=(a.events??[]).filter((e):e is Extract<NonNullable<World['events']>[number],{type:'airAttack'}>=>e.type==='airAttack');
-  const lines = newLines(b.log, a.log);
-  const ids = Object.keys(a.units).sort((x, y) => y.length - x.length);
-  const head = (t:string):{id:string; rest:string}|null => {
-    for (const id of ids) if (t.startsWith(id) && t.length > id.length && !/[A-Za-z0-9-]/.test(t[id.length])) return {id, rest:t.slice(id.length)};
-    return null;
-  };
+  const evs:RoundEvent[]=a.events??[];
   const pos:Record<string, Pos|null> = {}, hp:Record<string, number> = {};
   for (const [id, u] of Object.entries(b.units)) { pos[id] = u.pos ? {...u.pos} : null; hp[id] = u.hp; }
   const seen = new Set(a.seen); // never wider than the final visible set, so nothing hidden is revealed by the animation
@@ -86,9 +82,8 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     const used=before.learned.filter(move=>(before.pp[move]??0)>(after.pp[move]??0));
     if(used.length!==1)return null;
     if(used[0]!=='sleeptalk')return used[0];
-    const trigger=lines.find(line=>line.startsWith(id)&&line.includes('在睡眠中使用梦话，发动'));
-    if(!trigger)return null;
-    return Object.entries(SKILL_CN).find(([,name])=>trigger.includes(`发动${name}`))?.[0]??null;
+    const trigger=evs.find((e):e is Extract<RoundEvent,{type:'sleeptalk'}>=>e.type==='sleeptalk'&&e.unit===id);
+    return trigger?.skill??null;
   };
   const spentAnyPp=(id:string):boolean=>{
     const before=b.units[id],after=a.units[id];
@@ -148,7 +143,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     // A planned action may never run (for example, an earlier blowaway collision knocks this member out).
     // Keep an effect only when the rule log confirms it happened, even if the member falls afterward.
     if (move && moveOf(move)?.effects.includes('protect') && u.hp > 0 &&
-      (lines.includes(`${id}进入守住状态`)||(a.units[id]?.protect??0)>(b.units[id]?.protect??0)))
+      (evs.some(e=>e.type==='guard'&&e.kind==='protect'&&e.unit===id)||(a.units[id]?.protect??0)>(b.units[id]?.protect??0)))
       protects.push({idx:order(id), ev:{k:'protect', by:id, target:e?.type==='skill'?e.target:id, from:{x:0, y:0}, at:{x:0, y:0}, effect:effectForMove(move)??undefined}});
   }
   const flush = (upTo:number) => {
@@ -197,7 +192,7 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
       const id = b.enemies[i], p = pos[id];
       // Sleeping and just-woken enemies skip their turn without a log line (engine enemy phase). A born-asleep enemy that a move put to sleep this round has its flags cleared by the engine
       // (`出生时的睡眠转为…`), so a later hit that wakes it leaves it free to act; one still under the sleep status does not.
-      const converted = lines.includes(`${id}出生时的睡眠转为招式造成的睡眠状态`), stillAsleep = !!(a.units[id]?.status?.slp || a.units[id]?.status?.nap);
+      const converted = evs.some(e=>e.type==='sleepConverted'&&e.unit===id), stillAsleep = !!(a.units[id]?.status?.slp || a.units[id]?.status?.nap);
       if (!p || hp[id] <= 0 || used.has(id) || (converted ? stillAsleep : (b.units[id].asleep || b.units[id].wakeSkip))) continue;
       const move=spentMove(id),spec=move?moveOf(move):undefined;
       if(move&&isDamageMove(move)&&canSkillHit(id,target,move))candidates.push({id,move,index:i});
@@ -207,70 +202,61 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     enemyCursor=candidates[0].index;return {id:candidates[0].id,move:candidates[0].move};
   };
 
-  const damageEvents=(a.events??[]).filter((e):e is Extract<NonNullable<World['events']>[number],{type:'damage'}>=>e.type==='damage'),usedDamage=new Set<number>();
   const collisionVictims=new Map<string,{left:number;by:string;cast?:string}>();
-  type Cast={by:string;move:string;index:number;positions:Record<string,Pos|null>;health:Record<string,number>;hit:Set<string>;/** a snore or sleep-talk answer: the engine aims it at the attacker without a range check */reaction?:boolean};
+  type Cast={by:string;move:string;index:number;positions:Record<string, Pos|null>;health:Record<string, number>;hit:Set<string>;/** a snore or sleep-talk answer: the engine aims it at the attacker without a range check */reaction?:boolean};
   const casts:Cast[]=[];let activeCast:Cast|null=null;
   // A sleeper's snore or sleep-talk answers a hit in the middle of someone else's cast; the answered cast resumes afterwards.
   const reactionStack:Cast[]=[];
-  // A confused unit's strike has no target line of its own: the very next damage line is what it hit, whatever the side.
-  let pendingStrike:string|null=null;
+  // A confused unit's strike has no target event of its own: the very next damage event names the striker (`hpLoss.strike`); this says whether the striker's latest strike may be credited.
+  const strikeCredit=new Map<string,boolean>();
   const isAreaCast=(c:Cast)=>['room','around'].includes(moveOf(c.move)?.range??'');
   const claims=(c:Cast|null,target:string):c is Cast=>!!c&&isDamageMove(c.move)&&!c.hit.has(target)&&(c.hit.size===0||isAreaCast(c))&&(c.reaction?c.hit.size===0&&b.units[target]?.side!==b.units[c.by]?.side:canSkillHit(c.by,target,c.move,c.positions,c.health));
-  /** Every log line that says a unit's own action ended without a hit it could be credited with (engine.ts statusBlock, invalid, confused, miss and wait lines). */
-  const spentWithoutHit=/^(?:的普攻没打中|的普通攻击未命中任何目标|冰冻中，无法行动|打盹中，无法行动|睡眠中，无法行动|麻痹中，无法使用招式和普攻|畏缩中，无法使用招式和普攻|动作失效，等待，未扣PP|无路可走，等待|等待|因混乱乱走|因混乱朝.+乱走)|落空，未扣PP$|换位落空/;
 
-
-  for (let i = 0; i < lines.length; i++) {
-    const strike:string|null=pendingStrike;pendingStrike=null;
-    const h = head(lines[i]);
-    if (!h) continue;
-    const {id, rest} = h;
+  for (let i = 0; i < evs.length; i++) {
+    const ev = evs[i];
+    // The unit whose own action the event belongs to; events without one (status, damage, pickup) are not played here.
+    const id = 'unit' in ev ? ev.unit : ev.type==='miss'||ev.type==='immune'||ev.type==='airAttack' ? ev.actor : null;
+    if (id === null) continue;
     const unit = a.units[id] ?? b.units[id];
     if (!unit) continue;
-    // The thaw line comes before the damage line it belongs to, so it must not drop a confused unit's pending strike.
-    if (strike && /^受到火系招式或热水攻击后解冻$/.test(rest)) pendingStrike = strike;
-    let m:RegExpMatchArray|null;
-    if(rest.startsWith('使用')){
-      const move=b.units[id]?.learned.find(move=>rest==='使用'+(SKILL_CN[move]??move));
-      const reaction=!!move&&!!activeCast&&id!==activeCast.by&&(move==='snore'||!!lines[i-1]?.startsWith(id+'在睡眠中使用梦话'));
+    if (ev.type==='cast') {
+      const move=b.units[id]?.learned.includes(ev.skill)?ev.skill:undefined;
+      const answer=!!move&&(move==='snore'||!!ev.viaSleeptalk);
+      const reaction=answer&&!!activeCast&&id!==activeCast.by;
       if(reaction)reactionStack.push(activeCast!);else reactionStack.length=0;
-      const answer:boolean=!!move&&(move==='snore'||!!lines[i-1]?.startsWith(id+'在睡眠中使用梦话'));
       activeCast=move?{by:id,move,index:i,positions:Object.fromEntries(Object.entries(pos).map(([id,at])=>[id,at?{...at}:null])),health:{...hp},hit:new Set(),...(answer?{reaction:true}:{})}:null;
       if(activeCast){casts.push(activeCast);castActors.add(id);used.add(id);}
-      // A target the move cannot affect (immune) is still hit by the move: the engine says so with an `immune` event, shown as a hit that does nothing (never as a miss).
-      if(activeCast&&move)for(const ev of a.events??[]){
-        if(ev.type!=='immune'||ev.actor!==id||ev.skill!==move)continue;
-        const at=pos[ev.target],from=pos[id],tUnit=a.units[ev.target]??b.units[ev.target];if(!at||!tUnit)continue;
-        activeCast.hit.add(ev.target);
-        if(tUnit.side!=='friend'&&!vis(at))continue;
-        const shown=vis(from)?from:null,effect=shown?styleFor(move,ev.target,0)??undefined:undefined;
-        emit({k:'hit',by:id,attacker:shown?id:null,target:ev.target,from:shown,at,fx:shown?fxForMove(move):null,amount:0,dead:false,immune:true,...(effect?{effect}:{})});
-      }
+      continue;
     }
-    if(activeCast&&id===activeCast.by){
-      const prefix='的'+(SKILL_CN[activeCast.move]??activeCast.move)+'没打中';
-      if(rest.startsWith(prefix)){const target=rest.slice(prefix.length);if(ids.includes(target))activeCast.hit.add(target);}
+    // A target the move cannot affect (immune) is still hit by the move: the engine says so with an `immune` event, shown as a hit that does nothing (never as a miss).
+    if (ev.type==='immune') {
+      if(!activeCast||activeCast.by!==id||activeCast.move!==ev.skill)continue;
+      const move=activeCast.move,at=pos[ev.target],from=pos[id],tUnit=a.units[ev.target]??b.units[ev.target];if(!at||!tUnit)continue;
+      activeCast.hit.add(ev.target);
+      if(tUnit.side!=='friend'&&!vis(at))continue;
+      const shown=vis(from)?from:null,effect=shown?styleFor(move,ev.target,0)??undefined:undefined;
+      emit({k:'hit',by:id,attacker:shown?id:null,target:ev.target,from:shown,at,fx:shown?fxForMove(move):null,amount:0,dead:false,immune:true,...(effect?{effect}:{})});
+      continue;
     }
+    if (ev.type==='miss'&&ev.skill!==null&&activeCast&&id===activeCast.by&&ev.skill===activeCast.move&&b.units[ev.target])activeCast.hit.add(ev.target);
     // A unit whose action ended without a credited hit has still used its action, so a later hit on a target is not its work.
-    if(spentWithoutHit.test(rest))used.add(id);
-    // A status move stopped by a guard writes nothing after this line, so only a damaging action may claim the next damage line.
-    if(/^因混乱朝.+出手$/.test(rest)){used.add(id);if(activeCast?.by!==id||isDamageMove(activeCast.move))pendingStrike=id;}
-    // The cast is over when the log says so: a confused cast that found nothing, or another unit's own action line starts.
-    if(activeCast&&((id===activeCast.by&&rest==='的招式未命中任何目标')||(id!==activeCast.by&&(spentWithoutHit.test(rest)||/^(?:移动到|趋近一步|向.+挥空|与.+换位|对.+使用|因混乱朝)/.test(rest))))){activeCast=null;reactionStack.length=0;}
-    if ((m = rest.match(/^移动到(\d+),(\d+)$/))) {
-      const from = pos[id], to = {x:Number(m[1]), y:Number(m[2])};
+    const spentWithoutHit=ev.type==='fail'||(ev.type==='miss'&&ev.skill===null);
+    if (spentWithoutHit) used.add(id);
+    // A status move stopped by a guard writes nothing after this event, so only a damaging action may claim the next damage event.
+    if (ev.type==='confusedStrike'){used.add(id);strikeCredit.set(id,activeCast?.by!==id||isDamageMove(activeCast.move));}
+    // The cast is over when the events say so: a confused cast that found nothing, or another unit's own action starts.
+    if (activeCast&&((id===activeCast.by&&ev.type==='castNoTarget')||(id!==activeCast.by&&(spentWithoutHit||ev.type==='move'||ev.type==='airAttack'||ev.type==='swap'||ev.type==='confusedStrike'||(ev.type==='itemUse'&&ev.target!==undefined))))){activeCast=null;reactionStack.length=0;}
+    // An item used on the room or the party is the unit's own action: it ends whatever cast was running.
+    if (ev.type==='itemUse'&&ev.target===undefined) { activeCast=null; reactionStack.length=0; }
+    if (ev.type==='move') {
+      const from = pos[id], to = {...ev.to};
       if (from && (unit.side === 'friend' || (vis(from) && vis(to)))) emit({k:'move', by:id, id, from, to});
       pos[id] = to;
-    } else if (rest === '趋近一步') {
-      const from = pos[id], to = a.units[id]?.pos ?? null;
-      if (from && to && vis(from) && vis(to)) emit({k:'move', by:id, id, from, to});
-      if (to) pos[id] = to;
-    } else if ((m = rest.match(/^吹飞(.+?)到(-?\d+),(-?\d+)$/))) {
-      const t = head(`${m[1]}。`)?.id ?? null;
-      const from = t ? pos[t] : null, actorAt = pos[id], to={x:Number(m[2]),y:Number(m[3])};
-      if (t && from && actorAt) {
-        const move=spentMove(id),spec=move?moveOf(move):undefined;
+    } else if (ev.type==='blowaway') {
+      const t = ev.target;
+      const from = pos[t], actorAt = pos[id], to={...ev.to};
+      if (from && actorAt) {
+        const move=spentMove(id);
         const effect=move?styleFor(move,t)??undefined:undefined;
         if (vis(from)) {
           emit({k:'blowaway', by:id, target:t, actorAt:vis(actorAt)?actorAt:from, from, to, ...(effect&&vis(actorAt)?{effect}:{}),...(move?{cast:move}:{})});
@@ -285,23 +271,21 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
         }
         pos[t] = to;
       }
-    } else if (/^与.+换位$/.test(rest)) {
-      const o = head(`${rest.slice(1, -2)}。`)?.id ?? null;
-      if (o && pos[id] && pos[o]) { const pa = pos[id]!, pb = pos[o]!; emit({k:'swap', by:id, a:id, b:o, pa, pb}); used.add(o); pos[id] = pb; pos[o] = pa; }
-    } else if ((m = rest.match(/^受到(\d+)伤害，HP (\d+)$/))) {
-      // A Reviver Seed answers the same blow in the next line: the unit stays on the map at its restored HP and is not shown as fallen.
-      const at = pos[id], revived = Number(m[2])===0 && lines.slice(i+1,i+3).some(l=>l.startsWith(id+'倒下的瞬间，')), dead = Number(m[2])===0 && !revived;
-      const remaining=Number(m[2]),amount=remaining>0?Number(m[1]):Math.min(Number(m[1]),Math.max(0,hp[id]??0));
-      // A Reviver Seed answers the blow: the HP shown is the restored one.
-      const reviveLine=revived?lines.slice(i+1,i+3).find(l=>l.startsWith(id+'倒下的瞬间，')):undefined,hpAfter=reviveLine?Number(/HP恢复到(\d+)/.exec(reviveLine)?.[1]??remaining):remaining;
-      // The engine's damage event carries the critical flag: take the first unused one for this target and amount.
-      const damageIndex=damageEvents.findIndex((e,n)=>!usedDamage.has(n)&&e.target===id&&e.amount===Number(m![1]));if(damageIndex>=0)usedDamage.add(damageIndex);
-      const crit=damageIndex>=0&&!!damageEvents[damageIndex].crit;
+    } else if (ev.type==='swap') {
+      const o = ev.mate;
+      if (pos[id] && pos[o]) { const pa = pos[id]!, pb = pos[o]!; emit({k:'swap', by:id, a:id, b:o, pa, pb}); used.add(o); pos[id] = pb; pos[o] = pa; }
+    } else if (ev.type==='hpLoss' && !ev.cause) {
+      // A Reviver Seed answers the same blow: the unit stays on the map at its restored HP and is not shown as fallen.
+      const at = pos[id], revived = ev.revive!==undefined, dead = ev.hp===0 && !revived;
+      const remaining=ev.hp,amount=remaining>0?ev.amount:Math.min(ev.amount,Math.max(0,hp[id]??0));
+      const hpAfter=revived?ev.revive!:remaining;
+      const crit=!!ev.crit;
+      const strike=ev.strike&&strikeCredit.get(ev.strike)?ev.strike:null;
       hp[id] = remaining;
       const collision=collisionVictims.get(id);
       if(collision){if(collision.left<=1)collisionVictims.delete(id);else collisionVictims.set(id,{...collision,left:collision.left-1});}
-      if (at && (unit.side === 'friend' || vis(at))) {
-        if(collision){emit({k:'hit',by:collision.by,attacker:null,target:id,from:null,at,fx:null,amount,dead,hpAfter,collision:true,...(collision.cast?{cast:collision.cast}:{})});if(dead)pos[id]=null;continue;}
+      damage: if (at && (unit.side === 'friend' || vis(at))) {
+        if(collision){emit({k:'hit',by:collision.by,attacker:null,target:id,from:null,at,fx:null,amount,dead,hpAfter,collision:true,...(collision.cast?{cast:collision.cast}:{})});if(dead)pos[id]=null;break damage;}
         let attacker:string|null = null, from:Pos|null = null, fx:Fx = 'strong', by = '', move:string|null=null;
         if(reactionStack.length&&activeCast&&!claims(activeCast,id)&&claims(reactionStack[reactionStack.length-1],id))activeCast=reactionStack.pop()!;
         const cast=activeCast;
@@ -321,25 +305,26 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
         emit({k:'hit', by, attacker, target:id, from, at, fx, amount, dead, hpAfter, ...(effect&&effect.move!==null?{tint:damageNumberColor(effect.type)}:{}),...(crit?{crit:true as const}:{}),...(effect?{effect}:{}),...(effect?.template==='blow'&&move?{cast:move}:{})});
       }
       if (dead) pos[id] = null;
-    } else if ((m = rest.match(/^因.+损失(\d+)HP，HP (\d+)$/))) {
-      if(pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:-Number(m[1]),hpAfter:Number(m[2])});
-      hp[id]=Number(m[2]);if(hp[id]===0&&!lines.slice(i+1,i+3).some(l=>l.startsWith(id+'倒下的瞬间，')))pos[id]=null;   // a Reviver Seed answers a recoil or status death too: the unit keeps its place
-    } else if ((m = rest.match(/^倒下的瞬间，.+发动，HP恢复到(\d+)$/))) {
-      hp[id]=Number(m[1]);
-    } else if ((m = rest.match(/^(?:回复HP|吸取生命，HP) (\d+)→(\d+)$/))) {
-      if(rest.startsWith('吸取生命')&&pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:Number(m[2])-Number(m[1]),hpAfter:Number(m[2])});
-      hp[id]=Number(m[2]);
-    } else if ((m = rest.match(/^对(.+?)使用(橙橙果|PP多项小补剂)，(?:HP (\d+)→(\d+)|每招PP\+(\d+))/))) {
-      const t = head(`${m[1]}。`)?.id ?? null, item:Item = m[2] === '橙橙果' ? 'berry' : 'tonic';
-      const at = t ? pos[t] : null, actorAt = pos[id];
-      if(t&&item==='berry')hp[t]=Number(m[4]);
-      if (t && at && actorAt) emit({k:'heal', by:id, target:t, item, amount:item === 'berry' ? Number(m[4]) - Number(m[3]) : Number(m[5]), at, actorAt, ...(item==='berry'?{hpAfter:Number(m[4])}:{})});
+      hp[id] = hpAfter;   // a Reviver Seed's restored HP replaces the zero
+    } else if (ev.type==='hpLoss') {
+      if(pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:-ev.amount,hpAfter:ev.hp});
+      hp[id]=ev.revive??ev.hp;if(hp[id]===0)pos[id]=null;   // a Reviver Seed answers a recoil or status death too: the unit keeps its place
+    } else if (ev.type==='heal') {
+      hp[id]=ev.to;
+    } else if (ev.type==='drain') {
+      if(pos[id]&&(unit.side==='friend'||vis(pos[id])))emit({k:'hpchange',by:id,target:id,at:pos[id]!,delta:ev.to-ev.from,hpAfter:ev.to});
+      hp[id]=ev.to;
+    } else if (ev.type==='itemUse'&&ev.target!==undefined&&(ev.item==='berry'||ev.item==='tonic')) {
+      const t = ev.target, item:Item = ev.item;
+      const at = pos[t], actorAt = pos[id];
+      if(item==='berry')hp[t]=ev.to!;
+      if (at && actorAt) emit({k:'heal', by:id, target:t, item, amount:item === 'berry' ? ev.to! - ev.from! : ev.pp!, at, actorAt, ...(item==='berry'?{hpAfter:ev.to!}:{})});
     }
   }
 
-  // A non-damage cast is shown only when its own `使用` line is among the new log lines and the lines after it
-  // report a visible result on a target in range (stage change, status, heal, guard). PP is not checked here, and a
-  // cast line that fell out of the fixed-size log produces no effect.
+  // A non-damage cast is shown only when its own `cast` event is among the round's events and the events after it
+  // (up to the next cast) report a visible result on a target in range (stage change, status, heal, guard).
+  // PP is not checked here.
   for(const cast of casts){
     const {by:id,move}=cast;
     const spec=moveOf(move),baseStyle=effectForMove(move);if(!spec||!baseStyle||isDamageMove(move)||spec.effects.includes('protect'))continue;
@@ -347,29 +332,30 @@ export function inferEvents(b:World, a:World, cmd:Command):AnimEvent[] {
     if(!actor||!from||!vis(from))continue;
     const start=cast.index;
     if(start<0)continue;
-    let end=lines.length;
-    for(let i=start+1;i<lines.length;i++)if(head(lines[i])?.rest.startsWith('使用')){end=i;break;}
-    const castLines=lines.slice(start+1,end),rows=castLines.map(head);
+    let end=evs.length;
+    for(let i=start+1;i<evs.length;i++){const e=evs[i];if(e.type==='cast'||(e.type==='itemUse'&&e.target===undefined)){end=i;break;}}
+    const castEvents=evs.slice(start+1,end);
+    const rowUnit=(e:RoundEvent):string|null=>'unit' in e?e.unit:e.type==='status'?e.target:null;
     const targetIds=[...new Set([...b.queue,...b.enemies])];
     const changed=targetIds.flatMap(target=>{
       if(!b.units[target]||!a.units[target]||!canSkillHit(id,target,move,cast.positions,cast.health))return [];
       const at=cast.positions[target];if(!at||!vis(at))return [];
-      const targetRows=rows.filter(row=>row?.id===target).map(row=>row!.rest);
-      let amount:number|undefined;
+      const rows=castEvents.filter(e=>rowUnit(e)===target);
+      let amount:number|undefined,hpAfter:number|undefined;
       if(baseStyle.template==='heal'){
-        const match=targetRows.map(line=>line.match(/^回复HP (\d+)→(\d+)$/)).find(Boolean);
-        if(!match)return [];
-        amount=Number(match[2])-Number(match[1]);
+        const row=rows.find((e):e is Extract<RoundEvent,{type:'heal'}>=>e.type==='heal');
+        if(!row)return [];
+        amount=row.to-row.from;hpAfter=row.to;
       }else if(baseStyle.template==='up'||baseStyle.template==='down'){
-        if(!targetRows.some(line=>/^.+阶段变为-?\d+$/.test(line)))return [];
+        if(!rows.some(e=>e.type==='stage'))return [];
       }else if(baseStyle.template==='status'){
-        if(!targetRows.some(line=>/陷入.+状态$|持续时间重新计算$|开始打盹$/.test(line)))return [];
+        if(!rows.some(e=>(e.type==='status'&&(e.change==='apply'||e.change==='refresh'))||e.type==='rest'))return [];
       }else if(baseStyle.template==='guard'){
-        const direct=targetRows.some(line=>/进入反击状态|受到反射壁保护|受到光墙保护/.test(line));
-        const quick=spec.effects.includes('quickguard')&&castLines.some(line=>line.startsWith(id+'为')&&line.includes('开启快速防守'))&&a.quickguard?.units.includes(target);
+        const direct=rows.some(e=>e.type==='guard'&&e.kind!=='protect');
+        const quick=spec.effects.includes('quickguard')&&castEvents.some(e=>e.type==='quickguard'&&e.unit===id)&&a.quickguard?.units.includes(target);
         if(!direct&&!quick)return [];
       }else return [];
-      return [{target,at,amount,...(baseStyle.template==='heal'?{hpAfter:Number(targetRows.map(line=>line.match(/^回复HP (\d+)→(\d+)$/)).find(Boolean)![2])}:{})}];
+      return [{target,at,amount,...(hpAfter!==undefined?{hpAfter}:{})}];
     });
     if(!changed.length)continue;
     for(const choice of changed){

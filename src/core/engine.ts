@@ -140,8 +140,10 @@ export type World = {runId:string;scenario:string;round:number;floor:Pos[];liqui
   noCrit?:boolean;
   /** Luminous Orb: the whole floor's terrain is drawn (not units); cleared on every floor change. */
   mapRevealed?:boolean;
-  /** 8.8 (#165): latest round events (misses, air swings, status changes, status damage, pickups) for the interface; reset by each round command. */
+  /** Latest round events for the interface (see `RoundEvent`): the animation reads them, in the order the log lines were written; reset by each round command and never saved (the expedition is memory-only). */
   events?:RoundEvent[];
+  /** Transient, never saved: the confused unit whose random strike was the last log line (see `RoundEvent` `hpLoss.strike`); removed at the start and the end of each round. */
+  strikePending?:string;
   enemyAiRng?:number;quickguard?:{owner:'friend'|'enemy';units:string[]};
   pendingEvolutions?:{actor:string;choices:string[]}[];pendingLearnMoves?:{actor:string;move:string;pp:number}[];pendingSettlement?:{bossDrop:boolean;kills:string[]};
   /** 7.2 (expedition runs with `prog` only): purse money, technique machines of this run, the shop and the exchanger (only runs with `dungeon.services`). */
@@ -150,12 +152,41 @@ export type RoundEvent=
   |{type:'miss';actor:string;target:string;skill:string|null}
   /** The move reached the target but cannot affect it (type immunity and the like): shown as a hit that does nothing, never as a miss. */
   |{type:'immune';actor:string;target:string;skill:string}
-  /** One per damage line written for a hit: who was hit, for how much, and whether it was a critical hit. The log lines and the animation read `crit` from here. */
+  /** One per damage line written by a move or basic attack: who was hit, for how much, and whether it was a critical hit. The log panel reads `crit` from here (the animation reads `hpLoss`). */
   |{type:'damage';actor:string;target:string;amount:number;crit?:true}
   |{type:'airAttack';actor:string;from:Pos;to:Pos}
   |{type:'status';target:string;status:StatusId;change:'apply'|'refresh'|'cure'|'expire'|'unchanged'}
   |{type:'statusDamage';target:string;status:'psn'|'tox'|'brn';amount:number}
-  |{type:'pickup';actor:string;item:Item;ok:boolean};
+  |{type:'pickup';actor:string;item:Item;ok:boolean}
+  /* Presentation events (batch 13): one per log line the board animates, written in the same order as the log so the animation never reads the log text. */
+  /** A step to `to`; the unit's earlier position is known from the state before the round. */
+  |{type:'move';unit:string;to:Pos}
+  |{type:'swap';unit:string;mate:string}
+  /** A move starts. `viaSleeptalk` marks a move called by a sleeper's Sleep Talk. */
+  |{type:'cast';unit:string;skill:string;viaSleeptalk?:true}
+  |{type:'sleeptalk';unit:string;skill:string}
+  /** A confused user's move found no target on its random line. */
+  |{type:'castNoTarget';unit:string}
+  /** A confused unit struck in a random direction (its own action; the next damage is what it hit, see `hpLoss.strike`). */
+  |{type:'confusedStrike';unit:string}
+  /** The unit's own action ended without a hit it could be credited with. */
+  |{type:'fail';unit:string;reason:'basicNoTarget'|'frozen'|'nap'|'sleep'|'paralyzed'|'flinch'|'invalid'|'noPath'|'wait'|'confusedWander'|'swapPartnerFrozen'}
+  |{type:'blowaway';unit:string;target:string;to:Pos}
+  /** HP lost: a plain hit (no `cause`) or status/recoil damage. `hp` is the HP left; `revive` the HP restored by a Reviver Seed in the same blow; `strike` the confused unit whose random strike this was; `crit` a critical hit. */
+  |{type:'hpLoss';unit:string;amount:number;hp:number;cause?:string;crit?:true;strike?:string;revive?:number}
+  /** A frozen unit took no damage from a hit. */
+  |{type:'frozenBlock';unit:string}
+  |{type:'revive';unit:string;hp:number}
+  |{type:'heal';unit:string;from:number;to:number}
+  |{type:'drain';unit:string;from:number;to:number}
+  |{type:'stage';unit:string;stat:StageKey;value:number}
+  |{type:'rest';unit:string}
+  /** A unit born asleep had its sleeping flags turned into the move's sleep status. */
+  |{type:'sleepConverted';unit:string}
+  |{type:'guard';unit:string;kind:'protect'|'counter'|'reflect'|'lightscreen'}
+  |{type:'quickguard';unit:string;targets:string[]}
+  /** An item used. `target` is absent for items that act on the room or the party. */
+  |{type:'itemUse';unit:string;item:Item;target?:string;from?:number;to?:number;pp?:number};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
 export const RULE_VERSION='trial-rules-6';
 export const CONTENT_VERSION='trial-content-7';
@@ -248,7 +279,8 @@ const adjacent=(s:World,a:Pos,b:Pos)=>chebyshev(a,b)===1&&stepOk(s,a,b);
 const active=(s:World)=>[...s.queue,...s.enemies].map(id=>s.units[id]).filter(u=>u.hp>0&&u.pos);
 const occupied=(s:World,p:Pos)=>active(s).some(u=>same(u.pos,p));
 const alive=(u:Unit|undefined):u is Unit&{pos:Pos}=>!!u&&u.hp>0&&u.pos!==null;
-const note=(s:World,t:string)=>{s.log.push(t);s.log=s.log.slice(-80);};
+/** Any log line drops `s.strikePending`: only the line right after a confused strike (the damage it caused) may claim it. */
+const note=(s:World,t:string)=>{if(s.strikePending!==undefined)delete s.strikePending;s.log.push(t);s.log=s.log.slice(-80);};
 /* ---------- 8.8 (#165): battle random stream, hit chance, status conditions ---------- */
 const BATTLE_STREAM=0x3B1F6A27;
 /** The battle stream is separate from recruit draws (`prog.rng`), drops and enemy AI: adding hits and statuses leaves those draws unchanged. */
@@ -302,7 +334,7 @@ function applyStatus(s:World,targetId:string,kind:StatusId):void {
   if(kind==='slp'&&(hasStatus(t,'slp')||hasStatus(t,'nap')))return;
   if(kind==='psn'&&hasStatus(t,'tox')){note(s,`${targetId}已经是剧毒，仍保持剧毒`);emit(s,{type:'status',target:targetId,status:'tox',change:'unchanged'});return;}
   const had=hasStatus(t,kind),interval=STATUS_INTERVAL[kind];
-  if(kind==='slp'&&t.asleep){t.asleep=false;t.wakeSkip=false;note(s,targetId+'出生时的睡眠转为招式造成的睡眠状态');}
+  if(kind==='slp'&&t.asleep){t.asleep=false;t.wakeSkip=false;note(s,targetId+'出生时的睡眠转为招式造成的睡眠状态');emit(s,{type:'sleepConverted',unit:targetId});}
   if(kind==='frz'&&dropStatus(t,'brn'))note(s,`${targetId}的灼伤被冰冻顶掉`);
   if(kind==='brn'&&dropStatus(t,'frz'))note(s,`${targetId}的冰冻被灼伤顶掉`);
   if(kind==='tox'&&dropStatus(t,'psn'))note(s,`${targetId}的中毒被剧毒顶掉`);
@@ -1102,16 +1134,17 @@ function berryHealAmount(s:World,t:Unit):number {
   raw+=s.talents?.supplies??0;return activeCommission(s,'guardian')?Math.floor(raw/2):raw;
 }
 /** Applies HP loss and returns the HP actually lost. `cause` marks status damage (poison, burn), which has its own log line and does not wake a sleeper. A frozen unit takes no damage at all (8.8). */
-function hit(s:World,id:string,n:number,cause?:string,afterDamage?:(actual:number,shown:number)=>void):number {
+function hit(s:World,id:string,n:number,cause?:string,afterDamage?:(actual:number,shown:number)=>void,crit?:true):number {
   const u=s.units[id],before=u.hp;
-  if(n>0&&hasStatus(u,'frz')){note(s,`${id}冰冻中，不受伤害`);return 0;}
+  if(n>0&&hasStatus(u,'frz')){note(s,`${id}冰冻中，不受伤害`);emit(s,{type:'frozenBlock',unit:id});return 0;}
   if(n>0&&!cause&&u.side==='friend'&&s.queue.includes(id)&&hasBless(s,'thickskin')&&!u.thickUsed){u.thickUsed=true;const halved=Math.max(1,Math.floor(n/2));note(s,`厚皮：${id}本层第一次受到的伤害减半（${n}→${halved}）`);n=halved;}
-  u.hp=Math.max(0,u.hp-n);const actual=before-u.hp;note(s,cause?`${id}因${cause}损失${n}HP，HP ${u.hp}`:`${id}受到${n}伤害，HP ${u.hp}`);
+  u.hp=Math.max(0,u.hp-n);const actual=before-u.hp;const strike=s.strikePending;note(s,cause?`${id}因${cause}损失${n}HP，HP ${u.hp}`:`${id}受到${n}伤害，HP ${u.hp}`);
+  const lossEvent:Extract<RoundEvent,{type:'hpLoss'}>={type:'hpLoss',unit:id,amount:n,hp:u.hp,...(cause?{cause}:{}),...(crit?{crit:true as const}:{}),...(strike&&!cause?{strike}:{})};emit(s,lossEvent);
   afterDamage?.(actual,n);   // `n` is the number in the log line (after Thick Skin halving), so the event and the line pair up
   if(!cause&&u.side==='enemy'&&before>u.hp&&u.asleep){u.asleep=false;u.wakeSkip=true;}
   if(before>0&&u.hp===0&&u.side==='friend'&&s.prog&&s.queue.includes(id)&&(s.prog.items.reviverSeed??0)>0){
     s.prog.items.reviverSeed=(s.prog.items.reviverSeed??0)-1;u.hp=Math.max(1,Math.floor(u.maxHp/2));
-    note(s,`${id}倒下的瞬间，${ITEM_NAMES.reviverSeed}发动，HP恢复到${u.hp}`);return actual;
+    note(s,`${id}倒下的瞬间，${ITEM_NAMES.reviverSeed}发动，HP恢复到${u.hp}`);lossEvent.revive=u.hp;emit(s,{type:'revive',unit:id,hp:u.hp});return actual;
   }
   if(u.hp>0&&u.side==='friend'&&s.queue.includes(id)&&hasBless(s,'laststand')&&!u.standUsed&&u.hp<u.maxHp*(BLESSINGS.laststand.threshold??0.35)){
     u.standUsed=true;healUnit(s,id,Math.max(1,Math.floor(u.maxHp*(BLESSINGS.laststand.value??0.25))),'背水');
@@ -1224,19 +1257,19 @@ function onDirectDamageToSleeper(s:World,owner:Unit,attacker:Unit,blockingGuard:
   const chosen=choices[Math.floor(battleRandom(s)*choices.length)],spec=moveOf(chosen);if(!spec)return;
   const target=spec.target==='user'?owner:attacker;
   owner.pp.sleeptalk=(owner.pp.sleeptalk??0)-1;
-  note(s,owner.id+'在睡眠中使用梦话，发动'+(SKILL_CN[chosen]??chosen));
+  note(s,owner.id+'在睡眠中使用梦话，发动'+(SKILL_CN[chosen]??chosen));emit(s,{type:'sleeptalk',unit:owner.id,skill:chosen});
   executeSkill(s,owner.id,{type:'skill',skill:chosen,target:target.id},blockingGuard,createdGuard,{suppressSleepTrigger:true,spendPp:false,lastMove:'sleeptalk',forcedTarget:target,ignoreConfusion:true});
 }
 function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set(),thaw=false,skill?:Skill,suppressSleepTrigger=false,createdGuard:Set<string>=new Set()):number {
   const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
   let amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill);
-  if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');note(s,targetId+'受到火系招式或热水攻击后解冻');emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
+  if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');const keep=s.strikePending;note(s,targetId+'受到火系招式或热水攻击后解冻');if(keep!==undefined)s.strikePending=keep;emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
   const effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
   // One roll per target on the battle stream, only for a hit that deals damage and is not immune (G5.3 step 7 comes first); a critical hit is rolled again through the same rule with its own stage handling.
   const crit=!s.noCrit&&category!=='Status'&&amount>0&&effectiveness>0&&battleRandom(s)<CRIT_CHANCE;
   if(crit)amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill,true);
   const previousKiller=currentKiller;currentKiller=opposing?sourceId:null;let actual=0;
-  try{actual=hit(s,targetId,amount,undefined,(actual,shown)=>{emit(s,{type:'damage',actor:sourceId,target:targetId,amount:shown,...(crit?{crit:true as const}:{})});if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}});}finally{currentKiller=previousKiller;}
+  try{actual=hit(s,targetId,amount,undefined,(actual,shown)=>{emit(s,{type:'damage',actor:sourceId,target:targetId,amount:shown,...(crit?{crit:true as const}:{})});if(skill&&actual>0){if(effectiveness>1)note(s,'效果绝佳');else if(effectiveness>0&&effectiveness<1)note(s,'效果不好');}},crit?true:undefined);}finally{currentKiller=previousKiller;}
   // `actual` is the HP the hit really took; Last Stand or a Reviver Seed may have raised target.hp afterwards.
   if(opposing&&actual>0&&target.hp>0&&!suppressSleepTrigger)onDirectDamageToSleeper(s,target,source,quickguard,createdGuard);
   if(opposing&&actual>0&&target.hp>0&&target.counter>0&&source.pos&&target.pos&&adjacent(s,source.pos,target.pos)){const keep=currentKiller;currentKiller=targetId;try{hit(s,sourceId,actual);}finally{currentKiller=keep;}}
@@ -1262,7 +1295,7 @@ function blowAway(s:World,actor:Unit,target:Unit):void {
   }
   target.pos=at;
   if(!same(start,at))reveal(s);
-  note(s,`${actor.id}吹飞${target.id}到${key(at)}`);
+  note(s,`${actor.id}吹飞${target.id}到${key(at)}`);emit(s,{type:'blowaway',unit:actor.id,target:target.id,to:clone(at)});
   if(wall)collide(s,target.id,actor.id);
   else if(blocker){collide(s,target.id,actor.id);collide(s,blocker.id,actor.id);}
 }
@@ -1278,7 +1311,7 @@ function changeStage(s:World,targetId:string,stat:StageKey,change:number):void {
   const target=s.units[targetId],before=stageOf(target,stat);
   const limit=stat==='acc'||stat==='eva'?3:STAGE_LIMIT;
   target.stages[stat]=Math.max(-limit,Math.min(limit,before+change));
-  note(s,`${targetId}${STAGE_NAMES[stat]}阶段变为${target.stages[stat]}`);
+  note(s,`${targetId}${STAGE_NAMES[stat]}阶段变为${target.stages[stat]}`);emit(s,{type:'stage',unit:targetId,stat,value:target.stages[stat] as number});
 }
 const applyStageChange=(s:World,targetId:string,change:StageChange)=>{for(const [k,v] of Object.entries(change))changeStage(s,targetId,k as StageKey,v as number);};
 const RANGE_CELLS={front:1,front2:2,line10:10} as const;
@@ -1287,7 +1320,7 @@ const DIR_NAMES:Record<string,string>={'1,0':'右','0,1':'下','-1,0':'左','0,-
 function confusedStrike(s:World,actor:Unit&{pos:Pos},range:number):Unit|undefined {
   const dir=DIRS8[Math.floor(battleRandom(s)*8)];
   actor.facing=clone(dir);
-  note(s,`${actor.id}因混乱朝${DIR_NAMES[key(dir)]}出手`);
+  note(s,`${actor.id}因混乱朝${DIR_NAMES[key(dir)]}出手`);emit(s,{type:'confusedStrike',unit:actor.id});s.strikePending=actor.id;
   let at=actor.pos;
   for(let i=0;i<range;i++){
     const next=plus(at,dir);if(!walk(s,next)||!stepOk(s,at,next))return undefined;
@@ -1300,7 +1333,7 @@ type SkillExecutionOptions={suppressSleepTrigger?:boolean;forcedTarget?:Unit;spe
 function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockingGuard:ReadonlySet<string>,createdGuard:Set<string>,options:SkillExecutionOptions={}):void {
   const actor=s.units[id],spec=moveOf(a.skill)!,fx=moveEffects(a.skill),{suppressSleepTrigger=false,forcedTarget,spendPp=true,lastMove,ignoreConfusion=false}=options;
   if(spendPp)actor.pp[a.skill]=(actor.pp[a.skill]??0)-1;actor.lastMove=lastMove??a.skill;
-  note(s,`${id}使用${SKILL_CN[a.skill]??a.skill}`);
+  note(s,`${id}使用${SKILL_CN[a.skill]??a.skill}`);emit(s,{type:'cast',unit:id,skill:a.skill,...(lastMove==='sleeptalk'?{viaSleeptalk:true as const}:{})});
   let targets=forcedTarget?[forcedTarget]:(spec.range==='room'||spec.range==='around'?moveTargetsInReach(s,id,spec):[s.units[a.target]]);
   if(spec.range==='user')targets=[actor];
   let confusedDirection=false;
@@ -1309,7 +1342,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
     confusedDirection=true;
     const found=confusedStrike(s,actor,RANGE_CELLS[spec.range]);
     targets=found?[found]:[];
-    if(!found)note(s,`${id}的招式未命中任何目标`);
+    if(!found){note(s,`${id}的招式未命中任何目标`);emit(s,{type:'castNoTarget',unit:id});}
   }
   if(!confusedDirection&&attackTarget&&actor.pos){
     const aimed=s.units[a.target];if(alive(aimed)&&aimed.id!==id)faceToward(actor,actor.pos,aimed.pos);
@@ -1338,25 +1371,25 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
       for(const target of landed)if(alive(target)&&!effectBlocked(s,actor,target,blockingGuard)){const blocked=statusTypeBlockReason(a.skill,target,status);if(blocked){note(s,target.id+'免疫'+STATUS_NAMES[status]);continue;}applyStatus(s,target.id,status);}
       continue;
     }
-    if(effect==='rest'){actor.status??={};actor.status.nap={left:battleInt(s,2,3),fresh:true};note(s,id+'开始打盹');continue;}
+    if(effect==='rest'){actor.status??={};actor.status.nap={left:battleInt(s,2,3),fresh:true};note(s,id+'开始打盹');emit(s,{type:'rest',unit:id});continue;}
     if(effect==='heal:1:2'){
       for(const target of landed)if(alive(target)){
         const before=target.hp;target.hp=Math.min(target.maxHp,target.hp+Math.round(target.maxHp/2));
-        note(s,`${target.id}回复HP ${before}→${target.hp}`);
+        note(s,`${target.id}回复HP ${before}→${target.hp}`);emit(s,{type:'heal',unit:target.id,from:before,to:target.hp});
       }
       continue;
     }
-    if(effect==='protect'){actor.protect=3;note(s,`${id}进入守住状态`);continue;}
-    if(effect==='counter'){actor.counter=3;note(s,`${id}进入反击状态`);continue;}
+    if(effect==='protect'){actor.protect=3;note(s,`${id}进入守住状态`);emit(s,{type:'guard',unit:id,kind:'protect'});continue;}
+    if(effect==='counter'){actor.counter=3;note(s,`${id}进入反击状态`);emit(s,{type:'guard',unit:id,kind:'counter'});continue;}
     if(effect==='quickguard'){
       const guarded=landed.filter(t=>alive(t)&&t.side===actor.side);
       for(const target of guarded)createdGuard.add(target.id);
-      note(s,`${id}为${guarded.map(t=>t.id).join('、')}开启快速防守`);continue;
+      note(s,`${id}为${guarded.map(t=>t.id).join('、')}开启快速防守`);emit(s,{type:'quickguard',unit:id,targets:guarded.map(t=>t.id)});continue;
     }
     if(effect==='reflect'||effect==='lightscreen'){
       for(const target of landed)if(alive(target)&&target.side===actor.side){
         target[effect]=10;
-        note(s,`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续10个${target.side==='enemy'?'我方':'敌方'}行动阶段`);
+        note(s,`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续10个${target.side==='enemy'?'我方':'敌方'}行动阶段`);emit(s,{type:'guard',unit:target.id,kind:effect});
       }
       continue;
     }
@@ -1373,7 +1406,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
   }
   if(spec.effects.includes('drain')&&dealt>0&&actor.hp>0){
     const before=actor.hp,heal=Math.max(1,Math.floor(dealt/2));actor.hp=Math.min(actor.maxHp,actor.hp+heal);
-    note(s,`${id}吸取生命，HP ${before}→${actor.hp}`);
+    note(s,`${id}吸取生命，HP ${before}→${actor.hp}`);emit(s,{type:'drain',unit:id,from:before,to:actor.hp});
   }
   if(fx?.recoil&&dealt>0&&actor.hp>0){
     const amount=Math.max(1,Math.floor(dealt*fx.recoil[0]/fx.recoil[1]));
@@ -1414,13 +1447,13 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
   if(a.type!=='skill')u.lastMove=null;
   if(a.type==='move'){const from=clone(u.pos!),mate=allyAt(s,id,a.to);faceToward(u,from,a.to);if(mate)faceToward(mate,a.to,from);u.pos=clone(a.to);if(mate)mate.pos=clone(from);
     if(u.side==='friend'){onRoomEntry(s,from,a.to);if(mate)onRoomEntry(s,a.to,from);}
-    reveal(s);note(s,mate?`${id}与${mate.id}换位`:`${id}移动到${key(a.to)}`);
+    reveal(s);note(s,mate?`${id}与${mate.id}换位`:`${id}移动到${key(a.to)}`);emit(s,mate?{type:'swap',unit:id,mate:mate.id}:{type:'move',unit:id,to:clone(a.to)});
     if(u.side==='friend'){tryPickup(s,id);if(mate)tryPickup(s,mate.id);}}
   else if(a.type==='basic'){
     // 8.8 (G5.1): a basic attack always hits unless its user's accuracy stage is lowered; a confused attacker strikes a random direction.
     let target:string|undefined=a.target;
     const confused=hasStatus(u,'confusion');
-    if(confused){const found=confusedStrike(s,u as Unit&{pos:Pos},1);target=found?.id;if(!found)note(s,`${id}的普通攻击未命中任何目标`);}
+    if(confused){const found=confusedStrike(s,u as Unit&{pos:Pos},1);target=found?.id;if(!found){note(s,`${id}的普通攻击未命中任何目标`);emit(s,{type:'fail',unit:id,reason:'basicNoTarget'});}}
     if(target!==undefined){
       const victim=s.units[target];
       if(alive(victim)&&u.pos){if(!confused)faceToward(u,u.pos,victim.pos);if(victim.id!==id)faceToward(victim,victim.pos,u.pos);}
@@ -1432,7 +1465,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
     const from=clone(u.pos!),confused=hasStatus(u,'confusion');
     const direction=confused?DIRS8[Math.floor(battleRandom(s)*8)]:facingOf(u);
     u.facing=clone(direction);
-    if(confused)note(s,`${id}因混乱朝${DIR_NAMES[key(direction)]}出手`);
+    if(confused){note(s,`${id}因混乱朝${DIR_NAMES[key(direction)]}出手`);emit(s,{type:'confusedStrike',unit:id});s.strikePending=id;}
     const to=plus(from,direction),target=walk(s,to)&&s.seen.includes(key(to))&&stepOk(s,from,to)?active(s).find(v=>v.id!==id&&same(v.pos,to)):undefined;
     if(target&&target.pos&&target.side!==u.side){
       faceToward(target,target.pos,from);
@@ -1445,40 +1478,40 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
   else if(a.type==='use'){
     const t=s.units[a.target];s.prog!.items[a.item]=(s.prog!.items[a.item]??0)-1;
     if(a.item==='bigBerry'){
-      const before=t.hp,heal=activeCommission(s,'guardian')?Math.floor(t.maxHp/2):t.maxHp;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.bigBerry}，HP ${before}→${t.hp}`);
+      const before=t.hp,heal=activeCommission(s,'guardian')?Math.floor(t.maxHp/2):t.maxHp;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.bigBerry}，HP ${before}→${t.hp}`);emit(s,{type:'itemUse',unit:id,item:'bigBerry',target:t.id,from:before,to:t.hp});
     }else if(a.item==='berry'){
-      const before=t.hp,heal=berryHealAmount(s,t);t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);
+      const before=t.hp,heal=berryHealAmount(s,t);t.hp=Math.min(t.maxHp,t.hp+heal);note(s,`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);emit(s,{type:'itemUse',unit:id,item:'berry',target:t.id,from:before,to:t.hp});
     }else if(a.item==='violentSeed'){
       const raised:string[]=[];   // each stage rises to at least +3 and never drops; only the ones that really rose are logged
       for(const [k,name] of [['atk','攻击'],['spa','特攻']] as const){const cur=stageOf(t,k);if(cur<3){changeStage(s,t.id,k,3-cur);raised.push(name);}}
-      note(s,`${id}对${t.id}使用${ITEM_NAMES.violentSeed}，${raised.join('和')}升到+3级`);
+      note(s,`${id}对${t.id}使用${ITEM_NAMES.violentSeed}，${raised.join('和')}升到+3级`);emit(s,{type:'itemUse',unit:id,item:'violentSeed',target:t.id});
     }else if(a.item==='maxElixir'){
       for(const k of t.learned)t.pp[k]=t.maxPp[k]??0;
-      note(s,`${id}对${t.id}使用${ITEM_NAMES.maxElixir}，所有招式PP回满`);
+      note(s,`${id}对${t.id}使用${ITEM_NAMES.maxElixir}，所有招式PP回满`);emit(s,{type:'itemUse',unit:id,item:'maxElixir',target:t.id});
     }else if(a.item==='slumberOrb'||a.item==='totterOrb'){
       const kind:StatusId=a.item==='slumberOrb'?'slp':'confusion',foes=orbAffected(s,u,a.item);
-      note(s,`${id}使用${ITEM_NAMES[a.item]}，房间里的${foes.length}个敌人受到影响`);
+      note(s,`${id}使用${ITEM_NAMES[a.item]}，房间里的${foes.length}个敌人受到影响`);emit(s,{type:'itemUse',unit:id,item:a.item});
       for(const e of foes)applyStatus(s,e.id,kind);
     }else if(a.item==='luminousOrb'){
-      s.mapRevealed=true;note(s,`${id}使用${ITEM_NAMES.luminousOrb}，本层的地形全部显现`);
+      s.mapRevealed=true;note(s,`${id}使用${ITEM_NAMES.luminousOrb}，本层的地形全部显现`);emit(s,{type:'itemUse',unit:id,item:'luminousOrb'});
     }else if(a.item==='rollcallOrb'){
       const moved:string[]=[];
       for(const mid of s.queue){if(mid===id)continue;const m=s.units[mid];if(!alive(m)||adjacent(s,u.pos!,m.pos))continue;
         const spot=DIRS8.map(d=>plus(u.pos!,d)).find(c=>walk(s,c)&&s.seen.includes(key(c))&&stepOk(s,u.pos!,c)&&!active(s).some(v=>same(v.pos,c)));
         if(!spot)continue;m.pos=clone(spot);moved.push(mid);}
-      note(s,`${id}使用${ITEM_NAMES.rollcallOrb}，${moved.length?moved.join('、')+'被召到身边':'身边没有空位，同行留在原地'}`);if(moved.length)reveal(s);
+      note(s,`${id}使用${ITEM_NAMES.rollcallOrb}，${moved.length?moved.join('、')+'被召到身边':'身边没有空位，同行留在原地'}`);emit(s,{type:'itemUse',unit:id,item:'rollcallOrb'});if(moved.length)reveal(s);
     }else if(ITEM_CURES[a.item]){
       const cured=cureStatuses(s,t,ITEM_CURES[a.item]!);
-      note(s,`${id}对${t.id}使用${ITEM_NAMES[a.item]}，治好了${cured.map(k=>STATUS_NAMES[k]).join('、')}`);
+      note(s,`${id}对${t.id}使用${ITEM_NAMES[a.item]}，治好了${cured.map(k=>STATUS_NAMES[k]).join('、')}`);emit(s,{type:'itemUse',unit:id,item:a.item,target:t.id});
       const extra=ITEM_HEALS[a.item];if(extra){const half=activeCommission(s,'guardian')?Math.floor(extra/2):extra;healUnit(s,t.id,half,`${ITEM_NAMES[a.item]}同时回复`);}
     }else if(a.item==='teamTonic'){
       const restored:string[]=[];
       for(const member of s.queue){const ally=s.units[member];if(!alive(ally))continue;
         for(const skill of ally.learned){const before=ally.pp[skill]??0,max=ally.maxPp[skill]??0;if(before>=max)continue;
           ally.pp[skill]=Math.min(max,before+PROG.teamTonicPp);restored.push(`${member}的${SKILL_CN[skill]??skill}PP ${before}→${ally.pp[skill]}`);}}
-      note(s,`${id}使用${ITEM_NAMES.teamTonic}，在场存活同行每招恢复${PROG.teamTonicPp}PP（${restored.join('，')}）`);
+      note(s,`${id}使用${ITEM_NAMES.teamTonic}，在场存活同行每招恢复${PROG.teamTonicPp}PP（${restored.join('，')}）`);emit(s,{type:'itemUse',unit:id,item:'teamTonic'});
     }else{
-      for(const k of t.learned)t.pp[k]=Math.min(t.maxPp[k]??0,(t.pp[k]??0)+PROG.tonicPp);note(s,`${id}对${t.id}使用${ITEM_NAMES.tonic}，每招PP+${PROG.tonicPp}（不超上限）`);
+      for(const k of t.learned)t.pp[k]=Math.min(t.maxPp[k]??0,(t.pp[k]??0)+PROG.tonicPp);note(s,`${id}对${t.id}使用${ITEM_NAMES.tonic}，每招PP+${PROG.tonicPp}（不超上限）`);emit(s,{type:'itemUse',unit:id,item:'tonic',target:t.id,pp:PROG.tonicPp});
     }
   }
   else if(a.type==='skill')executeSkill(s,id,a,blockingGuard,createdGuard);
@@ -1513,7 +1546,7 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
       p.used=true;}
     if(a.exit)s.request={actor:id,pos:clone(u.pos!),locked:false,...(stairs?{to:s.dungeon!.level+(p.kind==='down'?1:-1)}:{})};
     note(s,stairs?`${id}走${p.kind==='down'?'下':'上'}楼梯`:`${id}交互${a.exit?'并请求撤离':''}`);
-  }else note(s,`${id}等待`);
+  }else{note(s,`${id}等待`);emit(s,{type:'fail',unit:id,reason:'wait'});}
 }
 type MovePlan={id:string;pos:Pos};
 function roomCells(r:Rect):Pos[]{const out:Pos[]=[];for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)out.push({x,y});return out;}
@@ -1614,13 +1647,16 @@ function wakeAdjacentEnemies(s:World):void {
     if(s.queue.some(q=>alive(s.units[q])&&adjacent(s,e.pos,s.units[q].pos!))){e.asleep=false;e.wakeSkip=true;note(s,`${id}被相邻的队员惊醒，本回合不行动`);}
   }
 }
+/** Why a unit's action is lost, as a code; the log text of each code is `BLOCK_TEXT` (a swap with a frozen partner has its own code). */
+type BlockReason='frozen'|'nap'|'sleep'|'paralyzed'|'flinch';
+const BLOCK_TEXT:Record<BlockReason,string>={frozen:'冰冻中，无法行动',nap:'打盹中，无法行动',sleep:'睡眠中，无法行动',paralyzed:'麻痹中，无法使用招式和普攻',flinch:'畏缩中，无法使用招式和普攻'};
 /** 8.8 (G5.13): why the unit's chosen action cannot happen because of a status condition, or null. */
-function statusBlock(u:Unit,a:Action):string|null {
+function statusBlock(u:Unit,a:Action):BlockReason|null {
   if(a.type==='wait')return null;
-  if(hasStatus(u,'frz'))return '冰冻中，无法行动';
-  if(sleeping(u))return hasStatus(u,'nap')?'打盹中，无法行动':'睡眠中，无法行动';
-  if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'par'))return '麻痹中，无法使用招式和普攻';
-  if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'flinch'))return '畏缩中，无法使用招式和普攻';
+  if(hasStatus(u,'frz'))return 'frozen';
+  if(sleeping(u))return hasStatus(u,'nap')?'nap':'sleep';
+  if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'par'))return 'paralyzed';
+  if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'flinch'))return 'flinch';
   return null;
 }
 /** 8.8 (G5.14): a confused member's chosen step is replaced by a random one of the eight directions; a step that cannot be taken leaves it standing (the action is still used). */
@@ -1628,8 +1664,8 @@ function confusedMove(s:World,id:string,chosen:Extract<Action,{type:'move'}>):Ac
   void chosen;
   const u=s.units[id] as Unit&{pos:Pos},dir=DIRS8[Math.floor(battleRandom(s)*8)],to=plus(u.pos,dir);
   const alt:Action={type:'move',to};
-  if(invalid(s,id,alt)){note(s,`${id}因混乱朝${DIR_NAMES[key(dir)]}乱走，被挡住，原地不动`);return {type:'wait'};}
-  note(s,`${id}因混乱朝${DIR_NAMES[key(dir)]}乱走`);return alt;
+  if(invalid(s,id,alt)){note(s,`${id}因混乱朝${DIR_NAMES[key(dir)]}乱走，被挡住，原地不动`);emit(s,{type:'fail',unit:id,reason:'confusedWander'});return {type:'wait'};}
+  note(s,`${id}因混乱朝${DIR_NAMES[key(dir)]}乱走`);emit(s,{type:'fail',unit:id,reason:'confusedWander'});return alt;
 }
 function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,trace?:TraceStep[]):string|null {
   const lead=s.leader,moved=new Set<string>(),friendGuard=new Set<string>(),enemyGuard=new Set<string>(),blockingFromEnemies=new Set(s.quickguard?.owner==='enemy'?s.quickguard.units:[]),leaderSleeping=sleeping(s.units[lead]);
@@ -1652,18 +1688,18 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     if(swap&&(id===lead||id===swap)){
       if(i===later){const err=invalid(s,lead,cmd.action);if(err){if(preflight)return err;continue;}
         // 8.8: a frozen leader or a frozen partner turns the swap into a lost action (no PP); a confused leader's swap becomes a random step instead.
-        const blockedBy=statusBlock(s.units[lead],cmd.action)??(hasStatus(s.units[swap],'frz')?'的换位对象冰冻中':null);
-        if(blockedBy){s.units[lead].lastMove=null;note(s,`${lead}${blockedBy}，换位落空，未扣PP`);trace?.push({id:lead,action:cmd.action,explicit:true,failed:true});continue;}
+        const blockedBy=statusBlock(s.units[lead],cmd.action)??(hasStatus(s.units[swap],'frz')?'swapPartnerFrozen' as const:null);
+        if(blockedBy){s.units[lead].lastMove=null;note(s,`${lead}${blockedBy==='swapPartnerFrozen'?'的换位对象冰冻中':BLOCK_TEXT[blockedBy]}，换位落空，未扣PP`);emit(s,{type:'fail',unit:lead,reason:blockedBy});trace?.push({id:lead,action:cmd.action,explicit:true,failed:true});continue;}
         if(hasStatus(s.units[lead],'confusion')){const step=confusedMove(s,lead,{type:'move',to:s.units[swap].pos!});
           const mate2=step.type==='move'?allyAt(s,lead,step.to):undefined;execute(s,lead,step,blockingFromEnemies,friendGuard);if(step.type==='move')moved.add(lead);trace?.push({id:lead,action:step,explicit:true,failed:false,...(mate2?{swapWith:mate2.id}:{})});continue;}
         const p=s.units[lead].pos,q=s.units[swap].pos;if(p&&q){faceToward(s.units[lead],p,q);faceToward(s.units[swap],q,p);onRoomEntry(s,p,q);onRoomEntry(s,q,p);}
-        s.units[lead].pos=q;s.units[swap].pos=p;s.units[lead].lastMove=null;s.units[swap].lastMove=null;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);tryPickup(s,lead);tryPickup(s,swap);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
+        s.units[lead].pos=q;s.units[swap].pos=p;s.units[lead].lastMove=null;s.units[swap].lastMove=null;moved.add(lead);moved.add(swap);reveal(s);note(s,`${lead}与${swap}换位`);emit(s,{type:'swap',unit:lead,mate:swap});tryPickup(s,lead);tryPickup(s,swap);trace?.push({id:lead,action:cmd.action,explicit:true,failed:false,swapWith:swap});}continue;}
     const explicit=id===lead?(leaderSleeping?{type:'wait'} as Action:cmd.action):cmd.override?.actor===id?cmd.override.action:null;
     let a=explicit??defaultAction(s,id,blockingFromEnemies,friendGuard);const err=invalid(s,id,a,moved);
-    if(err){if(explicit&&preflight)return err;s.units[id].lastMove=null;note(s,`${id}动作失效，等待，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
+    if(err){if(explicit&&preflight)return err;s.units[id].lastMove=null;note(s,`${id}动作失效，等待，未扣PP`);emit(s,{type:'fail',unit:id,reason:'invalid'});trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
     // 8.8: a frozen member cannot act; a paralysed or flinching one cannot use moves or basic attacks. The command is accepted and the action is lost (no PP is spent).
     const lost=statusBlock(s.units[id],a);
-    if(lost){s.units[id].lastMove=null;note(s,`${id}${lost}，本次行动落空，未扣PP`);trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
+    if(lost){s.units[id].lastMove=null;note(s,`${id}${BLOCK_TEXT[lost]}，本次行动落空，未扣PP`);emit(s,{type:'fail',unit:id,reason:lost});trace?.push({id,action:a,explicit:!!explicit,failed:true});continue;}
     if(a.type==='move'&&hasStatus(s.units[id],'confusion'))a=confusedMove(s,id,a);
     const mate=a.type==='move'?allyAt(s,id,a.to):undefined;
     execute(s,id,a,blockingFromEnemies,friendGuard);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false,...(mate?{swapWith:mate.id}:{})});
@@ -1678,19 +1714,19 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     let action=chooseEnemyAction(s,id,friendGuard,enemyGuard);
     // 8.8: a frozen enemy cannot act; a paralysed or flinching one cannot use moves or basic attacks; a confused one walks in a random direction.
     const lost=statusBlock(e,action);
-    if(lost){note(s,`${id}${lost}`);continue;}
+    if(lost){note(s,`${id}${BLOCK_TEXT[lost]}`);emit(s,{type:'fail',unit:id,reason:lost});continue;}
     const visibleIds=new Set(s.queue.map(q=>s.units[q]).filter(t=>alive(t)&&currentlyVisible(s,e.pos,t.pos)).map(t=>t.id));
     if(!e.waitOnly&&!sleeping(e)&&!hasStatus(e,'frz')&&!hasStatus(e,'par')&&!hasStatus(e,'flinch')){
       const disrupt=enemyDisruptAction(s,id,friendGuard,visibleIds);
       if(disrupt&&battleRandom(s)<0.3)action=disrupt;
     }
-    if(action.type==='move'&&hasStatus(e,'confusion')){const to=plus(e.pos,DIRS8[Math.floor(battleRandom(s)*8)]);note(s,`${id}因混乱乱走`);action={type:'move',to};}
+    if(action.type==='move'&&hasStatus(e,'confusion')){const to=plus(e.pos,DIRS8[Math.floor(battleRandom(s)*8)]);note(s,`${id}因混乱乱走`);emit(s,{type:'fail',unit:id,reason:'confusedWander'});action={type:'move',to};}
     if(action.type==='move'){
-      if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)){note(s,`${id}无路可走，等待`);continue;}
+      if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)){note(s,`${id}无路可走，等待`);emit(s,{type:'fail',unit:id,reason:'noPath'});continue;}
       const previous=clone(e.pos);execute(s,id,action,friendGuard,enemyGuard);e.direction={x:Math.sign(action.to.x-previous.x),y:Math.sign(action.to.y-previous.y)};
       if(e.roamTarget&&same(action.to,e.roamTarget))e.roamTarget=null;
     }else if(action.type==='skill'||action.type==='basic'||action.type==='basicForward')execute(s,id,action,friendGuard,enemyGuard);
-    else note(s,`${id}等待`);
+    else{note(s,`${id}等待`);emit(s,{type:'fail',unit:id,reason:'wait'});}
     }finally{endOwnTurn(s,id);}
   }
   statusRoundEnd(s);
@@ -2086,7 +2122,7 @@ export function applyCommand(original:World,cmd:Command):Result {
   if(cmd.type==='round'){
     if(original.phase!=='playing')return fail('先处理邀请、撤离或终局');
     const err=ownPhase(clone(original),cmd,true);if(err)return fail(err);
-    const s=clone(original);s.round++;delete s.events;ownPhase(s,cmd,false);afterRound(s);return {ok:true,state:s};
+    const s=clone(original);s.round++;delete s.events;delete s.strikePending;ownPhase(s,cmd,false);delete s.strikePending;afterRound(s);return {ok:true,state:s};
   }
   if(cmd.type==='finishTransit'){
     if(original.phase!=='transit'||!original.request?.locked||original.request.to===undefined||!original.dungeon)return fail('没有已成立且完成邀请处理的跨层请求');

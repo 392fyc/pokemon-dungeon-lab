@@ -154,6 +154,8 @@ test('N-b 打鼾目标看不见时，后面敌人打队友的普攻不算成打�
   s.seen=s.seen.filter(cell=>cell!==key({x:0,y:1}));
   const after=structuredClone(s);after.round=s.round+1;
   after.log=[...s.log,'A受到3伤害，HP 297','A使用打鼾','E受到4伤害，HP 496','B受到3伤害，HP 297'];
+  // The animation reads the structured events, which the engine writes in the same order as these lines.
+  after.events=[{type:'hpLoss',unit:'A',amount:3,hp:297},{type:'cast',unit:'A',skill:'snore'},{type:'hpLoss',unit:'E',amount:4,hp:496},{type:'hpLoss',unit:'B',amount:3,hp:297}];
   const onB=inferEvents(s,after,{type:'round',action:{type:'wait'}}).find(event=>event.k==='hit'&&event.target==='B');
   assert.ok(onB);assert.equal(onB.attacker,'F');assert.notEqual(onB.effect?.move,'snore');
 });

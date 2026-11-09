@@ -57,7 +57,7 @@ test('H3 a miss takes no damage and no side effect, still spends PP and is repor
   const missed=mk();missed.battleRng=HIGH;   // next draw ~1.0 >= 50%
   const m=skill(missed,'A','nuzzle','E');
   assert.equal(m.units.E.hp,60);assert.equal(m.units.E.status,undefined);assert.equal(m.units.A.pp.nuzzle,2);
-  assert.deepEqual(m.events,[{type:'miss',actor:'A',target:'E',skill:'nuzzle'}]);assert.ok(m.log.some(l=>l.includes('没打中E')));
+  assert.deepEqual(m.events,[{type:'cast',unit:'A',skill:'nuzzle'},{type:'miss',actor:'A',target:'E',skill:'nuzzle'},{type:'fail',unit:'E',reason:'wait'}],'the whole event sequence: no hpLoss, damage or status after a miss');assert.ok(m.log.some(l=>l.includes('没打中E')));
   assert.equal(m.battleRng,rngStep(HIGH).state,'only the hit roll was drawn; no side-effect roll after a miss');
   const landed=mk();landed.battleRng=LOW;
   const h=skill(landed,'A','nuzzle','E');
@@ -75,7 +75,7 @@ test('H5 the enemy rolls and misses the same way, and an accuracy-lowered basic 
   const s=world({friends:[a],enemies:[e],hit:false});s.battleRng=HIGH;
   const r=play(s,wait);assert.equal(r.units.A.hp,60);assert.ok(r.events.some(v=>v.type==='miss'&&v.actor==='E'&&v.target==='A'));
   const b=world({friends:[friend('A',1,1,60)],enemies:[still('E','geodude',2,1,60)],hit:false});b.units.A.stages.acc=-1;b.battleRng=HIGH;   // 75%
-  const m=play(b,{type:'basic',target:'E'});assert.equal(m.units.E.hp,60);assert.deepEqual(m.events,[{type:'miss',actor:'A',target:'E',skill:null}]);
+  const m=play(b,{type:'basic',target:'E'});assert.equal(m.units.E.hp,60);assert.deepEqual(m.events,[{type:'miss',actor:'A',target:'E',skill:null},{type:'fail',unit:'E',reason:'wait'}],'the whole event sequence: no hpLoss or damage after a miss');
   const full=world({friends:[friend('A',1,1,60)],enemies:[still('E','geodude',2,1,60)],hit:false});full.battleRng=HIGH;
   assert.ok(play(full,{type:'basic',target:'E'}).units.E.hp<60,'a plain basic attack never misses and draws nothing');assert.equal(play(full,{type:'basic',target:'E'}).battleRng,HIGH);
 });

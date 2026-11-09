@@ -61,8 +61,8 @@ test('D5 the Chinese name table has the eight new species, the boss and the four
  assert.equal(speciesZh('arcanine'),'风速狗');
  assert.deepEqual(['dragontail','helpinghand','mudslap'].map(tmZh),['龙尾','帮助','掷泥']);   // 8.8 (#165): Tera Blast is no longer a machine
  assert.deepEqual(['protect','whirlwind','roar'].map(tmZh),['守住','吹飞','吼叫']);
- for(const s of roster.species)for(const m of [...s.kit,...s.learnable])if(m.move!=='visegrip')assert.ok(NAME_TABLE.moves[m.move],m.move);
- assert.equal(moveZh('visegrip'),'visegrip','the documented PokeAPI spelling exception falls back to its Showdown id');
+ for(const s of roster.species)for(const m of [...s.kit,...s.learnable])assert.ok(NAME_TABLE.moves[m.move],m.move);
+ assert.equal(moveZh('visegrip'),'夹住','Vice Grip: Showdown spells it visegrip, PokeAPI vice-grip (#213); the Simplified name is 夹住');
 });
 
 /* ---------- T: technique machines ---------- */

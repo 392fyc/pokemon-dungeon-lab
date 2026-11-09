@@ -3,7 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {applyCommand,createMain,enemy,friend,key,rngStep} from '../../src/core/engine.ts';
 import {inferEvents} from '../../src/render/animation.ts';
-import {mergeLogLines} from '../../src/core/describe.ts';
+import {logEntryText} from '../../src/core/describe.ts';
+import {speciesZh} from '../../src/core/names.ts';
 
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));
 function duel({species='pidgey',moves=[],seed=1,noCrit=false}={}){
@@ -28,9 +29,10 @@ test('a critical hit does x1.5 before the type step and writes one merged log li
  assert.ok(lost(plain)>0&&lost(crit)===Math.round(lost(plain)*1.5),`crit ${lost(crit)} vs plain ${lost(plain)}`);
  assert.ok(!crit.log.includes('命中要害'),'no marker line in the engine log: the field is on the event');
  const ev=crit.events.filter(e=>e.type==='damage');assert.equal(ev.length,1);assert.deepEqual([ev[0].target,ev[0].amount,ev[0].crit],['T',lost(crit),true]);
- const {merged,skipped}=mergeLogLines(crit.log,crit.events);const at=crit.log.findIndex(l=>/^T受到\d+伤害，HP \d+$/.test(l));
- assert.equal(merged.get(at),`T受到${lost(crit)}伤害，命中要害`,'the display line is built from the event');assert.equal(skipped.size,0);
- assert.equal(mergeLogLines(plain.log,plain.events).merged.size,0,'a plain hit is left alone');
+ const hit=crit.entries.find(e=>e.damage),plainHit=plain.entries.find(e=>e.damage);
+ assert.equal(logEntryText(hit),`${speciesZh('pidgey')}受到${lost(crit)}伤害，命中要害`,'the display line is built from the entry');
+ assert.ok(crit.log.some(l=>/^T受到\d+伤害，HP \d+$/.test(l)),'the engine log line is unchanged');
+ assert.match(logEntryText(plainHit),/受到\d+伤害，HP \d+$/,'a plain hit is left alone');
 });
 test('the roll is 1 in 24: about that many of 2400 fixed seeds crit',()=>{
  let n=0;for(let seed=1;seed<=2400;seed++)if(isCrit(run(duel({seed}))))n++;
@@ -87,6 +89,6 @@ test('Thick Skin: the damage event carries the halved number the log shows, and 
  assert.equal(Number(line[1]),Number(halved[2]),'the log line shows the halved number');
  assert.equal(ev[0].amount,Number(line[1]),'the damage event carries the same number as the log line');assert.equal(ev[0].crit,true);
  assert.equal(100-found.units.A.hp,ev[0].amount);
- const {merged}=mergeLogLines(found.log,found.events);const at=found.log.findIndex(l=>/^A受到\d+伤害，HP \d+$/.test(l));
- assert.equal(merged.get(at),`A受到${ev[0].amount}伤害，命中要害`,'the critical mark is paired with the line');
+ const entry=found.entries.find(e=>e.damage&&e.damage.target==='A');
+ assert.equal(logEntryText(entry),`${speciesZh(found.units.A.species)}受到${ev[0].amount}伤害，命中要害`,'the critical mark is paired with the line');
 });

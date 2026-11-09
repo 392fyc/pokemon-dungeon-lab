@@ -31,7 +31,7 @@ const scrollers=p=>p.evaluate(()=>[...document.querySelectorAll('*')].filter(el=
 {
  const {ctx,p}=await open();
  await p.evaluate(()=>{const s=window.trial.store.world;for(const id of s.enemies)s.units[id].waitOnly=true;Object.assign(s.prog.items,{berry:5,tonic:2,bigBerry:1});
-  for(let i=0;i<80;i++)s.log.push('测试日志行 '+i);window.dispatchEvent(new Event('blur'));});
+  for(let i=0;i<80;i++)(s.log.push('测试日志行 '+i),(s.entries??=[]).push({n:(s.logSeq=(s.logSeq??0)+1),parts:['测试日志行 '+i]}));window.dispatchEvent(new Event('blur'));});
  const seen=new Set();
  const check=async name=>{const list=await scrollers(p);for(const e of list){seen.add(e.tag);assert.equal(e.w,'10px','('+name+') '+e.tag+' uses the shared scrollbar: '+e.w);assert.equal(e.thumb,'6px','('+name+') '+e.tag+' thumb is the shared rounded one');}};
  await check('dungeon');

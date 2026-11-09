@@ -17,7 +17,7 @@ import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
 import {moveOf} from '../core/moves.ts';
-import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,mergeLogLines,playerText,moveSummary,unitMoveLevel,adventureRoomMarkers} from '../core/describe.ts';
+import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,logEntryText,logEntryShown,logPartsText,playerText,moveSummary,unitMoveLevel,adventureRoomMarkers} from '../core/describe.ts';
 import {renderTitle,renderNewGame,portrait,portraitTick,type NewGameState} from '../ui/title.ts';
 import {newGameProfile,initialProfile,squadOf,TALENTS,TALENT_MAX_RANK,rankLevel,rankThreshold,availableTalentPoints,type BaseAction,type Profile,type TalentId} from '../core/base.ts';
 import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
@@ -30,7 +30,7 @@ import {DtefTerrainLayer} from '../render/dtef-scene.ts';
 import {PainterTerrainLayer} from '../render/painter-scene.ts';
 import {BOARD_BACKGROUND,darknessBackground,DungeonDarkness} from '../render/darkness.ts';
 import {prepareTerrainMap,type TerrainThemeKey,type TerrainLayer} from '../render/terrain.ts';
-import {inferEvents,plan,newLines,type AnimEvent} from '../render/animation.ts';
+import {inferEvents,plan,type AnimEvent} from '../render/animation.ts';
 import {selfOrAdjacentReachable,adjacentReachable,floorIndex,walkPath} from '../render/reach.ts';
 import {POINT_VISUALS,dungeonCellSize,terrainKnown} from '../render/point-visuals.ts';
 import {itemDescription} from '../core/item-descriptions.ts';
@@ -120,7 +120,8 @@ let ng:NewGameState={step:1,main:null,deputy:null,overwrite:false};
 let askOverwrite=false,exportedOriginal=false,ngError='',showCoords=false;
 let hoverId:string|null=null,pinnedId:string|null=null;
 /** Who hit whom this round (inferred by the same code that drives the animation) and how many log lines the last command added. */
-let attrib=new Map<string,string>(),freshCount=0;
+/** Entries of the record with a number above `freshSeq` were written by the last command; Infinity means none are new. */
+let attrib=new Map<string,string>(),freshSeq=Infinity;
 /** Stage 6.4: `active` is true while a round's animation plays; every world-changing input is dropped (not queued) meanwhile. */
 const anim={active:false,shift:false};
 /** Playtest 1107: after a defeat or an invitation the board keeps the last frame and a centre banner for a moment before the invitation or settlement panel opens; any key or click skips it. */
@@ -178,7 +179,7 @@ async function transition(p:Promise<unknown>,clearDraft=true){if(clearDraft)clea
 async function send(command:Parameters<typeof applyCommand>[1],keepMovement=false){if(!keepMovement)cancelMoveInput();if(anim.active)return;if(store.status!=='ready'){notice='保存未完成，当前只可查看或重试；本轮未执行。';render();return;}const predicted=applyCommand(live()!,command);if(!predicted.ok){notice=predicted.error;render();return;}const cancelledCombination=command.type==='switch'&&draft!==null;const before=clone(live()!);const pending=store.dispatch(command);
  let playing:Promise<void>|null=null;{const after=live();
   // Animation is presentation only: any failure here must leave the input lock released and the real state drawn.
-  try{if(after){freshCount=newLines(before.log,after.log).length;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshCount=0;}
+  try{if(after){freshSeq=before.logSeq??0;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshSeq=Infinity;}
   try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){hpShown=new Map(Object.entries(before.units).map(([id,u])=>[id,u.hp]));hpShownVer++;anim.active=true;const banner=after?resultBanner(before,after,animationEnabled()):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;hpShown=null;if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
   catch{anim.active=false;hpShown=null;playing=null;render();}}
  clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
@@ -286,8 +287,8 @@ function adventureRoomPanel(s:World,room:AdventureRoom,editor:string,ready:boole
  if(room.type==='challenge'){
   if(room.state==='idle')return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'目标',html:esc('打倒房内全部敌人')},{label:'奖励（其一）',html:['钱袋','道具','招式机','邀请','祝福'].map(t=>noticeTag(t)).join('')}],buttons:button('start-challenge','开始挑战',!canAct,'data-action="start-challenge" class="primary"')});
   if(room.state==='sealed')return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'目标',html:esc('打倒房内全部敌人')}]});
-  const reward=[...s.log].reverse().find(line=>line.startsWith('挑战奖励：'));
-  return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'奖励',html:esc(reward?localizeLog(s,reward.replace(/^挑战奖励：/,'')):'已发放'),id:'challenge-reward-result'}]});
+  const reward=[...(s.entries??[])].reverse().find(e=>e.reward);
+  return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'奖励',html:esc(reward?.reward?logPartsText(reward.reward):'已发放'),id:'challenge-reward-result'}]});
  }
  if(room.type==='item'){
   const item=room.item?itemName(room.item):'道具',icon=room.item?itemIconImg(room.item,'notice-icon-img'):'';
@@ -412,7 +413,7 @@ function renderDungeonHud(){
  }else targetUsable=new Set();
  placeInspectBelowParty();
  $('hud-bottom').innerHTML=hudBottom(s,quickItems,unavailable||sleeping(s.units[s.leader]),draft&&draft.editor!==s.leader?null:selectedSkill,choosingItem);
- updateMinimap($('hud-map'),s);
+ updateMinimap($('hud-map'),scene?.minimapWorld(s)??s);
  syncHpBars(document,k=>{const u=s.units[k.slice(2)];return u?{hp:u.hp,max:u.maxHp}:undefined;},hpAnimated());
  $('activity-status').innerHTML=hudTracking(s);$('activity-status').hidden=!s.dungeon?.roguelike;
  $('hud-tooltip').hidden=true;$('hud-tooltip').innerHTML='';
@@ -471,8 +472,6 @@ function renderDungeonHud(){
  document.querySelector<HTMLButtonElement>('[data-bag-use]')?.addEventListener('click',e=>{chooseHudItem((e.currentTarget as HTMLElement).dataset.bagUse as Item);});
  $('actions-open').onclick=()=>{actionsOpen=!actionsOpen;detailsId=null;render();};$('hud-settings').onclick=openSettings;
  if(anim.active)document.querySelectorAll<HTMLButtonElement|HTMLSelectElement>('#controls button,#controls select,#party button,#hud-bottom button').forEach(el=>{if(!unavailable&&!el.disabled&&el.matches('[data-hud-leader],[data-hud-details],[data-hud-skill],[data-hud-quick],#bag-open'))el.dataset.animationLocked='true';el.disabled=true;});
- // Runtime details and source IDs stay in developer diagnostics, not in the player's messages.
- if(!dev){for(const el of $('recent-events').querySelectorAll('li'))el.textContent=el.textContent?.replace(/（推断）/g,'')??'';}
  $('recent-events').scrollTop=Math.min($('recent-events').scrollHeight,$('recent-events').scrollTop);
 }
 
@@ -485,7 +484,7 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  bind('retry',()=>void transition(store.retry()));
  bind('export',()=>{const raw=store.exportRaw();if(raw===null){notice='无法读取原记录，不能重置；请保留当前浏览器数据。';render();return;}download(raw);notice='已提供原记录下载；请确认文件已保留，再选择重置。';render();});
  bind('reset',()=>{if(window.confirm('仅在已保留导出原记录后重置。该操作将开始一份新存档，是否确认？'))void transition(store.resetAfterExport(createMain(newId()),true));});
- $('history').innerHTML=s?visibleLog(s).slice(-12).map(t=>`<li>${esc(localizeLog(s,t))}</li>`).join(''):'';
+ $('history').innerHTML=s?visibleLog(s).slice(-12).map(t=>`<li>${esc(t)}</li>`).join(''):'';
  if(!s&&store.atBase){renderBase();return;}
  if(!s){$('party').innerHTML='<p class="muted">出发后在这里显示队伍。</p>';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>还没有存档。请返回标题开始新游戏。</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>开发者场景只在本次页面内存中运行，不会写入玩家营地存档。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（三层首领战，仅在内存）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(checkMode?store.start(createScenario(fixture!,newId()),scenarioProfile(fixture!)):store.start(begin(selectedConfig),selectedConfig==='expedition'?initialProfile():undefined));});return;}
  const ready=store.status==='ready',playing=s.phase==='playing',editable=ready||store.status==='saving';
@@ -795,35 +794,22 @@ async function startNewGame(){
  const ok=await store.beginNewGame(made.profile,ng.overwrite);
  if(!ok){ngError=store.error?`没有写入新存档：${store.error}。原存档保持不变。`:'没有写入新存档；原存档保持不变。';render();return;}
  quickItems=Array.from({length:6},()=>null);bagSlot=0;bagCategory='all';bagOpen=false;campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;
- clear();notice='';vaultState.move=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
+ clear();notice='';vaultState.move=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshSeq=Infinity;exportedOriginal=false;screen='play';render();
 }
-/** View-only event rows; the engine log remains intact for animation and saving. */
-/** The whole run's log, kept by the interface (the engine's note() keeps only 80 lines). Lines are filtered and turned into player text when they arrive, so they stay readable after a floor change. */
-type LogRow={t:string;text:string;seq:number};
+/** The whole run's record, kept by the interface (the engine keeps only the last 80 entries). Rows are built from the engine's structured entries (`World.entries`) when they arrive, so they stay readable after a floor change. No log text is read or parsed here. */
+type LogRow={n:number;text:string;damage?:{target:string;amount:number}};
 const RUN_LOG_LIMIT=2000;
-let runLogId="",runLogRows:LogRow[]=[],runLogSeen:string[]=[],runLogTotal=0;
+let runLogId="",runLogRows:LogRow[]=[],runLogLast=0;
 function trackRunLog(s:World):void{
- const hidden=s.enemies.filter(id=>{const u=s.units[id];return u.pos&&!s.seen.includes(key(u.pos));});
- // Match the raw note format independently of the current floor's actor dictionary.
- const routine=/^[A-Za-z0-9_:-]+(?:移动到-?\d+,-?\d+|与[A-Za-z0-9_:-]+换位|(?:无路可走，)?等待)$/;
- // Floor enemies use w<level><a-f> or challenge c<level><a-d>; removed-floor rows cannot be localized safely.
- const retiredEnemy=(t:string)=>[...t.matchAll(/(?:^|[^A-Za-z0-9_:-])(w\d+[a-f]|c\d+[a-d])(?=$|[^A-Za-z0-9_:-])/g)].some(m=>!s.units[m[1]]);
- let fresh:string[];
- if(s.runId!==runLogId){runLogId=s.runId;runLogRows=[];runLogTotal=0;fresh=s.log;}else fresh=newLines(runLogSeen,s.log);
- runLogSeen=[...s.log];
- // Display only: the engine writes the type note on its own line after the damage line; the player reads one line ("X受到N伤害，效果绝佳"). Nothing here changes the engine log.
- const {merged,skipped}=mergeLogLines(fresh,s.events??[]);
- for(const [i,t] of fresh.entries()){
-  runLogTotal++;if(skipped.has(i))continue;
-  if(hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??" "))||routine.test(t)||retiredEnemy(t))continue;
-  runLogRows.push({t,text:localizeLog(s,merged.get(i)??t).replace(/（推断）/g,''),seq:runLogTotal});
+ if(s.runId!==runLogId||(s.logSeq??0)<runLogLast){runLogId=s.runId;runLogRows=[];runLogLast=0;}
+ for(const e of s.entries??[]){
+  if(e.n<=runLogLast||!logEntryShown(s,e))continue;
+  runLogRows.push({n:e.n,text:logEntryText(e),...(e.damage?{damage:{target:e.damage.target,amount:e.damage.amount}}:{})});
  }
+ runLogLast=s.logSeq??runLogLast;
  if(runLogRows.length>RUN_LOG_LIMIT)runLogRows.splice(0,runLogRows.length-RUN_LOG_LIMIT);
 }
-/** `fromEnd` counts from the newest raw line (1 = newest), the same scale as `freshCount`. */
-function visibleLogEntries(s:World):{t:string;text:string;fromEnd:number}[]{
- trackRunLog(s);return runLogRows.map(r=>({t:r.t,text:r.text,fromEnd:runLogTotal-r.seq+1}));
-}
+function visibleLogEntries(s:World):LogRow[]{trackRunLog(s);return runLogRows;}
 function visibleLog(s:World):string[]{return visibleLogEntries(s).map(r=>r.text);}
 /** Full log window (L): every kept entry of this run, newest last, opened scrolled to the bottom. The engine keeps at most 80 raw entries (note() in engine.ts). */
 const logDialog=document.createElement('dialog');logDialog.id='log-dialog';logDialog.setAttribute('aria-labelledby','log-title');
@@ -878,10 +864,11 @@ function renderExtras(){
  const box=$('recent-events');
  if(!s)box.innerHTML='';
  else{
-  const rows=visibleLogEntries(s).slice(-60).map(({t,text,fromEnd})=>{
-   let extra='';const m=/^([^\s受]+)受到(\d+)伤害/.exec(t);
-   if(m&&fromEnd<=freshCount){const a=attrib.get(`${m[1]}|${m[2]}`);
-    if(a){const u=s.units[a];extra=u&&u.pos&&s.seen.includes(key(u.pos))?` ← ${unitLabel(u,a)}（推断）`:' ← 视野外的敌人';}}
+  const rows=visibleLogEntries(s).slice(-60).map(({n,text,damage})=>{
+   let extra='';
+   if(damage&&n>freshSeq){const a=attrib.get(`${damage.target}|${damage.amount}`);
+    // The "inferred" note is a developer diagnostic; the player sees only the name.
+    if(a){const u=s.units[a];extra=u&&u.pos&&s.seen.includes(key(u.pos))?` ← ${unitLabel(u,a)}${dev?'（推断）':''}`:' ← 视野外的敌人';}}
    return `<li>${esc(text)}${esc(extra)}</li>`;});
   const stick=box.scrollTop+box.clientHeight>=box.scrollHeight-4;
   box.innerHTML=`<ol id="recent-list">${rows.join('')||'<li class="muted">还没有事件。</li>'}</ol>`;
@@ -958,11 +945,29 @@ function draftOrder(s:World,d:NonNullable<typeof draft>):string{
 function download(raw:string,filename='trial-save-original.json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function makeBoardScene(Phaser:typeof import('phaser')){
 class BoardScene extends Phaser.Scene {
- private graphics!:Phaser.GameObjects.Graphics;private pointGraphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;
+ private graphics!:Phaser.GameObjects.Graphics;private pointGraphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;private shown:{before:World;after:World;revealed:boolean}|null=null;private minimapSig='';
  constructor(){super('board');}
  preload(){preloadArt(this);}
  private dtefLayer!:DtefTerrainLayer;private painterLayer!:PainterTerrainLayer;private darkness!:DungeonDarkness;private lightWorld:World|null=null;
- update(time:number){this.dtefLayer?.update(time);this.followSprites();this.floatZs(time);this.darkness?.update(time,this.partyLights());}
+ update(time:number){this.dtefLayer?.update(time);this.followSprites();this.floatZs(time);this.darkness?.update(time,this.partyLights());this.syncMinimap();}
+ /** The world as the board draws it right now, for the small map. While a round plays, the engine state is already the end of the round, so units stand where their sprites are and what is known switches from the old state to the new one at the moment the board reveals the new terrain. Outside an animation this is the state itself. */
+ minimapWorld(s:World):World{
+  const sh=this.shown,g=this.lastGeometry;if(!sh||!g||!anim.active)return s;
+  const base=sh.revealed?sh.after:sh.before;
+  const units=Object.fromEntries(Object.entries(sh.after.units).map(([id,u])=>{
+   const v=this.views.get(id);
+   if(!v)return [id,base.units[id]??u];
+   if(!v.sprite.visible)return [id,{...u,pos:null,hp:0}];
+   return [id,{...u,hp:Math.max(1,u.hp),pos:{x:Math.round((v.sprite.x-g.ox)/g.cell+g.minX-.5),y:Math.round((v.sprite.y-g.oy)/g.cell+g.minY-.5)}}];}));
+  return {...base,units,queue:sh.after.queue,enemies:sh.after.enemies,leader:sh.after.leader};
+ }
+ /** Keeps the small map in step with the board while a round plays (the interface itself is drawn only when something is clicked or the round ends). */
+ private syncMinimap(){
+  if(!anim.active||!this.shown)return;   // never read store.state here: it clones the whole world
+  const w=this.minimapWorld(this.shown.after),sig=(this.shown.revealed?'1':'0')+Object.values(w.units).map(u=>u.pos?u.pos.x+','+u.pos.y:'x').join('|');
+  if(sig===this.minimapSig)return;this.minimapSig=sig;
+  const host=document.getElementById('hud-map');if(host)updateMinimap(host,w);
+ }
  private followSprites(){
   for(const view of this.views.values()){const hp=view.labels[0];if(hp){placeHp(view.sprite,hp.t,this.lastGeometry?.cell??48,view.gfx.y);hp.dx=hp.t.x-view.gfx.x;hp.dy=hp.t.y-view.gfx.y;}}
   if(this.lastGeometry?.dungeon&&this.lightWorld){const sprite=this.views.get(this.lightWorld.leader)?.sprite;if(sprite)this.cameras.main.setRoundPixels(true).setScroll(Math.round(sprite.x-this.scale.width/2),Math.round(sprite.y-this.scale.height/2));}
@@ -1109,12 +1114,13 @@ class BoardScene extends Phaser.Scene {
  animate(before:World,after:World,events:AnimEvent[]):Promise<void>{
   const p=plan(events);this.paint(before,true);const g=this.lastGeometry;
   if(!p||!g)return Promise.resolve();
+  const shown={before,after,revealed:false};this.shown=shown;this.minimapSig='';
   const center=(q:Pos)=>({x:g.ox+(q.x-g.minX+.5)*g.cell,y:g.oy+(q.y-g.minY+.5)*g.cell});
   this.lightWorld=after;let revealed=false;const terrainAtStart=!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway'),seenBefore=new Set(before.seen),seenAfter=new Set(after.seen),camera=this.cameras.main,cameraX=camera.x,cameraY=camera.y;
-  const st:Stage={scene:this,views:this.views,onHp:(id,hp)=>{const hpLabel=this.views.get(id)?.labels[0]?.t;if(hpLabel){hpLabel.setText(String(hp));const max=after.units[id]?.maxHp??before.units[id]?.maxHp;if(max)hpLabel.setColor(hpTextColor(hp,max));}hpShown?.set(id,hp);hpShownVer++;patchHpDisplays();},center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;this.showTerrain(after,g);this.showDarkness(after,duration);}};
-  if(!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway')){this.showTerrain(after,g);this.showDarkness(after);}
+  const st:Stage={scene:this,views:this.views,onHp:(id,hp)=>{const hpLabel=this.views.get(id)?.labels[0]?.t;if(hpLabel){hpLabel.setText(String(hp));const max=after.units[id]?.maxHp??before.units[id]?.maxHp;if(max)hpLabel.setColor(hpTextColor(hp,max));}hpShown?.set(id,hp);hpShownVer++;patchHpDisplays();},center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;shown.revealed=true;this.showTerrain(after,g);this.showDarkness(after,duration);}};
+  if(!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway')){shown.revealed=true;this.showTerrain(after,g);this.showDarkness(after);}
   return new Promise<void>(resolve=>{
-   let done=false;st.cancelled=()=>done;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();resetCombatShake(this);camera.setPosition(cameraX,cameraY);try{this.paint(store.state,true);}finally{resolve();}};
+   let done=false;st.cancelled=()=>done;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.shown=null;this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();resetCombatShake(this);camera.setPosition(cameraX,cameraY);try{this.paint(store.state,true);}finally{resolve();}};
    const timer=setTimeout(finish,3000); // safety net, e.g. a hidden tab where Phaser's clock is paused
    this.skipNow=finish;
    void playEvents(st,events).then(finish,finish);
@@ -1206,7 +1212,7 @@ $('save-file').addEventListener('change',async()=>{
   }
   const pending=store.importRecord(raw,true);render();
   const ok=await pending;
-  if(ok){clear();campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;inviteChoice=undefined;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
+  if(ok){clear();campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;inviteChoice=undefined;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshSeq=Infinity;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
    $('transfer-message').textContent='存档已导入并保存，关闭设置后可继续游戏。';
   }else $('transfer-message').textContent=store.importError;
   render();

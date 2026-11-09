@@ -29,7 +29,7 @@ for(const how of ['button','key']){
  assert.ok(opened,'the record opens by '+how+' while an animation is playing');
 }
 // 2. the log box: wheel scrolls it, a click opens the record, a hint sits in its corner
-await p.evaluate(()=>{const s=window.trial.store.world;for(let i=0;i<30;i++)s.log.push('测试记录第'+i+'行');window.dispatchEvent(new Event('blur'));});
+await p.evaluate(()=>{const s=window.trial.store.world;for(let i=0;i<30;i++)(s.log.push('测试记录第'+i+'行'),(s.entries??=[]).push({n:(s.logSeq=(s.logSeq??0)+1),parts:['测试记录第'+i+'行']}));window.dispatchEvent(new Event('blur'));});
 await p.waitForTimeout(400);
 const box=p.locator('#recent-events');
 assert.equal(await box.locator('.log-hint').count(),0,'no instruction sentence sits in the log box');
@@ -41,9 +41,9 @@ await box.click();assert.equal(await p.locator('#log-dialog[open]').count(),1,'a
 const rows=await p.locator('#log-list li').count();assert.ok(rows>=30,'the record lists the lines: '+rows);
 await p.keyboard.press('Escape');
 // 3. the record keeps the whole run: more than the engine's 80 lines survive, and a floor change does not clear it
-await p.evaluate(()=>{const s=window.trial.store.world;for(let i=0;i<150;i++){s.log.push('长记录第'+i+'行');}window.dispatchEvent(new Event('blur'));});
+await p.evaluate(()=>{const s=window.trial.store.world;for(let i=0;i<150;i++){(s.log.push('长记录第'+i+'行'),(s.entries??=[]).push({n:(s.logSeq=(s.logSeq??0)+1),parts:['长记录第'+i+'行']}));}window.dispatchEvent(new Event('blur'));});
 await p.waitForTimeout(300);
-await p.evaluate(()=>{const s=window.trial.store.world;s.log=s.log.slice(-80);window.dispatchEvent(new Event('blur'));});   // the engine itself only keeps 80
+await p.evaluate(()=>{const s=window.trial.store.world;s.log=s.log.slice(-80);s.entries=s.entries.slice(-80);window.dispatchEvent(new Event('blur'));});   // the engine itself only keeps 80
 await p.locator('#log-open').click();const total=await p.locator('#log-list li').count();
 assert.ok(total>=180,'the interface keeps more than the engine\'s 80 lines: '+total);
 assert.ok((await p.locator('#log-list').innerText()).includes('测试记录第0行'),'the oldest line is still there');

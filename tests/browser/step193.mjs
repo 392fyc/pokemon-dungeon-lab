@@ -91,7 +91,7 @@ export async function step193Checks({setup,startMemory,state,ready,cell,artifact
   const cureShown=await p.locator('#recent-events,#history,#message').allTextContents();assert.ok(cureShown.some(t=>t.includes('零余果')));
   await p.screenshot({path:artifact+'step193-'+width+'-cured.png'});report.cure={round:cured.round,itemBefore:1,itemAfter:cured.prog.items.chestoBerry,status:cured.units.A.status??{},messages:cureShown};
 
-  const asleep=worldFor('step193-sleep-'+width,'squirtle',SPECIES.squirtle.kit);asleep.enemies=[];asleep.units.A.status={slp:{left:5}};asleep.log.push('A陷入睡眠状态');
+  const asleep=worldFor('step193-sleep-'+width,'squirtle',SPECIES.squirtle.kit);asleep.enemies=[];asleep.units.A.status={slp:{left:5}};(asleep.log.push('A陷入睡眠状态'),(asleep.entries??=[]).push({n:(asleep.logSeq=(asleep.logSeq??0)+1),parts:['A陷入睡眠状态']}));
   await p.reload();await p.locator('#start').waitFor();await startMemory(p,asleep);
   await p.clock.install();await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));await p.evaluate(()=>window.trial.autoSleep(true));
   assert.equal(await p.locator('#hud-sleep-status').innerText(),'睡眠中');
@@ -124,7 +124,7 @@ export async function sleepLabelChecks({setup,startMemory,artifact,width=320,hei
  try{
   await p.setViewportSize({width,height});
   const w=worldFor('sleep-label-'+width,'squirtle',SPECIES.squirtle.kit);w.enemies=[];
-  w.units.A.hp=w.units.A.maxHp=hp;w.units.A.status={slp:{left:5}};w.log.push('A陷入睡眠状态');
+  w.units.A.hp=w.units.A.maxHp=hp;w.units.A.status={slp:{left:5}};(w.log.push('A陷入睡眠状态'),(w.entries??=[]).push({n:(w.logSeq=(w.logSeq??0)+1),parts:['A陷入睡眠状态']}));
   await startMemory(p,w);
   await p.clock.install();await p.clock.pauseAt(await p.evaluate(()=>Date.now()+1000));await p.evaluate(()=>window.trial.autoSleep(true));
   assert.equal(await p.locator('#hud-sleep-status').innerText(),'睡眠中');

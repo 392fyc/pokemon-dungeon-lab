@@ -1055,6 +1055,10 @@ def validate_existing_species(current_species: list[dict] | None, generated_spec
             fail(f"当前物种既有字段与固定导入结果不同：{species_id} / {changed}")
 
 
+# Showdown move id -> PokeAPI identifier with its hyphens removed, for the spellings that differ between the two sources.
+SHOWDOWN_MOVE_NAME_ALIASES = {"visegrip": "vicegrip"}
+
+
 def pokeapi_names(snapshot_root: Path, raw_files: dict, gen1: list[dict], roster: list[dict], baseline_names: dict, union: set[str]):
     languages = load_csv(raw_files["pokeapi/languages.csv"], "pokeapi/languages.csv")
     language = next((r for r in languages if r.get("id") == LANGUAGE_ID), None)
@@ -1097,6 +1101,11 @@ def pokeapi_names(snapshot_root: Path, raw_files: dict, gen1: list[dict], roster
         if normalized in id_by_move and id_by_move[normalized] != poke_id:
             fail(f"PokeAPI 连字符标准化产生重复招式 id：{normalized}")
         id_by_move[normalized] = poke_id
+    # Showdown spells Vice Grip "visegrip"; PokeAPI spells it "vice-grip" (move 11). Without this alias it would be reported as a missing name (#213).
+    for showdown_id, pokeapi_normalized in SHOWDOWN_MOVE_NAME_ALIASES.items():
+        if pokeapi_normalized not in id_by_move:
+            fail(f"PokeAPI 招式别名没有对应的招式：{showdown_id} -> {pokeapi_normalized}")
+        id_by_move.setdefault(showdown_id, id_by_move[pokeapi_normalized])
 
     move_names = dict(baseline_names["moves"])
     missing_moves = []

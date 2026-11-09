@@ -1,5 +1,5 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
-import {attackStageMultiplier,defenceStageMultiplier,damageStage,levelDamageBonus,ITEM_NAMES,ORB_ITEMS,SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
+import {attackStageMultiplier,defenceStageMultiplier,damageStage,levelDamageBonus,ITEM_NAMES,ORB_ITEMS,SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type LogEntry,type LogPart,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
 import {SPECIES} from './roster.ts';
 import {currentStats,type StatKey} from './stats.ts';
 import {MOVE_DEFS,moveOf,moveEffects,type StageKey,type StatusId,type MoveRange} from './moves.ts';
@@ -166,27 +166,27 @@ export function playerText(text:string):string {
  return value;
 }
 /**
- * Display-only merge of the engine's separate type note into its damage line (the engine log keeps its own format; the tests parse it):
- * "X受到N伤害，HP h" + the engine's damage event (crit flag) + the "效果绝佳"/"效果不好" note lines -> one line "X受到N伤害，命中要害，效果绝佳". An immune target has its own log line ("<move>对X没有效果（…）") and a round event; 0 damage from a guard stays a plain line.
- * `merged` maps a line index to its replacement text; `skipped` holds the indexes of note lines that were folded in.
+ * The record, built from the engine's structured entries (`World.entries`); no log text is read or parsed. A slot is named from the data it carries: a unit by the species it had when the line was written
+ * (or "敌人"/"队员" when it has none), a move or species by its Chinese name.
  */
-export function mergeLogLines(lines:readonly string[],events:readonly {type:string;target?:string;amount?:number;crit?:true}[]=[]):{merged:Map<number,string>;skipped:Set<number>} {
-  const merged=new Map<number,string>(),skipped=new Set<number>();
-  const NOTES=['效果绝佳','效果不好'];
-  const damage=events.filter(e=>e.type==='damage'),used=new Set<number>();
-  lines.forEach((t,i)=>{
-    const hit=/^(.+)受到(\d+)伤害，HP \d+$/.exec(t);if(!hit)return;
-    // The engine's damage event carries the critical flag; a line is matched to the first unused event for the same target and amount, in order.
-    const k=damage.findIndex((e,n)=>!used.has(n)&&e.target===hit[1]&&e.amount===Number(hit[2]));
-    if(k>=0)used.add(k);
-    const crit=k>=0&&!!damage[k].crit;
-    const notes:string[]=[];
-    for(let q=i+1;q<lines.length&&NOTES.includes(lines[q]);q++)notes.push(lines[q]);
-    if(!notes.length&&!crit)return;
-    merged.set(i,`${hit[1]}受到${hit[2]}伤害，${[...(crit?['命中要害']:[]),...notes].join('，')}`);
-    notes.forEach((_,q)=>skipped.add(i+1+q));
-  });
-  return {merged,skipped};
+export function logPartsText(parts:readonly LogPart[]):string {
+  return parts.map(p=>typeof p==='string'?p:'unit' in p?(p.species?speciesZh(p.species):p.side==='enemy'?'敌人':p.side==='friend'?'队员':'单位'):'move' in p?moveZh(p.move):speciesZh(p.species)).join('');
+}
+/** The player-facing line of one entry. A plain damage line that carried a critical hit or a type note reads "X受到N伤害，命中要害，效果绝佳" (the HP left is dropped); otherwise it is the entry's own wording. */
+export function logEntryText(e:LogEntry):string {
+  const d=e.damage;
+  if(d&&(d.crit||d.notes.length)){
+    const target=e.parts[0]!;   // a damage line always starts with the unit that was hit
+    return `${logPartsText([target])}受到${d.amount}伤害，${[...(d.crit?['命中要害']:[]),...d.notes].join('，')}`;
+  }
+  return logPartsText(e.player??e.parts);
+}
+/** Whether an entry belongs in the player's record: not a plain move, swap or wait, not a type note already joined into its damage line, not about an enemy the player cannot see yet (its cell is not in `seen`), and not about an enemy of a floor that no longer exists. */
+export function logEntryShown(s:World,e:LogEntry):boolean {
+  if(e.folded||e.routine)return false;
+  const first=e.parts[0];
+  if(first&&typeof first==='object'&&'unit' in first){const u=s.units[first.unit];if(u&&s.enemies.includes(first.unit)&&u.pos&&!s.seen.includes(key(u.pos)))return false;}
+  return !e.parts.some(p=>typeof p==='object'&&'unit' in p&&p.side==='enemy'&&!s.units[p.unit]);
 }
 /** Turns unit, species and move ids in a log line into readable player-facing names. */
 export function localizeLog(s:World,line:string):string {

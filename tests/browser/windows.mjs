@@ -2045,7 +2045,7 @@ await test('#194 满员邀请可让新人直接回营且不进入本局队列',a
   const {createExpedition}=await import('../../src/core/engine.ts');const {initialProfile,squadOf}=await import('../../src/core/base.ts');
   const w=createExpedition('camp-invite-194',194,3,squadOf(initialProfile()),0,true,3),incoming=structuredClone(w.units[w.leader]);
   incoming.id='N4';incoming.protected=undefined;incoming.inst=undefined;incoming.hp=Math.max(1,Math.floor(incoming.maxHp/2));incoming.pos=null;
-  w.invitations=[{id:'N4',unit:incoming,status:'pending'}];w.phase='invitation';w.log.push('N4的邀请等待决定');
+  w.invitations=[{id:'N4',unit:incoming,status:'pending'}];w.phase='invitation';(w.log.push('N4的邀请等待决定'),(w.entries??=[]).push({n:(w.logSeq=(w.logSeq??0)+1),parts:['N4的邀请等待决定']}));
   await startMemory(p,w);assert.equal(w.queue.length,3);assert.ok(await p.locator('#invite-to-camp').isVisible());
   assert.doesNotMatch(await p.locator('#flow').innerText(),/\bN4\b|\bA\b|\bB\b|\bC\b/);
   await p.locator('#invite-to-camp').click();await ready(p);const after=await state(p);

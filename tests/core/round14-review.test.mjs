@@ -80,5 +80,5 @@ test('P2: a unit blown away and moving later does not have its move pulled befor
   const P=(x,y)=>({x,y});
   const events=[{k:'move',by:'A',id:'A',from:P(0,0),to:P(1,0)},{k:'blowaway',by:'F',target:'G',actorAt:P(0,0),from:P(4,0),to:P(6,0)},{k:'move',by:'G',id:'G',from:P(6,0),to:P(5,0)},{k:'move',by:'H',id:'H',from:P(0,2),to:P(1,2)}];
   const b=animationBatches(events).map(x=>x.map(e=>e.k+':'+(e.id??e.target)));
-  assert.deepEqual(b,[['move:A','move:H'],['blowaway:G'],['move:G']],'H (unaffected) still joins the first group, G moves after its own blow: '+JSON.stringify(b));
+  assert.deepEqual(b,[['move:A'],['blowaway:G'],['move:G','move:H']],'G moves after its own blow, and the unrelated H moves together with it: '+JSON.stringify(b));
 });

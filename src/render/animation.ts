@@ -385,13 +385,21 @@ export const MIN_SCALE = 0.3;
 
 const isMovementEvent = (event:AnimEvent) => event.k === 'move' || event.k === 'swap';
 const movedUnits = (event:AnimEvent):string[] => event.k === 'move' ? [event.id] : event.k === 'swap' ? [event.a, event.b] : [];
-/** Groups the ordinary moves and swaps of the round that happen together; other events keep their order. A unit's own events must stay in the order the engine
- *  ran them, so two things stop a later move from being pulled forward: a `recall` (a Rollcall Orb puts companions on other cells) closes the group of moves
- *  before it, and a move of a unit that was blown away earlier starts its own later group instead of joining the first one. */
+/** Every unit an event mentions (the mover, the target, the attacker, the one who acts): used to see what happened to a unit between two events. */
+function unitsOf(event:AnimEvent):string[] {
+  const e = event as Record<string, unknown>, out:string[] = [];
+  for (const k of ['by','id','a','b','actor','attacker','target']) if (typeof e[k] === 'string') out.push(e[k] as string);
+  if (event.k === 'tags') for (const item of event.items) out.push(item.target);
+  return out;
+}
+/** Groups the ordinary moves and swaps of the round that happen together; other events keep their order.
+ *  The rule that keeps every unit's own story in order: a move or swap may join the open movement batch only if none of its units has been mentioned by any
+ *  event since that batch was opened (including the batch's own events). Otherwise it starts a new batch where it stands. So a unit is never moved twice in one
+ *  batch, never moved before something that happened to it earlier (a recall, a blow-away, a swap, a hit drawn at its old cell), and moves of unrelated units
+ *  still play together. */
 export function animationBatches(events:AnimEvent[]):AnimEvent[][] {
   const batches:AnimEvent[][] = [];
-  let main:AnimEvent[]|null = null, late:AnimEvent[]|null = null;
-  const blown = new Set<string>();
+  let open:AnimEvent[]|null = null, touched = new Set<string>();
   const castMove=(event:AnimEvent):string|undefined=>{
     if('cast' in event&&event.cast)return event.cast;
     const effect='effect' in event?event.effect:undefined;
@@ -402,22 +410,15 @@ export function animationBatches(events:AnimEvent[]):AnimEvent[][] {
   for (let i=0;i<events.length;i++) {
     const event=events[i];
     if (isMovementEvent(event)) {
-      if (movedUnits(event).some(id=>blown.has(id))) {
-        if (!late) { late = []; batches.push(late); }
-        late.push(event);
-      } else {
-        if (!main) { main = []; batches.push(main); }
-        main.push(event);
-      }
+      if (open && !movedUnits(event).some(id=>touched.has(id))) open.push(event);
+      else { open = [event]; batches.push(open); touched = new Set(); }
+      for (const id of unitsOf(event)) touched.add(id);
       continue;
     }
-    if (event.k==='recall') { main = null; late = null; blown.clear(); batches.push([event]); continue; }
-    if (event.k==='blowaway') blown.add(event.target);
-    if(isAreaCast(event)){
-      const cast:AnimEvent[]=[event];
-      while(i+1<events.length&&sameAreaCast(cast[0],events[i+1])){const next=events[++i];if(next.k==='blowaway')blown.add(next.target);cast.push(next);}
-      batches.push(cast);
-    } else batches.push([event]);
+    const batch:AnimEvent[]=[event];
+    if(isAreaCast(event))while(i+1<events.length&&sameAreaCast(batch[0],events[i+1]))batch.push(events[++i]);
+    for (const e of batch) for (const id of unitsOf(e)) touched.add(id);
+    batches.push(batch);
   }
   return batches;
 }

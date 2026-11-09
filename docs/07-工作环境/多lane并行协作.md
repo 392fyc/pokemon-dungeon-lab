@@ -2,7 +2,7 @@
 tags:
   - 工作环境
   - 项目/协作
-updated: 2026-11-06
+updated: 2026-11-09
 ---
 # 多 lane 并行协作：Claude 与 Codex
 
@@ -149,7 +149,7 @@ GitHub issue 与 PR 评论仍用于留存决定与审查结论（可追溯的记
 
 | 环境 | 已知事实 | 未核实 |
 | --- | --- | --- |
-| `pokemon-dungeon-lab`（游戏） | 只绑定本仓库，访问范围 Only me，无秘密值；Linux，已验证 Node 24、Playwright 与 Chromium；联网现状只允许 `registry.npmjs.org`、`pypi.org`、`files.pythonhosted.org`（按下文“环境适配”调整，以 `cloud/README.md` 为准）（见 [`cloud/README.md`](../../cloud/README.md)、[REA 与 Codex Cloud](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/07-%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83/REA%E4%B8%8ECodexCloud.md)） | 云端 Shell 能否推送 GitHub、能否自定分支名 |
+| `pokemon-dungeon-lab`（游戏） | 只绑定本仓库，访问范围 Only me，无秘密值；Linux，已验证 Node 24、Playwright 与 Chromium；联网现状只允许 `registry.npmjs.org`、`pypi.org`、`files.pythonhosted.org`、`github.com`（`github.com` 用于取 PR 分支做 Linux 复核，D-20261109-12；按下文“环境适配”调整，以 `cloud/README.md` 为准）（见 [`cloud/README.md`](../../cloud/README.md)、[REA 与 Codex Cloud](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/07-%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83/REA%E4%B8%8ECodexCloud.md)） | 云端 Shell 能否推送 GitHub、能否自定分支名 |
 | `REA-research-lab`（逆向研究） | 曾用于只读研究，结论在聊天里交付（见[研究范围与双云分工](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/06-%E7%A0%94%E7%A9%B6/%E5%B8%82%E5%9C%BA%E7%A0%94%E7%A9%B6/%E7%A0%94%E7%A9%B6%E8%8C%83%E5%9B%B4%E4%B8%8E%E5%8F%8C%E4%BA%91%E5%88%86%E5%B7%A5.md)） | 绑定哪个仓库、访问范围、联网设置 |
 
 Claude 无法向它们派任务；`dev` lane 的本机 Codex 可以。本节是 `main` lane **应用户要求拟定的方针**（工作候选），用户可以随时修改或收回。

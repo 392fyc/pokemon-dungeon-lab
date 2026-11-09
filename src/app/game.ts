@@ -987,6 +987,8 @@ class BoardScene extends Phaser.Scene {
    const d=this.drip.shift()!;void ensureCharacters(this,[d]).then(()=>this.dripNext());},900);
  }
  /** Sheets still missing: the picture is drawn at once without those units (a gap of a moment), one repaint follows when they are in, and a unit still without its sheet after 1.2 s is drawn as a shadow and a dot. A slow load is retried every 3 s. */
+ /** The world of the last explicit `trial.repaint` (browser checks); any ordinary paint drops it. */
+ private pinned:World|null=null;
  private waitingSince=0;private everShown=false;private repaintScheduled=false;private placeholders:string[]=[];private placeholderTimer:ReturnType<typeof setTimeout>|null=null;
  private fetchSprites(s:World|null,force=false):void{
   if(!s)return;
@@ -997,7 +999,7 @@ class BoardScene extends Phaser.Scene {
   if(!missing.length){this.waitingSince=0;this.everShown=true;canvas.style.opacity='';return;}
   if(!this.waitingSince)this.waitingSince=performance.now();
   canvas.style.opacity=this.everShown||performance.now()-this.waitingSince>1200?'':'0';   // only the very first picture of the session waits invisibly, and for 1.2 s at most (the camera has no leader to follow yet); later floors just show a short gap
-  const again=(ms:number)=>{if(this.placeholderTimer!==null)clearTimeout(this.placeholderTimer);this.placeholderTimer=setTimeout(()=>{this.placeholderTimer=null;if(this.graphics?.scene)this.paint(live()??s,force);},ms);};
+  const again=(ms:number)=>{if(this.placeholderTimer!==null)clearTimeout(this.placeholderTimer);this.placeholderTimer=setTimeout(()=>{this.placeholderTimer=null;if(this.graphics?.scene)this.paint(this.pinned??live()??s,force);},ms);};   // a world given to `trial.repaint` (pinned) keeps being drawn by this late repaint until the next ordinary paint; the real game never pins, so there it draws the current world
   again(1300);
   void ensureCharacters(this,missing).then(()=>{   // many repaints may queue on the same load chain: they are merged into one catch-up repaint
    if(this.repaintScheduled)return;this.repaintScheduled=true;
@@ -1030,7 +1032,10 @@ class BoardScene extends Phaser.Scene {
  }
  geometry(s:World){if(s.dungeon){const d=s.dungeon,cell=dungeonCellSize(this.scale.height);return {minX:0,minY:0,cell,ox:0,oy:0,dungeon:true,w:d.width*cell,h:d.height*cell};}
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,(this.scale.width-80)/(maxX-minX+1),(this.scale.height-80)/(maxY-minY+1));return {minX,minY,cell,ox:(this.scale.width-(maxX-minX+1)*cell)/2,oy:(this.scale.height-(maxY-minY+1)*cell)/2,dungeon:false,w:this.scale.width,h:this.scale.height};}
- paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.fetchSprites(s,force);this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());v.zs?.forEach(z=>z.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.placeholders=[];this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
+ /** Browser checks only: stops every unit's idle animation on its first frame, so two screenshots of the same picture are identical (call after each repaint). */
+ freezeSprites(){this.views.forEach(v=>{const a=v.sprite.anims;if(a.currentAnim)a.pause(a.currentAnim.frames[0]);});}
+ pinPaint(w:World|null){this.pinned=w;this.paint(w,true);}
+ paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;if(!force)this.pinned=null;this.fetchSprites(s,force);this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());v.zs?.forEach(z=>z.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.placeholders=[];this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
  this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));return;}
  const g=this.geometry(s);const fog=g.dungeon;const nowVisible=s.dungeon?playerVisibleCells(s):null;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
@@ -1348,5 +1353,5 @@ installDrag([
   },drop:dropMove},
 ]);
 // Read-only state inspection and the same dispatch API for private browser acceptance.
-Object.assign(window,{trial:{store,minimapStats,walking:walkActive,render,spritesReady:()=>!charactersPending()&&document.querySelector<HTMLElement>('#board canvas')?.style.opacity!=='0',autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),reveal:(w:World)=>reveal(w),maskAlpha:(x:number,y:number)=>scene?.darknessAlpha(x,y)??0,repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
+Object.assign(window,{trial:{store,minimapStats,walking:walkActive,render,spritesReady:()=>!charactersPending()&&document.querySelector<HTMLElement>('#board canvas')?.style.opacity!=='0',autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),reveal:(w:World)=>reveal(w),maskAlpha:(x:number,y:number)=>scene?.darknessAlpha(x,y)??0,repaint:(w:World|null)=>scene?.pinPaint(w),freezeSprites:()=>scene?.freezeSprites(),animationEnabled}});
 render();void store.whenReady.then(()=>{render();const next=finishing();if(next)void transition(store.dispatch(next));});

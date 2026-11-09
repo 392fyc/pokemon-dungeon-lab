@@ -103,6 +103,8 @@ async function setup(fixture,mode='pass',animate=false,source='painter',contextO
   };
  },{mode});
  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ if(Number(process.env.TRIAL_CPU_THROTTLE)>1)await (await context.newCDPSession(page)).send('Emulation.setCPUThrottlingRate',{rate:Number(process.env.TRIAL_CPU_THROTTLE)});   // slow-machine simulation (Linux CI timing): TRIAL_CPU_THROTTLE=4..6
+ if(Number(process.env.TRIAL_SPRITE_DELAY_MS)>0)await context.route('**/assets/characters/**',async route=>{await new Promise(r=>setTimeout(r,Number(process.env.TRIAL_SPRITE_DELAY_MS)));await route.continue();});   // slow character sheets (Linux CI timing): TRIAL_SPRITE_DELAY_MS=2000
  if(animate)await page.clock.install();
  await page.goto(base+(fixture?'?fixture='+fixture:'?dev=1'));await page.locator('#start').waitFor();
  return {context,page,errors};
@@ -1932,6 +1934,7 @@ await test('8.8 #166：两种图源的未知墙与水像素一致，三主题暗
    const clip={x:Math.floor(bounds.x+((hidden.x-1)*c-cameraView.x)*sx),y:Math.floor(bounds.y+(hidden.y*c-cameraView.y)*sy),width:Math.ceil(2*c*sx),height:Math.ceil(c*sy)};
    const repaint=async world=>{
     await p.evaluate(world=>{window.trial.repaint(world);},world);await p.waitForFunction(()=>window.trial.spritesReady());   // a species nobody loaded yet is fetched first
+    await p.evaluate(()=>window.trial.freezeSprites());   // the crop may touch the leader: its idle animation is time, not terrain
     await p.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
     return p.screenshot({clip});
    };

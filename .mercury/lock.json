@@ -41,7 +41,9 @@
     ".github/workflows/mercury-verify.yml": "4657ff971d6b9a8eb70740a535dd714015aec4915de0ca0ae2bba65503cf4990",
     ".mercury/packs/core/agents.md": "e091598b38215c7faa6eadac132e5c6f3e986381c58d2c5a19994ac80bbc01a2",
     ".mercury/packs/core/claude.md": "a41db75ae5f575cf43e7f98e25b7bd9eb3488a248005bf9d78895e91476de95c",
+    ".mercury/packs/core/docs/mercury-gate.template.json": "f6c37668112c1ee16de48e3fba8a35abf22cbcb37d0ac63887b7415576c7d982",
     ".mercury/packs/core/docs/mercury-harness-ownership.md": "fda876a559a41118bd662cfbbab525a51352b422ff5b7b2afed6ade317542226",
+    ".mercury/packs/core/docs/mercury-scenario-gate.md": "942fc11381281031eb6cbd33e45629ce889bb16d7dfd445ab50135996e57e70b",
     ".mercury/packs/core/docs/mercury-task-contract.md": "dd26def2fcaf6106d4beba92a18ca0aa368faf7cdfa2cda863f759e385fdb8e1",
     ".mercury/packs/core/hooks/readonly_guard.py": "54baec615b515bd5277565492dfaaab72d3cb2d94c5fb0af10c01601f8eaab0f",
     ".mercury/packs/core/hooks/readonly_guard.sh": "f7823f1ea505f3d7c08847a72d00249b45dd476b426fc8e3adffbd9dc5cde1b3",
@@ -133,7 +135,7 @@
     "AGENTS.md": "fa7815f8acc51a65d7a5bdbaa8521e28adbb4de2d024262d62a03a49f58d129a",
     "CLAUDE.md": "c8adcf29c1d31304ea737b7a1a7dd801ed3ce007436a18a2647ef8a68aaf99f1"
   },
-  "source": "mercury@d0cf3e6319b8321b22403105165bcad919a54d49",
-  "source_commit": "d0cf3e6319b8321b22403105165bcad919a54d49",
+  "source": "mercury@0fd08871c00ed5183771a9f87f1caf89c852029f",
+  "source_commit": "0fd08871c00ed5183771a9f87f1caf89c852029f",
   "source_repo": "392fyc/Mercury"
 }

@@ -183,7 +183,7 @@ async function send(command:Parameters<typeof applyCommand>[1],keepMovement=fals
  let playing:Promise<void>|null=null;{const after=live();
   // Animation is presentation only: any failure here must leave the input lock released and the real state drawn.
   try{if(after){freshSeq=before.logSeq??0;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshSeq=Infinity;}
-  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){hpShown=new Map(Object.entries(before.units).map(([id,u])=>[id,u.hp]));hpShownVer++;logHeld=before;anim.active=true;const banner=after?resultBanner(before,after,animationEnabled()):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;hpShown=null;logHeld=null;if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
+  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){hpShown=new Map(Object.entries(before.units).map(([id,u])=>[id,u.hp]));hpShownVer++;logHeld=before;anim.active=true;const banner=after?resultBanner(before,after,animationEnabled()):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;hpShown=null;logHeld=null;if(logDialog.open){const w=live();if(w)fillLog(w);}if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
   catch{anim.active=false;hpShown=null;logHeld=null;playing=null;render();}}
  clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
 async function setTactic(actor:string,value:string){
@@ -855,9 +855,14 @@ function openLog(){
  const s=live();if(!s||screen!=='play'||store.atBase||logDialog.open||(settings.open||wikiOpen()))return;
  hold?.end();   // the pause is over once the record is open: the next click is the window's, not a skip
  cancelMoveInput();cancelSleepAdvance();
+ fillLog(s,true);logDialog.showModal();const list=$('log-list');list.scrollTop=list.scrollHeight;
+}
+/** Fills the run record; an open record is refreshed when a round's animation ends, keeping the reader's place unless they were at the bottom. */
+function fillLog(s:World,initial=false){
+ const list=$('log-list'),top=list.scrollTop,stick=initial||list.scrollTop+list.clientHeight>=list.scrollHeight-4;
  const rows=visibleLogEntries(s).map(r=>`<li>${esc(r.text)}</li>`);
- $('log-list').innerHTML=rows.join('')||'<li class="muted">还没有记录。</li>';
- logDialog.showModal();const list=$('log-list');list.scrollTop=list.scrollHeight;
+ list.innerHTML=rows.join('')||'<li class="muted">还没有记录。</li>';
+ if(!initial)list.scrollTop=stick?list.scrollHeight:top;
 }
 function closeLog(){if(logDialog.open)logDialog.close();syncSleepAdvance();}
 function renderExtras(){
@@ -910,7 +915,7 @@ function patchHpDisplays():void{
   const value=document.querySelector('#hud-bottom .hud-current-hp-value');if(value)value.textContent='HP '+leader.hp+'/'+leader.maxHp;
   const big=document.querySelector<HTMLElement>('#hud-bottom .hud-hp-track-large');if(big)applyHpBar(big,leader.hp,leader.maxHp,hpAnimated());
  }
- if(inspectShown())updateInspect();
+ if(hoverId||pinnedId||$('inspect').childElementCount)updateInspect();   // let updateInspect clear a card whose enemy just fell
 }
 function updateInspect(){
  const box=$('inspect');const s=live();

@@ -33,6 +33,14 @@ assert.notEqual(await recent(),preRecent,'and shows the round once the animation
 assert.ok(during.some(s=>Number(s.card)===60&&Number(s.bottom)===60),'while the animation starts the party card and the bottom bar still show the old HP: '+JSON.stringify(during.slice(0,4)));
 assert.ok(during.some(s=>Number(s.card)===final&&Number(s.bottom)===final),'and both show the new HP while the animation is still playing, when the hit lands: '+JSON.stringify(during.slice(-4)));
 assert.equal(Number(await cardHp(info.leader)),final);
+// the run record opened while a round plays fills in that round once the animation ends (#459)
+{const logRows=()=>p.evaluate(()=>[...document.querySelectorAll('#log-list li')].map(li=>li.textContent));
+ await p.keyboard.press('.');await p.waitForFunction(()=>window.trial.animating(),null,{timeout:3000});
+ await p.keyboard.press('l');await p.waitForSelector('#log-dialog[open]');const openedDuring=await logRows();
+ await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:6000});await p.waitForTimeout(150);
+ const afterRows=await logRows(),last=(await recent()).trim().split(/\n/).at(-1).split(' ←')[0].trim();
+ assert.ok(afterRows.length>openedDuring.length&&afterRows.includes(last),'the open record gained the round: '+JSON.stringify({openedDuring:openedDuring.slice(-3),afterRows:afterRows.slice(-3),last}));
+ await p.keyboard.press('Escape');await p.waitForTimeout(150);}
 // poison damage (like recoil and drain) also moves the HP when it happens, not at the end of the round. A mutation observer records every change of the card's HP together with whether the animation was still playing, so the check does not depend on polling speed.
 await p.evaluate(({leader})=>{const s=window.trial.store.world;for(const id of s.enemies)s.units[id].waitOnly=true;const L=s.units[leader];L.hp=L.maxHp=60;L.status={psn:{tick:1,left:5}};window.dispatchEvent(new Event('blur'));window.trial.repaint(s);
  window.__hpLog=[];const read=()=>document.querySelector('#unit-card-'+leader)?.innerText.match(/(\d+)\/(\d+)/)?.[1]??null;

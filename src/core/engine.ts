@@ -847,8 +847,13 @@ function sameRoomUnits(s:World,id:string):Unit[] {
   const room=roomAt(s,actor.pos);if(!room)return [];
   return sideIds(s,actor.side).map(i=>s.units[i]).filter(u=>alive(u)&&inRect(u.pos!,room));
 }
+/** Preparation moves only pay off in a fight: an opponent must be in the unit's sight (or among the opponents its tactic already sees). */
+function opponentInSight(s:World,actor:Unit,visibleOnly?:ReadonlySet<string>):boolean{
+  return opponentIds(s,actor.side).some(i=>{const t=s.units[i];return alive(t)&&(visibleOnly?visibleOnly.has(i):currentlyVisible(s,actor.pos!,t.pos!));});
+}
 function supportAction(s:World,id:string,quickguard:ReadonlySet<string>,tactic:Tactic='together',visibleOnly?:ReadonlySet<string>):Action|null {
   const actor=s.units[id];if(!alive(actor))return null;
+  const fight=opponentInSight(s,actor,visibleOnly);   // self-raising, Defense Curl family, Helping Hand and screens only pay off with an opponent in sight
   // 8.9a: the caller has already preferred any usable damage combination.
   for(const kind of ['status','foeStages','heal','selfStages'] as const){
     for(const skill of actor.learned){
@@ -867,19 +872,19 @@ function supportAction(s:World,id:string,quickguard:ReadonlySet<string>,tactic:T
       }else if(kind==='heal'){
         if(spec.effects.includes('heal:1:2')&&actor.hp<actor.maxHp/2)return {type:'skill',skill,target:id};
         if(skill==='rest'&&(actor.hp<actor.maxHp/2||!!actor.status&&Object.keys(actor.status).some(k=>k!=='nap')))return {type:'skill',skill,target:id};
-      }else if(spec.target==='user'&&!['defensecurl','harden'].includes(skill)&&stages.some(e=>e.change>0&&stageOf(actor,e.stat)<3)){
+      }else if(spec.target==='user'&&!['defensecurl','harden'].includes(skill)&&stages.some(e=>e.change>0&&stageOf(actor,e.stat)<3)&&fight){
         return {type:'skill',skill,target:id};
       }
     }
   }
   if(actor.protect===0&&threatenedByOpponent(s,id,quickguard)&&legalSupportTarget(s,id,'protect'))return {type:'skill',skill:'protect',target:id};
-  if(actor.stages.def<1){const defMove=actor.learned.find(k=>moveOf(k)?.effects.includes('stage:def:+1')&&legalSupportTarget(s,id,k));if(defMove){const spec=moveOf(defMove)!;return {type:'skill',skill:defMove,target:spec.range==='user'||spec.range==='room'?id:moveTargetsInReach(s,id,spec)[0].id};}}
+  if(fight&&actor.stages.def<1){const defMove=actor.learned.find(k=>moveOf(k)?.effects.includes('stage:def:+1')&&legalSupportTarget(s,id,k));if(defMove){const spec=moveOf(defMove)!;return {type:'skill',skill:defMove,target:spec.range==='user'||spec.range==='room'?id:moveTargetsInReach(s,id,spec)[0].id};}}
   const helpTargets=moveTargetsInReach(s,id,moveOf('helpinghand')!).filter(u=>u.stages.atk<2);
-  if(helpTargets.length&&legalSupportTarget(s,id,'helpinghand'))return {type:'skill',skill:'helpinghand',target:helpTargets[0].id};
+  if(fight&&helpTargets.length&&legalSupportTarget(s,id,'helpinghand'))return {type:'skill',skill:'helpinghand',target:helpTargets[0].id};
   const allies=sideIds(s,actor.side).filter(i=>alive(s.units[i]));
   if(allies.some(i=>threatenedByOpponent(s,i,quickguard,true))&&legalSupportTarget(s,id,'quickguard'))return {type:'skill',skill:'quickguard',target:id};
   for(const screen of ['reflect','lightscreen'] as const){
-    if(allies.every(i=>(s.units[i][screen]??0)===0)&&legalSupportTarget(s,id,screen))return {type:'skill',skill:screen,target:id};
+    if(fight&&allies.every(i=>(s.units[i][screen]??0)===0)&&legalSupportTarget(s,id,screen))return {type:'skill',skill:screen,target:id};
   }
   return null;
 }

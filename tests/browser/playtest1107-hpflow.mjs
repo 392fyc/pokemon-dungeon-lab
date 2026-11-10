@@ -20,13 +20,16 @@ const info=await p.evaluate(()=>{const s=window.trial.store.world,e=s.units.w1a,
 await p.waitForTimeout(500);
 const bottomHp=()=>p.evaluate(()=>document.querySelector('#hud-bottom')?.innerText.match(/HP\s*(\d+)\/(\d+)/)?.[1]??null);
 const cardHp=id=>p.evaluate(i=>document.querySelector('#unit-card-'+i)?.innerText.match(/(\d+)\/(\d+)/)?.[1]??null,id);
+const recent=()=>p.evaluate(()=>document.querySelector('#recent-events')?.innerText??'');const preRecent=await recent();
 await p.keyboard.press('.');   // wait: the enemy hits back
 const samples=[];
-for(let i=0;i<60;i++){samples.push({anim:await p.evaluate(()=>window.trial.animating()),card:await cardHp(info.leader),bottom:await bottomHp()});if(!samples.at(-1).anim&&i>3)break;await p.waitForTimeout(30);}
+for(let i=0;i<60;i++){samples.push({anim:await p.evaluate(()=>window.trial.animating()),card:await cardHp(info.leader),bottom:await bottomHp(),recent:await recent()});if(!samples.at(-1).anim&&i>3)break;await p.waitForTimeout(30);}
 await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:6000});
 const final=await p.evaluate(id=>window.trial.getState().units[id].hp,info.leader);
 assert.ok(final<60,'the enemy hurt the leader');
 const during=samples.filter(s=>s.anim);
+assert.ok(during.length&&during.every(s=>s.recent===preRecent),'the recent-events box keeps the old messages while the round plays (G13.1)');
+assert.notEqual(await recent(),preRecent,'and shows the round once the animation ends');
 assert.ok(during.some(s=>Number(s.card)===60&&Number(s.bottom)===60),'while the animation starts the party card and the bottom bar still show the old HP: '+JSON.stringify(during.slice(0,4)));
 assert.ok(during.some(s=>Number(s.card)===final&&Number(s.bottom)===final),'and both show the new HP while the animation is still playing, when the hit lands: '+JSON.stringify(during.slice(-4)));
 assert.equal(Number(await cardHp(info.leader)),final);

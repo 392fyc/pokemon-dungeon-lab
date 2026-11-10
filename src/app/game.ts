@@ -156,6 +156,8 @@ const $=(id:string)=>document.getElementById(id)!;
 const esc=(s:unknown)=>String(s).replaceAll('主控','操控者').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const button=(id:string,label:string,disabled=false,extra='')=>`<button id="${id}" ${disabled?'disabled':''} ${extra}>${label}</button>`;
 /** While an animation plays, the interface shows each unit's HP as it was before the round and lowers or raises it at the moment each hit or heal lands (the engine state is already final). */
+/** While a round plays, the recent-events box keeps the messages from before the round; the round's messages appear once the animation ends, so the text never runs ahead of the board. */
+let logHeld:World|null=null;
 let hpShown:Map<string,number>|null=null,hpShownSrc:World|null=null,hpShownView:World|null=null,hpShownVer=0,hpShownViewVer=-1;
 const live=():World|null=>{
  const s=store.state;if(!s||!anim.active||!hpShown)return s;
@@ -180,8 +182,8 @@ async function send(command:Parameters<typeof applyCommand>[1],keepMovement=fals
  let playing:Promise<void>|null=null;{const after=live();
   // Animation is presentation only: any failure here must leave the input lock released and the real state drawn.
   try{if(after){freshSeq=before.logSeq??0;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshSeq=Infinity;}
-  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){hpShown=new Map(Object.entries(before.units).map(([id,u])=>[id,u.hp]));hpShownVer++;anim.active=true;const banner=after?resultBanner(before,after,animationEnabled()):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;hpShown=null;if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
-  catch{anim.active=false;hpShown=null;playing=null;render();}}
+  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){hpShown=new Map(Object.entries(before.units).map(([id,u])=>[id,u.hp]));hpShownVer++;logHeld=before;anim.active=true;const banner=after?resultBanner(before,after,animationEnabled()):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;hpShown=null;logHeld=null;if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
+  catch{anim.active=false;hpShown=null;logHeld=null;playing=null;render();}}
  clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
 async function setTactic(actor:string,value:string){
  if(anim.active||store.status!=='ready'||!live()||live()!.phase!=='playing'||!isTactic(value))return;
@@ -864,7 +866,7 @@ function renderExtras(){
  const box=$('recent-events');
  if(!s)box.innerHTML='';
  else{
-  const rows=visibleLogEntries(s).slice(-60).map(({n,text,damage})=>{
+  const rows=visibleLogEntries(logHeld??s).slice(-60).map(({n,text,damage})=>{
    let extra='';
    if(damage&&n>freshSeq){const a=attrib.get(`${damage.target}|${damage.amount}`);
     // The "inferred" note is a developer diagnostic; the player sees only the name.

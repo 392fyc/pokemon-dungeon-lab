@@ -32,6 +32,27 @@ export function moveShortEffect(id:string):string{
   }
   return parts.join('、');
 }
+/** The range as plain card text, always shown: "射程 1" for an adjacent target, "射程 1–2", "直线 10", "周围 1", "同房间", "自身". */
+export function moveRangeText(id:string):string{const r=moveOf(id)?.range;return r?({front:'射程 1',front2:'射程 1–2',line10:'直线 10',around:'周围 1',room:'同房间',user:'自身'} as Record<MoveRange,string>)[r]:'—';}
+/** The added effect of a move as short tags for a card ("畏缩", "灼伤", "攻击↑", "防御↓", "回复", "吸取", "吹飞"); '' when the move only deals damage. A stage change that lands on the user of a move aimed at a foe says "自身". */
+export function moveEffectTags(id:string):string[]{
+  const spec=moveOf(id);if(!spec)return [];
+  const fx=moveEffects(id),foe=spec.target==='enemy'||spec.target==='all',out:string[]=[];
+  const stage=(c:Partial<Record<StageKey,number>>|undefined,own:boolean)=>{for(const [k,n] of Object.entries(c??{})){if(k==='spe'||!n)continue;out.push((own&&foe?'自身':'')+STAT_ZH[k]+(n>0?'↑':'↓'));}};
+  for(const e of spec.effects){
+    const st=/^stage:(\w+):([+-]\d+)$/.exec(e);
+    if(st){out.push(STAT_ZH[st[1]]+(Number(st[2])>0?'↑':'↓'));continue;}
+    if(e.startsWith('status:'))out.push(STATUS_NAMES[e.slice(7) as StatusId]);
+    else if(e==='drain')out.push('吸取');else if(e==='recoil')out.push('反伤');else if(e==='blowaway')out.push('吹飞');
+    else if(e.startsWith('heal:'))out.push('回复');else if(e==='rest')out.push('睡眠回复');
+    else if(e==='protect')out.push('守住');else if(e==='counter')out.push('反击');else if(e==='quickguard')out.push('快速防守');
+    else if(e==='reflect')out.push('反射壁');else if(e==='lightscreen')out.push('光墙');else if(e==='sleeptalk')out.push('梦话');
+  }
+  if(spec.effects.includes('damage'))for(const f of fx?.fx??[]){if(f.status)out.push(STATUS_NAMES[f.status]);stage(f.foe,false);stage(f.self,true);}
+  stage(fx?.cost,true);
+  return [...new Set(out)];
+}
+export const moveEffectTag=(id:string):string=>moveEffectTags(id).join('、');
 export function moveRangeLabel(id:string):string{const spec=moveOf(id);return spec?RANGE_CN[spec.range]:'未知射程';}
 export type DamageSummaryContext={s:World;sourceId:string;targetId?:string};
 /** Uses the engine estimate for player-facing action previews; without context, existing reference text stays intact. */

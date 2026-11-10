@@ -7,10 +7,10 @@ import {SPECIES,speciesMaxHp} from '../../src/core/roster.ts';
 test('7.8 boss.json has exactly the four typed modifiers and only roster species',()=>{
  const data=JSON.parse(readFileSync(new URL('../../src/data/boss.json',import.meta.url),'utf8'));
  for(const [id,row] of Object.entries(data.bosses)){
-  assert.ok(SPECIES[id]);assert.deepEqual(Object.keys(row).sort(),['canBeBlownAway','canMove','hpBase','hpMultiplier','levelBonus']);
+  assert.ok(SPECIES[id]);assert.deepEqual(Object.keys(row).sort(),['canBeBlownAway','hpBase','hpMultiplier','levelBonus','staysInRoom']);
   assert.ok(Number.isInteger(row.levelBonus)&&row.levelBonus>=0);
   assert.ok(typeof row.hpMultiplier==='number'&&Number.isFinite(row.hpMultiplier)&&row.hpMultiplier>0);
-  assert.equal(typeof row.canMove,'boolean');assert.equal(typeof row.canBeBlownAway,'boolean');
+  assert.equal(typeof row.staysInRoom,'boolean');assert.equal(typeof row.canBeBlownAway,'boolean');
  }
  assert.deepEqual(Object.keys(BOSS).sort(),['id','species']);
 });
@@ -45,6 +45,6 @@ test('7.8 independent streams, six enemies per floor, level bands and boss HP ar
    assert.equal(typeof e.asleep,'boolean');
   }
   assert.equal(g.enemyAiRng,(streamSeed(seed,level,'enemy-ai')+6*0x6D2B79F5)>>>0);
-  if(level===3){const boss=g.enemies.find(e=>e.boss);assert.equal(boss.level,22);assert.equal(boss.hp,75);assert.equal(boss.asleep,false);assert.equal(BOSS_CONFIG.arcanine.canMove,false);}
+  if(level===3){const boss=g.enemies.find(e=>e.boss);assert.equal(boss.level,22);assert.equal(boss.hp,75);assert.equal(boss.asleep,false);assert.equal(BOSS_CONFIG.arcanine.staysInRoom,true);}
  }
 });

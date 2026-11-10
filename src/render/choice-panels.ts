@@ -14,8 +14,7 @@ export function moveCard(move:string,pp:number,maxPp:number,side:Unit['side'],o:
   const inner=(o.tag?'<em class="c195-tag">'+esc(o.tag)+'</em>':'')+'<span class="c195-move-top">'+(o.key?'<kbd>'+o.key+'</kbd>':'')+chip+'<strong>'+esc(moveZh(move))+'</strong><span class="c195-cat">'+esc(f.category)+'</span></span>'+
    '<span class="c195-move-stats">'+moveFactPairs(f,pp+'/'+maxPp).map(([k,v])=>'<span>'+k+' <b>'+esc(v)+'</b></span>').join('')+'</span>';
   const cls='c195-move'+(o.selected?' is-selected':'')+(o.tag?' is-new':'');
-  const hover=' title="'+esc(moveSummary(move,undefined,side,o.level))+'"';
-  return o.button?'<button type="button" id="'+o.button.id+'"'+hover+' class="'+cls+'" aria-pressed="'+!!o.selected+'"'+(o.button.disabled?' disabled':'')+'>'+inner+'</button>':'<div class="'+cls+'"'+hover+'>'+inner+'</div>';
+  return o.button?'<button type="button" id="'+o.button.id+'"'+' class="'+cls+'" aria-pressed="'+!!o.selected+'"'+(o.button.disabled?' disabled':'')+'>'+inner+'</button>':'<div class="'+cls+'">'+inner+'</div>';
 }
 export function learningPanel(s:World,pending:NonNullable<World['pendingLearnMoves']>[number],unit:Unit,selected:string|null,ready:boolean):string {
   const name=unitLabel(unit,pending.actor),old=selected&&unit.learned.includes(selected)?selected:null;

@@ -31,3 +31,10 @@ test('a status move shows its effect, a damage move shows none',()=>{
  assert.equal(moveShortEffect('sleeppowder'),'使对手睡眠');assert.equal(moveShortEffect('protect'),'守住');assert.equal(moveShortEffect('synthesis'),'回复一半 HP');
  assert.equal(moveShortEffect('tackle'),'');assert.equal(moveShortEffect('thunderbolt'),'');
 });
+test('card range text and effect tags (playtest 1110)',async()=>{
+ const {moveRangeText,moveEffectTag}=await import('../../src/core/describe.ts');
+ assert.deepEqual(['tackle','quickattack','aurasphere','thunderbolt','growl','swordsdance'].map(moveRangeText),['射程 1','射程 1–2','直线 10','周围 1','同房间','自身']);
+ assert.equal(moveEffectTag('tackle'),'');
+ assert.equal(moveEffectTag('fakeout'),'畏缩');assert.equal(moveEffectTag('swordsdance'),'攻击↑');assert.equal(moveEffectTag('growl'),'攻击↓');
+ assert.equal(moveEffectTag('closecombat'),'自身防御↓、自身特防↓');assert.equal(moveEffectTag('sleeppowder'),'睡眠');assert.equal(moveEffectTag('drainpunch'),'吸取');
+});

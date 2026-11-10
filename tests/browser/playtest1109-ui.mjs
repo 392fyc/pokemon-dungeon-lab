@@ -63,7 +63,7 @@ const scrollers=p=>p.evaluate(()=>[...document.querySelectorAll('*')].filter(el=
  await p.evaluate(()=>{const s=window.trial.store.world,L=s.units[s.leader];L.stages={atk:8,def:-2,eva:3};window.dispatchEvent(new Event('blur'));});
  const badge=k=>p.locator(`.hud-party-card.is-leader .hud-status-badge[data-stage="${k}"]`);
  assert.match(await badge('atk').getAttribute('title'),/^攻击 \+8：物理招式造成的伤害×1\.\d+（普通攻击按[^）]*），持续到换层$/);
- assert.equal(await badge('eva').getAttribute('title'),'闪避 +3：对方招式的命中率×0.5（与对方命中阶段相抵，差值限于±3；普攻和必中招式不受影响），持续到换层','evasion +3: 3/(3+3), moves only');
+ assert.equal(await badge('eva').getAttribute('title'),'闪避 +3：对方招式的命中率×0.5（与对方命中阶段相抵，差值限于±6；普攻和必中招式不受影响），持续到换层','evasion +3: 3/(3+3), moves only (limit ±6, D-20261110-08)');
  assert.equal(await badge('def').getAttribute('title'),'防御 −2：受到的物理伤害×2（受到的普通攻击按攻击者的类别取防御或特防），持续到换层','defence -2: 256/128');
  await p.locator('.hud-party-card.is-leader [data-hud-details]').click();await p.waitForSelector('#unit-details-dialog[open]');
  const rows=await p.locator('#detail-stages li').allInnerTexts();assert.equal(rows.length,3,'one row per non-zero stage: '+rows);assert.ok(rows.some(r=>/攻击 \+8/.test(r)&&/物理招式造成的伤害×/.test(r)),rows.join('|'));
@@ -77,7 +77,8 @@ const scrollers=p=>p.evaluate(()=>[...document.querySelectorAll('*')].filter(el=
  const sizeNone=await p.locator('#unit-details-dialog').boundingBox();assert.equal(sizeNone.height,box.height,'the window size does not change');await p.locator('#unit-detail-close').click();
  // moves: the hover card shows the engine text, not the official prose
  const first=p.locator('#hud-bottom [data-hud-skill]').first();await first.hover();await p.locator('#hud-tooltip').waitFor({state:'visible'});
- const text=await p.locator('#hud-tooltip [data-move-description]').innerText();assert.ok(/。$/.test(text)&&/(物理|特殊)攻击|自身|对方/.test(text),'engine effect text: '+text);
+ const desc=p.locator('#hud-tooltip [data-move-description]'),text=await desc.count()?(await desc.innerText()).trim():'';   // D-20261110-09: only effects the card does not show; a pure damage move has none
+ assert.ok(!/按攻击对防御结算|命中率|（/.test(text)&&(text===''||/。$/.test(text)),'engine effect text without category, hit-rate or bracket notes: '+text);
  assert.ok(seen.size>=5,'scrollers seen: '+[...seen].join(','));
  assert.deepEqual(p.errs,[]);await ctx.close();
 }

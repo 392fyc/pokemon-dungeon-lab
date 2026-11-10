@@ -46,15 +46,15 @@ const setHp=(p,hp)=>p.evaluate(h=>{const s=window.trial.store.world,L=s.units[s.
 {
  const {ctx,p}=await open();
  await duel(p,['tackle','aquajet','bugbuzz','blizzard']);
- const cards=await p.evaluate(()=>[...document.querySelectorAll('.hud-skill[data-hud-skill]')].map(c=>({key:c.querySelector('.hud-skill-key')?.textContent,power:c.querySelector('.hud-skill-power')?.textContent,reach:c.querySelector('.hud-skill-reach')?.dataset.reach,svg:!!c.querySelector('.hud-skill-reach svg'),text:c.innerText.replace(/\s+/g,' ')})));
+ const cards=await p.evaluate(()=>[...document.querySelectorAll('.hud-skill[data-hud-skill]')].map(c=>({key:c.querySelector('.hud-skill-key')?.textContent,power:c.querySelector('.hud-skill-power')?.textContent,reach:c.querySelector('.hud-skill-reach')?.dataset.reach,reachText:c.querySelector('.hud-skill-reach')?.textContent,text:c.innerText.replace(/\s+/g,' ')})));
  assert.deepEqual(cards.map(c=>c.key),['1','2','3','4']);
  assert.deepEqual(cards.map(c=>c.reach),['front','front2','around','room']);
- assert.ok(cards.every(c=>c.svg),'each reach is an icon');assert.ok(cards.every(c=>/^\d+$/.test(c.power)),'damaging moves show a number: '+JSON.stringify(cards.map(c=>c.power)));
- assert.ok(cards.every(c=>!/前方|直线|房间|周围|格/.test(c.text)),'no sentence on the card: '+cards[0].text);
+ assert.deepEqual(cards.map(c=>c.reachText),['射程 1','射程 1–2','周围 1','同房间'],'the reach is written out, not drawn');assert.ok(cards.every(c=>/^威力 \d+$/.test(c.power)),'damaging moves show a number: '+JSON.stringify(cards.map(c=>c.power)));
+ assert.ok(cards.every(c=>!/[。，；]/.test(c.text)),'no sentence on the card: '+cards[0].text);
  await p.screenshot({path:out+'r10-cards-ranges.png',clip:{x:300,y:600,width:700,height:120}});
  await duel(p,['acidarmor','glare','aurasphere','tackle']);
  const cards2=await p.evaluate(()=>[...document.querySelectorAll('.hud-skill[data-hud-skill]')].map(c=>({power:c.querySelector('.hud-skill-power')?.textContent,reach:c.querySelector('.hud-skill-reach')?.dataset.reach})));
- assert.deepEqual(cards2.map(c=>c.power),['—','—',String(cards2[2].power),String(cards2[3].power)],'status moves show a dash');assert.equal(cards2[0].reach,'user');assert.equal(cards2[2].reach,'line10');
+ assert.deepEqual(cards2.map(c=>c.power),['威力 —','威力 —',cards2[2].power,cards2[3].power],'status moves show a dash');assert.equal(cards2[0].reach,'user');assert.equal(cards2[2].reach,'line10');
  await p.locator('.hud-skill').first().hover();await p.waitForTimeout(200);
  assert.ok(await p.locator('#hud-tooltip:not([hidden])').count()===1,'the hover card still opens');
  await p.keyboard.press('2');await p.waitForTimeout(150);assert.equal(await p.locator('.hud-skill[aria-pressed="true"] .hud-skill-key').textContent(),'2','the badge matches the key that selects the card');

@@ -79,6 +79,14 @@ function fuzzRounds(worlds,seed){
   return out;
 }
 const rounds=fuzzRounds(500,7);
+/* One fixed round per guard kind, so a rule change elsewhere that shifts the random walk cannot make a kind disappear from the fuzz (Pursuit is this game's counter move). */
+for(const move of ['pursuit','protect','reflect','lightscreen']){
+  const s=fuzzWorld(makeRng(11)),L=s.units[s.leader];
+  Object.assign(L,{hp:Math.max(1,L.hp),status:undefined,asleep:false,protect:0,counter:0,reflect:0,lightscreen:0,lastMove:null,learned:[move],pp:{[move]:3},maxPp:{[move]:5}});
+  for(const id of s.queue)s.units[id].reflect=0,s.units[id].lightscreen=0;
+  const cmd={type:'round',action:{type:'skill',skill:move,target:s.leader}},res=applyCommand(s,cmd);
+  if(res.ok)rounds.push({before:s,cmd,after:res.state});
+}
 
 test('the seeded fuzz produces the common presentation events, every fail reason and every guard kind, with sane fields',()=>{
   const seen={},reasons=new Set(),guards=new Set();

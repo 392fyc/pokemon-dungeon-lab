@@ -1,9 +1,9 @@
 /** The effect text of a move (G13.1, playtest round 14): written only from the data the engine reads, never from the official prose, so a card and
  *  the engine cannot disagree. Every number comes from an engine constant or from the move data (src/data/pmd-moves.json, move-effects.json). */
-import {moveOf,moveEffects,moveCategory,type StageKey,type StatusId,type MoveSpec,type StageChange} from './moves.ts';
+import {moveOf,moveEffects,type StageKey,type StatusId,type MoveSpec,type StageChange} from './moves.ts';
 import {typeZh,speciesZh} from './names.ts';
 import {
-  STAGE_NAMES,STATUS_NAMES,STATUS_DURATION,STATUS_DEFAULT_LEFT,PROTECT_PHASES,COUNTER_PHASES,SCREEN_PHASES,BLOWAWAY_CELLS,COLLISION_DAMAGE,
+  STAGE_NAMES,STATUS_NAMES,STATUS_DURATION,PROTECT_PHASES,COUNTER_PHASES,SCREEN_PHASES,BLOWAWAY_CELLS,COLLISION_DAMAGE,
   attackStageMultiplier,defenceStageMultiplier,accuracyMultiplier,ACCURACY_STAGE_LIMIT,STATUS_INTERVAL,STATUS_DAMAGE_DIVISOR,BURN_DAMAGE_RATIO,statusImmuneTypes,BLOWAWAY_IMMUNE_BOSSES,
 } from './engine.ts';
 
@@ -24,13 +24,12 @@ const immuneText=(moveId:string,st:StatusId):string=>{const t=statusImmuneTypes(
 export function statusWithDuration(st:StatusId,moveId?:string):string {
   const range=STATUS_DURATION[st],interval=STATUS_INTERVAL[st];
   const imm=moveId?immuneText(moveId,st):'';
-  if(range)return STATUS_NAMES[st]+'（'+(range[0]===range[1]?range[0]:range[0]+'—'+range[1])+'次自身行动'+imm+'）';
-  if(st==='flinch')return STATUS_NAMES[st]+'（'+STATUS_DEFAULT_LEFT+'次自身行动'+imm+'）';
+  if(range||st==='flinch')return STATUS_NAMES[st]+imm;
   if(interval!==undefined){
     const div=(STATUS_DAMAGE_DIVISOR as Record<string,number>)[st];
-    return STATUS_NAMES[st]+'（下一轮结束起，每'+interval+'轮结束损失最大HP的1/'+div+'，至少1点'+(st==='brn'?'；攻击伤害×'+BURN_DAMAGE_RATIO[0]+'/'+BURN_DAMAGE_RATIO[1]:'')+'；到治愈或换层'+imm+'）';
+    return STATUS_NAMES[st]+'，每'+interval+'轮结束损失最大HP的1/'+div+(st==='brn'?'，攻击伤害×'+BURN_DAMAGE_RATIO[0]+'/'+BURN_DAMAGE_RATIO[1]:'')+'，到治愈或换层'+imm;
   }
-  return STATUS_NAMES[st]+(imm?'（'+imm.slice(1)+'）':'');
+  return STATUS_NAMES[st]+imm;
 }
 const stageParts=(who:string,c:StageChange|undefined)=>Object.entries(c??{}).filter(([k])=>k!=='spe').map(([k,n])=>who+STAGE_NAMES[k as StageKey]+sign(n as number));
 
@@ -41,36 +40,34 @@ export const HANDLED_FX_FIELDS=['acc','fx','thaw','recoil','cost','powder','sour
 /** One short sentence per effect, in the order the engine resolves them. */
 export function moveEffectLines(id:string):string[] {
   const spec=moveOf(id);if(!spec)return [];
-  const fx=moveEffects(id),category=moveCategory(id),who=whoOf(spec),out:string[]=[];
-  const foeTarget=spec.target==='enemy'||spec.target==='all',damaging=spec.effects.includes('damage');
+  const fx=moveEffects(id),who=whoOf(spec),out:string[]=[];
+  const damaging=spec.effects.includes('damage');
   let stagesShown=false;
-  if(damaging&&spec.power!==null)out.push(category==='Special'?'特殊攻击，按特攻对特防结算':'物理攻击，按攻击对防御结算');
-  if(foeTarget&&!spec.effects.includes('sleeptalk'))out.push(fx?.acc===null||fx?.acc===undefined?'必定命中（不受命中和闪避阶段影响）':'命中率'+Number(fx.acc.toFixed(1))+'%，与双方命中、闪避阶段相抵后再算');
   for(const e of spec.effects){
     const st=/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/.exec(e);
     if(st){out.push(who+STAGE_NAMES[st[1] as StageKey]+sign(Number(st[2])));stagesShown=true;continue;}
     if(e.startsWith('status:')){out.push('使'+who+statusWithDuration(e.slice(7) as StatusId,id));continue;}
     switch(e){
       case 'damage':break;
-      case 'drain':out.push('回复实际伤害的一半（向下取整，至少1点）');break;
-      case 'recoil':if(fx?.recoil)out.push('自身承受实际伤害的'+Math.round(fx.recoil[0]/fx.recoil[1]*100)+'%作为反作用（向下取整，至少1点）');break;
-      case 'blowaway':out.push('把对方沿直线吹飞，最远'+BLOWAWAY_CELLS+'格；撞墙时对方受'+COLLISION_DAMAGE+'点伤害，撞到单位时两者各受'+COLLISION_DAMAGE+'点；不会被吹飞的首领（'+BLOWAWAY_IMMUNE_BOSSES.map(speciesZh).join('、')+'）不受影响'+(spec.effects.includes('damage')?'，只受伤害':'，此招对其无效'));break;
+      case 'drain':out.push('回复实际伤害的一半');break;
+      case 'recoil':if(fx?.recoil)out.push('自身承受实际伤害的'+Math.round(fx.recoil[0]/fx.recoil[1]*100)+'%作为反作用');break;
+      case 'blowaway':out.push('把对方沿直线吹飞，最远'+BLOWAWAY_CELLS+'格；撞墙时对方受'+COLLISION_DAMAGE+'点伤害，撞到单位时两者各受'+COLLISION_DAMAGE+'点；首领'+BLOWAWAY_IMMUNE_BOSSES.map(speciesZh).join('、')+'不会被吹飞'+(spec.effects.includes('damage')?'，只受伤害':'，此招对其无效'));break;
       case 'protect':out.push('之后'+PROTECT_PHASES+'个对方行动阶段内，对方攻击对自身的伤害为0，对方招式的异常和能力降低也无效；上一次行动是守住或快速防守时不能使用');break;
       case 'counter':out.push('之后'+COUNTER_PHASES+'个对方行动阶段内，相邻对方每造成一次大于0的伤害，对方受到同样的伤害');break;
-      case 'quickguard':out.push('使用那一刻范围内的己方，在接下来1个对方行动阶段内不受距离大于1格的攻击（其异常和能力降低也无效）；上一次行动是守住或快速防守时不能使用');break;
+      case 'quickguard':out.push('使用那一刻范围内的己方，在接下来1个对方行动阶段内不受距离大于1格的攻击，其异常和能力降低也无效；上一次行动是守住或快速防守时不能使用');break;
       case 'reflect':out.push('使用那一刻范围内的己方，'+SCREEN_PHASES+'个对方行动阶段内受到的物理伤害减半；重复使用重新计时');break;
       case 'lightscreen':out.push('使用那一刻范围内的己方，'+SCREEN_PHASES+'个对方行动阶段内受到的特殊伤害减半；重复使用重新计时');break;
       case 'heal:1:2':out.push(who+(spec.target==='party'?'各自':'')+'回复最大HP的一半');break;
-      case 'rest':{const r=STATUS_DURATION.nap;out.push('自身进入打盹'+(r?'（'+r[0]+'—'+r[1]+'次自身行动，期间不能行动）':'')+'，结束时回满HP并解除全部异常；中途换层则打盹解除、不回复；HP已满且没有异常时不能使用');break;}
-      case 'sleeptalk':out.push('自身在睡眠或打盹中被攻击且没醒来时，随机使用自己的另一招（只消耗梦话的PP，不会选对队友的招式）；同时带打鼾时只发动打鼾；不能主动使用');break;
-      case 'snore':out.push('自身在睡眠或打盹中被攻击且没醒来时，对攻击者反击（消耗打鼾的PP，命中率见上）；不造成畏缩；不能主动使用');break;
+      case 'rest':{const r=STATUS_DURATION.nap;out.push('自身进入打盹'+(r?'，期间不能行动':'')+'，结束时回满HP并解除全部异常；中途换层则打盹解除、不回复；HP已满且没有异常时不能使用');break;}
+      case 'sleeptalk':out.push('自身在睡眠或打盹中被攻击且没醒来时，随机使用自己的另一招，只消耗梦话的PP，不会选对队友的招式；同时带打鼾时只发动打鼾；不能主动使用');break;
+      case 'snore':out.push('自身在睡眠或打盹中被攻击且没醒来时，对攻击者反击，消耗打鼾的PP；不造成畏缩；不能主动使用');break;
     }
   }
   if(damaging)for(const f of fx?.fx??[]){
     const parts=[...(f.status?['使对方'+statusWithDuration(f.status,id)]:[]),...stageParts('对方',f.foe),...stageParts('自身',f.self)];
     if(!parts.length)continue;
     if(f.foe&&Object.keys(f.foe).some(k=>k!=='spe')||f.self&&Object.keys(f.self).some(k=>k!=='spe'))stagesShown=true;
-    out.push('命中后'+(f.chance>=100?'':f.chance+'%概率')+parts.join('，'));
+    out.push((f.chance>=100?'命中后':f.chance+'%概率')+parts.join('，'));
   }
   const cost=stageParts('自身',fx?.cost);
   if(cost.length){out.push('命中后'+cost.join('，'));stagesShown=true;}

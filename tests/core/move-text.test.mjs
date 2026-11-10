@@ -11,7 +11,8 @@ const sign=n=>(n>0?'+':'−')+Math.abs(n);
 
 test('the usable moves are the roster and machine pool, and every one has an effect text',()=>{
   assert.ok(ids.length>150,'moves checked: '+ids.length);
-  for(const id of ids)assert.ok(moveEffectText(id).endsWith('。'),id+' has an effect text');
+  for(const id of ids){const text=moveEffectText(id);assert.ok(text===''||text.endsWith('。'),id+' has an effect text or none');assert.doesNotMatch(text,/物理攻击|特殊攻击|命中率|必定命中|（/,id+' repeats what the card header says or uses brackets: '+text);}
+  assert.equal(moveEffectText('tackle'),'','a move with no added effect has no effect text');
 });
 test('every effect field the engine reads for a usable move has matching text and no field is left unrecognised',()=>{
   for(const id of ids){
@@ -32,14 +33,13 @@ test('every effect field the engine reads for a usable move has matching text an
       if(e==='rest')assert.ok(text.includes('打盹')&&text.includes('回满HP'),id);
       if(e==='sleeptalk')assert.ok(text.includes('随机使用'),id);
       if(e==='snore')assert.ok(text.includes('反击'),id);
-      if(e==='damage'&&spec.power!==null)assert.ok(text.includes(moveCategory(id)==='Special'?'特殊攻击':'物理攻击'),id);
-    }
+          }
     if(!fx)continue;
     for(const k of Object.keys(fx))assert.ok(HANDLED_FX_FIELDS.includes(k),id+' has a move-effects field the text does not know: '+k);
     if(fx.fx&&!spec.effects.includes('damage'))assert.ok(!moveEffectText(id).includes('命中后'),id+': the engine rolls secondary effects only for damaging moves, so the text states none');
     if(spec.effects.includes('damage'))for(const f of fx.fx??[]){
       for(const k of Object.keys(f))assert.ok(['chance','status','foe','self'].includes(k),id+' unknown secondary field '+k);
-      if(f.status)assert.ok(text.includes('命中后')&&text.includes(STATUS_NAMES[f.status]),id+' secondary status in: '+text);
+      if(f.status)assert.ok(text.includes(f.chance>=100?'命中后':f.chance+'%概率')&&text.includes(STATUS_NAMES[f.status]),id+' secondary status in: '+text);
       for(const [k,n] of Object.entries({...f.foe,...f.self}))if(k!=='spe')assert.ok(text.includes(STAGE_NAMES[k]+sign(n)),id+' secondary stage '+k+' in: '+text);
       const shown=!!f.status||Object.keys({...f.foe,...f.self}).some(k=>k!=='spe');   // speed does not exist in this game (engine ignores it), so a speed-only entry states nothing
       if(shown&&f.chance<100)assert.ok(text.includes(f.chance+'%概率'),id+' chance in: '+text);
@@ -48,14 +48,13 @@ test('every effect field the engine reads for a usable move has matching text an
     if(fx.recoil)assert.ok(text.includes('反作用'),id);
     if(fx.thaw)assert.ok(text.includes('解冻'),id);
     if(fx.powder)assert.ok(text.includes('粉末'),id);
-    if(typeof fx.acc==='number'&&!spec.effects.includes('sleeptalk')&&(spec.target==='enemy'||spec.target==='all'))assert.ok(text.includes('命中率'+Number(fx.acc.toFixed(1))+'%'),id+' accuracy');
   }
 });
 test('spot checks: Fake Out, Swords Dance, Shadow Claw-like damage, drain, Protect, screens, Rest',()=>{
   const fake=moveEffectText('fakeout');
-  assert.match(fake,/命中率80%/);assert.match(fake,/命中后使对方畏缩/);assert.doesNotMatch(fake,/出场|立刻/,'Fake Out is usable at any time (G5.1, G5.13)');
+  assert.equal(fake,'命中后使对方畏缩。');assert.doesNotMatch(fake,/出场|立刻/,'Fake Out is usable at any time (G5.1, G5.13)');
   assert.equal(moveEffectText('swordsdance'),'自身攻击+2。能力阶段持续到换层。');
-  assert.match(moveEffectText('shadowsneak')||moveEffectText('shadowclaw'),/物理攻击/);
+  assert.equal(moveEffectText('shadowclaw'),'','plain damage says nothing the header does not');
   assert.match(moveEffectText('drainpunch'),/回复实际伤害的一半/);
   assert.match(moveEffectText('protect'),/之后3个对方行动阶段/);
   assert.match(moveEffectText('reflect'),/10个对方行动阶段/);
@@ -106,8 +105,8 @@ test('type immunities and boss exceptions the engine writes per move id or type 
   }
   assert.match(moveEffectText('thunderwave'),/地面/);assert.match(moveEffectText('sleeppowder'),/草系免疫/);
   assert.match(moveEffectText('protect'),/异常和能力降低也无效/);assert.match(moveEffectText('quickguard'),/异常和能力降低也无效/);
-  assert.match(moveEffectText('rest'),/换层则打盹解除、不回复/);assert.match(moveEffectText('rest'),new RegExp(eng.STATUS_DURATION.nap[0]+'—'+eng.STATUS_DURATION.nap[1]));
-  assert.match(moveEffectText('snore'),/命中率\d+/);assert.match(moveEffectText('sleeptalk'),/只消耗梦话的PP.*只发动打鼾/);
+  assert.match(moveEffectText('rest'),/换层则打盹解除、不回复/);assert.doesNotMatch(moveEffectText('rest'),/次自身行动/);
+  assert.match(moveEffectText('snore'),/反击/);assert.match(moveEffectText('sleeptalk'),/只消耗梦话的PP.*只发动打鼾/);
   assert.match(moveEffectText('toxic'),new RegExp('每'+eng.STATUS_INTERVAL.tox+'轮结束损失最大HP的1/'+eng.STATUS_DAMAGE_DIVISOR.tox));
-  assert.match(moveEffectText('fakeout'),/畏缩（\d次自身行动）/);
+  assert.doesNotMatch(moveEffectText('fakeout'),/次自身行动|（/);
 });

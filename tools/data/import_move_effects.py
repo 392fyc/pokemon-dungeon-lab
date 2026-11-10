@@ -5,9 +5,8 @@
 输入文件只当数据读取，先校验 Showdown moves.json 的 sha256，不一致就退出。
 
 每招输出：
-  acc      命中率（百分数，可含小数）；null 表示必中。顺序：Showdown accuracy 为 true 的必中；
-           探险队 official.accuracy 为 “—%”（原版必中）的必中；否则取探险队百分比；
-           叶影等没有探险队数据的招式取 Showdown 的 accuracy。
+  acc      命中率（百分数）；null 表示必中。取 Showdown（正作）的 accuracy：true 为必中，整数为百分比
+           （D-20261110-08；此前取探险队百分比）。
   fx       附加效果列表（Showdown secondary / secondaries），每项独立判定：
            chance 概率；status 为 brn frz par psn tox confusion flinch 之一；
            foe 为降低对方能力的阶段变化，self 为提高自己能力的阶段变化。
@@ -52,19 +51,6 @@ def stages(boosts, move_id):
     return dict(sorted(out.items()))
 
 
-def official_accuracy(official):
-    """返回 ('always', None)、('percent', 数值) 或 ('unknown', None)。"""
-    if not isinstance(official, dict):
-        return ("unknown", None)
-    text = official.get("accuracy", "")
-    if text == "—%":
-        return ("always", None)
-    if text.endswith("%") and text[:-1]:
-        value = float(text[:-1])
-        return ("percent", int(value) if value == int(value) else value)
-    return ("unknown", None)
-
-
 def build(showdown, pmd):
     result = {}
     template_sources = json.loads((REPO / "tools/data/moves-items-191-sources.json").read_text(encoding="utf-8"))["moves"]
@@ -74,15 +60,12 @@ def build(showdown, pmd):
         sd = showdown.get(move_id)
         if not isinstance(sd, dict):
             sys.exit(f"Showdown 数据里没有 {move_id}")
-        kind, percent = official_accuracy(spec.get("official"))
-        if sd.get("accuracy") is True or kind == "always":
+        if sd.get("accuracy") is True:
             acc = None
-        elif kind == "percent":
-            acc = percent
         elif isinstance(sd.get("accuracy"), int):
             acc = sd["accuracy"]
         else:
-            sys.exit(f"{move_id} 的命中率无法确定：官方 {spec.get('official')!r}，Showdown {sd.get('accuracy')!r}")
+            sys.exit(f"{move_id} 的命中率无法确定：Showdown {sd.get('accuracy')!r}")
         fx = []
         secondaries = sd.get("secondaries") or ([sd["secondary"]] if sd.get("secondary") else [])
         for sec in secondaries:

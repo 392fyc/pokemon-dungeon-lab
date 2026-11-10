@@ -22,7 +22,7 @@ import {
 import { moveCategory, moveEffects, moveOf, type MoveRange } from "../core/moves.ts";
 import { THEME_FLOORS, themeOfLevel } from "../core/dungeon.ts";
 import { itemZh, moveZh, speciesZh, tmZh, typeZh } from "../core/names.ts";
-import { damageEstimateText, moveRangeLabel, moveShortEffect } from "../core/describe.ts";
+import { damageEstimateText, moveRangeLabel, moveRangeText, moveEffectTag } from "../core/describe.ts";
 import { itemDescription } from "../core/item-descriptions.ts";
 import { skinFor } from "./sprites.ts";
 import { terrainKnown } from "./point-visuals.ts";
@@ -192,31 +192,16 @@ function moveCategoryLabel(skill: Skill): string {
   return "—";
 }
 
-/** Only a non-default reach gets a tag; an adjacent single target (and self) is left unsaid. */
+/** Every card names its reach in words: "射程 1", "射程 1–2", "直线 10", "周围 1", "同房间", "自身". */
 function compactRange(range: MoveRange | undefined): string {
-  switch (range) {
-    case "front2": return "2格";
-    case "line10": return "直线 10 格";
-    case "around": return "周围";
-    case "room": return "同房间";
-    default: return "";
-  }
+  const names: Record<MoveRange, string> = { front: "射程 1", front2: "射程 1–2", line10: "直线 10", around: "周围 1", room: "同房间", user: "自身" };
+  return range ? names[range] : "—";
 }
 
-/** Small pictograms of a move's reach (the cell grid of the hover card, boiled down to one glyph): dots are the cells hit, the ring is the user. Wording lives in the hover card and the title. */
-const REACH_GLYPHS: Record<MoveRange, string> = {
-  front: '<circle cx="4" cy="8" r="2" class="r-self"/><circle cx="11" cy="8" r="2.4"/>',
-  front2: '<circle cx="2.5" cy="8" r="1.8" class="r-self"/><circle cx="8" cy="8" r="2.2"/><circle cx="13" cy="8" r="2.2"/>',
-  line10: '<circle cx="2" cy="8" r="1.6" class="r-self"/><path d="M5 8h8" stroke-width="2" stroke-linecap="round"/><path d="M11 5l3 3-3 3" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
-  around: '<circle cx="8" cy="8" r="1.8" class="r-self"/><circle cx="8" cy="2.6" r="1.5"/><circle cx="8" cy="13.4" r="1.5"/><circle cx="2.6" cy="8" r="1.5"/><circle cx="13.4" cy="8" r="1.5"/><circle cx="4.2" cy="4.2" r="1.3"/><circle cx="11.8" cy="4.2" r="1.3"/><circle cx="4.2" cy="11.8" r="1.3"/><circle cx="11.8" cy="11.8" r="1.3"/>',
-  room: '<rect x="2" y="2" width="12" height="12" rx="2" fill="none" stroke-width="1.8"/><circle cx="8" cy="8" r="2"/>',
-  user: '<circle cx="8" cy="8" r="3" class="r-self"/><circle cx="8" cy="8" r="6" fill="none" stroke-width="1.4"/>',
-};
-function reachIcon(skill: Skill): string {
+function reachText(skill: Skill): string {
   const range = moveOf(skill)?.range;
   if (!range) return "";
-  return '<span class="hud-skill-reach" data-reach="' + range + '" title="' + esc(moveRangeLabel(skill)) +
-    '"><svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">' + REACH_GLYPHS[range] + "</svg></span>";
+  return '<span class="hud-skill-reach" data-reach="' + range + '" title="' + esc(moveRangeLabel(skill)) + '">' + esc(compactRange(range)) + "</span>";
 }
 /** Power as the cards show it: the number for a damaging move, a dash for a status move or one without a base power. */
 function powerLabel(skill: Skill): string {
@@ -334,9 +319,10 @@ export function hudBottom(
       (selectedSkill === skill) + '" aria-label="' + esc(moveZh(skill) + "，" + moveTypeLabel(skill) +
       "，PP " + current + "/" + maximum) + '"' + (unavailable ? " disabled" : "") + ">" +
       '<span class="hud-skill-head"><kbd class="hud-skill-key" aria-hidden="true">' + (index + 1) + '</kbd><span class="hud-skill-name">' + esc(moveZh(skill)) + '</span></span>' +
-      '<span class="hud-skill-stats"><span class="hud-skill-power" data-power="' + powerLabel(skill) + '" title="威力">' + powerLabel(skill) + "</span>" + reachIcon(skill) + "</span>" +
-      '<span class="hud-skill-meta"><span class="hud-skill-type">' + esc(moveTypeLabel(skill)) +
-      '</span><span class="hud-skill-pp">PP ' + current + "/" + maximum + "</span></span></button>";
+      '<span class="hud-skill-stats"><span class="hud-skill-power" data-power="' + powerLabel(skill) + '" title="威力">威力 ' + powerLabel(skill) + "</span>" + reachText(skill) + "</span>" +
+      '<span class="hud-skill-meta"><span class="hud-skill-type">' + esc(moveTypeLabel(skill)) + "</span>" +
+      (moveEffectTag(skill) ? '<span class="hud-skill-effect">' + esc(moveEffectTag(skill)) + "</span>" : "") +
+      '<span class="hud-skill-pp">PP ' + current + "/" + maximum + "</span></span></button>";
   }).join("");
 
   const quickMarkup = Array.from({ length: 6 }, (_, index) =>
@@ -532,7 +518,6 @@ export function hudMoveTip(s: World, skill: Skill): string {
   const power = spec?.power === null || spec?.power === undefined ? "—" : String(spec.power);
   const range = compactRange(spec?.range);
   const damaging = !!spec && (spec.effects.includes("damage") || skill === "snore") && spec.power !== null;
-  const effect = moveShortEffect(skill);
   const fullRange = spec ? moveRangeLabel(skill) : "未知射程";
   const cells = scopeGrid(spec?.range);
   const typeId = type ? esc(type) : "";
@@ -548,12 +533,11 @@ export function hudMoveTip(s: World, skill: Skill): string {
     '<div class="hud-tip-fields">' +
     (damaging ? '<div class="hud-tip-field"><span>威力</span><strong>' + power + "</strong></div>" : "") +
     (accuracy !== "不检定" ? '<div class="hud-tip-field"><span>命中</span><strong data-move-accuracy="' + esc(skill) + '">' + esc(accuracy) + "</strong></div>" : "") +
-    (effect ? '<div class="hud-tip-field"><span>效果</span><strong>' + esc(effect) + "</strong></div>" : "") +
     '<div class="hud-tip-field"><span>PP</span><strong>' + current + "/" + maximum + "</strong></div>" +
-    (range ? '<div class="hud-tip-field" data-move-range="' + esc(spec?.range ?? "") + '"><span>射程</span><strong title="' + esc(fullRange) + '">' + esc(range) + "</strong></div>" : "") + "</div>" +
+    ('<div class="hud-tip-field" data-move-range="' + esc(spec?.range ?? "") + '"><span>射程</span><strong title="' + esc(fullRange) + '">' + esc(range.replace(/^射程 /, "")) + "</strong></div>") + "</div>" +
     (damaging ? '<div class="hud-tip-preview"><span>预计伤害</span><strong data-move-preview="' +
     esc(skill) + '">' + esc(hudDamageEstimate(s, s.leader, undefined, skill)) + '</strong></div>' : "") +
-    '<p class="hud-tip-description" data-move-description>' + esc(description) + '</p></div></div></section>';
+    '<p class="hud-tip-description" data-move-description' + (description ? "" : " hidden") + '>' + esc(description) + '</p></div></div></section>';
 }
 
 /** The title picker shows the same move data as the dungeon card before there is a live team. */
@@ -567,21 +551,20 @@ export function starterMoveFields(skill: Skill) {
     category: moveCategoryLabel(skill),
     power: spec?.power ?? "",
     accuracy: checksAccuracy ? formatAccuracy(baseAccuracy) : "",
-    effect: moveShortEffect(skill),
+    effect: moveEffectTag(skill),
     range: compactRange(spec?.range),
     scope: scopeGrid(spec?.range),
     description: moveEffectText(skill),
   };
 }
 
-/** The facts a move card or hover card shows, left out when empty: power and hit chance for a damage move, the short effect for a status move, PP, and a range tag only for a non-default reach. */
+/** The same facts in the same order on every move card: 威力, 命中, PP, 射程, then the effect tag when the move has an added effect. Power and hit chance show a dash when the move has none. */
 export function moveFactPairs(f: { power: unknown; accuracy: string; effect: string; range: string }, pp?: string | number): [string, string][] {
-  const out: [string, string][] = [];
-  if (f.power !== "" && f.power !== "—" && f.power !== null && f.power !== undefined) out.push(["威力", String(f.power)]);
-  if (f.accuracy) out.push(["命中", f.accuracy.replace("基础 ", "")]);
-  if (f.effect) out.push(["效果", f.effect]);
+  const none = f.power === "" || f.power === "—" || f.power === null || f.power === undefined;
+  const out: [string, string][] = [["威力", none ? "—" : String(f.power)], ["命中", f.accuracy ? f.accuracy.replace("基础 ", "") : "—"]];
   if (pp !== undefined) out.push(["PP", String(pp)]);
-  if (f.range) out.push(["射程", f.range]);
+  out.push(["射程", f.range.replace(/^射程 /, "")]);
+  if (f.effect) out.push(["效果", f.effect]);
   return out;
 }
 

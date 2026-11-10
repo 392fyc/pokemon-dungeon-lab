@@ -45,7 +45,7 @@ function validUnit(v:unknown,depth=0):boolean {
   for(const k of learned){const n=v.pp[k],max=v.maxPp[k];if(!integer(n)||!integer(max)||(max as number)<1||(n as number)<0||(n as number)>(max as number))return false;}
   // 8.8 (#165): `atk` and `def` always exist; the special, accuracy and evasion stages exist once changed.
   const stg=v.stages as Record<string,unknown>|undefined,sts=v.status as Record<string,unknown>|undefined;
-  if(!object(stg)||!integer(stg.atk)||!integer(stg.def)||Object.keys(stg).some(k=>!['atk','def','spa','spd','acc','eva'].includes(k)||!integer(stg[k])||Math.abs(stg[k] as number)>(k==='acc'||k==='eva'?3:10)))return false;   // attack, defence and the special pair run -10...+10; accuracy and evasion -3...+3
+  if(!object(stg)||!integer(stg.atk)||!integer(stg.def)||Object.keys(stg).some(k=>!['atk','def','spa','spd','acc','eva'].includes(k)||!integer(stg[k])||Math.abs(stg[k] as number)>(k==='acc'||k==='eva'?6:10)))return false;   // attack, defence and the special pair run -10...+10; accuracy and evasion -6...+6 (D-20261110-08)
   if(sts!==undefined&&(!object(sts)||Object.keys(sts).some(k=>!['psn','tox','brn','par','frz','confusion','flinch'].includes(k)||!validStatusState(sts[k]))))return false;
   if(!integer(v.protect)||(v.protect as number)<0||(v.protect as number)>3||!integer(v.counter)||(v.counter as number)<0||(v.counter as number)>3)return false;
   if(v.lastMove!==null&&(typeof v.lastMove!=='string'||!moveOf(v.lastMove)||!learned.includes(v.lastMove)))return false;

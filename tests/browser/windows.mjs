@@ -208,7 +208,7 @@ await test('M3：电光一闪两格射程、合法目标提示与T撤离',async(
  const {context,page:p,errors}=await setup();try{await p.locator('#config').selectOption('main-none');await start(p);
   // This route needs a one-hit E; Normal Quick Attack is now resisted by Rock, so use a literal 4-HP target.
   await p.evaluate(()=>{const e=window.trial.store.world.units.E;e.hp=e.maxHp=4;});
-  await click(p,'skill-quickattack');const card=p.locator('#skill-quickattack'),tip=p.locator('#hud-tooltip');await hoverCell(p,4,1);await card.hover();await tip.waitFor({state:'visible'});let label=await tip.innerText();assert.match(label,/电光一闪/);for(const field of ['威力','命中','PP','射程'])assert.ok(label.includes(field),`hover card exposes the independent ${field} field`);assert.ok(!label.includes('范围'),'the redundant 范围 field is gone');const rangeField=tip.locator('.hud-tip-field').filter({hasText:'射程'}),rangeValue=rangeField.locator('strong');assert.equal(await rangeValue.innerText(),'2格','Quick Attack retains its two-cell reach');assert.equal(await rangeValue.getAttribute('title'),'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角','Quick Attack exposes its actual eight-direction ray and corner restrictions on hover');assert.match(label,/约4点/,'the live hover estimate preserves Quick Attack damage against the real nearby target');assert.doesNotMatch(await card.innerText(),/同排|同列|斜线|造成约/,'details belong in the hover card, not the compact move card');
+  await click(p,'skill-quickattack');const card=p.locator('#skill-quickattack'),tip=p.locator('#hud-tooltip');await hoverCell(p,4,1);await card.hover();await tip.waitFor({state:'visible'});let label=await tip.innerText();assert.match(label,/电光一闪/);for(const field of ['威力','命中','PP','射程'])assert.ok(label.includes(field),`hover card exposes the independent ${field} field`);assert.ok(!label.includes('范围'),'the redundant 范围 field is gone');const rangeField=tip.locator('.hud-tip-field').filter({hasText:'射程'}),rangeValue=rangeField.locator('strong');assert.equal(await rangeValue.innerText(),'1–2','Quick Attack retains its two-cell reach');assert.equal(await rangeValue.getAttribute('title'),'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角','Quick Attack exposes its actual eight-direction ray and corner restrictions on hover');assert.match(label,/约4点/,'the live hover estimate preserves Quick Attack damage against the real nearby target');assert.doesNotMatch(await card.innerText(),/同排|同列|斜线|造成约/,'details belong in the hover card, not the compact move card');
   await cell(p,4,1);let s=await state(p);assert.equal(s.round,1);assert.equal(s.units.E.hp,0);assert.equal(s.units.C.pp.quickattack,1); // E's 4 HP are defeated by round(8 × 0.5)=4 Quick Attack from two cells away
   await key(p,'ArrowRight');s=await state(p);assert.equal(s.units.C.pos.x,3); // kill E before the remaining Quick Attack PP is used on R
   for(let i=0;i<4;i++)await key(p,'.');s=await state(p);assert.equal(s.round,6);assert.equal(s.units.R.hp,8);assert.deepEqual(s.units.R.pos,{x:4,y:1});assert.equal(s.units.C.hp,14); // R walks from 9 to 4, then deals one 6-point STAB Tackle
@@ -697,7 +697,7 @@ await test('基地6.5：回到基地、学习招式机、配招、编队、出�
    let s=await state(p);assert.equal(s,null);
   await openCampRoster(p,'P3');
   await p.locator('[data-camp-move]').first().focus();await p.locator('#camp-move-tooltip').waitFor({state:'visible'});
-  const baseMoves=await p.locator('#camp-move-tooltip').innerText();assert.doesNotMatch(baseMoves,/射程/,'an adjacent single target says nothing about range');assert.match(baseMoves,/威力\s*6/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
+  const baseMoves=await p.locator('#camp-move-tooltip').innerText();assert.match(baseMoves,/射程\s*1/,'every card names its range, an adjacent target included');assert.match(baseMoves,/威力\s*6/);assert.doesNotMatch(baseMoves,/两招行为须不同/);
   assert.equal(await p.locator('#camp-move-tooltip .hud-range-cell.is-active').count(),1);
   assert.equal(await p.locator('#camp-move-tooltip .hud-range-cell.is-active,#camp-move-tooltip .hud-range-cell.is-direction').count(),8,'the front move diagram retains all eight adjacent directions');
   const prof=()=>p.evaluate(()=>window.trial.profile());
@@ -897,11 +897,11 @@ await test('7.1(a) 全新存档：标题→新游戏→选主控与副手→基�
   assert.match(await p.locator('.starter-stats').getAttribute('aria-label'),/HP 44.*攻击 48.*防御 65.*特攻 50.*特防 64.*速度 43/);
   await p.screenshot({path:artifact+'windows-starter-aligned-1280.png'});
   const water=p.locator('[data-starter-move=watergun]');
-  assert.deepEqual(await water.locator('dt').allTextContents(),['威力','命中','PP'],'only what is not the default: no range for an adjacent target, no 范围 row');
+  assert.deepEqual(await water.locator('dt').allTextContents(),['威力','命中','PP','射程'],'the same fields on every card: power, accuracy, PP, range (no effect row for a move with no added effect)');
   assert.equal(await water.locator('.hud-range-cell').count(),25);
-  assert.equal(await water.locator('.starter-move-description').isVisible(),false);
-  await water.hover();
-  assert.match(await water.locator('.starter-move-description').innerText(),/特殊攻击，按特攻对特防结算。命中率\d+%/);
+  assert.equal(await water.locator('.starter-move-description').count(),0,'a move with no added effect has no effect text');
+  const withEffect=p.locator('[data-starter-move]:has(.starter-move-description)').first();if(await withEffect.count()>0)await withEffect.hover();
+  if(await withEffect.count()>0)assert.doesNotMatch(await withEffect.locator('.starter-move-description').innerText(),/物理攻击|特殊攻击|命中率/,'the effect text leaves out what the card header already says');
   await p.locator('#pick-main-treecko').click();await p.locator('#main-next').click();
   assert.equal(await p.locator('.starter-option').count(),8);assert.equal(await p.locator('#pick-deputy-treecko').count(),0);
   const deputyPortraits=await visiblePortraits(p,'.starter-option .portrait');assert.equal(deputyPortraits.length,8);assertPortraitsCentered(deputyPortraits,'eight deputy option icons');
@@ -1027,12 +1027,12 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   await move.hover();const tip=p.locator('#hud-tooltip');await tip.waitFor({state:'visible'});let detail=await tip.innerText();
   for(const field of ['威力','命中','PP'])assert.ok(detail.includes(field),`the move tooltip exposes ${field}`);assert.ok(!detail.includes('范围'));
   const moveDescription=(await tip.locator('[data-move-description]').textContent())??'';
-  assert.ok(moveDescription.endsWith('。')&&moveDescription.length>4,'the hover tooltip carries the effect text built from the engine data: '+moveDescription);
+  assert.ok(moveDescription===''||moveDescription.endsWith('。'),'the hover tooltip carries the effect text built from the engine data, or none for plain damage: '+moveDescription);
   assert.doesNotMatch(moveDescription,/建议|可以使用/,'the effect text is not an operating instruction (G13.5)');
   assert.ok((await tip.locator(`[data-move-preview="${skill}"]`).textContent())?.trim(),'the hover card carries the live move estimate');
   assert.doesNotMatch(await tip.locator('[data-move-preview]').innerText(),/对普通目标|[（）]/,'the visual estimate omits explanatory parentheses');
   assert.doesNotMatch(await move.innerText(),/同排|同列|斜线|造成约/,'compact move cards do not carry the old detailed explanation');
-  assert.ok(!(await move.innerText()).includes(moveDescription),'full move prose appears in the hover tooltip only');
+  assert.ok(moveDescription===''||!(await move.innerText()).includes(moveDescription),'full move prose appears in the hover tooltip only');
   await p.screenshot({path:artifact+'windows-hud-main-hover.png',fullPage:false});
   const learned=s.units.A.learned;
   for(let index=1;index<4;index++){

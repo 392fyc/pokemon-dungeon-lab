@@ -25,7 +25,7 @@ export const TM_MOVES_V5=[...TM_MOVES_V4,'rest','sleeptalk'] as const;
 export const ALL_TM_MOVES=TM_MOVES_V5;
 /** Missing tmPool preserves old saves: ordinary runs use three, old boss runs six; marked pools 3/4/5 use nine/fifteen/seventeen. */
 export const tmPool=(d?:{boss?:boolean;tmPool?:3|4|5}|null):readonly string[]=>d?.boss?(d.tmPool===5?TM_MOVES_V5:d.tmPool===4?TM_MOVES_V4:d.tmPool===3?TM_MOVES_V3:TM_MOVES):LEGACY_TM_MOVES;
-export type BossTraits={levelBonus:number;hpBase:number;hpMultiplier:number;canMove:boolean;canBeBlownAway:boolean};
+export type BossTraits={levelBonus:number;hpBase:number;hpMultiplier:number;staysInRoom:boolean;canBeBlownAway:boolean};
 export const BOSS_CONFIG:Record<string,BossTraits>=bosses.bosses;
 /** Bosses share the ordinary roster; recruited partners do not inherit boss traits. */
 export const BOSS_SPECIES:Record<string,string>=Object.fromEntries(Object.keys(BOSS_CONFIG).map(id=>[id,SPECIES[id].dex]));

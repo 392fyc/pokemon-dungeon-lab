@@ -5,7 +5,7 @@
       "levelBonus": 2,
       "hpBase": 30,
       "hpMultiplier": 4,
-      "canMove": false,
+      "staysInRoom": true,
       "canBeBlownAway": false
     }
   }

@@ -336,9 +336,9 @@ const battleInt=(s:World,lo:number,hi:number)=>lo+Math.floor(battleRandom(s)*(hi
 const emit=(s:World,e:RoundEvent)=>{(s.events??=[]).push(e);};
 /** Stage of a unit; the missing keys of old units read as 0 and speed never has one. */
 export const stageOf=(u:Unit,k:StageKey):number=>k==='spe'?0:((u.stages as Record<string,number|undefined>|undefined)?.[k]??0);
-/** G2 (8.8): stage difference n is clamped to -3...+3; n>=0 gives (3+n)/3, n<0 gives 3/(3-n). */
-/** G5.1: accuracy and evasion stages run -3...+3. G4.3: at most three travellers. G5.13: a status without a duration range (flinch) lasts this many of its owner's action chances. */
-export const ACCURACY_STAGE_LIMIT=3,PARTY_LIMIT=3,STATUS_DEFAULT_LEFT=1;
+/** G5.1 (D-20261110-08): stage difference n is clamped to -6...+6; n>=0 gives (3+n)/3, n<0 gives 3/(3-n). */
+/** G5.1: accuracy and evasion stages run -6...+6 as in the main series (Showdown hitStepAccuracy; D-20261110-08). G4.3: at most three travellers. G5.13: a status without a duration range (flinch) lasts this many of its owner's action chances. */
+export const ACCURACY_STAGE_LIMIT=6,PARTY_LIMIT=3,STATUS_DEFAULT_LEFT=1;
 /** G5.6, G5.7, G5.8, G5.9: how long guard, counter and screens last (in opposing action phases), and the blow-away reach and impact. Read by the move texts. */
 export const PROTECT_PHASES=3,COUNTER_PHASES=3,SCREEN_PHASES=10,BLOWAWAY_CELLS=10,COLLISION_DAMAGE=5;
 export const accuracyMultiplier=(n:number):number=>{const c=Math.max(-ACCURACY_STAGE_LIMIT,Math.min(ACCURACY_STAGE_LIMIT,n));return c>=0?(3+c)/3:3/(3-c);};
@@ -963,11 +963,14 @@ function chooseEnemyAction(s:World,id:string,blockingGuard:ReadonlySet<string>,c
     const damage=pickDamageAction(s,id,'gofoes',quickguard,visibleIds);if(damage)return damage;
     const support=supportAction(s,id,quickguard,'gofoes',visibleIds);if(support)return support;
     const basic=legalBasicTarget(s,id,'gofoes',visibleIds);if(basic)return {type:'basic',target:basic.id};
-    if(actor.boss&&BOSS_CONFIG[actor.species??'']?.canMove===false)return {type:'wait'};
     const target=ordered[0];
+    if(actor.boss)return bossStepToward(s,actor,target.pos!);
     const step=firstStepTo(s,actorPos,target.pos!,false);return step?{type:'move',to:step}:{type:'wait'};
   }
-  if(actor.boss)return {type:'wait'};
+  if(actor.boss){   // D-20261110-07: out of sight, the boss heads for whoever last hit it, inside its room
+    if(actor.targetMemory&&!same(actor.pos,actor.targetMemory)){const a=bossStepToward(s,actor,actor.targetMemory);if(a.type==='move')return a;}
+    actor.targetMemory=null;return {type:'wait'};
+  }
   if(actor.targetMemory){
     actor.lostSightTurns=(actor.lostSightTurns??0)+1;
     if(actor.lostSightTurns>=4||same(actor.pos,actor.targetMemory)){actor.targetMemory=null;actor.lostSightTurns=0;actor.roamTarget=null;}
@@ -978,6 +981,13 @@ function chooseEnemyAction(s:World,id:string,blockingGuard:ReadonlySet<string>,c
     return step?{type:'move',to:step}:{type:'wait'};
   }
   return roamAction(s,actor);
+}
+/** D-20261110-07 (G7.7): a boss that stays in its room moves toward a target but never steps out of the boss room; when the next step would leave it, it waits at the edge. */
+function bossStepToward(s:World,actor:Unit,target:Pos):Action {
+  const step=firstStepTo(s,actor.pos!,target,false);if(!step)return {type:'wait'};
+  const room=s.bossRoom!==undefined?s.rooms?.[s.bossRoom]:undefined,stays=BOSS_CONFIG[actor.species??'']?.staysInRoom!==false;
+  if(stays&&room&&!(step.x>=room.x&&step.y>=room.y&&step.x<room.x+room.w&&step.y<room.y+room.h))return {type:'wait'};
+  return {type:'move',to:step};
 }
 function randomEnemyAi(s:World):number {
   const state=s.enemyAiRng??streamSeed(s.dungeon?.seed??0,s.dungeon?.level??1,'enemy-ai'),next=rngStep(state);s.enemyAiRng=next.state;return next.value;
@@ -1232,7 +1242,7 @@ function basicCategory(u:Unit):'Physical'|'Special' {
 /** Critical hits (main-series values, working numbers): 1 in 24 per target, damage x1.5. */
 export const CRIT_CHANCE=1/24,CRIT_MULTIPLIER=1.5;
 export const STAT_DAMAGE_RATIO=Object.freeze({min:0.5,max:2} as const);
-/** Ability stages of attack, special attack, defence and special defence run -10...+10 (Mystery Dungeon, Bulbapedia "Stat (Mystery Dungeon)"); accuracy and evasion keep their own -3...+3 rule. */
+/** Ability stages of attack, special attack, defence and special defence run -10...+10 (Mystery Dungeon, Bulbapedia "Stat (Mystery Dungeon)"); accuracy and evasion keep their own -6...+6 rule (G5.1). */
 export const STAGE_LIMIT=10;
 /** Stage multipliers in 256ths, index = stage + 10. Attack and special attack (attacker side), defence and special defence (defender side: the defence value is multiplied, so damage is divided). */
 export const ATTACK_STAGE_256=[128,133,138,143,148,153,161,171,179,204,256,307,332,358,384,409,422,435,448,460,473] as const;
@@ -1322,6 +1332,7 @@ function onDirectDamageToSleeper(s:World,owner:Unit,attacker:Unit,blockingGuard:
 function resolveDamage(s:World,sourceId:string,targetId:string,baseDamage:number,category:'Physical'|'Special'|'Status'='Physical',quickguard:ReadonlySet<string>=new Set(),thaw=false,skill?:Skill,suppressSleepTrigger=false,createdGuard:Set<string>=new Set()):number {
   const source=s.units[sourceId],target=s.units[targetId],opposing=source.side!==target.side;
   let amount=damageAmount(s,source,target,baseDamage,category,quickguard,thaw,skill);
+  if(target.boss&&opposing&&source.pos&&alive(target))target.targetMemory=clone(source.pos);   // D-20261110-07: a boss that is hit turns on its attacker
   if(thaw&&amount>0&&hasStatus(target,'frz')){dropStatus(target,'frz');const keep=s.strikePending;note(s,L`${targetId}受到火系招式或热水攻击后解冻`);if(keep!==undefined)s.strikePending=keep;emit(s,{type:'status',target:targetId,status:'frz',change:'cure'});}
   const effectiveness=skill?typeEffectiveness(skill,speciesTypes(target)):1;
   // One roll per target on the battle stream, only for a hit that deals damage and is not immune (G5.3 step 7 comes first); a critical hit is rolled again through the same rule with its own stage handling.
@@ -1368,7 +1379,7 @@ function effectBlocked(s:World,actor:Unit,target:Unit,guard:ReadonlySet<string>)
 function changeStage(s:World,targetId:string,stat:StageKey,change:number):void {
   if(stat==='spe')return; // the game has no speed: speed changes do not take effect (8.8, 4)
   const target=s.units[targetId],before=stageOf(target,stat);
-  const limit=stat==='acc'||stat==='eva'?3:STAGE_LIMIT;
+  const limit=stat==='acc'||stat==='eva'?ACCURACY_STAGE_LIMIT:STAGE_LIMIT;
   target.stages[stat]=Math.max(-limit,Math.min(limit,before+change));
   note(s,L`${targetId}${STAGE_NAMES[stat]}阶段变为${target.stages[stat]}`);emit(s,{type:'stage',unit:targetId,stat,value:target.stages[stat] as number});
 }

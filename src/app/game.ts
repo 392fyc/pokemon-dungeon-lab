@@ -358,7 +358,7 @@ function showMoveTip(skill:Skill,actor:string){
  const preview=pending&&unit?{...s,units:{...s.units,[actor]:{...unit,pp:{...unit.pp,[skill]:pending.pp},maxPp:{...unit.maxPp,[skill]:pending.pp}}}}:s;
  const detailDialog=document.getElementById('unit-details-dialog') as HTMLDialogElement|null;
  const box=(s.phase==='learning'?document.getElementById('learning-tooltip'):detailDialog?.open?document.getElementById('detail-tooltip'):null)??$('hud-tooltip');
- if(s.phase==='learning')$('hud-tooltip').hidden=true;
+ if(s.phase==='learning'){$('hud-tooltip').hidden=true;if(box.id==='hud-tooltip')return;}   // the learning cards already show every field; a floating tip would cover the buttons
  box.dataset.sourceId=actor;box.innerHTML=hudMoveTip({...preview,leader:actor},skill);refreshDamagePreviews(s);box.hidden=false;
  if(box.id==='detail-tooltip'&&detailDialog){const row=detailDialog.querySelector<HTMLElement>('[data-detail-skill="'+CSS.escape(skill)+'"]')!,r=row.getBoundingClientRect(),d=detailDialog.getBoundingClientRect();box.style.left=Math.max(8,Math.min(detailDialog.clientWidth-box.offsetWidth-8,r.left-d.left-box.offsetWidth-12))+'px';box.style.top=Math.max(detailDialog.scrollTop+8,Math.min(r.top-d.top+detailDialog.scrollTop,detailDialog.scrollTop+detailDialog.clientHeight-box.offsetHeight-8))+'px';}
 }

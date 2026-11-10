@@ -8,6 +8,7 @@ import {DIFFICULTY,ENEMY_SLEEP_CHANCE} from '../../src/core/dungeon.ts';
 import {wikiCategories,wikiEntry,wikiEntryIds,wikiMoveIds,wikiTokens,searchWiki,WIKI_LINK,isCategoryLink,wikiRuleIds} from '../../src/core/wiki.ts';
 import {SPECIES,ALL_TM_MOVES} from '../../src/core/roster.ts';
 import {moveOf} from '../../src/core/moves.ts';
+import {moveEffectText} from '../../src/core/move-text.ts';
 import {moveZh,speciesZh} from '../../src/core/names.ts';
 import {STATUS_NAMES,STAGE_NAMES,ITEM_NAMES,BLESSINGS,ITEM_CURES,STATUS_DURATION,STATUS_INTERVAL,STATUS_DAMAGE_DIVISOR,ATTACK_STAGE_256,DEFENCE_STAGE_256,STAGE_LIMIT,CRIT_CHANCE,CRIT_MULTIPLIER,ACCURACY_STAGE_LIMIT,PARTY_LIMIT,STATUS_DEFAULT_LEFT} from '../../src/core/engine.ts';
 import {ITEM_DESCRIPTIONS} from '../../src/core/item-descriptions.ts';
@@ -39,7 +40,7 @@ test('every move a game can hand out has an entry with name, type, category and 
     const e=wikiEntry('moves:'+id);assert.ok(e,id);assert.ok(moveOf(id),id);
     assert.equal(e.title,moveZh(id));assert.ok(e.meta.types.length===1,id+' has a type');
     const facts=e.blocks.find(b=>b.t==='facts').rows.map(r=>r.label);for(const l of ['属性','类别','威力','命中','PP','射程'])assert.ok(facts.includes(l),id+' '+l);
-    assert.ok(e.blocks.some(b=>b.t==='p'&&b.text.length>3),id+' has the official description');
+    const text=moveEffectText(id);assert.equal(e.blocks.some(b=>b.t==='p'),text!=='',id+': a move with an added effect has its effect paragraph, a plain damage move has none (no filler sentence)');if(text)assert.ok(e.blocks.some(b=>b.t==='p'&&b.text.length>3),id+' has the effect text');
   }
 });
 test('a move links to its status and the status lists the move back',()=>{
@@ -65,7 +66,7 @@ test('stage entries show the engine multiplier tables, the stage limit and the c
   assert.deepEqual(table('stages:def').rows.map(r=>Number(r[1])),[...DEFENCE_STAGE_256]);
   assert.deepEqual(table('stages:spd').rows.map(r=>Number(r[1])),[...DEFENCE_STAGE_256]);
   assert.equal(table('stages:atk').rows.length,STAGE_LIMIT*2+1);
-  assert.deepEqual(table('stages:acc').rows.map(r=>r[0]),['−3','−2','−1','0','+1','+2','+3']);
+  assert.deepEqual(table('stages:acc').rows.map(r=>r[0]),['−6','−5','−4','−3','−2','−1','0','+1','+2','+3','+4','+5','+6']);
   const t=wikiTokens();assert.equal(t['stage.limit'],String(STAGE_LIMIT));assert.equal(t['crit.chance'],'1/'+Math.round(1/CRIT_CHANCE));assert.equal(t['crit.mult'],String(CRIT_MULTIPLIER));
   assert.ok(blocksText(wikiEntry('terms:crit')).includes('1/24')&&blocksText(wikiEntry('terms:crit')).includes('1.5'));
   for(const k of Object.keys(STAGE_NAMES).filter(k=>k!=='spe'))assert.equal(wikiEntry('stages:'+k).title,STAGE_NAMES[k]);
@@ -73,7 +74,7 @@ test('stage entries show the engine multiplier tables, the stage limit and the c
 test('the evasion page lists the defender evasion stage: +1 evasion makes the attacker multiplier smaller than 1, -1 larger (G5.1 n = accuracy - evasion)',()=>{
   const rows=id=>wikiEntry(id).blocks.find(b=>b.t==='table').rows,mult=r=>Number(r[1].slice(1));
   const eva=rows('stages:eva'),acc=rows('stages:acc');
-  assert.deepEqual(eva.map(r=>r[0]),['−3','−2','−1','0','+1','+2','+3']);
+  assert.deepEqual(eva.map(r=>r[0]),['−6','−5','−4','−3','−2','−1','0','+1','+2','+3','+4','+5','+6']);
   assert.ok(mult(eva.find(r=>r[0]==='+1'))<1,'evasion +1: '+eva.find(r=>r[0]==='+1')[1]);assert.ok(mult(eva.find(r=>r[0]==='−1'))>1);
   assert.equal(mult(eva.find(r=>r[0]==='+1')).toFixed(2),(3/4).toFixed(2));assert.equal(mult(eva.find(r=>r[0]==='−1')).toFixed(2),(4/3).toFixed(2));
   assert.ok(mult(acc.find(r=>r[0]==='+1'))>1&&mult(acc.find(r=>r[0]==='−1'))<1,'accuracy +1 raises the chance');

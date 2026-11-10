@@ -880,23 +880,30 @@ body.dungeon-mode .hud-skill-power[data-power="—"] {
 }
 
 body.dungeon-mode .hud-skill-reach {
-  display: inline-flex;
-  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-body.dungeon-mode .hud-skill-reach svg {
-  fill: #fff;
-  stroke: #fff;
+body.dungeon-mode .hud-skill-power {
+  white-space: nowrap;
 }
 
-body.dungeon-mode .hud-skill-reach .r-self {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 1.5;
+body.dungeon-mode .hud-skill-effect {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.34);
+  color: #fff6d8;
+  font-weight: 700;
+  text-overflow: ellipsis;
 }
 
 body.dungeon-mode .hud-skill-meta {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 4px;
   color: rgba(242, 238, 224, 0.84);

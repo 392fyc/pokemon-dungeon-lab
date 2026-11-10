@@ -406,6 +406,11 @@ dialog#map-dialog.map194[open] {
   display: block;
 }
 
+/* Slide the 900px map right just enough that its plaque clears the party cards (x < 250) on a 1280-wide screen. */
+@media (min-width: 1280px) {
+  dialog#map-dialog.map194 { left: max(0px, calc(1350px - 100vw)); }
+}
+
 dialog#map-dialog.map194::backdrop {
   background: #0c0a089e;
 }

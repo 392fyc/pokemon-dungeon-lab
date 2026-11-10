@@ -7,7 +7,7 @@
 .paper-window button:hover:not(:disabled):not([aria-pressed=true]){background-color:#fff6dc}
 .paper-window :focus-visible,.settlement194 :focus-visible{outline:3px solid #d9622b;outline-offset:3px}
 .paper-plaque{position:absolute;left:24px;top:-24px;display:inline-block;margin:0;padding:3px 22px 5px;background:var(--paper-wood);color:#fff4d8;font:900 22px/1.3 var(--ui-body);letter-spacing:2px;text-shadow:2px 2px 0 var(--paper-wood-dark);box-shadow:0 0 0 3px var(--paper-ink),inset 0 3px 0 var(--paper-wood-light),inset 0 -3px 0 var(--paper-wood-dark)}
-.paper-window .paper-close{position:absolute;right:14px;top:14px;z-index:3;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;background:var(--paper-2);box-shadow:0 0 0 2px var(--paper-ink);font-size:24px}
+.paper-window .paper-close{position:absolute;right:14px;top:-18px;z-index:3;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;background:var(--paper-2);box-shadow:0 0 0 2px var(--paper-ink);font-size:24px}
 .paper-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;background:var(--paper-wood-light);box-shadow:0 0 0 2px var(--paper-ink),inset 0 3px 0 #e6c291,inset 0 -3px 0 var(--paper-wood)}
 .paper-button.is-primary{background:#d9622b;color:#fff;box-shadow:0 0 0 3px var(--paper-ink),inset 0 3px 0 #f39a63,inset 0 -3px 0 #a64217}
 .paper-muted{font-size:14px;color:var(--paper-muted)}
@@ -51,7 +51,7 @@
 #detail-tooltip{position:fixed;z-index:80;max-height:calc(100dvh - 32px);overflow:auto;width:min(372px,calc(100vw - 32px));padding:12px;background:#2a1f17;color:#f5ebd2;border:3px solid #000;box-shadow:6px 8px 0 #0006}
 #detail-tooltip[hidden]{display:none}
 #detail-tooltip .hud-move-tip-main{align-items:flex-start}
-dialog#settings.settings194{width:800px;max-width:calc(100vw - 48px);height:500px;max-height:calc(100dvh - 64px);overflow:visible;padding:26px;background:var(--paper);color:var(--paper-ink);border:4px solid var(--paper-wood-dark);border-radius:0}
+dialog#settings.settings194{width:800px;max-width:calc(100vw - 48px);height:580px;max-height:calc(100dvh - 64px);overflow:visible;padding:26px;background:var(--paper);color:var(--paper-ink);border:4px solid var(--paper-wood-dark);border-radius:0}
 #settings.settings194 [hidden]{display:none!important}
 #settings.settings194 button{margin:0}
 .settings-side{position:absolute;left:18px;top:42px;bottom:22px;width:150px;display:flex;flex-direction:column;gap:8px}
@@ -66,8 +66,9 @@ dialog#settings.settings194{width:800px;max-width:calc(100vw - 48px);height:500p
 .paper-switch button[aria-pressed=true]{background:var(--paper-leaf);color:#fff}
 .settings194 kbd{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 7px;background:#fff8e4;color:var(--paper-ink);font:900 14px var(--ui-body);box-shadow:0 0 0 2px var(--paper-ink),inset 0 -3px 0 var(--paper-3)}
 .paper-key-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.paper-key-group{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-height:66px;background:var(--paper-2);padding:10px 12px}
-.paper-key-group:nth-child(-n+2){min-height:112px}
+.paper-key-group{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-height:54px;background:var(--paper-2);padding:10px 12px}
+.paper-key-group:nth-child(-n+2){min-height:104px}
+.paper-key-group.is-wide{grid-column:1/-1}.paper-key-group>.key-caps{flex-wrap:nowrap}
 .paper-key-group>b{margin-left:auto;font-size:15px}
 .key-caps{display:flex;flex-wrap:wrap;gap:5px}.key-caps.is-wasd{display:grid;grid-template-columns:repeat(3,32px)}.is-wasd kbd:first-child{grid-column:2}.is-wasd kbd:nth-child(2){grid-column:1}
 .settings-profile{display:flex;align-items:center;flex-wrap:wrap;gap:18px;padding:16px;background:var(--paper-2)}
@@ -136,6 +137,7 @@ body.dungeon-mode #flow .settlement-foot .paper-button{font-family:var(--ui-body
 @media(max-width:760px){
  .detail194,dialog#settings.settings194{width:calc(100vw - 32px);max-width:none;height:auto;max-height:calc(100dvh - 48px);overflow:auto;padding:18px}
  .paper-window .paper-plaque{position:static;display:inline-block;margin:0 0 14px;font-size:20px}
+ .paper-window .paper-close{top:8px;right:8px}
  .detail-tabs{position:static;width:calc(100% - 32px);margin:0 0 12px;padding:3px;max-height:60px}
  .detail-body{display:flex;flex-direction:column;margin-top:0;gap:16px}
  .detail-portrait-pad .panel-portrait{width:84px;height:84px}.detail-identity h3{font-size:24px}
@@ -185,6 +187,8 @@ body.dungeon-mode #flow #result-settings{position:absolute;right:12px;top:12px;z
 /* Round 5: the blessing list is a column attached to the right of the window. Window and column are centred together; both keep their size whatever the member or the number of blessings. */
 .detail194{--bless-w:200px;--bless-gap:14px;left:calc(50% - (var(--bless-w) + var(--bless-gap)) / 2);max-width:calc(100vw - 32px - var(--bless-w) - var(--bless-gap))}
 .detail194 .detail-tactics{bottom:18px}
+/* On a 1280-wide screen the details window and its blessing column are centred together, which puts the plaque over the party cards (x < 250); slide them right until the plaque clears. */
+@media(min-width:1280px){.detail194{left:max(calc(50% - (var(--bless-w) + var(--bless-gap)) / 2),613px)}}
 .detail-blessings{position:absolute;top:-4px;bottom:-4px;left:calc(100% + var(--bless-gap) + 4px);   /* 4px: the window's own border */
  width:var(--bless-w);display:flex;flex-direction:column;gap:8px;padding:18px 12px 12px}
 .detail-blessings h3{flex:none;text-align:center;font-size:18px;letter-spacing:4px}

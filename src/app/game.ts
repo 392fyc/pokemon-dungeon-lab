@@ -593,16 +593,15 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
 /** 6.5 base screen: roster, technique machines, carried moves, squad and departure. Every edit is one saved write; the next edit waits for it. */
 function rankPanel(p:Profile,ready:boolean):string{
  const level=rankLevel(p.rankExp),floor=rankThreshold(level),next=rankThreshold(level+1),points=availableTalentPoints(p);
+ const pips=(n:number)=>Array.from({length:TALENT_MAX_RANK},(_,i)=>`<i class="${i<n?'is-on':''}"></i>`).join('');
  const rows=(['vitality','offense','supplies'] as TalentId[]).map(id=>{
   const n=p.talents[id]??0;
   const effect=id==='vitality'?`全队最大 HP +${n*5}%`:id==='offense'?`对敌伤害 +${n*3}%`:`橙橙果回复 +${n} HP${n>=3?' · 出发带 1 个橙橙果':''}`;
-  return `<article class="unit" id="talent-${id}"><h3>${esc(TALENTS[id].name)} <small>${n}/${TALENT_MAX_RANK}</small></h3><p>${effect}</p>${button(`talent-add-${id}`,'加一点',!ready||points<1||n>=TALENT_MAX_RANK)}</article>`;
+  return `<article class="camp194-talent-card" id="talent-${id}"><h3>${esc(TALENTS[id].name)} <small>${n}/${TALENT_MAX_RANK}</small></h3><div class="camp194-talent-pips">${pips(n)}</div><p>${effect}</p>${button(`talent-add-${id}`,'加一点',!ready||points<1||n>=TALENT_MAX_RANK)}</article>`;
  }).join('');
- return `<section id="rank-panel"><p id="rank-level">探险队 Lv${level}</p>
-  <p id="rank-progress">下一级 ${p.rankExp-floor}/${next-floor}</p>
-  <p id="talent-points">未分配天赋点：${points}</p>
-  <div id="talent-tree">${rows}</div>
-  ${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0))}</section>`;
+ return `<section id="rank-panel" class="camp194-talents"><div class="camp194-talent-head"><strong id="rank-level">探险队 Lv${level}</strong><span id="talent-points" class="camp194-talent-points">未分配天赋点：${points}</span><p id="rank-progress" class="camp194-talent-xp"><span>下一级</span><b>${p.rankExp-floor}/${next-floor}</b></p></div>
+  <div id="talent-tree" class="camp194-talent-cards">${rows}</div>
+  ${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0),'class="camp194-talent-reset"')}</section>`;
 }
 function renderBase(){
  const p=store.profile;
@@ -667,13 +666,14 @@ function renderBase(){
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-shard]'))el.onclick=()=>{vaultState.shard=el.dataset.vaultShard!;render();};
  for(const m of ALL_TM_MOVES)bind('tm-'+m,()=>{vaultState.move=m;vaultState.learner=null;notice='';render();});
  for(const difficulty of ['easy','normal','hard'])if(isDifficulty(difficulty))bind('difficulty-'+difficulty,()=>void edit({type:'difficulty',difficulty}));
+ /** The vault's right panel already describes the selected machine, so that tile never raises a tooltip (it would repeat the text and cover the learners). */
+ const tipFor=(el:HTMLButtonElement|null|undefined)=>el&&!(el.classList.contains('camp194-tm-tile')&&el.getAttribute('aria-pressed')==='true')?el:null;
+ const showTip=(el:HTMLButtonElement|null|undefined)=>{const tip=document.getElementById('camp-move-tooltip');if(!tip)return;const target=tipFor(el);if(target){tip.innerHTML=campMoveTooltip194(target.dataset.campMove!);tip.hidden=false;}else tip.hidden=true;};
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-camp-move]')){
-  const show=()=>{const tip=document.getElementById('camp-move-tooltip');if(tip){tip.innerHTML=campMoveTooltip194(el.dataset.campMove!);tip.hidden=false;}};
-  const hide=()=>{const active=dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus')??dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:hover');const tip=document.getElementById('camp-move-tooltip');if(tip){if(active){tip.innerHTML=campMoveTooltip194(active.dataset.campMove!);tip.hidden=false;}else tip.hidden=true;}};
-  el.onmouseenter=show;el.onfocus=show;el.onmouseleave=hide;el.onblur=hide;
+  const hide=()=>showTip(tipFor(dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus'))??tipFor(dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:hover')));
+  el.onmouseenter=()=>showTip(el);el.onfocus=()=>showTip(el);el.onmouseleave=hide;el.onblur=hide;
  }
- const focusedMove=dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus'),focusedTip=document.getElementById('camp-move-tooltip');
- if(focusedMove&&focusedTip){focusedTip.innerHTML=campMoveTooltip194(focusedMove.dataset.campMove!);focusedTip.hidden=false;}
+ showTip(dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus'));
  bind('depart',()=>{if(anim.active||store.status!=='ready')return;campWindowCycle++;departureOpen=true;campPanel=null;notice='';render();});
  bind('depart-confirm',()=>{if(anim.active||store.status!=='ready')return;clear();departureOpen=false;notice='';const pending=store.depart(newId(),newSeed(),0);render();void pending.then(()=>render());});
 }

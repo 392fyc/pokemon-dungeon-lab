@@ -96,23 +96,14 @@ export function campScene(profile:Profile,ready:boolean,message:string):string {
 
 export function campPanelMarkup(panel:CampPanel,content:string,message:string):string {
   const building=CAMP_BUILDINGS[panel];
-  if(panel!=='talents'){
-    return '<dialog id="camp-dialog" class="camp-dialog camp194-paper-dialog camp194-'+panel+'-dialog" data-camp-panel="'+panel+'" aria-labelledby="camp-dialog-heading">'+
-      '<div class="camp194-paper-shell">'+
-        '<h2 id="camp-dialog-heading" class="camp194-plaque">'+escape(building.name)+'</h2>'+
-        '<button type="button" id="camp-close" class="camp194-close" aria-label="关闭'+escape(building.name)+'">×</button>'+
-        message+
-        '<div class="camp194-paper-content">'+content+'</div>'+
-        '<div id="camp-move-tooltip" class="camp194-move-tooltip" role="tooltip" hidden></div>'+
-          '</div>'+
-    '</dialog>';
-  }
-  return '<dialog id="camp-dialog" class="camp-dialog" data-camp-panel="'+panel+'" aria-labelledby="camp-dialog-heading">'+
-    '<div class="camp-dialog-layout"><div class="camp-dialog-main">'+
-      '<div class="camp-dialog-heading"><h2 id="camp-dialog-heading">'+escape(building.name)+'</h2>'+
-        '<button type="button" id="camp-close" aria-label="关闭'+escape(building.name)+'">×</button></div>'+
-      message+'<div class="camp-dialog-content">'+content+'</div>'+
-    '</div></div>'+
+  return '<dialog id="camp-dialog" class="camp-dialog camp194-paper-dialog camp194-'+panel+'-dialog" data-camp-panel="'+panel+'" aria-labelledby="camp-dialog-heading">'+
+    '<h2 id="camp-dialog-heading" class="camp194-plaque">'+escape(building.name)+'</h2>'+
+    '<button type="button" id="camp-close" class="camp194-close" aria-label="关闭'+escape(building.name)+'">×</button>'+
+    '<div class="camp194-paper-shell">'+
+      message+
+      '<div class="camp194-paper-content">'+content+'</div>'+
+      '<div id="camp-move-tooltip" class="camp194-move-tooltip" role="tooltip" hidden></div>'+
+    '</div>'+
   '</dialog>';
 }
 
@@ -387,10 +378,10 @@ function departureMember(profile:Profile,id:string,index:number):string {
 export function campDeparture194(profile:Profile,ready:boolean,difficultyMarkup:string,feedback:string):string {
   const team=profile.team.map((id,index)=>departureMember(profile,id,index)).join('');
   return '<dialog id="camp-departure" class="camp194-paper-dialog camp194-departure" data-camp-panel="departure" aria-labelledby="camp-departure-heading">'+
+    '<h2 id="camp-departure-heading" class="camp194-plaque">出发</h2>'+
+    '<button type="button" id="depart-cancel" class="camp194-close" aria-label="取消出发">×</button>'+
     '<div class="camp194-departure-shell">'+
-      '<h2 id="camp-departure-heading" class="camp194-plaque">出发</h2>'+
-      '<button type="button" id="depart-cancel" class="camp194-close" aria-label="取消出发">×</button>'+
-            '<section class="camp194-depart-team" aria-label="出发阵容">'+(team||'<p class="camp194-empty">无</p>')+'</section>'+
+      '<section class="camp194-depart-team" aria-label="出发阵容">'+(team||'<p class="camp194-empty">无</p>')+'</section>'+
       '<section class="camp194-depart-difficulty" aria-label="远征难度"><h3>远征难度</h3>'+difficultyMarkup+'</section>'+
       '<button type="button" id="depart-confirm" class="camp194-depart-confirm" '+(ready?'':'disabled')+'>进入迷宫</button>'+feedback+
     '</div>'+

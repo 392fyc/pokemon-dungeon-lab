@@ -57,7 +57,7 @@ for(const [w,h] of [[1280,720],[900,520]]){
  // the blessing column is always there: empty state first, window and column centred together, the same size for every member
  assert.equal(await p.locator('#detail-blessing-empty').innerText(),'无');assert.equal(await p.locator('.detail-blessings').isVisible(),true);
  const boxOf=async()=>{const d=await rect('#unit-details-dialog'),c=await rect('.detail-blessings');return {d,c,left:Math.min(d.x,c.x),right:Math.max(d.x+d.width,c.x+c.width)};};
- const empty=await boxOf();assert.ok(Math.abs((empty.left+empty.right)/2-w/2)<=2,`window and blessing column are centred together at ${w}x${h}: ${JSON.stringify({l:empty.left,r:empty.right})}`);
+ const empty=await boxOf();assert.ok(w===1280?empty.d.x+28-3>=250:Math.abs((empty.left+empty.right)/2-w/2)<=2,`window and blessing column are centred together at ${w}x${h} (at 1280 they slide right until the plaque clears the party cards, x 250): ${JSON.stringify({l:empty.left,r:empty.right})}`);
  assert.ok(empty.left>=0&&empty.right<=w+1&&empty.d.y>=0&&empty.d.y+empty.d.height<=h+1,'everything fits the viewport');
  assert.ok(Math.abs(empty.c.height-empty.d.height)<=1&&empty.c.x>=empty.d.x+empty.d.width,'the column is as tall as the window and sits to its right');
  await p.screenshot({path:out+`r5-details-blessings-0-${w}x${h}.png`});

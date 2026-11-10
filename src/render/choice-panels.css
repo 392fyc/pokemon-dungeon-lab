@@ -8,8 +8,7 @@ body.dungeon-mode #flow:has(.c195) {
   border: 0;
   background: none;
 }
-.c195 { position: relative; max-height: calc(100dvh - 40px); overflow: auto; padding: 30px 22px 18px; font-family: var(--ui-body); }
-.c195 .paper-plaque { position: absolute; }
+.c195 { position: relative; max-height: calc(100dvh - 56px); overflow: visible; padding: 36px 22px 18px; font-family: var(--ui-body); }
 .c195-title { margin: 6px 0 8px; font-size: 21px; color: var(--paper-ink); letter-spacing: 1px; }
 .c195 h4 { margin: 0 0 6px; font: 900 13px var(--ui-body); color: var(--paper-wood-dark); }
 .c195-head { display: flex; gap: 14px; align-items: center; margin-bottom: 8px; }
@@ -56,7 +55,7 @@ body.dungeon-mode #flow:has(.c195) {
   .c195-learn-grid { grid-template-columns: minmax(0, 1fr); gap: 6px; }
 }
 @media (max-width: 700px), (max-height: 560px) {
-  .c195 { padding: 18px 12px 10px; }
+  .c195 { padding: 32px 12px 10px; }
   .c195-move, .c195-unit { padding: 4px 8px; gap: 2px; }
   .c195-move-text { font-size: 11px; line-height: 1.25; }
   .c195-move-stats { font-size: 12px; }
@@ -65,7 +64,6 @@ body.dungeon-mode #flow:has(.c195) {
   .c195-unit.is-big .c195-portrait { width: 60px; height: 60px; }
   .c195-title { font-size: 16px; margin: 2px 0 4px; }
   .c195-head { margin-bottom: 4px; }
-  .c195 .paper-plaque { margin: -2px 0 4px -4px; font-size: 16px; padding: 1px 14px 2px; }
   .c195-foot { margin-top: 6px; }
   .c195-foot .paper-button { min-height: 36px; }
   .c195-team .c195-unit-moves { display: none; }
@@ -114,7 +112,6 @@ body.dungeon-mode #flow:has(.c195) {
 }
 
 /* The generic dungeon #flow button rules are more specific than the paper classes; restate the paper look here. */
-.c195 .paper-plaque { position: static; display: inline-block; margin: -6px 0 10px -6px; }
 body.dungeon-mode #flow .c195 button.c195-move,
 body.dungeon-mode #flow .c195 button.c195-unit,
 body.dungeon-mode #flow .c195 .c195-bag-item,
@@ -144,9 +141,8 @@ body.dungeon-mode #hud-bag .c195 .paper-button.is-primary { background: #d9622b;
 body.dungeon-mode #flow .c195 .paper-button:disabled,
 body.dungeon-mode #hud-bag .c195 .paper-button:disabled { opacity: .5; }
 body.dungeon-mode #hud-bag .c195 .c195-bag-actions .paper-button { font-size: 14px; }
-body.dungeon-mode #hud-bag .c195 .paper-close { position: absolute; right: 14px; top: 14px; background: var(--paper-2); color: var(--paper-ink); font-size: 24px; }
+body.dungeon-mode #hud-bag .c195 .paper-close { position: absolute; right: 14px; top: -18px; background: var(--paper-2); color: var(--paper-ink); font-size: 24px; }
 
-.c195 .paper-plaque { align-self: flex-start; }
 body.dungeon-mode #hud-bag .c195 .c195-bag-detail p { color: var(--paper-ink); font-size: 14px; }
 body.dungeon-mode #hud-bag .c195 .c195-slot { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 58px; padding: 4px; width: auto; height: auto; }
 body.dungeon-mode #hud-bag .c195 .c195-slot .c195-icon { width: 32px; height: 32px; min-width: 0; flex: none; }
@@ -172,7 +168,7 @@ body.dungeon-mode #hud-bag .c195 .c195-slot .c195-icon:has(.c195-icon-img) { wid
 #map-hint[hidden] { display: none; }
 
 /* Camp and run dialogs built on the paper window: keep them centred (the .c195 position rule would otherwise pull them to the corner). */
-dialog.c195 { position: fixed; inset: 0; margin: auto; width: min(820px, calc(100vw - 24px)); height: fit-content; max-height: calc(100dvh - 24px); overflow: auto; }
+dialog.c195 { position: fixed; inset: 0; margin: auto; width: min(820px, calc(100vw - 24px)); height: fit-content; max-height: calc(100dvh - 56px); overflow: visible; }
 dialog.c195::backdrop { background: rgba(12, 10, 8, 0.62); }
 dialog#abandon-dialog { width: min(560px, calc(100vw - 24px)); }
 .c195-consequences { margin: 4px 0 8px; padding-left: 20px; font-size: 15px; line-height: 1.65; }
@@ -187,7 +183,7 @@ dialog#abandon-dialog { width: min(560px, calc(100vw - 24px)); }
 /* Service panels (shop, exchanger, rest, adventure rooms): a centred paper panel instead of loose text over the map. */
 body.dungeon-mode #context-actions:has(.service) {
   position: fixed; top: 50%; left: 50%; bottom: auto; z-index: 44; display: block;
-  width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow: auto; box-sizing: border-box;
+  width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 56px); overflow: visible; box-sizing: border-box;
   padding: 28px 22px 14px; transform: translate(-50%, -50%);
   background: var(--paper); color: var(--paper-ink); font-family: var(--ui-body);
   border: 4px solid var(--paper-wood-dark); box-shadow: 0 0 0 3px var(--paper-ink), inset 0 0 0 2px var(--paper-wood), 8px 12px 0 #0006;
@@ -195,11 +191,11 @@ body.dungeon-mode #context-actions:has(.service) {
 body.dungeon-mode #context-actions:has(.service) .service { position: static; padding: 0; background: none; border: 0; color: inherit; }
 body.dungeon-mode #context-actions:has(.service) .service h2 { margin: 0 0 8px; font: 900 20px var(--ui-body); color: var(--paper-wood-dark); }
 body.dungeon-mode #context-actions:has(.service) .service p { margin: 6px 0; font-size: 14px; color: var(--paper-ink); }
-body.dungeon-mode #context-actions:has(.service) .paper-plaque { position: static; display: inline-block; margin: -8px 0 8px -4px; padding: 3px 22px 5px; background: var(--paper-wood); color: #fff4d8; font: 900 22px/1.3 var(--ui-body); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--paper-wood-dark); }
+body.dungeon-mode #context-actions:has(.service) .paper-plaque { position: absolute; left: 24px; top: -24px; display: inline-block; margin: 0; padding: 3px 22px 5px; background: var(--paper-wood); color: #fff4d8; font: 900 22px/1.3 var(--ui-body); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--paper-wood-dark); }
 body.dungeon-mode #context-actions:has(.service) button:not(.paper-close):not(.shop-row) { margin: 4px 6px 4px 0; padding: 8px 16px; border: 0; border-radius: 0; background: var(--paper-wood-light); color: var(--paper-ink); font: 900 15px var(--ui-body); box-shadow: 0 0 0 2px var(--paper-ink); cursor: pointer; }
 body.dungeon-mode #context-actions:has(.service) button.primary, body.dungeon-mode #context-actions:has(.service) button.is-primary { background: #d9622b; color: #fff; }
 body.dungeon-mode #context-actions:has(.service) button:disabled { opacity: .5; cursor: not-allowed; }
-body.dungeon-mode #context-actions:has(.service) .paper-close { position: absolute; right: 12px; top: 12px; width: 36px; height: 36px; padding: 0; border: 0; background: var(--paper-2); color: var(--paper-ink); font-size: 22px; box-shadow: 0 0 0 2px var(--paper-ink); cursor: pointer; }
+body.dungeon-mode #context-actions:has(.service) .paper-close { position: absolute; right: 14px; top: -18px; width: 40px; height: 40px; padding: 0; border: 0; background: var(--paper-2); color: var(--paper-ink); font: 900 24px/1 var(--ui-body); box-shadow: 0 0 0 2px var(--paper-ink); cursor: pointer; }
 .shop-purse { margin: 0 0 8px; font-size: 18px; font-weight: 900; }
 .shop-purse strong { color: #a64217; }
 .shop-body { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 12px; }
@@ -222,7 +218,7 @@ body.dungeon-mode #context-actions .shop-row.is-sold { opacity: .4; }
 .shop-detail .shop-detail-text { min-height: 60px; line-height: 1.5; }
 .shop-note { font-size: 12px !important; }
 @media (max-width: 700px), (max-height: 560px) {
-  body.dungeon-mode #context-actions:has(.service) { padding: 20px 12px 10px; }
+  body.dungeon-mode #context-actions:has(.service) { padding: 26px 12px 10px; }
   .shop-body { grid-template-columns: minmax(0, 1fr) 190px; }
   .shop-list { max-height: 210px; }
   .shop-detail .shop-detail-text { min-height: 0; font-size: 12px; }
@@ -277,3 +273,8 @@ body.dungeon-mode #flow:has(.c195) > .c195 { margin-left: auto; margin-right: au
 .rarity-tag { display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: 3px; background: var(--rarity-color, #8a877b); color: #fff; font: 700 11px/16px var(--ui-body, sans-serif); font-style: normal; vertical-align: 2px; letter-spacing: 1px; }
 #blessing-refresh:disabled { filter: grayscale(.9); opacity: .55; cursor: default; }
 li[data-rarity] .bless-sigil { background: var(--rarity-color); }
+
+/* Short windows: the hanging plaque still needs 24px above the frame. */
+@media (max-height: 560px) {
+  .c195, dialog.c195, body.dungeon-mode #context-actions:has(.service) { max-height: calc(100dvh - 48px); }
+}

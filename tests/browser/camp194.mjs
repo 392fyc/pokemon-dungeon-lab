@@ -58,12 +58,13 @@ async function assertDialogInViewport(page,selector,width,height){
   assert.ok(box.x>=-1&&box.right<=box.viewportWidth+1,selector+' stays inside the horizontal viewport: '+JSON.stringify(box));
   assert.ok(box.y>=-1&&box.bottom<=box.viewportHeight+1,selector+' stays inside the vertical viewport: '+JSON.stringify(box));
   if(selector.includes('camp-departure')){
-    // The scroll box clips anything above its padding edge; the whole title plaque, including its 3px outline, must sit inside it.
-    const plaque=await page.locator(selector).evaluate(element=>{
-      const dialog=element.getBoundingClientRect(),title=element.querySelector('.camp194-plaque').getBoundingClientRect();
-      return {plaqueTop:title.top-3,plaqueLeft:title.left-3,paddingTop:dialog.top+element.clientTop,paddingLeft:dialog.left+element.clientLeft,scrollTop:element.scrollTop};
+    // The plaque and close button hang on the frame border (same offsets as .paper-plaque), so the frame must not clip and both stay inside the viewport.
+    const frame=await page.locator(selector).evaluate(element=>{
+      const dialog=element.getBoundingClientRect(),title=element.querySelector('.camp194-plaque').getBoundingClientRect(),close=element.querySelector('.camp194-close').getBoundingClientRect();
+      return {overflow:getComputedStyle(element).overflowY,plaqueTop:title.top-3,plaqueLeft:title.left-3,hang:dialog.top-title.top,closeTop:close.top,closeRight:close.right,dialogRight:dialog.right,viewportWidth:innerWidth};
     });
-    assert.ok(plaque.plaqueTop>=plaque.paddingTop-.5&&plaque.plaqueLeft>=plaque.paddingLeft-.5,'the departure plaque is not clipped at '+width+'×'+height+': '+JSON.stringify(plaque));
+    assert.equal(frame.overflow,'visible','the departure frame does not clip its plaque at '+width+'×'+height);
+    assert.ok(frame.plaqueTop>=-.5&&frame.plaqueLeft>=-.5&&frame.closeTop>=-.5&&frame.closeRight<=frame.viewportWidth+.5,'the departure plaque and close stay on screen at '+width+'×'+height+': '+JSON.stringify(frame));
   }
   return box;
 }
@@ -437,10 +438,10 @@ export async function camp194Checks({setup,ready,emptyReady,state,artifact}){
       await p.evaluate(()=>window.__fault.pending.at(-1).reject());
       await p.waitForFunction(()=>window.trial.store.status==='failed'&&document.querySelector('#camp-departure .camp-feedback')?.textContent.includes('重试保存'));
       await assertDialogInViewport(p,'#camp-departure[open]',width,height);
-      const initialScroll=await p.locator('#camp-departure').evaluate(el=>({scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,scrollTop:el.scrollTop,overflowY:getComputedStyle(el).overflowY}));
-      assert.equal(initialScroll.overflowY,'auto','the short departure window scrolls internally');
+      const initialScroll=await p.locator('#camp-departure .camp194-departure-shell').evaluate(el=>({scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,scrollTop:el.scrollTop,overflowY:getComputedStyle(el).overflowY}));
+      assert.equal(initialScroll.overflowY,'auto','the short departure window scrolls its content (the frame stays unclipped so the plaque can hang on it)');
       assert.ok(initialScroll.scrollHeight>initialScroll.clientHeight,'the failed-save retry row remains in scrollable dialog content');
-      const scrolled=await p.locator('#camp-departure').evaluate(el=>{
+      const scrolled=await p.locator('#camp-departure .camp194-departure-shell').evaluate(el=>{
         el.scrollTop=el.scrollHeight;
         const button=el.querySelector('#camp-retry').getBoundingClientRect(),windowRect=el.getBoundingClientRect();
         const visibleTop=windowRect.top+el.clientTop,visibleBottom=visibleTop+el.clientHeight;

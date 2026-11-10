@@ -15,7 +15,9 @@ import {ITEM_DESCRIPTIONS} from '../../src/core/item-descriptions.ts';
 import {TACTICS,TACTIC_LABELS} from '../../src/core/tactics.ts';
 
 const cats=wikiCategories(),byCat=Object.fromEntries(cats.map(c=>[c.id,c]));
-const rulesText=fs.readFileSync(new URL('../../docs/01-现行规则/游戏规则.md',import.meta.url),'utf8');
+const rulesDir=new URL('../../docs/01-现行规则/',import.meta.url);
+// The rules are layered: the core page plus the topic pages (规则-*.md); a rule number must exist in the merged text.
+const rulesText=['游戏规则.md',...fs.readdirSync(rulesDir).filter(f=>/^规则-.*\.md$/.test(f)).sort()].map(f=>fs.readFileSync(new URL(f,rulesDir),'utf8')).join('\n');
 const ruleExists=rule=>{const [major,minor]=rule.slice(1).split('.');return minor?new RegExp('\\*\\*G'+major+'\\.'+minor+'[ 　*）（]').test(rulesText):new RegExp('^## G'+major+' ','m').test(rulesText);};
 const blocksText=e=>e.blocks.map(b=>b.t==='p'?b.text:b.t==='facts'?b.rows.map(r=>r.text).join(' '):'').join('\n');
 
@@ -107,7 +109,7 @@ test('wiki-zh.json: every hand-written entry has a category, text and rule numbe
   for(const c of wikiData.categories)assert.ok(c.rules.length>0,c.id+' category rule numbers');
   for(const rule of wikiRuleIds()){
     assert.match(rule,/^G\d+(\.\d+)?$/,rule);
-    assert.ok(ruleExists(rule),rule+' exists in 游戏规则.md');
+    assert.ok(ruleExists(rule),rule+' exists in 游戏规则.md or a 规则-*.md topic page');
   }
   assert.equal(ruleExists('G5.99'),false);assert.equal(ruleExists('G99'),false);   // the check itself can fail
 });

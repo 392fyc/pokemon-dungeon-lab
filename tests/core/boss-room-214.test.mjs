@@ -33,3 +33,24 @@ test('a boss that is hit remembers the attacker',()=>{
  assert.ok(after.units.boss.hp<300,'the line attack hit (main-series Flamethrower always hits here): '+after.log.join(' / '));
  assert.ok(after.units.boss.pos.x>4,'after being hit the boss heads for the attacker in the same round: '+after.log.join(' / '));
 });
+
+test('a confused boss never wanders out of its room, whatever the random step',()=>{
+ let escaped=0,moved=0;
+ for(let n=1;n<=60;n++){
+  const {s,room}=scene({x:4,y:7});s.units.boss.pos={x:7,y:4};s.units.boss.status={confusion:{left:5}};s.battleRng=(n*2654435761)>>>0;
+  const after=doCmd(s,{type:'round',action:wait});
+  if(!inRoom(after.units.boss.pos,room))escaped++;
+  if(after.units.boss.pos.x!==7||after.units.boss.pos.y!==4)moved++;
+ }
+ assert.equal(escaped,0,'no seed puts the boss on the corridor');
+ assert.ok(moved>0,'the fixture does make the boss move on some seeds, so the check is not vacuous');
+});
+
+test('a boss that sees someone else keeps the attacker it was hit by',()=>{
+ const {s}=scene({x:12,y:4});s.units.boss.pos={x:7,y:4};
+ const A=s.units.A;A.learned=['flamethrower'];A.pp={flamethrower:5};A.maxPp={flamethrower:5};A.facing={x:-1,y:0};
+ const B=friend('B',4,7,200,{},200);B.species='bulbasaur';B.tactic='wait';s.units.B=B;s.queue=['A','B'];
+ const after=doCmd(s,{type:'round',action:{type:'skill',skill:'flamethrower',target:'boss'}});
+ assert.ok(after.units.boss.hp<300,'the hit landed: '+after.log.join(' / '));
+ assert.deepEqual(after.units.boss.targetMemory,{x:12,y:4},'memory is the attacker, not the visible bystander');
+});

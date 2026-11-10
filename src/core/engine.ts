@@ -37,7 +37,7 @@ export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; p
   inst?:string; moves?:string[];
   /** 7.2: true for a founding member of the base profile (the initial two, or the three starters of an old profile); never goes missing in a wipe. */
   protected?:true;
-  /** 7.3: the regional boss. Only the generator sets it (an enemy of the species in `BOSS` in dungeon.ts; its traits — level bonus, HP multiplier, whether it moves or can be blown away — come from `BOSS_CONFIG` in roster.ts; when it sees no opponent it always waits in place. Recruiting it yields an ordinary version without these traits). */
+  /** 7.3: the regional boss. Only the generator sets it (an enemy of the species in `BOSS` in dungeon.ts; its traits — level bonus, HP multiplier, whether it moves or can be blown away — come from `BOSS_CONFIG` in roster.ts; when it sees no opponent it heads inside its room for whoever last hit it, and waits in place if nobody has. Recruiting it yields an ordinary version without these traits). */
   boss?:true};
 // Precondition: generated expedition enemies never carry `recruit`; expedition invitations come only from the
 // round-end draw. A preset `recruit` would issue a species-less invitation that save.ts rejects.
@@ -958,7 +958,8 @@ function chooseEnemyAction(s:World,id:string,blockingGuard:ReadonlySet<string>,c
   if(visible.length){
     const visibleIds=new Set(visible.map(t=>t.id));
     const ordered=visible.sort((a,b)=>chebyshev(actorPos,a.pos!)-chebyshev(actorPos,b.pos!)||opponentIds(s,actor.side).indexOf(a.id)-opponentIds(s,actor.side).indexOf(b.id));
-    actor.targetMemory=clone(ordered[0].pos!);actor.lostSightTurns=0;
+    if(!actor.boss)actor.targetMemory=clone(ordered[0].pos!);   // G7.7: a boss remembers only whoever hit it (set when it is hit), never merely the nearest one it sees
+    actor.lostSightTurns=0;
     const quickguard=new Set([...blockingGuard,...createdGuard]);
     const damage=pickDamageAction(s,id,'gofoes',quickguard,visibleIds);if(damage)return damage;
     const support=supportAction(s,id,quickguard,'gofoes',visibleIds);if(support)return support;
@@ -985,9 +986,13 @@ function chooseEnemyAction(s:World,id:string,blockingGuard:ReadonlySet<string>,c
 /** D-20261110-07 (G7.7): a boss that stays in its room moves toward a target but never steps out of the boss room; when the next step would leave it, it waits at the edge. */
 function bossStepToward(s:World,actor:Unit,target:Pos):Action {
   const step=firstStepTo(s,actor.pos!,target,false);if(!step)return {type:'wait'};
-  const room=s.bossRoom!==undefined?s.rooms?.[s.bossRoom]:undefined,stays=BOSS_CONFIG[actor.species??'']?.staysInRoom!==false;
-  if(stays&&room&&!(step.x>=room.x&&step.y>=room.y&&step.x<room.x+room.w&&step.y<room.y+room.h))return {type:'wait'};
+  if(!bossMayStand(s,actor,step))return {type:'wait'};
   return {type:'move',to:step};
+}
+/** G7.7: false when the unit is a room-bound boss and `p` lies outside its room. Checked on the final cell, so a confused random step cannot carry the boss out either. */
+function bossMayStand(s:World,actor:Unit,p:Pos):boolean {
+  const room=s.bossRoom!==undefined?s.rooms?.[s.bossRoom]:undefined,stays=BOSS_CONFIG[actor.species??'']?.staysInRoom!==false;
+  return !(actor.boss&&stays&&room)||p.x>=room.x&&p.y>=room.y&&p.x<room.x+room.w&&p.y<room.y+room.h;
 }
 function randomEnemyAi(s:World):number {
   const state=s.enemyAiRng??streamSeed(s.dungeon?.seed??0,s.dungeon?.level??1,'enemy-ai'),next=rngStep(state);s.enemyAiRng=next.state;return next.value;
@@ -1794,7 +1799,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     }
     if(action.type==='move'&&hasStatus(e,'confusion')){const to=plus(e.pos,DIRS8[Math.floor(battleRandom(s)*8)]);note(s,L`${id}因混乱乱走`);emit(s,{type:'fail',unit:id,reason:'confusedWander'});action={type:'move',to};}
     if(action.type==='move'){
-      if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)){note(s,L`${id}无路可走，等待`,{routine:true});emit(s,{type:'fail',unit:id,reason:'noPath'});continue;}
+      if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)||!bossMayStand(s,e,action.to)){note(s,L`${id}无路可走，等待`,{routine:true});emit(s,{type:'fail',unit:id,reason:'noPath'});continue;}
       const previous=clone(e.pos);execute(s,id,action,friendGuard,enemyGuard);e.direction={x:Math.sign(action.to.x-previous.x),y:Math.sign(action.to.y-previous.y)};
       if(e.roamTarget&&same(action.to,e.roamTarget))e.roamTarget=null;
     }else if(action.type==='skill'||action.type==='basic'||action.type==='basicForward')execute(s,id,action,friendGuard,enemyGuard);

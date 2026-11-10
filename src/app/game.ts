@@ -954,7 +954,7 @@ class BoardScene extends Phaser.Scene {
  minimapWorld(s:World):World{
   const sh=this.shown,g=this.lastGeometry;if(!sh||!g||!anim.active)return s;
   return playbackMinimapWorld(sh.before,sh.after,sh.revealed,id=>{
-   const v=this.views.get(id);if(!v)return undefined;if(!v.sprite.visible)return null;
+   const v=this.views.get(id);if(!v)return this.placeholders.includes(id)?undefined:null;if(!v.sprite.visible)return null;
    return {x:Math.round((v.gfx.x-g.ox)/g.cell+g.minX-.5),y:Math.round((v.gfx.y-g.oy)/g.cell+g.minY-.5)};});   // gfx sits on the cell centre; the sprite carries the foot offset
  }
  /** Keeps the small map in step with the board while a round plays (the interface itself is drawn only when something is clicked or the round ends). */

@@ -29,7 +29,7 @@ test('enemies a challenge spawns this round stay off the small map until the boa
  const before=challengeWorld(),r=applyCommand(before,{type:'round',action:{type:'interact',exit:false}});
  assert.equal(r.ok,true);const after=r.state;
  const spawned=after.enemies.filter(id=>!before.units[id]);assert.ok(spawned.length>=3,'the challenge spawned enemies');
- const drawn=id=>before.units[id]?.pos??undefined;   // the board starts the animation from the old state: only old units have sprites
+ const drawn=id=>before.units[id]?.pos??null;   // the board starts the animation from the old state: only old units have sprites
  for(const revealed of [false,true]){
   const w=playbackMinimapWorld(before,after,revealed,drawn);
   for(const id of spawned)assert.equal(w.units[id].pos,null,`${id} is not drawn yet (revealed=${revealed})`);
@@ -44,4 +44,17 @@ test('a hidden sprite is off the map; a drawn one sits where the board draws it'
  const before=challengeWorld(),after=structuredClone(before);after.units.A.pos={x:6,y:4};
  assert.equal(playbackMinimapWorld(before,after,false,id=>id==='A'?null:before.units[id].pos).units.A.pos,null);
  assert.deepEqual(playbackMinimapWorld(before,after,false,id=>before.units[id].pos).units.A.pos,{x:5,y:4});
+});
+
+test('an enemy in ground the round reveals stays off the small map until the board draws it (#454)',()=>{
+ const before=challengeWorld();before.seen=before.seen.filter(k=>k!=='7,5');   // E stands in unrevealed ground when the round begins
+ const after=structuredClone(before);after.seen.push('7,5');   // the walk reveals its cell
+ const place=id=>id==='E'?null:before.units[id].pos;   // the board has no sprite for E yet
+ for(const revealed of [false,true])assert.equal(playbackMinimapWorld(before,after,revealed,place).units.E.pos,null,`revealed=${revealed}`);
+ assert.ok(!minimapDynamic(playbackMinimapWorld(before,after,true,place)).includes('cx="7.5" cy="5.5"'));
+});
+
+test('a loading placeholder stays on the small map at its pre-round cell',()=>{
+ const before=challengeWorld(),after=structuredClone(before);after.units.E.pos={x:6,y:5};
+ assert.deepEqual(playbackMinimapWorld(before,after,true,id=>id==='E'?undefined:before.units[id].pos).units.E.pos,{x:7,y:5});
 });

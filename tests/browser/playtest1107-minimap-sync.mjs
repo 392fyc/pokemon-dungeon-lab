@@ -19,7 +19,7 @@ await p.waitForTimeout(500);
 /** The leader's cell on the board (from its sprite) and on the small map (its big circle), in cell units. */
 const sample=()=>p.evaluate(()=>{
  const v=window.trial.view(),s=window.trial.getState(),g=v.geometry,u=v.units[s.leader];
- const board={x:(u.x-g.ox)/g.cell+g.minX-.5,y:(u.y-g.oy)/g.cell+g.minY-.5};
+ const board={x:(u.x-g.ox)/g.cell+g.minX-.5,y:(u.ground.centerY-g.oy)/g.cell+g.minY-.5};   // the cell centre, not the sprite's foot offset
  const c=document.querySelector('#hud-map .hud-map-unit.is-leader');
  const map=c?{x:Number(c.getAttribute('cx'))-.5,y:Number(c.getAttribute('cy'))-.5}:null;
  return {animating:window.trial.animating(),board,map,final:s.units[s.leader].pos};

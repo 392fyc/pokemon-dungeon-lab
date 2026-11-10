@@ -8,6 +8,19 @@ import { terrainKnown } from "./point-visuals.ts";
 const esc = (value: unknown): string => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]!));
 
 type Cell = { x: number; y: number };
+/** The world the small map shows while a round plays. `place(id)` says where the board currently draws a unit:
+ *  a cell, `null` when its sprite is hidden, `undefined` when the board has no sprite for it yet.
+ *  A unit with no sprite keeps its old state; one that did not exist before the round (a challenge's enemies) stays off the map until the board draws it. */
+export function playbackMinimapWorld(before: World, after: World, revealed: boolean, place: (id: string) => Cell | null | undefined): World {
+  const base = revealed ? after : before;
+  const units = Object.fromEntries(Object.entries(after.units).map(([id, u]) => {
+    const at = place(id);
+    if (at === undefined) { const old = before.units[id]; return [id, old ? base.units[id] ?? old : { ...u, pos: null, hp: 0 }]; }
+    if (at === null) return [id, { ...u, pos: null, hp: 0 }];
+    return [id, { ...u, hp: Math.max(1, u.hp), pos: at }];
+  }));
+  return { ...base, units, queue: after.queue, enemies: after.enemies, leader: after.leader };
+}
 type Bounds = { minX: number; minY: number; width: number; height: number };
 type Terrain = { markup: string; viewBox: string; width: number; height: number; rooms: number | null };
 

@@ -7,7 +7,7 @@ import {resultBanner} from '../render/result-banner.ts';
 import {applyHpBar,syncHpBars,hpTextColor} from '../render/hpbar.ts';
 import {typeChips,unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
 import {createWiki} from '../render/wiki.ts';
-import {updateMinimap,bigMinimapMarkup,minimapStats} from '../render/minimap.ts';
+import {updateMinimap,playbackMinimapWorld,bigMinimapMarkup,minimapStats} from '../render/minimap.ts';
 import '../render/panels194.css';
 import {learningPanel,invitationPanel,moveCard,noticePanel,noticeTag} from '../render/choice-panels.ts';
 import '../render/choice-panels.css';
@@ -953,13 +953,9 @@ class BoardScene extends Phaser.Scene {
  /** The world as the board draws it right now, for the small map. While a round plays, the engine state is already the end of the round, so units stand where their sprites are and what is known switches from the old state to the new one at the moment the board reveals the new terrain. Outside an animation this is the state itself. */
  minimapWorld(s:World):World{
   const sh=this.shown,g=this.lastGeometry;if(!sh||!g||!anim.active)return s;
-  const base=sh.revealed?sh.after:sh.before;
-  const units=Object.fromEntries(Object.entries(sh.after.units).map(([id,u])=>{
-   const v=this.views.get(id);
-   if(!v)return [id,base.units[id]??u];
-   if(!v.sprite.visible)return [id,{...u,pos:null,hp:0}];
-   return [id,{...u,hp:Math.max(1,u.hp),pos:{x:Math.round((v.sprite.x-g.ox)/g.cell+g.minX-.5),y:Math.round((v.sprite.y-g.oy)/g.cell+g.minY-.5)}}];}));
-  return {...base,units,queue:sh.after.queue,enemies:sh.after.enemies,leader:sh.after.leader};
+  return playbackMinimapWorld(sh.before,sh.after,sh.revealed,id=>{
+   const v=this.views.get(id);if(!v)return undefined;if(!v.sprite.visible)return null;
+   return {x:Math.round((v.gfx.x-g.ox)/g.cell+g.minX-.5),y:Math.round((v.gfx.y-g.oy)/g.cell+g.minY-.5)};});   // gfx sits on the cell centre; the sprite carries the foot offset
  }
  /** Keeps the small map in step with the board while a round plays (the interface itself is drawn only when something is clicked or the round ends). */
  private syncMinimap(){

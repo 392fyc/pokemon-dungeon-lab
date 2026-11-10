@@ -103,7 +103,7 @@ async function play(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise
      if(ev.hpAfter!==undefined&&st.onHp)ps.push(wait(st,impact).then(()=>st.onHp!(ev.target,ev.hpAfter!)));}
     if(ev.effect?.superEffective)ps.push(floatText(st,{x:to.x,y:to.y-st.cell*.3},'效果绝佳','#ffd24a',Math.max(1,d(duration)-impact),impact));
     else if(ev.effect?.resisted&&ev.amount>0)ps.push(floatText(st,{x:to.x,y:to.y-st.cell*.3},'效果不好','#9fb4c8',Math.max(1,d(duration)-impact),impact));
-    if(ev.dead&&T)ps.push(wait(st,d(ev.effect||ev.cast?duration-140:220)).then(()=>tween(st,{targets:[T.sprite,...T.labels.map(l=>l.t)],alpha:0,duration:Math.max(1,d(140))})));
+    if(ev.dead&&T)ps.push(wait(st,d(ev.effect||ev.cast?duration-140:220)).then(()=>tween(st,{targets:[T.sprite,T.gfx,...T.labels.map(l=>l.t)],alpha:0,duration:Math.max(1,d(140))})));
     await Promise.all(ps);}
   else if(ev.k==='protect'){const A=V(ev.by);if(A)face(A,ev.from,ev.at);if(A)idle(st,A);
     if(ev.effect)await drawEffect(st,ev,opts);else await flash(st,'fx-guard',at(ev.at),d(BASE_MS.protect),0,{grow:1.5});}

@@ -8,6 +8,16 @@ import { terrainKnown } from "./point-visuals.ts";
 const esc = (value: unknown): string => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]!));
 
 type Cell = { x: number; y: number };
+/** What the board draws for one unit, as `playbackMinimapWorld` expects it. `view` is the unit's board drawing (sprite plus its cell-centred shadow `gfx`), if any. */
+export function boardCell(
+  view: { sprite: { visible: boolean; alpha: number }; gfx: { x: number; y: number } } | undefined,
+  placeholder: boolean,
+  g: { ox: number; oy: number; cell: number; minX: number; minY: number },
+): Cell | null | undefined {
+  if (!view) return placeholder ? undefined : null;   // no drawing: off the map unless the board shows a loading placeholder
+  if (!view.sprite.visible || view.sprite.alpha === 0) return null;   // hidden, or a knocked-out unit that has faded out
+  return { x: Math.round((view.gfx.x - g.ox) / g.cell + g.minX - 0.5), y: Math.round((view.gfx.y - g.oy) / g.cell + g.minY - 0.5) };   // gfx sits on the cell centre; the sprite carries the foot offset
+}
 /** The world the small map shows while a round plays: only what the board draws. `place(id)` says where the board currently draws a unit:
  *  a cell; `undefined` when it stands as a loading placeholder at its pre-round cell; `null` when the board does not draw it at all
  *  (a hidden sprite, a unit in unrevealed ground when the round began, or one that appears this round such as a challenge's enemies). */
@@ -19,7 +29,7 @@ export function playbackMinimapWorld(before: World, after: World, revealed: bool
     if (at === null) return [id, { ...u, pos: null, hp: 0 }];
     return [id, { ...u, hp: Math.max(1, u.hp), pos: at }];
   }));
-  return { ...base, units, queue: after.queue, enemies: after.enemies, leader: after.leader };
+  return { ...base, units, queue: after.queue, enemies: after.enemies, leader: before.leader };   // the board keeps the leader ring on the old leader until the round ends
 }
 type Bounds = { minX: number; minY: number; width: number; height: number };
 type Terrain = { markup: string; viewBox: string; width: number; height: number; rooms: number | null };

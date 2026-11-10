@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {applyCommand} from '../../src/core/engine.ts';
-import {minimapDynamic,playbackMinimapWorld} from '../../src/render/minimap.ts';
+import {boardCell,minimapDynamic,playbackMinimapWorld} from '../../src/render/minimap.ts';
 import {enemy,friend,world} from '../acceptance/fixtures.mjs';
 
 const key=p=>`${p.x},${p.y}`;
@@ -57,4 +57,21 @@ test('an enemy in ground the round reveals stays off the small map until the boa
 test('a loading placeholder stays on the small map at its pre-round cell',()=>{
  const before=challengeWorld(),after=structuredClone(before);after.units.E.pos={x:6,y:5};
  assert.deepEqual(playbackMinimapWorld(before,after,true,id=>id==='E'?undefined:before.units[id].pos).units.E.pos,{x:7,y:5});
+});
+
+test('boardCell: what the board draws for one unit (#454 wiring, review P3)',()=>{
+ const g={ox:0,oy:0,cell:48,minX:0,minY:0};
+ const view=(x,y,o={})=>({sprite:{visible:true,alpha:1,...o},gfx:{x:(x+.5)*48,y:(y+.5)*48}});
+ assert.equal(boardCell(undefined,false,g),null,'no drawing and no placeholder: off the map (an enemy in unrevealed ground when the round began)');
+ assert.equal(boardCell(undefined,true,g),undefined,'a loading placeholder keeps its pre-round cell');
+ assert.deepEqual(boardCell(view(3,4),false,g),{x:3,y:4});
+ const step=view(3,4);step.gfx.y+=48*.49;assert.deepEqual(boardCell(step,false,g),{x:3,y:4},'just under half a step down stays on the old cell');
+ step.gfx.y+=48*.02;assert.deepEqual(boardCell(step,false,g),{x:3,y:5},'just over half a step switches');
+ assert.equal(boardCell(view(3,4,{visible:false}),false,g),null);
+ assert.equal(boardCell(view(3,4,{alpha:0}),false,g),null,'a knocked-out unit that faded out leaves the map');
+});
+
+test('the leader mark stays on the pre-round leader during playback (review P3)',()=>{
+ const before=challengeWorld(),after=structuredClone(before);after.leader='B';
+ assert.equal(playbackMinimapWorld(before,after,true,id=>before.units[id].pos).leader,'A');
 });

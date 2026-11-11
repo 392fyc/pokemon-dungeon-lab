@@ -1087,7 +1087,7 @@ class BoardScene extends Phaser.Scene {
  const shown=new Set<string>();const visible=(id:string)=>{const u=s.units[id];return u.pos&&u.hp>0&&s.seen.includes(key(u.pos))?u:null;};
  for(const id of [...s.enemies,...s.queue]){const u=visible(id);if(!u||!u.pos)continue;if(!characterDrawable(this,skinFor(id,u.side,u.species))){   // sheets not here yet: nothing for the first moments, then a shadow and a dot, so a unit that exists is never invisible
    const waited=this.waitingSince>0&&performance.now()-this.waitingSince>1200;
-   if(waited||characterFailed(skinFor(id,u.side,u.species))){const pc=center(u.pos);this.placeholders.push(id);this.overlay.fillStyle(0x000000,.35);this.overlay.fillEllipse(pc.x,pc.y+g.cell*UNIT_GROUND_FRACTION,g.cell*.55,g.cell*.2);this.overlay.fillStyle(u.side==='enemy'?0xff7a6a:0x7fe0c0,1);this.overlay.fillCircle(pc.x,pc.y,g.cell*.13);this.overlay.lineStyle(2,0x0b1312);this.overlay.strokeCircle(pc.x,pc.y,g.cell*.13);}
+   if(waited||characterFailed(skinFor(id,u.side,u.species))){const pc=center(u.pos);this.placeholders.push(id);this.overlay.fillStyle(0x000000,.35);this.overlay.fillEllipse(pc.x,pc.y+g.cell*UNIT_GROUND_FRACTION,g.cell*.55,g.cell*.2);this.overlay.fillStyle(u.side==='enemy'?0xff7a6a:0x7fe0c0,1);this.overlay.fillCircle(pc.x,pc.y,g.cell*.13);this.overlay.lineStyle(2,0x17120e);this.overlay.strokeCircle(pc.x,pc.y,g.cell*.13);}
    continue;}
   shown.add(id);const c=center(u.pos);
   // Shadow and leader ring live in a per-unit Graphics (local origin = cell centre, depth 3: above floor tiles and props, below sprites, highlights and labels) so animation can move them with the sprite.

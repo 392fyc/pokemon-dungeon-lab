@@ -1,7 +1,7 @@
 body.dungeon-mode {
   margin: 0;
   overflow: hidden;
-  background: #0b0f0d;
+  background: #0e0b08;
   color: #f2eee0;
 }
 
@@ -29,7 +29,7 @@ body.dungeon-mode #dungeon-layout {
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: #0b0f0d;
+  background: #0e0b08;
   color: #f2eee0;
   font-family: "Noto Sans SC", system-ui, sans-serif;
 }
@@ -361,7 +361,7 @@ body.dungeon-mode .hud-map-point.is-exit {
 
 body.dungeon-mode .hud-map-stairs-plate {
   fill: #e4efb0;
-  stroke: #0b0f0d;
+  stroke: #0e0b08;
   stroke-width: 0.16;
 }
 
@@ -375,7 +375,7 @@ body.dungeon-mode .hud-map-stairs-arrow {
 
 body.dungeon-mode .hud-map-exit {
   fill: #f0a040;
-  stroke: #0b0f0d;
+  stroke: #0e0b08;
   stroke-width: 0.1;
 }
 
@@ -454,13 +454,13 @@ dialog#map-dialog .hud-map-wall {
 
 dialog#map-dialog .hud-map-exit {
   fill: #f0a040;
-  stroke: #0b0f0d;
+  stroke: #0e0b08;
   stroke-width: 0.1;
 }
 
 dialog#map-dialog .hud-map-stairs-plate {
   fill: #e4efb0;
-  stroke: #0b0f0d;
+  stroke: #0e0b08;
   stroke-width: 0.16;
 }
 
@@ -490,7 +490,7 @@ dialog#map-dialog .hud-map-point.is-exit {
 
 dialog#map-dialog .hud-map-unit {
   fill: #e8d48a;
-  stroke: #0b0f0d;
+  stroke: #0e0b08;
   stroke-width: 0.13;
 }
 
@@ -528,7 +528,7 @@ dialog#map-dialog .hud-minimap-heading {
 
 body.dungeon-mode .hud-map-unit {
   fill: #e8d48a;
-  stroke: #0b0f0d;
+  stroke: #0e0b08;
   stroke-width: 0.13;
 }
 
@@ -1115,7 +1115,7 @@ body.dungeon-mode .hud-bag-open {
   border: 0;
   border-radius: 24px;
   background: #e8d48a;
-  color: #0b0f0d;
+  color: #0e0b08;
   font: inherit;
   font-size: 14px;
   font-weight: 700;
@@ -1175,7 +1175,7 @@ body.dungeon-mode .hud-range-cell,
 
 body.dungeon-mode .hud-range-cell.is-direction,
 .starter-picker .hud-range-cell.is-direction {
-  background: #3a3b2e;
+  background: #4a3826;
 }
 
 body.dungeon-mode .hud-range-cell.is-active,
@@ -1427,7 +1427,7 @@ body.dungeon-mode .hud-bag-tab {
 body.dungeon-mode .hud-bag-tab.is-active {
   border-color: #e8d48a;
   background: #e8d48a;
-  color: #0b0f0d;
+  color: #0e0b08;
 }
 
 body.dungeon-mode .hud-bag-empty {

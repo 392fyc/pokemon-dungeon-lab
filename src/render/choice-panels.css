@@ -30,9 +30,9 @@ body.dungeon-mode #flow:has(.c195) {
 .c195-move-stats b { color: var(--paper-ink); }
 .c195-move-text { font-size: 12px; line-height: 1.4; color: #4a3a2a; overflow-wrap: anywhere; }
 /* Learn window: the frame stays overflow-visible for its plaque; the cards scroll in the inner area so the buttons below it never leave the frame. Padding keeps the "new" tag and selection outlines unclipped. */
-#learning-choice.c195-learn { display: flex; flex-direction: column; }
+#learning-choice.c195-learn, #learn-carry-dialog.c195-learn[open] { display: flex; flex-direction: column; }
 .c195-scroll { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 10px 4px 4px; margin: -10px -4px -4px; }
-#learning-choice.c195-learn > .c195-foot { flex: none; }
+#learning-choice.c195-learn > .c195-foot, #learn-carry-dialog.c195-learn > .c195-foot { flex: none; }
 .c195-learn-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 14px; }
 .c195-old { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .c195-foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; }

@@ -15,7 +15,7 @@ import {ITEM_DESCRIPTIONS} from './item-descriptions.ts';
 import {TACTIC_LABELS} from './tactics.ts';
 import {
   ATTACK_STAGE_256,DEFENCE_STAGE_256,STAGE_LIMIT,STAT_DAMAGE_RATIO,CRIT_CHANCE,CRIT_MULTIPLIER,STATUS_DURATION,STATUS_INTERVAL,STATUS_DAMAGE_DIVISOR,
-  BURN_DAMAGE_RATIO,WAKE_ON_HIT_CHANCE,STATUS_NAMES,STAGE_NAMES,ACCURACY_STAGE_LIMIT,PARTY_LIMIT,STATUS_DEFAULT_LEFT,ITEM_NAMES,ITEM_CURES,BLESSINGS,BLESSING_RARITY,PROG,INITIAL_BLESSING_REFRESHES,accuracyMultiplier,
+  BURN_DAMAGE_RATIO,WAKE_ON_HIT_CHANCE,PROTECT_PHASES,COUNTER_PHASES,SCREEN_PHASES,BLOWAWAY_CELLS,COLLISION_DAMAGE,STATUS_NAMES,STAGE_NAMES,ACCURACY_STAGE_LIMIT,PARTY_LIMIT,STATUS_DEFAULT_LEFT,ITEM_NAMES,ITEM_CURES,BLESSINGS,BLESSING_RARITY,PROG,INITIAL_BLESSING_REFRESHES,accuracyMultiplier,
   type Item,type BlessingId,
 } from './engine.ts';
 
@@ -44,6 +44,8 @@ export function wikiTokens():Record<string,string> {
   const pct=(n:number)=>String(Math.round(n*100));
   const range=(k:StatusId)=>{const r=STATUS_DURATION[k]??[STATUS_DEFAULT_LEFT,STATUS_DEFAULT_LEFT];return r[0]===r[1]?String(r[0]):r[0]+'—'+r[1];};
   const t:Record<string,string>={
+    'protect.turns':String(PROTECT_PHASES),'counter.turns':String(COUNTER_PHASES),'screen.turns':String(SCREEN_PHASES),
+    'blowaway.cells':String(BLOWAWAY_CELLS),'blowaway.damage':String(COLLISION_DAMAGE),
     'crit.chance':'1/'+Math.round(1/CRIT_CHANCE),'crit.mult':String(CRIT_MULTIPLIER),'stage.limit':String(STAGE_LIMIT),'acc.limit':String(ACCURACY_STAGE_LIMIT),
     'ratio.min':String(STAT_DAMAGE_RATIO.min),'ratio.max':String(STAT_DAMAGE_RATIO.max),'party.max':String(PARTY_LIMIT),'recruit.pct':pct(PROG.recruitChance),
     'wake.pct':pct(WAKE_ON_HIT_CHANCE),'level.start':String(PROG.initialLevel),'level.max':String(PROG.maxLevel),

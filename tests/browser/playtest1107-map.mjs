@@ -237,26 +237,17 @@ const turnKey=async(p,key)=>{const r=await p.evaluate(()=>window.trial.getState(
  assert.deepEqual(p.errs,[]);await ctx.close();
 }
 
-// ---- review R1: the shortcut card lists L, H and M, matches the settings key page, and overlaps nothing at 1280x720 and 800x600
+// ---- D-20261112-01: shortcut labels live in settings at both viewports
 {
  for(const [size,name] of [[{width:1280,height:720},'1280'],[{width:800,height:600},'800']]){
   const {ctx,p}=await dungeon(size);
-  const labels=await p.locator('#shortcut-card span').allInnerTexts();
-  for(const k of ['L','H','M','百科','地图','日志'])assert.ok(labels.includes(k),'the shortcut card lists '+k+' at '+name);
+  assert.equal(await p.locator('#shortcut-card').count(),0,'no shortcut instructions on the map at '+name);
   await p.locator('#hud-settings').click();await p.locator('#settings[open]').waitFor();await p.locator('#settings-tab-keys').click();
   const text=await p.locator('#settings-pane-keys').innerText();
   for(const w of ['日志','百科','地图','背包','等待'])assert.ok(text.includes(w),'settings key page says '+w);
   const caps=(await p.locator('#settings-pane-keys .key-caps').allInnerTexts()).join(' ').split(/\s+/);
   for(const k of ['L','H','M','B','Tab','F'])assert.ok(caps.includes(k),'settings key page lists the key '+k+': '+caps.join(' '));
   await p.keyboard.press('Escape');await p.waitForTimeout(150);
-  const rect=sel=>p.evaluate(s=>{const e=document.querySelector(s);if(!e||e.hidden)return null;const r=e.getBoundingClientRect();return r.width&&r.height?{x:r.x,y:r.y,r:r.right,b:r.bottom}:null;},sel);
-  const card=await rect('#shortcut-card');assert.ok(card,'the card is visible at '+name);
-  assert.ok(card.x>=0&&card.r<=size.width+1&&card.y>=0&&card.b<=size.height+1,'the card is inside the screen at '+name+': '+JSON.stringify(card));
-  for(const other of ['#recent-events','#message','#hud-bottom','#hud-map','#activity-status','#hud-bag','#hud-tooltip','#hud-tools','#party']){
-   const o=await rect(other);if(!o)continue;
-   const hit=!(card.r<=o.x||o.r<=card.x||card.b<=o.y||o.b<=card.y);
-   assert.equal(hit,false,'the shortcut card overlaps '+other+' at '+name+': card '+JSON.stringify(card)+' other '+JSON.stringify(o));
-  }
   await p.screenshot({path:out+'r12-shortcuts-'+name+'.png'});
   assert.deepEqual(p.errs,[]);await ctx.close();
  }

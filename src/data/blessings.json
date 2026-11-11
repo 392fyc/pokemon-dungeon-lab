@@ -133,7 +133,7 @@
   },
   "regen": {
     "name": "再生",
-    "description": "每经过10轮，全队存活成员回复最大HP的5%（至少1点）。",
+    "description": "每10回合，全队存活成员回复最大HP的5%（至少1点）。",
     "rarity": "common",
     "floors": [
       1,

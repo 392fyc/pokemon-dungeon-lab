@@ -95,7 +95,7 @@ export function createWiki(host:{onOpen?:()=>void;onClose?:()=>void;showRules?:b
   }
   function drawDetail(){
     const e=state.entry?wikiEntry(state.entry):undefined,c=wikiCategory(state.cat)!;
-    detail.innerHTML=e?entryHtml(e,host.showRules):'<header class="wiki-entry-head"><div class="wiki-entry-title"><h3>'+esc(c.name)+'</h3>'+(host.showRules?'<div class="wiki-entry-tags"><span class="wiki-rule">规则 '+c.rules.map(esc).join('、')+'</span></div>':'')+'</div></header><div class="wiki-entry-body"><p>'+esc(c.intro)+'</p><p class="paper-muted">在左边的列表里选一项查看；条目里的蓝色文字可以点开。</p></div>';
+    detail.innerHTML=e?entryHtml(e,host.showRules):'<header class="wiki-entry-head"><div class="wiki-entry-title"><h3>'+esc(c.name)+'</h3>'+(host.showRules?'<div class="wiki-entry-tags"><span class="wiki-rule">规则 '+c.rules.map(esc).join('、')+'</span></div>':'')+'</div></header>'+(c.intro?'<div class="wiki-entry-body"><p>'+esc(c.intro)+'</p></div>':'');
     detail.scrollTop=0;
     for(const b of list.querySelectorAll<HTMLElement>('.wiki-row'))b.setAttribute('aria-pressed',String(b.dataset.wikiEntry===state.entry));
   }

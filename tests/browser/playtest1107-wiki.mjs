@@ -188,6 +188,8 @@ const fits=async(p,size)=>{const box=await p.locator('#wiki-dialog').boundingBox
  await p.goto(base+'/');await p.locator('#title-settings').click();await p.locator('#settings[open]').waitFor();
  await p.locator('#settings-wiki').click();await p.locator('#wiki-dialog[open]').waitFor();
  assert.equal(await p.locator('.wiki-rule').count(),0,'no rule tag on the category home outside developer mode');
+ assert.equal((await p.locator('#wiki-detail').innerText()).trim(),'名词','the category home keeps the heading without filler');
+ await p.screenshot({path:out+'r8-wiki-home.png'});
  await p.locator('#wiki-list .wiki-row').first().click();
  assert.equal(await p.locator('.wiki-rule').count(),0,'no rule tag on an entry outside developer mode');
  assert.ok((await p.locator('#wiki-detail').innerText()).length>20);
@@ -210,6 +212,22 @@ const fits=async(p,size)=>{const box=await p.locator('#wiki-dialog').boundingBox
  const list=await p.locator('#wiki-list').boundingBox(),detail=await p.locator('#wiki-detail').boundingBox();
  assert.ok(list.width>=140&&detail.width>=300,'list and detail are both usable at 800 wide: '+list.width+' / '+detail.width);
  await p.screenshot({path:out+'r11-800.png'});
+ const tabs=p.locator('.wiki-tabs');
+ await tabs.evaluate(el=>{el.style.maxWidth='160px';el.scrollLeft=0;});
+ assert.ok(await tabs.evaluate(el=>el.scrollWidth>el.clientWidth),'the horizontal tab strip overflows');
+ await tabs.hover();await p.mouse.wheel(0,90);
+ await p.waitForFunction(()=>document.querySelector('.wiki-tabs').scrollLeft>0);
+ const atEdge=await tabs.evaluate(el=>{
+  el.scrollLeft=el.scrollWidth;
+  return el.firstElementChild.dispatchEvent(new WheelEvent('wheel',{deltaY:90,bubbles:true,cancelable:true}));
+ });
+ assert.equal(atEdge,true,'a wheel at the horizontal edge remains available for native scrolling');
+ const verticalAllowed=await tabs.evaluate(el=>{
+  el.style.height='20px';el.style.overflowY='auto';el.scrollLeft=0;
+  if(el.scrollHeight<=el.clientHeight)throw Error('test tab strip has no vertical overflow');
+  return el.firstElementChild.dispatchEvent(new WheelEvent('wheel',{deltaY:90,bubbles:true,cancelable:true}))&&el.scrollLeft===0;
+ });
+ assert.equal(verticalAllowed,true,'a pane that can scroll vertically retains native wheel input');
  await p.locator('#wiki-close').click();assert.equal(await isOpen(p),false);
  assert.deepEqual(p.errs,[]);await ctx.close();
 }

@@ -992,7 +992,7 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();await p.locator('#depart').waitFor();await ready(p);await confirmDeparture(p);await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   let s=await state(p);assert.equal(s.round,0);assert.equal(s.phase,'playing');
   assert.equal(await p.locator('#dungeon-layout').isVisible(),true,'the real player run uses the full-screen maze layout');
-  assert.equal(await p.locator('#shortcut-card').isVisible(),true,'shortcut help is inside the maze view');
+  assert.equal(await p.locator('#shortcut-card').count(),0,'shortcut help is in settings only');
   assert.equal(await p.locator('#hud-bottom [data-move-slot]').count(),4,'all four move slots, including empty slots, stay visible');
   assert.equal(await p.locator('#hud-bottom [data-hud-quick]').count(),6,'all six quick-item slots stay visible');
   const controlBounds=await p.evaluate(()=>{
@@ -1005,7 +1005,6 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
    assert.ok(rects.every(r=>r.left>=0&&r.top>=0&&r.right<=controlBounds.viewport.width&&r.bottom<=controlBounds.viewport.height),`${label} rectangles stay fully inside the 1280×720 viewport: ${JSON.stringify(rects)}`);
    assert.ok(rects.every(r=>Math.abs(r.width-rects[0].width)<0.5&&Math.abs(r.height-rects[0].height)<0.5),`${label} have consistent widths and heights`);
   }
-  for(const keyLabel of ['1—4','5—0','Tab','B'])assert.ok((await p.locator('#shortcut-card').innerText()).includes(keyLabel),`in-frame shortcut card includes ${keyLabel}`);
   assert.equal(await p.locator('#party [id^="unit-card-"]').count(),2);
   assert.equal(await p.locator('#hud-bottom .hud-quick-slot.is-empty').count(),6,'new runs show six empty quick slots without zero-count items');
   assert.equal(await p.locator('.hud-minimap-heading > span').first().innerText(),'苔石洞 1F');
@@ -1387,7 +1386,8 @@ await test('7.8 UI夹具：伊布进化选择与暂缓按钮实际可点击',asy
   await startMemory(first.page,evolutionWorld());
   assert.equal((await state(first.page)).phase,'evolution');
   assert.match(await first.page.locator('#evolution-choice').innerText(),/伊布可以进化/);
-  assert.match(await first.page.locator('#evolution-choice').innerText(),/下次升级时再询问/);
+  assert.equal(await first.page.locator('#evolution-close').innerText(),'暂不进化（下次升级时再问）');
+  assert.doesNotMatch(await first.page.locator('#evolution-choice').innerText(),/请选择下一形态/);
   for(const id of ['vaporeon','jolteon','flareon'])assert.equal(await first.page.locator('#evolve-'+id).count(),1);
   await click(first.page,'evolve-vaporeon');
   const chosen=await state(first.page);
@@ -1506,7 +1506,14 @@ await test('7.7b 仓库：三招可见、学习、配招，新远征使用新版
  try{
   await p.goto(base+'?dev=1&seed=16763');await p.locator('#start').waitFor();
   assert.equal(await p.evaluate(pr=>window.trial.store.beginNewGame(pr,true),profile),true);await p.reload();await ready(p);
+  await p.setViewportSize({width:1280,height:720});
   await openCampPanel(p,'vault');
+  await p.locator('#tm-reflect').click();
+  await p.locator('#tm-lightscreen').hover();
+  assert.equal(await p.locator('#camp-move-tooltip').isVisible(),false);
+  assert.equal(await p.locator('#tm-reflect').getAttribute('aria-pressed'),'true');
+  assert.match(await p.locator('.camp194-vault-detail').innerText(),/10回合内受到的物理伤害减半/);
+  await p.screenshot({path:artifact+'r8-vault-hover.png'});
   for(const [move,label,inst] of [['quickguard','快速防守','P1'],['reflect','反射壁','P2'],['lightscreen','光墙','P2']]){
    assert.match(await p.locator('#tm-'+move).innerText(),new RegExp(label));
    await click(p,'tm-'+move);await click(p,'learn-'+inst);
@@ -1672,6 +1679,7 @@ await test('8.4 委托与祝福：实际接下、拒绝、三选一、放弃及�
 });
 await test('8.4 选机：真实三选一按钮、一次消费与挑战奖励来源文字',async()=>{
  const {context,page:p,errors}=await setup();try{
+  await p.setViewportSize({width:1280,height:720});
   await emptyReady(p);const {createExpedition}=await import('../../src/core/engine.ts');
   const fixture=createExpedition('browser-84-tm',1,3,{members:[
    {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'}],leader:0},0,true,3);
@@ -1682,8 +1690,18 @@ await test('8.4 选机：真实三选一按钮、一次消费与挑战奖励来�
   await startMemory(p,fixture);
   await click(p,'blessing-tmChoice');const offered=await state(p);assert.equal(offered.phase,'tmChoice');
   const options=offered.pendingChoices[0].options;assert.equal(options.length,3);assert.equal(new Set(options).size,3);
-  await p.screenshot({path:artifact+'windows-84-tm-choice.png',fullPage:true});
-  await click(p,'tm-choice-'+options[1]);const s=await state(p);
+  const cards=p.locator('#tm-choice.paper-window .camp194-tm-tile');
+  assert.equal(await cards.count(),3);
+  for(const part of ['.camp194-tm-disc','strong','.paper-type','.camp194-category']){
+   assert.equal(await cards.locator(part).count(),3,'each reward uses the warehouse card field '+part);
+  }
+  assert.doesNotMatch(await p.locator('#tm-choice').innerText(),/选择后即可继续/);
+  await p.screenshot({path:artifact+'windows-84-tm-choice.png'});
+  await cards.first().focus();await p.keyboard.press('Tab');
+  assert.equal(await p.locator('#tm-choice :focus').getAttribute('id'),'tm-choice-'+options[1]);
+  await p.keyboard.press('Enter');
+  await p.waitForFunction(()=>window.trial.store.world.phase==='playing');
+  const s=await state(p);
   assert.equal(s.phase,'playing');assert.equal(s.round,offered.round);
   assert.equal(s.tms.length,2);assert.deepEqual(s.tms[1],{move:options[1],source:'blessing',fate:'held'});
   assert.equal(await raw(p),null);
@@ -2019,7 +2037,7 @@ await test('#194 全部物品说明、敌招分行与队友显式详情',async()
   for(const item of Object.keys(ITEM_NAMES)){
    const button=p.locator('[data-bag-item="'+item+'"]');await button.click();
    const description=p.locator('.c195-bag-text');assert.ok(await description.isVisible(),'effect stays visible in the detail panel: '+item);
-   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/HP.*回满/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP/,slumberOrb:/所有敌人.*睡着/,totterOrb:/所有敌人.*混乱/,luminousOrb:/全部地形/,rollcallOrb:/同行.*身边/,reviverSeed:/倒下时.*一半/};
+   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/回满.*HP/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP/,slumberOrb:/所有敌人.*进入睡眠/,totterOrb:/所有敌人.*混乱/,luminousOrb:/全部地形/,rollcallOrb:/同行.*身边/,reviverSeed:/倒下时.*一半/};
    assert.match(text,effects[item],'visible effect matches the current item rule: '+item);assert.ok((await button.getAttribute('aria-label')).includes(ITEM_NAMES[item]),'accessible item label names the item: '+item);
    assert.match(await p.locator('.c195-bag-detail').innerText(),new RegExp(ITEM_NAMES[item]),'detail shows the selected item name');
   }

@@ -3,6 +3,7 @@ import {hudParty,hudBottom,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDama
 import '../render/hud.css';
 import {itemIconImg} from '../render/item-icons.ts';
 import {installDrag,reconcileDrag} from './drag.ts';
+import {scrollHorizontalWithWheel} from './scroll.ts';
 import {resultBanner} from '../render/result-banner.ts';
 import {applyHpBar,syncHpBars,hpTextColor} from '../render/hpbar.ts';
 import {typeChips,unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
@@ -11,7 +12,7 @@ import {updateMinimap,playbackMinimapWorld,boardCell,bigMinimapMarkup,minimapSta
 import '../render/panels194.css';
 import {learningPanel,invitationPanel,moveCard,noticePanel,noticeTag} from '../render/choice-panels.ts';
 import '../render/choice-panels.css';
-import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
+import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,tmTile,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
 import {applyCommand,bossDefeated,traceRound,playerVisibleCells,reveal,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,ORB_ITEMS,PROG,COMMISSIONS,BLESSING_RARITY,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
@@ -60,7 +61,7 @@ const params=new URLSearchParams(location.search);
 /** Developer mode (stage 7.1): `?dev=1` or `?fixture=`. Only here do the fixed map, the no-invitation control, fixtures, `?seed=` and coordinates exist; the title screen is skipped. */
 const dev=params.get('dev')==='1'||(params.get('fixture')!==null&&(SCENARIOS as readonly string[]).includes(params.get('fixture')!));
 const app=document.querySelector<HTMLDivElement>('#app')!;
-app.innerHTML=`<header><div class="brand">宝可梦地牢探索</div><div class="build">版本 ${BUILD_ID.replace(/^trial-/,'')} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'使用开发者菜单检查固定场景或三层首领战，结果只在本页内存中。':'逐层探索迷宫、招募伙伴，击败第三层的首领。伙伴始终归营，招式机胜利后带回。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未出发</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标</span><span>T 成果</span><span>下 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><p class="muted">在队友卡片上更改作战方针，不占回合；点击详情可查看招式与当前方针。</p><div id="party"></div></section><section id="controls"></section>${dev?`<details id="developer-tools"><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button><p>运行时地形图集（每层含 47 种形状及 4 个变体）</p><label>主题 <select id="terrain-theme"><option value="moss">苔石洞</option><option value="wet">潮湿水窟</option><option value="ash">灰烬裂谷</option></select></label><label>图层 <select id="terrain-layer"><option value="floor">连续地面</option><option value="edge">地面边缘</option><option value="liquid">水面／岩浆</option><option value="wall">墙体</option></select></label><button id="export-terrain">导出地形图集 PNG</button></details>`:''}<footer>无需账号，进度保存在此浏览器</footer></aside></main><div id="title-screen" class="screen" hidden></div>${settingsMarkup()}`;
+app.innerHTML=`<header><div class="brand">宝可梦地牢探索</div><div class="build">版本 ${BUILD_ID.replace(/^trial-/,'')} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1>${dev?'<p>使用开发者菜单检查固定场景或三层首领战，结果只在本页内存中。</p>':''}</div><section id="guide"></section><div class="board-head"><span id="world-label">尚未出发</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标</span><span>T 成果</span><span>下 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section>${dev?`<details id="developer-tools"><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button><p>运行时地形图集（每层含 47 种形状及 4 个变体）</p><label>主题 <select id="terrain-theme"><option value="moss">苔石洞</option><option value="wet">潮湿水窟</option><option value="ash">灰烬裂谷</option></select></label><label>图层 <select id="terrain-layer"><option value="floor">连续地面</option><option value="edge">地面边缘</option><option value="liquid">水面／岩浆</option><option value="wall">墙体</option></select></label><button id="export-terrain">导出地形图集 PNG</button></details>`:''}</aside></main><div id="title-screen" class="screen" hidden></div>${settingsMarkup()}`;
 const fixture=params.get('fixture') as ScenarioId|null;
 const checkMode=fixture!==null&&SCENARIOS.includes(fixture);
 const legend=document.querySelector<HTMLElement>('.legend')!;
@@ -68,8 +69,9 @@ legend.innerHTML='<span><i class="friend"></i>同行</span><span><i class="enemy
 const activityStatusRoot=document.createElement('section');activityStatusRoot.id='activity-status';activityStatusRoot.setAttribute('aria-live','polite');document.getElementById('save')!.after(activityStatusRoot);
 // Stateful panels return to their original positions at camp.
 const dungeonLayout=document.createElement('div');dungeonLayout.id='dungeon-layout';dungeonLayout.hidden=true;
-dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="shortcut-card"><span>WASD</span><span>移动</span><span>W+D 等</span><span>斜向移动</span><span>1—4</span><span>招式</span><span>5—0</span><span>快捷物品</span><span>Tab</span><span>切换操控</span><span>B</span><span>背包</span><span>F</span><span>向前普通攻击</span><span>.</span><span>等待</span><span>L</span><span>日志</span><span>H</span><span>百科</span><span>M</span><span>地图</span><span>Esc</span><span>关闭窗口</span></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button><button id="log-open" aria-label="打开完整记录（L）" title="完整记录（L）">记录</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div><div id="unit-details-layer"></div></div>`;
+dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button><button id="log-open" aria-label="打开完整记录（L）" title="完整记录（L）">记录</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div><div id="unit-details-layer"></div></div>`;
 app.append(dungeonLayout);
+document.addEventListener('wheel',scrollHorizontalWithWheel,{passive:false});
 const panelHomes=new Map<HTMLElement,Comment>();
 for(const id of ['board','party','activity-status','recent-events','message','inspect','controls','flow','save',...(dev?['developer-tools']:[])]){const el=document.getElementById(id)!;const home=document.createComment(id);el.before(home);panelHomes.set(el,home);}
 let actionsOpen=false,bagOpen=false,bagCategory='all',bagSlot=0;
@@ -270,7 +272,7 @@ function activityStatus(s:World):string{
  return `<section class="unit" id="commission-status"><h2>进行中的委托（${(s.commissions??[]).length}/3）</h2>${commissions?`<ul>${commissions}</ul>`:'<p>暂无进行中的委托。</p>'}</section><section class="unit" id="blessing-status"><h2>已获得的祝福</h2>${blessings?`<ul>${blessings}</ul>`:'<p>尚未获得祝福。</p>'}</section>`;
 }
 /** What a commission asks, in one short line. */
-const COMMISSION_GOAL:Record<CommissionId,string>={hunter:'击倒 3 只敌人',collector:'取得 1 件道具',scout:'先进祝福房或道具房，再下楼',guardian:'下楼时全队存活',speedrun:'限定轮数内下楼'};
+const COMMISSION_GOAL:Record<CommissionId,string>={hunter:'击倒 3 只敌人',collector:'取得 1 件道具',scout:'先进祝福房或道具房，再下楼',guardian:'下楼时全队存活',speedrun:'限时下楼'};
 const commissionPenaltyTag=(penalty:typeof COMMISSIONS[CommissionId]['penalty']):string=>penalty==='defenseMinusOne'?'全队防御 −1':penalty==='berryHealHalf'?'树果回复减半':'';
 /** The commission offer as a notice board: name, goal, reward (icon and number), the penalty while it runs and the floor limit, then accept or reject. */
 function commissionNotice(spec:typeof COMMISSIONS[CommissionId],id:CommissionId,full:boolean,ready:boolean):string{
@@ -489,7 +491,7 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  bind('reset',()=>{if(window.confirm('仅在已保留导出原记录后重置。该操作将开始一份新存档，是否确认？'))void transition(store.resetAfterExport(createMain(newId()),true));});
  $('history').innerHTML=s?visibleLog(s).slice(-12).map(t=>`<li>${esc(t)}</li>`).join(''):'';
  if(!s&&store.atBase){renderBase();return;}
- if(!s){$('party').innerHTML='<p class="muted">出发后在这里显示队伍。</p>';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>还没有存档。请返回标题开始新游戏。</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>开发者场景只在本次页面内存中运行，不会写入玩家营地存档。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（三层首领战，仅在内存）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(checkMode?store.start(createScenario(fixture!,newId()),scenarioProfile(fixture!)):store.start(begin(selectedConfig),selectedConfig==='expedition'?initialProfile():undefined));});return;}
+ if(!s){$('party').innerHTML='';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>尚无存档</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>开发者场景只在本次页面内存中运行，不会写入玩家营地存档。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（三层首领战，仅在内存）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(checkMode?store.start(createScenario(fixture!,newId()),scenarioProfile(fixture!)):store.start(begin(selectedConfig),selectedConfig==='expedition'?initialProfile():undefined));});return;}
  const ready=store.status==='ready',playing=s.phase==='playing',editable=ready||store.status==='saving';
  $('party').innerHTML=s.queue.map((id,i)=>{const u=s.units[id];const down=u.hp===0,level=u.level??s.prog?.level;return `<article class="unit ${id===s.leader?'leader':''}" id="unit-card-${esc(id)}"><div><strong>${esc(unitLabel(u,id))}</strong><span>${down?'倒下 · 仍占名额':id===s.leader?'操控者':'同行'}${u.protected?' · 初始成员':''} · ${u.hp}/${u.maxHp}${u.species?` · ${esc(specName(u))}`:''}${level===undefined?'':` · Lv${level}`}</span></div><div class="hp"><i style="width:${u.hp/u.maxHp*100}%"></i></div><p class="muted" data-unit-status="${esc(id)}" ${combatStatus(u)?'':'hidden'}>${esc(combatStatus(u))}</p><p>${u.learned.map(k=>`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普通攻击，不耗PP'}</p>${tacticSelect(`tactic-run-${id}`,u.tactic??'together',!ready||!playing)}${button('leader-'+i,'设为操控者',!ready||!playing||down||s.leader===id)}${button('detail-'+i,'详情')}</article>`;}).join('')+(s.camp.length?`<p class="muted">此前已回营：${s.camp.map(id=>esc(resources(s,id))).join('；')}（本局不可调回）</p>`:'');
   s.queue.forEach((id,i)=>{bind('leader-'+i,()=>{void send({type:'switch',actor:id});});bind('detail-'+i,()=>{detailsId=detailsId===id?null:id;detailsOpenerId=detailsId;render();});
@@ -525,7 +527,7 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  if(s.phase==='tmChoice'){
   $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
   if(!pending||pending.type!=='tmChoice'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的招式机选择。</p></div>';return;}
-  $('flow').innerHTML=`<div class="result" id="tm-choice" role="dialog" aria-labelledby="tm-choice-heading"><small>${SRC[pending.source]} · 下一张招式机</small><h2 id="tm-choice-heading">选择一张招式机</h2><p>选择后即可继续本轮。</p><div class="choice-grid">${pending.options.map(move=>button(`tm-choice-${move}`,`<strong class="choice-title">${esc(tmZh(move))}招式机</strong>`,!ready,'class="primary choice-card"')).join('')}</div></div>`;
+  $('flow').innerHTML=`<section class="paper-window c195 c195-tm" id="tm-choice" role="dialog" aria-labelledby="tm-choice-heading"><h2 class="paper-plaque" id="tm-choice-heading">选择一张招式机</h2><small>${SRC[pending.source]}</small><div class="choice-grid">${pending.options.map(move=>tmTile(move,{disabled:!ready})).join('')}</div></section>`;
   for(const move of pending.options)bind(`tm-choice-${move}`,()=>void send({type:'tmChoice',move}));return;
  }
  if(s.phase==='learning'){
@@ -539,7 +541,7 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  }
   if(s.phase==='evolution'){
    $('controls').innerHTML='';const pending=s.pendingEvolutions?.[0],unit=pending?s.units[pending.actor]:undefined;
-   $('flow').innerHTML=pending?`<div class="result" id="evolution-choice" role="dialog" aria-labelledby="evolution-heading"><small>升级后进化</small><h2 id="evolution-heading">${esc(unitLabel(unit,pending.actor))}可以进化</h2><p>请选择下一形态。关闭选择会暂不进化，并在下次升级时再询问。</p><div>${pending.choices.map(choice=>button(`evolve-${choice}`,spName(choice),!ready,'class="primary"')).join('')}</div>${button('evolution-close','暂不进化（下次升级时再问）',!ready)}</div>`:'<p class="error">进化阶段缺少待处理选择。</p>';
+   $('flow').innerHTML=pending?`<div class="result" id="evolution-choice" role="dialog" aria-labelledby="evolution-heading"><small>升级后进化</small><h2 id="evolution-heading">${esc(unitLabel(unit,pending.actor))}可以进化</h2><div>${pending.choices.map(choice=>button(`evolve-${choice}`,spName(choice),!ready,'class="primary"')).join('')}</div>${button('evolution-close','暂不进化（下次升级时再问）',!ready)}</div>`:'<p class="error">进化阶段缺少待处理选择。</p>';
    if(pending){for(const choice of pending.choices)bind(`evolve-${choice}`,()=>void send({type:'evolve',species:choice}));bind('evolution-close',()=>void send({type:'evolve',species:null}));}
    return;
   }
@@ -666,11 +668,9 @@ function renderBase(){
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-shard]'))el.onclick=()=>{vaultState.shard=el.dataset.vaultShard!;render();};
  for(const m of ALL_TM_MOVES)bind('tm-'+m,()=>{vaultState.move=m;vaultState.learner=null;notice='';render();});
  for(const difficulty of ['easy','normal','hard'])if(isDifficulty(difficulty))bind('difficulty-'+difficulty,()=>void edit({type:'difficulty',difficulty}));
- /** The vault's right panel already describes the selected machine, so that tile never raises a tooltip (it would repeat the text and cover the learners). */
- const tipFor=(el:HTMLButtonElement|null|undefined)=>el&&!(el.classList.contains('camp194-tm-tile')&&el.getAttribute('aria-pressed')==='true')?el:null;
- const showTip=(el:HTMLButtonElement|null|undefined)=>{const tip=document.getElementById('camp-move-tooltip');if(!tip)return;const target=tipFor(el);if(target){tip.innerHTML=campMoveTooltip194(target.dataset.campMove!);tip.hidden=false;}else tip.hidden=true;};
+ const showTip=(el:HTMLButtonElement|null|undefined)=>{const tip=document.getElementById('camp-move-tooltip');if(!tip)return;if(el){tip.innerHTML=campMoveTooltip194(el.dataset.campMove!);tip.hidden=false;}else tip.hidden=true;};
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-camp-move]')){
-  const hide=()=>showTip(tipFor(dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus'))??tipFor(dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:hover')));
+  const hide=()=>showTip(dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus')??dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:hover'));
   el.onmouseenter=()=>showTip(el);el.onfocus=()=>showTip(el);el.onmouseleave=hide;el.onblur=hide;
  }
  showTip(dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus'));
@@ -948,7 +948,7 @@ function draftOrder(s:World,d:NonNullable<typeof draft>):string{
  const main:Action=d.main??{type:'wait'};
  const steps=traceRound(s,{type:'round',action:main,...(!d.swap&&d.action?{override:{actor:d.partner,action:d.action}}:{})});
  if(!steps)return '<p class="muted" id="draft-order">本轮顺序暂时无法预演（草稿里有不合法的动作）。</p>';
- return `<p id="draft-order"><strong>本轮顺序：</strong>${esc(orderLine(s,steps))}</p><ul id="draft-steps">${stepRows(s,steps).map(r=>`<li>${esc(r.text)}</li>`).join('')}</ul>${d.main?'':'<p class="muted">操控者的动作还没选；预览暂按“等待”。</p>'}${!d.swap&&!d.action?'<p class="muted">伙伴的动作还没选；预览用默认行为，可以直接提交。</p>':''}`;
+ return `<p id="draft-order"><strong>本轮顺序：</strong>${esc(orderLine(s,steps))}</p><ul id="draft-steps">${stepRows(s,steps).map(r=>`<li>${esc(r.text)}</li>`).join('')}</ul>`;
 }
 function download(raw:string,filename='trial-save-original.json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function makeBoardScene(Phaser:typeof import('phaser')){

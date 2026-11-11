@@ -79,6 +79,18 @@ const scrollers=p=>p.evaluate(()=>[...document.querySelectorAll('*')].filter(el=
  const first=p.locator('#hud-bottom [data-hud-skill]').first();await first.hover();await p.locator('#hud-tooltip').waitFor({state:'visible'});
  const desc=p.locator('#hud-tooltip [data-move-description]'),text=await desc.count()?(await desc.innerText()).trim():'';   // D-20261110-09: only effects the card does not show; a pure damage move has none
  assert.ok(!/按攻击对防御结算|命中率|（/.test(text)&&(text===''||/。$/.test(text)),'engine effect text without category, hit-rate or bracket notes: '+text);
+ await p.evaluate(()=>{
+  const s=window.trial.store.world,leader=s.units[s.leader];
+  leader.learned=['snore','reflect'];leader.pp={snore:5,reflect:2};leader.maxPp={...leader.pp};
+  window.dispatchEvent(new Event('blur'));
+ });
+ for(const [move,pattern] of [['snore',/受到对方直接攻击.*不能主动使用/],['reflect',/10回合内受到的物理伤害减半；重复使用刷新计时/]]){
+  await p.locator('#hud-bottom [data-hud-skill="'+move+'"]').hover();
+  await p.locator('#hud-tooltip').waitFor({state:'visible'});
+  const description=await p.locator('#hud-tooltip [data-move-description]').innerText();
+  assert.match(description,pattern);assert.doesNotMatch(description,/不造成畏缩/);
+  await p.screenshot({path:out+'r8-hover-'+move+'.png'});
+ }
  assert.ok(seen.size>=5,'scrollers seen: '+[...seen].join(','));
  assert.deepEqual(p.errs,[]);await ctx.close();
 }

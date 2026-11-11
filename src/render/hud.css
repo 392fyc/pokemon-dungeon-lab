@@ -92,8 +92,7 @@ body.dungeon-mode #dungeon-hud #hud-map,
 body.dungeon-mode #dungeon-hud #activity-status,
 body.dungeon-mode #dungeon-hud #inspect,
 body.dungeon-mode #dungeon-hud #recent-events,
-body.dungeon-mode #dungeon-hud #message,
-body.dungeon-mode #dungeon-hud #shortcut-card {
+body.dungeon-mode #dungeon-hud #message {
   pointer-events: none;
 }
 
@@ -639,26 +638,6 @@ body.dungeon-mode #message {
   pointer-events: none;
 }
 
-body.dungeon-mode #shortcut-card {
-  position: absolute;
-  right: 14px;
-  bottom: 132px;
-  z-index: 22;
-  display: grid;
-  grid-template-columns: auto auto;
-  gap: 0 10px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(19, 15, 12, 0.58);
-  color: #d6d0bc;
-  font-size: 11px;
-  line-height: 1.75;
-  pointer-events: none;
-}
-
-body.dungeon-mode #shortcut-card span:nth-child(odd) {
-  color: #e8d48a;
-}
 
 body.dungeon-mode #hud-tools {
   position: absolute;
@@ -1789,11 +1768,6 @@ body.dungeon-mode :focus-visible {
     font-size: 11px;
   }
 
-  body.dungeon-mode #shortcut-card {
-    right: 8px;
-    bottom: 150px;
-    font-size: 10px;
-  }
 
   body.dungeon-mode #hud-tooltip {
     bottom: 144px;
@@ -1827,17 +1801,8 @@ body.dungeon-mode :focus-visible {
     height: calc(100% - 100px);
   }
 
-  body.dungeon-mode #recent-events,
-  body.dungeon-mode #shortcut-card {
+  body.dungeon-mode #recent-events {
     bottom: 112px;
-  }
-
-  /* low screens: the key list runs in four columns so it stays short and clears the panels above it */
-  body.dungeon-mode #shortcut-card {
-    grid-template-columns: repeat(4, auto);
-    gap: 0 8px;
-    font-size: 10px;
-    line-height: 1.6;
   }
 
   body.dungeon-mode #hud-tooltip {
@@ -1931,8 +1896,7 @@ body.dungeon-mode :focus-visible {
     height: calc(100% - 136px);
   }
 
-  body.dungeon-mode #recent-events,
-  body.dungeon-mode #shortcut-card {
+  body.dungeon-mode #recent-events {
     bottom: 150px;
   }
 
@@ -2043,7 +2007,7 @@ body.dungeon-mode #inspect .inspect-close {
   cursor: pointer;
 }
 
-/* Choice windows (blessings, TMs): equal-size cards in a grid; the skip button sits on its own centred row. */
+/* Equal-width recruitment and TM choices. */
 body.dungeon-mode #flow .choice-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

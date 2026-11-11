@@ -242,11 +242,18 @@ export function normalizeVault194(profile:Profile,state:Partial<VaultState>|null
   return {tab,by,filter,move,learner,shard};
 }
 
-function vaultMoveTile(profile:Profile,move:string,selected:boolean):string {
-  const fields=moveFields(move),count=Math.max(0,profile.vault[move]??0);
-  return '<button type="button" class="camp194-tm-tile'+(count?'':' is-empty')+'" id="tm-'+escape(move)+'" data-camp-move="'+escape(move)+'" aria-pressed="'+(selected?'true':'false')+'" aria-label="'+escape(moveZh(move)+'，库存 '+count)+'">'+
+export function tmTile(move:string,options:{count:number;selected:boolean}|{disabled:boolean}):string {
+  const fields=moveFields(move),name=moveZh(move);
+  const stock='count' in options;
+  const attrs=stock
+    ? ' id="tm-'+escape(move)+'" aria-pressed="'+options.selected+'" aria-label="'+escape(name+'，库存 '+options.count)+'"'
+    : ' id="tm-choice-'+escape(move)+'"'+(options.disabled?' disabled':'');
+  return '<button type="button" class="camp194-tm-tile'+(stock&&!options.count?' is-empty':'')+'"'+attrs+'>'+
     '<span class="camp194-tm-disc" aria-hidden="true" style="--tm-color:'+typeColor(fields.type)+'"></span>'+
-    '<strong>'+escape(moveZh(move))+'</strong><span class="camp194-tm-count">×'+count+'</span></button>';
+    '<strong>'+escape(name)+'</strong><span class="camp194-tm-tags">'+
+    '<span class="paper-type" style="background:'+typeColor(fields.type)+'">'+escape(typeZh(fields.type))+'</span>'+
+    '<span class="camp194-category">'+escape(fields.category)+'</span></span>'+
+    (stock?'<span class="camp194-tm-count">×'+options.count+'</span>':'')+'</button>';
 }
 function shardTile(species:string,count:number,selected:boolean):string {
   return '<button type="button" id="camp-vault-shard-'+escape(species)+'" class="camp194-shard-tile" data-vault-shard="'+escape(species)+'" aria-pressed="'+(selected?'true':'false')+'">'+
@@ -272,7 +279,7 @@ function moveDetail(profile:Profile,move:string,state:VaultState,ready:boolean):
       '<div><dt>属性</dt><dd>'+escape(typeZh(fields.type))+'</dd></div><div><dt>分类</dt><dd>'+escape(fields.category)+'</dd></div>'+
       moveFactPairs(fields,undefined).map(([k,v])=>'<div><dt>'+k+'</dt><dd>'+escape(v)+'</dd></div>').join('')+
       '<div><dt>PP上限</dt><dd>'+(maximum??'—')+'</dd></div></dl></div>'+
-    '<p class="camp194-move-description">'+escape(fields.description||'没有招式说明。')+'</p>'+
+    (fields.description?'<p class="camp194-move-description">'+escape(fields.description)+'</p>':'')+
     '<section class="camp194-learners" aria-label="学习对象"><div class="camp194-section-heading"><h3>学习对象</h3><span>库存 ×'+stock+'</span></div>'+
       '<div class="camp194-learner-list" id="camp-vault-learners" data-camp-scroll>'+vaultLearningChoices(profile,move,state.learner)+'</div></section>'+
     '<button type="button" class="camp194-learn-button" id="learn-'+escape(state.learner??'none')+'" '+(canStudy?'':'disabled')+'>'+
@@ -295,7 +302,7 @@ export function campVault194(profile:Profile,ready:boolean,state:VaultState):str
     return '<button type="button" id="camp-vault-filter-'+escape(value)+'" class="camp194-filter-chip" data-vault-filter="'+escape(value)+'" aria-pressed="'+(view.filter===value?'true':'false')+'"'+color+'>'+escape(name)+'</button>';
   }).join('');
   const types=filteredMoves(view.by,view.filter);
-  const tmList=types.length?types.map(move=>vaultMoveTile(profile,move,view.move===move)).join(''):'<p class="camp194-empty">无</p>';
+  const tmList=types.length?types.map(move=>tmTile(move,{count:Math.max(0,profile.vault[move]??0),selected:view.move===move})).join(''):'<p class="camp194-empty">无</p>';
   const shardList=shards.length?shards.map(([species,count])=>shardTile(species,count,view.shard===species)).join(''):'<p class="camp194-empty">无</p>';
   const detail=view.tab==='tm'&&view.move?moveDetail(profile,view.move,view,ready):view.tab==='shards'?shardDetail(profile,view.shard):'<section class="camp194-vault-detail"><p class="camp194-empty">无</p></section>';
   return '<div class="camp194-vault">'+
@@ -393,13 +400,12 @@ function genericMovePp(move:string,preferred?:number):string {
 }
 export function campMoveTooltip194(move:string,pp?:number):string {
   const fields=moveFields(move);
-  const description=fields.description||'没有招式说明。';
   const maximum=genericMovePp(move,pp);
   return '<section class="camp194-move-tip" aria-label="'+escape(moveZh(move))+'招式信息" style="--camp-move-color:'+typeColor(fields.type)+'">'+
     '<div class="camp194-tip-top">'+fields.scope+
       '<div class="camp194-tip-info"><header><strong>'+escape(moveZh(move))+'</strong><span class="paper-type" style="background:'+typeColor(fields.type)+'">'+escape(typeZh(fields.type))+'</span><span class="camp194-category">'+escape(fields.category)+'</span></header>'+
         '<dl>'+moveFactPairs(fields,undefined).map(([k,v])=>'<div><dt>'+k+'</dt><dd>'+escape(v)+'</dd></div>').join('')+'<div><dt>PP上限</dt><dd>'+maximum+'</dd></div></dl>'+
-        '<p>'+escape(description)+'</p></div>'+
+        (fields.description?'<p>'+escape(fields.description)+'</p>':'')+'</div>'+
     '</div>'+
   '</section>';
 }

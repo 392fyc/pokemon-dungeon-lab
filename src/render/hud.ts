@@ -359,7 +359,7 @@ export function blessingEffectLabel(id: BlessingId): string {
     case "fullpower": return "HP>" + Math.round((definition.threshold ?? 0) * 100) + "% 时伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
     case "scholar": return "经验 +" + Math.round((definition.value ?? 0) * 100) + "%";
     case "killheal": return "击倒回复 " + Math.round((definition.value ?? 0) * 100) + "% HP";
-    case "regen": return "每 " + (definition.every ?? 10) + " 轮回复 " + Math.round((definition.value ?? 0) * 100) + "% HP";
+    case "regen": return "每 " + (definition.every ?? 10) + " 回合回复 " + Math.round((definition.value ?? 0) * 100) + "% HP";
     case "thickskin": return "每层每人首次直接伤害减半";
     case "laststand": return "首次 HP<" + Math.round((definition.threshold ?? 0) * 100) + "% 回复 " + Math.round((definition.value ?? 0) * 100) + "%";
   }
@@ -382,7 +382,7 @@ export function hudTracking(s: World): string {
       if (commission.id === "speedrun") {
         return commission.speedLimit === null
           ? "限时未设置"
-          : "剩余 " + Math.max(0, commission.speedLimit - commission.progress) + " 轮";
+          : "剩余 " + Math.max(0, commission.speedLimit - commission.progress) + " 回合";
       }
       if (commission.id === "hunter") {
         return "剩余 " + Math.max(0, commission.progressTarget - commission.progress) + " 只";

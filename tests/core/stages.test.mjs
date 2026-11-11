@@ -40,7 +40,7 @@ test('the stage multiplier sits outside the 0.5-2 ratio clamp, so a boost is not
  assert.equal(estimateAttackDamage(mk(0),'A','T','tackle'),26,'tackle 9 + level bonus 4 = 13, ratio clamped to 2');
  assert.equal(estimateAttackDamage(mk(4),'A','T','tackle'),39,'13 x 2 x 1.5: the +4 is not cut by the clamp');
 });
-test('a move changes a stage by its own amount up to +10; accuracy keeps its +-3 limit',()=>{
+test('a move changes a stage by its own amount up to +10; accuracy and evasion keep their +-6 limit',()=>{
  const s=duel();s.units.A.learned=['swordsdance'];s.units.A.pp={swordsdance:20};s.units.A.maxPp={swordsdance:20};
  let cur=s;for(let i=0;i<7;i++){const r=applyCommand(cur,{type:'round',action:{type:'skill',skill:'swordsdance',target:'A'}});assert.equal(r.ok,true,r.error);cur=r.state;}
  assert.equal(cur.units.A.stages.atk,10,'+2 seven times is held at +10');

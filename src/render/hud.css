@@ -1977,13 +1977,9 @@ body.dungeon-mode .learning-new { border: 1px solid #e8d48a; border-radius: 8px;
 body.dungeon-mode .learning-moves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 body.dungeon-mode .learning-move strong { overflow-wrap: anywhere; }
 
-/* Learning details reserve their own space and receive touch input inside the choice window. */
+/* Learning window sizing (the cards carry every field; there is no separate detail area). */
 body.dungeon-mode #flow:has(#learning-choice) { max-height: calc(100vh - 32px); padding: 12px; }
 body.dungeon-mode #learning-choice { margin: 0; padding: 12px; }
-body.dungeon-mode #learning-tooltip { height: 146px; overflow: auto; overscroll-behavior: contain; touch-action: pan-y; margin: 10px 0; border: 1px solid #6c7758; border-radius: 8px; background: #101b15; pointer-events: auto; }
-body.dungeon-mode #learning-tooltip .hud-move-tip { padding: 8px; }
-body.dungeon-mode #learning-tooltip .hud-move-tip-main { gap: 8px; align-items: flex-start; }
-body.dungeon-mode #learning-tooltip .hud-tip-description { margin-bottom: 0; }
 body.dungeon-mode .hud-current-hp-value { white-space: nowrap; }
 
 /* ---- playtest 1107 ---- */

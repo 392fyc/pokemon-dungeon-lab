@@ -15,7 +15,7 @@ p.on('request',r=>{if(r.resourceType()==='script')scriptRequests.push(r.url());}
 p.on('pageerror',e=>errors.push(e.message));
 p.on('response',r=>{
  if(r.status()>=400)failed.push(r.url());
- if(/\/assets\/(tiles\/floor-stone|camp\/base)\.png$/.test(r.url()))backdrops.push({url:r.url(),status:r.status(),type:r.headers()['content-type']});
+ if(/\/assets\/camp\/base\.png$/.test(r.url()))backdrops.push({url:r.url(),status:r.status(),type:r.headers()['content-type']});
 });
 p.on('requestfailed',r=>failed.push(r.url()));
 p.setDefaultTimeout(15000);
@@ -60,7 +60,7 @@ try{
  await p.goto(base);await p.locator('#title-new').waitFor();
  await p.waitForLoadState('networkidle');
  await capture('01-title');
- const backdropUrl=new URL('assets/tiles/floor-stone.png',p.url()).href;
+ const backdropUrl=new URL('assets/camp/base.png',p.url()).href;
  assert.ok(backdrops.some(r=>r.url===backdropUrl&&r.status===200&&r.type?.startsWith('image/png')),'the title background loads from the same application path: '+JSON.stringify(backdrops));
  assert.equal(await p.evaluate(()=>performance.getEntriesByType('resource').some(r=>/\/phaser-.*\.js/.test(r.name))),false,'title must not load Phaser');
  assert.equal(scriptRequests.some(url=>/\/game-data-.*\.js/.test(url)),false,'idle title must not request game data');

@@ -115,9 +115,9 @@ body.dungeon-mode .hud-party-list {
 body.dungeon-mode .hud-party-card {
   position: relative;
   min-width: 0;
-  border: 1px solid rgba(77, 93, 80, 0.9);
+  border: 1px solid rgba(119, 93, 73, 0.9);
   border-radius: 10px;
-  background: rgba(10, 15, 12, 0.86);
+  background: rgba(19, 15, 12, 0.86);
   box-shadow: 0 5px 16px rgba(0, 0, 0, 0.16);
 }
 
@@ -277,9 +277,9 @@ body.dungeon-mode .hud-party-details {
   bottom: 6px;
   min-width: 42px;
   padding: 3px 6px;
-  border: 1px solid rgba(125, 143, 127, 0.6);
+  border: 1px solid rgba(119, 93, 73, 0.6);
   border-radius: 5px;
-  background: rgba(15, 23, 18, 0.78);
+  background: rgba(29, 23, 18, 0.78);
   color: #c9c4b0;
   font: inherit;
   font-size: 10px;
@@ -304,9 +304,9 @@ body.dungeon-mode #hud-map {
 body.dungeon-mode .hud-minimap-panel,
 body.dungeon-mode .hud-tracking-panel {
   box-sizing: border-box;
-  border: 1px solid rgba(35, 45, 38, 0.66);
+  border: 1px solid rgba(58, 45, 35, 0.66);
   border-radius: 10px;
-  background: rgba(10, 15, 12, 0.86);
+  background: rgba(19, 15, 12, 0.86);
   box-shadow: 0 5px 16px rgba(0, 0, 0, 0.12);
 }
 
@@ -329,17 +329,17 @@ body.dungeon-mode .hud-minimap-map {
   height: 116px;
   margin-top: 6px;
   border-radius: 6px;
-  background: #121814;
+  background: #17120e;
   shape-rendering: crispEdges;
 }
 
 body.dungeon-mode .hud-map-floor {
-  fill: #8a9a7a;
+  fill: #a8956f;
   opacity: 0.86;
 }
 
 body.dungeon-mode .hud-map-wall {
-  fill: #38453a;
+  fill: #5c4a38;
   opacity: 0.66;
 }
 
@@ -370,7 +370,7 @@ body.dungeon-mode .hud-map-stairs.is-up .hud-map-stairs-plate {
 }
 
 body.dungeon-mode .hud-map-stairs-arrow {
-  fill: #1b2a14;
+  fill: #17120e;
 }
 
 body.dungeon-mode .hud-map-exit {
@@ -419,7 +419,7 @@ dialog#map-dialog .map-heading-line {
   margin: 4px 56px 8px 0;
   padding: 4px 10px;
   border-radius: 6px;
-  background: rgba(10, 15, 12, 0.86);
+  background: rgba(19, 15, 12, 0.86);
   font-size: 15px;
   justify-content: flex-start;
   gap: 18px;
@@ -438,17 +438,17 @@ dialog#map-dialog .hud-minimap-map.is-big {
   aspect-ratio: var(--map-aspect, 3/2);
   margin: 0;
   border-radius: 6px;
-  background: #121814;
+  background: #17120e;
   shape-rendering: crispEdges;
 }
 
 dialog#map-dialog .hud-map-floor {
-  fill: #8a9a7a;
+  fill: #a8956f;
   opacity: 0.86;
 }
 
 dialog#map-dialog .hud-map-wall {
-  fill: #38453a;
+  fill: #5c4a38;
   opacity: 0.66;
 }
 
@@ -469,7 +469,7 @@ dialog#map-dialog .hud-map-stairs.is-up .hud-map-stairs-plate {
 }
 
 dialog#map-dialog .hud-map-stairs-arrow {
-  fill: #1b2a14;
+  fill: #17120e;
 }
 
 dialog#map-dialog .hud-map-point {
@@ -588,7 +588,7 @@ body.dungeon-mode .hud-track-name {
 }
 
 body.dungeon-mode .hud-track-count {
-  color: #b9c8b8;
+  color: #cdb985;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
@@ -608,7 +608,7 @@ body.dungeon-mode #recent-events {
   overflow: hidden;
   padding: 8px 12px;
   border-radius: 10px;
-  background: rgba(10, 15, 12, 0.72);
+  background: rgba(19, 15, 12, 0.72);
   color: #d6d0bc;
   font-size: 13px;
   line-height: 1.65;
@@ -649,7 +649,7 @@ body.dungeon-mode #shortcut-card {
   gap: 0 10px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: rgba(10, 15, 12, 0.58);
+  background: rgba(19, 15, 12, 0.58);
   color: #d6d0bc;
   font-size: 11px;
   line-height: 1.75;
@@ -680,9 +680,9 @@ body.dungeon-mode #hud-item-targets button {
 body.dungeon-mode #hud-tools button {
   min-width: 36px;
   min-height: 36px;
-  border: 1px solid rgba(77, 93, 80, 0.9);
+  border: 1px solid rgba(119, 93, 73, 0.9);
   border-radius: 8px;
-  background: rgba(10, 15, 12, 0.85);
+  background: rgba(19, 15, 12, 0.85);
   color: #e8d48a;
   cursor: pointer;
 }
@@ -697,8 +697,8 @@ body.dungeon-mode #hud-bottom {
   width: 100%;
   height: 118px;
   padding: 10px 16px 8px;
-  border-top: 2px solid #4d5d50;
-  background: linear-gradient(180deg, rgba(24, 33, 28, 0.98), rgba(16, 22, 18, 0.99));
+  border-top: 2px solid #6b4326;
+  background: linear-gradient(180deg, rgba(42, 33, 26, 0.98), rgba(28, 22, 17, 0.99));
 }
 
 body.dungeon-mode .hud-bottom-grid {
@@ -756,7 +756,7 @@ body.dungeon-mode .hud-current-member .hud-avatar {
   width: 70px;
   height: 70px;
   border-radius: 12px;
-  background: radial-gradient(circle at 50% 70%, #2a3a30, #141c18 75%);
+  background: radial-gradient(circle at 50% 70%, #3a2c20, #17120e 75%);
 }
 
 body.dungeon-mode .hud-current-info {
@@ -829,8 +829,8 @@ body.dungeon-mode #bag-open:disabled[data-animation-locked] {
 }
 
 body.dungeon-mode .hud-skills > .hud-skill.is-empty:disabled {
-  border: 1px dashed #657466;
-  background: rgba(12, 24, 18, 0.46);
+  border: 1px dashed #8a7050;
+  background: rgba(23, 18, 14, 0.46);
   color: transparent;
   opacity: 1;
 }
@@ -972,9 +972,9 @@ body.dungeon-mode .hud-bag-item {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid #4d5d50;
+  border: 1px solid #6b4326;
   border-radius: 8px;
-  background: #1f2b24;
+  background: #2a1f17;
   color: #f2eee0;
   font: inherit;
   text-align: center;
@@ -991,8 +991,8 @@ body.dungeon-mode .hud-quick-slot {
 body.dungeon-mode .hud-quick-slot.is-empty,
 body.dungeon-mode .hud-bag-slot.is-empty {
   border-style: dashed;
-  border-color: #3d4a40;
-  background: rgba(20, 28, 24, 0.55);
+  border-color: #5c4a38;
+  background: rgba(36, 28, 22, 0.55);
   cursor: default;
 }
 
@@ -1048,9 +1048,9 @@ body.dungeon-mode .hud-bag-slot .hud-item-description {
   max-width: min(220px, calc(100vw - 24px));
   padding: 8px 10px;
   transform: translateX(-50%);
-  border: 1px solid #758978;
+  border: 1px solid #8a6a48;
   border-radius: 7px;
-  background: rgba(10, 15, 12, 0.98);
+  background: rgba(19, 15, 12, 0.98);
   color: #f2eee0;
   font-size: 11px;
   font-weight: 400;
@@ -1100,7 +1100,7 @@ body.dungeon-mode .hud-bag-item:hover,
 body.dungeon-mode .hud-bag-item:focus,
 body.dungeon-mode .hud-bag-item.is-selected {
   border-color: #fff1b8;
-  background: #354239;
+  background: #3a2c20;
 }
 
 body.dungeon-mode .hud-bag-item:hover .hud-item-description,
@@ -1142,7 +1142,7 @@ body.dungeon-mode #hud-tooltip {
   transform: translateX(-50%);
   border: 1px solid #e8d48a;
   border-radius: 12px;
-  background: rgba(12, 18, 15, 0.96);
+  background: rgba(23, 18, 14, 0.96);
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
   color: #f2eee0;
   pointer-events: none;
@@ -1170,7 +1170,7 @@ body.dungeon-mode .hud-range-grid,
 body.dungeon-mode .hud-range-cell,
 .starter-picker .hud-range-cell {
   border-radius: 2px;
-  background: #202923;
+  background: #2a1f17;
 }
 
 body.dungeon-mode .hud-range-cell.is-direction,
@@ -1222,7 +1222,7 @@ body.dungeon-mode .hud-tip-category {
 }
 
 body.dungeon-mode .hud-tip-category {
-  background: #2a3a30;
+  background: #3a2c20;
 }
 
 body.dungeon-mode .hud-tip-fields {
@@ -1272,7 +1272,7 @@ body.dungeon-mode #hud-bag {
 body.dungeon-mode .hud-bag-scrim {
   position: absolute;
   inset: 0;
-  background: rgba(4, 8, 6, 0.2);
+  background: rgba(10, 8, 6, 0.2);
 }
 
 body.dungeon-mode .hud-bag-dialog {
@@ -1290,7 +1290,7 @@ body.dungeon-mode .hud-bag-dialog {
   transform: translateX(-50%);
   border: 2px solid #e8d48a;
   border-radius: 14px;
-  background: rgba(12, 18, 15, 0.98);
+  background: rgba(23, 18, 14, 0.98);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.48);
   color: #f2eee0;
 }
@@ -1318,7 +1318,7 @@ body.dungeon-mode .hud-bag-close {
   flex: 0 0 44px;
   width: 44px;
   height: 36px;
-  border: 1px solid #4d5d50;
+  border: 1px solid #6b4326;
   border-radius: 8px;
   background: transparent;
   color: inherit;
@@ -1334,7 +1334,7 @@ body.dungeon-mode .hud-bag-quick-heading {
 body.dungeon-mode .hud-bag-clear {
   min-height: 30px;
   padding: 0 10px;
-  border: 1px solid #4d5d50;
+  border: 1px solid #6b4326;
   border-radius: 7px;
   background: transparent;
   color: #e8d48a;
@@ -1375,7 +1375,7 @@ body.dungeon-mode .hud-bag-item {
 
 body.dungeon-mode .hud-bag-slot[aria-pressed="true"] {
   border: 2px solid #fff1b8;
-  background: #354239;
+  background: #3a2c20;
 }
 
 body.dungeon-mode .hud-bag-item {
@@ -1396,7 +1396,7 @@ body.dungeon-mode .hud-bag-item:disabled {
 body.dungeon-mode .hud-bag-selected-description {
   margin: 0;
   padding: 8px 2px 2px;
-  border-top: 1px solid #4d5d50;
+  border-top: 1px solid #6b4326;
   color: #d6d0bc;
   font-size: 12px;
   line-height: 1.4;
@@ -1415,7 +1415,7 @@ body.dungeon-mode .hud-bag-tabs {
 body.dungeon-mode .hud-bag-tab {
   min-height: 32px;
   padding: 0 14px;
-  border: 1px solid #4d5d50;
+  border: 1px solid #6b4326;
   border-radius: 16px;
   background: transparent;
   color: #f2eee0;
@@ -1449,7 +1449,7 @@ body.dungeon-mode #hud-actions {
   padding: 16px;
   border: 1px solid #e8d48a;
   border-radius: 12px;
-  background: rgba(12, 18, 15, 0.96);
+  background: rgba(23, 18, 14, 0.96);
   color: #f2eee0;
 }
 
@@ -1500,7 +1500,7 @@ body.dungeon-mode #hud-item-targets {
   padding: 10px;
   transform: translateX(-50%);
   border-radius: 8px;
-  background: rgba(10, 15, 12, 0.92);
+  background: rgba(19, 15, 12, 0.92);
 }
 
 body.dungeon-mode #flow {
@@ -1516,7 +1516,7 @@ body.dungeon-mode #flow {
   padding: 16px;
   border: 1px solid #e8d48a;
   border-radius: 12px;
-  background: rgba(12, 18, 15, 0.97);
+  background: rgba(23, 18, 14, 0.97);
   color: #f2eee0;
 }
 
@@ -1536,9 +1536,9 @@ body.dungeon-mode #inspect:empty {
 body.dungeon-mode #inspect .inspect-card {
   pointer-events: auto;
   padding: 10px 12px;
-  border: 1px solid rgba(77, 93, 80, 0.84);
+  border: 1px solid rgba(119, 93, 73, 0.84);
   border-radius: 10px;
-  background: rgba(10, 15, 12, 0.9);
+  background: rgba(19, 15, 12, 0.9);
   color: #f2eee0;
   font-size: 11px;
 }
@@ -1557,9 +1557,9 @@ body.dungeon-mode .enemy-move-list {
 
 body.dungeon-mode .enemy-move-list li {
   min-width: 0;
-  border: 1px solid rgba(125, 143, 127, 0.45);
+  border: 1px solid rgba(119, 93, 73, 0.45);
   border-radius: 6px;
-  background: rgba(26, 38, 30, 0.7);
+  background: rgba(49, 38, 30, 0.7);
 }
 
 body.dungeon-mode .enemy-move-list details > summary {
@@ -1949,7 +1949,7 @@ body.dungeon-mode #hud-sleep-status {
   padding: 0 1px;
   border: 1px solid #e8d48a;
   border-radius: 4px;
-  background: rgba(12, 18, 15, .94);
+  background: rgba(23, 18, 14, .94);
   color: #f2eee0;
   font-size: 11px;
   line-height: 14px;
@@ -2035,9 +2035,9 @@ body.dungeon-mode #inspect .inspect-close {
   min-height: 0;
   margin: 0;
   padding: 0;
-  border: 1px solid rgba(125, 143, 127, 0.7);
+  border: 1px solid rgba(119, 93, 73, 0.7);
   border-radius: 5px;
-  background: rgba(26, 38, 30, 0.9);
+  background: rgba(49, 38, 30, 0.9);
   color: #f2eee0;
   font: 700 15px/1 sans-serif;
   cursor: pointer;
@@ -2075,7 +2075,7 @@ body.dungeon-mode #flow .choice-card .choice-desc {
   font-size: 12px;
   font-weight: 400;
   line-height: 1.45;
-  color: #405038;
+  color: #6d5a44;
 }
 
 body.dungeon-mode #flow #blessing-choice .button-row {
@@ -2101,7 +2101,7 @@ body.dungeon-mode #flow #blessing-choice .button-row {
   padding: 0;
   border: 1px solid #e8d48a;
   border-radius: 12px;
-  background: rgba(12, 18, 15, 0.98);
+  background: rgba(23, 18, 14, 0.98);
   color: #f2eee0;
 }
 
@@ -2119,7 +2119,7 @@ body.dungeon-mode #flow #blessing-choice .button-row {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid rgba(125, 143, 127, 0.5);
+  border-bottom: 1px solid rgba(119, 93, 73, 0.5);
 }
 
 #log-dialog h2 {
@@ -2133,9 +2133,9 @@ body.dungeon-mode #flow #blessing-choice .button-row {
   width: 30px;
   height: 30px;
   padding: 0;
-  border: 1px solid rgba(125, 143, 127, 0.7);
+  border: 1px solid rgba(119, 93, 73, 0.7);
   border-radius: 6px;
-  background: rgba(26, 38, 30, 0.9);
+  background: rgba(49, 38, 30, 0.9);
   color: transparent;
   font-size: 0;
   cursor: pointer;
@@ -2168,7 +2168,7 @@ body.dungeon-mode #flow #blessing-choice .button-row {
 }
 
 #log-dialog #log-list li {
-  border-bottom: 1px solid rgba(125, 143, 127, 0.18);
+  border-bottom: 1px solid rgba(119, 93, 73, 0.18);
   overflow-wrap: anywhere;
 }
 
@@ -2182,7 +2182,7 @@ body.dungeon-mode #flow #blessing-choice .button-row {
   padding: 14px 34px;
   border: 2px solid #e8d48a;
   border-radius: 12px;
-  background: rgba(12, 18, 15, 0.9);
+  background: rgba(23, 18, 14, 0.9);
   color: #fff1b8;
   font-size: 28px;
   font-weight: 800;

@@ -35,9 +35,8 @@ export function renderTitle(c:TitleContext):string {
       : '',
     `<button id="title-new" ${c.asking ? 'disabled' : ''} class="${c.hasRecord ? '' : 'primary'}">新的冒险</button>`,
   ].join('');
-  const floorTile = '<span style="background-image:url(assets/tiles/floor-stone.png)"></span>';
   return `<div class="screen-inner title-landing">
-    <div class="title-landscape" aria-hidden="true">${floorTile.repeat(3)}</div>
+    <div class="title-landscape" aria-hidden="true"></div>
     <div class="title-core">
       <h1 class="brand big">宝可梦地牢探索</h1>
       <div class="title-menu">${menu}</div>

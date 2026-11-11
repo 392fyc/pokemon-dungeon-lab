@@ -169,7 +169,7 @@ body.dungeon-mode #hud-bag .c195 .c195-slot .c195-icon:has(.c195-icon-img) { wid
   .c195-icon:has(.c195-icon-img), .c195-icon-img { width: 32px; height: 32px; }
   .c195-bag-detail-head .c195-icon:has(.c195-icon-img), .c195-bag-detail-head .c195-icon-img { width: 32px; height: 32px; }
 }
-#map-hint { position: fixed; z-index: 60; padding: 3px 8px; border-radius: 6px; background: rgba(10, 15, 12, .92); border: 1px solid #e8d48a; color: #fff1b8; font-size: 13px; pointer-events: none; white-space: nowrap; }
+#map-hint { position: fixed; z-index: 60; padding: 3px 8px; border-radius: 6px; background: rgba(19, 15, 12, .92); border: 1px solid #e8d48a; color: #fff1b8; font-size: 13px; pointer-events: none; white-space: nowrap; }
 #map-hint[hidden] { display: none; }
 
 /* Camp and run dialogs built on the paper window: keep them centred (the .c195 position rule would otherwise pull them to the corner). */

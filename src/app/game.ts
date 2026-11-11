@@ -1042,7 +1042,7 @@ class BoardScene extends Phaser.Scene {
  /** Browser checks only: stops every unit's idle animation on its first frame, so two screenshots of the same picture are identical (call after each repaint). */
  freezeSprites(){this.views.forEach(v=>{const a=v.sprite.anims;if(a.currentAnim)a.pause(a.currentAnim.frames[0]);});}
  pinPaint(w:World|null){this.pinned=w;this.paint(w,true);}
- paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;if(!force)this.pinned=null;this.fetchSprites(s,force);this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());v.zs?.forEach(z=>z.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.placeholders=[];this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
+ paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;if(!force)this.pinned=null;this.fetchSprites(s,force);this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());v.zs?.forEach(z=>z.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.placeholders=[];this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#17120e',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
  this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));return;}
  const g=this.geometry(s);const fog=g.dungeon;const nowVisible=s.dungeon?playerVisibleCells(s):null;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
@@ -1078,9 +1078,9 @@ class BoardScene extends Phaser.Scene {
     if(!visual.icon.startsWith('stairs'))text(c.x,c.y+g.cell*.38,visual.name,'#e4efb0',Math.max(10,Math.min(13,g.cell/6))).setAlpha(alpha).setWordWrapWidth(g.cell*1.6,true);
    }
   }
-  if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,p.x+','+p.y,'#8fa89c',9);
+  if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,p.x+','+p.y,'#cdb985',9);
  }
- for(const marker of roomMarkers){const c=center(marker.at),color=marker.dimmed?'#84918a':marker.state==='sealed'?'#ffb7a7':marker.roomType==='challenge'?'#f4d58d':marker.roomType==='commission'?'#a4d8e8':marker.roomType==='blessing'?'#d7b3ff':'#c4e89a';
+ for(const marker of roomMarkers){const c=center(marker.at),color=marker.dimmed?'#a89b80':marker.state==='sealed'?'#ffb7a7':marker.roomType==='challenge'?'#f4d58d':marker.roomType==='commission'?'#a4d8e8':marker.roomType==='blessing'?'#d7b3ff':'#c4e89a';
   if(marker.kind==='interaction'){this.prop(marker.roomType==='challenge'?'room-challenge':marker.roomType==='commission'?'room-commission':marker.roomType==='blessing'?'room-blessing':'room-treasure',c,g.cell,marker.dimmed?.45:1,marker.dimmed);continue;}
   const label=text(c.x,c.y,marker.label,color,marker.kind==='door'?(marker.label==='封闭'?12:14):15);if(marker.dimmed)label.setAlpha(.45);
  }
@@ -1098,7 +1098,7 @@ class BoardScene extends Phaser.Scene {
   sp.clearTint();sp.setVisible(true).setAlpha(1).setPosition(c.x,c.y+g.cell*UNIT_GROUND_FRACTION).setScale(scale*(u.boss?1.5:1)).setOrigin(.5,groundOriginY(dex,'Idle'));sp.anims.timeScale=1;if(sp.anims.currentAnim?.key!==anim)sp.play(anim);
   // Sleeping units (born asleep, slp, nap; either side) hold one frame: the sheets have no Sleep action.
   const asleep=!!u.asleep||sleeping(u);if(asleep)sp.anims.pause(sp.anims.currentAnim?.frames[0]);else if(sp.anims.isPaused)sp.anims.resume();
-  const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:Math.max(10,Math.round(g.cell*.12)),color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
+  const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:Math.max(10,Math.round(g.cell*.12)),color,stroke:'#17120e',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
   // Only HP sits beside the model; species names remain in the HUD and information cards.
   const hp=ut(0,0,`${u.hp}`,hpTextColor(u.hp,u.maxHp));hp.t.setStyle({fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(16,Math.round(g.cell*.22))});placeHp(sp,hp.t,g.cell,c.y);hp.dx=hp.t.x-c.x;hp.dy=hp.t.y-c.y;
   const view:UnitView={sprite:sp,gfx:ug,labels:[hp,...(u.boss?[ut(0,-g.cell*.78,'首领','#ffd37a')]:[])],dex,row};
@@ -1141,7 +1141,7 @@ async function ensureBoard():Promise<void>{
  if(boardLoading)return boardLoading;
  boardLoading=(async()=>{
   try{const {default:Phaser}=await import('phaser');
-   const board=$('board');const game=new Phaser.Game({type:Phaser.AUTO,width:board.clientWidth||680,height:board.clientHeight||350,parent:'board',backgroundColor:'#101c1b',scene:makeBoardScene(Phaser),scale:{mode:Phaser.Scale.NONE},pixelArt:true});
+   const board=$('board');const game=new Phaser.Game({type:Phaser.AUTO,width:board.clientWidth||680,height:board.clientHeight||350,parent:'board',backgroundColor:'#2a1f17',scene:makeBoardScene(Phaser),scale:{mode:Phaser.Scale.NONE},pixelArt:true});
    new ResizeObserver(()=>{if(board.clientWidth&&board.clientHeight)game.scale.resize(board.clientWidth,board.clientHeight);}).observe(board);
   }catch{notice='画面加载失败，请刷新重试。存档没有被清除。';$('message').textContent=notice.replaceAll('主控','操控者');}
  })();

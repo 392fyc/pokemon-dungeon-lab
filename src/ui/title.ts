@@ -21,8 +21,8 @@ export function portraitTick(nowMs:number,animated:boolean):void {
   tickPortraits(nowMs,animated);
 }
 const AXES = [
-  ['hp','HP','#68ce72'], ['atk','攻击','#e5a457'], ['def','防御','#e8d361'],
-  ['spa','特攻','#6eacf3'], ['spd','特防','#73d4b0'], ['spe','速度','#e97ba4'],
+  ['hp','HP','#2f7a3a'], ['atk','攻击','#b5681c'], ['def','防御','#8a7410'],
+  ['spa','特攻','#2b6cb0'], ['spd','特防','#1f7f62'], ['spe','速度','#c23b78'],
 ] as const;
 
 function statChart(stats: NonNullable<typeof SPECIES[string]['baseStats']>): string {

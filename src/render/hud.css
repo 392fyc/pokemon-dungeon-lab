@@ -199,7 +199,7 @@ body.dungeon-mode .hud-experience-track {
   overflow: hidden;
   height: 7px;
   border-radius: 999px;
-  background: #2a2f2a;
+  background: var(--ui-panel-2);
 }
 
 body.dungeon-mode .hud-hp-fill,

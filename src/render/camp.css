@@ -19,7 +19,7 @@ body.camp-mode main {
   height: 100dvh;
   overflow: hidden;
   color: #f8efcd;
-  background: #18271b;
+  background: #2a1f17;
 }
 
 .camp-map {
@@ -164,7 +164,7 @@ body:has(dialog[open]) .camp-badge { visibility: hidden; }
   margin: 0;
   padding: 3px 7px;
   color: #f7edcb;
-  background: #223322;
+  background: #3a2c20;
   font-size: clamp(9px, 1.02cqw, 13px);
   white-space: nowrap;
 }
@@ -196,11 +196,11 @@ body:has(dialog[open]) .camp-badge { visibility: hidden; }
   padding: 18px;
   border: 2px solid #ecd78d;
   border-radius: 16px;
-  background: #111a14f5;
+  background: #17120ef5;
   color: #f8efcd;
 }
 
-.camp-dialog::backdrop { background: #07110a55; }
+.camp-dialog::backdrop { background: #0c0a0855; }
 
 .camp-dialog-heading {
   display: flex;
@@ -250,7 +250,7 @@ body:has(dialog[open]) .camp-badge { visibility: hidden; }
   box-shadow: 0 0 0 3px var(--paper-ink, #2a1c14), inset 0 0 0 2px var(--paper-wood, #a4703f), 8px 12px 0 #0006;
   font-family: var(--ui-body, system-ui, sans-serif);
 }
-.camp194-paper-dialog::backdrop { background: #07110a80; }
+.camp194-paper-dialog::backdrop { background: #0c0a0880; }
 .camp194-paper-dialog button {
   box-sizing: border-box;
   margin: 0;
@@ -742,6 +742,8 @@ body:has(dialog[open]) .camp-badge { visibility: hidden; }
   background: var(--paper-2, #e0cfa4);
   font-size: 12px;
 }
+.camp194-tm-tags { display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 2px; }
+.camp194-tm-tags .paper-type, .camp194-tm-tags .camp194-category { padding: 0 4px; font-size: 10px; line-height: 14px; }
 .camp194-tm-tile > strong { overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
 .camp194-tm-disc {
   position: relative;
@@ -1089,7 +1091,7 @@ body:has(dialog[open]) .camp-badge { visibility: hidden; }
   display: grid;
   grid-template-rows: auto auto auto;
   gap: 13px;
-  min-height: 300px;
+  min-height: min(300px, calc(100dvh - 140px));   /* a short window shrinks the shell and scrolls it, so the confirm button stays reachable */
   max-height: calc(100dvh - 140px);
   overflow-x: hidden;
   overflow-y: auto;
@@ -1182,6 +1184,9 @@ body:has(dialog[open]) .camp-badge { visibility: hidden; }
   min-height: 48px;
   padding: 0 24px;
   justify-self: end;
+  position: sticky;   /* pinned to the bottom of the scrolling shell, so a short window never hides it */
+  bottom: 6px;
+  z-index: 1;
   background: #d9622b;
   color: #fff !important;
   box-shadow: 0 0 0 3px var(--paper-ink, #2a1c14), inset 0 3px 0 #f39a63, inset 0 -3px 0 #a64217;
@@ -1239,7 +1244,7 @@ body:has(dialog[open]) .camp-badge { visibility: hidden; }
 }
 .camp194-tip-info > header > strong { color: #fff4d8; font-size: 15px; }
 .camp194-tip-info .paper-type { margin: 0; }
-.camp194-tip-info .camp194-category { background: #3b4738; }
+.camp194-tip-info .camp194-category { background: #5c4a38; }
 .camp194-move-tip dl { grid-template-columns: repeat(5, minmax(0, 1fr)); color: #f5ebd2; }
 .camp194-move-tip dt { color: #b5a586; }
 .camp194-move-tip dd { color: #fff4d8; }

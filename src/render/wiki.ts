@@ -89,21 +89,22 @@ export function createWiki(host:{onOpen?:()=>void;onClose?:()=>void;showRules?:b
   }
   function drawList(){
     shown=searchWiki(state.cat,state.query);rendered=0;list.innerHTML='';list.scrollTop=0;
+    if(!shown.some(e=>e.id===state.entry))state.entry=shown[0]?.id??null;
     renderMore(Math.max(BATCH,state.entry?shown.findIndex(e=>e.id===state.entry)+1:0));
     count.textContent=state.query.trim()?'找到 '+shown.length+' 项':'共 '+(wikiCategory(state.cat)?.entries.length??0)+' 项';
     if(!shown.length)list.innerHTML='<li class="wiki-empty">没有符合的条目</li>';
   }
   function drawDetail(){
-    const e=state.entry?wikiEntry(state.entry):undefined,c=wikiCategory(state.cat)!;
-    detail.innerHTML=e?entryHtml(e,host.showRules):'<header class="wiki-entry-head"><div class="wiki-entry-title"><h3>'+esc(c.name)+'</h3>'+(host.showRules?'<div class="wiki-entry-tags"><span class="wiki-rule">规则 '+c.rules.map(esc).join('、')+'</span></div>':'')+'</div></header><div class="wiki-entry-body"><p>'+esc(c.intro)+'</p><p class="paper-muted">在左边的列表里选一项查看；条目里的蓝色文字可以点开。</p></div>';
+    const e=state.entry?wikiEntry(state.entry):undefined;
+    detail.innerHTML=e?entryHtml(e,host.showRules):'';
     detail.scrollTop=0;
     for(const b of list.querySelectorAll<HTMLElement>('.wiki-row'))b.setAttribute('aria-pressed',String(b.dataset.wikiEntry===state.entry));
   }
-  function draw(redrawList=true){
+  function draw(){
     for(const b of dialog.querySelectorAll<HTMLElement>('[data-wiki-cat]'))b.setAttribute('aria-pressed',String(b.dataset.wikiCat===state.cat));
     if(search.value!==state.query)search.value=state.query;
     search.placeholder='搜索'+(wikiCategory(state.cat)?.name??'');
-    if(redrawList)drawList();
+    drawList();
     drawDetail();
     back.disabled=history.length===0;
     const sel=list.querySelector('.wiki-row[aria-pressed=true]') as HTMLElement|null;sel?.scrollIntoView({block:'nearest'});
@@ -126,7 +127,7 @@ export function createWiki(host:{onOpen?:()=>void;onClose?:()=>void;showRules?:b
     if(el.dataset.wikiLink){followLink(el.dataset.wikiLink);return;}
     if(el.dataset.wikiEntry){state={...state,entry:el.dataset.wikiEntry};drawDetail();}
   });
-  search.addEventListener('input',()=>{state={...state,query:search.value};drawList();});
+  search.addEventListener('input',()=>{state={...state,query:search.value};draw();});
   list.addEventListener('scroll',()=>{if(list.scrollTop+list.clientHeight>=list.scrollHeight-80)renderMore();});
   // The window closes with Esc through the dialog's own cancel; the host is told on every close.
   dialog.addEventListener('close',()=>host.onClose?.());
@@ -134,7 +135,7 @@ export function createWiki(host:{onOpen?:()=>void;onClose?:()=>void;showRules?:b
   function open(target:Partial<WikiState>={}){
     if(!dialog.open){host.onOpen?.();dialog.showModal();}
     history.length=0;
-    state=Object.keys(target).length?{cat:target.cat??state.cat,entry:target.entry??null,query:target.query??''}:state;
+    state=Object.keys(target).length?{cat:target.cat??state.cat,entry:target.entry??null,query:target.query??''}:{...state,entry:null};
     draw();
   }
   return {dialog,open,close,isOpen:()=>dialog.open,state:()=>({...state})};

@@ -1,0 +1,34 @@
+# Argus 审查模块：Argus 在审查本仓库 PR 前读取这个文件和下面列出的规则文件。
+# 读取位置是 PR 的目标分支（main），所以规则改动要先合并才会生效。格式见 392fyc/Argus 的 README。
+
+focus = """
+本仓库是宝可梦二维随机迷宫游戏的私有原型：Phaser 4.2.1 + TypeScript + Vite，docs/ 是知识库（KB，同时是 Obsidian vault）。审查时重点看：
+
+1. 游戏规则：实现要与 docs/01-现行规则/游戏规则.md 的 G 条目一致（数值、结算次序）；数据口径以 G12.3 为准：Showdown 加固定的 Bulbapedia 快照，登记在 docs/05-制作流程/数据快照登记.md。改了规则或数值的 PR，要在同一个 PR 里改对应 G 条目，并在决策登记加一行、删掉被推翻的旧行。
+2. KB 维护（KB维护规则 K4）：按改动类型同 PR 更新进度、规则、决策和索引，写成合并之后成立的样子；不开只为补记上一个 PR 的 PR；不设归档、不标“已取代”；PR 正文要引用 Issue，并有一行以 “KB:” 开头。
+3. 依据（K9、K8）：改动 docs/ 的 PR 里，新增或修改的规则与设计结论要标出依据（G、K 编号，决策编号，文件:行，PR、Issue 或用户原话），G 条目末尾写来源决策编号；没有依据的判断不能写成结论。
+4. 素材与数据来源：每个进入工程的素材文件都在 public/assets/manifest.json 登记来源、许可和摘要（角色目录另有 credits.txt），署名同步写进 public/THIRD-PARTY-NOTICES.txt。来源包括 SpriteCollab 角色、PMDCollab 地形、gpt-image 生成的原创地砖与界面图和 google/fonts 字体。新增素材文件却没有登记时要指出；不得引入来源不明的 ROM、素材或数据。
+5. 凭据与环境：OpenAI API key 只从被忽略的 .env 读取，不得复制、打印或提交；环境验证产物写入被忽略的目录。
+6. 验证声明：Linux 云端的构建或浏览器检查不能写成 Windows 原生运行已通过，要写明实际平台和验证范围。
+
+审查整个 PR 的累积改动，不只看最新提交。只报真正影响正确性、规则一致性、数据来源或安全的问题，不报措辞和格式偏好。
+"""
+
+# 上下文额度约 2 万 token：KB 维护规则短，放在前面保证完整；游戏规则很长，后面几节可能被截掉，
+# 所以 G12.3 的数据口径已写进上面的 focus。
+context_files = [
+  "docs/01-现行规则/KB维护规则.md",
+  "docs/01-现行规则/游戏规则.md",
+]
+
+max_context_chars = 60000
+
+# Mercury 生成的副本、依赖锁，以及素材本身（图片、字体、SpriteCollab 动画数据）不审；manifest.json、credits.txt 等登记文件照常审。
+skip_paths = [
+  ".mercury/packs/**",
+  ".mercury/lock.json",
+  "package-lock.json",
+  "public/assets/**/*.png",
+  "public/assets/**/*.woff2",
+  "public/assets/**/*.xml",
+]

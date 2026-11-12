@@ -28,11 +28,33 @@ foreach ($inherited in @("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDE
     throw "Unset the inherited $inherited before using this script."
   }
 }
+function Invoke-Utf8Native {
+  # git and gh write UTF-8, but PowerShell decodes an external command's output with the console code page. Under GBK
+  # that garbles non-ASCII text such as Chinese paths and check names, and can swallow a closing quote so JSON stops
+  # parsing. Read the output as UTF-8 and put the console back. Without a console the assignment can throw; then keep
+  # the old behaviour rather than fail.
+  param([string]$Command, [string[]]$NativeArgs)
+
+  $previousEncoding = [Console]::OutputEncoding
+  $switched = $false
+  try {
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+    $switched = $true
+  } catch {
+    $switched = $false
+  }
+  try {
+    & $Command @NativeArgs 2>$null
+  } finally {
+    if ($switched) { [Console]::OutputEncoding = $previousEncoding }
+  }
+}
+
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 # The repository is the Git work tree that holds this script, never the caller's current directory: an agent in
 # another checkout that calls this copy acts on this copy's work tree (installed under .mercury/packs/git-safe/scripts/
 # or, in Mercury itself, under packs/git-safe/scripts/). Issue #723.
-$repoRoot = & git -C $scriptDir rev-parse --show-toplevel 2>$null
+$repoRoot = Invoke-Utf8Native "git" @("-C", $scriptDir, "rev-parse", "--show-toplevel")
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace("$repoRoot")) {
   throw "This script must live inside the Git work tree it guards."
 }
@@ -88,7 +110,7 @@ function Assert-KbPullRequestBody {
 
 # The review mark lives in the Git directory of this work tree (Issue #723): it is never committed, needs no ignore
 # rule in downstream projects, and each worktree keeps its own. Earlier versions wrote .mercury/state/review-passed.
-$reviewFlag = & git -C $repoRoot rev-parse --git-path mercury-review-passed
+$reviewFlag = Invoke-Utf8Native "git" @("-C", $repoRoot, "rev-parse", "--git-path", "mercury-review-passed")
 if ($LASTEXITCODE -ne 0) {
   throw "Unable to locate the Git directory for the review mark."
 }
@@ -266,6 +288,24 @@ function Assert-SafePushTarget {
 
   $tokens = $CommandText -split '\s+'
   $knownTokens = @("git", "push") + (Get-ConfiguredRemote)
+  $refspecs = 0
+  foreach ($token in $tokens) {
+    if ([string]::IsNullOrWhiteSpace($token) -or $token -in $knownTokens -or $token.StartsWith("-")) {
+      continue
+    }
+    # A leading + forces the update like --force, and a pattern can reach branches the words do not name (#772).
+    if ($token.StartsWith("+")) {
+      throw "Force-update refspecs (+<src>:<dst>) are forbidden in Codex guard mode: $CommandText"
+    }
+    if ($token.Contains("*")) {
+      throw "Pattern refspecs (*) are forbidden in Codex guard mode: $CommandText"
+    }
+    $refspecs++
+  }
+  if ($refspecs -eq 0) {
+    # Without a refspec the target comes from push.default and remote.<name>.push, which the words do not show.
+    throw "Name what to push: git push <remote> <branch>. A push without a refspec is forbidden in Codex guard mode: $CommandText"
+  }
   foreach ($token in $tokens) {
     if ($token -match '^-[^-][A-Za-z]+$') {
       $shortFlags = $token.Substring(1).ToCharArray()
@@ -345,7 +385,7 @@ function Assert-GhCliAvailable {
 }
 
 function Get-RepositoryCoordinate {
-  $repoJson = & gh repo view --json owner,name 2>$null
+  $repoJson = Invoke-Utf8Native "gh" @("repo", "view", "--json", "owner,name")
   if ($LASTEXITCODE -ne 0) {
     throw "Unable to determine the current GitHub repository via 'gh repo view --json owner,name'."
   }
@@ -504,7 +544,7 @@ function Invoke-PreMergeGraphqlQuery {
     $graphqlArgs += @("-F", "after=$After")
   }
 
-  $rawResponse = & gh api @graphqlArgs 2>$null
+  $rawResponse = Invoke-Utf8Native "gh" (@("api") + $graphqlArgs)
   if ($LASTEXITCODE -ne 0) {
     throw "Unable to fetch $Purpose for PR #$Number."
   }
@@ -721,7 +761,7 @@ function Assert-PreMergeReady {
 
   $repo = Get-RepositoryCoordinate
   $repoName = "$($repo.owner)/$($repo.name)"
-  $prJson = & gh pr view $Number --repo $repoName --json number,state,isDraft,mergeable,reviewDecision,statusCheckRollup,headRefName,headRefOid,baseRefName,body 2>$null
+  $prJson = Invoke-Utf8Native "gh" @("pr", "view", "$Number", "--repo", $repoName, "--json", "number,state,isDraft,mergeable,reviewDecision,statusCheckRollup,headRefName,headRefOid,baseRefName,body")
   if ($LASTEXITCODE -ne 0 -or -not $prJson) {
     throw "Unable to fetch PR metadata for #$Number."
   }
@@ -810,7 +850,6 @@ function Assert-PreMergeReady {
 
   $cursor = $null
   $seenThreadCursors = @{}
-  $threadCount = 0
   $unresolvedCount = 0
   $threadQuery = @'
 query($owner: String!, $name: String!, $number: Int!, $after: String) {
@@ -833,7 +872,6 @@ query($owner: String!, $name: String!, $number: Int!, $after: String) {
     }
     $threadPage = $threadPullRequest.reviewThreads
     Assert-GraphqlConnectionShape -Connection $threadPage -Description "review thread" -Number $Number
-    $threadCount += $threadPage.nodes.Count
     foreach ($node in @($threadPage.nodes)) {
       if (-not (Test-JsonProperty -InputObject $node -Name "isResolved") -or $node.isResolved -isnot [bool]) {
         throw "GitHub returned an incomplete review thread for PR #$Number."
@@ -855,9 +893,8 @@ query($owner: String!, $name: String!, $number: Int!, $after: String) {
     }
   } while ($cursor)
 
-  if ($UseNativeReceipt -and $threadCount -gt 0) {
-    throw "PR #$Number has $threadCount review thread(s); native review receipt requires zero threads."
-  }
+  # Resolved threads do not block, with or without a native receipt: an advisory reviewer such as Argus resolves the
+  # threads it accepts, and agents do not resolve them (PR procedure, #773).
   if ($unresolvedCount -gt 0) {
     throw "PR #$Number still has $unresolvedCount unresolved review thread(s)."
   }

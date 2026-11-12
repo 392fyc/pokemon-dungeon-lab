@@ -25,13 +25,13 @@ test('every effect field the engine reads for a usable move has matching text an
       if(e==='drain')assert.ok(text.includes('回复实际伤害的一半'),id);
       if(e==='recoil')assert.ok(fx?.recoil&&text.includes('反作用'),id+' recoil effect needs recoil data the engine reads');
       if(e==='blowaway')assert.ok(text.includes('吹飞')&&text.includes(String(BLOWAWAY_CELLS))&&text.includes(String(COLLISION_DAMAGE)),id);
-      if(e==='protect')assert.ok(text.includes('之后'+PROTECT_PHASES+'个对方行动阶段'),id);
-      if(e==='counter')assert.ok(text.includes('之后'+COUNTER_PHASES+'个对方行动阶段'),id);
-      if(e==='quickguard')assert.ok(text.includes('不受距离大于1格的攻击'),id);
-      if(e==='reflect')assert.ok(text.includes(SCREEN_PHASES+'个对方行动阶段内受到的物理伤害减半'),id);
-      if(e==='lightscreen')assert.ok(text.includes(SCREEN_PHASES+'个对方行动阶段内受到的特殊伤害减半'),id);
+      if(e==='protect')assert.ok(text.includes(PROTECT_PHASES+'回合内免疫对方攻击'),id);
+      if(e==='counter')assert.ok(text.includes(COUNTER_PHASES+'回合内，受到相邻对方的伤害'),id);
+      if(e==='quickguard')assert.ok(text.includes('1回合内免疫距离大于1格的攻击'),id);
+      if(e==='reflect')assert.ok(text.includes(SCREEN_PHASES+'回合内受到的物理伤害减半'),id);
+      if(e==='lightscreen')assert.ok(text.includes(SCREEN_PHASES+'回合内受到的特殊伤害减半'),id);
       if(e==='rest')assert.ok(text.includes('打盹')&&text.includes('回满HP'),id);
-      if(e==='sleeptalk')assert.ok(text.includes('随机使用'),id);
+      if(e==='sleeptalk')assert.ok(text.includes('随机对自身或攻击者发动'),id);
       if(e==='snore')assert.ok(text.includes('反击'),id);
           }
     if(!fx)continue;
@@ -56,8 +56,8 @@ test('spot checks: Fake Out, Swords Dance, Shadow Claw-like damage, drain, Prote
   assert.equal(moveEffectText('swordsdance'),'自身攻击+2。能力阶段持续到换层。');
   assert.equal(moveEffectText('shadowclaw'),'','plain damage says nothing the header does not');
   assert.match(moveEffectText('drainpunch'),/回复实际伤害的一半/);
-  assert.match(moveEffectText('protect'),/之后3个对方行动阶段/);
-  assert.match(moveEffectText('reflect'),/10个对方行动阶段/);
+  assert.match(moveEffectText('protect'),/3回合内免疫对方攻击/);
+  assert.equal(moveEffectText('reflect'),'使用时范围内的己方，10回合内受到的物理伤害减半；重复使用刷新计时。');
   assert.match(moveEffectText('rest'),/打盹.*回满HP/);
   assert.match(moveEffectText('closecombat'),/命中后自身防御−1/);
   assert.ok(moveEffectLines('swordsdance').length===2);
@@ -79,12 +79,12 @@ test('stage badges explain themselves from the engine tables (G5.1, G5.3, G5.5)'
   assert.equal(stageEffectLabel('eva',-1),'对方招式的命中率×1.33');
   assert.match(stageTitle('eva',1),/普攻和必中招式不受影响/);assert.match(stageTitle('acc',1),/普攻不受影响/);assert.doesNotMatch(stageTitle('acc',-1),/普攻不受影响/);
   assert.match(stageTitle('def',0,-1),/猎人委托使实际生效为 −1.*×1\.43/,'the label follows the stage the engine uses (hunter commission)');
-  assert.match(stageTitle('atk',8),/^攻击 \+8：物理招式造成的伤害×1\.\d+（普通攻击按[^）]*），持续到换层$/);
+  assert.match(stageTitle('atk',8),/^攻击 \+8：物理招式造成的伤害×1\.\d+，持续到换层。普通攻击按.+$/);
 });
 
-test('type immunities and boss exceptions the engine writes per move id or type are all in the text',async()=>{
+test('move text retains type immunities and describes blowaway generically',async()=>{
   const eng=await import('../../src/core/engine.ts');
-  const {typeZh}=await import('../../src/core/names.ts');
+  const {typeZh,speciesZh}=await import('../../src/core/names.ts');
   const cap=t=>t[0].toUpperCase()+t.slice(1);
   let checked=0;
   for(const id of ids){
@@ -92,9 +92,8 @@ test('type immunities and boss exceptions the engine writes per move id or type 
     const statuses=[...spec.effects.filter(e=>e.startsWith('status:')).map(e=>e.slice(7)),...(spec.effects.includes('damage')?(fx?.fx??[]).filter(f=>f.status).map(f=>f.status):[])];
     for(const st of statuses)for(const t of eng.statusImmuneTypes(id,st)){assert.ok(text.includes(typeZh(cap(t))+'系')||text.includes('、'+typeZh(cap(t))+'系')||new RegExp(typeZh(cap(t))+'(、[^；）]*)?系免疫').test(text)||text.includes(typeZh(cap(t))),id+' '+st+' immunity '+t+' in: '+text);checked++;}
     if(spec.effects.includes('blowaway')){
-      assert.ok(eng.BLOWAWAY_IMMUNE_BOSSES.length>0);
-      for(const b of eng.BLOWAWAY_IMMUNE_BOSSES)assert.ok(text.includes('首领')&&text.includes('不会被吹飞'),id+' names the boss exception');
-      assert.ok(text.includes(spec.effects.includes('damage')?'只受伤害':'此招对其无效'),id+' says what happens to such a boss');checked++;
+      for(const boss of eng.BLOWAWAY_IMMUNE_BOSSES)assert.ok(!text.includes(speciesZh(boss)),id+' has no named exception');
+      assert.doesNotMatch(text,/首领|只受伤害|此招对其无效/);checked++;
     }
   }
   assert.ok(checked>20,'special cases checked: '+checked);
@@ -104,9 +103,10 @@ test('type immunities and boss exceptions the engine writes per move id or type 
     assert.ok(shown,'the immunity of '+t+' to '+st+' is shown on some move');
   }
   assert.match(moveEffectText('thunderwave'),/地面/);assert.match(moveEffectText('sleeppowder'),/草系免疫/);
-  assert.match(moveEffectText('protect'),/异常和能力降低也无效/);assert.match(moveEffectText('quickguard'),/异常和能力降低也无效/);
-  assert.match(moveEffectText('rest'),/换层则打盹解除、不回复/);assert.doesNotMatch(moveEffectText('rest'),/次自身行动/);
-  assert.match(moveEffectText('snore'),/反击/);assert.match(moveEffectText('sleeptalk'),/只消耗梦话的PP.*只发动打鼾/);
-  assert.match(moveEffectText('toxic'),new RegExp('每'+eng.STATUS_INTERVAL.tox+'轮结束损失最大HP的1/'+eng.STATUS_DAMAGE_DIVISOR.tox));
+  assert.match(moveEffectText('protect'),/免疫.*异常和能力降低/);assert.match(moveEffectText('quickguard'),/免疫.*异常和能力降低/);
+  assert.match(moveEffectText('rest'),/自然醒来时回满HP.*换层会提前结束打盹/);assert.doesNotMatch(moveEffectText('rest'),/次自身行动/);
+  assert.match(moveEffectText('snore'),/反击.*不能主动使用/);assert.doesNotMatch(moveEffectText('snore'),/不造成畏缩/);
+  assert.match(moveEffectText('sleeptalk'),/仅消耗梦话的PP.*优先判定打鼾/);
+  assert.match(moveEffectText('toxic'),new RegExp('每'+eng.STATUS_INTERVAL.tox+'回合末损失最大HP的1/'+eng.STATUS_DAMAGE_DIVISOR.tox));
   assert.doesNotMatch(moveEffectText('fakeout'),/次自身行动|（/);
 });

@@ -87,7 +87,7 @@ test('player logs preserve the acting side and sleep transition meanings',()=>{
  const screenResult=applyCommand(screenWorld,{type:'round',action:{type:'wait'}});assert.equal(screenResult.ok,true,screenResult.ok?'':screenResult.error);assert.equal(screenResult.state.units.E.reflect,10);
  const enemyScreen=screenResult.state.log.map(line=>localizeLog(screenResult.state,line)).find(line=>line.includes('受到反射壁保护'));
  assert.ok(enemyScreen,screenResult.state.log.map(line=>localizeLog(screenResult.state,line)).join('\n'));
- assert.match(enemyScreen,/持续10个我方行动阶段/);
+ assert.match(enemyScreen,/持续10回合/);
 
  const missWorld=textBattle('describe-basic-miss-counterexample');missWorld.units.E.pos={x:2,y:1};missWorld.units.A.status={confusion:{tick:1}};
  const missResult=applyCommand(missWorld,{type:'round',action:{type:'basic',target:'E'}});assert.equal(missResult.ok,true,missResult.ok?'':missResult.error);
@@ -96,7 +96,7 @@ test('player logs preserve the acting side and sleep transition meanings',()=>{
  assert.equal(playerText('普攻需要相邻敌人'),'普通攻击需要相邻敌人');
  assert.equal(playerText('该招式只能指定对方阵营'),'该招式只能指定对方阵营');
  const invalidWorld=textBattle('describe-relative-target-error');invalidWorld.units.B=friend('B',1,2,20,{});invalidWorld.queue.push('B');invalidWorld.units.A.learned=['ember'];invalidWorld.units.A.pp={ember:15};invalidWorld.units.A.maxPp={ember:15};
- const invalidTarget=applyCommand(invalidWorld,{type:'round',action:{type:'skill',skill:'ember',target:'B'}});assert.equal(invalidTarget.ok,false);assert.equal(invalidTarget.error,'该招式只能指定与使用者不同阵营的目标；本轮未执行');assert.deepEqual(invalidTarget.state,invalidWorld);
+ const invalidTarget=applyCommand(invalidWorld,{type:'round',action:{type:'skill',skill:'ember',target:'B'}});assert.equal(invalidTarget.ok,false);assert.equal(invalidTarget.error,'该招式只能指定与使用者不同阵营的目标；本回合未执行');assert.deepEqual(invalidTarget.state,invalidWorld);
 });
 
 
@@ -107,6 +107,6 @@ test('friendly reflect log counts enemy action phases',()=>{
  assert.equal(result.ok,true,result.ok?'':result.error);
  const line=result.state.log.map(t=>localizeLog(result.state,t)).find(t=>t.includes('受到反射壁保护'));
  assert.ok(line,result.state.log.join('\n'));
- assert.match(line,/持续10个敌方行动阶段/);
+ assert.match(line,/持续10回合/);
  assert.equal(result.state.units.A.reflect,9,'the enemy action phase immediately after casting consumes the first phase');
 });

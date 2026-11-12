@@ -15,7 +15,7 @@ import {ITEM_DESCRIPTIONS} from './item-descriptions.ts';
 import {TACTIC_LABELS} from './tactics.ts';
 import {
   ATTACK_STAGE_256,DEFENCE_STAGE_256,STAGE_LIMIT,STAT_DAMAGE_RATIO,CRIT_CHANCE,CRIT_MULTIPLIER,STATUS_DURATION,STATUS_INTERVAL,STATUS_DAMAGE_DIVISOR,
-  BURN_DAMAGE_RATIO,WAKE_ON_HIT_CHANCE,STATUS_NAMES,STAGE_NAMES,ACCURACY_STAGE_LIMIT,PARTY_LIMIT,STATUS_DEFAULT_LEFT,ITEM_NAMES,ITEM_CURES,BLESSINGS,BLESSING_RARITY,PROG,INITIAL_BLESSING_REFRESHES,accuracyMultiplier,
+  BURN_DAMAGE_RATIO,WAKE_ON_HIT_CHANCE,PROTECT_PHASES,COUNTER_PHASES,SCREEN_PHASES,BLOWAWAY_CELLS,COLLISION_DAMAGE,STATUS_NAMES,STAGE_NAMES,ACCURACY_STAGE_LIMIT,PARTY_LIMIT,STATUS_DEFAULT_LEFT,ITEM_NAMES,ITEM_CURES,BLESSINGS,BLESSING_RARITY,PROG,INITIAL_BLESSING_REFRESHES,accuracyMultiplier,
   type Item,type BlessingId,
 } from './engine.ts';
 
@@ -44,6 +44,8 @@ export function wikiTokens():Record<string,string> {
   const pct=(n:number)=>String(Math.round(n*100));
   const range=(k:StatusId)=>{const r=STATUS_DURATION[k]??[STATUS_DEFAULT_LEFT,STATUS_DEFAULT_LEFT];return r[0]===r[1]?String(r[0]):r[0]+'—'+r[1];};
   const t:Record<string,string>={
+    'protect.turns':String(PROTECT_PHASES),'counter.turns':String(COUNTER_PHASES),'screen.turns':String(SCREEN_PHASES),
+    'blowaway.cells':String(BLOWAWAY_CELLS),'blowaway.damage':String(COLLISION_DAMAGE),
     'crit.chance':'1/'+Math.round(1/CRIT_CHANCE),'crit.mult':String(CRIT_MULTIPLIER),'stage.limit':String(STAGE_LIMIT),'acc.limit':String(ACCURACY_STAGE_LIMIT),
     'ratio.min':String(STAT_DAMAGE_RATIO.min),'ratio.max':String(STAT_DAMAGE_RATIO.max),'party.max':String(PARTY_LIMIT),'recruit.pct':pct(PROG.recruitChance),
     'wake.pct':pct(WAKE_ON_HIT_CHANCE),'level.start':String(PROG.initialLevel),'level.max':String(PROG.maxLevel),
@@ -92,8 +94,8 @@ function describeMoveEffects(move:string):string[] {
     else if(e==='blowaway')lines.push(link('terms:blowaway','吹飞'));
     else if(e==='drain')lines.push(link('terms:drain','吸取'));
     else if(e.startsWith('heal:'))lines.push(link('terms:drain','回复'));
-    else if(e==='sleeptalk')lines.push('睡眠中随机使用另一个招式（梦话）');
-    else if(e==='snore')lines.push('睡眠中的反应招式（打鼾）');
+    else if(e==='sleeptalk')lines.push('睡眠中随机使用另一招');
+    else if(e==='snore')lines.push('睡眠中受击反击');
   }
   for(const f of fx?.fx??[]){
     const chance=f.chance>=100?'必定':f.chance+'%';
@@ -102,7 +104,7 @@ function describeMoveEffects(move:string):string[] {
     for(const [k,n] of stageChanges(f.self)){facts.stages.add(k);lines.push(chance+'自身 '+stageText(k,n));}
   }
   for(const [k,n] of stageChanges(fx?.cost)){facts.stages.add(k);lines.push('使用后自身 '+stageText(k,n));}
-  if(fx?.recoil)lines.push('反作用：造成伤害的 '+Math.round(fx.recoil[0]/fx.recoil[1]*100)+'%（'+link('terms:drain','说明')+'）');
+  if(fx?.recoil)lines.push(link('terms:drain','反作用')+'：实际伤害的 '+Math.round(fx.recoil[0]/fx.recoil[1]*100)+'%');
   if(fx?.thaw)lines.push('打中冰冻的目标会使其'+link('status:frz','解冻'));
   if(fx?.powder)lines.push('粉末招式，草系免疫');
   return lines;
@@ -154,7 +156,7 @@ function buildSpecies(id:string):WikiEntry {
   blocks.push({t:'chips',label:'初始招式',ids:sp.kit.map(m=>'moves:'+m.move)});
   if(sp.levelUp.length)blocks.push({t:'learnset',rows:sp.levelUp.map(m=>({level:m.level,move:m.move}))});
   const taught=sp.learnable.map(m=>m.move).filter(m=>!sp.kit.some(k=>k.move===m)&&!sp.levelUp.some(l=>l.move===m));
-  blocks.push({t:'chips',label:'可学招式（招式机等）',ids:taught.map(m=>'moves:'+m)});
+  blocks.push({t:'chips',label:'可学招式',ids:taught.map(m=>'moves:'+m)});
   return {id:'species:'+id,cat:'species',key:id,title:zh,subtitle:types.map(typeZh).join('／'),rules:['G12.1'],blocks,meta:{kind:'species',species:id,dex:sp.dex,types:[...types]},
     search:[zh,sp.name,id,sp.dex,types.map(typeZh).join(' '),types.join(' ')].join(' ').toLowerCase()};
 }

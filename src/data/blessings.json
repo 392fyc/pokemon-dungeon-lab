@@ -13,7 +13,7 @@
   },
   "floorHeal": {
     "name": "换层回复",
-    "description": "进入下一层时，在场存活同行各回复最大HP的20%（至少4点）。",
+    "description": "进入下一层时，在场存活同行各回复最大HP的20%，至少4点。",
     "rarity": "epic",
     "floors": [
       1,
@@ -72,7 +72,7 @@
   },
   "nemesis": {
     "name": "克星",
-    "description": "对处于异常状态（含睡眠）的敌人，造成的伤害增加10%。",
+    "description": "对处于睡眠等异常状态的敌人造成的伤害增加10%。",
     "rarity": "rare",
     "floors": [
       1,
@@ -121,7 +121,7 @@
   },
   "killheal": {
     "name": "击倒回复",
-    "description": "打倒敌人的队员回复最大HP的8%（至少1点）。",
+    "description": "打倒敌人的队员回复最大HP的8%，至少1点。",
     "rarity": "rare",
     "floors": [
       1,
@@ -133,7 +133,7 @@
   },
   "regen": {
     "name": "再生",
-    "description": "每经过10轮，全队存活成员回复最大HP的5%（至少1点）。",
+    "description": "每10回合，全队存活成员回复最大HP的5%，至少1点。",
     "rarity": "common",
     "floors": [
       1,
@@ -146,7 +146,7 @@
   },
   "thickskin": {
     "name": "厚皮",
-    "description": "每层每名队员第一次受到的直接伤害减半（至少1点）；中毒、灼伤和反作用不算。",
+    "description": "每层每名队员首次受到的直接伤害减半，至少承受1点。",
     "rarity": "rare",
     "floors": [
       1,

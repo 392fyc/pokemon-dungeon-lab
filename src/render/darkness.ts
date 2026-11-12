@@ -17,7 +17,7 @@ export const CIRCLE_OUTER = 3.0;
 export const CIRCLE_FEATHER = .75;
 /** The base darkness sinks into the deeper fog over this many cells inside the border of the revealed picture. */
 export const FOG_FEATHER = .85;
-export const BOARD_BACKGROUND = 0x101c1b;
+export const BOARD_BACKGROUND = 0x17120e;
 
 export type DarknessLight = {x: number; y: number; primary: boolean};
 export type StaticDarknessLight = {x: number; y: number; inner: number; outer: number; strength: number};

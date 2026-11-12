@@ -37,7 +37,7 @@ export type Unit = {id:string; side:'friend'|'enemy'; hp:number; maxHp:number; p
   inst?:string; moves?:string[];
   /** 7.2: true for a founding member of the base profile (the initial two, or the three starters of an old profile); never goes missing in a wipe. */
   protected?:true;
-  /** 7.3: the regional boss. Only the generator sets it (an enemy of the species in `BOSS` in dungeon.ts; its traits — level bonus, HP multiplier, whether it moves or can be blown away — come from `BOSS_CONFIG` in roster.ts; when it sees no opponent it always waits in place. Recruiting it yields an ordinary version without these traits). */
+  /** 7.3: the regional boss. Only the generator sets it (an enemy of the species in `BOSS` in dungeon.ts; its traits — level bonus, HP multiplier, whether it moves or can be blown away — come from `BOSS_CONFIG` in roster.ts; when it sees no opponent it heads inside its room for whoever last hit it, and waits in place if nobody has. Recruiting it yields an ordinary version without these traits). */
   boss?:true};
 // Precondition: generated expedition enemies never carry `recruit`; expedition invitations come only from the
 // round-end draw. A preset `recruit` would issue a species-less invitation that save.ts rejects.
@@ -958,7 +958,8 @@ function chooseEnemyAction(s:World,id:string,blockingGuard:ReadonlySet<string>,c
   if(visible.length){
     const visibleIds=new Set(visible.map(t=>t.id));
     const ordered=visible.sort((a,b)=>chebyshev(actorPos,a.pos!)-chebyshev(actorPos,b.pos!)||opponentIds(s,actor.side).indexOf(a.id)-opponentIds(s,actor.side).indexOf(b.id));
-    actor.targetMemory=clone(ordered[0].pos!);actor.lostSightTurns=0;
+    if(!actor.boss)actor.targetMemory=clone(ordered[0].pos!);   // G7.7: a boss remembers only whoever hit it (set when it is hit), never merely the nearest one it sees
+    actor.lostSightTurns=0;
     const quickguard=new Set([...blockingGuard,...createdGuard]);
     const damage=pickDamageAction(s,id,'gofoes',quickguard,visibleIds);if(damage)return damage;
     const support=supportAction(s,id,quickguard,'gofoes',visibleIds);if(support)return support;
@@ -985,9 +986,13 @@ function chooseEnemyAction(s:World,id:string,blockingGuard:ReadonlySet<string>,c
 /** D-20261110-07 (G7.7): a boss that stays in its room moves toward a target but never steps out of the boss room; when the next step would leave it, it waits at the edge. */
 function bossStepToward(s:World,actor:Unit,target:Pos):Action {
   const step=firstStepTo(s,actor.pos!,target,false);if(!step)return {type:'wait'};
-  const room=s.bossRoom!==undefined?s.rooms?.[s.bossRoom]:undefined,stays=BOSS_CONFIG[actor.species??'']?.staysInRoom!==false;
-  if(stays&&room&&!(step.x>=room.x&&step.y>=room.y&&step.x<room.x+room.w&&step.y<room.y+room.h))return {type:'wait'};
+  if(!bossMayStand(s,actor,step))return {type:'wait'};
   return {type:'move',to:step};
+}
+/** G7.7: false when the unit is a room-bound boss and `p` lies outside its room. Checked on the final cell, so a confused random step cannot carry the boss out either. */
+function bossMayStand(s:World,actor:Unit,p:Pos):boolean {
+  const room=s.bossRoom!==undefined?s.rooms?.[s.bossRoom]:undefined,stays=BOSS_CONFIG[actor.species??'']?.staysInRoom!==false;
+  return !(actor.boss&&stays&&room)||p.x>=room.x&&p.y>=room.y&&p.x<room.x+room.w&&p.y<room.y+room.h;
 }
 function randomEnemyAi(s:World):number {
   const state=s.enemyAiRng??streamSeed(s.dungeon?.seed??0,s.dungeon?.level??1,'enemy-ai'),next=rngStep(state);s.enemyAiRng=next.state;return next.value;
@@ -1459,7 +1464,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
     if(effect==='reflect'||effect==='lightscreen'){
       for(const target of landed)if(alive(target)&&target.side===actor.side){
         target[effect]=SCREEN_PHASES;
-        note(s,L`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续${SCREEN_PHASES}个${target.side==='enemy'?'我方':'敌方'}行动阶段`);emit(s,{type:'guard',unit:target.id,kind:effect});
+        note(s,L`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续${SCREEN_PHASES}回合`);emit(s,{type:'guard',unit:target.id,kind:effect});
       }
       continue;
     }
@@ -1794,7 +1799,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     }
     if(action.type==='move'&&hasStatus(e,'confusion')){const to=plus(e.pos,DIRS8[Math.floor(battleRandom(s)*8)]);note(s,L`${id}因混乱乱走`);emit(s,{type:'fail',unit:id,reason:'confusedWander'});action={type:'move',to};}
     if(action.type==='move'){
-      if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)){note(s,L`${id}无路可走，等待`,{routine:true});emit(s,{type:'fail',unit:id,reason:'noPath'});continue;}
+      if(!walk(s,action.to)||occupied(s,action.to)||!stepOk(s,e.pos,action.to)||!bossMayStand(s,e,action.to)){note(s,L`${id}无路可走，等待`,{routine:true});emit(s,{type:'fail',unit:id,reason:'noPath'});continue;}
       const previous=clone(e.pos);execute(s,id,action,friendGuard,enemyGuard);e.direction={x:Math.sign(action.to.x-previous.x),y:Math.sign(action.to.y-previous.y)};
       if(e.roamTarget&&same(action.to,e.roamTarget))e.roamTarget=null;
     }else if(action.type==='skill'||action.type==='basic'||action.type==='basicForward')execute(s,id,action,friendGuard,enemyGuard);
@@ -2095,7 +2100,7 @@ export function defaultLearningCommand(s:World):Extract<Command,{type:'learnMove
   return power(pending.move)>minimum?{type:'learnMove',replace:weakest}:{type:'learnMove',replace:null};
 }
 export function applyCommand(original:World,cmd:Command):Result {
-  const fail=(error:string):Result=>({ok:false,state:original,error:`${error}；本轮未执行`});
+  const fail=(error:string):Result=>({ok:false,state:original,error:`${error}；本回合未执行`});
   if(cmd.type==='learnMove'){
     if(original.phase!=='learning'||!original.pendingLearnMoves?.length)return fail('当前没有待处理的学招选择');
     const pending=original.pendingLearnMoves[0],unit=original.units[pending.actor];
@@ -2126,7 +2131,7 @@ export function applyCommand(original:World,cmd:Command):Result {
       if(choice.commission==='speedrun'&&speedLimit===null)return fail('委托点与楼梯之间没有可走路线');
       const progress=choice.commission==='speedrun'?1:0,progressTarget=speedLimit??def.progressTarget??1;
       (s.commissions??=[]).push({id:choice.commission,floor:currentFloorLevel(s),acceptedRound:s.round,progress,progressTarget,speedLimit});
-      note(s,L`接下委托：${def.name}${speedLimit===null?'':`，限${speedLimit}轮`}`);
+      note(s,L`接下委托：${def.name}${speedLimit===null?'':`，限${speedLimit}回合`}`);
     }else note(s,L`拒绝委托`);
     resumeAfterChoice(s);return {ok:true,state:s};
   }
@@ -2218,7 +2223,7 @@ export function applyCommand(original:World,cmd:Command):Result {
   }else if(cmd.choice==='accept'&&preview?.ok){
     if(cmd.outgoing){s.camp.push(cmd.outgoing);s.units[cmd.outgoing].pos=null;}
     const unit=clone(invite.unit);unit.pos=preview.pos;s.units[unit.id]=unit;s.queue=preview.queue;s.leader=preview.leader;invite.status='accepted';reveal(s);
-    note(s,L`${unit.id}加入，${cmd.outgoing??'空名额'}回营；下轮才行动`);
+    note(s,L`${unit.id}加入，${cmd.outgoing??'空名额'}回营；下回合才行动`);
   }else{invite.status='rejected';note(s,L`拒绝${invite.unit.id}`);}
   if(!s.invitations.some(i=>i.status==='pending')){
     if(completeAdventureIfReady(s))return {ok:true,state:s};

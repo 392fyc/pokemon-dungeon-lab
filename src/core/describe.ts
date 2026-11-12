@@ -1,5 +1,6 @@
 /** Stage 7.1 readability helpers: plain-language text built from the world state. Pure functions; no DOM, no rule changes. */
 import {attackStageMultiplier,defenceStageMultiplier,damageStage,levelDamageBonus,ITEM_NAMES,ORB_ITEMS,SKILL_CN,STAGE_NAMES,STATUS_NAMES,key,estimateAttackDamage,type Action,type LogEntry,type LogPart,type Pos,type Skill,type TraceStep,type Unit,type World} from './engine.ts';
+import {situationalMoveEffect} from './move-text.ts';
 import {SPECIES} from './roster.ts';
 import {currentStats,type StatKey} from './stats.ts';
 import {MOVE_DEFS,moveOf,moveEffects,type StageKey,type StatusId,type MoveRange} from './moves.ts';
@@ -14,7 +15,7 @@ export const unitName=(u:Unit|undefined,fallback=''):string=>u?.species?speciesZ
 export const unitLabel=(u:Unit|undefined,_id:string):string=>unitName(u);
 /** A skill is a move id, so its label is the move's Chinese name with no behavior suffix. */
 export const skillLabel=(_u:Unit|undefined,skill:Skill):string=>SKILL_CN[skill]??moveZh(skill);
-const RANGE_CN:Record<MoveRange,string>={front:'相邻1格（含斜向，斜向不穿墙角）',front2:'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角',line10:'同排、同列或斜线至多10格，命中首个单位（队友也会被命中），斜向不穿墙角',around:'使用者周围8格（斜向不穿墙角）',room:'同房间；走廊或无房间数据时周围2格',user:'自身'};
+const RANGE_CN:Record<MoveRange,string>={front:'相邻1格，含斜向。斜向不穿墙角',front2:'同排、同列或斜线1–2格，无遮挡，斜向不穿墙角',line10:'同排、同列或斜线至多10格，命中首个单位，包括队友。斜向不穿墙角',around:'使用者周围8格，斜向不穿墙角',room:'同房间；走廊或无房间数据时周围2格',user:'自身'};
 /** The short range tag, only for a non-default reach: an adjacent single target (and self) says nothing. */
 export function moveRangeTag(id:string):string{const r=moveOf(id)?.range;return r==='front2'?'2格':r==='line10'?'直线 10 格':r==='around'?'周围':r==='room'?'同房间':'';}
 const STAT_ZH:Record<string,string>={atk:'攻击',def:'防御',spa:'特攻',spd:'特防',acc:'命中',eva:'闪避'};
@@ -59,29 +60,22 @@ export type DamageSummaryContext={s:World;sourceId:string;targetId?:string};
 export function damageEstimateText(s:World,sourceId:string,targetId?:string,skill?:Skill):string {
   const source=s.units[sourceId],quickguard=source&&s.quickguard&&s.quickguard.owner!==source.side?new Set(s.quickguard.units):undefined;
   const amount=estimateAttackDamage(s,sourceId,targetId,skill,quickguard);
-  return `约${amount}点${targetId===undefined?'（对普通目标）':''}`;
+  return `约${amount}点`;
 }
-/** `side` is the side of whoever uses the move: duration and "enemy" wording in the fixed texts name the opposing side (#204). Defaults to the context's source, else the player's side. */
+/** `side` is the move user's side. Fixed effects name the opposing side (#204). */
 /** `level` (the level the move is used at) adds the level bonus to the fixed base-damage text; without a context and without a level (the camp) the text says plainly that it leaves the level bonus out. */
 export function moveEffectLabel(id:string,context?:DamageSummaryContext,side?:Unit['side'],level?:number):string{
   const spec=moveOf(id);if(!spec)return '招式数据缺失';
   const user=side??context?.s.units[context.sourceId]?.side??'friend',foe=user==='enemy'?'我方':'敌方',foeUnit=user==='enemy'?'我方单位':'敌人';
   const parts:string[]=[];
   for(const effect of spec.effects){
-    if(effect==='damage')parts.push(spec.power===null?'造成伤害':context?`造成${damageEstimateText(context.s,context.sourceId,context.targetId,id)}`:level===undefined?`造成${6+Math.ceil(spec.power/2)}点基础伤害（不含等级加成）`:`造成${6+Math.ceil(spec.power/2)+levelDamageBonus(level)}点基础伤害`);
+    const special=situationalMoveEffect(effect,foe,foeUnit);
+    if(special){parts.push(special);continue;}
+    if(effect==='damage')parts.push(spec.power===null?'造成伤害':context?`造成${damageEstimateText(context.s,context.sourceId,context.targetId,id)}`:level===undefined?`造成${6+Math.ceil(spec.power/2)}点基础伤害，未计等级加成`:`造成${6+Math.ceil(spec.power/2)+levelDamageBonus(level)}点基础伤害`);
     else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
-    else if(effect==='recoil'){const r=moveEffects(id)?.recoil;if(r)parts.push(`承受实际伤害的${r[0]}/${r[1]}反作用（向下取整，至少1；未造成伤害时不扣HP）`);}
-    else if(effect==='rest')parts.push('自身进入打盹2—3轮；结束时回满HP并解除全部异常');
-    else if(effect==='snore')parts.push(`睡眠或打盹中受到${foeUnit}直接攻击且未醒来时，对攻击者发动；不受射程限制且不造成畏缩`);
-    else if(effect==='sleeptalk')parts.push(`睡眠或打盹中受到${foeUnit}直接攻击且未醒来时，随机发动一招；不受射程限制`);
+    else if(effect==='recoil'){const r=moveEffects(id)?.recoil;if(r)parts.push(`造成伤害后，承受实际伤害的${r[0]}/${r[1]}作为反作用，至少1点`);}
     else if(effect==='heal:1:2')parts.push(`${spec.target==='party'?'同房间全队':'自身'}回复各自最大HP的一半`);
     else if(effect.startsWith('status:'))parts.push(`命中后施加${STATUS_NAMES[effect.slice(7) as StatusId]}`);
-    else if(effect==='protect')parts.push(`自身受到${foe}攻击伤害为0（3个${foe}阶段）`);
-    else if(effect==='counter')parts.push(`反击相邻${foeUnit}的有效伤害（3个${foe}阶段）`);
-    else if(effect==='quickguard')parts.push(`使用时范围内全队在本回合挡下距离大于1格的${foe}攻击；与守住不能连续使用`);
-    else if(effect==='reflect')parts.push(`使用时范围内全队受到的物理攻击伤害减半（10个${foe}阶段）`);
-    else if(effect==='lightscreen')parts.push(`使用时范围内全队受到的特殊攻击伤害减半（10个${foe}阶段）`);
-    else if(effect==='blowaway')parts.push(spec.effects.includes('damage')?'伤害后沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害':'沿直线最多吹飞10格，撞墙或碰单位时各受5点撞击伤害');
     else {const stage=/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/.exec(effect);if(stage){const who=spec.range==='room'&&spec.target==='teammates'?'同房间队友':spec.range==='user'?'自身':'目标';parts.push(`${who}${STAGE_NAMES[stage[1] as StageKey]}${stage[2]}`);}}
   }
   return parts.join('；')||'无效果说明';
@@ -147,13 +141,14 @@ export function moveBaseDamage(s:World,u:Unit,move:string):number|null {
   const spec=moveOf(move);if(!spec||(!spec.effects.includes('damage')&&move!=='snore')||spec.power===null)return null;   // Snore hits through its own rule but uses the same base
   return 6+Math.ceil(spec.power/2)+levelDamageBonus(unitMoveLevel(s,u));
 }
-export type EnemyMoveRow={id:string;name:string;type:string;pp:number;maxPp:number;detail:string};
-export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];moveRows:EnemyMoveRow[];note:string;statuses:string[]};
+export type EnemyMoveRow={id:string;name:string;type:string;pp:number;maxPp:number;summary:string;detail:string};
+export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];moveRows:EnemyMoveRow[];statuses:string[]};
 export type TeammateInfo={id:string;name:string;level:number|null;tactic:Tactic;moves:string[]};
 const tacticFor=(u:Unit):Tactic=>isTactic(u.tactic)?u.tactic:u.side==='enemy'?'gofoes':'together';
-const moveRows=(u:Unit,context?:DamageSummaryContext):EnemyMoveRow[]=>u.learned.map(id=>{
-  const pp=u.pp[id]??0,maxPp=u.maxPp[id]??pp,type=MOVE_TYPES[id];
-  return {id,name:moveZh(id),type:type?typeZh(type):'—',pp,maxPp,detail:moveZh(id)+'（'+moveSummary(id,context,u.side)+'） PP '+pp+'/'+maxPp};
+const moveRows=(s:World,u:Unit,context?:DamageSummaryContext):EnemyMoveRow[]=>u.learned.map(id=>{
+  const pp=u.pp[id]??0,maxPp=u.maxPp[id]??pp,type=MOVE_TYPES[id],name=moveZh(id);
+  const summary=moveSummary(id,context,u.side,unitMoveLevel(s,u));
+  return {id,name,type:type?typeZh(type):'—',pp,maxPp,summary,detail:`${name} · ${summary} · PP ${pp}/${maxPp}`};
 });
 /** Names of the conditions a unit is under now, in STATUS_NAMES order; a unit born asleep (not yet woken) shows as sleeping. */
 export function statusLabels(u:Unit):string[]{
@@ -167,15 +162,15 @@ export function enemyInfo(s:World,id:string):EnemyInfo|null {
   const u=s.units[id];
   if(!u||u.side!=='enemy'||u.hp<=0||!u.pos||!s.seen.includes(key(u.pos)))return null;
   const sp=u.species?SPECIES[u.species]:undefined;
-  const tactic=tacticFor(u),note=u.boss?'区域首领；击败后有概率发出加入邀请，入队的是普通形态。':u.species?'击败后有概率发出加入邀请。':'';
-  const rows=moveRows(u);
+  const tactic=tacticFor(u);
+  const rows=moveRows(s,u);
   return {id,name:u.boss?`${unitName(u,'敌人')}（首领）`:unitName(u,'敌人'),types:sp?(sp.types??[]).map(typeZh).join('／'):'',hp:u.hp,maxHp:u.maxHp,
-    level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:rows.map(row=>row.detail),moveRows:rows,note,statuses:statusLabels(u)};
+    level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:rows.map(row=>row.detail),moveRows:rows,statuses:statusLabels(u)};
 }
 /** Read-only detail for a teammate card when the player explicitly opens it. */
 export function teammateInfo(s:World,id:string,targetId?:string):TeammateInfo|null {
   const u=s.units[id];if(!u||u.side!=='friend')return null;
-  const rows=moveRows(u,{s,sourceId:id,targetId});
+  const rows=moveRows(s,u,{s,sourceId:id,targetId});
   return {id,name:unitName(u,'队员'),level:typeof u.level==='number'?u.level:null,tactic:tacticFor(u),moves:rows.map(row=>row.detail)};
 }
 

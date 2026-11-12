@@ -91,7 +91,7 @@ test('攻击、防御阶段上下限 ±10；帮助只提升房间内队友，走
   withMove('testLower',{range:'user',target:'user',power:null,effects:['stage:def:-1']},()=>{
     const a=friend('A',1,1,20),b=friend('B',2,2),c=friend('C',5,1);equip(a,'testRaise',15);equip(a,'testLower',5);
     let s=world({floor:rect(0,6,0,4),friends:[a,b,c],rooms:[{x:0,y:0,w:4,h:4}]});
-    for(let i=0;i<12;i++)s=use(s,'testRaise','A');assert.equal(s.units.A.stages.atk,10);   // held at +10 (accuracy and evasion keep +-3)
+    for(let i=0;i<12;i++)s=use(s,'testRaise','A');assert.equal(s.units.A.stages.atk,10);   // held at +10 (accuracy and evasion keep +-6)
     s.units.A.stages.def=-9;for(let i=0;i<4;i++)s=use(s,'testLower','A');assert.equal(s.units.A.stages.def,-10);
 
     const h=friend('H',0,1,20,{helpinghand:2}),inside=friend('I',2,2),outside=friend('O',4,2);

@@ -23,7 +23,8 @@ const blocksText=e=>e.blocks.map(b=>b.t==='p'?b.text:b.t==='facts'?b.rows.map(r=
 
 test('the categories are defined by the data file, in order, and each has entries',()=>{
   assert.deepEqual(cats.map(c=>c.id),['terms','moves','species','status','stages','items','blessings']);
-  for(const c of cats){assert.ok(c.entries.length>0,c.id);assert.ok(c.name&&c.intro);}
+  for(const c of cats){assert.ok(c.entries.length>0,c.id);assert.ok(c.name);}
+  assert.deepEqual(cats.filter(c=>!c.intro).map(c=>c.id),['terms','moves','species'],'reference lists omit explanatory filler');
 });
 test('every species of the roster has an entry with portrait data, types, six base stats and its kit',()=>{
   assert.equal(byCat.species.entries.length,Object.keys(SPECIES).length);
@@ -56,7 +57,7 @@ test('every status has a Chinese entry that quotes the engine constants',()=>{
   const t=wikiTokens();
   for(const [id,name] of Object.entries(STATUS_NAMES)){const e=wikiEntry('status:'+id);assert.equal(e.title,name);assert.ok(/[一-鿿]/.test(e.title));}
   for(const k of ['psn','tox','brn']){assert.equal(t[k+'.interval'],String(STATUS_INTERVAL[k]));assert.equal(t[k+'.div'],String(STATUS_DAMAGE_DIVISOR[k]));
-    const text=blocksText(wikiEntry('status:'+k));assert.ok(text.includes(' '+STATUS_INTERVAL[k]+' 轮')&&text.includes('除以 '+STATUS_DAMAGE_DIVISOR[k]),k+' text carries the constants');}
+    const text=blocksText(wikiEntry('status:'+k));assert.ok(text.includes(' '+STATUS_INTERVAL[k]+' 回合')&&text.includes('除以 '+STATUS_DAMAGE_DIVISOR[k]),k+' text carries the constants');}
   for(const k of ['par','frz','slp','nap','confusion']){const [lo,hi]=STATUS_DURATION[k];assert.ok(blocksText(wikiEntry('status:'+k)).includes(lo+'—'+hi),k+' duration '+lo+'—'+hi);}
   for(const [item,cures] of Object.entries(ITEM_CURES))for(const k of cures)assert.ok(wikiEntry('status:'+k).blocks.some(b=>b.t==='chips'&&b.ids.includes('items:'+item)),item+' listed under '+k);
 });
@@ -104,6 +105,7 @@ test('wiki-zh.json: every hand-written entry has a category, text and rule numbe
     assert.ok(ids.has(e.category),e.id+' category');assert.ok(e.id.startsWith(e.category+':'),e.id+' id prefix');assert.ok(!seen.has(e.id),'duplicate '+e.id);seen.add(e.id);
     assert.ok(Array.isArray(e.body)&&e.body.length>0&&e.body.every(t=>typeof t==='string'&&t.length>0),e.id+' body');
     assert.ok(Array.isArray(e.rules)&&e.rules.length>0,e.id+' has rule numbers');
+    for(const text of e.body)assert.doesNotMatch(text,/[（）]/,e.id+' body has no explanatory parentheses');
     if(e.todo)assert.ok(e.todoNote,e.id+' todo has a note');
   }
   for(const c of wikiData.categories)assert.ok(c.rules.length>0,c.id+' category rule numbers');

@@ -29,7 +29,7 @@ function flash(st:Stage,keyName:string,at:{x:number;y:number},ms:number,delay:nu
 }
 function floatText(st:Stage,at:{x:number;y:number},text:string,color:string,ms:number,delay:number,opt:{size?:number;bounce?:boolean}={}){
   return wait(st,delay).then(()=>{
-    const t=track(st,st.scene.add.text(at.x,at.y-st.cell*.3,text,{fontFamily:'sans-serif',fontSize:opt.size??15,fontStyle:'bold',color,stroke:'#0b1312',strokeThickness:4}).setOrigin(.5).setDepth(9));
+    const t=track(st,st.scene.add.text(at.x,at.y-st.cell*.3,text,{fontFamily:'sans-serif',fontSize:opt.size??15,fontStyle:'bold',color,stroke:'#17120e',strokeThickness:4}).setOrigin(.5).setDepth(9));
     if(opt.bounce)void tween(st,{targets:t,scale:{from:1.7,to:1},duration:Math.max(1,Math.min(ms,220)),ease:'Back.easeOut'});
     void tween(st,{targets:t,alpha:0,delay:Math.round(Math.max(1,ms)*.55),duration:Math.max(1,Math.round(ms*.45))});   // stays fully opaque for the first half so the colour reads
     return tween(st,{targets:t,y:at.y-st.cell*.85,duration:Math.max(1,ms),ease:'Quad.easeOut'}).then(()=>{t.destroy();st.temp.delete(t);});});

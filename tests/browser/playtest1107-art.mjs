@@ -37,7 +37,7 @@ for(const [w,h] of [[1280,720],[900,520]]){
  assert.equal(await p.locator('.c195-bag-item[data-bag-tm]').count(),1);
  const tmName=await p.locator('.c195-bag-item[data-bag-tm] .c195-name').innerText();assert.ok(/撞击/.test(tmName)&&!/tackle/.test(tmName),'technique machine named in Chinese: '+tmName);
  await p.locator('[data-bag-item="slumberOrb"]').click();
- assert.match(await p.locator('.c195-bag-detail').innerText(),/睡眠宝珠[\s\S]*房间里/);
+ assert.match(await p.locator('.c195-bag-detail').innerText(),/睡眠宝珠[\s\S]*房间内所有敌人进入睡眠/);
  await p.locator('[data-bag-slot="0"]').click();await p.locator('#bag-pin').click();
  await p.locator('[data-bag-item="reviverSeed"]').click();assert.equal(await p.locator('#bag-use').count(),0,'the Reviver Seed has no manual use');
  await p.screenshot({path:out+`bag-icons-${w}x${h}.png`});

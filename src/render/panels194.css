@@ -1,5 +1,4 @@
-/* #194: the approved paper/wood windows. Existing dungeon/camp layouts stay scoped outside these panels. */
-:root{--paper-ink:#2a1c14;--paper:#f0e4c6;--paper-2:#e0cfa4;--paper-3:#cdb985;--paper-wood:#a4703f;--paper-wood-dark:#6b4326;--paper-wood-light:#c99a62;--paper-muted:#6d5a44;--paper-leaf:#4f8a3c}
+/* #194: the approved paper/wood windows. The paper/wood palette is the global default (src/style.css :root, D-20261111-07). */
 .paper-window{box-sizing:border-box;background:var(--paper);color:var(--paper-ink);border:4px solid var(--paper-wood-dark);border-radius:0;padding:26px;box-shadow:0 0 0 3px var(--paper-ink),inset 0 0 0 2px var(--paper-wood),8px 12px 0 #0006;font-family:var(--ui-body);font-weight:500}
 .paper-window h3,.settlement194 h3{margin:0;color:var(--paper-wood-dark);font:900 16px/1.4 var(--ui-body);letter-spacing:1px}
 .paper-window button,.paper-button{margin:0;border:0;border-radius:0;font-family:var(--ui-body);font-size:16px;font-weight:900;cursor:pointer;color:var(--paper-ink)}

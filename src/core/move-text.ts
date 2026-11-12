@@ -1,10 +1,10 @@
 /** The effect text of a move (G13.1, playtest round 14): written only from the data the engine reads, never from the official prose, so a card and
  *  the engine cannot disagree. Every number comes from an engine constant or from the move data (src/data/pmd-moves.json, move-effects.json). */
 import {moveOf,moveEffects,type StageKey,type StatusId,type MoveSpec,type StageChange} from './moves.ts';
-import {typeZh,speciesZh} from './names.ts';
+import {typeZh} from './names.ts';
 import {
   STAGE_NAMES,STATUS_NAMES,STATUS_DURATION,PROTECT_PHASES,COUNTER_PHASES,SCREEN_PHASES,BLOWAWAY_CELLS,COLLISION_DAMAGE,
-  attackStageMultiplier,defenceStageMultiplier,accuracyMultiplier,ACCURACY_STAGE_LIMIT,STATUS_INTERVAL,STATUS_DAMAGE_DIVISOR,BURN_DAMAGE_RATIO,statusImmuneTypes,BLOWAWAY_IMMUNE_BOSSES,
+  attackStageMultiplier,defenceStageMultiplier,accuracyMultiplier,ACCURACY_STAGE_LIMIT,STATUS_INTERVAL,STATUS_DAMAGE_DIVISOR,BURN_DAMAGE_RATIO,statusImmuneTypes,
 } from './engine.ts';
 
 const sign=(n:number)=>(n>0?'+':n<0?'−':'±')+Math.abs(n);
@@ -27,7 +27,7 @@ export function statusWithDuration(st:StatusId,moveId?:string):string {
   if(range||st==='flinch')return STATUS_NAMES[st]+imm;
   if(interval!==undefined){
     const div=(STATUS_DAMAGE_DIVISOR as Record<string,number>)[st];
-    return STATUS_NAMES[st]+'，每'+interval+'轮结束损失最大HP的1/'+div+(st==='brn'?'，攻击伤害×'+BURN_DAMAGE_RATIO[0]+'/'+BURN_DAMAGE_RATIO[1]:'')+'，到治愈或换层'+imm;
+    return STATUS_NAMES[st]+'，每'+interval+'回合末损失最大HP的1/'+div+(st==='brn'?'，攻击伤害×'+BURN_DAMAGE_RATIO[0]+'/'+BURN_DAMAGE_RATIO[1]:'')+'，持续至治愈或换层'+imm;
   }
   return STATUS_NAMES[st]+imm;
 }
@@ -36,6 +36,28 @@ const stageParts=(who:string,c:StageChange|undefined)=>Object.entries(c??{}).fil
 /** Effect ids of pmd-moves.json the engine executes, and fields of move-effects.json it reads; the coverage test compares the data against these. */
 export const HANDLED_EFFECTS=['damage','drain','recoil','blowaway','lightscreen','protect','counter','quickguard','heal:1:2','reflect','rest','sleeptalk','snore'] as const;
 export const HANDLED_FX_FIELDS=['acc','fx','thaw','recoil','cost','powder','source'] as const;
+
+/** Shared effect copy for cards and the wiki. The opposing side is relative to the move user. */
+export function situationalMoveEffect(effect:string,foe='对方',foeUnit=foe):string|undefined {
+  switch(effect){
+    case 'blowaway':return '沿直线吹飞目标，最远'+BLOWAWAY_CELLS+'格；撞墙时目标受'+COLLISION_DAMAGE+'点伤害，撞到单位时两者各受'+COLLISION_DAMAGE+'点';
+    case 'protect':return PROTECT_PHASES+'回合内免疫'+foe+'攻击的伤害、异常和能力降低；上一次行动是守住或快速防守时不能使用';
+    case 'counter':return COUNTER_PHASES+'回合内，受到相邻'+foeUnit+'的伤害时，对其造成等量伤害';
+    case 'quickguard':return '使用时范围内的己方，1回合内免疫距离大于1格的'+(foe==='对方'?'':foe)+'攻击及其异常和能力降低；上一次行动是守住或快速防守时不能使用';
+    case 'reflect':
+    case 'lightscreen':{
+      const category=effect==='reflect'?'物理':'特殊';
+      const source=foe==='对方'?'':foe+'造成的';
+      return '使用时范围内的己方，'+SCREEN_PHASES+'回合内受到'+(source||'的')+category+'伤害减半；重复使用刷新计时';
+    }
+    case 'rest':{
+      const [min,max]=STATUS_DURATION.nap!;
+      return '自身打盹'+min+'—'+max+'回合，期间无法行动；自然醒来时回满HP并解除全部异常，换层会提前结束打盹；HP已满且没有异常时不能使用';
+    }
+    case 'sleeptalk':return '睡眠或打盹期间受到'+foeUnit+'直接攻击，未苏醒时随机对自身或攻击者发动符合条件的另一招，仅消耗梦话的PP；携带打鼾时优先判定打鼾；不能主动使用';
+    case 'snore':return '睡眠或打盹期间受到'+foeUnit+'直接攻击，未苏醒时对攻击者发动反击，消耗打鼾的PP；不能主动使用';
+  }
+}
 
 /** One short sentence per effect, in the order the engine resolves them. */
 export function moveEffectLines(id:string):string[] {
@@ -47,20 +69,12 @@ export function moveEffectLines(id:string):string[] {
     const st=/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/.exec(e);
     if(st){out.push(who+STAGE_NAMES[st[1] as StageKey]+sign(Number(st[2])));stagesShown=true;continue;}
     if(e.startsWith('status:')){out.push('使'+who+statusWithDuration(e.slice(7) as StatusId,id));continue;}
+    const special=situationalMoveEffect(e);
+    if(special){out.push(special);continue;}
     switch(e){
-      case 'damage':break;
       case 'drain':out.push('回复实际伤害的一半');break;
       case 'recoil':if(fx?.recoil)out.push('自身承受实际伤害的'+Math.round(fx.recoil[0]/fx.recoil[1]*100)+'%作为反作用');break;
-      case 'blowaway':out.push('把对方沿直线吹飞，最远'+BLOWAWAY_CELLS+'格；撞墙时对方受'+COLLISION_DAMAGE+'点伤害，撞到单位时两者各受'+COLLISION_DAMAGE+'点；首领'+BLOWAWAY_IMMUNE_BOSSES.map(speciesZh).join('、')+'不会被吹飞'+(spec.effects.includes('damage')?'，只受伤害':'，此招对其无效'));break;
-      case 'protect':out.push('之后'+PROTECT_PHASES+'个对方行动阶段内，对方攻击对自身的伤害为0，对方招式的异常和能力降低也无效；上一次行动是守住或快速防守时不能使用');break;
-      case 'counter':out.push('之后'+COUNTER_PHASES+'个对方行动阶段内，相邻对方每造成一次大于0的伤害，对方受到同样的伤害');break;
-      case 'quickguard':out.push('使用那一刻范围内的己方，在接下来1个对方行动阶段内不受距离大于1格的攻击，其异常和能力降低也无效；上一次行动是守住或快速防守时不能使用');break;
-      case 'reflect':out.push('使用那一刻范围内的己方，'+SCREEN_PHASES+'个对方行动阶段内受到的物理伤害减半；重复使用重新计时');break;
-      case 'lightscreen':out.push('使用那一刻范围内的己方，'+SCREEN_PHASES+'个对方行动阶段内受到的特殊伤害减半；重复使用重新计时');break;
       case 'heal:1:2':out.push(who+(spec.target==='party'?'各自':'')+'回复最大HP的一半');break;
-      case 'rest':{const r=STATUS_DURATION.nap;out.push('自身进入打盹'+(r?'，期间不能行动':'')+'，结束时回满HP并解除全部异常；中途换层则打盹解除、不回复；HP已满且没有异常时不能使用');break;}
-      case 'sleeptalk':out.push('自身在睡眠或打盹中被攻击且没醒来时，随机使用自己的另一招，只消耗梦话的PP，不会选对队友的招式；同时带打鼾时只发动打鼾；不能主动使用');break;
-      case 'snore':out.push('自身在睡眠或打盹中被攻击且没醒来时，对攻击者反击，消耗打鼾的PP；不造成畏缩；不能主动使用');break;
     }
   }
   if(damaging)for(const f of fx?.fx??[]){
@@ -108,7 +122,7 @@ export function stageEffectNote(stat:StageKey,stage:number):string {
 }
 /** The hover text of a stage badge: "攻击 +1：造成的伤害×1.2，持续到换层". `effective` is the stage the engine really uses when it differs from the stored one (the hunter commission lowers a friend's defence stages by 1). */
 export function stageTitle(stat:StageKey,stage:number,effective=stage):string {
-  const note=effective!==stage?'（猎人委托使实际生效为 '+sign(effective)+'）':'';
+  const note=effective!==stage?'猎人委托使实际生效为 '+sign(effective)+'，':'';
   const fine=stageEffectNote(stat,effective);
-  return STAGE_NAMES[stat]+' '+sign(stage)+note+'：'+stageEffectLabel(stat,effective)+(fine?'（'+fine+'）':'')+'，持续到换层';
+  return STAGE_NAMES[stat]+' '+sign(stage)+'：'+note+stageEffectLabel(stat,effective)+'，持续到换层'+(fine?'。'+fine:'');
 }

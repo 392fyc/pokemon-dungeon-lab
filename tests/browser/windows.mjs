@@ -222,12 +222,12 @@ await test('M3：三格直线目标拒绝且不耗PP或回合',async()=>{
  const {context,page:p,errors}=await setup('K5');try{await start(p);await reject(p);const before=await state(p);
   await click(p,'skill-quickattack');await cell(p,5,1);
   assert.deepEqual(await state(p),before);assert.equal(before.units.C.pp.quickattack,1);
-  assert.equal(await p.locator('#message').innerText(),'目标相距3格，超出招式射程2格；本轮未执行');assert.deepEqual(errors,[]);
+  assert.equal(await p.locator('#message').innerText(),'目标相距3格，超出招式射程2格；本回合未执行');assert.deepEqual(errors,[]);
   return {threeTileTargetRejected:true,noRoundOrPpSpent:true};
  }finally{await context.close();}
 });
 await test('M6：邀请替换、双方换位、承伤撤离',async()=>{
- const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await click(p,'leader-1');await click(p,'swap');await click(p,'partner-N');assert.ok((await p.locator('#controls').innerText()).includes('双方行动'));await click(p,'submit');
+ const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await click(p,'leader-1');await click(p,'swap');await click(p,'partner-N');assert.match(await p.locator('#edit-partner').innerText(),/：换位$/);await click(p,'submit');
   // B now leads at x=3 and R is at 5. B waits (R steps adjacent), then trades basic attacks: R tackles B once (6 after Normal STAB), B's second hit (6+6>=8) kills it.
   await key(p,'.');await cell(p,4,1);await cell(p,4,1);assert.equal((await state(p)).units.R.hp,0);
   await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,13);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,14,10]);assert.equal(s.units.C.hp,12);assert.deepEqual(s.camp,['C']);assert.deepEqual(s.camp.map(i=>s.units[i].hp),[12]);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(errors,[]);return {rounds:13,team:['A20','B14','N10'],camp:'C12'};}finally{await context.close();}
@@ -358,7 +358,7 @@ await test('PR5 历史单层G/T重复交互不重复领取',async()=>{
  }
  return observations;
 });
-await test('PR5 非法移动点名真实原因且说明本轮未执行',async()=>{
+await test('PR5 非法移动点名真实原因且说明本回合未执行',async()=>{
  const observations=[];
  for(const fixture of [undefined,'V1']){
   const {context,page:p,errors}=await setup(fixture);
@@ -366,7 +366,7 @@ await test('PR5 非法移动点名真实原因且说明本轮未执行',async()=
    await start(p);const before=await state(p),bytes=await raw(p);
    const wall={x:before.units[before.leader].pos.x,y:before.units[before.leader].pos.y-1};await cell(p,wall.x,wall.y);
    const text=await p.locator('#message').innerText();
-   assert.match(text,/本轮未执行/);assert.doesNotMatch(text,/可能/);
+   assert.match(text,/本回合未执行/);assert.doesNotMatch(text,/可能/);
    assert.match(text,/墙|不可行走|非地面|不是可行走/);   // 8.8: both fixtures use the wall above the leader; the V1 teammate-block reason no longer exists
    assert.deepEqual(await state(p),before);assert.equal(await raw(p),bytes);await key(p,'ArrowUp');const turned=structuredClone(before);turned.units[before.leader].facing={x:0,y:-1};assert.deepEqual(await state(p),turned,'the same blocked direction key only turns');assert.equal(await raw(p),bytes);assert.deepEqual(errors,[]);
    observations.push({fixture:fixture??'main-invite',text});
@@ -438,7 +438,7 @@ await test('阶段5 换位草稿不被方向键、句点或点地图改写',asyn
    order:(await draft.locator('#draft-order').innerText()).replace(/\s+/g,' ').trim(),
    steps:(await draft.locator('#draft-steps li').allTextContents()).map(text=>text.trim())
   };};
-  const plan=await draftContent();assert.match(plan.partner,/与A换位|换位（双方行动）/);
+  const plan=await draftContent();assert.match(plan.partner,/与A换位|：换位$/);
   await key(p,'ArrowRight');await key(p,'.');await cell(p,4,1);
   assert.deepEqual(await draftContent(),plan,'the visible draft actions and order stay unchanged');
   assert.match(await p.locator('#message').innerText(),/先取消组合/);
@@ -630,7 +630,7 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   assert.match(await p.locator('#goal-label').innerText(),/橙橙果×1/);assert.equal(await p.locator('#take').count(),0);
   // refusal: everyone is still at full HP (or the user is healthy), so the berry is refused with its reason
   const full=s.queue.every(i=>s.units[i].hp===s.units[i].maxHp);
-  if(full){await click(p,'use-berry');await p.locator('#target-hint').waitFor();assert.match(await p.locator('#target-none').innerText(),/HP已满.*本轮未执行/,'with nobody to heal every card is dimmed and the reason is shown');assert.equal(await p.locator('.hud-party-card.is-target').count(),0);await p.locator('#target-cancel').click();assert.deepEqual(await state(p),s);}
+  if(full){await click(p,'use-berry');await p.locator('#target-hint').waitFor();assert.match(await p.locator('#target-none').innerText(),/HP已满.*本回合未执行/,'with nobody to heal every card is dimmed and the reason is shown');assert.equal(await p.locator('.hud-party-card.is-target').count(),0);await p.locator('#target-cancel').click();assert.deepEqual(await state(p),s);}
   // get hurt: walk next to the melee enemy and hold the line until someone is below max HP
     await go(await (async()=>{const t=await state(p);const lp=t.units[t.leader].pos,f=t.units[t.enemies.filter(i=>t.units[i].hp>0&&t.units[i].pos).sort((x,y)=>Math.abs(t.units[x].pos.x-lp.x)+Math.abs(t.units[x].pos.y-lp.y)-Math.abs(t.units[y].pos.x-lp.x)-Math.abs(t.units[y].pos.y-lp.y))[0]].pos;const floor=new Set(t.floor.map(q=>q.x+','+q.y));return [{x:f.x+1,y:f.y},{x:f.x-1,y:f.y},{x:f.x,y:f.y+1},{x:f.x,y:f.y-1}].find(c=>floor.has(c.x+','+c.y));})());
   for(let i=0;i<8;i++){await settlePrompt();s=await state(p);if(s.queue.some(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp))break;await key(p,'.');}
@@ -992,7 +992,7 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
   await p.locator('#pick-deputy-mudkip').click();await p.locator('#newgame-start').click();await p.locator('#depart').waitFor();await ready(p);await confirmDeparture(p);await p.waitForFunction(()=>window.trial.getState()!==null);await ready(p);
   let s=await state(p);assert.equal(s.round,0);assert.equal(s.phase,'playing');
   assert.equal(await p.locator('#dungeon-layout').isVisible(),true,'the real player run uses the full-screen maze layout');
-  assert.equal(await p.locator('#shortcut-card').isVisible(),true,'shortcut help is inside the maze view');
+  assert.equal(await p.locator('#shortcut-card').count(),0,'shortcut help is in settings only');
   assert.equal(await p.locator('#hud-bottom [data-move-slot]').count(),4,'all four move slots, including empty slots, stay visible');
   assert.equal(await p.locator('#hud-bottom [data-hud-quick]').count(),6,'all six quick-item slots stay visible');
   const controlBounds=await p.evaluate(()=>{
@@ -1005,7 +1005,6 @@ await test('162 迷宫全屏 HUD：四招式槽、六快捷槽、键位、背包
    assert.ok(rects.every(r=>r.left>=0&&r.top>=0&&r.right<=controlBounds.viewport.width&&r.bottom<=controlBounds.viewport.height),`${label} rectangles stay fully inside the 1280×720 viewport: ${JSON.stringify(rects)}`);
    assert.ok(rects.every(r=>Math.abs(r.width-rects[0].width)<0.5&&Math.abs(r.height-rects[0].height)<0.5),`${label} have consistent widths and heights`);
   }
-  for(const keyLabel of ['1—4','5—0','Tab','B'])assert.ok((await p.locator('#shortcut-card').innerText()).includes(keyLabel),`in-frame shortcut card includes ${keyLabel}`);
   assert.equal(await p.locator('#party [id^="unit-card-"]').count(),2);
   assert.equal(await p.locator('#hud-bottom .hud-quick-slot.is-empty').count(),6,'new runs show six empty quick slots without zero-count items');
   assert.equal(await p.locator('.hud-minimap-heading > span').first().innerText(),'苔石洞 1F');
@@ -1326,13 +1325,22 @@ await test('162 同页替换新档：成功清空快捷分配，写入失败保�
  }finally{await context.close();}
 });
 await test('7.1/7.8 可读性：悬停敌人看等级与招式、组合草稿显示执行顺序与默认行为',async()=>{
- const {context,page:p,errors}=await setup('K1');
+ const {context,page:p,errors}=await setup('K1','pass',false,'painter',{viewport:{width:1280,height:720}});
  try{
   await start(p);const s=await state(p);const h=s.units.H;
   await hoverCell(p,h.pos.x,h.pos.y);
   await p.waitForSelector('#enemy-info');const info=await p.locator('#enemy-info').innerText();
   const {moveZh,speciesZh}=await import('../../src/core/names.ts');assert.ok(info.includes(h.species?speciesZh(h.species):'敌人'));assert.doesNotMatch(info,/\bH\b/);assert.match(info,new RegExp(`Lv${h.level}`));assert.ok(info.includes(`${h.hp}/${h.maxHp}`));assert.match(info,/作战方针：主动出击/);assert.equal(await p.locator('#enemy-info .enemy-move-list > li').count(),h.learned.length);
   assert.ok(h.learned.length>0);for(const move of h.learned)assert.ok(info.includes(moveZh(move)),`enemy info shows ${move}`);
+  const {moveBaseDamage}=await import('../../src/core/describe.ts');
+  const moveRow=p.locator('#enemy-info .enemy-move-list li').first();
+  const baseDamage=moveBaseDamage(s,h,h.learned[0]);assert.ok(baseDamage!==null);
+  await moveRow.locator('summary').click();
+  const detail=await moveRow.locator('p').innerText();
+  assert.equal(detail,'造成'+baseDamage+'点基础伤害');
+  assert.doesNotMatch(info,/加入邀请/);
+  await p.screenshot({path:artifact+'r480-enemy-move.png'});
+  await moveRow.locator('summary').click();
   await click(p,'arrange');await click(p,'partner-B');
   const order=await p.locator('#draft-order').innerText();assert.match(order,/→.*敌方/);
   assert.match(await p.locator('#draft-steps').innerText(),/默认行为/);
@@ -1387,7 +1395,8 @@ await test('7.8 UI夹具：伊布进化选择与暂缓按钮实际可点击',asy
   await startMemory(first.page,evolutionWorld());
   assert.equal((await state(first.page)).phase,'evolution');
   assert.match(await first.page.locator('#evolution-choice').innerText(),/伊布可以进化/);
-  assert.match(await first.page.locator('#evolution-choice').innerText(),/下次升级时再询问/);
+  assert.equal(await first.page.locator('#evolution-close').innerText(),'暂不进化');
+  assert.doesNotMatch(await first.page.locator('#evolution-choice').innerText(),/请选择下一形态/);
   for(const id of ['vaporeon','jolteon','flareon'])assert.equal(await first.page.locator('#evolve-'+id).count(),1);
   await click(first.page,'evolve-vaporeon');
   const chosen=await state(first.page);
@@ -1422,14 +1431,14 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
   assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01,'the boss is drawn 1.5 times larger: '+v.boss.scale/v.leader.scale);assert.ok(v.boss.labels.includes('首领'),'the boss carries a name tag');
   await hoverCell(p,s.units.boss.pos.x,s.units.boss.pos.y);await p.waitForSelector('#enemy-info');
   const info=await p.locator('#enemy-info').innerText();
-  const {moveZh}=await import('../../src/core/names.ts'),boss=s.units.boss;assert.match(info,/风速狗（首领）/);assert.ok(info.includes(`${boss.hp}/${boss.maxHp}`));assert.match(info,new RegExp(`Lv${boss.level}`));assert.match(info,/区域首领/);
-  for(const move of boss.learned)assert.ok(info.includes(moveZh(move)),`boss info shows ${move}`);assert.match(info,/击败后有概率发出加入邀请/);
+  const {moveZh}=await import('../../src/core/names.ts'),boss=s.units.boss;assert.match(info,/风速狗（首领）/);assert.ok(info.includes(`${boss.hp}/${boss.maxHp}`));assert.match(info,new RegExp(`Lv${boss.level}`));
+  for(const move of boss.learned)assert.ok(info.includes(moveZh(move)),`boss info shows ${move}`);assert.doesNotMatch(info,/加入邀请|入队的是/);
   await p.screenshot({path:artifact+'windows-boss-1-floor.png',fullPage:true});
   await click(p,'skill-roar');await cell(p,s.units.boss.pos.x,s.units.boss.pos.y);
   await p.waitForFunction(()=>document.getElementById('message').textContent.includes('首领不能被吹飞'));
-  assert.equal(await p.locator('#message').innerText(),'首领不能被吹飞；本轮未执行');
+  assert.equal(await p.locator('#message').innerText(),'首领不能被吹飞；本回合未执行');
   const after=await state(p);assert.equal(after.round,0);assert.deepEqual(after.units.A.pp,s.units.A.pp,'no PP spent');assert.deepEqual(after.units.boss.pos,s.units.boss.pos);
-  assert.deepEqual(errors,[]);return {tiles:v.tiles,bossScale:v.boss.scale,message:'首领不能被吹飞；本轮未执行'};
+  assert.deepEqual(errors,[]);return {tiles:v.tiles,bossScale:v.boss.scale,message:'首领不能被吹飞；本回合未执行'};
  }finally{await context.close();}
 });
 await test('结算8.1：首领倒下后自动胜利，三组奖励与招式机带回',async()=>{
@@ -1485,7 +1494,7 @@ await test('7.7a 状态卡片：守住与反击递减、攻防阶段显示；开
   await startMemory(p,fixture);await key(p,'Tab');const before=await state(p);
   await click(p,'skill-protect');await cell(p,before.units.A.pos.x,before.units.A.pos.y);
   assert.deepEqual(await state(p),before);
-  assert.equal(await p.locator('#message').innerText(),'这种招式的目标必须填使用者自己；本轮未执行');
+  assert.equal(await p.locator('#message').innerText(),'这种招式的目标必须填使用者自己；本回合未执行');
   const status=p.locator('[data-unit-status="B"]');
   const badges=()=>status.locator('.hud-status-badge').allTextContents();
   assert.deepEqual(await badges(),['攻击↑1','防御↓2','守住2','反击1']);
@@ -1506,7 +1515,14 @@ await test('7.7b 仓库：三招可见、学习、配招，新远征使用新版
  try{
   await p.goto(base+'?dev=1&seed=16763');await p.locator('#start').waitFor();
   assert.equal(await p.evaluate(pr=>window.trial.store.beginNewGame(pr,true),profile),true);await p.reload();await ready(p);
+  await p.setViewportSize({width:1280,height:720});
   await openCampPanel(p,'vault');
+  await p.locator('#tm-reflect').click();
+  await p.locator('#tm-lightscreen').hover();
+  assert.equal(await p.locator('#camp-move-tooltip').isVisible(),false);
+  assert.equal(await p.locator('#tm-reflect').getAttribute('aria-pressed'),'true');
+  assert.match(await p.locator('.camp194-vault-detail').innerText(),/10回合内受到的物理伤害减半/);
+  await p.screenshot({path:artifact+'r8-vault-hover.png'});
   for(const [move,label,inst] of [['quickguard','快速防守','P1'],['reflect','反射壁','P2'],['lightscreen','光墙','P2']]){
    assert.match(await p.locator('#tm-'+move).innerText(),new RegExp(label));
    await click(p,'tm-'+move);await click(p,'learn-'+inst);
@@ -1672,6 +1688,7 @@ await test('8.4 委托与祝福：实际接下、拒绝、三选一、放弃及�
 });
 await test('8.4 选机：真实三选一按钮、一次消费与挑战奖励来源文字',async()=>{
  const {context,page:p,errors}=await setup();try{
+  await p.setViewportSize({width:1280,height:720});
   await emptyReady(p);const {createExpedition}=await import('../../src/core/engine.ts');
   const fixture=createExpedition('browser-84-tm',1,3,{members:[
    {inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}],tactic:'wait'}],leader:0},0,true,3);
@@ -1682,8 +1699,18 @@ await test('8.4 选机：真实三选一按钮、一次消费与挑战奖励来�
   await startMemory(p,fixture);
   await click(p,'blessing-tmChoice');const offered=await state(p);assert.equal(offered.phase,'tmChoice');
   const options=offered.pendingChoices[0].options;assert.equal(options.length,3);assert.equal(new Set(options).size,3);
-  await p.screenshot({path:artifact+'windows-84-tm-choice.png',fullPage:true});
-  await click(p,'tm-choice-'+options[1]);const s=await state(p);
+  const cards=p.locator('#tm-choice.paper-window .camp194-tm-tile');
+  assert.equal(await cards.count(),3);
+  for(const part of ['.camp194-tm-disc','strong','.paper-type','.camp194-category']){
+   assert.equal(await cards.locator(part).count(),3,'each reward uses the warehouse card field '+part);
+  }
+  assert.doesNotMatch(await p.locator('#tm-choice').innerText(),/选择后即可继续/);
+  await p.screenshot({path:artifact+'windows-84-tm-choice.png'});
+  await cards.first().focus();await p.keyboard.press('Tab');
+  assert.equal(await p.locator('#tm-choice :focus').getAttribute('id'),'tm-choice-'+options[1]);
+  await p.keyboard.press('Enter');
+  await p.waitForFunction(()=>window.trial.store.world.phase==='playing');
+  const s=await state(p);
   assert.equal(s.phase,'playing');assert.equal(s.round,offered.round);
   assert.equal(s.tms.length,2);assert.deepEqual(s.tms[1],{move:options[1],source:'blessing',fate:'held'});
   assert.equal(await raw(p),null);
@@ -2009,7 +2036,7 @@ await test('#194 持续移动、遇见新敌停止、碰墙免费转身与 F 打
  }finally{await context.close();}
 });
 await test('#194 全部物品说明、敌招分行与队友显式详情',async()=>{
- const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef');
+ const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef',{viewport:{width:1280,height:720}});
  try{
   const {ITEM_NAMES}=await import('../../src/core/engine.ts');const w=await playtest194World();
   for(const item of Object.keys(ITEM_NAMES))w.prog.items[item]=2;
@@ -2019,7 +2046,7 @@ await test('#194 全部物品说明、敌招分行与队友显式详情',async()
   for(const item of Object.keys(ITEM_NAMES)){
    const button=p.locator('[data-bag-item="'+item+'"]');await button.click();
    const description=p.locator('.c195-bag-text');assert.ok(await description.isVisible(),'effect stays visible in the detail panel: '+item);
-   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/HP.*回满/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP/,slumberOrb:/所有敌人.*睡着/,totterOrb:/所有敌人.*混乱/,luminousOrb:/全部地形/,rollcallOrb:/同行.*身边/,reviverSeed:/倒下时.*一半/};
+   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/回满.*HP/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP/,slumberOrb:/所有敌人.*进入睡眠/,totterOrb:/所有敌人.*混乱/,luminousOrb:/全部地形/,rollcallOrb:/同行.*身边/,reviverSeed:/倒下时.*一半/};
    assert.match(text,effects[item],'visible effect matches the current item rule: '+item);assert.ok((await button.getAttribute('aria-label')).includes(ITEM_NAMES[item]),'accessible item label names the item: '+item);
    assert.match(await p.locator('.c195-bag-detail').innerText(),new RegExp(ITEM_NAMES[item]),'detail shows the selected item name');
   }
@@ -2031,9 +2058,15 @@ await test('#194 全部物品说明、敌招分行与队友显式详情',async()
   await p.mouse.move(bounds.x+(g.ox+(11-g.minX+.5)*g.cell-map.cam.x)*bounds.width/map.v.cameraView.width,bounds.y+(g.oy+(10-g.minY+.5)*g.cell-map.cam.y)*bounds.height/map.v.cameraView.height);
   await p.locator('#enemy-info').waitFor();
   const rows=p.locator('#enemy-info .enemy-move-list > li');assert.equal(await rows.count(),enemy.learned.length);
-  for(const row of await rows.all()){
-   assert.match(await row.locator('summary').innerText(),/PP \d+\/\d+/);assert.doesNotMatch(await row.locator('summary').innerText(),/射程|伤害|范围/);
-   await row.locator('summary').click();assert.ok((await row.locator('p').innerText()).length>5);await row.locator('summary').click();
+  const {moveSummary,unitMoveLevel}=await import('../../src/core/describe.ts');
+  assert.doesNotMatch(await p.locator('#enemy-info').innerText(),/加入邀请/);
+  for(const [index,row] of (await rows.all()).entries()){
+   const header=row.locator('summary');
+   assert.match(await header.innerText(),/PP \d+\/\d+/);assert.doesNotMatch(await header.innerText(),/射程|伤害|范围/);
+   await header.click();
+   assert.equal(await row.locator('p').innerText(),moveSummary(enemy.learned[index],undefined,enemy.side,unitMoveLevel(w,enemy)));
+   if(index===0)await p.screenshot({path:artifact+'r482-expedition-enemy.png'});
+   await header.click();
   }
   assert.doesNotMatch(await p.locator('#party').innerText(),/\b(?:A|B|C|w\d+[a-z]?|N\d+)\b/,'cards show species instead of opaque IDs');
   assert.deepEqual(errors,[]);return {items:Object.keys(ITEM_NAMES).length,accessibleFocusDescriptions:true,selectedDescription:true,enemyMoveRows:enemy.learned.length,explicitPartyDetails:true};

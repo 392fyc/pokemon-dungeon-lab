@@ -39,11 +39,20 @@ test('M191 primary debuff hits, misses, clamps, affects a boss, and respects Pro
   for(let seed=1;seed<10000;seed++)if(rngStep(seed).value>.99){missed.battleRng=seed;break;}
   const r=cast(missed,'sandattack');assert.equal(stageOf(r.units.E,'acc'),0);assert.equal(r.units.A.pp.sandattack,4);assert.ok(r.events.some(e=>e.type==='miss'));
 });
-test('M191 multi-stat self buffs use special/accuracy/evasion stages; accuracy stops at +3, the others at +10',()=>{
+test('M191 multi-stat self buffs use special/accuracy/evasion stages; accuracy and evasion stop at +6, the others at +10',()=>{
   const s=world({coil:4});s.units.A.stages={atk:3,def:2,acc:2};
-  const r=cast(s,'coil','A');assert.deepEqual(r.units.A.stages,{atk:4,def:3,acc:3});   // attack and defence go on past 3; accuracy is held at +3
+  const r=cast(s,'coil','A');assert.deepEqual(r.units.A.stages,{atk:4,def:3,acc:3});   // attack and defence go on past 3; accuracy rises by one like the others (its own limit is +6)
   const d=cast(world({dragondance:2}),'dragondance','A');assert.equal(d.units.A.stages.atk,1);assert.equal(d.units.A.stages.spe,undefined);
   assert.equal(stageOf(cast(world({nastyplot:2}),'nastyplot','A').units.A,'spa'),2);
+});
+test('M191 accuracy and evasion stages are held at -6 and +6 (D-20261110-08)',()=>{
+  const lowered=world({sandattack:5});lowered.units.E.stages.acc=-5;
+  const once=cast(lowered,'sandattack');assert.equal(stageOf(once.units.E,'acc'),-6,'-5 then -1 reaches -6');
+  assert.equal(stageOf(cast(once,'sandattack').units.E,'acc'),-6,'a further drop is held at -6');
+  const raised=world({minimize:5});raised.units.A.stages.eva=5;
+  const up=cast(raised,'minimize','A');assert.equal(stageOf(up.units.A,'eva'),6,'+5 then +1 reaches +6');
+  assert.equal(stageOf(cast(up,'minimize','A').units.A,'eva'),6,'a further rise is held at +6');
+  const coil=world({coil:4});coil.units.A.stages.acc=6;assert.equal(stageOf(cast(coil,'coil','A').units.A,'acc'),6,'accuracy +6 stays +6');
 });
 test('M191 primary status applies to any type, keeps tox over psn, and respects Protect',()=>{
   const s=world({toxic:4,poisonpowder:4});

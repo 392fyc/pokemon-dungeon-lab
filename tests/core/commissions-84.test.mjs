@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {applyCommand,estimateAttackDamage,PROG,rngStep,createExpedition} from '../../src/core/engine.ts';
+import {applyCommand,estimateAttackDamage,damageStage,PROG,rngStep,createExpedition} from '../../src/core/engine.ts';
 import {generateFloor,BOSS} from '../../src/core/dungeon.ts';
 import {friend,enemy,world,row,pos} from '../acceptance/fixtures.mjs';
 
 const kinds=['hunter','collector','scout','guardian','speedrun'];
-const blessings=['berryBoost','floorHeal','battleSpirit','lullaby','rally','tmChoice'];
+const blessings=['berryBoost','floorHeal','battleSpirit','lullaby','rally','tmChoice','nemesis','headhunter','fullpower','scholar','killheal','regen','thickskin','laststand'];
+const floor3Blessings=blessings.filter(id=>id!=='floorHeal'&&id!=='lullaby');
 const midpoint={1:5.5,2:9.5,3:16};
 const commissionXp={hunter:{1:33,2:57,3:96},collector:{1:11,2:19,3:32},scout:{1:33,2:57},guardian:{1:22,2:38},speedrun:{1:33,2:57}};
 const interact=exit=>({type:'interact',exit});
@@ -65,22 +66,25 @@ function findCommission(id,{seed,level=1,roomTypes=['commission'],visitedTarget=
   assert.equal(pending(s,'commission')?.commission,id,`fixed seed ${seed} offers ${id}`);
   return {seed,state:s};
 }
-function findBlessing(id,{seed,level=1,owned=[]}={}){
-  assert.ok(Number.isInteger(seed),'each blessing test names one fixed seed');
-  const s=fixture({seed,level,roomTypes:['blessing']});s.blessings=[...owned];
-  const offered=startRoom(s);
-  assert.equal(offered.phase,'blessing',`fixed seed ${seed} opens a blessing choice`);
-  assert.ok(pending(offered,'blessing')?.options.includes(id),`fixed seed ${seed} offers ${id}`);
-  return {seed,state:offered};
+/** The blessing pool grew to 14, so each test names a starting seed and the helper takes the first seed from it whose three offers include `id` (and satisfy `ok`). */
+function findBlessing(id,{seed,level=1,owned=[],ok=()=>true}={}){
+  assert.ok(Number.isInteger(seed),'each blessing test names one starting seed');
+  for(let candidate=seed;candidate<seed+400;candidate++){
+    const s=fixture({seed:candidate,level,roomTypes:['blessing']});s.blessings=[...owned];
+    const offered=startRoom(s);
+    if(offered.phase==='blessing'&&pending(offered,'blessing')?.options.includes(id)&&ok(candidate))return {seed:candidate,state:offered};
+  }
+  assert.fail(`no seed from ${seed} offers ${id}`);
 }
 function findGuardianWithBlessing(id,{seed}={}){
-  assert.ok(Number.isInteger(seed),'each combined offer test names one fixed seed');
-  let s=startRoom(fixture({seed,roomTypes:['commission','blessing'],partySize:3}));
-  assert.equal(pending(s,'commission')?.commission,'guardian',`fixed seed ${seed} offers guardian first`);
-  s=chooseCommission(s);s.units.A.pos=structuredClone(roomAt(s,1).interaction);s=act(s,interact(false));
-  assert.equal(s.phase,'blessing',`fixed seed ${seed} opens the following blessing choice`);
-  assert.ok(pending(s,'blessing')?.options.includes(id),`fixed seed ${seed} offers ${id}`);
-  return {seed,state:s};
+  assert.ok(Number.isInteger(seed),'each combined offer test names one starting seed');
+  for(let candidate=seed;candidate<seed+600;candidate++){
+    let s=startRoom(fixture({seed:candidate,roomTypes:['commission','blessing'],partySize:3}));
+    if(pending(s,'commission')?.commission!=='guardian')continue;
+    s=chooseCommission(s);s.units.A.pos=structuredClone(roomAt(s,1).interaction);s=act(s,interact(false));
+    if(s.phase==='blessing'&&pending(s,'blessing')?.options.includes(id))return {seed:candidate,state:s};
+  }
+  assert.fail(`no seed from ${seed} offers guardian then ${id}`);
 }
 function findCommissionPair(first,second,{seed,level=1,partySize=1,prepare=s=>s}={}){
   assert.ok(Number.isInteger(seed),'each repeated commission test names one fixed seed');
@@ -167,7 +171,7 @@ test('C2/C3: hunter counts three post-acceptance defeats, pays the floor reward,
   const enemyUnit=addEnemy(active,'probe',2,1,20);addEnemy(control,'probe',2,1,20);
   const withPenalty=estimateAttackDamage(active,'probe','A','tackle');
   const withoutPenalty=estimateAttackDamage(control,'probe','A','tackle');
-  assert.equal(withPenalty,withoutPenalty+1,'hunter lowers the whole party defense by one stage');
+  assert.ok(withPenalty>withoutPenalty&&Math.abs(withPenalty-withoutPenalty*256/179)<=1,`hunter lowers the whole party defense by one stage: damage x 256/179 (${withoutPenalty} -> ${withPenalty})`);
   setNoInviteDraws(active,3);setNoInviteDraws(control,3);
   for(let i=0;i<3;i++){
     const id=`H${i}`;addEnemy(active,id,2,1,1);addEnemy(control,id,2,1,1);
@@ -175,7 +179,8 @@ test('C2/C3: hunter counts three post-acceptance defeats, pays the floor reward,
   }
   assert.equal(active.commissions.length,0);assert.equal(active.prog.exp-control.prog.exp,commissionXp.hunter[1]);
   assert.equal(active.prog.exp-control.prog.exp,33);
-  assert.equal(estimateAttackDamage(active,'probe','A','tackle'),withoutPenalty,'the penalty ends as soon as the commission completes');
+  // the commission paid experience, so A is a higher level now and its numbers differ; compare the penalty itself (the defence stage), not the damage
+  assert.equal(damageStage(active,active.units.A,'def'),0,'the penalty ends as soon as the commission completes');
   assert.equal(enemyUnit.hp,20);
 });
 
@@ -189,16 +194,16 @@ test('main176: repeated hunters progress independently and share one defense red
   let control=structuredClone(s);control.commissions=[];
   const probe=enemy('damage-probe',20,1,20,'melee',{waitOnly:true});s.units[probe.id]=structuredClone(probe);control.units[probe.id]=structuredClone(probe);
   const baseline=estimateAttackDamage(control,'damage-probe','A','tackle');
-  assert.equal(estimateAttackDamage(s,'damage-probe','A','tackle'),baseline+1,'two identical penalties still lower defense by one stage');
+  assert.ok(Math.abs(estimateAttackDamage(s,'damage-probe','A','tackle')-baseline*256/179)<=1&&estimateAttackDamage(s,'damage-probe','A','tackle')>baseline,'two identical penalties still lower defense by one stage only');
   for(const id of ['second-kill','third-kill']){
     addEnemy(s,id,2,1,1);addEnemy(control,id,2,1,1);s=killOne(s,id);control=killOne(control,id);
   }
   assert.equal(s.commissions.length,1);assert.equal(s.commissions[0].progress,2);
   assert.equal(s.prog.exp-control.prog.exp,commissionXp.hunter[1]);
-  assert.equal(estimateAttackDamage(s,'damage-probe','A','tackle'),baseline+1,'the remaining hunter keeps the single reduction');
+  assert.equal(damageStage(s,s.units.A,'def'),damageStage(control,control.units.A,'def')-1,'the remaining hunter keeps the single reduction');
   addEnemy(s,'fourth-kill',2,1,1);addEnemy(control,'fourth-kill',2,1,1);s=killOne(s,'fourth-kill');control=killOne(control,'fourth-kill');
   assert.equal(s.commissions?.length??0,0);assert.equal(s.prog.exp-control.prog.exp,2*commissionXp.hunter[1]);
-  assert.equal(estimateAttackDamage(s,'damage-probe','A','tackle'),baseline,'the penalty ends when the last hunter finishes');
+  assert.equal(damageStage(s,s.units.A,'def'),damageStage(control,control.units.A,'def'),'the penalty ends when the last hunter finishes');
 });
 
 test('C2: collector counts a picked item once, ignores a shop purchase, and awards 11 XP on floor 1',()=>{
@@ -220,7 +225,7 @@ test('C2/C3/C9/C15: uncompleted hunter and collector both fail at the same-floor
   const probe=enemy('damage-probe',20,1,20,'melee',{waitOnly:true});s.units[probe.id]=probe;
   const noPenalty=structuredClone(s);noPenalty.commissions=[];
   const baseline=estimateAttackDamage(noPenalty,'damage-probe','A','tackle');
-  assert.equal(estimateAttackDamage(s,'damage-probe','A','tackle'),baseline+1,'hunter penalty remains active before the request');
+  {const active=estimateAttackDamage(s,'damage-probe','A','tackle');assert.ok(active>baseline&&Math.abs(active-baseline*256/179)<=1,`hunter penalty remains active before the request: damage x 256/179 (${baseline} -> ${active})`);}
   const before={exp:s.prog.exp,purse:s.purse,items:structuredClone(s.prog.items),tms:structuredClone(s.tms),queue:[...s.queue],camp:[...s.camp]};
 
   s.units.A.pos=structuredClone(s.points.find(p=>p.kind==='down').pos);s=act(s,interact(true));
@@ -265,7 +270,7 @@ test('C2/C9/C15: guardian completes at a valid downstairs request, fails when an
   assert.equal(failed.prog.exp,old.exp);assert.equal(failed.purse,old.purse);assert.deepEqual(failed.queue,old.queue);
   assert.deepEqual(failed.camp,old.camp);assert.deepEqual(failed.prog.items,old.items);assert.deepEqual(failed.tms,old.tms);
   failed=apply(failed,{type:'finishTransit'});failed=act(failed,{type:'use',item:'berry',target:'A'});
-  assert.equal(failed.units.A.hp,58,'ordinary berry healing is restored immediately after failure');
+  assert.equal(failed.units.A.hp,80,'ordinary berry healing (30% of 100) is restored immediately after failure');
 
   const both=findCommissionPair('guardian','hunter',{seed:449,partySize:3});let combined=chooseCommission(both.state);
   assert.deepEqual(combined.commissions.map(c=>c.id).sort(),['guardian','hunter']);
@@ -277,7 +282,7 @@ test('main176: two active guardian commissions still halve berry recovery once',
   const found=findCommissionPair('guardian','guardian',{seed:1424,partySize:3});
   let s=chooseCommission(found.state);assert.equal(s.commissions.length,2);
   s.prog.items.berry=1;s.units.A.hp=50;s=act(s,{type:'use',item:'berry',target:'A'});
-  assert.equal(s.units.A.hp,54,'two matching penalties do not quarter the normal eight-point heal');
+  assert.equal(s.units.A.hp,65,'two matching penalties do not quarter the normal heal: floor(30/2) = 15');
   assert.equal(s.commissions.length,2);
 });
 
@@ -317,7 +322,7 @@ test('C9/C15: failing guardian or speedrun at the three-active limit releases a 
   assert.equal(guardian.prog.exp,before.exp);assert.equal(guardian.purse,before.purse);assert.deepEqual(guardian.prog.items,before.items);
   assert.deepEqual(guardian.tms,before.tms);assert.deepEqual(guardian.queue,before.queue);assert.deepEqual(guardian.camp,before.camp);
   guardian.enemies=[];guardian.units.A.hp=50;guardian=act(guardian,{type:'use',item:'berry',target:'A'});
-  assert.equal(guardian.units.A.hp,58,'the guardian berry penalty is gone on the failure round');
+  assert.equal(guardian.units.A.hp,80,'the guardian berry penalty is gone on the failure round');
   guardian= startRoom(guardian,3);
   assert.equal(pending(guardian,'commission')?.commission,'collector');
   guardian=chooseCommission(guardian);assert.equal(guardian.commissions.length,3,'the unprocessed fourth room can refill the freed slot');
@@ -343,7 +348,7 @@ test('C5/C12: blessing choices are unique, omit owned or unavailable effects, an
   const round=s.round;s=chooseBlessing(s,null);assert.equal(s.round,round);assert.equal(roomAt(s,0).state,'done');assert.deepEqual(s.blessings,['battleSpirit']);
 
   const floor3=fixture({seed:612,level:3,roomTypes:['blessing']});
-  floor3.blessings=['berryBoost','battleSpirit','rally'];
+  floor3.blessings=floor3Blessings.filter(id=>id!=='tmChoice');
   const available=startRoom(floor3);assert.equal(available.phase,'blessing');
   assert.deepEqual(pending(available,'blessing').options,['tmChoice']);
   const noChoice=fixture({seed:613,roomTypes:['blessing']});noChoice.blessings=[...blessings];
@@ -353,13 +358,13 @@ test('C5/C12: blessing choices are unique, omit owned or unavailable effects, an
 
 test('C10: berry boost and guardian penalty apply in order, battle spirit clears on crossing, and floor heal repeats per new floor',()=>{
   let s=getBlessing('berryBoost',{seed:712}).state;s.prog.items.berry=1;s.units.A.hp=50;
-  s=act(s,{type:'use',item:'berry',target:'A'});assert.equal(s.units.A.hp,62);
+  s=act(s,{type:'use',item:'berry',target:'A'});assert.equal(s.units.A.hp,95,'30 + 50% = 45');
 
   let guarded=findGuardianWithBlessing('berryBoost',{seed:719}).state;
   assert.equal(guarded.commissions[0].id,'guardian');
   assert.ok(pending(guarded,'blessing').options.includes('berryBoost'));
   guarded=chooseBlessing(guarded,'berryBoost');guarded.prog.items.berry=1;guarded.units.A.hp=50;
-  guarded=act(guarded,{type:'use',item:'berry',target:'A'});assert.equal(guarded.units.A.hp,56);
+  guarded=act(guarded,{type:'use',item:'berry',target:'A'});assert.equal(guarded.units.A.hp,72,'guardian halves 45 to 22');
   guarded.prog.items.bigBerry=1;guarded.units.A.hp=50;
   guarded=act(guarded,{type:'use',item:'bigBerry',target:'A'});assert.equal(guarded.units.A.hp,100);
 
@@ -371,33 +376,35 @@ test('C10: berry boost and guardian penalty apply in order, battle spirit clears
   heal.queue=['A','B','C'];heal.units.B.pos=pos(2);heal.units.C.pos=pos(3);
   heal.units.A.hp=50;heal.units.B.hp=99;heal.units.C.hp=100;
   const before=[50,99,100];assert.deepEqual(heal.queue.map(id=>heal.units[id].hp),before);
-  heal=descend(heal);assert.deepEqual(heal.queue.map(id=>heal.units[id].hp),[53,100,100]);
-  heal.enemies=[];heal.units.A.hp=53;heal=act(heal,wait);assert.equal(heal.units.A.hp,53,'the blessing does not heal again during an ordinary round on the same floor');
+  heal=descend(heal);assert.deepEqual(heal.queue.map(id=>heal.units[id].hp),[70,100,100]);
+  heal.enemies=[];heal.units.A.hp=70;heal=act(heal,wait);assert.equal(heal.units.A.hp,70,'the blessing does not heal again during an ordinary round on the same floor');
   heal.units.A.hp=10;heal.units.B.hp=99;heal.units.C.hp=100;
-  heal=descend(heal);assert.deepEqual(heal.queue.map(id=>heal.units[id].hp),[13,100,100],'the same blessing heals again on the next floor transition');
+  heal=descend(heal);assert.deepEqual(heal.queue.map(id=>heal.units[id].hp),[30,100,100],'the same blessing heals again on the next floor transition');
 });
 
 test('C6/C8: lullaby changes only the next floor sleep threshold; seeded generation remains deterministic',()=>{
-  const found=getBlessing('lullaby',{seed:812}),seed=found.seed,params={width:36,height:24,floors:3,boss:true,roguelike:true,difficulty:'normal'};
+  const params={width:36,height:24,floors:3,boss:true,roguelike:true,difficulty:'normal'};
+  const rolls=seed=>{const a=generateFloor(seed,2,params),b=generateFloor(seed,2,{...params,enemySleepChance:0.4});return b.enemies.some((e,i)=>e.asleep&&!a.enemies[i].asleep);};
+  const found=getBlessing('lullaby',{seed:812,ok:rolls}),seed=found.seed;
   const normal=generateFloor(seed,2,params),normalAgain=generateFloor(seed,2,params);
   assert.deepEqual(normalAgain,normal);
-  const withLullaby=generateFloor(seed,2,{...params,enemySleepChance:0.5});
+  const withLullaby=generateFloor(seed,2,{...params,enemySleepChance:0.4});
   assert.deepEqual(withLullaby.floor,normal.floor);assert.deepEqual(withLullaby.rooms,normal.rooms);
   assert.deepEqual(withLullaby.points,normal.points);assert.deepEqual(withLullaby.pickups,normal.pickups);assert.deepEqual(withLullaby.services,normal.services);
   assert.deepEqual(withLullaby.enemies.map(({asleep,...e})=>e),normal.enemies.map(({asleep,...e})=>e));
-  assert.ok(withLullaby.enemies.some((e,i)=>e.asleep&&!normal.enemies[i].asleep),'fixed seed has a roll between 0.25 and 0.5');
+  assert.ok(withLullaby.enemies.some((e,i)=>e.asleep&&!normal.enemies[i].asleep),'the chosen seed has a roll between 0.25 and 0.4');
   assert.equal(withLullaby.enemyAiRng,normal.enemyAiRng);
 
-  let s=found.state;assert.equal(s.lullabyPending,true);
+  let s=found.state;assert.ok(s.blessings.includes('lullaby'));
   s=descend(s);assert.deepEqual(s.floor,withLullaby.floor);assert.deepEqual(s.enemies.map(id=>s.units[id].asleep),withLullaby.enemies.map(e=>e.asleep));
-  assert.notEqual(s.lullabyPending,true,'lullaby is consumed after generating one floor');
+  assert.ok(s.blessings.includes('lullaby'),'the effect stays for every later new floor');
 });
 
 test('C10: rally changes only the invite threshold, while preserving the recruit random sequence',()=>{
   const targeted=14,draw=rngStep(targeted).value;
   assert.ok(draw>=0.30&&draw<0.45,`fixed RNG state ${targeted} draws ${draw} in the rally-only range`);
   let withRally=getBlessing('rally',{seed:912}).state;
-  let withoutRally=structuredClone(withRally);withoutRally.blessings=[];withoutRally.tmChoiceReady=false;
+  let withoutRally=structuredClone(withRally);withoutRally.blessings=[];
   for(const s of [withRally,withoutRally]){s.prog.rng=targeted;s.units.A.pos=pos(1);addEnemy(s,'recruit-test',2,1,1);}
   withRally=act(withRally,basic('recruit-test'));withoutRally=act(withoutRally,basic('recruit-test'));
   assert.equal(withRally.phase,'invitation');assert.notEqual(withoutRally.phase,'invitation');
@@ -406,23 +413,18 @@ test('C10: rally changes only the invite threshold, while preserving the recruit
 
 test('C7/C13: a challenge TM opens a three-choice panel; a blessing reward opens its own panel without +40 coins',()=>{
   let s=getBlessing('tmChoice',{seed:1013}).state;
+  assert.equal(s.phase,'tmChoice','the blessing opens the three-choice panel at once');assert.equal(pending(s,'tmChoice').source,'blessing');
+  assert.equal(pending(s,'tmChoice').options.length,3);assert.equal(new Set(pending(s,'tmChoice').options).size,3);
+  const picked=pending(s,'tmChoice').options[0];s=apply(s,{type:'tmChoice',move:picked});
+  assert.deepEqual(s.tms,[{move:picked,source:'blessing',fate:'held'}]);
   let shop=structuredClone(s);shop.points=[{pos:structuredClone(shop.units.A.pos),kind:'shop',used:false}];
   shop.shop={level:1,stock:{berry:0,tonic:0,tm:'protect'},trades:[]};shop.purse=100;
-  shop=apply(shop,{type:'buy',item:'tm'});
-  assert.deepEqual(shop.tms,[{move:'protect',source:'shop',fate:'held'}]);assert.equal(shop.tmChoiceReady,true,'a shop purchase does not consume the next non-shop choice');
+  shop=apply(shop,{type:'buy',item:'tm'});assert.deepEqual(shop.tms[1],{move:'protect',source:'shop',fate:'held'});
   s.adventureRooms[0].type='challenge';s.adventureRooms[0].state='sealed';s.adventureRooms[0].enemyIds=['c1a'];
   s.adventureRooms[0].reward='tm';s.adventureRooms[0].rewardCurrency=null;s.adventureRooms[0].rewardMove='protect';
   s.units.c1a=enemy('c1a',2,1,1,'melee',{waitOnly:true});s.units.c1a.species='geodude';s.units.c1a.hp=s.units.c1a.maxHp=1;s.enemies=['c1a'];
   setNoInviteDraws(s,1);s=killOne(s,'c1a');
-  assert.equal(s.phase,'tmChoice');assert.equal(pending(s,'tmChoice').source,'challenge');
-  assert.equal(pending(s,'tmChoice').options.length,3);assert.equal(new Set(pending(s,'tmChoice').options).size,3);
-  const picked=pending(s,'tmChoice').options[0];s=apply(s,{type:'tmChoice',move:picked});
-  assert.equal(s.tms.length,1);assert.deepEqual(s.tms[0],{move:picked,source:'challenge',fate:'held'});assert.notEqual(s.tmChoiceReady,true);
-  s.rooms.push({x:4,y:0,w:3,h:3});
-  s.adventureRooms.push({room:1,type:'challenge',state:'sealed',interaction:pos(5),doors:[],sealedCells:[],enemyIds:['c1b'],reward:'tm',rewardCurrency:null,item:null,rewardItem:null,rewardMove:'protect'});
-  s.units.c1b=enemy('c1b',2,1,1,'melee',{waitOnly:true});s.units.c1b.hp=s.units.c1b.maxHp=1;s.enemies=['c1b'];
-  setNoInviteDraws(s,1);s=act(s,basic('c1b'));
-  assert.notEqual(s.phase,'tmChoice');assert.equal(s.tms.length,2);assert.deepEqual(s.tms[1],{move:'protect',source:'challenge',fate:'held'});
+  assert.notEqual(s.phase,'tmChoice','later challenge TMs are plain items: the blessing was spent on the immediate choice');assert.equal(s.tms.length,2);assert.deepEqual(s.tms[1],{move:'protect',source:'challenge',fate:'held'});
 
   let blessing=getBlessing('berryBoost',{seed:1012}).state;
   blessing.adventureRooms[0].type='challenge';blessing.adventureRooms[0].state='sealed';blessing.adventureRooms[0].enemyIds=['c1a'];
@@ -445,7 +447,7 @@ test('C11: terminal win and wipe discard the run-only contract state without add
   win=killOne(win,BOSS.id);const controlEnd=killOne(winControl,BOSS.id);
   assert.equal(win.phase,'ended');assert.equal(win.end.outcome,'won');assert.equal(win.prog.exp,controlEnd.prog.exp,'an unfinished mission adds no experience to the ordinary boss award');
   const next=createExpedition('fresh-after-win',991,3,{members:[{inst:'P1',species:'mudkip',carry:[{move:'tackle',pp:20}]}],leader:0},0,true,3);
-  assert.deepEqual(next.commissions??[],[]);assert.deepEqual(next.blessings??[],[]);assert.notEqual(next.lullabyPending,true);assert.notEqual(next.tmChoiceReady,true);
+  assert.deepEqual(next.commissions??[],[]);assert.deepEqual(next.blessings??[],[]);
 
   let wipe=fixture({roomTypes:[],downX:8,partySize:3});wipe.queue=['A','B','C'];
   wipe.units.A.hp=1;wipe.units.B.hp=wipe.units.C.hp=0;wipe.units.B.pos=wipe.units.C.pos=null;
@@ -458,28 +460,27 @@ test('C11: terminal win and wipe discard the run-only contract state without add
 });
 
 test('C11: a room choice followed by a same-round wipe ends immediately and clears the unprocessed offer',()=>{
-  for(const [type,seed,logText] of [['commission',107,'委托房提出'],['blessing',712,'祝福房提供']]){
+  for(const [type,seed] of [['commission',107],['blessing',712]]){
+    let control=fixture({seed,roomTypes:[type],partySize:3});control.units.B.hp=control.units.C.hp=0;control.units.B.pos=control.units.C.pos=null;control.enemies=[];
+    control=startRoom(control);assert.equal(control.pendingChoices?.[0]?.type,type,`without an attacker the interaction reaches the ${type} offer`);
     let s=fixture({seed,roomTypes:[type],partySize:3});
     s.units.B.hp=s.units.C.hp=0;s.units.B.pos=s.units.C.pos=null;s.units.A.hp=1;
     const attacker=enemy('wipe-attacker',2,1,50,'melee');attacker.pp.tackle=50;attacker.maxPp.tackle=50;s.units[attacker.id]=attacker;s.enemies=[attacker.id];
     s=startRoom(s);
     assert.equal(s.phase,'ended');assert.equal(s.end.outcome,'wipe');
-    assert.ok(s.log.some(line=>line.includes(logText)),`the interaction reached the ${type} offer before the enemy phase`);
     assert.equal(s.pendingChoices,undefined,'the team cannot be left waiting on a choice after a wipe');
     assert.equal(s.commissions,undefined);assert.equal(s.blessings,undefined);assert.equal(s.prog.exp,0);
   }
 
   let win=fixture({seed:1711,level:3,roomTypes:[],partySize:1});
   win.queue=['A'];win.units.A.pos=pos(1);win.units.A.hp=1;
-  win.blessings=['tmChoice'];win.tmChoiceReady=true;
+  win.blessings=['tmChoice'];
   win.enemies=[BOSS.id,'wipe-attacker'];
   const boss=enemy(BOSS.id,2,1,1,'melee',{waitOnly:true});boss.boss=true;boss.species=BOSS.species;boss.hp=boss.maxHp=1;boss.level=22;
   const attacker=enemy('wipe-attacker',0,1,50,'melee');attacker.pp.tackle=50;attacker.maxPp.tackle=50;
   win.units[BOSS.id]=boss;win.units[attacker.id]=attacker;
   win=act(win,basic(BOSS.id));
-  assert.equal(win.phase,'tmChoice');assert.equal(win.pendingEnd,'won');assert.equal(win.end,null);
-  assert.equal(pending(win,'tmChoice').source,'boss');assert.equal(pending(win,'tmChoice').options.length,3);
-  win=apply(win,{type:'tmChoice',move:pending(win,'tmChoice').options[0]});
+  // The Select-TM blessing is spent when it is taken (an immediate choice), so the boss drop is an ordinary machine and the run ends at once.
   assert.equal(win.phase,'ended');assert.equal(win.end.outcome,'won');assert.equal(win.pendingChoices,undefined);
   assert.equal(win.tms.length,1);assert.equal(win.tms[0].source,'boss');assert.equal(win.tms[0].fate,'brought');
 });

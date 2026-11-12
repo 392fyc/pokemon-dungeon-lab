@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {applyCommand,createMain,createExpedition,jumpToFloor,friend,key,rngStep,stageOf,CONTENT_VERSION,PROG} from '../../src/core/engine.ts';
 import {moveOf} from '../../src/core/moves.ts';
+import {moveEffectText} from '../../src/core/move-text.ts';
 import {SPECIES,TM_MOVES_V3,TM_MOVES_V4,tmPool} from '../../src/core/roster.ts';
 import {initialProfile,squadOf,newGameProfile} from '../../src/core/base.ts';
 import {generateChallengeEncounter} from '../../src/core/dungeon.ts';
@@ -30,18 +31,28 @@ test('M191 frozen kits: all 175 species retain the exact pre-expansion move ids 
 });
 test('M191 primary debuff hits, misses, clamps, affects a boss, and respects Protect',()=>{
   const s=world({faketears:5});s.units.E.boss=true;s.units.E.stages.spd=-2;
-  assert.equal(stageOf(cast(s,'faketears').units.E,'spd'),-3);
+  assert.equal(stageOf(cast(s,'faketears').units.E,'spd'),-4,'special defence runs to -10 now (-2 then -2 more)');
+  {const deep=world({faketears:5});deep.units.E.stages.spd=-9;assert.equal(stageOf(cast(deep,'faketears').units.E,'spd'),-10,'and is held at -10');}
   const guarded=world({faketears:5});guarded.units.E.protect=2;
   assert.equal(stageOf(cast(guarded,'faketears').units.E,'spd'),0);
   const missed=world({sandattack:5});missed.units.A.stages.acc=-3;missed.units.E.stages.acc=0;
   for(let seed=1;seed<10000;seed++)if(rngStep(seed).value>.99){missed.battleRng=seed;break;}
   const r=cast(missed,'sandattack');assert.equal(stageOf(r.units.E,'acc'),0);assert.equal(r.units.A.pp.sandattack,4);assert.ok(r.events.some(e=>e.type==='miss'));
 });
-test('M191 multi-stat self buffs use special/accuracy/evasion stages and stop at +3',()=>{
+test('M191 multi-stat self buffs use special/accuracy/evasion stages; accuracy and evasion stop at +6, the others at +10',()=>{
   const s=world({coil:4});s.units.A.stages={atk:3,def:2,acc:2};
-  const r=cast(s,'coil','A');assert.deepEqual(r.units.A.stages,{atk:3,def:3,acc:3});
+  const r=cast(s,'coil','A');assert.deepEqual(r.units.A.stages,{atk:4,def:3,acc:3});   // attack and defence go on past 3; accuracy rises by one like the others (its own limit is +6)
   const d=cast(world({dragondance:2}),'dragondance','A');assert.equal(d.units.A.stages.atk,1);assert.equal(d.units.A.stages.spe,undefined);
   assert.equal(stageOf(cast(world({nastyplot:2}),'nastyplot','A').units.A,'spa'),2);
+});
+test('M191 accuracy and evasion stages are held at -6 and +6 (D-20261110-08)',()=>{
+  const lowered=world({sandattack:5});lowered.units.E.stages.acc=-5;
+  const once=cast(lowered,'sandattack');assert.equal(stageOf(once.units.E,'acc'),-6,'-5 then -1 reaches -6');
+  assert.equal(stageOf(cast(once,'sandattack').units.E,'acc'),-6,'a further drop is held at -6');
+  const raised=world({minimize:5});raised.units.A.stages.eva=5;
+  const up=cast(raised,'minimize','A');assert.equal(stageOf(up.units.A,'eva'),6,'+5 then +1 reaches +6');
+  assert.equal(stageOf(cast(up,'minimize','A').units.A,'eva'),6,'a further rise is held at +6');
+  const coil=world({coil:4});coil.units.A.stages.acc=6;assert.equal(stageOf(cast(coil,'coil','A').units.A,'acc'),6,'accuracy +6 stays +6');
 });
 test('M191 primary status applies to any type, keeps tox over psn, and respects Protect',()=>{
   const s=world({toxic:4,poisonpowder:4});
@@ -97,6 +108,14 @@ test('M191 no useful support: existing status, capped stages and half-or-higher 
   s.units.A.status={tox:{tick:2}};s.units.A.stages.def=-3;s.units.E.stages={atk:0,def:0,spa:3,spd:3};s.units.E.hp=40;
   assert.equal(play(s,wait).units.E.lastMove,null,'falls back to basic attack rather than spending support PP');
 });
+test('Violent seed raises each of attack and special attack to at least +3 and never lowers one; with both at +3 or more it is refused and kept',()=>{
+  const mk=(atk,spa)=>{const s=world({tackle:5});s.units.A.stages={atk,def:0,spa};s.prog.items.violentSeed=1;return s;};
+  const r=play(mk(6,0),{type:'use',item:'violentSeed',target:'A'});
+  assert.equal(stageOf(r.units.A,'atk'),6,'the +6 attack stays');assert.equal(stageOf(r.units.A,'spa'),3,'special attack rises to +3');assert.equal(r.prog.items.violentSeed,0);
+  const line=r.log.find(l=>l.includes('暴力种子'));assert.ok(line.includes('特攻升到+3级')&&!line.includes('攻击和'),'the log names only the stage that rose: '+line);
+  for(const [atk,spa] of [[3,3],[6,5],[10,3]]){const s=mk(atk,spa),refused=applyCommand(s,{type:'round',action:{type:'use',item:'violentSeed',target:'A'}});
+    assert.equal(refused.ok,false,`${atk}/${spa} is refused`);assert.equal(s.prog.items.violentSeed,1,'nothing is consumed');}
+});
 test('M191 violent seed maximizes both attack stages; full elixir fills every move of one adjacent ally',()=>{
   const s=world({tackle:5,protect:9});const b=friend('B',2,3,80,{tackle:5,protect:9});s.units.B=b;s.queue.push('B');
   b.maxHp=80;b.maxPp={tackle:5,protect:9};b.tactic='nomoves';
@@ -125,7 +144,7 @@ test('M191 two new room items can be collected once and remain in the backpack a
     const next=jumpToFloor(s,2);assert.equal(next.dungeon.level,2);assert.equal(next.prog.items[item],1);found.add(item);
   }
   assert.deepEqual([...found].sort(),['maxElixir','violentSeed']);
-  for(let seed=1;seed<=1000;seed++){const r=generateChallengeEncounter(seed,1,'normal',true,4);assert.ok(!r.rewardItem||['bigBerry','teamTonic'].includes(r.rewardItem),'new items do not enter challenge rewards');}
+  for(let seed=1;seed<=1000;seed++){const r=generateChallengeEncounter(seed,1,'normal',true,4);assert.ok(!r.rewardItem||['bigBerry','teamTonic','slumberOrb','totterOrb','luminousOrb','rollcallOrb','reviverSeed'].includes(r.rewardItem),'the Violent Seed and Max Elixir do not enter challenge rewards');}
 });
 test('M191 the v4 pool preserves v3 and all six new machines can be learned, saved, equipped and brought into the next expedition',async()=>{
   assert.deepEqual(TM_MOVES_V4,[...TM_MOVES_V3,'calmmind','toxic','bulkup','willowisp','thunderwave','swordsdance']);
@@ -142,14 +161,7 @@ test('M191 the v4 pool preserves v3 and all six new machines can be learned, sav
     assert.equal(unit.pp[move],SPECIES[species.id].learnable.find(m=>m.move===move).pp);
   }
 });
-test('M191 displayed descriptions use project effects while retaining official text and rule sources',()=>{
-  const {moves}=JSON.parse(readFileSync(new URL('../../src/data/move-desc-zh.json',import.meta.url),'utf8'));
-  for(const id of ['submission','softboiled','minimize','sweetscent','smokescreen','dragondance','quiverdance','babydolleyes','toxic','pursuit','feintattack','hyperfang']){
-    const row=moves[id];assert.equal(row.game,'本作',id);assert.ok(row.originalDesc&&row.originalGame,id);assert.ok(row.overrideSource.rules.length>0,id);
-    assert.doesNotMatch(row.desc,/无法使用|建议忘记/,id);
-  }
-  assert.match(moves.softboiled.desc,/所有存活同行/);
-  assert.match(moves.minimize.desc,/闪避1级/);assert.match(moves.sweetscent.desc,/闪避1级/);assert.match(moves.smokescreen.desc,/命中1级/);
-  assert.doesNotMatch(moves.dragondance.desc+moves.quiverdance.desc,/速度/);assert.doesNotMatch(moves.babydolleyes.desc,/先制/);
-  assert.match(moves.toxic.desc,/每2轮/);assert.match(moves.toxic.desc,/八分之一/);assert.match(moves.pursuit.desc,/反弹等量伤害/);
+test('M191 displayed texts come from the engine data: Soft-Boiled heals the whole room party',()=>{
+  assert.match(moveEffectText('softboiled'),/范围内全队各自回复最大HP的一半/);
+  assert.match(moveEffectText('minimize'),/自身闪避\+1/);assert.match(moveEffectText('toxic'),/使对方剧毒/);
 });

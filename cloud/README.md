@@ -37,7 +37,7 @@
 
 ## 联网与使用入口
 
-环境保存的允许域名为 `registry.npmjs.org`、`pypi.org`、`files.pythonhosted.org`，全网访问和包管理器预设关闭。三个安装来源实际请求成功。新任务的实际策略还自动包含 `www.pypi.org` 别名；不要把界面条目数解释为逐字符相同的实际主机清单。后续研究、引擎或数据下载需要其他来源时，按具体任务调整。
+环境保存的允许域名为 `registry.npmjs.org`、`pypi.org`、`files.pythonhosted.org`、`github.com`、`cdn.playwright.dev`、`playwright.download.prss.microsoft.com`，全网访问和包管理器预设关闭。三个安装来源实际请求成功。`github.com` 于 2026-11-09 按用户决定加入（D-20261109-12），用于云任务取 PR 分支的提交做 Linux 复核；两个 Playwright 下载域名于 2026-11-10 按用户决定加入（D-20261110-04），用于安装浏览器检查录像段需要的 ffmpeg，加入后还没有新任务实测下载；同时回读访问范围 Only me、无 HTTP 秘密值、无额外环境变量。新任务的实际策略还自动包含 `www.pypi.org` 别名；不要把界面条目数解释为逐字符相同的实际主机清单。后续研究、引擎或数据下载需要其他来源时，按具体任务调整。
 
 在网页的 Explore → Codex 中，新建任务，选择 Work in → Cloud，再选择 `pokemon-dungeon-lab`。环境已经在这个普通任务选择器中出现并成功启动检查任务。安装与启动配置的官方说明见 [Codex Cloud 环境](https://learn.chatgpt.com/docs/environments/cloud-environments)。
 

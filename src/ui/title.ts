@@ -1,7 +1,7 @@
 /** Stage 7.1 title screen and new-game pages: HTML builders and the portrait animation tick. No game rules and no storage here. */
 import {SPECIES,STARTER_IDS} from '../core/roster.ts';
 import {speciesZh,moveZh,typeZh} from '../core/names.ts';
-import {starterMoveFields} from '../render/hud.ts';
+import {starterMoveFields,moveFactPairs} from '../render/hud.ts';
 import '../render/starter-picker.css';
 import {portraitMarkup,tickPortraits} from '../render/portrait.ts';
 import '../render/portrait.css';
@@ -21,8 +21,8 @@ export function portraitTick(nowMs:number,animated:boolean):void {
   tickPortraits(nowMs,animated);
 }
 const AXES = [
-  ['hp','HP','#68ce72'], ['atk','攻击','#e5a457'], ['def','防御','#e8d361'],
-  ['spa','特攻','#6eacf3'], ['spd','特防','#73d4b0'], ['spe','速度','#e97ba4'],
+  ['hp','HP','#2f7a3a'], ['atk','攻击','#b5681c'], ['def','防御','#8a7410'],
+  ['spa','特攻','#2b6cb0'], ['spd','特防','#1f7f62'], ['spe','速度','#c23b78'],
 ] as const;
 
 function statChart(stats: NonNullable<typeof SPECIES[string]['baseStats']>): string {
@@ -55,10 +55,7 @@ function statChart(stats: NonNullable<typeof SPECIES[string]['baseStats']>): str
 
 function moveCard(move: string, pp: number): string {
   const info = starterMoveFields(move);
-  const fields = [
-    ['威力', info.power], ['命中', info.accuracy], ['PP', pp],
-    ['射程', info.range], ['范围', info.target],
-  ].map(([name,value]) => `<div><dt>${name}</dt><dd>${esc(value)}</dd></div>`).join('');
+  const fields = moveFactPairs(info, pp).map(([name,value]) => `<div><dt>${name}</dt><dd>${esc(value)}</dd></div>`).join('');
   return `<article class="starter-move" tabindex="0" data-starter-move="${esc(move)}">
     ${info.scope}
     <div><div class="starter-move-heading"><strong>${esc(moveZh(move))}</strong>

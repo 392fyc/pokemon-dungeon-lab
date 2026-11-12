@@ -14,15 +14,16 @@
   max-width: none;
   padding: 24px 16px;
   overflow: hidden;
-  background: #0b1310;
+  background: var(--ui-bg);
 }
 
 .title-landscape {
   position: absolute;
   z-index: -1;
-  inset: -12px;
+  inset: -24px;
   overflow: hidden;
-  filter: blur(3px);
+  background: url('/assets/camp/base.png') center / cover no-repeat;
+  filter: blur(5px) sepia(.65) saturate(.9) brightness(.8);
   pointer-events: none;
 }
 
@@ -30,35 +31,7 @@
   position: absolute;
   inset: 0;
   content: "";
-  background: radial-gradient(ellipse at center, #0b131080, #060b09df 88%);
-}
-
-.title-landscape > span {
-  position: absolute;
-  background: #66774c;
-  background-size: 120px 120px;
-  box-shadow: 0 0 0 18px #33412e;
-}
-
-.title-landscape > span:nth-child(1) {
-  top: 9%;
-  right: 18%;
-  width: 49%;
-  height: 59%;
-}
-
-.title-landscape > span:nth-child(2) {
-  top: 38%;
-  left: -3%;
-  width: 33%;
-  height: 49%;
-}
-
-.title-landscape > span:nth-child(3) {
-  top: 48%;
-  left: 27%;
-  width: 22%;
-  height: 9%;
+  background: radial-gradient(ellipse at center, #17120e80, #0c0a08df 88%);
 }
 
 .title-core {
@@ -75,7 +48,7 @@
   font-size: clamp(27px, 6.2vw, 76px);
   font-weight: 900;
   letter-spacing: .12em;
-  text-shadow: 0 0 24px #f0d88255;
+  text-shadow: 3px 3px 0 var(--paper-wood-dark), 0 0 24px #17120e99;
 }
 
 .title-core .title-menu {
@@ -89,22 +62,27 @@
 .title-core .title-menu button {
   min-height: 52px;
   margin: 0;
-  border-radius: 12px;
-  border-color: #5b6b58;
-  background: #17221bbd;
-  color: #f4eedb;
+  border-radius: 0;
+  background: var(--paper-wood-light);
+  color: var(--paper-ink);
   font-size: 18px;
-  font-weight: 650;
+  font-weight: 900;
+  border: 0;
+  box-shadow: 0 0 0 2px var(--paper-ink), inset 0 3px 0 #e6c291, inset 0 -3px 0 var(--paper-wood);
 }
 
 .title-core .title-menu button:hover:not(:disabled) {
-  border-color: #ebd78c;
+  background: #d8aa72;
 }
 
 .title-core .title-menu .primary {
-  background: #ead58b;
-  border-color: #ead58b;
-  color: #151711;
+  background: var(--ui-accent);
+  color: #fff;
+  box-shadow: 0 0 0 3px var(--paper-ink), inset 0 3px 0 #f39a63, inset 0 -3px 0 #a64217;
+}
+
+.title-core .title-menu .primary:hover:not(:disabled) {
+  background: #e8763d;
 }
 
 .title-save-summary {

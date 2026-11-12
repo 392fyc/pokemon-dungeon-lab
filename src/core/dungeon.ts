@@ -9,20 +9,20 @@ export type Cell={x:number;y:number};
 export type FloorParams={width:number;height:number;floors:number;boss?:boolean;roguelike?:true;difficulty?:Difficulty;enemySleepChance?:number};
 export const DEFAULT_PARAMS:FloorParams={width:36,height:24,floors:3,boss:true,roguelike:true};
 import {ECON} from './economy.ts';
-import {SPECIES,BOSS_CONFIG,speciesMaxHp,tmPool} from './roster.ts';
+import {SPECIES,BOSS_CONFIG,speciesMaxHp,bossMaxHp,tmPool} from './roster.ts';
 import rooms83 from '../data/rooms-83.json' with {type:'json'};
 import terrainThemesJson from '../data/terrain-themes.json' with {type:'json'};
 export {BOSS_CONFIG} from './roster.ts';
-export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'rest'|'shop'|'exchange';
+export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'rest'|'shop'|'exchange';
 /** 8.8 (#165, G3.x): what a floor item point holds, with its weight in percent (WORKING CANDIDATE). */
-export const FLOOR_ITEM_WEIGHTS:readonly (readonly [PointKind,number])[]=[['berry',35],['pechaBerry',13],['rawstBerry',13],['cheriBerry',13],['chestoBerry',13],['healSeed',13]];
+export const FLOOR_ITEM_WEIGHTS:readonly (readonly [PointKind,number])[]=[['berry',35],['healSeed',13],['pechaBerry',8],['rawstBerry',8],['cheriBerry',8],['chestoBerry',8],['slumberOrb',5],['totterOrb',5],['luminousOrb',5],['rollcallOrb',5]];
 export type PointSpec={pos:Cell;kind:PointKind;used:boolean};
 export type EnemySpec={id:string;species:string;level:number;hp:number;pos:Cell;post?:Cell;boss?:true;asleep?:boolean};
 export type Room={x:number;y:number;w:number;h:number};
 export type AdventureRoomType='challenge'|'commission'|'blessing'|'item';
 export type AdventureRoomState='idle'|'sealed'|'cleared'|'done';
 type LegacyAdventureItemId='bigBerry'|'teamTonic';
-export type AdventureItemId=LegacyAdventureItemId|'violentSeed'|'maxElixir';
+export type AdventureItemId=LegacyAdventureItemId|'violentSeed'|'maxElixir'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'reviverSeed';
 export type ChallengeRewardType='currency'|'item'|'invite'|'tm'|'blessing';
 export type AdventureRoom={room:number;type:AdventureRoomType;state:AdventureRoomState;interaction:Cell;doors:Cell[];sealedCells:Cell[];
   enemyIds:string[];reward:ChallengeRewardType|null;rewardCurrency:number|null;item:AdventureItemId|null;rewardItem:AdventureItemId|null;rewardMove:string|null};
@@ -54,6 +54,8 @@ export type Difficulty='easy'|'normal'|'hard';
 export const DIFFICULTY:Readonly<Record<Difficulty,number>>=Object.freeze({easy:0.28,normal:0.4,hard:0.56});
 export const isDifficulty=(value:unknown):value is Difficulty=>typeof value==='string'&&Object.hasOwn(DIFFICULTY,value);
 export const ENEMY_DIFFICULTY=DIFFICULTY.normal;
+/** G7.6: the chance that an ordinary enemy is born asleep. */
+export const ENEMY_SLEEP_CHANCE=0.25;
 /** First-type partitions and level bands from the 7.8 working specification. */
 export const THEME_FLOORS:{theme:ThemeId;name:string;types:string[];levels:[number,number];count:number;floorTile:string;wallTile:string}[]=[
   {theme:'moss',name:'苔石洞',types:['Normal','Grass','Bug','Rock','Ground','Flying'],levels:[5,6],count:6,floorTile:'floor-stone',wallTile:'wall-rock'},
@@ -68,6 +70,13 @@ export const eligibleSpecies=(level:number,boss=true):string[]=>{
   return themeCandidates(config.theme).filter(sp=>sp.evoLevel<=config.levels[1]).map(sp=>sp.id);
 };
 export const WILD_SPECIES:Record<string,string>=Object.fromEntries([...new Set([...THEME_FLOORS.flatMap((_,i)=>eligibleSpecies(i+1)), 'geodude','pidgey','growlithe'])].map(id=>[id,SPECIES[id].dex]));
+/** The ordinary enemies a floor will draw, from the same species stream as generateFloor (one draw per enemy slot), so the interface can preload their sprites before the floor exists. */
+export function plannedEnemySpecies(seed:number,level:number,bossEnabled:boolean):string[] {
+  const themed=THEME_FLOORS[bossEnabled?Math.min(Math.max(level,1),THEME_FLOORS.length)-1:0],pool=eligibleSpecies(level,bossEnabled);
+  if(!pool.length)return [];
+  const rng=mulberry32(streamSeed(seed,level,'enemy-species'));
+  return Array.from({length:themed.count},()=>pool[Math.floor(rng()*pool.length)]);
+}
 /** Only identity lives here. All boss modifiers come from main-owned boss.json. */
 export const BOSS={id:'boss',species:'arcanine'} as const;
 export type EnemyStream='enemy-ai'|'enemy-level'|'enemy-species';
@@ -106,7 +115,7 @@ export function serviceRoll(seed:number,floors:number):ServiceRoll {
   return {shop:shopOn?{level:shopLevel,tmDraw}:null,exchange:exOn?{level:exLevel}:null};
 }
 type Rooms83Data={roomTypeWeights:Record<AdventureRoomType,number>;challengeRewardWeights:Record<ChallengeRewardType,number>;
-  itemWeights:Record<LegacyAdventureItemId,number>;roomItemWeights:Record<AdventureItemId,number>;challengeCurrencyAmount:number;
+  itemWeights:Record<AdventureItemId,number>;roomItemWeights:Record<AdventureItemId,number>;challengeCurrencyAmount:number;
 };
 const ROOMS_83=rooms83 as Rooms83Data;
 const ADVENTURE_STREAMS={roomItem:0x4C957F2D,challengeCount:0x165667B1,challengeSpecies:0x9E3779B9,
@@ -919,7 +928,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const species=speciesPool[Math.floor(speciesRng()*speciesPool.length)];
     const lower=Math.max(themed.levels[0],SPECIES[species].evoLevel),upper=themed.levels[1];
     const enemyLevel=bossEnabled?lower+Math.floor(levelRng()*(upper-lower+1)):INITIAL_LEVEL;
-    const asleep=sleepRng()<(params.enemySleepChance??0.25);
+    const asleep=sleepRng()<(params.enemySleepChance??ENEMY_SLEEP_CHANCE);
     enemyAiRng=(enemyAiRng+0x6D2B79F5)>>>0;
     return {id:'w'+level+'abcdef'[n],species,level:enemyLevel,
       hp:speciesMaxHp(species,enemyLevel,difficulty),pos,
@@ -957,7 +966,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     bossPos=center(rooms[bossRoom]);
     used.add(k(bossPos));
     enemies.push({id:BOSS.id,species:BOSS.species,level:enemyLevel,
-      hp:speciesMaxHp(BOSS.species,enemyLevel,traits.hpMultiplier*difficulty),pos:bossPos,boss:true,asleep:false});
+      hp:bossMaxHp(BOSS.species,enemyLevel,traits.hpMultiplier*difficulty),pos:bossPos,boss:true,asleep:false});
   }
 
   const prng=mulberry32((Math.imul(seed>>>0,0x7FEB352D)^Math.imul(level,0x846CA68B)^0x1B873593)>>>0);

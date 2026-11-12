@@ -17,5 +17,5 @@ export const adventureRoomMark=(type:AdventureRoomType,item?:string|null)=>type=
 export const adventureRoomStateZh=(type:AdventureRoomType,state:'idle'|'sealed'|'cleared'|'done')=>state==='sealed'?'进行中':state==='cleared'?'已完成':state==='done'?'已处理':type==='challenge'?'未挑战':'未处理';
 export const challengeRewardZh=(reward:ChallengeRewardType)=>CHALLENGE_REWARD_NAMES[reward];
 /** The technique machine's move, by the same table as every other move (kept in its own section so a test can check the machine pool). */
-export const tmZh=(id:string)=>pick(table.tms,id);
+export const tmZh=(id:string)=>Object.prototype.hasOwnProperty.call(table.tms,id)?table.tms[id]:moveZh(id);
 export const NAME_TABLE=table;

@@ -30,7 +30,8 @@ let gameTiming=null;
 const deadline=setTimeout(()=>{report.deadlineReached=true;console.error('Five-game browser check exceeded its 40-minute deadline');void browser.close();},40*60*1000);
 const context=await browser.newContext({viewport:{width:1440,height:1100},acceptDownloads:true});
 await context.addInitScript(()=>{
- window.__trialNoAnim=true;window.__trialNoAutoSleep=true;window.__movementInputTrace=[];
+ window.__trialNoAnim=true;window.__trialNoAutoSleep=true;window.__trialNoAutoInteract=true;   // this driver proves one key = one round, so a room choice must not open by itself in between
+ window.__movementInputTrace=[];
  for(const type of ['keydown','keyup'])addEventListener(type,event=>{if(!['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.key))return;const s=window.trial?.getState(),entry={type,key:event.key,at:event.timeStamp,round:s?.round};window.__movementInputTrace.push(entry);if(window.__movementInputTrace.length>64)window.__movementInputTrace.shift();queueMicrotask(()=>{entry.afterRound=window.trial?.getState()?.round;});},true);
 });
 const page=await context.newPage(),errors=[];
@@ -38,7 +39,7 @@ page.setDefaultTimeout(15000);
 page.on('pageerror',e=>errors.push(e.message));
 page.on('requestfailed',r=>errors.push(r.url()));
 page.on('response',r=>{if(r.status()>=400)errors.push(r.status()+' '+r.url());});
-const ready=()=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view());
+const ready=()=>page.waitForFunction(()=>window.trial?.store.status==='ready'&&window.trial.view()&&window.trial.spritesReady());
 const state=()=>page.evaluate(()=>window.trial.getState());
 const envelope=()=>page.evaluate(()=>window.trial.store.envelope);
 const raw=()=>page.evaluate(()=>localStorage.getItem(window.trial.store.key));
@@ -54,8 +55,8 @@ const click=async id=>{
   await bag.locator('[data-bag-category="all"]').click();await ready();
   const itemButton=bag.locator('[data-bag-item="'+item+'"]');
   assert.equal(await itemButton.count(),1,'the held consumable must appear in the all-items category');
-  const itemName=(await itemButton.locator('.hud-item-name').innerText()).trim();
-  await itemButton.click();await ready();
+  const itemName=(await itemButton.locator('.c195-name').innerText()).trim();
+  await itemButton.click();if(await bag.locator('#bag-pin').count())await bag.locator('#bag-pin').click();await ready();   // a second use of an item that is already in slot 1 has no pin button
   const slotLabel=await bag.locator('[data-bag-slot="0"]').getAttribute('aria-label');
   assert.ok(slotLabel?.includes(itemName),'the selected item must appear in the assigned quick slot');
   await page.locator('#bag-close').click();await ready();
@@ -118,16 +119,16 @@ async function command(c){
   assert.equal(s.phase,'invitation');
   const pending=s.invitations.find(i=>i.status==='pending');assert.ok(pending);
   if(c.choice==='accept'){
-   if(c.outgoing)await click('out-'+s.queue.indexOf(c.outgoing));else await click('out-none');
+   if(c.outgoing)await click('out-'+s.queue.indexOf(c.outgoing));
    await click('accept');
    const after=await state();
    assert.equal(after.invitations.find(i=>i.id===pending.id).status,'accepted');
    assert.ok(after.queue.includes(pending.unit.id),'accepted recruit must actually join the party');
-  }else{await click('reject');await click('reject-confirm');}
+  }else{await click('reject');}
   assert.notEqual((await state()).invitations.find(i=>i.id===pending.id)?.status,'pending','the chosen invitation must be resolved');
   return;
  }
- if(c.type==='buy'){await click('buy-'+c.item);return;}
+ if(c.type==='buy'){await click('shop-pick-'+c.item);await click('buy-'+c.item);return;}
  assert.equal(c.type,'round');
  const a=c.action,movementBefore=a.type==='move'?await state():null;
  if(a.type==='move'){
@@ -138,10 +139,10 @@ async function command(c){
  else if(a.type==='skill'){await click('skill-'+a.skill);await cell(a.targetPos);}
  else if(a.type==='wait')await click('wait');
  else if(a.type==='swap'){await click('swap');await click('partner-'+a.target);await click('submit');}
- else if(a.type==='use'){await click('use-'+a.item);await click(a.item==='teamTonic'?'item-use-teamTonic':a.item==='bigBerry'?'item-target-bigBerry-'+a.target:'item-target-'+a.target);}
+ else if(a.type==='use'){await click('use-'+a.item);await page.waitForTimeout(300);if(await page.locator('#target-hint').count())await page.locator('#unit-card-'+a.target+' .hud-party-main').click();}   // one usable target (or a whole-team item) is used at once
  else if(a.type==='rest')await click('rest');
  else if(a.type==='interact'){
-  if(a.exit){await click('take-exit');await click('exit-confirm');}else await click('take');
+  if(a.exit){await page.waitForTimeout(150);if(!(await page.locator('#stairs-go').count()))await click('stairs-reopen');await click('stairs-go');}else await click('take');
  }else throw Error('Unsupported route action '+JSON.stringify(a));
  const after=await state();
  assert.ok(after.round>c.beforeRound,'UI action must advance a complete round; action: '+JSON.stringify(a)+'; notice: '+await page.locator('#message').innerText()+'; visible state: '+JSON.stringify(visibleView(after)));
@@ -378,7 +379,7 @@ async function playRun(index,route){
    if(decision.outgoing)replacementsInRun++;
    continue;
   }
-  if(s.phase==='learning'){const cmd=defaultLearningCommand(s);assert.ok(cmd);await click(cmd.replace?'learn-replace-'+cmd.replace:'learn-skip');continue;}
+  if(s.phase==='learning'){const cmd=defaultLearningCommand(s);assert.ok(cmd);await click(cmd.replace?'learn-replace-'+cmd.replace:'learn-skip');if(cmd.replace)await click('learn-confirm');continue;}
   if(s.phase==='evolution'){await click('evolution-close');continue;}
   assert.equal(s.phase,'playing','game must remain playable while routing');
   if(sleeping(s.units[s.leader])){await page.keyboard.press('.');await ready();roundActions++;continue;}
@@ -550,15 +551,18 @@ try{
     assert.ok(choice,'real vault TMs are present but no departing member can learn them: '+moves.join(', '));
     ({move:trainedMove,inst:trainedInst}=choice);
     const unit=p.roster.find(u=>u.id===trainedInst);
+    const removed=unit.carry.includes(t.removeMove)?t.removeMove:unit.carry[0];
     await click('learn-'+trainedInst);
+    // Playtest round 2: with room the machine move is carried at once; with four carried moves a window asks which one gives way.
+    const askedWhich=await page.locator('#learn-carry-dialog[open]').count()>0;
+    if(askedWhich){if(removed){await click('carry-replace-'+removed);await click('carry-confirm');}else await click('carry-only-learn');}
     const afterLearn=(await envelope()).profile;
     assert.ok(afterLearn.roster.find(u=>u.id===trainedInst)?.learned.some(k=>k.move===trainedMove),'training actually adds the move');
     assert.equal(afterLearn.vault[trainedMove]??0,p.vault[trainedMove]-1,'training consumes exactly one of the selected TM');
-    const removed=unit.carry.includes(t.removeMove)?t.removeMove:unit.carry[0];
-    if(removed)await click('carry-'+trainedInst+'-'+removed);
-    await click('carry-'+trainedInst+'-'+trainedMove);
+    if(!askedWhich&&removed)await click('carry-'+trainedInst+'-'+removed);   // the machine move was already carried; take the chosen old move off
     const equipped=(await envelope()).profile.roster.find(u=>u.id===trainedInst);
-    assert.deepEqual(equipped?.carry,[...unit.carry.filter(move=>move!==removed),trainedMove],'the trained move replaces only the selected slot');
+    const expectedCarry=askedWhich?unit.carry.map(move=>move===removed?trainedMove:move):[...unit.carry.filter(move=>move!==removed),trainedMove];
+    assert.deepEqual(equipped?.carry,expectedCarry,'the trained move replaces only the selected slot, in that slot');
     report.training={inst:trainedInst,move:trainedMove,removed:removed??null,consumed:true,equipped:true};
     learned=true;
    }

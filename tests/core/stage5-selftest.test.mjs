@@ -4,7 +4,7 @@ import {applyCommand} from '../../src/core/engine.ts';
 import {createScenario} from '../../src/core/scenarios.ts';
 // Stage 5 maker self-test (2026-10-30): a rejected line skill names its one real reason.
 const line=target=>({type:'round',action:{type:'skill',skill:'quickattack',target}});
-function denied(s,cmd,reason){const before=JSON.stringify(s),r=applyCommand(s,cmd);assert.equal(r.ok,false);assert.match(r.error,reason);assert.match(r.error,/本轮未执行$/);assert.equal(JSON.stringify(s),before);return r.error;}
+function denied(s,cmd,reason){const before=JSON.stringify(s),r=applyCommand(s,cmd);assert.equal(r.ok,false);assert.match(r.error,reason);assert.match(r.error,/本回合未执行$/);assert.equal(JSON.stringify(s),before);return r.error;}
 test('line out of range states the distance and range',()=>{
  const s=createScenario('V1','line-range');
  const e=denied(s,line('R'),/目标相距4格，超出招式射程2格/);assert.doesNotMatch(e,/挡/);

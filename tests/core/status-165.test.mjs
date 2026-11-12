@@ -18,7 +18,7 @@ import {sureHit} from './sure-hit.mjs';
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));
 let sequence=0;
 function world({floor=rect(0,8,0,8),friends=[friend('A',1,1,60,{tackle:5})],enemies=[],hit=true}={}){
-  const s=createMain(`status165-${++sequence}`,false);
+  const s=createMain(`status165-${++sequence}`,false);s.noCrit=true;   // exact damage and draw counts; critical hits have their own tests
   s.floor=floor;s.seen=floor.map(key);s.units=Object.fromEntries([...friends,...enemies].map(u=>[u.id,u]));
   s.queue=friends.map(u=>u.id);s.enemies=enemies.map(u=>u.id);s.leader=s.queue[0];s.camp=[];s.points=[];s.log=[];
   delete s.rooms;delete s.dungeon;delete s.prog;delete s.tms;delete s.shop;delete s.exchange;s.purse=0;
@@ -37,51 +37,52 @@ const rollsFrom=(state,n)=>{const out=[];for(let i=0;i<n;i++){const r=rngStep(st
 const wait={type:'wait'};
 
 /* ---------- hit ---------- */
-test('H1 stage multiplier: n>=0 gives (3+n)/3, n<0 gives 3/(3-n), clamped to -3...+3',()=>{
-  assert.deepEqual([-5,-3,-2,-1,0,1,2,3,5].map(accuracyMultiplier),[0.5,0.5,0.6,0.75,1,4/3,5/3,2,2]);
+test('H1 stage multiplier: n>=0 gives (3+n)/3, n<0 gives 3/(3-n), clamped to -6...+6 (main series, D-20261110-08)',()=>{
+  assert.deepEqual([-8,-6,-5,-3,-2,-1,0,1,2,3,5,6,8].map(accuracyMultiplier),[1/3,1/3,3/8,0.5,0.6,0.75,1,4/3,5/3,2,8/3,3,3]);
 });
 test('H2 hit chance: always-hit moves stay at 100, a percentage scales with stages and caps at 100, a basic attack is 100 unless its user\'s accuracy is lowered',()=>{
-  const a=friend('A',1,1,60,{roar:5,tackle:5,swordsdance:5}),e=still('E','geodude',2,1,60);
+  const a=friend('A',1,1,60,{roar:5,razorleaf:5,swordsdance:5}),e=still('E','geodude',2,1,60);   // Razor Leaf: 95 in the main series
   const s=world({friends:[a],enemies:[e],hit:false});
   assert.equal(moveEffects('roar').acc,null);assert.equal(hitChance(s,'A','E','roar'),100);
   assert.equal(hitChance(s,'A','E','swordsdance'),100);                                  // self buffs never roll
-  assert.equal(moveEffects('tackle').acc,95);assert.equal(hitChance(s,'A','E','tackle'),95);
+  assert.equal(moveEffects('razorleaf').acc,95);assert.equal(hitChance(s,'A','E','razorleaf'),95);
   assert.equal(hitChance(s,'A','E'),100);                                                // basic attack
-  s.units.A.stages.acc=-1;assert.equal(hitChance(s,'A','E','tackle'),95*0.75);assert.equal(hitChance(s,'A','E'),75);
-  s.units.A.stages.acc=-3;s.units.E.stages={...s.units.E.stages,eva:3};assert.equal(hitChance(s,'A','E','tackle'),95*0.5);   // -3 - 3 clamps to -3
-  s.units.A.stages.acc=2;s.units.E.stages.eva=0;assert.equal(hitChance(s,'A','E','tackle'),100);assert.equal(hitChance(s,'A','E'),100);   // plus stages never raise a basic attack
+  s.units.A.stages.acc=-1;assert.equal(hitChance(s,'A','E','razorleaf'),95*0.75);assert.equal(hitChance(s,'A','E'),75);
+  s.units.A.stages.acc=-3;s.units.E.stages={...s.units.E.stages,eva:3};assert.equal(hitChance(s,'A','E','razorleaf'),95*(1/3));   // -3 - 3 = -6
+  s.units.A.stages.acc=-6;assert.equal(hitChance(s,'A','E','razorleaf'),95*(1/3));                                               // -6 - 3 clamps to -6
+  s.units.A.stages.acc=2;s.units.E.stages.eva=0;assert.equal(hitChance(s,'A','E','razorleaf'),100);assert.equal(hitChance(s,'A','E'),100);   // plus stages never raise a basic attack
   s.units.A.stages.acc=-2;assert.equal(hitChance(s,'A','E','roar'),100);
 });
 test('H3 a miss takes no damage and no side effect, still spends PP and is reported; a hit with the same stream state lands',()=>{
-  const mk=()=>{const a=friend('A',1,1,60);equip(a,'nuzzle',3);const e=still('E','geodude',2,1,60);return world({friends:[a],enemies:[e],hit:false});};
-  const missed=mk();missed.battleRng=HIGH;   // next draw ~1.0 >= 50%
+  const mk=()=>{const a=friend('A',1,1,60);equip(a,'nuzzle',3);a.stages.acc=-1;const e=still('E','geodude',2,1,60);return world({friends:[a],enemies:[e],hit:false});};   // Nuzzle always hits at 100; accuracy -1 makes it 75%
+  const missed=mk();missed.battleRng=HIGH;   // next draw ~1.0 >= 75%
   const m=skill(missed,'A','nuzzle','E');
   assert.equal(m.units.E.hp,60);assert.equal(m.units.E.status,undefined);assert.equal(m.units.A.pp.nuzzle,2);
-  assert.deepEqual(m.events,[{type:'miss',actor:'A',target:'E',skill:'nuzzle'}]);assert.ok(m.log.some(l=>l.includes('没打中E')));
+  assert.deepEqual(m.events,[{type:'cast',unit:'A',skill:'nuzzle'},{type:'miss',actor:'A',target:'E',skill:'nuzzle'},{type:'fail',unit:'E',reason:'wait'}],'the whole event sequence: no hpLoss, damage or status after a miss');assert.ok(m.log.some(l=>l.includes('没打中E')));
   assert.equal(m.battleRng,rngStep(HIGH).state,'only the hit roll was drawn; no side-effect roll after a miss');
   const landed=mk();landed.battleRng=LOW;
   const h=skill(landed,'A','nuzzle','E');
   assert.ok(h.units.E.hp<60);assert.ok(h.units.E.status.par);assert.equal(h.events?.some(e=>e.type==='miss')??false,false);
 });
 test('H4 the same seed and the same commands give the same outcome; battle draws leave the recruit and enemy-AI streams alone',()=>{
-  const run=()=>{const a=friend('A',1,1,60);equip(a,'bite',9);const e=foeOf('E','geodude',2,1,60);const s=world({friends:[a],enemies:[e],hit:false});s.runId='h4';s.prog={level:5,exp:0,rng:12345,made:0,kills:[],items:{berry:0,tonic:0}};s.enemyAiRng=777;
+  const run=()=>{const a=friend('A',1,1,60);equip(a,'bite',9);const e=foeOf('E','geodude',2,1,600);const s=world({friends:[a],enemies:[e],hit:false});a.stages.acc=-1;s.runId='h4';s.prog={level:5,exp:0,rng:12345,made:0,kills:[],items:{berry:0,tonic:0}};s.enemyAiRng=777;
     let t=s;for(let i=0;i<6;i++)t=play(t,{type:'skill',skill:'bite',target:'E'});return t;};
   const x=run(),y=run();
   assert.deepEqual(x,y);assert.notEqual(x.battleRng,undefined);
   assert.equal(x.prog.rng,12345,'recruit stream untouched');assert.equal(x.enemyAiRng,777,'enemy AI stream untouched');
 });
 test('H5 the enemy rolls and misses the same way, and an accuracy-lowered basic attack can miss',()=>{
-  const a=friend('A',1,1,60,{tackle:5});const e=foeOf('E','geodude',2,1,60,{tackle:5});
+  const a=friend('A',1,1,60,{tackle:5});const e=foeOf('E','geodude',2,1,60,{tackle:5});e.stages.acc=-1;   // Tackle is 100 in the main series
   const s=world({friends:[a],enemies:[e],hit:false});s.battleRng=HIGH;
   const r=play(s,wait);assert.equal(r.units.A.hp,60);assert.ok(r.events.some(v=>v.type==='miss'&&v.actor==='E'&&v.target==='A'));
   const b=world({friends:[friend('A',1,1,60)],enemies:[still('E','geodude',2,1,60)],hit:false});b.units.A.stages.acc=-1;b.battleRng=HIGH;   // 75%
-  const m=play(b,{type:'basic',target:'E'});assert.equal(m.units.E.hp,60);assert.deepEqual(m.events,[{type:'miss',actor:'A',target:'E',skill:null}]);
+  const m=play(b,{type:'basic',target:'E'});assert.equal(m.units.E.hp,60);assert.deepEqual(m.events,[{type:'miss',actor:'A',target:'E',skill:null},{type:'fail',unit:'E',reason:'wait'}],'the whole event sequence: no hpLoss or damage after a miss');
   const full=world({friends:[friend('A',1,1,60)],enemies:[still('E','geodude',2,1,60)],hit:false});full.battleRng=HIGH;
   assert.ok(play(full,{type:'basic',target:'E'}).units.E.hp<60,'a plain basic attack never misses and draws nothing');assert.equal(play(full,{type:'basic',target:'E'}).battleRng,HIGH);
 });
 test('H6 an attack with target "all" (a line that can catch a companion) is judged against each unit it hits',()=>{
   assert.equal(moveOf('icebeam').target,'all');
-  const a=friend('A',1,1,60);equip(a,'icebeam',3);const s=world({friends:[a],enemies:[still('E','geodude',2,1,60)],hit:false});s.battleRng=HIGH;
+  const a=friend('A',1,1,60);equip(a,'icebeam',3);a.stages.acc=-1;const s=world({friends:[a],enemies:[still('E','geodude',2,1,60)],hit:false});s.battleRng=HIGH;
   const r=skill(s,'A','icebeam','E');assert.equal(r.units.E.hp,60);assert.ok(r.events.some(v=>v.type==='miss'));
 });
 
@@ -252,10 +253,10 @@ test('G1 special moves use the special attack and defence stages; physical ones 
   const mk=(move,edit)=>{const a=friend('A',1,1,60);equip(a,move,3);const e=still('E','geodude',2,1,200);edit(a,e);return skill(world({friends:[a],enemies:[e]}),'A',move,'E');};
   const none=200-mk('ember',()=>{}).units.E.hp;
   assert.equal(200-mk('ember',(a,e)=>{e.stages.def=3;}).units.E.hp,none,'defence stage does not touch a special move');
-  assert.equal(200-mk('ember',(a,e)=>{e.stages.spd=3;}).units.E.hp,none-3);
-  assert.equal(200-mk('ember',(a,e)=>{a.stages.spa=2;}).units.E.hp,none+2);
+  assert.equal(200-mk('ember',(a,e)=>{e.stages.spd=3;}).units.E.hp,Math.round(none*256/486),'+3 special defence: damage x 256/486 (10 -> 5)');
+  assert.equal(200-mk('ember',(a,e)=>{a.stages.spa=2;}).units.E.hp,Math.round(none*332/256),'+2 special attack: damage x 332/256 (10 -> 13)');
   const phys=200-mk('tackle',()=>{}).units.E.hp;
-  assert.equal(200-mk('tackle',(a,e)=>{e.stages.def=2;}).units.E.hp,phys-2);assert.equal(200-mk('tackle',(a,e)=>{e.stages.spd=3;}).units.E.hp,phys);
+  assert.equal(200-mk('tackle',(a,e)=>{e.stages.def=2;}).units.E.hp,Math.round(phys*256/409),'+2 defence: damage x 256/409 (9 -> 6)');assert.equal(200-mk('tackle',(a,e)=>{e.stages.spd=3;}).units.E.hp,phys);
   assert.equal(stageOf({stages:{atk:0,def:0}},'spa'),0);assert.equal(stageOf({stages:{atk:0,def:0}},'spe'),0);
 });
 test('G2 the 29 stat-lowering side effects map to the stages; speed changes do not take effect; the 7 self-raising ones raise the user',()=>{
@@ -282,7 +283,7 @@ test('G3 the six self-cost moves lower the user\'s stats after use when they con
   for(const [move,expected] of Object.entries(cost)){
     assert.ok(moveEffects(move).cost,move);
     for(const miss of [false,true]){
-      const a=friend('A',1,1,60);equip(a,move,3);const e=still('E','geodude',2,1,300);const s=world({friends:[a],enemies:[e],hit:!miss});s.battleRng=miss?HIGH:LOW;
+      const a=friend('A',1,1,60);equip(a,move,3);if(miss)a.stages.acc=-6;const e=still('E','geodude',2,1,300);const s=world({friends:[a],enemies:[e],hit:!miss});s.battleRng=miss?HIGH:LOW;
       const r=skill(s,'A',move,['room','user'].includes(moveOf(move).range)?'A':'E');
       for(const stat of ['atk','def','spa','spd','eva'])assert.equal(stageOf(r.units.A,stat),miss?0:(expected[stat]??0),`${move} ${stat} ${miss?'(missed: no price)':''}`);
       if(miss)assert.equal(r.units.E.hp,300);

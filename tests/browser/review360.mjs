@@ -27,7 +27,7 @@ export async function review360FloorChecks({setup,startMemory,state,ready,viaSta
   for(const id of retired)assert.ok(shown.every(text=>!text.includes(id)),'removed enemy ID stays out of browser messages: '+id+' '+JSON.stringify(shown));
   assert.ok(shown.every(text=>!/移动到-?\d+,-?\d+/.test(text)),'ordinary movement coordinates stay hidden after crossing');
   assert.ok(shown.some(text=>text.includes('同行抵达第2层')));
-  const format=structuredClone(w),actor=format.leader;format.runId='review360-formats';format.log=[actor+'无路可走，等待',actor+'动作失效，等待，未扣PP',actor+'向13,8挥空'];
+  const format=structuredClone(w),actor=format.leader;format.runId='review360-formats';const me={unit:actor,species:format.units[actor].species,side:'friend'};format.log=[actor+'无路可走，等待',actor+'动作失效，等待，未扣PP',actor+'向13,8挥空'];format.entries=[{n:1,parts:[me,'无路可走，等待'],routine:true},{n:2,parts:[me,'动作失效，等待，未扣PP']},{n:3,parts:[me,'向13,8挥空'],player:[me,'普通攻击挥空']}];format.logSeq=3;
   await p.reload();await p.locator('#start').waitFor();await startMemory(p,format);
   const formatted=await p.locator('#recent-events,#history,#message').allTextContents();assert.ok(formatted.every(text=>!text.includes('无路可走，等待')));assert.ok(formatted.some(text=>text.includes('动作失效，等待，未扣PP')));assert.ok(formatted.every(text=>!text.includes('向13,8挥空')),'empty-attack coordinates stay out of visible prose');assert.ok(formatted.some(text=>text.includes('普通攻击挥空')),'the actual empty-attack event remains readable');assert.deepEqual((await state(p)).log,format.log);
   await p.screenshot({path:artifact+'review360-wait-filter.png'});report.formatFixture={raw:format.log,shown:formatted};

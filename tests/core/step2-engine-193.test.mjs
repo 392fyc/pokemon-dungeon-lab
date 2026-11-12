@@ -9,7 +9,7 @@ import {moveEffectLabel,localizeLog} from '../../src/core/describe.ts';
 import {rngStep} from '../../src/core/engine.ts';
 
 function isolatedBattle(){
-  const s=createMain('step2-engine-193',false);
+  const s=createMain('step2-engine-193',false);s.noCrit=true;   // these tests fix damage numbers and draw order; critical hits have their own tests (crit.test.mjs)
   s.queue=['A'];s.leader='A';s.enemies=['E'];
   s.units.A.pos={x:3,y:1};s.units.E.pos={x:4,y:1};s.units.E.waitOnly=true;
   for(const id of ['B','C','R']){s.units[id].hp=0;s.units[id].pos=null;}
@@ -409,7 +409,7 @@ test('recruits and ordinary enemies use level-based loadouts, bosses keep their 
   const challenge=(()=>{for(let seed=0;seed<200;seed++){const encounter=generateChallengeEncounter(seed,1,'normal',true,5);if(encounter.reward==='tm')return encounter;}return null;})();
   assert.ok(challenge,'seeded challenge draws a TM reward in the searched seeds');
   assert.ok(tmPool({boss:true,tmPool:5}).includes(challenge.rewardMove));
-  assert.deepEqual(FLOOR_ITEM_WEIGHTS,[['berry',35],['pechaBerry',13],['rawstBerry',13],['cheriBerry',13],['chestoBerry',13],['healSeed',13]]);
+  assert.deepEqual(FLOOR_ITEM_WEIGHTS,[['berry',35],['healSeed',13],['pechaBerry',8],['rawstBerry',8],['cheriBerry',8],['chestoBerry',8],['slumberOrb',5],['totterOrb',5],['luminousOrb',5],['rollcallOrb',5]]);
   assert.equal(ITEM_NAMES.chestoBerry,'零余果');
   assert.deepEqual(ITEM_CURES.chestoBerry,['slp']);
   assert.deepEqual(tmPool({boss:true,tmPool:5}),TM_MOVES_V5);

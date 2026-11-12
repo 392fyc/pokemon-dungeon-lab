@@ -1,0 +1,294 @@
+/* Playtest 1107: learn-a-move, invitation and backpack windows, built on the #194 paper window. */
+body.dungeon-mode #flow:has(.c195) {
+  top: 50%;
+  width: min(820px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.c195 { position: relative; max-height: calc(100dvh - 56px); overflow: visible; padding: 36px 22px 18px; font-family: var(--ui-body); }
+.c195-title { margin: 6px 0 8px; font-size: 21px; color: var(--paper-ink); letter-spacing: 1px; }
+.c195 h4 { margin: 0 0 6px; font: 900 13px var(--ui-body); color: var(--paper-wood-dark); }
+.c195-head { display: flex; gap: 14px; align-items: center; margin-bottom: 8px; }
+.c195-head .c195-title { margin: 0 0 4px; }
+.c195-head .paper-muted, .c195 .c195-small { margin: 0; font-size: 13px; }
+.c195-portrait { width: 72px; height: 72px; flex: none; background: var(--paper-2); }
+.c195-tag { position: absolute; top: -8px; left: 6px; padding: 0 8px; background: #d9622b; color: #fff; font: 900 12px/18px var(--ui-body); font-style: normal; z-index: 1; }
+.c195-move, .c195-unit { position: relative; display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 8px 10px; background: var(--paper-2); box-shadow: 0 0 0 2px var(--paper-ink); text-align: left; color: var(--paper-ink); font-family: var(--ui-body); font-weight: 400; }
+.c195 button.c195-move, .c195 button.c195-unit { font-weight: 400; font-size: 13px; }
+.c195-move.is-new { background: #f7e2a8; }
+.c195-move.is-selected, .c195-unit.is-selected { background: #fff0b8; box-shadow: 0 0 0 3px #d9622b; }
+.c195-move-top { display: flex; align-items: center; gap: 6px; }
+.c195-move-top .paper-move-type { flex: none; height: 22px; padding: 0 8px; }
+.c195-move-top strong { flex: 1; font-size: 16px; }
+.c195-move-top kbd { flex: none; min-width: 20px; text-align: center; background: var(--paper-ink); color: #fff4d8; font: 700 12px/18px var(--ui-body); }
+.c195-cat { color: var(--paper-muted); font-size: 13px; font-weight: 700; }
+.c195-move-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; font-size: 13px; color: var(--paper-muted); }
+.c195-move-stats > span:nth-child(5) { grid-column: 1 / -1; }
+.c195-move-stats b { color: var(--paper-ink); }
+.c195-move-text { font-size: 12px; line-height: 1.4; color: #4a3a2a; overflow-wrap: anywhere; }
+/* Learn window: the frame stays overflow-visible for its plaque; the cards scroll in the inner area so the buttons below it never leave the frame. Padding keeps the "new" tag and selection outlines unclipped. */
+#learning-choice.c195-learn, #learn-carry-dialog.c195-learn[open] { display: flex; flex-direction: column; }
+.c195-scroll { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 10px 4px 4px; margin: -10px -4px -4px; }
+#learning-choice.c195-learn > .c195-foot, #learn-carry-dialog.c195-learn > .c195-foot { flex: none; }
+.c195-learn-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 14px; }
+.c195-old { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.c195-foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 12px; }
+.c195-foot .paper-button { min-height: 44px; font-size: 16px; }
+.c195-foot .is-primary { padding: 0 26px; }
+.c195-note { margin: 10px 0 6px; font-size: 15px; font-weight: 700; }
+.c195-error { margin: 6px 0; color: #a83c2c; font-size: 13px; }
+.c195-unit { flex-direction: row; align-items: flex-start; gap: 10px; }
+.c195-unit-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.c195-unit-name { font-size: 17px; }
+.c195-unit-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 13px; font-weight: 700; }
+.c195-unit-meta .paper-type { margin: 0; }
+.c195-unit-moves { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 10px; margin: 2px 0 0; padding: 0; list-style: none; }
+.c195-unit-moves li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 13px; }
+.c195-unit-moves .paper-move-type { height: 18px; padding: 0 5px; font-size: 11px; }
+.c195-unit.is-big { cursor: default; }
+.c195-unit.is-big .c195-portrait { width: 96px; height: 96px; }
+.c195-unit.is-big .c195-unit-moves li { align-items: flex-start; }
+.c195-unit.is-big .c195-unit-moves strong { font-size: 14px; }
+.c195-team { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.c195-team .c195-unit { flex-direction: column; }
+.c195-team .c195-portrait { width: 48px; height: 48px; }
+.c195-team .c195-unit-moves { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 700px) {
+  .c195-learn-grid { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+}
+@media (max-width: 700px), (max-height: 560px) {
+  .c195 { padding: 32px 12px 10px; }
+  .c195-move, .c195-unit { padding: 4px 8px; gap: 2px; }
+  .c195-move-text { font-size: 11px; line-height: 1.25; }
+  .c195-move-stats { font-size: 12px; }
+  .c195-move-top strong { font-size: 14px; }
+  .c195-portrait { width: 48px; height: 48px; }
+  .c195-unit.is-big .c195-portrait { width: 60px; height: 60px; }
+  .c195-title { font-size: 16px; margin: 2px 0 4px; }
+  .c195-head { margin-bottom: 4px; }
+  .c195-foot { margin-top: 6px; }
+  .c195-foot .paper-button { min-height: 36px; }
+  .c195-team .c195-unit-moves { display: none; }
+}
+
+/* Backpack: tabs | item grid | detail, with the six quick slots along the bottom. */
+#hud-bag .c195-bag { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(820px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; gap: 10px; }
+.c195-bag-body { display: grid; grid-template-columns: 110px minmax(0, 1fr) 250px; gap: 12px; min-height: 0; }
+.c195-bag-tabs { display: flex; flex-direction: column; gap: 6px; }
+.c195-bag-tabs button { min-height: 38px; padding: 0 8px; background: var(--paper-2); box-shadow: 0 0 0 2px var(--paper-ink); text-align: left; font-size: 15px; }
+.c195-bag-tabs button.is-active { background: var(--paper-wood-light); }
+.c195-bag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); grid-auto-rows: 84px; gap: 8px; align-content: start; min-height: 168px; max-height: 300px; overflow-y: auto; padding: 3px; }
+.c195-bag-item { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px; background: var(--paper-2); box-shadow: 0 0 0 2px var(--paper-ink); font-size: 13px; text-align: center; }
+.c195-bag-item.is-selected { background: #fff0b8; box-shadow: 0 0 0 3px #d9622b; }
+.c195-bag-item .c195-count { position: absolute; right: 4px; bottom: 2px; font-size: 13px; font-weight: 900; }
+.c195-bag-item .c195-name { font-size: 12px; line-height: 1.2; font-weight: 700; overflow-wrap: anywhere; }
+.c195-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 50%; background: var(--paper-leaf); color: #fff; font: 900 18px var(--ui-body); box-shadow: 0 0 0 2px var(--paper-ink); }
+.c195-icon.cat-berry { background: #c2491f; }
+.c195-icon.cat-drink { background: #2b6fb0; }
+.c195-icon.cat-tm { background: #765196; }
+.c195-icon.cat-other { background: #a07a10; }
+.c195-icon img { width: 30px; height: 30px; image-rendering: pixelated; }
+.c195-bag-detail { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--paper-2); box-shadow: 0 0 0 2px var(--paper-ink); min-height: 168px; }
+.c195-bag-detail-head { display: flex; align-items: center; gap: 10px; }
+.c195-bag-detail-head strong { font-size: 18px; }
+.c195-bag-detail-head small { display: block; font-size: 14px; color: var(--paper-muted); }
+.c195-bag-detail p { margin: 0; font-size: 14px; line-height: 1.5; }
+.c195-bag-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.c195-bag-actions .paper-button { min-height: 38px; padding: 0 14px; font-size: 14px; }
+.c195-bag-quick { display: flex; align-items: center; gap: 10px; }
+.c195-bag-quick > span { flex: none; font: 900 14px var(--ui-body); color: var(--paper-wood-dark); }
+.c195-bag-quick-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; flex: 1; }
+.c195-bag-quick-grid .c195-slot { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 58px; padding: 4px; background: var(--paper-2); box-shadow: 0 0 0 2px var(--paper-ink); font-size: 12px; }
+.c195-bag-quick-grid .c195-slot.is-empty { background: transparent; box-shadow: 0 0 0 2px var(--paper-muted); }
+.c195-bag-quick-grid .c195-slot.is-selected { box-shadow: 0 0 0 3px #d9622b; background: #fff0b8; }
+.c195-bag-quick-grid kbd { position: absolute; left: 3px; top: 2px; background: var(--paper-ink); color: #fff4d8; font: 700 11px/14px var(--ui-body); padding: 0 4px; }
+.c195-bag-empty { padding: 16px; font-size: 15px; color: var(--paper-muted); grid-column: 1 / -1; }
+@media (max-width: 700px), (max-height: 560px) {
+  .c195-bag-body { grid-template-columns: 78px minmax(0, 1fr) 190px; gap: 8px; }
+  .c195-bag-grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); grid-auto-rows: 66px; min-height: 100px; max-height: 190px; }
+  .c195-icon { width: 28px; height: 28px; font-size: 14px; }
+  .c195-icon img { width: 22px; height: 22px; }
+  .c195-bag-detail { min-height: 100px; padding: 6px; gap: 4px; }
+  .c195-bag-detail p { font-size: 12px; }
+  .c195-bag-quick-grid button { min-height: 44px; }
+}
+
+/* The generic dungeon #flow button rules are more specific than the paper classes; restate the paper look here. */
+body.dungeon-mode #flow .c195 button.c195-move,
+body.dungeon-mode #flow .c195 button.c195-unit,
+body.dungeon-mode #flow .c195 .c195-bag-item,
+body.dungeon-mode #hud-bag .c195 .c195-bag-item,
+body.dungeon-mode #hud-bag .c195 .c195-bag-tabs button,
+body.dungeon-mode #hud-bag .c195 .c195-slot {
+  background: var(--paper-2);
+  color: var(--paper-ink);
+  border: 0;
+  border-radius: 0;
+  font-weight: 400;
+}
+body.dungeon-mode #flow .c195 button.c195-move:hover:not(:disabled),
+body.dungeon-mode #flow .c195 button.c195-unit:hover:not(:disabled),
+body.dungeon-mode #hud-bag .c195 .c195-bag-item:hover,
+body.dungeon-mode #hud-bag .c195 .c195-bag-tabs button:hover,
+body.dungeon-mode #hud-bag .c195 .c195-slot:hover { background: #fff6dc; color: var(--paper-ink); }
+body.dungeon-mode #flow .c195 button.is-selected,
+body.dungeon-mode #hud-bag .c195 button.is-selected,
+body.dungeon-mode #hud-bag .c195 .c195-bag-tabs button.is-active { background: #fff0b8; color: var(--paper-ink); }
+body.dungeon-mode #hud-bag .c195 .c195-bag-tabs button.is-active { background: var(--paper-wood-light); }
+body.dungeon-mode #hud-bag .c195 .c195-bag-quick-grid .c195-slot.is-empty { background: transparent; }
+body.dungeon-mode #flow .c195 .paper-button,
+body.dungeon-mode #hud-bag .c195 .paper-button { font-size: 16px; font-weight: 900; color: var(--paper-ink); border: 0; border-radius: 0; background: var(--paper-wood-light); }
+body.dungeon-mode #flow .c195 .paper-button.is-primary,
+body.dungeon-mode #hud-bag .c195 .paper-button.is-primary { background: #d9622b; color: #fff; }
+body.dungeon-mode #flow .c195 .paper-button:disabled,
+body.dungeon-mode #hud-bag .c195 .paper-button:disabled { opacity: .5; }
+body.dungeon-mode #hud-bag .c195 .c195-bag-actions .paper-button { font-size: 14px; }
+body.dungeon-mode #hud-bag .c195 .paper-close { position: absolute; right: 14px; top: -18px; background: var(--paper-2); color: var(--paper-ink); font-size: 24px; }
+
+body.dungeon-mode #hud-bag .c195 .c195-bag-detail p { color: var(--paper-ink); font-size: 14px; }
+body.dungeon-mode #hud-bag .c195 .c195-slot { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 58px; padding: 4px; width: auto; height: auto; }
+body.dungeon-mode #hud-bag .c195 .c195-slot .c195-icon { width: 32px; height: 32px; min-width: 0; flex: none; }
+body.dungeon-mode #hud-bag .c195 .c195-slot .c195-count { position: static; font: 900 12px var(--ui-body); }
+body.dungeon-mode #hud-bag .c195 .c195-slot kbd { position: absolute; left: 3px; top: 2px; }
+.c195-invite .c195-title { margin-bottom: 16px; }
+@media (max-width: 480px) { .c195-old { grid-template-columns: minmax(0, 1fr); } .c195-team { grid-template-columns: minmax(0, 1fr); } .c195-bag-body { grid-template-columns: 64px minmax(0, 1fr); } .c195-bag-detail { grid-column: 1 / -1; } }
+
+/* Item art: 32 px pixel icons at whole-number scales. */
+.item-icon, .c195-icon-img, .hud-quick-icon, .shop-icon { image-rendering: pixelated; }
+.c195-icon:has(.c195-icon-img) { width: 32px; height: 32px; border-radius: 0; background: none; box-shadow: none; }
+.c195-icon-img { width: 32px; height: 32px; display: block; }
+.c195-bag-detail-head .c195-icon:has(.c195-icon-img) { width: 64px; height: 64px; }
+.c195-bag-detail-head .c195-icon-img { width: 64px; height: 64px; }
+body.dungeon-mode #hud-bag .c195 .c195-slot .c195-icon:has(.c195-icon-img) { width: 32px; height: 32px; }
+.hud-quick-icon { width: 32px; height: 32px; flex: none; }
+.shop-icon { width: 32px; height: 32px; vertical-align: middle; margin-right: 6px; }
+@media (max-width: 700px), (max-height: 560px) {
+  .c195-icon:has(.c195-icon-img), .c195-icon-img { width: 32px; height: 32px; }
+  .c195-bag-detail-head .c195-icon:has(.c195-icon-img), .c195-bag-detail-head .c195-icon-img { width: 32px; height: 32px; }
+}
+#map-hint { position: fixed; z-index: 60; padding: 3px 8px; border-radius: 6px; background: rgba(19, 15, 12, .92); border: 1px solid #e8d48a; color: #fff1b8; font-size: 13px; pointer-events: none; white-space: nowrap; }
+#map-hint[hidden] { display: none; }
+
+/* Camp and run dialogs built on the paper window: keep them centred (the .c195 position rule would otherwise pull them to the corner). */
+dialog.c195 { position: fixed; inset: 0; margin: auto; width: min(820px, calc(100vw - 24px)); height: fit-content; max-height: calc(100dvh - 56px); overflow: visible; }
+dialog.c195::backdrop { background: rgba(12, 10, 8, 0.62); }
+dialog#abandon-dialog { width: min(560px, calc(100vw - 24px)); }
+.c195-consequences { margin: 4px 0 8px; padding-left: 20px; font-size: 15px; line-height: 1.65; }
+.abandon-open { margin: 8px 0 0; padding: 6px 12px; border: 1px solid #a8483a; border-radius: 6px; background: rgba(168, 72, 58, 0.18); color: #ffb7a7; font: inherit; cursor: pointer; }
+.settings-run { margin-top: 10px; text-align: right; }
+.settings-run button { background: #d8b8a8; color: #7a2418; }
+
+/* Learner types and the same-type mark. */
+.c195-learner-types { margin: 0 0 4px; }
+.c195-learner-types .paper-type { font-size: 14px; padding: 2px 10px; }
+
+/* Service panels (shop, exchanger, rest, adventure rooms): a centred paper panel instead of loose text over the map. */
+body.dungeon-mode #context-actions:has(.service) {
+  position: fixed; top: 50%; left: 50%; bottom: auto; z-index: 44; display: block;
+  width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 56px); overflow: visible; box-sizing: border-box;
+  padding: 28px 22px 14px; transform: translate(-50%, -50%);
+  background: var(--paper); color: var(--paper-ink); font-family: var(--ui-body);
+  border: 4px solid var(--paper-wood-dark); box-shadow: 0 0 0 3px var(--paper-ink), inset 0 0 0 2px var(--paper-wood), 8px 12px 0 #0006;
+}
+body.dungeon-mode #context-actions:has(.service) .service { position: static; padding: 0; background: none; border: 0; color: inherit; }
+body.dungeon-mode #context-actions:has(.service) .service h2 { margin: 0 0 8px; font: 900 20px var(--ui-body); color: var(--paper-wood-dark); }
+body.dungeon-mode #context-actions:has(.service) .service p { margin: 6px 0; font-size: 14px; color: var(--paper-ink); }
+body.dungeon-mode #context-actions:has(.service) .paper-plaque { position: absolute; left: 24px; top: -24px; display: inline-block; margin: 0; padding: 3px 22px 5px; background: var(--paper-wood); color: #fff4d8; font: 900 22px/1.3 var(--ui-body); letter-spacing: 2px; text-shadow: 2px 2px 0 var(--paper-wood-dark); }
+body.dungeon-mode #context-actions:has(.service) button:not(.paper-close):not(.shop-row) { margin: 4px 6px 4px 0; padding: 8px 16px; border: 0; border-radius: 0; background: var(--paper-wood-light); color: var(--paper-ink); font: 900 15px var(--ui-body); box-shadow: 0 0 0 2px var(--paper-ink); cursor: pointer; }
+body.dungeon-mode #context-actions:has(.service) button.primary, body.dungeon-mode #context-actions:has(.service) button.is-primary { background: #d9622b; color: #fff; }
+body.dungeon-mode #context-actions:has(.service) button:disabled { opacity: .5; cursor: not-allowed; }
+body.dungeon-mode #context-actions:has(.service) .paper-close { position: absolute; right: 14px; top: -18px; width: 40px; height: 40px; padding: 0; border: 0; background: var(--paper-2); color: var(--paper-ink); font: 900 24px/1 var(--ui-body); box-shadow: 0 0 0 2px var(--paper-ink); cursor: pointer; }
+.shop-purse { margin: 0 0 8px; font-size: 18px; font-weight: 900; }
+.shop-purse strong { color: #a64217; }
+.shop-body { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 12px; }
+.shop-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin: 0; padding: 3px; list-style: none; max-height: 330px; overflow-y: auto; }
+body.dungeon-mode #context-actions .shop-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; width: 100%; padding: 4px 10px; text-align: left; border: 0; background: var(--paper-2); color: var(--paper-ink); font: 700 14px var(--ui-body); box-shadow: 0 0 0 2px var(--paper-ink); cursor: pointer; }
+body.dungeon-mode #context-actions .shop-row.is-selected { background: #fff0b8; box-shadow: 0 0 0 3px #d9622b; }
+body.dungeon-mode #context-actions .shop-row.is-short .shop-price, .shop-detail-head small.is-short .shop-price-num { color: #c0301e; }
+body.dungeon-mode #context-actions .shop-row.is-sold { opacity: .4; }
+.shop-icon { image-rendering: pixelated; width: 32px; height: 32px; margin: 0; vertical-align: middle; }
+.shop-icon.is-big { width: 64px; height: 64px; }
+.tm-disc-icon { position: relative; display: block; width: 24px; height: 24px; flex: none; background: var(--tm-color, #5f5e50); box-shadow: 0 0 0 2px var(--paper-ink, #2a1c14); }
+.tm-disc-icon::after { position: absolute; inset: 32%; background: var(--paper, #f0e4c6); box-shadow: 0 0 0 2px var(--paper-ink, #2a1c14); content: ""; }
+.shop-icon.tm-icon { display: inline-grid; place-items: center; }
+.c195-icon .tm-disc-icon { width: 22px; height: 22px; }
+.c195-icon.cat-tm { background: transparent; box-shadow: none; }
+.shop-detail { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--paper-2); box-shadow: 0 0 0 2px var(--paper-ink); }
+.shop-detail-head { display: flex; align-items: center; gap: 10px; }
+.shop-detail-head strong { font-size: 17px; }
+.shop-detail-head small { display: block; font-size: 13px; color: var(--paper-muted); }
+.shop-detail .shop-detail-text { min-height: 60px; line-height: 1.5; }
+.shop-note { font-size: 12px !important; }
+@media (max-width: 700px), (max-height: 560px) {
+  body.dungeon-mode #context-actions:has(.service) { padding: 26px 12px 10px; }
+  .shop-body { grid-template-columns: minmax(0, 1fr) 190px; }
+  .shop-list { max-height: 210px; }
+  .shop-detail .shop-detail-text { min-height: 0; font-size: 12px; }
+  .shop-icon.is-big { width: 32px; height: 32px; }
+}
+
+/* Drag and drop: what can be picked up, the ghost, and the drop targets. */
+.c195-bag-item[data-bag-item], .c195-slot:not(.is-empty), .camp194-roster-select, .camp194-team-slot[data-camp-member], .camp194-move-tile { touch-action: pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; cursor: grab; }
+body.is-dragging, body.is-dragging * { cursor: grabbing !important; }
+/* The dragged source dims; `body` carries the same class for the cursor rule above and must not dim with it (that made the whole screen dark while dragging). */
+.is-dragging:not(body) { opacity: .4; }
+.drop-ok { outline: 3px dashed #d9a22b; outline-offset: 2px; }
+.drop-hover { outline: 3px solid #3f8f3a !important; outline-offset: 2px; background-color: #e9f5c9 !important; }
+.hud-quick-slot.drop-ok, .hud-quick-slot.drop-hover { position: relative; z-index: 60; }
+.drag-ghost { box-shadow: 0 10px 22px rgba(0, 0, 0, .45); border-radius: 6px; }
+body.dungeon-mode #context-actions:has(.service) .service h2.paper-plaque { color: #fff4d8; font: 900 22px/1.3 var(--ui-body); }
+
+/* Playtest round 4: notice-board panels (commission offer, challenge, item and blessing rooms): labelled rows, tags, no sentences. */
+.notice-body { display: grid; gap: 10px; margin: 12px 0 8px; }
+.notice-row { display: grid; grid-template-columns: 118px minmax(0, 1fr); align-items: center; gap: 10px; min-height: 30px; }
+.notice-k { color: var(--paper-wood-dark, #6b4a28); font-size: 14px; font-weight: 900; letter-spacing: 2px; }
+.notice-v { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: var(--paper-ink, #2a1c14); font-size: 17px; font-weight: 800; }
+.notice-tag { padding: 1px 10px; background: var(--paper-2, #e8dab4); box-shadow: 0 0 0 2px var(--paper-ink, #2a1c14); color: var(--paper-ink, #2a1c14); font-size: 14px; font-weight: 800; }
+.notice-tag.is-bad { background: #c2491f; color: #fff; }
+.notice-tag.is-good { background: #3f8f3a; color: #fff; }
+.notice-icon { display: inline-block; width: 22px; height: 22px; background: #d9a63a; box-shadow: 0 0 0 2px var(--paper-ink, #2a1c14); clip-path: polygon(50% 0, 62% 36%, 100% 38%, 70% 60%, 80% 100%, 50% 76%, 20% 100%, 30% 60%, 0 38%, 38% 36%); }
+.notice-icon-img { width: 28px; height: 28px; image-rendering: pixelated; }
+.notice-actions { display: flex; gap: 10px; margin-top: 10px; }
+.c195-tm, .c195-notice { width: min(440px, calc(100vw - 32px)); }
+body.dungeon-mode #flow .c195-tm > small { color: var(--paper-muted); }
+body.dungeon-mode #flow .c195-tm .camp194-tm-tile {
+  color: var(--paper-ink);
+  background: var(--paper-2);
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 0 0 2px var(--paper-ink);
+}
+body.dungeon-mode #flow .c195-tm .camp194-tm-tile:hover:not(:disabled) { background: #fff6dc; }
+
+.notice-cards { display: flex; gap: 10px; width: 100%; }
+.notice-card { display: grid; flex: 1 1 0; align-content: start; gap: 6px; min-height: 96px; padding: 10px; text-align: left; }
+.notice-card strong { font-size: 17px; color: var(--paper-ink, #2a1c14); }
+.notice-card span { font-size: 13px; font-weight: 600; color: var(--paper-muted, #6d5a44); }
+.c195-notice:has(.notice-cards) { width: min(640px, calc(100vw - 32px)); }
+.notice-row.is-bare { grid-template-columns: minmax(0, 1fr); }
+
+/* The stairs prompt: one question and two buttons. */
+.c195-stairs { width: min(380px, calc(100vw - 32px)); padding-bottom: 14px; }
+.stairs-ask { margin: 26px 12px 16px; text-align: center; font-size: 21px; font-weight: 900; color: var(--paper-ink, #2a1c14); }
+.c195-stairs .c195-foot { display: flex; justify-content: center; gap: 12px; }
+
+/* Every pop-up sits in the middle of the screen: panels inside #flow (stairs, exit, commission, blessing, invitation, learn) are centred in it, whatever their own width. */
+body.dungeon-mode #flow:has(.c195) > .c195 { margin-left: auto; margin-right: auto; }
+
+/* Blessing rarity: grey (common), blue (rare), purple (epic) on the card border, the tag and the sigil in the details column. */
+:root { --rarity-common: #8a877b; --rarity-rare: #3b78c4; --rarity-epic: #8a4bc2; }
+.notice-card[data-rarity] { box-shadow: inset 0 0 0 3px var(--rarity-color, #8a877b); }
+.notice-card[data-rarity=common], li[data-rarity=common] { --rarity-color: var(--rarity-common); }
+.notice-card[data-rarity=rare], li[data-rarity=rare] { --rarity-color: var(--rarity-rare); }
+.notice-card[data-rarity=epic], li[data-rarity=epic] { --rarity-color: var(--rarity-epic); }
+.rarity-tag { display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: 3px; background: var(--rarity-color, #8a877b); color: #fff; font: 700 11px/16px var(--ui-body, sans-serif); font-style: normal; vertical-align: 2px; letter-spacing: 1px; }
+#blessing-refresh:disabled { filter: grayscale(.9); opacity: .55; cursor: default; }
+li[data-rarity] .bless-sigil { background: var(--rarity-color); }
+
+/* Short windows: the hanging plaque still needs 24px above the frame. */
+@media (max-height: 560px) {
+  .c195, dialog.c195, body.dungeon-mode #context-actions:has(.service) { max-height: calc(100dvh - 48px); }
+}

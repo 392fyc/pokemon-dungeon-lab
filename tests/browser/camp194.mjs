@@ -58,12 +58,13 @@ async function assertDialogInViewport(page,selector,width,height){
   assert.ok(box.x>=-1&&box.right<=box.viewportWidth+1,selector+' stays inside the horizontal viewport: '+JSON.stringify(box));
   assert.ok(box.y>=-1&&box.bottom<=box.viewportHeight+1,selector+' stays inside the vertical viewport: '+JSON.stringify(box));
   if(selector.includes('camp-departure')){
-    // The scroll box clips anything above its padding edge; the whole title plaque, including its 3px outline, must sit inside it.
-    const plaque=await page.locator(selector).evaluate(element=>{
-      const dialog=element.getBoundingClientRect(),title=element.querySelector('.camp194-plaque').getBoundingClientRect();
-      return {plaqueTop:title.top-3,plaqueLeft:title.left-3,paddingTop:dialog.top+element.clientTop,paddingLeft:dialog.left+element.clientLeft,scrollTop:element.scrollTop};
+    // The plaque and close button hang on the frame border (same offsets as .paper-plaque), so the frame must not clip and both stay inside the viewport.
+    const frame=await page.locator(selector).evaluate(element=>{
+      const dialog=element.getBoundingClientRect(),title=element.querySelector('.camp194-plaque').getBoundingClientRect(),close=element.querySelector('.camp194-close').getBoundingClientRect();
+      return {overflow:getComputedStyle(element).overflowY,plaqueTop:title.top-3,plaqueLeft:title.left-3,hang:dialog.top-title.top,closeTop:close.top,closeRight:close.right,dialogRight:dialog.right,viewportWidth:innerWidth};
     });
-    assert.ok(plaque.plaqueTop>=plaque.paddingTop-.5&&plaque.plaqueLeft>=plaque.paddingLeft-.5,'the departure plaque is not clipped at '+width+'×'+height+': '+JSON.stringify(plaque));
+    assert.equal(frame.overflow,'visible','the departure frame does not clip its plaque at '+width+'×'+height);
+    assert.ok(frame.plaqueTop>=-.5&&frame.plaqueLeft>=-.5&&frame.closeTop>=-.5&&frame.closeRight<=frame.viewportWidth+.5,'the departure plaque and close stay on screen at '+width+'×'+height+': '+JSON.stringify(frame));
   }
   return box;
 }
@@ -169,7 +170,9 @@ export async function camp194Checks({setup,ready,emptyReady,state,artifact}){
       if(width>=761)assert.equal(memberHeader.paddingRight,'52px','the desktop member heading reserves space for the corner close button');
       const teamCloseOverlap=memberHeader.team.left<memberHeader.close.right&&memberHeader.team.right>memberHeader.close.left&&memberHeader.team.top<memberHeader.close.bottom&&memberHeader.team.bottom>memberHeader.close.top;
       assert.equal(teamCloseOverlap,false,'the selected member control stays clear of the dialog close button: '+JSON.stringify(memberHeader));
-      assert.equal(await p.locator('#carry-P1-'+fixture.overflowMove).isDisabled(),true,'the fifth learned move cannot exceed the four-move carry limit');
+      // The fifth learned move stays enabled so it can be dragged onto a carried move to replace it; clicking it is refused by the engine (checked in the camp-learn and drag tests).
+      assert.equal(await p.locator('#carry-P1-'+fixture.overflowMove).count(),1,'the fifth learned move is listed among the learned moves, not the carried four');
+      assert.equal(await p.locator('#camp-party-carry .camp194-move-tile').count(),4,'the carried list holds four');
       await selectMember(p,'P4');
       assert.equal(await p.locator('#team-P4').isDisabled(),true,'a full three-member team cannot take a fourth member');
       assert.equal(await p.locator('#lead-P4').isDisabled(),true,'a member outside the team cannot become its lead');
@@ -257,7 +260,9 @@ export async function camp194Checks({setup,ready,emptyReady,state,artifact}){
       await p.locator('[data-vault-learner="P1"]').click();
       await p.locator('#learn-P1').waitFor();
       assert.equal(await p.locator('#learn-P1').isDisabled(),false,'a compatible partner can confirm learning');
-      await p.locator('#learn-P1').click();await ready(p);
+      await p.locator('#learn-P1').click();
+      // P1 already carries four moves, so the window asks; "only learn" keeps the carried list as it was.
+      await p.locator('#learn-carry-dialog[open]').waitFor();await p.locator('#carry-only-learn').click();await ready(p);
       const learned=await savedProfile(p),learnedP1=learned.roster.find(member=>member.id==='P1');
       assert.equal(learned.vault[fixture.learnMove],inventoryBefore-1,'learning consumes exactly one machine');
       assert.ok(learnedP1.learned.some(move=>move.move===fixture.learnMove),'the learned move is added to the real profile');
@@ -433,10 +438,10 @@ export async function camp194Checks({setup,ready,emptyReady,state,artifact}){
       await p.evaluate(()=>window.__fault.pending.at(-1).reject());
       await p.waitForFunction(()=>window.trial.store.status==='failed'&&document.querySelector('#camp-departure .camp-feedback')?.textContent.includes('重试保存'));
       await assertDialogInViewport(p,'#camp-departure[open]',width,height);
-      const initialScroll=await p.locator('#camp-departure').evaluate(el=>({scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,scrollTop:el.scrollTop,overflowY:getComputedStyle(el).overflowY}));
-      assert.equal(initialScroll.overflowY,'auto','the short departure window scrolls internally');
+      const initialScroll=await p.locator('#camp-departure .camp194-departure-shell').evaluate(el=>({scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,scrollTop:el.scrollTop,overflowY:getComputedStyle(el).overflowY}));
+      assert.equal(initialScroll.overflowY,'auto','the short departure window scrolls its content (the frame stays unclipped so the plaque can hang on it)');
       assert.ok(initialScroll.scrollHeight>initialScroll.clientHeight,'the failed-save retry row remains in scrollable dialog content');
-      const scrolled=await p.locator('#camp-departure').evaluate(el=>{
+      const scrolled=await p.locator('#camp-departure .camp194-departure-shell').evaluate(el=>{
         el.scrollTop=el.scrollHeight;
         const button=el.querySelector('#camp-retry').getBoundingClientRect(),windowRect=el.getBoundingClientRect();
         const visibleTop=windowRect.top+el.clientTop,visibleBottom=visibleTop+el.clientHeight;

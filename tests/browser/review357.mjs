@@ -16,7 +16,7 @@ export async function review357Checks({setup,startMemory,state,ready,artifact}){
   const lead=w.units[w.leader],emptyMove=lead.learned[0],readyMove=lead.learned.find(k=>k!==emptyMove&&(lead.pp[k]??0)>0);
   assert.ok(emptyMove&&readyMove,'the fixture has a zero-PP and a usable move');lead.pp[emptyMove]=0;
   await startMemory(p,w);
-  await p.locator('#bag-open').click();await p.locator('[data-bag-slot="0"]').click();await p.locator('[data-bag-category="all"]').click();await p.locator('[data-bag-item="berry"]').click();await p.locator('#bag-close').click();assert.equal((await state(p)).round,w.round);
+  await p.locator('#bag-open').click();await p.locator('[data-bag-slot="0"]').click();await p.locator('[data-bag-category="all"]').click();await p.locator('[data-bag-item="berry"]').click();await p.locator('#bag-pin').click();await p.locator('#bag-close').click();assert.equal((await state(p)).round,w.round);
   const events=async()=>({latest:(await p.locator('#recent-events li').allTextContents()).at(-1)?.trim(),history:await p.locator('#history').textContent(),notice:await p.locator('#message').textContent()});
   assert.equal((await events()).latest,'还没有事件。');
   await p.keyboard.press('f');await p.waitForFunction(()=>!window.trial.animating());await ready(p);

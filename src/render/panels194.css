@@ -1,5 +1,4 @@
-/* #194: the approved paper/wood windows. Existing dungeon/camp layouts stay scoped outside these panels. */
-:root{--paper-ink:#2a1c14;--paper:#f0e4c6;--paper-2:#e0cfa4;--paper-3:#cdb985;--paper-wood:#a4703f;--paper-wood-dark:#6b4326;--paper-wood-light:#c99a62;--paper-muted:#6d5a44;--paper-leaf:#4f8a3c}
+/* #194: the approved paper/wood windows. The paper/wood palette is the global default (src/style.css :root, D-20261111-07). */
 .paper-window{box-sizing:border-box;background:var(--paper);color:var(--paper-ink);border:4px solid var(--paper-wood-dark);border-radius:0;padding:26px;box-shadow:0 0 0 3px var(--paper-ink),inset 0 0 0 2px var(--paper-wood),8px 12px 0 #0006;font-family:var(--ui-body);font-weight:500}
 .paper-window h3,.settlement194 h3{margin:0;color:var(--paper-wood-dark);font:900 16px/1.4 var(--ui-body);letter-spacing:1px}
 .paper-window button,.paper-button{margin:0;border:0;border-radius:0;font-family:var(--ui-body);font-size:16px;font-weight:900;cursor:pointer;color:var(--paper-ink)}
@@ -7,7 +6,7 @@
 .paper-window button:hover:not(:disabled):not([aria-pressed=true]){background-color:#fff6dc}
 .paper-window :focus-visible,.settlement194 :focus-visible{outline:3px solid #d9622b;outline-offset:3px}
 .paper-plaque{position:absolute;left:24px;top:-24px;display:inline-block;margin:0;padding:3px 22px 5px;background:var(--paper-wood);color:#fff4d8;font:900 22px/1.3 var(--ui-body);letter-spacing:2px;text-shadow:2px 2px 0 var(--paper-wood-dark);box-shadow:0 0 0 3px var(--paper-ink),inset 0 3px 0 var(--paper-wood-light),inset 0 -3px 0 var(--paper-wood-dark)}
-.paper-window .paper-close{position:absolute;right:14px;top:14px;z-index:3;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;background:var(--paper-2);box-shadow:0 0 0 2px var(--paper-ink);font-size:24px}
+.paper-window .paper-close{position:absolute;right:14px;top:-18px;z-index:3;display:grid;place-items:center;width:40px;height:40px;min-height:0;padding:0;background:var(--paper-2);box-shadow:0 0 0 2px var(--paper-ink);font-size:24px}
 .paper-button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;background:var(--paper-wood-light);box-shadow:0 0 0 2px var(--paper-ink),inset 0 3px 0 #e6c291,inset 0 -3px 0 var(--paper-wood)}
 .paper-button.is-primary{background:#d9622b;color:#fff;box-shadow:0 0 0 3px var(--paper-ink),inset 0 3px 0 #f39a63,inset 0 -3px 0 #a64217}
 .paper-muted{font-size:14px;color:var(--paper-muted)}
@@ -18,8 +17,7 @@
 #unit-details-layer{pointer-events:auto}
 .detail194{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);margin:0;width:776px;max-width:calc(100vw - 48px);height:526px;max-height:calc(100dvh - 64px);overflow:visible;pointer-events:auto}
 .detail194::backdrop,dialog#settings.settings194::backdrop{background:#0c0a089e}
-.detail194.is-enemy{height:352px}
-.detail-tabs{position:absolute;left:184px;right:76px;top:-34px;display:flex;gap:10px;overflow-x:auto;padding:4px 3px 0;scrollbar-width:thin}
+.detail-tabs{position:absolute;left:184px;right:76px;top:-34px;display:flex;gap:10px;overflow-x:auto;padding:4px 3px 0}
 .detail-tabs button{flex:none;width:60px;height:52px;display:grid;place-items:center;padding:4px;background:var(--paper-2);box-shadow:0 -3px 0 var(--paper-ink),-3px 0 0 var(--paper-ink),3px 0 0 var(--paper-ink)}
 .detail-tabs button[aria-pressed=true]{background:var(--paper)}
 .detail-tab-portrait{width:42px;height:42px}
@@ -31,8 +29,11 @@
 .detail-status{display:flex;gap:6px;flex-wrap:wrap;min-height:24px;margin-top:10px}
 .detail194 .hud-status-badge{border-radius:0;border:0;font:700 13px var(--ui-body);color:#fff;background:#6b4a96}
 .detail194 .hud-status-badge.is-up{background:#3c7f3a}.detail194 .hud-status-badge.is-down{background:#a83c2c}
+.detail-stages{list-style:none;margin:8px 0 0;padding:0;max-height:104px;overflow:auto;display:grid;gap:2px;font-size:12px;line-height:1.35}
+.detail-stages li{display:flex;justify-content:space-between;gap:6px}
+.detail-stages b{flex:none}.detail-stages span{color:var(--paper-muted);text-align:right}
 .detail-stat-chart{width:250px;height:250px;max-width:100%;overflow:visible}
-.detail-stat-chart text{text-anchor:middle;font:700 13px var(--ui-body)}.detail-stat-chart .stat-value{font-weight:900;font-size:15px;fill:var(--paper-ink)}
+
 .detail-moves{display:flex;flex-direction:column;gap:8px;padding-top:2px}
 .detail194 .paper-move{display:grid;grid-template-columns:44px minmax(0,1fr) 36px 54px;gap:6px;align-items:center;width:100%;height:42px;min-height:42px;padding:0 8px 0 0;background:var(--paper-2);text-align:left}
 .paper-move-type{height:100%;display:grid;place-items:center;color:#fff;font-size:13px;font-weight:700}
@@ -49,7 +50,7 @@
 #detail-tooltip{position:fixed;z-index:80;max-height:calc(100dvh - 32px);overflow:auto;width:min(372px,calc(100vw - 32px));padding:12px;background:#2a1f17;color:#f5ebd2;border:3px solid #000;box-shadow:6px 8px 0 #0006}
 #detail-tooltip[hidden]{display:none}
 #detail-tooltip .hud-move-tip-main{align-items:flex-start}
-dialog#settings.settings194{width:800px;max-width:calc(100vw - 48px);height:500px;max-height:calc(100dvh - 64px);overflow:visible;padding:26px;background:var(--paper);color:var(--paper-ink);border:4px solid var(--paper-wood-dark);border-radius:0}
+dialog#settings.settings194{width:800px;max-width:calc(100vw - 48px);height:580px;max-height:calc(100dvh - 64px);overflow:visible;padding:26px;background:var(--paper);color:var(--paper-ink);border:4px solid var(--paper-wood-dark);border-radius:0}
 #settings.settings194 [hidden]{display:none!important}
 #settings.settings194 button{margin:0}
 .settings-side{position:absolute;left:18px;top:42px;bottom:22px;width:150px;display:flex;flex-direction:column;gap:8px}
@@ -64,8 +65,9 @@ dialog#settings.settings194{width:800px;max-width:calc(100vw - 48px);height:500p
 .paper-switch button[aria-pressed=true]{background:var(--paper-leaf);color:#fff}
 .settings194 kbd{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 7px;background:#fff8e4;color:var(--paper-ink);font:900 14px var(--ui-body);box-shadow:0 0 0 2px var(--paper-ink),inset 0 -3px 0 var(--paper-3)}
 .paper-key-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.paper-key-group{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-height:66px;background:var(--paper-2);padding:10px 12px}
-.paper-key-group:nth-child(-n+2){min-height:112px}
+.paper-key-group{display:flex;align-items:center;flex-wrap:wrap;gap:10px;min-height:54px;background:var(--paper-2);padding:10px 12px}
+.paper-key-group:nth-child(-n+2){min-height:104px}
+.paper-key-group.is-wide{grid-column:1/-1}.paper-key-group>.key-caps{flex-wrap:nowrap}
 .paper-key-group>b{margin-left:auto;font-size:15px}
 .key-caps{display:flex;flex-wrap:wrap;gap:5px}.key-caps.is-wasd{display:grid;grid-template-columns:repeat(3,32px)}.is-wasd kbd:first-child{grid-column:2}.is-wasd kbd:nth-child(2){grid-column:1}
 .settings-profile{display:flex;align-items:center;flex-wrap:wrap;gap:18px;padding:16px;background:var(--paper-2)}
@@ -96,7 +98,7 @@ body.dungeon-mode #flow .settlement194 .settlement-heading{position:relative;dis
 .settlement-xp-top{display:flex;align-items:center;justify-content:space-between;flex:none}
 .settlement-xp-top strong{font:400 44px/1 var(--ui-display);color:#b84a18}
 .settlement-tally-wrap{position:relative;flex:1;min-height:0;margin:6px 0 8px}
-.settlement-tally{position:relative;display:block;height:100%;overflow-y:auto;overscroll-behavior:contain;margin:0;padding:0 6px 24px 0;list-style:none;color:var(--paper-ink);font-size:16px;scrollbar-width:thin;scrollbar-color:#8a6a3f transparent}
+.settlement-tally{position:relative;display:block;height:100%;overflow-y:auto;overscroll-behavior:contain;margin:0;padding:0 6px 24px 0;list-style:none;color:var(--paper-ink);font-size:16px}
 .settlement-tally li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;min-height:27px}
 .settlement-tally li>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .settlement-tally b{text-align:right;font-weight:900;font-variant-numeric:tabular-nums}
@@ -105,7 +107,7 @@ body.dungeon-mode #flow .settlement194 .settlement-heading{position:relative;dis
 .settlement-level{display:flex;flex:none;justify-content:space-between;font-size:16px;margin-bottom:6px}
 .settlement-levelup{display:flex;flex:none;justify-content:space-between;align-items:center;margin-top:8px;padding:5px 12px;background:var(--paper-leaf);color:#fff;font-weight:900}
 .settlement-loot{grid-column:2;grid-row:1/span 2;display:grid;grid-template-rows:auto minmax(0,1fr) auto minmax(0,1fr);gap:8px;min-height:0;margin-bottom:84px;padding:14px 22px}
-.settlement-loot-row{display:flex;gap:12px;min-width:0;min-height:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior:contain;padding:0 0 6px;margin:0;list-style:none;scrollbar-width:thin;scrollbar-color:#8a6a3f transparent}
+.settlement-loot-row{display:flex;gap:12px;min-width:0;min-height:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior:contain;padding:0 0 6px;margin:0;list-style:none}
 .settlement-loot-row>ul{display:contents;margin:0;padding:0;list-style:none}
 .loot-tile{position:relative;display:flex;flex:none;flex-direction:column;align-items:center;justify-content:flex-end;width:150px;height:150px;max-height:100%;background:var(--paper-2);padding:6px;color:var(--paper-ink);font-size:14px;font-weight:700}
 .loot-tile>.panel-portrait{width:92px;height:92px;margin-bottom:8px}
@@ -118,7 +120,7 @@ body.dungeon-mode #flow .settlement194 .settlement-heading{position:relative;dis
 .settlement194 .settlement-foot{--result-button-height:60px;--result-button-size:20px;--result-button-pad:44px;grid-column:2;grid-row:1/span 2;align-self:end;position:relative;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:16px;height:62px;padding:0;color:#d9c9a5;font-size:14px;line-height:1.4}
 body.dungeon-mode #flow .settlement-foot .paper-button{font-family:var(--ui-body);font-weight:900;height:var(--result-button-height);padding:0 var(--result-button-pad);font-size:var(--result-button-size);white-space:nowrap;flex-shrink:0}
 @media(min-width:761px) and (max-height:620px){
- .detail194{height:calc(100dvh - 64px)}.detail194 .detail-body{margin-top:6px}.detail194 .detail-portrait-pad{height:84px}.detail194 .detail-portrait-pad .panel-portrait{width:68px;height:68px}.detail194 .detail-chart{max-height:210px}.detail194 .detail-status{margin-top:6px}.detail194 .detail-tactics{bottom:10px}.detail194 .detail-tactics p{height:auto;margin-top:4px}
+ .detail194{height:calc(100dvh - 64px)}.detail194 .detail-body{margin-top:6px}.detail194 .detail-portrait-pad{height:84px}.detail194 .detail-portrait-pad .panel-portrait{width:68px;height:68px}.detail194 .detail-status{margin-top:6px}.detail194 .detail-tactics{bottom:10px}.detail194 .detail-tactics p{height:auto;margin-top:4px}
  .settlement194{grid-template-rows:96px minmax(0,1fr)}.settlement-heading h2{font-size:48px;top:6px}.settlement-heading>p{top:65px}.settlement-floors{top:20px}.settlement-body{padding:18px 32px 22px;gap:14px 30px}.settlement194 .settlement-foot{--result-button-height:44px;--result-button-size:17px;--result-button-pad:24px;height:46px}.settlement-foot .paper-button{height:44px;min-height:44px;font-size:17px;padding:0 24px}.settlement-loot{margin-bottom:60px}.settlement-team{padding-bottom:8px}.settlement-team .panel-portrait{width:64px;height:64px}.settlement-xp{padding:8px 16px}.settlement-xp-top strong{font-size:30px}.settlement-levelup{font-size:13px;padding:2px 8px}.settlement-level{font-size:14px}.settlement-xp .paper-bar{height:8px}.settlement-tally{font-size:14px}.settlement-tally li{min-height:24px}.loot-tile{height:100px;width:120px;font-size:13px}.loot-tile>.panel-portrait{width:48px;height:48px;margin-bottom:4px}.tm-disc{width:48px;height:48px;margin-bottom:8px}.settlement-loot{padding:10px 14px}
 }
 /* A short two-column result still reserves space for the disc, name and source. */
@@ -134,6 +136,7 @@ body.dungeon-mode #flow .settlement-foot .paper-button{font-family:var(--ui-body
 @media(max-width:760px){
  .detail194,dialog#settings.settings194{width:calc(100vw - 32px);max-width:none;height:auto;max-height:calc(100dvh - 48px);overflow:auto;padding:18px}
  .paper-window .paper-plaque{position:static;display:inline-block;margin:0 0 14px;font-size:20px}
+ .paper-window .paper-close{top:8px;right:8px}
  .detail-tabs{position:static;width:calc(100% - 32px);margin:0 0 12px;padding:3px;max-height:60px}
  .detail-body{display:flex;flex-direction:column;margin-top:0;gap:16px}
  .detail-portrait-pad .panel-portrait{width:84px;height:84px}.detail-identity h3{font-size:24px}
@@ -160,3 +163,59 @@ body.dungeon-mode #flow .settlement-foot .paper-button{font-family:var(--ui-body
 .settlement-foot #settlement-save:empty{display:none}.settlement-foot #settlement-save{position:absolute;bottom:74px;left:0;right:0;z-index:3}.settlement-foot #save{background:#f0e4c6;color:#7b2c16;border-radius:0;border-color:#a64217}.settlement-foot #save .error{color:#7b2c16}
 
 body.dungeon-mode #flow #result-settings{position:absolute;right:12px;top:12px;z-index:2;width:36px;height:36px;min-height:0;margin:0;padding:0;border:2px solid #2a1c14;border-radius:0;background:#e0cfa4;color:#2a1c14;font:900 22px/1 var(--ui-body)}
+
+/* Playtest round 2: enemy details show no stat chart; ally details label the chart; the close button never covers the move list. */
+.detail194 .detail-moves{padding-top:52px}
+.detail-chart{display:flex;flex-direction:column;align-items:center;gap:2px}
+.detail-chart-title{margin:0;font-size:16px;letter-spacing:2px}
+
+
+/* Playtest round 3: current ability values (table + radar), how damage is worked out, base damage and accuracy on move rows, and the blessings tab. */
+/* Opening the explanation swaps it in for the numbers, so the column never grows into the tactics row. */
+.detail194 .paper-move{height:auto;min-height:42px;grid-template-rows:auto auto;padding-top:2px;padding-bottom:2px}
+.paper-move-numbers{grid-column:2/-1;font-size:11px;color:var(--paper-muted);font-weight:400}
+.detail194 .detail-body{grid-template-columns:216px 262px minmax(0,1fr)}
+
+/* Playtest round 4: the radar is a fixed square (nothing stretches), the table carries the current values only, and the blessings are a permanent strip on the window. */
+.detail-chart{position:relative}
+.detail194 .detail-stat-chart{flex:none;width:250px;height:272px;max-width:none}
+.detail194 .detail-moves{padding-top:30px}
+.detail-stat-chart text{text-anchor:middle;dominant-baseline:middle}
+.detail-stat-chart .axis-name{font:700 17px var(--ui-body)}
+
+/* Round 5: the blessing list is a column attached to the right of the window. Window and column are centred together; both keep their size whatever the member or the number of blessings. */
+.detail194{--bless-w:200px;--bless-gap:14px;left:calc(50% - (var(--bless-w) + var(--bless-gap)) / 2);max-width:calc(100vw - 32px - var(--bless-w) - var(--bless-gap))}
+.detail194 .detail-tactics{bottom:18px}
+/* On a 1280-wide screen the details window and its blessing column are centred together, which puts the plaque over the party cards (x < 250); slide them right until the plaque clears. */
+@media(min-width:1280px){.detail194{left:max(calc(50% - (var(--bless-w) + var(--bless-gap)) / 2),613px)}}
+.detail-blessings{position:absolute;top:-4px;bottom:-4px;left:calc(100% + var(--bless-gap) + 4px);   /* 4px: the window's own border */
+ width:var(--bless-w);display:flex;flex-direction:column;gap:8px;padding:18px 12px 12px}
+.detail-blessings h3{flex:none;text-align:center;font-size:18px;letter-spacing:4px}
+.detail-blessings ul{flex:1 1 0;min-height:0;margin:0;padding:0 4px 0 0;list-style:none;display:grid;align-content:start;gap:6px;overflow-y:auto}
+.detail-blessings li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:center;padding:5px 6px;background:var(--paper-2);box-shadow:0 0 0 2px var(--paper-ink)}
+.bless-sigil{width:18px;height:18px;background:#d9a63a;box-shadow:0 0 0 2px var(--paper-ink);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.bless-text{display:grid;min-width:0}
+.bless-text strong{font-size:15px;color:var(--paper-ink)}
+.bless-text small{font-size:12px;line-height:1.25;font-weight:600;color:var(--paper-muted)}
+#detail-blessing-empty{margin:auto 0;text-align:center;font-size:16px;color:var(--paper-muted)}
+@media (min-width:761px) and (max-width:1040px){
+ .detail194{--bless-w:158px;width:calc(100vw - 32px - var(--bless-w) - var(--bless-gap))}
+ .detail194 .detail-body{grid-template-columns:190px 220px minmax(0,1fr)}
+ .detail-blessings{padding:14px 8px 8px}.bless-text small{font-size:11px}
+}
+@media (max-width:760px){
+ .detail194{left:50%;max-width:none}
+ .detail-blessings{position:static;width:auto;margin-top:14px;padding:12px}
+ .detail-blessings ul{max-height:160px}
+}
+
+/* Stat hint: a paper tip beside the hovered or focused row, kept inside the details window. */
+#stat-tip{position:absolute;z-index:90;box-sizing:border-box;width:max-content;max-width:210px;padding:6px 10px;background:var(--paper);color:var(--paper-ink);border:2px solid var(--paper-wood-dark);box-shadow:0 0 0 1px var(--paper-ink),3px 4px 0 #0005;font:600 13px/1.4 var(--ui-body);pointer-events:none}
+#stat-tip[hidden]{display:none}
+
+/* Round 8: the radar carries the current ability values and is the only stat display. Each label is a hover / focus / tap target for the hint. */
+.detail-stat-chart .axis-label{cursor:help;outline:none}
+.detail-stat-chart .axis-label:focus-visible rect{stroke:var(--paper-wood);stroke-width:2;fill:#c99a6240}
+.detail-stat-chart .axis-value{font:900 20px var(--ui-body);fill:var(--paper-ink)}
+.detail-stat-chart .axis-stage{font:900 12px var(--ui-body);fill:var(--paper-muted)}
+@media (max-height:620px){.detail194 .detail-stat-chart{width:200px;height:218px}.detail194 .detail-chart-title{font-size:14px}}

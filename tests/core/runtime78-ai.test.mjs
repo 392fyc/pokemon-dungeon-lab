@@ -79,7 +79,7 @@ test('3.c an enemy helps another enemy: helping hand raises that enemy\'s attack
  const s0=W({A:withoutSpecies(mate('A',3,1,{moves:{tackle:5}})),E1:foeOf('E1','geodude',6,1,40,{helpinghand:3}),E2:foeOf('E2','geodude',4,1,40,{tackle:5})},{rooms:bigRoom});
  const s=round(s0);
  assert.equal(s.units.E2.stages.atk,1);assert.equal(s.units.A.stages.atk,0);
- assert.equal(s.units.A.hp,35,'A takes the boosted 5 (round(tackle 9 x 0.4) = 4, +1 attack stage)');
+ assert.equal(s.units.A.hp,36,'A takes round(9 x 307/256 = 10.8 -> 11) x 0.4 = 4.4 -> 4 with the +1 attack stage (the old flat +1 made it 5)');
  // the stage is capped at +2 for the choice: with E2 already at +2 there is nothing to help
  const capped=W({A:withoutSpecies(mate('A',3,1,{moves:{tackle:5}})),E1:foeOf('E1','geodude',6,1,40,{helpinghand:3}),E2:foeOf('E2','geodude',4,1,40,{tackle:5})},{rooms:bigRoom});
  capped.units.E2.stages.atk=2;
@@ -232,9 +232,10 @@ test('4.* the same algorithm drives an enemy: highest gain, never an ally, never
 const T=(tactic,x,rest={},moves={tackle:5,quickattack:5},leaderAt=0)=>W({A:mate('A',leaderAt,1,{moves:{tackle:5}}),X:mate('X',x,1,{moves,tactic}),...rest},{rooms:bigRoom});
 const goes=(a,x)=>assert.deepEqual(a,{type:'move',to:{x,y:1}});
 
-test('11.6 together: hits opponents within 3 of the leader (even at range), never one farther away unless adjacent; otherwise walks to the leader',()=>{
+test('11.6 together: hits opponents the member or leader can see within 6 of the leader (even at range), never one farther away unless adjacent; otherwise walks to the leader',()=>{
  assert.deepEqual(skillOf(actionOf(T('together',1,{F:dummy('F',3,1)}),'X')),['quickattack','F'],'F is 3 from the leader and 2 from X: quickattack');
- goes(actionOf(T('together',2,{F:dummy('F',4,1)}),'X'),1);   // F is 4 from the leader: out of the allowed zone, X is not adjacent to F, so it follows the leader
+ assert.deepEqual(skillOf(actionOf(T('together',2,{F:dummy('F',4,1)}),'X')),['quickattack','F'],'F is 4 from the leader: inside the six-cell zone since playtest round 2');
+ goes(actionOf(T('together',2,{F:dummy('F',9,1)}),'X'),1);   // F is 9 from the leader: out of the zone, X is not adjacent to F, so it follows the leader
  assert.deepEqual(skillOf(actionOf(T('together',5,{F:dummy('F',6,1)}),'X')),['tackle','F'],'an adjacent opponent is always fair game, even 6 from the leader');
  goes(actionOf(T('together',5,{F:dummy('F',11,1)}),'X'),4);  // far opponent, X far from the leader: walk toward the leader, do not chase
 });
@@ -258,7 +259,7 @@ test('11.6 wait: never moves, but still attacks what is in reach',()=>{
 test('11.6 nomoves: only basic attacks (no PP spent), only on adjacent opponents; moves like together',()=>{
  const adj=T('nomoves',5,{F:dummy('F',6,1)});
  assert.deepEqual(skillOf(actionOf(adj,'X')),['basic','F']);
- assert.equal(actionOf(T('nomoves',1,{F:dummy('F',3,1)}),'X').type,'wait','a front2 target is out of basic range; X touches the leader, so it waits');
+ goes(actionOf(T('nomoves',1,{F:dummy('F',3,1)}),'X'),2);   // a front2 target is out of basic range; F is within 3 of the leader, so X closes in (playtest 1107 #6) instead of idling beside the leader
  goes(actionOf(T('nomoves',5,{F:dummy('F',11,1)}),'X'),4);
  assert.equal(round(adj).units.X.pp.tackle,5,'the round spent no PP');
 });

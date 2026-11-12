@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import {moveOf} from '../../src/core/moves.ts';
 import {createScenario} from '../../src/core/scenarios.ts';
 import {applyCommand,friend,enemy,key} from '../../src/core/engine.ts';
+import {newLines} from '../../src/render/animation.ts';
 
 const CASES=[
  ['pound','melee'],['ember','special'],['gunkshot','shot'],['aurorabeam','beam'],
@@ -40,6 +41,7 @@ export async function fx194Checks({setup,startMemory,ready,state,cell,artifact})
    const self=['room','user'].includes(moveOf(move).range),target=self?'A':'H';
    const command={type:'round',action:{type:'skill',skill:move,target}};
    const expected=applyCommand(w,command);assert.equal(expected.ok,true,expected.error);
+   const logBefore=(await state(p)).log;
    await p.locator('[data-hud-skill="'+move+'"]').click();
    await cell(p,w.units[target].pos.x,w.units[target].pos.y);
    assert.equal(await p.evaluate(()=>window.trial.animating()),true,move+' begins an actual animation');
@@ -61,10 +63,13 @@ export async function fx194Checks({setup,startMemory,ready,state,cell,artifact})
    const hitAt=HIT_SHOT[template]??240;
    while(elapsed<hitAt){await p.clock.runFor(10);elapsed+=10;if(heavy&&await p.evaluate(()=>{const c=window.trial.view().cameraPosition;return c.x!==0||c.y!==0;}))shifted=true;}
    await p.screenshot({path:artifact+'fx194-'+template+'-'+move+'-impact.png'});
-   while(elapsed<560){await p.clock.runFor(10);elapsed+=10;if(heavy&&await p.evaluate(()=>{const c=window.trial.view().cameraPosition;return c.x!==0||c.y!==0;}))shifted=true;}
+   // A poison or burn tick at the end of the round is its own short step now (the HP moves when it happens), so the round may last one such step longer.
+   const fresh=newLines(logBefore,(await state(p)).log);   // only the lines this round wrote
+   const tick=fresh.some(line=>/因.+损失\d+HP/.test(line)),words=fresh.some(line=>/阶段变为|陷入.+状态/.test(line)),limit=(tick?830:560)+(words?700:0);   // a stage or status change adds the short word step (round 10) at the end
+   while(elapsed<limit){await p.clock.runFor(10);elapsed+=10;if(heavy&&await p.evaluate(()=>{const c=window.trial.view().cameraPosition;return c.x!==0||c.y!==0;}))shifted=true;}
    if(heavy)assert.equal(shifted,true,move+' is super effective, so the main camera shakes');
    assert.deepEqual(await p.evaluate(()=>window.trial.view().cameraPosition),{x:0,y:0},'the camera is back in place after '+move);
-   assert.equal(await p.evaluate(()=>window.trial.animating()),false,move+' completes within the 500ms budget plus one render frame');
+   assert.equal(await p.evaluate(()=>window.trial.animating()),false,move+' completes within the 500ms budget plus one render frame'+(tick?' and the 240ms status-damage step':'')+(words?' and the 560ms stage/status word step':''));
    await p.clock.resume();
    await p.waitForFunction(()=>!window.trial.animating(),null,{timeout:5000});await ready(p);
    const after=await state(p),finished=await p.evaluate(()=>window.trial.view());

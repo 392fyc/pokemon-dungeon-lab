@@ -8,6 +8,7 @@ import {TrialStore,decodeLegacy,BUILD_ID} from '../../src/core/save.ts';
 import {generateFloor,THEME_FLOORS,themeOfLevel,eligibleSpecies,WILD_SPECIES,BOSS,serviceRoll} from '../../src/core/dungeon.ts';
 import {LEGACY_TM_MOVES,TM_MOVES,tmPool,BOSS_SPECIES,SPECIES,learnableMove} from '../../src/core/roster.ts';
 import {NAME_TABLE,speciesZh,moveZh,tmZh} from '../../src/core/names.ts';
+import {hpAtLevel} from '../../src/core/stats.ts';
 import {enemyInfo,localizeLog} from '../../src/core/describe.ts';
 import {friend,enemy,pos,row} from '../acceptance/fixtures.mjs';
 import legacyBossSeed4 from './fixtures/map122-legacy-boss-seed4.json' with {type:'json'};
@@ -60,8 +61,8 @@ test('D5 the Chinese name table has the eight new species, the boss and the four
  assert.equal(speciesZh('arcanine'),'风速狗');
  assert.deepEqual(['dragontail','helpinghand','mudslap'].map(tmZh),['龙尾','帮助','掷泥']);   // 8.8 (#165): Tera Blast is no longer a machine
  assert.deepEqual(['protect','whirlwind','roar'].map(tmZh),['守住','吹飞','吼叫']);
- for(const s of roster.species)for(const m of [...s.kit,...s.learnable])if(m.move!=='visegrip')assert.ok(NAME_TABLE.moves[m.move],m.move);
- assert.equal(moveZh('visegrip'),'visegrip','the documented PokeAPI spelling exception falls back to its Showdown id');
+ for(const s of roster.species)for(const m of [...s.kit,...s.learnable])assert.ok(NAME_TABLE.moves[m.move],m.move);
+ assert.equal(moveZh('visegrip'),'夹住','Vice Grip: Showdown spells it visegrip, PokeAPI vice-grip (#213); the Simplified name is 夹住');
 });
 
 /* ---------- T: technique machines ---------- */
@@ -172,13 +173,13 @@ test('B1 defeating the boss draws a machine then a normal Arcanine recruitment o
  s.prog.rng=1;const after=round(s,{type:'basic',target:'boss'});
  assert.equal(after.units.boss.hp,0);assert.equal(after.prog.rng,rngStep(rngStep(1).state).state);
  const offer=after.invitations[0];assert.ok(offer);assert.equal(offer.unit.species,'arcanine');assert.equal(offer.unit.boss,undefined);
- assert.equal(offer.unit.maxHp,30+after.prog.level-5);assert.equal(offer.unit.hp,Math.floor(offer.unit.maxHp/2));
+ assert.equal(offer.unit.maxHp,hpAtLevel(90,after.prog.level),'a recruited Arcanine has the level-based HP of the run level');assert.equal(offer.unit.hp,Math.floor(offer.unit.maxHp/2));
  assert.equal(s.prog.rng,1);
 });
 test('B2 push on the boss is refused with the Chinese reason and costs no PP',()=>{
  const s=arena({units:{A:A(3),B:B(2)}});
  const r=applyCommand(s,{type:'round',action:{type:'skill',skill:'roar',target:'boss'}});
- assert.equal(r.ok,false);assert.match(r.error,/首领.*吹飞；本轮未执行/);assert.deepEqual(r.state,s);assert.equal(s.units.A.pp.roar,2);assert.equal(s.units.boss.pos.x,4);
+ assert.equal(r.ok,false);assert.match(r.error,/首领.*吹飞；本回合未执行/);assert.deepEqual(r.state,s);assert.equal(s.units.A.pp.roar,2);assert.equal(s.units.boss.pos.x,4);
 });
 test('B3 boss uses one shared move per round, spends PP, and never chases',()=>{
  const s=arena({units:{A:A(3),B:B(0)}}),hit=round(s,{type:'wait'});
@@ -446,7 +447,7 @@ test('S4 a markerless historical boss run moves through transit, battle and exit
 test('boss info names the species, HP, level and actual moves; log lines show the Chinese machine names',()=>{
  const s=arena({units:{A:A(3),B:B(2)}});
  const info=enemyInfo(s,'boss');
- assert.equal(info.name,'风速狗（首领）');assert.equal(info.hp,56);assert.equal(info.maxHp,75);assert.match(info.note,/击败后有概率发出加入邀请，入队的是普通形态/);assert.equal(info.level,22);assert.ok(info.moves.some(m=>m.includes('神速')));
+ assert.equal(info.name,'风速狗（首领）');assert.equal(info.hp,56);assert.equal(info.maxHp,75);assert.equal(info.level,22);assert.ok(info.moves.some(m=>m.includes('神速')));
  assert.equal(localizeLog(s,'取得招式机：dragontail，mudslap，terablast，helpinghand'),'取得招式机：龙尾，掷泥，太晶爆发，帮助');
 });
 test('boss constants',()=>{assert.deepEqual(BOSS,{id:'boss',species:'arcanine'});assert.equal(PROG.bossExp,0);});

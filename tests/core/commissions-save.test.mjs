@@ -23,7 +23,7 @@ test('8.4 challenge TM and chosen boss TM settle once to camp and import without
  fixture.units.fixtureBoss=boss;fixture.enemies=['fixtureBoss'];
  fixture.seen=fixture.floor.map(p=>`${p.x},${p.y}`);
  fixture.tms=[{move:'protect',source:'challenge',fate:'held'}];
- fixture.blessings=['berryBoost','tmChoice'];fixture.tmChoiceReady=true;
+ fixture.blessings=['berryBoost'];fixture.pendingChoices=[{type:'tmChoice',source:'boss',options:['protect','reflect','lightscreen']}];   // an open choice the terminal write must wait for
  fixture.commissions=[{id:'hunter',room:0,floor:1,acceptedRound:0,progress:0,progressTarget:3}];
  store.world=fixture; // TypeScript private is a test-only fixture seam; no production API added.
  assert.equal(store.exportRecord(),before,'new run state never enters a mid-run export');

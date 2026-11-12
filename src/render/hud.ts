@@ -6,6 +6,7 @@ import {
   ITEM_NAMES,
   PROG,
   stageOf,
+  damageStage,
   sleeping,
   STATUS_NAMES,
   STAGE_NAMES,
@@ -21,18 +22,18 @@ import {
 import { moveCategory, moveEffects, moveOf, type MoveRange } from "../core/moves.ts";
 import { THEME_FLOORS, themeOfLevel } from "../core/dungeon.ts";
 import { itemZh, moveZh, speciesZh, tmZh, typeZh } from "../core/names.ts";
-import { damageEstimateText, moveRangeLabel } from "../core/describe.ts";
+import { damageEstimateText, moveRangeLabel, moveRangeText, moveEffectTag } from "../core/describe.ts";
 import { itemDescription } from "../core/item-descriptions.ts";
 import { skinFor } from "./sprites.ts";
+import { terrainKnown } from "./point-visuals.ts";
+import { itemIconImg, tmDisc } from "./item-icons.ts";
 import { portraitMarkup } from "./portrait.ts";
+import { hpTrackMarkup } from "./hpbar.ts";
 import "./portrait.css";
 import moveTypeSnapshot from "../data/move-types.json" with { type: "json" };
-import moveDescriptionSnapshot from "../data/move-desc-zh.json" with { type: "json" };
+import { moveEffectText, stageTitle } from "../core/move-text.ts";
 
 const MOVE_TYPES = (moveTypeSnapshot as unknown as { types: Record<string, string> }).types;
-const MOVE_DESCRIPTIONS = (moveDescriptionSnapshot as unknown as {
-  moves: Record<string, { desc: string }>;
-}).moves;
 const ITEM_CATEGORIES: Record<Item, string> = {
   berry: "berry",
   bigBerry: "berry",
@@ -45,11 +46,17 @@ const ITEM_CATEGORIES: Record<Item, string> = {
   healSeed: "other",
   violentSeed: "other",
   maxElixir: "drink",
+  slumberOrb: "orb",
+  totterOrb: "orb",
+  luminousOrb: "orb",
+  rollcallOrb: "orb",
+  reviverSeed: "other",
 };
 const CATEGORY_TABS = [
   ["all", "全部"],
   ["berry", "树果"],
   ["drink", "补剂"],
+  ["orb", "宝珠"],
   ["tm", "招式机"],
   ["other", "其他"],
 ] as const;
@@ -69,11 +76,6 @@ function unitName(unit: Unit): string {
   return unit.species ? speciesZh(unit.species) : unit.side === "enemy" ? "敌人" : "队员";
 }
 
-function hpPercent(unit: Unit): number {
-  if (unit.maxHp <= 0) return 0;
-  return Math.max(0, Math.min(100, (unit.hp / unit.maxHp) * 100));
-}
-
 function spriteMarkup(unit: Unit, label: string): string {
   const dex = skinFor(unit.id, unit.side, unit.species);
   return portraitMarkup(dex, {
@@ -84,17 +86,19 @@ function spriteMarkup(unit: Unit, label: string): string {
   });
 }
 
-function stageBadge(label: string, stage: number): string {
+/** `stage` is the stage the engine really uses (damageStage: the hunter commission lowers a friend's defence stages by 1); `stored` is the one on the unit. */
+function stageBadge(key: StageKey, stage: number, stored = stage): string {
   if (!stage) return "";
   const direction = stage > 0 ? "up" : "down";
   const arrow = stage > 0 ? "↑" : "↓";
-  return '<span class="hud-status-badge is-' + direction + '">' +
-    esc(label + arrow + Math.abs(stage)) + "</span>";
+  const tip = esc(stageTitle(key, stored, stage));
+  return '<span class="hud-status-badge is-' + direction + '" data-stage="' + key + '" title="' + tip + '" aria-label="' + tip + '">' +
+    esc(STAGE_NAMES[key] + arrow + Math.abs(stage)) + "</span>";
 }
 
-function statusMarkup(unit: Unit): string {
+function statusMarkup(unit: Unit, world?: World): string {
   const stageKeys: StageKey[] = ["atk", "def", "spa", "spd", "acc", "eva"];
-  const badges = stageKeys.map((key) => stageBadge(STAGE_NAMES[key], stageOf(unit, key)));
+  const badges = stageKeys.map((key) => stageBadge(key, world && (key === "atk" || key === "def" || key === "spa" || key === "spd") ? damageStage(world, unit, key) : stageOf(unit, key), stageOf(unit, key)));
   for (const kind of Object.keys(STATUS_NAMES) as StatusId[]) {
     const state: StatusState | undefined = unit.status?.[kind];
     if (!state) continue;
@@ -102,7 +106,7 @@ function statusMarkup(unit: Unit): string {
     badges.push('<span class="hud-status-badge is-down">' +
       esc(STATUS_NAMES[kind] + (remaining === undefined ? "" : remaining)) + "</span>");
   }
-  if (unit.asleep) badges.push('<span class="hud-status-badge is-down">睡眠</span>');
+  if (unit.asleep && !unit.status?.slp && !unit.status?.nap) badges.push('<span class="hud-status-badge is-down">睡眠</span>');
   if (unit.protect > 0) badges.push('<span class="hud-status-badge is-up">守住' + unit.protect + '</span>');
   if (unit.reflect && unit.reflect > 0) badges.push('<span class="hud-status-badge is-up">反射' + unit.reflect + '</span>');
   if (unit.lightscreen && unit.lightscreen > 0) badges.push('<span class="hud-status-badge is-up">光墙' + unit.lightscreen + '</span>');
@@ -131,6 +135,11 @@ const QUICK_ITEM_NAMES: Record<Item, string> = {
   healSeed: "治愈种",
   violentSeed: "暴力种",
   maxElixir: "满PP剂",
+  slumberOrb: "睡眠珠",
+  totterOrb: "慌乱珠",
+  luminousOrb: "发光珠",
+  rollcallOrb: "邀回珠",
+  reviverSeed: "复活种",
 };
 
 function quickSlotMarkup(world: World, item: Item | null, index: number, disabled: boolean, selectedItem: Item | null): string {
@@ -145,7 +154,7 @@ function quickSlotMarkup(world: World, item: Item | null, index: number, disable
   const unavailable = disabled;
   return '<button type="button" class="hud-quick-slot' + (selected ? " is-selected" : "") + '" data-hud-quick="' + index +
     '" aria-pressed="' + selected + '" aria-label="' + esc(name + " ×" + amount + "。" + description) + '"' + (unavailable ? " disabled" : "") + ">" +
-    '<span class="hud-quick-name">' + esc(QUICK_ITEM_NAMES[item]) + '</span><span class="hud-quick-count">×' +
+    itemIconImg(item, 'hud-quick-icon') + '<span class="hud-quick-name">' + esc(QUICK_ITEM_NAMES[item]) + '</span><span class="hud-quick-count">×' +
     amount + '</span><span class="hud-item-description">' + esc(description) + "</span></button>";
 }
 
@@ -183,28 +192,22 @@ function moveCategoryLabel(skill: Skill): string {
   return "—";
 }
 
+/** Every card names its reach in words: "射程 1", "射程 1–2", "直线 10", "周围 1", "同房间", "自身". */
 function compactRange(range: MoveRange | undefined): string {
-  switch (range) {
-    case "front": return "1格";
-    case "front2": return "2格";
-    case "line10": return "10格";
-    case "around": return "周围1格";
-    case "room": return "同房间";
-    case "user": return "自身";
-    default: return "—";
-  }
+  const names: Record<MoveRange, string> = { front: "射程 1", front2: "射程 1–2", line10: "直线 10", around: "周围 1", room: "同房间", user: "自身" };
+  return range ? names[range] : "—";
 }
 
-function rangeCategory(range: MoveRange | undefined): string {
-  switch (range) {
-    case "front":
-    case "front2":
-    case "line10": return "单体";
-    case "around": return "周围";
-    case "room": return "房间";
-    case "user": return "自身";
-    default: return "—";
-  }
+function reachText(skill: Skill): string {
+  const range = moveOf(skill)?.range;
+  if (!range) return "";
+  return '<span class="hud-skill-reach" data-reach="' + range + '" title="' + esc(moveRangeLabel(skill)) + '">' + esc(compactRange(range)) + "</span>";
+}
+/** Power as the cards show it: the number for a damaging move, a dash for a status move or one without a base power. */
+function powerLabel(skill: Skill): string {
+  const spec = moveOf(skill);
+  const damaging = !!spec && (spec.effects.includes("damage") || skill === "snore") && spec.power !== null;
+  return damaging ? String(spec!.power) : "—";
 }
 
 function scopeGrid(range: MoveRange | undefined): string {
@@ -271,9 +274,8 @@ export function hudParty(s: World, disabled: boolean): string {
     const unit = s.units[id];
     if (!unit) return "";
     const name = unitName(unit);
-    const percent = hpPercent(unit);
     const chosen = id === s.leader;
-    const status = statusMarkup(unit);
+    const status = statusMarkup(unit, s);
     return '<article class="hud-party-card' + (chosen ? " is-leader" : "") + '" id="unit-card-' + esc(id) + '">' +
       '<button type="button" class="hud-party-main" id="leader-' + index + '" data-hud-leader="' +
       esc(id) + '" aria-pressed="' + chosen + '" aria-label="切换操控到' + esc(name) + '"' +
@@ -281,9 +283,8 @@ export function hudParty(s: World, disabled: boolean): string {
       spriteMarkup(unit, name) +
       '<span class="hud-party-info"><span class="hud-party-name-row"><strong class="hud-party-name">' +
       esc(name) + '</strong><span class="hud-party-hp">' + unit.hp + "/" + unit.maxHp +
-      '</span></span><span class="hud-hp-track"><span class="hud-hp-fill' +
-      (unit.hp <= 0 ? " is-empty" : "") + '" style="width:' + percent.toFixed(2) +
-      '%"></span></span><span class="hud-unit-status" data-unit-status="' + esc(id) +
+      '</span></span>' + hpTrackMarkup("p:" + id, unit.hp, unit.maxHp) +
+      '<span class="hud-unit-status" data-unit-status="' + esc(id) +
       '">' + status + "</span></span></button>" +
       '<button type="button" class="hud-party-details" id="detail-' + index +
       '" data-hud-details="' + esc(id) + '" aria-label="查看' + esc(name) + '详情">详情</button></article>';
@@ -301,7 +302,6 @@ export function hudBottom(
   const leader = s.units[s.leader];
   if (!leader) return "";
   const name = unitName(leader);
-  const percent = hpPercent(leader);
   const skills = Array.from({ length: 4 }, (_, index) => {
     const skill = leader.learned[index];
     if (!skill) {
@@ -318,9 +318,11 @@ export function hudBottom(
       '" data-move-type="' + esc(typeId) + '" aria-pressed="' +
       (selectedSkill === skill) + '" aria-label="' + esc(moveZh(skill) + "，" + moveTypeLabel(skill) +
       "，PP " + current + "/" + maximum) + '"' + (unavailable ? " disabled" : "") + ">" +
-      '<span class="hud-skill-name">' + esc(moveZh(skill)) + '</span>' +
-      '<span class="hud-skill-meta"><span class="hud-skill-type">' + esc(moveTypeLabel(skill)) +
-      '</span><span class="hud-skill-pp">PP ' + current + "/" + maximum + "</span></span></button>";
+      '<span class="hud-skill-head"><kbd class="hud-skill-key" aria-hidden="true">' + (index + 1) + '</kbd><span class="hud-skill-name">' + esc(moveZh(skill)) + '</span></span>' +
+      '<span class="hud-skill-stats"><span class="hud-skill-power" data-power="' + powerLabel(skill) + '" title="威力">威力 ' + powerLabel(skill) + "</span>" + reachText(skill) + "</span>" +
+      '<span class="hud-skill-meta"><span class="hud-skill-type">' + esc(moveTypeLabel(skill)) + "</span>" +
+      (moveEffectTag(skill) ? '<span class="hud-skill-effect">' + esc(moveEffectTag(skill)) + "</span>" : "") +
+      '<span class="hud-skill-pp">PP ' + current + "/" + maximum + "</span></span></button>";
   }).join("");
 
   const quickMarkup = Array.from({ length: 6 }, (_, index) =>
@@ -332,9 +334,8 @@ export function hudBottom(
     '<section class="hud-current-unit" aria-label="当前操控队员">' +
     experienceMarkup(s) +
     '<div class="hud-current-member">' + spriteMarkup(leader, name) +
-    '<span class="hud-current-info"><strong>' + esc(name) + '</strong><span class="hud-hp-track hud-hp-track-large">' +
-    '<span class="hud-hp-fill' + (leader.hp <= 0 ? " is-empty" : "") +
-    '" style="width:' + percent.toFixed(2) + '%"></span></span><span class="hud-current-hp"><span class="hud-current-hp-value">HP ' +
+    '<span class="hud-current-info"><strong>' + esc(name) + '</strong>' +
+    hpTrackMarkup("b:" + s.leader, leader.hp, leader.maxHp, "hud-hp-track-large") + '<span class="hud-current-hp"><span class="hud-current-hp-value">HP ' +
     leader.hp + "/" + leader.maxHp + "</span>" + sleepNotice + "</span></span></div></section>" +
     '<div class="hud-skills" aria-label="招式">' + skills + "</div>" +
     '<div class="hud-quick-grid" aria-label="快捷物品">' + quickMarkup + "</div>" +
@@ -342,65 +343,25 @@ export function hudBottom(
     "</div>";
 }
 
-export function hudMinimap(s: World): string {
-  const seen = new Set(s.seen);
-  const floorCells = s.floor.filter((pos) => seen.has(pos.x + "," + pos.y));
-  const wallCells = (s.seenWalls ?? []).map((value) => {
-    const [x, y] = value.split(",").map(Number);
-    return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
-  }).filter((pos): pos is { x: number; y: number } => !!pos);
-  const floorXs = s.floor.map((pos) => pos.x);
-  const floorYs = s.floor.map((pos) => pos.y);
-  const minX = s.dungeon ? 0 : Math.min(0, ...floorXs) - 1;
-  const minY = s.dungeon ? 0 : Math.min(0, ...floorYs) - 1;
-  const maxX = s.dungeon ? s.dungeon.width : Math.max(0, ...floorXs) + 2;
-  const maxY = s.dungeon ? s.dungeon.height : Math.max(0, ...floorYs) + 2;
-  const width = Math.max(1, maxX - minX);
-  const height = Math.max(1, maxY - minY);
-  const floorMarkup = floorCells.map((pos) =>
-    '<rect class="hud-map-floor" x="' + pos.x + '" y="' + pos.y + '" width="1" height="1"></rect>',
-  ).join("");
-  const wallMarkup = wallCells.map((pos) =>
-    '<rect class="hud-map-wall" x="' + pos.x + '" y="' + pos.y + '" width="1" height="1"></rect>',
-  ).join("");
-  const pointMarkup = s.points.filter((point) => !point.used && seen.has(point.pos.x + "," + point.pos.y)).map((point) =>
-    '<rect class="hud-map-point is-' + esc(point.kind) + '" x="' + point.pos.x +
-    '" y="' + point.pos.y + '" width="1" height="1"></rect>',
-  ).join("");
-  const friends = s.queue.map((id) => s.units[id]).filter((unit): unit is Unit & { pos: NonNullable<Unit["pos"]> } =>
-    !!unit && !!unit.pos && unit.hp > 0 && seen.has(unit.pos.x + "," + unit.pos.y),
-  );
-  const enemies = s.enemies.map((id) => s.units[id]).filter((unit): unit is Unit & { pos: NonNullable<Unit["pos"]> } =>
-    !!unit && !!unit.pos && unit.hp > 0 && seen.has(unit.pos.x + "," + unit.pos.y),
-  );
-  const friendMarkup = friends.map((unit) =>
-    '<circle class="hud-map-unit' + (unit.id === s.leader ? " is-leader" : "") +
-    '" cx="' + (unit.pos!.x + 0.5) + '" cy="' + (unit.pos!.y + 0.5) + '" r="0.36"></circle>',
-  ).join("");
-  const enemyMarkup = enemies.map((unit) =>
-    '<circle class="hud-map-unit is-enemy" cx="' + (unit.pos!.x + 0.5) +
-    '" cy="' + (unit.pos!.y + 0.5) + '" r="0.32"></circle>',
-  ).join("");
-  const theme = s.dungeon ? themeOfLevel(s.dungeon.boss, s.dungeon.level) : null;
-  const mazeName = theme ? THEME_FLOORS.find((floor) => floor.theme === theme)?.name ?? "迷宫" : "固定地图";
-  const floorLabel = s.dungeon ? mazeName + " " + s.dungeon.level + "F" : mazeName;
-  const roundLabel = "第 " + s.round + " 轮";
-  return '<section class="hud-minimap-panel" aria-label="小地图">' +
-    '<div class="hud-minimap-heading"><span>' + esc(floorLabel) + '</span><span>' + esc(roundLabel) + "</span></div>" +
-    '<svg class="hud-minimap-map" viewBox="' + minX + " " + minY + " " + width + " " + height +
-    '" role="img" aria-label="已探索区域">' + wallMarkup + floorMarkup + pointMarkup +
-    friendMarkup + enemyMarkup + "</svg></section>";
-}
+export { hudMinimap } from "./minimap.ts";
 
-function blessingEffectLabel(id: BlessingId): string {
+export function blessingEffectLabel(id: BlessingId): string {
   const definition = BLESSINGS[id];
   switch (id) {
-    case "berryBoost": return "橙橙果额外回复 " + (definition.berryHealBonus ?? 0) + " HP";
-    case "floorHeal": return "换层回复 " + (definition.floorHealHp ?? 0) + " HP";
+    case "berryBoost": return "橙橙果回复 +" + Math.round((definition.berryHealRate ?? 0) * 100) + "%";
+    case "floorHeal": return "换层回复最大HP的 " + Math.round((definition.floorHealRate ?? 0) * 100) + "%";
     case "battleSpirit": return "攻击 +" + (definition.attackStage ?? 0) + "，换层清除";
-    case "lullaby": return "下层睡眠 " + Math.round((definition.sleepChance ?? 0) * 100) + "%";
+    case "lullaby": return "新楼层敌人睡眠 " + Math.round((definition.sleepChance ?? 0) * 100) + "%";
     case "rally": return "招募概率 " + Math.round((definition.recruitChance ?? 0) * 100) + "%";
-    case "tmChoice": return "招式机 " + (definition.choiceCount ?? 0) + " 选 1";
+    case "tmChoice": return "立即从 " + (definition.choiceCount ?? 0) + " 张招式机里选 1 张";
+    case "nemesis": return "对异常敌人伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
+    case "headhunter": return "对首领伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
+    case "fullpower": return "HP>" + Math.round((definition.threshold ?? 0) * 100) + "% 时伤害 +" + Math.round((definition.value ?? 0) * 100) + "%";
+    case "scholar": return "经验 +" + Math.round((definition.value ?? 0) * 100) + "%";
+    case "killheal": return "击倒回复 " + Math.round((definition.value ?? 0) * 100) + "% HP";
+    case "regen": return "每 " + (definition.every ?? 10) + " 回合回复 " + Math.round((definition.value ?? 0) * 100) + "% HP";
+    case "thickskin": return "每层每人首次直接伤害减半";
+    case "laststand": return "首次 HP<" + Math.round((definition.threshold ?? 0) * 100) + "% 回复 " + Math.round((definition.value ?? 0) * 100) + "%";
   }
 }
 
@@ -421,7 +382,7 @@ export function hudTracking(s: World): string {
       if (commission.id === "speedrun") {
         return commission.speedLimit === null
           ? "限时未设置"
-          : "剩余 " + Math.max(0, commission.speedLimit - commission.progress) + " 轮";
+          : "剩余 " + Math.max(0, commission.speedLimit - commission.progress) + " 回合";
       }
       if (commission.id === "hunter") {
         return "剩余 " + Math.max(0, commission.progressTarget - commission.progress) + " 只";
@@ -452,78 +413,79 @@ export function hudTracking(s: World): string {
     (blessings || '<li class="hud-track-empty">无</li>') + "</ul></section></div>";
 }
 
+/** The technique-machine disc in the colour of the move's type (CSS only, same look as the camp's machine tiles). */
+export const tmDiscOf = (move: string, cls = "tm-disc-icon"): string => tmDisc(moveType(move as Skill), cls);
+function bagIcon(item: Item | null, category: string, move?: string): string {
+  if (item) return '<span class="c195-icon">' + itemIconImg(item, "c195-icon-img") + "</span>";
+  return '<span class="c195-icon cat-' + category + '">' + (move ? tmDiscOf(move) : "") + "</span>";
+}
+
+/** Backpack window: category tabs, item grid, an always-visible detail panel and the six quick slots. Clicking an item only selects it. */
 export function hudBag(
   s: World,
   quick: (Item | null)[],
   category: string,
   selectedSlot: number,
-  selectedItem: Item | null = null,
+  selectedItem: Item | string | null = null,
+  canUse = true,
 ): string {
   const activeCategory = CATEGORY_SET.has(category) ? category : "all";
-  const selected = Number.isInteger(selectedSlot) && selectedSlot >= 0 && selectedSlot < 6;
-  const selectedBagItem = selectedItem ?? (selected ? quick[selectedSlot] ?? null : null);
-  const quickMarkup = Array.from({ length: 6 }, (_, index) => {
+  const slot = Number.isInteger(selectedSlot) && selectedSlot >= 0 && selectedSlot < 6 ? selectedSlot : 0;
+  type Entry = { key: string; category: string; item: Item | null; move?: string; amount: number };
+  const entries: Entry[] = [
+    ...consumableList(s).map((e) => ({ key: e.item as string, category: e.category, item: e.item as Item | null, amount: e.amount })),
+    ...heldTmList(s).map((e) => ({ key: "tm:" + e.move, category: "tm", item: null as Item | null, move: e.move, amount: e.amount })),
+  ].filter((e) => activeCategory === "all" || e.category === activeCategory);
+  const current = entries.find((e) => e.key === selectedItem || e.key === "tm:" + selectedItem) ?? entries[0] ?? null;
+  const tabs = CATEGORY_TABS.map(([id, label]) =>
+    '<button type="button" role="tab" id="bag-category-' + id + '" class="hud-bag-tab' + (activeCategory === id ? " is-active" : "") +
+    '" data-bag-category="' + id + '" aria-selected="' + (activeCategory === id) + '">' + label + "</button>",
+  ).join("");
+  const cells = entries.map((e) => {
+    const name = e.item ? itemTitle(e.item) : "招式机 · " + tmZh(e.move!);
+    // A stable id lets the window put the focus back on the same button after every redraw (Enter keeps working on the selected item).
+    const attrs = e.item ? ' id="bag-item-' + e.item + '" data-bag-item="' + e.item + '"' : ' id="bag-tm-' + esc(e.move) + '" data-bag-tm="' + esc(e.move) + '"';
+    return '<button type="button" class="c195-bag-item' + (current && e.key === current.key ? " is-selected" : "") + '"' + attrs +
+      ' aria-pressed="' + (!!current && e.key === current.key) + '" aria-label="' + esc(name + " ×" + e.amount) + '">' +
+      bagIcon(e.item, e.category, e.move) + '<span class="c195-name">' + esc(name) + '</span><b class="c195-count">×' + e.amount + "</b></button>";
+  });
+  const grid = cells.length ? cells.join("") : '<div class="hud-bag-empty c195-bag-empty">无物品</div>';
+  let detail: string;
+  if (!current) {
+    detail = '';
+  } else {
+    const name = current.item ? itemTitle(current.item) : "招式机 · " + tmZh(current.move!);
+    const text = current.item ? itemDescription(current.item) : "";
+    const pinnedAt = current.item ? quick.findIndex((q) => q === current.item) : -1;
+    const buttons: string[] = [];
+    if (current.item) {
+      if (current.item !== "reviverSeed") buttons.push('<button type="button" id="bag-use" class="paper-button is-primary" data-bag-use="' + current.item + '"' + (canUse ? "" : " disabled") + ">使用</button>");
+      if (current.item !== "reviverSeed" && pinnedAt !== slot) buttons.push('<button type="button" id="bag-pin" class="paper-button" data-bag-pin="' + current.item + '">放入快捷格 ' + (slot + 1) + "</button>");
+      if (current.item !== "reviverSeed" && pinnedAt >= 0) buttons.push('<button type="button" id="bag-unpin" class="paper-button" data-bag-unpin="' + current.item + '">移出快捷格</button>');
+    }
+    detail = '<div class="c195-bag-detail-head">' + bagIcon(current.item, current.category, current.move) + "<div><strong>" + esc(name) + "</strong><small>数量 ×" + current.amount +
+      (pinnedAt >= 0 ? " · 在快捷格 " + (pinnedAt + 1) : "") + '</small></div></div><p class="c195-bag-text" aria-live="polite">' + esc(text) +
+      '</p><div class="c195-bag-actions">' + buttons.join("") + "</div>";
+  }
+  const slots = Array.from({ length: 6 }, (_, index) => {
     const item = quick[index] ?? null;
     const amount = item ? itemCount(s, item) : 0;
     const occupied = !!item && amount > 0;
-    const description = occupied ? itemDescription(item!) : "";
-    const label = occupied ? itemTitle(item!) + " ×" + amount + "。" + description : "空快捷格";
-    const isSelectedSlot = selected && selectedSlot === index;
-    return '<button type="button" class="hud-bag-slot' + (occupied ? "" : " is-empty") +
-      (isSelectedSlot ? " is-selected" : "") + '" data-bag-slot="' + index + '" aria-pressed="' + isSelectedSlot +
-      '" aria-label="快捷格 ' + (index + 1) + "：" + esc(label) + '">' +
-      (occupied ? '<span>' + esc(QUICK_ITEM_NAMES[item!]) + '</span><small>×' + amount +
-        '</small><span class="hud-item-description">' + esc(description) + "</span>" : "") +
-      "</button>";
+    const keyLabel = ["5", "6", "7", "8", "9", "0"][index];
+    return '<button type="button" id="bag-slot-' + index + '" class="c195-slot' + (occupied ? "" : " is-empty") + (slot === index ? " is-selected" : "") +
+      '" data-bag-slot="' + index + '" aria-pressed="' + (slot === index) + '" aria-label="快捷格 ' + (index + 1) + "：" +
+      esc(occupied ? itemTitle(item!) + " ×" + amount + "。" + itemDescription(item!) : "空快捷格") + '"><kbd>' + keyLabel + "</kbd>" +
+      (occupied ? bagIcon(item, ITEM_CATEGORIES[item!]) + '<span class="c195-count">×' + amount + "</span>" : "") + "</button>";
   }).join("");
-
-  const consumables = consumableList(s).map((entry) => {
-    const description = itemDescription(entry.item);
-    const selectedClass = entry.item === selectedBagItem ? " is-selected" : "";
-    return {
-      category: entry.category,
-      markup: '<button type="button" class="hud-bag-item' + selectedClass + '" data-bag-item="' + entry.item +
-        '" aria-label="' + esc(itemTitle(entry.item) + " ×" + entry.amount + "。" + description) + '">' +
-        '<span class="hud-item-name">' + esc(itemTitle(entry.item)) + '</span><small>×' + entry.amount +
-        '</small><span class="hud-item-description">' + esc(description) + "</span></button>",
-    };
-  });
-  const machines = heldTmList(s).map((entry) => ({
-    category: "tm",
-    markup: '<div class="hud-bag-item is-readonly" role="group" aria-label="' +
-      esc("招式机 " + tmZh(entry.move) + " ×" + entry.amount) + '">' +
-      '<span>招式机 · ' + esc(tmZh(entry.move)) + '</span><small>×' +
-      entry.amount + "</small></div>",
-  }));
-  const allItems = [...consumables, ...machines];
-  const filtered = allItems.filter((entry) => activeCategory === "all" || entry.category === activeCategory);
-  const itemMarkup = filtered.length
-    ? filtered.map((entry) => entry.markup).join("")
-    : '<div class="hud-bag-empty">无物品</div>';
-  const selectedDescription = selectedBagItem
-    ? '<p class="hud-bag-selected-description" aria-live="polite"><strong>' + esc(itemTitle(selectedBagItem)) + '：</strong>' + esc(itemDescription(selectedBagItem)) + '</p>'
-    : '<p class="hud-bag-selected-description" aria-live="polite">悬停、聚焦或点选道具查看效果说明。</p>';
-  const tabs = CATEGORY_TABS.map(([id, label]) =>
-    '<button type="button" role="tab" class="hud-bag-tab' + (activeCategory === id ? " is-active" : "") +
-    '" data-bag-category="' + id + '" aria-selected="' + (activeCategory === id) + '">' +
-    label + "</button>",
-  ).join("");
-
   return '<div class="hud-bag-scrim" aria-hidden="true"></div>' +
-    '<section class="hud-bag-dialog" role="dialog" aria-label="背包" aria-modal="true">' +
-    '<header class="hud-bag-heading"><h2>背包</h2>' +
-    '<button type="button" id="bag-close" class="hud-bag-close" aria-label="关闭背包">×</button></header>' +
-    '<div class="hud-bag-quick-heading"><span>快捷物品</span>' +
-    '<button type="button" class="hud-bag-clear" data-bag-clear' +
-    (selected ? "" : " disabled") + '>清空所选快捷格</button></div>' +
-    '<div class="hud-bag-quick-grid" aria-label="快捷格">' + quickMarkup + "</div>" +
-    '<div class="hud-bag-tabs" role="tablist" aria-label="物品分类">' + tabs + "</div>" +
-    '<div class="hud-bag-item-grid" aria-label="背包物品">' + itemMarkup + "</div>" + selectedDescription + "</section>";
+    '<section class="paper-window c195 c195-bag" role="dialog" aria-label="背包" aria-modal="true"><h2 class="paper-plaque">背包</h2>' +
+    '<button type="button" id="bag-close" class="paper-close" aria-label="关闭背包">×</button>' +
+    '<div class="c195-bag-body"><div class="c195-bag-tabs" role="tablist" aria-label="物品分类">' + tabs + "</div>" +
+    '<div class="c195-bag-grid" aria-label="背包物品">' + grid + '</div><aside class="c195-bag-detail" aria-label="物品详情">' + detail + "</aside></div>" +
+    '<div class="c195-bag-quick"><span>快捷格</span><div class="c195-bag-quick-grid" aria-label="快捷格">' + slots + "</div></div></section>";
 }
 
-export function hudDamageEstimate(s: World, actor: string, targetId?: string, skill?: Skill): string {
-  return damageEstimateText(s, actor, targetId, skill).replace(/（对普通目标）$/, "");
-}
+export const hudDamageEstimate = damageEstimateText;
 
 function formatAccuracy(chance: number): string {
   return String(Number(chance.toFixed(1))) + "%";
@@ -553,12 +515,12 @@ export function hudMoveTip(s: World, skill: Skill): string {
   const category = moveCategoryLabel(skill);
   const power = spec?.power === null || spec?.power === undefined ? "—" : String(spec.power);
   const range = compactRange(spec?.range);
-  const target = rangeCategory(spec?.range);
+  const damaging = !!spec && (spec.effects.includes("damage") || skill === "snore") && spec.power !== null;
   const fullRange = spec ? moveRangeLabel(skill) : "未知射程";
   const cells = scopeGrid(spec?.range);
   const typeId = type ? esc(type) : "";
   const accuracy = hudMoveAccuracy(s, s.leader, skill);
-  const description = MOVE_DESCRIPTIONS[skill]?.desc ?? "";
+  const description = moveEffectText(skill);
   return '<section class="hud-move-tip" aria-label="' + esc(moveZh(skill)) + "招式信息" +
     '" data-move-type="' + typeId + '">' +
     '<div class="hud-move-tip-main">' + cells +
@@ -567,15 +529,13 @@ export function hudMoveTip(s: World, skill: Skill): string {
     typeId + '">' + esc(type ? typeZh(type) : "—") + '</span>' +
     '<span class="hud-tip-category">' + esc(category) + "</span></header>" +
     '<div class="hud-tip-fields">' +
-    '<div class="hud-tip-field"><span>威力</span><strong>' + power + "</strong></div>" +
-    '<div class="hud-tip-field"><span>命中</span><strong data-move-accuracy="' +
-    esc(skill) + '">' + esc(accuracy) + "</strong></div>" +
+    (damaging ? '<div class="hud-tip-field"><span>威力</span><strong>' + power + "</strong></div>" : "") +
+    (accuracy !== "不检定" ? '<div class="hud-tip-field"><span>命中</span><strong data-move-accuracy="' + esc(skill) + '">' + esc(accuracy) + "</strong></div>" : "") +
     '<div class="hud-tip-field"><span>PP</span><strong>' + current + "/" + maximum + "</strong></div>" +
-    '<div class="hud-tip-field" data-move-range="' + esc(spec?.range ?? "") + '"><span>射程</span><strong aria-label="' + esc(fullRange) + '">' + esc(range) + "</strong></div>" +
-    '<div class="hud-tip-field"><span>范围</span><strong>' + esc(target) + "</strong></div></div>" +
-    '<div class="hud-tip-preview"><span>预计伤害</span><strong data-move-preview="' +
-    esc(skill) + '">' + esc(hudDamageEstimate(s, s.leader, undefined, skill)) + '</strong></div>' +
-    '<p class="hud-tip-description" data-move-description>' + esc(description) + '</p></div></div></section>';
+    ('<div class="hud-tip-field" data-move-range="' + esc(spec?.range ?? "") + '"><span>射程</span><strong title="' + esc(fullRange) + '">' + esc(range.replace(/^射程 /, "")) + "</strong></div>") + "</div>" +
+    (damaging ? '<div class="hud-tip-preview"><span>预计伤害</span><strong data-move-preview="' +
+    esc(skill) + '">' + esc(hudDamageEstimate(s, s.leader, undefined, skill)) + '</strong></div>' : "") +
+    '<p class="hud-tip-description" data-move-description' + (description ? "" : " hidden") + '>' + esc(description) + '</p></div></div></section>';
 }
 
 /** The title picker shows the same move data as the dungeon card before there is a live team. */
@@ -587,13 +547,23 @@ export function starterMoveFields(skill: Skill) {
   return {
     type,
     category: moveCategoryLabel(skill),
-    power: spec?.power ?? "—",
-    accuracy: checksAccuracy ? formatAccuracy(baseAccuracy) : "不检定",
+    power: spec?.power ?? "",
+    accuracy: checksAccuracy ? formatAccuracy(baseAccuracy) : "",
+    effect: moveEffectTag(skill),
     range: compactRange(spec?.range),
-    target: rangeCategory(spec?.range),
     scope: scopeGrid(spec?.range),
-    description: MOVE_DESCRIPTIONS[skill]?.desc ?? "",
+    description: moveEffectText(skill),
   };
+}
+
+/** The same facts in the same order on every move card: 威力, 命中, PP, 射程, then the effect tag when the move has an added effect. Power and hit chance show a dash when the move has none. */
+export function moveFactPairs(f: { power: unknown; accuracy: string; effect: string; range: string }, pp?: string | number): [string, string][] {
+  const none = f.power === "" || f.power === "—" || f.power === null || f.power === undefined;
+  const out: [string, string][] = [["威力", none ? "—" : String(f.power)], ["命中", f.accuracy ? f.accuracy.replace("基础 ", "") : "—"]];
+  if (pp !== undefined) out.push(["PP", String(pp)]);
+  out.push(["射程", f.range.replace(/^射程 /, "")]);
+  if (f.effect) out.push(["效果", f.effect]);
+  return out;
 }
 
 export {statusMarkup as hudStatusMarkup};

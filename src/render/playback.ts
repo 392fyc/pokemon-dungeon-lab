@@ -4,9 +4,11 @@ import {animationBatches,BASE_MS,movementDuration,type AnimEvent} from './animat
 import type {Pos} from '../core/engine.ts';
 import {playCombatEffect,effectImpactDelay} from './combat-effects.ts';
 import type {EffectStyle} from './effect-spec.ts';
+/** Darker shade of a #rrggbb colour (resisted hits read smaller and dimmer). */
+const darken=(hex:string,k:number)=>'#'+[1,3,5].map(i=>Math.round(parseInt(hex.slice(i,i+2),16)*(1-k)).toString(16).padStart(2,'0')).join('');
 /** Everything the scene draws for one unit, so a step can move the sprite, its shadow and its labels together. */
-export type UnitView={sprite:Phaser.GameObjects.Sprite;gfx:Phaser.GameObjects.Graphics;labels:{t:Phaser.GameObjects.Text;dx:number;dy:number}[];dex:string;row:number};
-export type Stage={scene:Phaser.Scene;views:Map<string,UnitView>;center:(p:Pos)=>{x:number;y:number};cell:number;scale:number;temp:Set<Phaser.GameObjects.GameObject>;f:number;effectCells?:(caster:Pos)=>readonly Pos[];reduceMotion?:boolean;cancelled?:()=>boolean;setHitFlash?:(view:UnitView,on:boolean)=>void;onMovementStart?:(durationMs:number)=>void;onMovementProgress?:(progress:number)=>void};
+export type UnitView={sprite:Phaser.GameObjects.Sprite;gfx:Phaser.GameObjects.Graphics;labels:{t:Phaser.GameObjects.Text;dx:number;dy:number}[];dex:string;row:number;zs?:Phaser.GameObjects.Text[];zMoving?:boolean};
+export type Stage={scene:Phaser.Scene;views:Map<string,UnitView>;center:(p:Pos)=>{x:number;y:number};cell:number;scale:number;temp:Set<Phaser.GameObjects.GameObject>;f:number;effectCells?:(caster:Pos)=>readonly Pos[];reduceMotion?:boolean;cancelled?:()=>boolean;setHitFlash?:(view:UnitView,on:boolean)=>void;onHp?:(id:string,hp:number)=>void;onMovementStart?:(durationMs:number)=>void;onMovementProgress?:(progress:number)=>void};
 const wait=(st:Stage,ms:number)=>new Promise<void>(r=>{st.scene.time.delayedCall(Math.max(1,ms),()=>r());});
 const tween=(st:Stage,cfg:Record<string,unknown>)=>new Promise<void>(r=>{st.scene.tweens.add({...cfg,onComplete:()=>r()} as unknown as Phaser.Types.Tweens.TweenBuilderConfig);});
 const put=(st:Stage,v:UnitView,x:number,y:number)=>{v.sprite.setPosition(x,y+st.cell*UNIT_GROUND_FRACTION);v.gfx.setPosition(x,y);v.labels.forEach(l=>l.t.setPosition(x+l.dx,y+l.dy));};
@@ -25,10 +27,12 @@ function flash(st:Stage,keyName:string,at:{x:number;y:number},ms:number,delay:nu
     const start=opts.from??at,im=track(st,st.scene.add.image(start.x,start.y,keyName).setDepth(7).setScale(st.scale*(opts.grow?1:1.3)*.7).setAlpha(.95).setRotation(opts.angle??0));
     return tween(st,{targets:im,x:at.x,y:at.y,scale:st.scale*(opts.grow??1.3),alpha:0,duration:Math.max(1,ms),ease:'Quad.easeOut'}).then(()=>{im.destroy();st.temp.delete(im);});});
 }
-function floatText(st:Stage,at:{x:number;y:number},text:string,color:string,ms:number,delay:number){
+function floatText(st:Stage,at:{x:number;y:number},text:string,color:string,ms:number,delay:number,opt:{size?:number;bounce?:boolean}={}){
   return wait(st,delay).then(()=>{
-    const t=track(st,st.scene.add.text(at.x,at.y-st.cell*.3,text,{fontFamily:'sans-serif',fontSize:15,fontStyle:'bold',color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(9));
-    return tween(st,{targets:t,y:at.y-st.cell*.85,alpha:0,duration:Math.max(1,ms),ease:'Quad.easeOut'}).then(()=>{t.destroy();st.temp.delete(t);});});
+    const t=track(st,st.scene.add.text(at.x,at.y-st.cell*.3,text,{fontFamily:'sans-serif',fontSize:opt.size??15,fontStyle:'bold',color,stroke:'#17120e',strokeThickness:4}).setOrigin(.5).setDepth(9));
+    if(opt.bounce)void tween(st,{targets:t,scale:{from:1.7,to:1},duration:Math.max(1,Math.min(ms,220)),ease:'Back.easeOut'});
+    void tween(st,{targets:t,alpha:0,delay:Math.round(Math.max(1,ms)*.55),duration:Math.max(1,Math.round(ms*.45))});   // stays fully opaque for the first half so the colour reads
+    return tween(st,{targets:t,y:at.y-st.cell*.85,duration:Math.max(1,ms),ease:'Quad.easeOut'}).then(()=>{t.destroy();st.temp.delete(t);});});
 }
 const hurt=(st:Stage,v:UnitView,ms:number,delay:number,white=false,recoil=true)=>wait(st,delay).then(()=>{
   const x=v.sprite.x;useAnim(st,v,'Hurt',v.row,ms);
@@ -68,7 +72,7 @@ function groupedEffects(batch:AnimEvent[]):Map<AnimEvent,EffectPlaybackOptions>{
  const out=new Map<AnimEvent,EffectPlaybackOptions>();
  for(const group of groups.values()){
   if(group.events.length<2)continue;
-  const style={...group.styles[0],superEffective:group.styles.some(item=>item.superEffective===true)};
+  const style={...group.styles[0],superEffective:group.styles.some(item=>item.superEffective===true),resisted:group.styles.every(item=>item.resisted===true)};
   group.events.forEach((ev,index)=>out.set(ev,index===0?{effect:style,impactPositions:group.points}:{skipEffect:true,sharedCast:true}));
  }
  return out;
@@ -76,6 +80,7 @@ function groupedEffects(batch:AnimEvent[]):Map<AnimEvent,EffectPlaybackOptions>{
 async function play(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise<void>{
   const f=st.f,d=(ms:number)=>ms*f,at=(p:Pos)=>st.center(p),V=(id:string)=>st.views.get(id);
   if(ev.k==='move'){const v=V(ev.id);if(!v)return;face(v,ev.from,ev.to);useAnim(st,v,'Walk',v.row);await slide(st,v,at(ev.from),at(ev.to),d(BASE_MS.move));idle(st,v);}
+  else if(ev.k==='recall'){const v=V(ev.id);if(!v)return;face(v,ev.from,ev.to);useAnim(st,v,'Walk',v.row);await slide(st,v,at(ev.from),at(ev.to),d(BASE_MS.recall));idle(st,v);}
   else if(ev.k==='airAttack'){const v=V(ev.actor);if(v){face(v,ev.from,ev.to);useAnim(st,v,'Attack',v.row,d(BASE_MS.airAttack));await wait(st,d(BASE_MS.airAttack));idle(st,v);}}
   else if(ev.k==='swap'){const a=V(ev.a),b=V(ev.b),ps:Promise<void>[]=[];
     if(a){face(a,ev.pa,ev.pb);useAnim(st,a,'Walk',a.row);ps.push(slide(st,a,at(ev.pa),at(ev.pb),d(BASE_MS.swap)));}
@@ -89,10 +94,16 @@ async function play(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise
     else if(ev.fx==='line'&&ev.from)ps.push(flash(st,'fx-line',to,d(200),d(60),{angle:Math.atan2(to.y-at(ev.from).y,to.x-at(ev.from).x),from:at(ev.from),grow:1}));
     const impact=ev.collision?d(280):ev.effect?d(effectImpactDelay(ev.effect,ev.effect.template==='blow'?BASE_MS.blowaway:BASE_MS.hit)):d(110);
     const duration=ev.cast||ev.effect?500:BASE_MS.hit;
-    if(T){if(ev.from)face(T,ev.at,ev.from);ps.push(hurt(st,T,d(170),impact,!!ev.effect&&ev.amount>0,ev.effect?.template!=='blow'));}
-    ps.push(floatText(st,to,'-'+ev.amount,ev.effect?.superEffective?'#ffd24a':ev.effect?'#ffffff':'#ff9c88',ev.effect||ev.cast?Math.max(1,d(duration)-impact):d(220),impact));
+    if(T){if(ev.from)face(T,ev.at,ev.from);if(!ev.immune)ps.push(hurt(st,T,d(170),impact,!!ev.effect&&ev.amount>0,ev.effect?.template!=='blow'));}
+    // The number takes the move's type colour (a plain attack stays white); a critical hit adds "!" and a bigger size, a super effective hit is bigger and bounces, a resisted one is smaller and darker.
+    {const sup=!!ev.effect?.superEffective,res=!!ev.effect?.resisted&&ev.amount>0,base=ev.tint??'#ffffff';
+     const color=ev.amount<=0?'#c8d0d0':res?darken(base,.35):base,size=ev.amount<=0?15:ev.crit?22:sup?20:res?12:15;
+     const text=ev.amount>0?String(ev.amount)+(ev.crit?'!':''):ev.immune?'没有效果':'没有伤害';
+     ps.push(floatText(st,to,text,color,ev.effect||ev.cast?Math.max(1,d(duration)-impact):d(220),impact,{size,bounce:sup||!!ev.crit}));
+     if(ev.hpAfter!==undefined&&st.onHp)ps.push(wait(st,impact).then(()=>st.onHp!(ev.target,ev.hpAfter!)));}
     if(ev.effect?.superEffective)ps.push(floatText(st,{x:to.x,y:to.y-st.cell*.3},'效果绝佳','#ffd24a',Math.max(1,d(duration)-impact),impact));
-    if(ev.dead&&T)ps.push(wait(st,d(ev.effect||ev.cast?duration-140:220)).then(()=>tween(st,{targets:[T.sprite,...T.labels.map(l=>l.t)],alpha:0,duration:Math.max(1,d(140))})));
+    else if(ev.effect?.resisted&&ev.amount>0)ps.push(floatText(st,{x:to.x,y:to.y-st.cell*.3},'效果不好','#9fb4c8',Math.max(1,d(duration)-impact),impact));
+    if(ev.dead&&T)ps.push(wait(st,d(ev.effect||ev.cast?duration-140:220)).then(()=>tween(st,{targets:[T.sprite,T.gfx,...T.labels.map(l=>l.t)],alpha:0,duration:Math.max(1,d(140))})));
     await Promise.all(ps);}
   else if(ev.k==='protect'){const A=V(ev.by);if(A)face(A,ev.from,ev.at);if(A)idle(st,A);
     if(ev.effect)await drawEffect(st,ev,opts);else await flash(st,'fx-guard',at(ev.at),d(BASE_MS.protect),0,{grow:1.5});}
@@ -104,10 +115,17 @@ async function play(st:Stage,ev:AnimEvent,opts:EffectPlaybackOptions={}):Promise
     await Promise.all(ps);}
   else if(ev.k==='heal'){const A=V(ev.by);if(A)face(A,ev.actorAt,ev.at);if(A&&ev.target!==ev.by)idle(st,A);
     const delay=ev.effect?d(effectImpactDelay(ev.effect,BASE_MS.heal)):d(40);
-    await Promise.all([ev.effect?drawEffect(st,ev,opts):flash(st,'fx-heal',at(ev.at),d(BASE_MS.heal),0,{grow:1.3}),floatText(st,at(ev.at),ev.item==='berry'?'+'+ev.amount:'PP+'+ev.amount,'#9be3a0',ev.effect?Math.max(1,d(BASE_MS.heal)-delay):d(220),delay)]);}
+    await Promise.all([ev.effect?drawEffect(st,ev,opts):flash(st,'fx-heal',at(ev.at),d(BASE_MS.heal),0,{grow:1.3}),floatText(st,at(ev.at),ev.item==='berry'?'+'+ev.amount:'PP+'+ev.amount,'#62e06f',ev.effect?Math.max(1,d(BASE_MS.heal)-delay):d(220),delay),...(ev.hpAfter!==undefined&&st.onHp?[wait(st,delay).then(()=>st.onHp!(ev.target,ev.hpAfter!))]:[])]);}
+  else if(ev.k==='hpchange'){const to=at(ev.at),loss=ev.delta<0;   // status damage, recoil or a drain: the HP moves when it happens
+    await Promise.all([floatText(st,to,loss?String(-ev.delta):'+'+ev.delta,loss?'#ff9c88':'#62e06f',d(BASE_MS.hpchange),d(30)),wait(st,d(30)).then(()=>st.onHp?.(ev.target,ev.hpAfter)),wait(st,d(BASE_MS.hpchange))]);}
+  else if(ev.k==='tags'){   // stage and status words: above the damage numbers, a unit's words one after another so they never overlap
+    const count=new Map<string,number>();
+    await Promise.all(ev.items.map(item=>{const n=count.get(item.target)??0;count.set(item.target,n+1);
+      const to=at(item.at);return floatText(st,{x:to.x,y:to.y-st.cell*.34-n*st.cell*.2},item.text,item.color,d(BASE_MS.tags),d(30+n*110),{size:14});}));}
   else if(ev.k==='effect'){const A=V(ev.by);if(A)face(A,ev.from,ev.at);if(A)idle(st,A);
     const ps:Promise<void>[]=[drawEffect(st,ev,opts)],duration=(BASE_MS as Record<string,number>).effect??320;
-    if(ev.effect.template==='heal'&&ev.amount!==undefined&&ev.amount>0)ps.push(floatText(st,at(ev.at),'+'+ev.amount,'#9be3a0',d(duration),d(effectImpactDelay(ev.effect,duration))));
+    if(ev.effect.template==='heal'&&ev.amount!==undefined&&ev.amount>0)ps.push(floatText(st,at(ev.at),'+'+ev.amount,'#62e06f',d(duration),d(effectImpactDelay(ev.effect,duration))));
+    if(ev.hpAfter!==undefined&&st.onHp)ps.push(wait(st,d(effectImpactDelay(ev.effect,duration))).then(()=>st.onHp!(ev.target,ev.hpAfter!)));
     await Promise.all(ps);}
 }
 export async function playEvents(st:Stage,events:AnimEvent[]):Promise<void>{

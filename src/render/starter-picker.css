@@ -13,11 +13,16 @@
 }
 
 .starter-picker-nav h1 {
-  width: 100%;
-  margin: 0;
-  color: #ead58b;
-  font-size: 15px;
-  font-weight: 500;
+  width: auto;
+  margin: 0 auto;
+  padding: 3px 22px 5px;
+  background: var(--paper-wood);
+  color: #fff4d8;
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 0 var(--paper-wood-dark);
+  box-shadow: 0 0 0 3px var(--paper-ink), inset 0 3px 0 var(--paper-wood-light), inset 0 -3px 0 var(--paper-wood-dark);
   text-align: center;
 }
 
@@ -27,7 +32,14 @@
   margin: 0;
   border: 0;
   background: transparent;
-  color: #ead58b;
+  box-shadow: none;
+  color: var(--ui-text-muted);
+}
+
+.starter-picker-nav button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ui-text);
+  text-decoration: underline;
 }
 
 .starter-detail {
@@ -36,9 +48,11 @@
   align-items: center;
   gap: clamp(12px, 2vw, 28px);
   padding: clamp(14px, 2.5vw, 30px);
-  border: 1px solid #3f5145;
-  border-radius: 16px;
-  background: #15201aa8;
+  border: 4px solid var(--paper-wood-dark);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--paper-ink);
+  box-shadow: 0 0 0 3px var(--paper-ink), inset 0 0 0 2px var(--paper-wood), 8px 12px 0 #0006;
 }
 
 .starter-featured {
@@ -51,13 +65,13 @@
 .starter-featured > .portrait-box {
   width: min(100%, 184px);
   height: min(24vh, 184px);
-  background: #1b29217a;
-  border-radius: 16px;
+  background: var(--paper-2);
+  border-radius: 0;
 }
 
 .starter-featured h2 {
   margin: 0;
-  color: #fff0c5;
+  color: var(--paper-ink);
   font-size: clamp(19px, 3vw, 32px);
 }
 
@@ -65,11 +79,12 @@
   width: min(170px, 100%);
   min-height: 46px;
   margin: 3px 0 0;
-  background: #ead58b;
-  border-color: #ead58b;
-  color: #17190e;
+  background: var(--ui-accent);
+  color: #fff;
   font-size: 17px;
   font-weight: 700;
+  border: 0;
+  box-shadow: 0 0 0 3px var(--paper-ink), inset 0 3px 0 #f39a63, inset 0 -3px 0 #a64217;
 }
 
 .starter-types {
@@ -81,8 +96,8 @@
 .starter-move-heading span {
   padding: 3px 8px;
   border-radius: 999px;
-  background: #344237;
-  color: #e9e7d7;
+  background: var(--paper-muted);
+  color: #fff;
   font-size: 11px;
 }
 
@@ -102,16 +117,16 @@
 
 .starter-stat-ring {
   fill: none;
-  stroke: #405346;
+  stroke: var(--paper-3);
 }
 
 .starter-stat-area {
-  fill: #ead58b50;
-  stroke: #ead58b;
+  fill: #a4703f80;
+  stroke: var(--paper-wood-dark);
   stroke-width: 2;
 }
 
-.starter-stat-value { fill: #f2ecd5; }
+.starter-stat-value { fill: var(--paper-ink); }
 
 .starter-moves {
   display: grid;
@@ -125,15 +140,17 @@
   align-items: center;
   gap: 12px;
   padding: 10px;
-  border: 1px solid #45584b;
-  border-radius: 12px;
-  background: #25332a;
+  border: 0;
+  border-radius: 0;
+  background: var(--paper-2);
+  color: var(--paper-ink);
+  box-shadow: 0 0 0 2px var(--paper-ink);
 }
 
 .starter-move:hover,
 .starter-move:focus-visible {
   z-index: 2;
-  outline: 1px solid #ead58b;
+  outline: 3px solid var(--ui-accent);
 }
 
 .starter-move-heading {
@@ -141,7 +158,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 5px;
-  color: #fff0c5;
+  color: var(--paper-ink);
 }
 
 .starter-move dl {
@@ -152,8 +169,8 @@
   font-size: 12px;
 }
 
-.starter-move dt { color: #a9b4a5; }
-.starter-move dd { margin: 2px 0 0; color: #f5edcf; }
+.starter-move dt { color: var(--paper-muted); }
+.starter-move dd { margin: 2px 0 0; color: var(--paper-ink); }
 
 .starter-move-description {
   display: none;
@@ -162,10 +179,10 @@
   z-index: 3;
   margin: 0;
   padding: 8px 10px;
-  border: 1px solid #ead58b;
-  border-radius: 8px;
-  background: #131b14;
-  color: #f5edcf;
+  border: 3px solid #000;
+  border-radius: 0;
+  background: var(--ui-panel);
+  color: var(--ui-text);
 }
 
 .starter-move:hover .starter-move-description,
@@ -186,16 +203,16 @@
   min-width: 0;
   margin: 0;
   padding: 4px 1px 8px;
-  border-color: #405346;
-  border-radius: 12px;
-  background: #18241e;
+  border-radius: 0;
+  background: var(--paper-2);
+  color: var(--paper-ink);
   font-size: clamp(9px, 1.3vw, 14px);
 }
 
 .starter-option[aria-pressed="true"] {
-  border-color: #ead58b;
-  box-shadow: inset 0 0 0 1px #ead58b;
-  background: #2a3b31;
+  box-shadow: 0 0 0 3px var(--ui-accent), inset 0 0 0 2px var(--ui-accent);
+  background: var(--paper-wood-dark);
+  color: #fff4d8;
 }
 
 .starter-icon {

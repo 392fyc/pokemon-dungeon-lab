@@ -1,20 +1,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  buildCellDarkness,
-  buildDarkness,
+  buildKnownMask,
+  circleLight,
+  CIRCLE_INNER,
+  CIRCLE_OUTER,
+  composeMask,
   darknessBackground,
   darknessTint,
   DungeonDarkness,
+  ROOM_FADE_MS,
+  roomLight,
   unknownDarkness,
+  deepDarkness,
 } from '../../src/render/darkness.ts';
 
-const key = (x,y)=>x+','+y;
-const allCells = (width,height)=>new Set(Array.from({length:width*height},(_,i)=>key(i%width,Math.floor(i/width))));
-const fieldOf = (width,height,overrides={})=>({
-  width,height,known:new Set(),visible:new Set(),lights:[],...overrides,
-});
-const alphaAt = (pixels,width,x,y)=>pixels[y*(width*4)+x];
+const S=6;   // texels per cell (SAMPLES_PER_CELL)
+const key=(x,y)=>x+','+y;
+const allCells=(width,height)=>new Set(Array.from({length:width*height},(_,i)=>key(i%width,Math.floor(i/width))));
+const fieldOf=(width,height,overrides={})=>({width,height,known:allCells(width,height),lights:[],...overrides});
+const mask=(width,height,{dark=.74,rooms=[],lights=[],known}={})=>{
+  const out=new Float32Array(width*S*height*S);
+  composeMask(width,height,dark,rooms,lights,undefined,out,known);
+  return {out,at:(x,y)=>out[Math.floor(y*S)*width*S+Math.floor(x*S)]};
+};
 
 function makeMockScene() {
   const state={time:0,dimensions:null,latest:null,refreshes:0,removed:0,imageSizes:[],imageDestroys:0,borderRects:[],borderDestroys:0,borders:[]};
@@ -32,21 +41,9 @@ function makeMockScene() {
       remove(){state.removed++;},
     },
     add:{
-      image(){
-        return {
-          setOrigin(){return this;},
-          setDepth(){return this;},
-          setDisplaySize(width,height){state.imageSizes.push([width,height]);return this;},
-          destroy(){state.imageDestroys++;},
-        };
-      },
+      image(){return {setOrigin(){return this;},setDepth(){return this;},setDisplaySize(width,height){state.imageSizes.push([width,height]);return this;},destroy(){state.imageDestroys++;}};},
       graphics(){
-        const border={
-          setDepth(){return this;},
-          fillStyle(color,alpha){border.color=color;border.alpha=alpha;return this;},
-          fillRect(x,y,width,height){state.borderRects.push([x,y,width,height]);return this;},
-          destroy(){state.borderDestroys++;},
-        };
+        const border={setDepth(){return this;},fillStyle(color,alpha){border.color=color;border.alpha=alpha;return this;},fillRect(x,y,width,height){state.borderRects.push([x,y,width,height]);return this;},destroy(){state.borderDestroys++;}};
         state.borders.push(border);
         return border;
       },
@@ -54,192 +51,140 @@ function makeMockScene() {
   };
   return {scene,state};
 }
+const alphaOf=(state,width,x,y)=>state.latest[(Math.floor(y*S)*width*S+Math.floor(x*S))*4+3]/255;
 
-function capturedAlpha(state,width,x,y) {
-  assert.ok(state.latest,'mock texture received a frame');
-  return state.latest[(y*(width*4)+x)*4+3];
-}
-
-test('350 cell values use known-and-visible status, 8-neighbor edge, and wall RGB mean',()=>{
-  const width=9,height=9,known=allCells(width,height);
-  known.delete(key(0,0));
-  const field=fieldOf(width,height,{
-    known,
-    visible:new Set([key(4,4),key(0,0)]),
-    wallColor:[100,100,100],
-    lights:[],
-  });
-  const values=buildCellDarkness(field);
-  const at=(x,y)=>values[y*width+x];
-  assert.equal(at(4,4),0,'visible known cell is clear');
-  assert.ok(Math.abs(at(3,3)-.3)<1e-6,'diagonal neighbor is a revealed edge');
-  assert.ok(Math.abs(at(1,1)-.58)<1e-6,'revealed cell away from visible cells is dim');
-  assert.ok(Math.abs(at(0,0)-.74)<1e-6,'unknown wins even if a two-step visibility set contains it');
-  assert.ok(Math.abs(at(1,0)-.58)<1e-6,'an unknown visible neighbor does not create a revealed edge');
+test('350 darkness constants: one even darkness from wall brightness, tint from the theme, board colour blended toward the tint',()=>{
   assert.equal(unknownDarkness([0,0,0]),.7,'black wall RGB follows the lower clamp');
   assert.ok(Math.abs(unknownDarkness([300,300,300])-.9)<1e-6,'bright wall RGB follows the upper clamp');
   assert.equal(darknessTint('moss').join(','),'20,16,13','mask tint uses this theme wall[0]');
-  const board=darknessBackground('moss',[100,100,100]);
   const expected=darknessTint('moss').map(channel=>Math.round(100+(channel-100)*.74));
-  assert.equal(board,((expected[0]<<16)|(expected[1]<<8)|expected[2])>>>0,'outside-map color blends wall RGB toward the theme tint');
+  assert.equal(darknessBackground('moss',[100,100,100]),((expected[0]<<16)|(expected[1]<<8)|expected[2])>>>0);
 });
 
-test('350 mask interpolation and two blur rounds remove cell-sized hard steps',()=>{
-  const width=8,height=8,known=allCells(width,height),visible=new Set();
-  for(let y=0;y<height;y++)for(let x=0;x<3;x++)visible.add(key(x,y));
-  const pixels=buildDarkness(fieldOf(width,height,{known,visible,lights:[],seed:44}));
-  const row=4*4+1;
-  const line=Array.from({length:20},(_,i)=>alphaAt(pixels,width,2*4+i,row));
-  const largestStep=Math.max(...line.slice(1).map((value,i)=>Math.abs(value-line[i])));
-  const boundaryCell=new Set(line.slice(4,8));
-  assert.ok(boundaryCell.size>1,'subcell samples vary across one tile instead of forming a flat square');
-  assert.ok(largestStep<40,'neighboring mask samples change smoothly; largest byte step was '+largestStep);
+test('350 outside every light the mask is one even darkness: no cell-sized patches, whatever is explored',()=>{
+  const {out}=mask(12,9,{dark:.74,lights:[{x:1,y:1}]});
+  const far=[];
+  for(let py=0;py<9*S;py++)for(let px=0;px<12*S;px++){const x=(px+.5)/S,y=(py+.5)/S;if(Math.hypot(x-1.5,y-1.5)>CIRCLE_OUTER+.2)far.push(out[py*12*S+px]);}
+  assert.ok(far.length>1000);assert.ok(far.every(v=>Math.abs(v-.74)<1e-6),'every texel beyond the circle carries exactly the one darkness');
 });
 
-test('350 floor-seeded noise is repeatable and changes only with the seed',()=>{
-  const width=18,height=15,known=allCells(width,height),visible=new Set();
-  for(let y=0;y<height;y++)for(let x=0;x<width;x++)if((x+y)%2===0)visible.add(key(x,y));
-  const make=(seed)=>buildDarkness(fieldOf(width,height,{known,visible,lights:[],seed}));
-  const first=make(350),again=make(350),otherFloor=make(351);
-  assert.deepEqual(first,again,'same floor seed produces identical samples');
-  assert.notDeepEqual(first,otherFloor,'another floor seed bends the sample coordinates differently');
+test('350 a party circle: clear inside about 1.9 cells, soft to nothing at 3, monotone, no hard step',()=>{
+  assert.equal(circleLight(CIRCLE_INNER-.01),1);assert.equal(circleLight(CIRCLE_OUTER+.01),0);
+  const half=circleLight((CIRCLE_INNER+CIRCLE_OUTER)/2);assert.ok(Math.abs(half-.5)<.01,'the half-light radius is about 2.5 cells');
+  const {out}=mask(14,14,{lights:[{x:6,y:6}]});const row=Math.floor(6.5*S)*14*S,cx=Math.floor(6.5*S);
+  let prev=out[row+cx],maxStep=0;
+  for(let px=cx;px<cx+4*S;px++){const v=out[row+px];assert.ok(v>=prev-1e-6,'darkness only grows moving away from the light');maxStep=Math.max(maxStep,v-prev);prev=v;}
+  assert.ok(maxStep<=.74*.3,'the largest texel-to-texel step along a radius is '+maxStep.toFixed(3)+', well below a hard edge (0.74)');
+  assert.equal(out[row+cx],0,'the centre is fully lit');
+  for(const [px,py] of [[cx+Math.floor(2.4*S),Math.floor(6.5*S)],[Math.floor((6.5+1.7)*S),Math.floor((6.5+1.7)*S)],[Math.floor((6.5-1.7)*S),Math.floor((6.5+1.7)*S)]]){const dist=Math.hypot((px+.5)/S-6.5,(py+.5)/S-6.5);assert.ok(Math.abs(out[py*14*S+px]-.74*(1-circleLight(dist)))<1e-5,'the darkness depends on the distance only (round light): '+dist.toFixed(2));}
 });
 
-test('350 party lights move as circles and static lights only illuminate revealed sources',()=>{
-  const width=12,height=12,known=allCells(width,height);
-  known.delete(key(9,9));
-  const staticLights=[
-    {x:2,y:2,inner:.3,outer:1.25,strength:.45},
-    {x:9,y:9,inner:.4,outer:1.7,strength:.55},
-  ];
-  const base=fieldOf(width,height,{known,visible:new Set(),lights:[],staticLights,wallColor:[120,120,120],seed:5});
-  const noStatic=buildDarkness({...base,staticLights:[]});
-  const hiddenOnly=buildDarkness({...base,staticLights:[staticLights[1]]});
-  assert.deepEqual(hiddenOnly,noStatic,'an undiscovered static source has no lighting effect');
-  const lava={x:6,y:6,inner:.4,outer:1.7,strength:.55};
-  const withStairs=buildDarkness({...base,staticLights:[staticLights[0],lava]});
-  assert.ok(alphaAt(withStairs,width,2*4+2,2*4+2)<alphaAt(noStatic,width,2*4+2,2*4+2),'revealed stair source multiplies the base darkness');
-  assert.ok(alphaAt(withStairs,width,6*4+2,6*4+2)<alphaAt(noStatic,width,6*4+2,6*4+2),'revealed magma source multiplies the base darkness');
-
-  const roundLight=buildDarkness(fieldOf(12,12,{known,visible:new Set(),lights:[{x:5,y:5,primary:true,fire:false}],wallColor:[120,120,120],seed:5}));
-  assert.ok(Math.abs(alphaAt(roundLight,width,6*4+2,5*4+2)-alphaAt(roundLight,width,5*4+2,6*4+2))<=1,'equal-radius samples around a party light have equal attenuation');
-
-  const {scene,state}=makeMockScene(),darkness=new DungeonDarkness(scene,1);
-  const moving=fieldOf(width,height,{
-    known,visible:new Set(),seed:5,wallColor:[120,120,120],
-    lights:[{x:4.25,y:5.5,primary:true,fire:false},{x:5,y:5,primary:false,fire:true}],
-    staticLights,
-  });
-  darkness.show('floor-a','moss',24,moving,false);
-  let debug=darkness.debug();
-  assert.equal(debug.lights.length,2,'static lights are cached in the base and are not per-frame lights');
-  assert.deepEqual(debug.lights.map(({primary,fire})=>[primary,fire]),[[true,false],[false,true]]);
-  assert.ok(Math.abs(debug.lights[0].inner-.9)<1e-5 && Math.abs(debug.lights[0].outer-1.95)<1e-5 && debug.lights[0].strength===1);
-  assert.ok(Math.abs(debug.lights[1].inner-.95)<1e-5 && debug.lights[1].outer===2.25 && Math.abs(debug.lights[1].strength-.85)<1e-5);
-  assert.equal(debug.lights[0].centerX,4.75,'grid coordinate plus one half is the sample center');
-
-  const oldCenter=capturedAlpha(state,width,4*4+3,5*4+3);
-  const movedLocationBefore=capturedAlpha(state,width,1*4+3,2*4+3);
-  darkness.update(16,[{x:1.25,y:2.5,primary:true,fire:true}]);
-  debug=darkness.debug();
-  assert.equal(debug.lights.length,1);
-  assert.equal(debug.lights[0].x,1.25);
-  assert.equal(debug.lights[0].centerY,3);
-  assert.equal(debug.lights[0].primary,true);
-  assert.equal(debug.lights[0].fire,true);
-  const movedCenter=capturedAlpha(state,width,1*4+3,2*4+3);
-  assert.ok(oldCenter>=0 && movedCenter<movedLocationBefore,'per-frame composition follows the moved sprite center');
-  assert.ok(debug.drawMs>=0,'draw time is exposed without counting base-build time');
-  darkness.clear();
+test('350 a lit room is the room plus its ring (corners too) as a rounded rectangle with a soft edge',()=>{
+  const room={x:3,y:3,w:5,h:4};   // lit rectangle: cells 2..8 x 2..7
+  assert.ok(roomLight(room,5.5,5)>.999,'inside');
+  assert.ok(roomLight(room,2.5,2.5)>.9,'the ring corner cell centre is lit');
+  assert.ok(roomLight(room,2.02,2.02)<.5,'the very corner is rounded off (radius about half a cell)');
+  assert.ok(roomLight(room,1.6,5)<.05&&roomLight(room,9.4,5)<.05,'beyond the ring the light is gone (soft edge about 0.3 cell)');
+  const {out}=mask(12,10,{rooms:[{room,level:1}]});const row=Math.floor(5*S)*12*S;
+  const across=[];for(let px=Math.floor(1.5*S);px<=Math.floor(2.6*S);px++)across.push(out[row+px]);
+  const middle=across.filter(v=>v>.05&&v<.69);assert.ok(middle.length>=2,'the edge passes through at least two intermediate values, so it is feathered: '+across.map(v=>v.toFixed(2)).join(' '));
+  for(let i=1;i<across.length;i++)assert.ok(across[i]<=across[i-1]+1e-6,'monotone across the edge');
+  assert.ok(out[Math.floor(5*S)*12*S+Math.floor(5.5*S)]<1e-6,'the whole room interior is not dimmed');
+  assert.ok(out[Math.floor(0.5*S)*12*S+Math.floor(0.5*S)]>.73,'outside stays dark');
 });
 
-test('350 base cache and transition timing follow the supplied movement duration',()=>{
-  const width=6,height=6,known=allCells(width,height);
-  const before=fieldOf(width,height,{known,visible:new Set([key(2,2)]),lights:[],seed:77,wallColor:[90,90,90]});
-  const after=fieldOf(width,height,{known,visible:new Set([key(2,2),key(3,2)]),lights:[],seed:77,wallColor:[90,90,90]});
-  const {scene,state}=makeMockScene(),darkness=new DungeonDarkness(scene,1);
+test('350 party circles do not light cells that are not revealed; the cut-off is soft',()=>{
+  const width=12,height=6,bits=new Uint8Array(width*height);for(let y=0;y<height;y++)for(let x=0;x<6;x++)bits[y*width+x]=1;
+  const km=buildKnownMask(width,height,bits);
+  const {at}=mask(width,height,{lights:[{x:5,y:2}],known:km});
+  assert.ok(at(4.5,2.5)<.05,'a revealed cell next to the light is lit');
+  assert.ok(at(8.5,2.5)>.73,'an unrevealed cell inside the circle radius stays dark');
+  const ramp=[5.4,5.6,5.8,6.0,6.2,6.4,6.6,6.8,7.0,7.2].map(x=>at(x,2.5));
+  for(let i=1;i<ramp.length;i++)assert.ok(ramp[i]>=ramp[i-1]-1e-6&&ramp[i]-ramp[i-1]<.4,'the edge of the revealed area fades over cells, not in one step: '+ramp.map(v=>v.toFixed(2)).join(' '));
+});
 
-  scene.time.now=10;
-  darkness.show('floor-77','moss',24,before,false);
-  assert.equal(darkness.debug().baseBuildCount,1);
-  assert.deepEqual(state.dimensions,[width*4,height*4],'the dynamic texture covers only the map at four samples per cell');
-  assert.equal(state.borderRects.length,4,'the map margin is four static rectangles');
-  assert.equal(state.borders[0].alpha,unknownDarkness([90,90,90]),'the outside veil preserves the repeated wall texture under the same unknown opacity');
-  assert.equal(state.borderRects[0][0],-64*24);
-
-  scene.time.now=30;
-  darkness.show('floor-77','moss',24,{...before,known:new Set(known),visible:new Set(before.visible)},true,500);
-  assert.equal(darkness.debug().baseBuildCount,1,'same base field is reused');
-  assert.equal(darkness.debug().transition.end,10,'same animated field does not restart an interpolation');
-
-  scene.time.now=100;
-  darkness.show('floor-77','moss',24,after,true,400);
-  assert.equal(darkness.debug().baseBuildCount,2);
-  assert.deepEqual(darkness.debug().transition,{start:100,end:500,progress:0});
-  scene.time.now=300;
-  darkness.show('floor-77','moss',24,{...after,known:new Set(known),visible:new Set(after.visible)},true,900);
-  assert.equal(darkness.debug().baseBuildCount,2);
-  assert.equal(darkness.debug().transition.start,100,'same target does not restart the movement fade');
-  assert.equal(darkness.debug().transition.end,500);
-  assert.ok(Math.abs(darkness.debug().transition.progress-.5)<.02,'progress follows the actual elapsed duration');
-
-  scene.time.now=500;
-  darkness.update(500);
+test('350 a room fades in as one whole shape over about 225 ms; a skip or reduced motion settles at once',()=>{
+  const width=12,height=10,room={x:3,y:3,w:4,h:3},{scene,state}=makeMockScene(),darkness=new DungeonDarkness(scene,1);
+  const base=fieldOf(width,height,{seed:5,wallColor:[90,90,90]});
+  state.time=0;darkness.show('floor-a','moss',24,{...base,litRooms:[]},false);
+  assert.ok(alphaOf(state,width,4.5,4.5)>.7,'the room starts dark');
+  state.time=100;darkness.show('floor-a','moss',24,{...base,litRooms:[room]},true,200);
+  assert.equal(darkness.debug().rooms.length,1);assert.equal(darkness.debug().rooms[0].level,0,'the fade starts from nothing');
+  darkness.update(100+ROOM_FADE_MS/2);
+  const a=alphaOf(state,width,3.5,3.5),b=alphaOf(state,width,5.5,4.5),c=alphaOf(state,width,6.5,5.5);
+  assert.ok(Math.abs(a-b)<.01&&Math.abs(b-c)<.01,'half way, every cell of the room has the same brightness (no cell-by-cell spreading): '+[a,b,c].join(' '));
+  assert.ok(a>.05&&a<.7,'half way the room is half lit: '+a);
+  darkness.update(100+ROOM_FADE_MS+1);assert.ok(alphaOf(state,width,5.5,4.5)<.01,'after the fade the room is fully lit');
   assert.equal(darkness.debug().transition.progress,1);
-  scene.time.now=520;
-  darkness.show('floor-77','moss',48,after,false);
-  assert.equal(darkness.debug().baseBuildCount,2,'final repaint does not rebuild the target field');
-  assert.deepEqual(darkness.debug().transition,{start:520,end:520,progress:1},'non-animated final repaint settles to the target');
-  assert.deepEqual(state.imageSizes.at(-1),[width*48,height*48],'resize updates display size without rebuilding samples');
-
-  darkness.clear();
-  assert.equal(state.removed,1);
-  assert.equal(state.imageDestroys,1);
-  assert.equal(state.borderDestroys>=1,true);
-  scene.time.now=600;
-  darkness.show('floor-77','moss',48,before,true);
-  assert.equal(darkness.debug().baseBuildCount,3,'clear removes its cache and the next show builds once');
-  assert.equal(darkness.debug().transition.progress,1,'missing duration means immediate arrival');
+  // leaving fades out as a whole too
+  state.time=1000;darkness.show('floor-a','moss',24,{...base,litRooms:[]},true,200);darkness.update(1000+ROOM_FADE_MS/2);
+  const out=alphaOf(state,width,5.5,4.5);assert.ok(out>.05&&out<.7,'the room dims gradually when left: '+out);
+  darkness.update(1000+ROOM_FADE_MS+1);assert.ok(alphaOf(state,width,5.5,4.5)>.7,"back to the even darkness");assert.equal(darkness.debug().rooms.length,0);
+  // skip: a final repaint settles at once
+  state.time=2000;darkness.show('floor-a','moss',24,{...base,litRooms:[room]},false);assert.ok(alphaOf(state,width,5.5,4.5)<.01,'a non-animated repaint is the final state');
+  // reduced motion
+  darkness.show('floor-a','moss',24,{...base,litRooms:[]},false);
+  globalThis.window={matchMedia:()=>({matches:true})};
+  try{state.time=3000;darkness.show('floor-a','moss',24,{...base,litRooms:[room]},true,200);assert.ok(alphaOf(state,width,5.5,4.5)<.01,'reduced motion switches straight to the final state');}
+  finally{delete globalThis.window;}
   darkness.clear();
 });
 
-test('350 changing a hidden static source does not rebuild the visible base',()=>{
-  const width=4,height=4,known=allCells(width,height);
-  known.delete(key(3,3));
-  const {scene}=makeMockScene(),darkness=new DungeonDarkness(scene,1);
-  const hidden={x:3,y:3,inner:.4,outer:1.7,strength:.55};
-  const base=fieldOf(width,height,{known,visible:new Set(),lights:[],staticLights:[hidden],seed:7});
-  darkness.show('floor-7','moss',24,base,false);
-  const count=darkness.debug().baseBuildCount;
-  darkness.show('floor-7','moss',24,{...base,staticLights:[{...hidden,strength:.9}]},true,300);
-  assert.equal(darkness.debug().baseBuildCount,count,'unknown static sources do not affect cached pixels');
-  const revealed={x:1,y:1,inner:.3,outer:1.25,strength:.45};
-  darkness.show('floor-7','moss',24,{...base,staticLights:[revealed]},true,300);
-  assert.equal(darkness.debug().baseBuildCount,count+1,'revealing a static source changes and rebuilds the cached base');
-  darkness.clear();
-});
-
-test('350 theme change and map-size change refresh texture tint and border bounds',()=>{
+test('350 a new floor starts with its rooms already lit; tint and border follow the theme and the map size',()=>{
   const {scene,state}=makeMockScene(),darkness=new DungeonDarkness(scene,1);
-  const first=fieldOf(2,2,{known:allCells(2,2),visible:new Set(),lights:[],seed:11});
-  darkness.show('floor-11','moss',24,first,false);
+  const room={x:1,y:1,w:2,h:2};
+  darkness.show('floor-1','moss',24,fieldOf(8,8,{seed:1,litRooms:[room]}),true,200);
+  assert.ok(alphaOf(state,8,2.5,2.5)<.01,'no fade-in on arrival at a floor');
   assert.deepEqual(Array.from(state.latest.slice(0,3)),[20,16,13]);
-  const resized=fieldOf(3,2,{known:allCells(3,2),visible:new Set(),lights:[],seed:11});
-  darkness.show('floor-11','wet',48,resized,false);
-  assert.deepEqual(state.dimensions,[12,8]);
+  assert.equal(state.borders.at(-1).alpha,deepDarkness([...Array(3)].map(()=>0)) ,'border veil uses the deep darkness of an unknown cell when no wall colour is given or the theme default');
+  darkness.show('floor-1','wet',48,fieldOf(9,8,{seed:1,litRooms:[room]}),false);
+  assert.deepEqual(state.dimensions,[9*S,8*S]);
   assert.deepEqual(Array.from(state.latest.slice(0,3)),[10,17,18],'new canvas gets the wet wall[0] tint');
-  assert.deepEqual(state.imageSizes.at(-1),[3*48,2*48]);
-  assert.equal(state.borders.at(-1).color,0x0a1112,'outside masking uses the same wet cliff tint as the map');
   darkness.clear();
 });
 
+test('350 revealed stairs and magma glow locally; a hidden source does nothing and the static layer is rebuilt only when its set changes',()=>{
+  const width=8,height=8,known=allCells(width,height);known.delete(key(7,7));
+  const {scene,state}=makeMockScene(),darkness=new DungeonDarkness(scene,1);
+  const base=fieldOf(width,height,{known,seed:7,wallColor:[90,90,90]});
+  darkness.show('f','moss',24,base,false);const plain=alphaOf(state,width,2.5,2.5);const count=darkness.debug().baseBuildCount;
+  darkness.show('f','moss',24,{...base,staticLights:[{x:7,y:7,inner:.4,outer:1.7,strength:.55}]},false);
+  assert.equal(darkness.debug().baseBuildCount,count,'a source on an unrevealed cell changes nothing');
+  darkness.show('f','moss',24,{...base,staticLights:[{x:2,y:2,inner:.3,outer:1.25,strength:.45}]},false);
+  assert.equal(darkness.debug().baseBuildCount,count+1);assert.ok(alphaOf(state,width,2.5,2.5)<plain*.6,'the glow lowers the darkness around the source');
+  darkness.show('f','moss',24,{...base,staticLights:[{x:2,y:2,inner:.3,outer:1.25,strength:.45}]},false);
+  assert.equal(darkness.debug().baseBuildCount,count+1,'the same set is not rebuilt');
+  darkness.clear();
+});
 
-test('350 physical movement progress wins over a Scene clock that runs ahead',()=>{
- const {scene}=makeMockScene(),darkness=new DungeonDarkness(scene,1),known=allCells(3,3);
- const before=fieldOf(3,3,{known,visible:new Set(['1,1']),lights:[],seed:350}),after={...before,visible:new Set(known)};
- scene.time.now=0;darkness.show('physical','moss',72,before,false);
- darkness.setMovementProgress(0);scene.time.now=10;darkness.show('physical','moss',72,after,true,180);
- darkness.update(1000);assert.equal(darkness.debug().transition.progress,0,'a stalled sprite also stalls the reveal despite elapsed Scene time');
- darkness.setMovementProgress(.5);darkness.update(1001);assert.equal(darkness.debug().transition.progress,.5,'half a real movement displays half the base transition');
- darkness.setMovementProgress(1);darkness.update(1010);assert.equal(darkness.debug().transition.progress,1);assert.equal(darkness.debug().transition.end,1010,'transition completion follows the actual movement');darkness.clear();
+test('350 the primary light follows the sprite pixel position every frame',()=>{
+  const {scene,state}=makeMockScene(),darkness=new DungeonDarkness(scene,1);
+  darkness.show('f','moss',24,fieldOf(10,10,{seed:2,wallColor:[90,90,90],lights:[{x:2.25,y:3.5,primary:true}]}),false);
+  assert.equal(darkness.debug().lights[0].x,2.25);assert.equal(darkness.debug().lights[0].centerX,2.75);
+  const before=alphaOf(state,10,6.5,3.5);
+  darkness.update(16,[{x:5.5,y:3.5,primary:true}]);
+  assert.equal(darkness.debug().lights[0].x,5.5);assert.ok(alphaOf(state,10,6.5,3.5)<before,'the lit spot moved with the light');
+  assert.ok(darkness.debug().drawMs>=0);
+  darkness.clear();
+});
+
+test('350 the outer border is four rectangles reaching 64 cells out; resizing keeps the samples; clear frees everything',()=>{
+  const width=6,height=6,known=allCells(width,height),field=fieldOf(width,height,{known,seed:77,wallColor:[90,90,90]});
+  const {scene,state}=makeMockScene(),darkness=new DungeonDarkness(scene,1);
+  darkness.show('floor-77','moss',24,field,false);
+  assert.equal(darkness.debug().baseBuildCount,1);
+  assert.deepEqual(state.dimensions,[width*S,height*S],'the texture covers only the map at the sample density');
+  assert.equal(state.borderRects.length,4,'the map margin is four static rectangles');
+  assert.equal(state.borders[0].alpha,deepDarkness([90,90,90]),'the outside veil uses the same darkness as an unknown cell');
+  assert.equal(state.borderRects[0][0],-64*24,'the border reaches 64 cells beyond the map');
+  darkness.show('floor-77','moss',48,field,false);
+  assert.equal(darkness.debug().baseBuildCount,1,'resizing does not rebuild the samples');
+  assert.deepEqual(state.imageSizes.at(-1),[width*48,height*48],'resize only updates the display size');
+  darkness.clear();
+  assert.equal(state.removed,1,'the texture is removed');
+  assert.equal(state.imageDestroys,1,'the image is destroyed');
+  assert.ok(state.borderDestroys>=1,'the border is destroyed');
+  darkness.show('floor-77','moss',48,field,false);
+  assert.equal(darkness.debug().baseBuildCount,2,'clear drops the cache, so the next show builds once');
+  darkness.clear();
 });

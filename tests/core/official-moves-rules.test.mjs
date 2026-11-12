@@ -73,8 +73,8 @@ test('伤害按威力、攻击阶段、本局等级和防御阶段结算；普�
   const a=friend('A',0,1,20,{tackle:2});a.stages.atk=2;
   const e=enemy('E',1,1,50,'melee',0);e.stages.def=1;
   const s=world({floor:row(0,3),friends:[a],enemies:[e],level:13});
-  const moveHit=use(s,'tackle','E');assert.equal(moveHit.units.E.hp,38); // 9 + 2 攻击 + 2 等级(floor((13-5)/4)) - 1 防御
-  const basicHit=play(moveHit,{type:'basic',target:'E'});assert.equal(basicHit.units.E.hp,29); // 6 + 2 + 2 - 1
+  const moveHit=use(s,'tackle','E');assert.equal(moveHit.units.E.hp,39); // (9 + 2 等级(floor((13-5)/4))) x 攻击+2 332/256 ÷ 防御+1 332/256 = 11
+  const basicHit=play(moveHit,{type:'basic',target:'E'});assert.equal(basicHit.units.E.hp,31); // (6 + 2) x 332/256 ÷ 332/256 = 8
 });
 
 test('吸取按实际伤害恢复一半并受最大 HP 限制',()=>{
@@ -87,12 +87,12 @@ test('吸取按实际伤害恢复一半并受最大 HP 限制',()=>{
   s=use(low,'absorb','E');assert.equal(s.units.E.hp,0);assert.equal(s.units.A.hp,6); // 公式伤害 7，但只扣掉目标剩余的 2 HP，恢复 1
 });
 
-test('能力阶段有 ±3 上下限；帮助只提升房间内队友，走廊退化为切比雪夫距离 2',()=>withMove('testRaise',{range:'user',target:'user',power:null,effects:['stage:atk:+1']},()=>
+test('攻击、防御阶段上下限 ±10；帮助只提升房间内队友，走廊退化为切比雪夫距离 2',()=>withMove('testRaise',{range:'user',target:'user',power:null,effects:['stage:atk:+1']},()=>
   withMove('testLower',{range:'user',target:'user',power:null,effects:['stage:def:-1']},()=>{
-    const a=friend('A',1,1,20),b=friend('B',2,2),c=friend('C',5,1);equip(a,'testRaise',5);equip(a,'testLower',5);
+    const a=friend('A',1,1,20),b=friend('B',2,2),c=friend('C',5,1);equip(a,'testRaise',15);equip(a,'testLower',5);
     let s=world({floor:rect(0,6,0,4),friends:[a,b,c],rooms:[{x:0,y:0,w:4,h:4}]});
-    for(let i=0;i<5;i++)s=use(s,'testRaise','A');assert.equal(s.units.A.stages.atk,3);
-    s.units.A.stages.def=-3;for(let i=0;i<4;i++)s=use(s,'testLower','A');assert.equal(s.units.A.stages.def,-3);
+    for(let i=0;i<12;i++)s=use(s,'testRaise','A');assert.equal(s.units.A.stages.atk,10);   // held at +10 (accuracy and evasion keep +-6)
+    s.units.A.stages.def=-9;for(let i=0;i<4;i++)s=use(s,'testLower','A');assert.equal(s.units.A.stages.def,-10);
 
     const h=friend('H',0,1,20,{helpinghand:2}),inside=friend('I',2,2),outside=friend('O',4,2);
     s=world({floor:rect(0,5,0,4),friends:[h,inside,outside],rooms:[{x:0,y:0,w:3,h:4}]});

@@ -1,30 +1,39 @@
 import type Phaser from 'phaser';
-import {hudParty,hudBottom,hudMinimap,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate} from '../render/hud.ts';
+import {hudParty,hudBottom,hudTracking,hudBag,hudMoveTip,hudMoveAccuracy,hudDamageEstimate,tmDiscOf,blessingEffectLabel} from '../render/hud.ts';
 import '../render/hud.css';
-import {unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
+import {itemIconImg} from '../render/item-icons.ts';
+import {installDrag,reconcileDrag} from './drag.ts';
+import {scrollHorizontalWithWheel} from './scroll.ts';
+import {resultBanner} from '../render/result-banner.ts';
+import {applyHpBar,syncHpBars,hpTextColor} from '../render/hpbar.ts';
+import {typeChips,unitDetails,settingsMarkup,settingsProfile,settlement} from '../render/panels194.ts';
+import {createWiki} from '../render/wiki.ts';
+import {updateMinimap,playbackMinimapWorld,boardCell,bigMinimapMarkup,minimapStats} from '../render/minimap.ts';
 import '../render/panels194.css';
-import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
-import {applyCommand,traceRound,playerVisibleCells,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,PROG,COMMISSIONS,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
+import {learningPanel,invitationPanel,moveCard,noticePanel,noticeTag} from '../render/choice-panels.ts';
+import '../render/choice-panels.css';
+import {CAMP_BUILDINGS,campScene,campPanelMarkup,campParty194,campVault194,normalizeVault194,campRecords194,campDeparture194,campMoveTooltip194,tmTile,type CampPanel,type VaultState,type CampReport} from '../render/camp.ts';
+import {applyCommand,bossDefeated,traceRound,playerVisibleCells,reveal,previewInvitation,createMain,createExpedition,key,same,plus,clone,facingOf,skillTargets,sleeping,ITEM_NAMES,ORB_ITEMS,PROG,COMMISSIONS,BLESSING_RARITY,BLESSINGS,type World,type Action,type Skill,type Pos,type Item,type Unit,type ShopItem,type TmItem,type Point,type CommissionId} from '../core/engine.ts';
 import {ECON} from '../core/economy.ts';
 import {SPECIES,ALL_TM_MOVES,STARTER_IDS,learnableMove} from '../core/roster.ts';
 import {speciesZh,moveZh,tmZh,typeZh,itemZh,adventureRoomTypeZh,adventureRoomStateZh,challengeRewardZh} from '../core/names.ts';
 import {moveOf} from '../core/moves.ts';
-import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,playerText,moveSummary,adventureRoomMarkers} from '../core/describe.ts';
+import {unitLabel,skillLabel,actionText,orderLine,stepRows,enemyInfo,localizeLog,logEntryText,logEntryShown,logPartsText,playerText,moveSummary,unitMoveLevel,adventureRoomMarkers} from '../core/describe.ts';
 import {renderTitle,renderNewGame,portrait,portraitTick,type NewGameState} from '../ui/title.ts';
 import {newGameProfile,initialProfile,squadOf,TALENTS,TALENT_MAX_RANK,rankLevel,rankThreshold,availableTalentPoints,type BaseAction,type Profile,type TalentId} from '../core/base.ts';
 import {TACTICS,TACTIC_LABELS,isTactic,type Tactic} from '../core/tactics.ts';
 import {TrialStore,SAVE_KEY,BUILD_ID,type StoragePort} from '../core/save.ts';
 import {createScenario,scenarioProfile,SCENARIOS,SCENARIO_LABEL,type ScenarioId} from '../core/scenarios.ts';
 import {THEME_FLOORS,themeOfLevel,ARENA_TILE,isDifficulty,type Difficulty} from '../core/dungeon.ts';
-import {preloadArt,createAnims,createTerrainArt,exportTerrainArt,skinFor,facingRow,animKey,groundOriginY,UNIT_GROUND_FRACTION,TILE} from '../render/sprites.ts';
+import {preloadArt,ensureCharacters,characterReady,characterFailed,characterDrawable,charactersPending,worldDex,nextFloorDex,createTerrainArt,exportTerrainArt,skinFor,facingRow,animKey,groundOriginY,UNIT_GROUND_FRACTION,TILE} from '../render/sprites.ts';
 import {terrainSource} from '../render/dtef.ts';
 import {DtefTerrainLayer} from '../render/dtef-scene.ts';
 import {PainterTerrainLayer} from '../render/painter-scene.ts';
 import {BOARD_BACKGROUND,darknessBackground,DungeonDarkness} from '../render/darkness.ts';
 import {prepareTerrainMap,type TerrainThemeKey,type TerrainLayer} from '../render/terrain.ts';
-import {inferEvents,plan,newLines,type AnimEvent} from '../render/animation.ts';
-import {selfOrAdjacentReachable,adjacentReachable,floorIndex} from '../render/reach.ts';
-import {POINT_VISUALS,dungeonCellSize} from '../render/point-visuals.ts';
+import {inferEvents,plan,type AnimEvent} from '../render/animation.ts';
+import {selfOrAdjacentReachable,adjacentReachable,floorIndex,walkPath} from '../render/reach.ts';
+import {POINT_VISUALS,dungeonCellSize,terrainKnown} from '../render/point-visuals.ts';
 import {itemDescription} from '../core/item-descriptions.ts';
 import {playEvents,type Stage,type UnitView} from '../render/playback.ts';
 import {resetCombatShake} from '../render/combat-effects.ts';
@@ -42,17 +51,17 @@ const experienceProgress=(s:World)=>{
  const level=Math.min(p.level,PROG.maxLevel),currentThreshold=PROG.thresholds[level]??0,nextThreshold=PROG.thresholds[level+1];
  if(nextThreshold===undefined)return `Lv${level} · 升级经验已满（累计 ${p.exp}）`;
  const required=nextThreshold-currentThreshold,progress=Math.max(0,Math.min(required,p.exp-currentThreshold));
- return `Lv${level} · 升级经验 ${progress}/${required}（升到下一级需当前等级经验；击倒敌人获得其等级×${PROG.expMultiplier}的经验）`;
+ return `Lv${level} · 升级经验 ${progress}/${required}`;
 };
 const FATE:Record<TmItem['fate'],string>={held:'持有中',brought:'已带回',sent:'已由伙伴运送',lost:'已取得、未带出'};
-const SRC:Record<TmItem['source'],string>={target:'成果 T',shop:'商店',boss:'区域首领',challenge:'挑战奖励'};
+const SRC:Record<TmItem['source'],string>={target:'成果 T',shop:'商店',boss:'区域首领',challenge:'挑战奖励',blessing:'祝福奖励'};
 const REASON:Record<string,string>={goal:'完成了基础目标 G',recruit:'保留了本局新招募的伙伴',tm:'带回或安全送回了招式机'};
 const tmLine=(t:TmItem)=>`${tmName(t.move)}（${SRC[t.source]}）：${FATE[t.fate]}`;
 const params=new URLSearchParams(location.search);
 /** Developer mode (stage 7.1): `?dev=1` or `?fixture=`. Only here do the fixed map, the no-invitation control, fixtures, `?seed=` and coordinates exist; the title screen is skipped. */
 const dev=params.get('dev')==='1'||(params.get('fixture')!==null&&(SCENARIOS as readonly string[]).includes(params.get('fixture')!));
 const app=document.querySelector<HTMLDivElement>('#app')!;
-app.innerHTML=`<header><div class="brand">宝可梦地牢探索</div><div class="build">版本 ${BUILD_ID.replace(/^trial-/,'')} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1><p>${dev?'使用开发者菜单检查固定场景或三层首领战，结果只在本页内存中。':'逐层探索迷宫、招募伙伴，击败第三层的首领。伙伴始终归营，招式机胜利后带回。'}</p></div><section id="guide"></section><div class="board-head"><span id="world-label">尚未出发</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标</span><span>T 成果</span><span>下 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本轮发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><p class="muted">在队友卡片上更改作战方针，不占回合；点击详情可查看招式与当前方针。</p><div id="party"></div></section><section id="controls"></section>${dev?`<details id="developer-tools"><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button><p>运行时地形图集（每层含 47 种形状及 4 个变体）</p><label>主题 <select id="terrain-theme"><option value="moss">苔石洞</option><option value="wet">潮湿水窟</option><option value="ash">灰烬裂谷</option></select></label><label>图层 <select id="terrain-layer"><option value="floor">连续地面</option><option value="edge">地面边缘</option><option value="liquid">水面／岩浆</option><option value="wall">墙体</option></select></label><button id="export-terrain">导出地形图集 PNG</button></details>`:''}<footer>无需账号，进度保存在此浏览器</footer></aside></main><div id="title-screen" class="screen" hidden></div>${settingsMarkup()}`;
+app.innerHTML=`<header><div class="brand">宝可梦地牢探索</div><div class="build">版本 ${BUILD_ID.replace(/^trial-/,'')} <button id="open-settings">设置与存档</button> · ${dev?'私有单层试验 · 开发者模式':'私有试玩构建'}${dev?'':'<button id="to-title">返回标题</button>'}</div></header><main><section class="left"><div class="intro"><small>探索 · 伙伴 · 选择</small><h1>下一步，由你决定。</h1>${dev?'<p>使用开发者菜单检查固定场景或三层首领战，结果只在本页内存中。</p>':''}</div><section id="guide"></section><div class="board-head"><span id="world-label">尚未出发</span><span id="goal-label"></span></div><div id="board"></div><div class="legend"><span><i class="friend"></i>同行</span><span><i class="enemy"></i>敌人</span><span>G 基础目标</span><span>T 成果</span><span>下 楼梯</span><span id="legend-items" hidden>果／剂 橙橙果／PP多项小补剂 · 休 休整点（每局一次） · 商 商店（稀有，用钱袋） · 换 伙伴交换机（稀有，每局一次）</span><span>暗格尚未揭示</span>${dev?'<label><input type="checkbox" id="coords-toggle"> 显示坐标（开发者）</label>':''}</div><div id="message" role="status" aria-live="polite"></div><section id="inspect" aria-live="polite"></section><section id="recent-events"></section><section id="flow"></section><details><summary>本回合发生了什么</summary><ol id="history"></ol></details></section><aside><section id="save" aria-live="polite"></section><section><h2>同行队列 <small>一人一次行动 → 敌方</small></h2><div id="party"></div></section><section id="controls"></section>${dev?`<details id="developer-tools"><summary>开发者菜单：检查入口（隔离存储）</summary><p>检查初态不是玩家关卡，也不替换当前试验。</p><select id="fixture">${SCENARIOS.map(id=>`<option value="${id}">${SCENARIO_LABEL[id]??id}</option>`).join('')}</select><button id="open-fixture">新窗口检查</button><p>运行时地形图集（每层含 47 种形状及 4 个变体）</p><label>主题 <select id="terrain-theme"><option value="moss">苔石洞</option><option value="wet">潮湿水窟</option><option value="ash">灰烬裂谷</option></select></label><label>图层 <select id="terrain-layer"><option value="floor">连续地面</option><option value="edge">地面边缘</option><option value="liquid">水面／岩浆</option><option value="wall">墙体</option></select></label><button id="export-terrain">导出地形图集 PNG</button></details>`:''}</aside></main><div id="title-screen" class="screen" hidden></div>${settingsMarkup()}`;
 const fixture=params.get('fixture') as ScenarioId|null;
 const checkMode=fixture!==null&&SCENARIOS.includes(fixture);
 const legend=document.querySelector<HTMLElement>('.legend')!;
@@ -60,12 +69,13 @@ legend.innerHTML='<span><i class="friend"></i>同行</span><span><i class="enemy
 const activityStatusRoot=document.createElement('section');activityStatusRoot.id='activity-status';activityStatusRoot.setAttribute('aria-live','polite');document.getElementById('save')!.after(activityStatusRoot);
 // Stateful panels return to their original positions at camp.
 const dungeonLayout=document.createElement('div');dungeonLayout.id='dungeon-layout';dungeonLayout.hidden=true;
-dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="shortcut-card"><span>WASD</span><span>移动</span><span>W+D 等</span><span>斜向移动</span><span>1—4</span><span>招式</span><span>5—0</span><span>快捷物品</span><span>Tab</span><span>切换操控</span><span>B</span><span>背包</span><span>F</span><span>向前普通攻击</span><span>.</span><span>等待</span></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div><div id="unit-details-layer"></div></div>`;
+dungeonLayout.innerHTML=`<div id="dungeon-hud"><div id="hud-map"></div><div id="hud-tools"><button id="actions-open" aria-label="行动菜单">⋯</button><button id="hud-settings" aria-label="设置与存档">⚙</button><button id="log-open" aria-label="打开完整记录（L）" title="完整记录（L）">记录</button></div><div id="context-actions"></div><div id="hud-actions" hidden></div><div id="hud-item-targets" hidden></div><div id="hud-bottom"></div><div id="hud-tooltip" role="tooltip" hidden></div><div id="hud-bag" hidden></div><div id="unit-details-layer"></div></div>`;
 app.append(dungeonLayout);
+document.addEventListener('wheel',scrollHorizontalWithWheel,{passive:false});
 const panelHomes=new Map<HTMLElement,Comment>();
 for(const id of ['board','party','activity-status','recent-events','message','inspect','controls','flow','save',...(dev?['developer-tools']:[])]){const el=document.getElementById(id)!;const home=document.createComment(id);el.before(home);panelHomes.set(el,home);}
 let actionsOpen=false,bagOpen=false,bagCategory='all',bagSlot=0;
-let bagSelectedItem:Item|null=null;
+let bagSelectedItem:string|null=null;
 let quickItems:(Item|null)[]=Array.from({length:6},()=>null);
 function dungeonMode(){return screen==='play'&&!!live();}
 function syncDungeonLayout(){
@@ -87,8 +97,16 @@ let selectedConfig='main-invite';
 let draft:{partner:string;action:Action|null;main:Action|null;editor:string;swap:boolean}|null=null;
 let choosingItem:Item|null=null;
 let selectedSkill:Skill|null=null, choosingPartner=false,choosingSwap=false,confirmExit=false;
-let inviteChoice:string|undefined,inviteReject=false,notice='',detailsId:string|null=null,detailsOpenerId:string|null=null;
+/** The stairs prompt opens by itself when the leader stands on a staircase; "不前进" closes it for that cell and a small button in the bottom bar brings it back. */
+let stairsClosedKey='',stairsPromptShown=false;
+/** Rooms holding the leader or a living companion: each is lit as one whole rounded rectangle (the room and the ring around it). */
+const litRoomsOf=(s:World)=>(s.rooms??[]).filter(r=>s.queue.some(id=>{const u=s.units[id];return !!u&&u.hp>0&&!!u.pos&&u.pos.x>=r.x&&u.pos.x<r.x+r.w&&u.pos.y>=r.y&&u.pos.y<r.y+r.h;})).map(r=>({x:r.x,y:r.y,w:r.w,h:r.h}));
+const stairsKeyOf=(s:World):string=>{const L=s.units[s.leader],p=L?.pos&&s.points.find(q=>same(q.pos,L.pos!));return p&&(p.kind==='down'||p.kind==='up')?`${s.runId}|${s.dungeon?.level??0}|${L.pos!.x},${L.pos!.y}`:'';};
+let inviteChoice:string|undefined,notice='',detailsId:string|null=null,detailsOpenerId:string|null=null;
+let learnChoice:string|null=null,learnKeyShown='';
 let campSelected:string|null=null,departureOpen=false;
+/** Set by the camp panel on every render so the drag rules below act on the profile the player sees. */
+let campDragCtx:{edit:(a:BaseAction)=>Promise<void>;p:NonNullable<typeof store.profile>}|null=null;
 let vaultState:VaultState={tab:'tm',by:'type',filter:'all',move:null,learner:null,shard:null};
 let campPanel:CampPanel|null=null;
 let campWindowCycle=0;
@@ -104,19 +122,30 @@ let ng:NewGameState={step:1,main:null,deputy:null,overwrite:false};
 let askOverwrite=false,exportedOriginal=false,ngError='',showCoords=false;
 let hoverId:string|null=null,pinnedId:string|null=null;
 /** Who hit whom this round (inferred by the same code that drives the animation) and how many log lines the last command added. */
-let attrib=new Map<string,string>(),freshCount=0;
+/** Entries of the record with a number above `freshSeq` were written by the last command; Infinity means none are new. */
+let attrib=new Map<string,string>(),freshSeq=Infinity;
 /** Stage 6.4: `active` is true while a round's animation plays; every world-changing input is dropped (not queued) meanwhile. */
 const anim={active:false,shift:false};
+/** Playtest 1107: after a defeat or an invitation the board keeps the last frame and a centre banner for a moment before the invitation or settlement panel opens; any key or click skips it. */
+let hold:{end:()=>void}|null=null;
+const holdBanner=document.createElement('div');holdBanner.id='result-banner';holdBanner.setAttribute('role','status');holdBanner.hidden=true;document.body.append(holdBanner);
+function startHold(b:{text:string;ms:number}):Promise<void>{
+ return new Promise<void>(resolve=>{
+  holdBanner.textContent=b.text;holdBanner.hidden=false;anim.active=true;
+  const timer=setTimeout(()=>hold?.end(),b.ms);
+  hold={end:()=>{clearTimeout(timer);hold=null;holdBanner.hidden=true;anim.active=false;try{render();}finally{resolve();}}};
+ });
+}
 let sleepTimer:ReturnType<typeof setTimeout>|null=null,sleepTurn='';
 const sleepAutoEnabled=()=>!(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep;
 function cancelSleepAdvance(){if(sleepTimer!==null)clearTimeout(sleepTimer);sleepTimer=null;sleepTurn='';}
 function syncSleepAdvance(){
- const s=live(),eligible=screen==='play'&&s?.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!detailsId&&sleepAutoEnabled()&&sleeping(s.units[s.leader]);
+ const s=live(),eligible=screen==='play'&&s?.phase==='playing'&&store.status==='ready'&&!anim.active&&!(settings.open||wikiOpen())&&!logDialog.open&&!abandonDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(s.units[s.leader]);
  if(!eligible||!s){cancelSleepAdvance();return;}
  const turn=s.runId+'|'+s.round+'|'+s.leader;if(sleepTimer!==null&&sleepTurn===turn)return;
  cancelSleepAdvance();sleepTurn=turn;sleepTimer=setTimeout(()=>{
   sleepTimer=null;sleepTurn='';const current=live();
-  if(current&&current.runId+'|'+current.round+'|'+current.leader===turn&&screen==='play'&&current.phase==='playing'&&store.status==='ready'&&!anim.active&&!settings.open&&!detailsId&&sleepAutoEnabled()&&sleeping(current.units[current.leader]))void send({type:'round',action:{type:'wait'}});
+  if(current&&current.runId+'|'+current.round+'|'+current.leader===turn&&screen==='play'&&current.phase==='playing'&&store.status==='ready'&&!anim.active&&!(settings.open||wikiOpen())&&!logDialog.open&&!abandonDialog.open&&!detailsId&&sleepAutoEnabled()&&sleeping(current.units[current.leader]))void send({type:'round',action:{type:'wait'}});
  },600);
 }
 
@@ -128,12 +157,21 @@ const animationEnabled=():boolean=>{const q=params.get('anim');if(q==='off')retu
 const $=(id:string)=>document.getElementById(id)!;
 const esc=(s:unknown)=>String(s).replaceAll('主控','操控者').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const button=(id:string,label:string,disabled=false,extra='')=>`<button id="${id}" ${disabled?'disabled':''} ${extra}>${label}</button>`;
-const live=()=>store.state;
+/** While an animation plays, the interface shows each unit's HP as it was before the round and lowers or raises it at the moment each hit or heal lands (the engine state is already final). */
+/** While a round plays, the interface (party cards, bottom bar, recent events) keeps the world from before the round, except HP, which moves as each hit lands; level-ups, new moves and messages appear once the animation ends, so the text never runs ahead of the board. */
+let logHeld:World|null=null;
+let hpShown:Map<string,number>|null=null,hpShownSrc:World|null=null,hpShownView:World|null=null,hpShownVer=0,hpShownViewVer=-1;
+const live=():World|null=>{
+ const now=store.state;if(!now||!anim.active||!hpShown)return now;
+ const s=logHeld??now;
+ if(hpShownSrc!==s||hpShownViewVer!==hpShownVer){hpShownSrc=s;hpShownViewVer=hpShownVer;const shown=hpShown;hpShownView={...s,units:Object.fromEntries(Object.entries(s.units).map(([id,u])=>[id,shown.has(id)&&shown.get(id)!==u.hp?{...u,hp:shown.get(id)!}:u]))};}
+ return hpShownView;
+};
 const combatStatus=(u:Unit):string=>[
- u.protect>0?`守住：剩余${u.protect}个敌方阶段`:'',
- u.counter>0?`反击：剩余${u.counter}个敌方阶段`:'',
- (u.reflect??0)>0?`反射壁：剩余${u.reflect}个敌方阶段`:'',
- (u.lightscreen??0)>0?`光墙：剩余${u.lightscreen}个敌方阶段`:'',
+ u.protect>0?`守住：剩余${u.protect}回合`:'',
+ u.counter>0?`反击：剩余${u.counter}回合`:'',
+ (u.reflect??0)>0?`反射壁：剩余${u.reflect}回合`:'',
+ (u.lightscreen??0)>0?`光墙：剩余${u.lightscreen}回合`:'',
  u.stages.atk?`攻击${u.stages.atk>0?'+':''}${u.stages.atk}`:'',
  u.stages.def?`防御${u.stages.def>0?'+':''}${u.stages.def}`:'',
 ].filter(Boolean).join(' · ');
@@ -143,13 +181,13 @@ function clear(keepMovement=false){if(!keepMovement)cancelMoveInput();actionsOpe
 /** A saved pending exit or pending crossing is completed once, automatically, after the save succeeded. */
 const finishing=():Parameters<typeof applyCommand>[1]|null=>{const p=store.state?.phase;return store.status!=='ready'?null:p==='exit'?{type:'finishExit'}:p==='transit'?{type:'finishTransit'}:null;};
 async function transition(p:Promise<unknown>,clearDraft=true){if(clearDraft)clear();render();await p;render();const next=finishing();if(next){const done=store.dispatch(next);render();await done;render();}}
-async function send(command:Parameters<typeof applyCommand>[1],keepMovement=false){if(!keepMovement)cancelMoveInput();if(anim.active)return;if(store.status!=='ready'){notice='保存未完成，当前只可查看或重试；本轮未执行。';render();return;}const predicted=applyCommand(live()!,command);if(!predicted.ok){notice=predicted.error;render();return;}const cancelledCombination=command.type==='switch'&&draft!==null;const before=clone(live()!);const pending=store.dispatch(command);
+async function send(command:Parameters<typeof applyCommand>[1],keepMovement=false){if(!keepMovement)cancelMoveInput();if(anim.active)return;if(store.status!=='ready'){notice='保存未完成，当前只可查看或重试；本回合未执行。';render();return;}const predicted=applyCommand(live()!,command);if(!predicted.ok){notice=predicted.error;render();return;}const cancelledCombination=command.type==='switch'&&draft!==null;const before=clone(live()!);const pending=store.dispatch(command);
  let playing:Promise<void>|null=null;{const after=live();
   // Animation is presentation only: any failure here must leave the input lock released and the real state drawn.
-  try{if(after){freshCount=newLines(before.log,after.log).length;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshCount=0;}
-  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){anim.active=true;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;render();});}}
-  catch{anim.active=false;playing=null;render();}}
- clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;inviteReject=false;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
+  try{if(after){freshSeq=before.logSeq??0;attrib=new Map();for(const e of inferEvents(before,after,command))if(e.k==='hit'&&e.attacker)attrib.set(`${e.target}|${e.amount}`,e.attacker);}}catch{attrib=new Map();freshSeq=Infinity;}
+  try{const events=scene&&after&&animationEnabled()&&!anim.shift?inferEvents(before,after,command):[];if(scene&&events.length&&plan(events)){hpShown=new Map(Object.entries(before.units).map(([id,u])=>[id,u.hp]));hpShownVer++;logHeld=before;anim.active=true;const banner=after?resultBanner(before,after,animationEnabled()):null;let held:Promise<void>|null=null;playing=scene.animate(before,after!,events).finally(()=>{anim.active=false;hpShown=null;logHeld=null;if(logDialog.open){const w=live();if(w)fillLog(w);}if(banner)held=startHold(banner);render();}).then(()=>held??undefined);}}
+  catch{anim.active=false;hpShown=null;logHeld=null;playing=null;render();}}
+ clear(keepMovement);notice=cancelledCombination?'组合已取消。':'';if(command.type==='invite'){inviteChoice=undefined;}render();const r=await pending;if(!r.ok)notice=r.error;render();if(playing)await playing;const next=finishing();if(next)await transition(store.dispatch(next));return playing!==null;}
 async function setTactic(actor:string,value:string){
  if(anim.active||store.status!=='ready'||!live()||live()!.phase!=='playing'||!isTactic(value))return;
  const pending=store.dispatch({type:'tactic',actor,tactic:value});
@@ -162,10 +200,12 @@ function act(action:Action){cancelMoveInput();if(anim.active||!live()||(store.st
  selectedSkill=null;choosingItem=null;
  if(draft?.swap){notice='换位已占双方动作卡；要改成其他动作，请先取消组合。';render();return;}
  if(draft){if(draft.editor===live()!.leader)draft.main=action;else draft.action=action;render();return;}
- if(action.type==='interact'&&action.exit){confirmExit=true;render();return;}
+ if(action.type==='interact'&&action.exit){const s0=live();if(s0&&stairsKeyOf(s0)){stairsClosedKey='';render();return;}confirmExit=true;render();return;}
  void send({type:'round',action});
 }
-function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
+function clickCell(p:Pos){if(performance.now()<swallowClickUntil){swallowClickUntil=0;return;}   // this very click just stopped a walk: it does nothing else
+ const s=live();if(anim.active||!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
+ if(targetMode()){const mate=s.queue.find(i=>s.units[i].hp>0&&same(s.units[i].pos,p));if(mate)useOn(mate);return;}   // choosing a target: a click on a partner uses the item, anything else does nothing
  const id=draft?.editor??s.leader;const target=[...s.queue,...s.enemies].find(i=>s.units[i].hp>0&&same(s.units[i].pos,p)&&s.seen.includes(key(p)));
  if(selectedSkill){
   const legal=skillTargets(s,id,selectedSkill);
@@ -178,67 +218,149 @@ function clickCell(p:Pos){const s=live();if(anim.active||!s||s.phase!=='playing'
     ?{type:'round' as const,action:draft.main??{type:'wait' as const},override:{actor:id,action}}
     :{type:'round' as const,action,...(draft?.action?{override:{actor:draft.partner,action:draft.action}}:{})};
    const checked=applyCommand(s,cmd);
-   notice=checked.ok?'该招式不能指定这个目标；本轮未执行':checked.error;
+   notice=checked.ok?'该招式不能指定这个目标；本回合未执行':checked.error;
    render();
-  }else{notice='该招式需要存活的合法目标；本轮未执行。';render();}
+  }else{notice='该招式需要存活的合法目标；本回合未执行。';render();}
   return;
  }
+ if(!target&&!draft&&s.units[s.leader].pos&&Math.max(Math.abs(p.x-s.units[s.leader].pos!.x),Math.abs(p.y-s.units[s.leader].pos!.y))>1){void autoWalk(p);return;}   // a far, empty, revealed cell: walk there
  if(target&&s.enemies.includes(target))act({type:'basic',target});else act({type:'move',to:p});
 }
+/* Click-to-walk (roguelike "travel" and Mystery Dungeon's touch movement): every step is an ordinary round, and the walk stops the moment something needs the player. */
+let walkToken=0,swallowClickUntil=0,walkMarker:Pos|null=null;
+const walkActive=()=>walkMarker!==null;
+function stopWalk(fromMapClick=false){if(walkMarker===null)return;walkToken++;walkMarker=null;if(fromMapClick)swallowClickUntil=performance.now()+400;if(!anim.active)scene?.paint(live());}
+/** A confused leader walks in a random direction (engine), so a walk is neither started nor continued. */
+const confusedLeader=(s:World):boolean=>!!s.units[s.leader]?.status?.confusion;
+/** Cells that ask for the player's attention: items, stairs and other points, adventure-room interactions. */
+function attentionCells(s:World):Set<string>{const out=new Set<string>();for(const p of s.points)if(!p.used||p.kind==='down'||p.kind==='up'||p.kind==='exit'||p.kind==='shop'||p.kind==='rest'||p.kind==='exchange')out.add(key(p.pos));for(const r of s.adventureRooms??[])if(r.state!=='done')out.add(key(r.interaction));return out;}
+async function autoWalk(target:Pos){
+ const first=live();if(!first||first.phase!=='playing'||store.status!=='ready'||draft||choosingItem||selectedSkill||bagOpen||(settings.open||wikiOpen())||screen!=='play'||anim.active||confusedLeader(first))return;
+ const token=++walkToken;cancelMoveInput();
+ const plan0=(s:World)=>{const L=s.units[s.leader];if(!L?.pos)return null;const blocked=new Set(s.enemies.filter(id=>s.units[id].hp>0&&s.units[id].pos).map(id=>key(s.units[id].pos!)));return walkPath(floorIndex(s.floor),new Set(s.seen),L.pos,target,blocked,attentionCells(s));};
+ if(!plan0(first))return;   // not reachable (wall, unrevealed, occupied): nothing happens
+ walkMarker={x:target.x,y:target.y};scene?.paint(live());
+ while(token===walkToken){
+  const s=live();if(!s||s.phase!=='playing'||store.status!=='ready'||anim.active||bagOpen||(settings.open||wikiOpen())||screen!=='play'||draft||sleeping(s.units[s.leader])||confusedLeader(s))break;
+  const path=plan0(s);if(!path||!path.length)break;
+  const run=s.runId,level=s.dungeon?.level,round=s.round,leader=s.leader,enemiesBefore=movementEnemies(s),watched=attentionCells(s);   // read before the step: walking onto an item picks it up and clears its marker
+  await send({type:'round',action:{type:'move',to:path[0]}},true);
+  if(token!==walkToken)return;
+  const after=live();if(!after||after.runId!==run||after.dungeon?.level!==level||after.round===round||after.phase!=='playing'||store.status!=='ready'||after.leader!==leader)break;
+  {const at=after.units[leader].pos;if(!at||!same(at,path[0]))break;}   // the leader did not land where planned (confusion, blown away, swapped elsewhere)
+  if([...movementEnemies(after)].some(id=>!enemiesBefore.has(id)))break;   // a new enemy came into view
+  if((after.events??[]).some(e=>e.type==='hpLoss'&&e.amount>0&&after.queue.includes(e.unit)))break;   // someone lost HP this round (a Reviver Seed restoring the HP in the same blow leaves no net loss, so the events are read, not the HP difference)
+  const here=after.units[leader].pos;if(!here||same(here,target)||watched.has(key(here))||attentionCells(after).has(key(here)))break;   // arrived, or stepped on something to look at
+ }
+ if(token===walkToken){walkMarker=null;walkToken++;scene?.paint(live());}
+}
+document.addEventListener('pointerdown',e=>stopWalk((e.target as HTMLElement|null)?.tagName==='CANVAS'),true);
+document.addEventListener('keydown',()=>stopWalk(false),true);
 const itemName=(id:Item)=>id==='teamTonic'?itemZh(id):ITEM_NAMES[id];
-function actionLabel(a:Action|null,actor?:string){const target=(id:string)=>id===actor?'自身':unitLabel(live()?.units[id],id);if(!a)return '尚未选择';if(a.type==='move')return '移动';if(a.type==='skill')return `${moveZh(a.skill)} → ${target(a.target)}`;if(a.type==='basic')return `普通攻击 → ${target(a.target)}`;if(a.type==='basicForward')return '向前普通攻击';if(a.type==='swap')return `与${target(a.target)}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${target(a.target)}`;if(a.type==='interact')return a.exit?'交互并请求跨层':'取得并继续';return '等待';}
+function actionLabel(a:Action|null,actor?:string){const target=(id:string)=>id===actor?'自身':unitLabel(live()?.units[id],id);if(!a)return '尚未选择';if(a.type==='move')return '移动';if(a.type==='skill')return `${moveZh(a.skill)} → ${target(a.target)}`;if(a.type==='basic')return `普通攻击 → ${target(a.target)}`;if(a.type==='basicForward')return '向前普通攻击';if(a.type==='swap')return `与${target(a.target)}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${target(a.target)}`;if(a.type==='interact')return a.exit?'前进或撤离':'取得并继续';return '等待';}
 type AdventureRoom=NonNullable<World['adventureRooms']>[number];
-const challengeRewardPool=()=>[
- `${challengeRewardZh('currency')}（30%）`,
- `${challengeRewardZh('item')}（25%，${ITEM_NAMES.bigBerry}与${itemZh('teamTonic')}各50%）`,
- `${challengeRewardZh('invite')}（15%）`,
- `${challengeRewardZh('tm')}（15%）`,
- `${challengeRewardZh('blessing')}（15%；清场后从可用选项中选一项）`,
-].join('、');
 function commissionPenaltyText(penalty:typeof COMMISSIONS[CommissionId]['penalty']):string{
  return penalty==='defenseMinusOne'?'全队防御阶段 −1（委托生效期间）':penalty==='berryHealHalf'?'树果回复减半（委托生效期间）':'无';
 }
 function activityStatus(s:World):string{
  if(!s.dungeon?.roguelike||s.phase==='ended')return '';
  const commissions=(s.commissions??[]).map(c=>{
-  const spec=COMMISSIONS[c.id],progress=c.speedLimit===null?`${c.progress}/${c.progressTarget}`:`已用 ${c.progress}/${c.speedLimit} 轮`;
+  const spec=COMMISSIONS[c.id],progress=c.speedLimit===null?`${c.progress}/${c.progressTarget}`:`已用 ${c.progress}/${c.speedLimit} 回合`;
   return `<li><strong>${esc(spec.name)}</strong> · 第${c.floor}层接下 · 需本层完成 · 进度 ${progress}<p>${esc(spec.description)}</p><p class="muted">负面效果：${commissionPenaltyText(spec.penalty)}</p></li>`;
  }).join('');
  const blessings=(s.blessings??[]).map(id=>{const blessing=BLESSINGS[id];return `<li><strong>${esc(blessing.name)}</strong>：${esc(blessing.description)}</li>`;}).join('');
  return `<section class="unit" id="commission-status"><h2>进行中的委托（${(s.commissions??[]).length}/3）</h2>${commissions?`<ul>${commissions}</ul>`:'<p>暂无进行中的委托。</p>'}</section><section class="unit" id="blessing-status"><h2>已获得的祝福</h2>${blessings?`<ul>${blessings}</ul>`:'<p>尚未获得祝福。</p>'}</section>`;
 }
+/** What a commission asks, in one short line. */
+const COMMISSION_GOAL:Record<CommissionId,string>={hunter:'击倒 3 只敌人',collector:'取得 1 件道具',scout:'先进祝福房或道具房，再下楼',guardian:'下楼时全队存活',speedrun:'限时下楼'};
+const commissionPenaltyTag=(penalty:typeof COMMISSIONS[CommissionId]['penalty']):string=>penalty==='defenseMinusOne'?'全队防御 −1':penalty==='berryHealHalf'?'树果回复减半':'';
+/** The commission offer as a notice board: name, goal, reward (icon and number), the penalty while it runs and the floor limit, then accept or reject. */
+function commissionNotice(spec:typeof COMMISSIONS[CommissionId],id:CommissionId,full:boolean,ready:boolean):string{
+ const penalty=commissionPenaltyTag(spec.penalty);
+ return noticePanel({id:'commission-choice',kind:'委托',title:spec.name,asDialog:true,rows:[
+  {label:'目标',html:esc(COMMISSION_GOAL[id])},
+  {label:'奖励',html:'<i class="notice-icon exp" aria-hidden="true"></i><b>×'+spec.equivalentEnemies+'</b>',id:'commission-reward'},
+  ...(penalty?[{label:'生效期间',html:noticeTag(penalty,'bad')}]:[]),
+  {label:'期限',html:esc('本层')+(full?noticeTag('已有 3 条委托','bad'):'')},
+ ],buttons:button('commission-accept','接下',!ready||full,'class="paper-button is-primary" data-confirm')+button('commission-reject','拒绝',!ready,'class="paper-button"')});
+}
+let autoInteractKey='';
 function adventureRoomPanel(s:World,room:AdventureRoom,editor:string,ready:boolean,draftActive:boolean):string{
- const typeName=adventureRoomTypeZh(room.type),stateName=adventureRoomStateZh(room.type,room.state),canAct=ready&&editor===s.leader&&!draft?.swap;
- const heading=`${typeName}房 · ${stateName}`;
+ const canAct=ready&&editor===s.leader&&!draft?.swap;
+ const attrs=(type:string)=>`data-room-type="${type}" data-room-state="${room.state}"`;
+ const id='adventure-room-panel';
  if(room.type==='challenge'){
-  if(room.state==='idle')return `<section class="service" id="adventure-room-panel" data-room-type="challenge" data-room-state="idle"><h2>${heading}</h2><p>奖励池：${challengeRewardPool()}。具体奖励在清场后公布。</p>${draftActive&&editor!==s.leader?'<p class="muted">请先切回操控者，再安排开始挑战。</p>':''}${button('start-challenge','开始挑战',!canAct,'data-action="start-challenge" class="primary"')}</section>`;
-  if(room.state==='sealed')return `<section class="service" id="adventure-room-panel" data-room-type="challenge" data-room-state="sealed"><h2>${heading}</h2><p>门已封闭；击倒房间里的全部挑战敌人后会开门并发放奖励。</p></section>`;
-  const reward=[...s.log].reverse().find(line=>line.startsWith('挑战奖励：'));
-  return `<section class="service" id="adventure-room-panel" data-room-type="challenge" data-room-state="cleared"><h2>${heading}</h2><p id="challenge-reward-result">${reward?`实际奖励：${esc(localizeLog(s,reward.replace(/^挑战奖励：/,'')))}`:'奖励已发放；具体内容见最近事件与本轮记录。'}</p></section>`;
+  if(room.state==='idle')return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'目标',html:esc('打倒房内全部敌人')},{label:'选择一项奖励',html:['钱袋','道具','招式机','邀请','祝福'].map(t=>noticeTag(t)).join('')}],buttons:button('start-challenge','开始挑战',!canAct,'data-action="start-challenge" class="primary"')});
+  if(room.state==='sealed')return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'目标',html:esc('打倒房内全部敌人')}]});
+  const reward=[...(s.entries??[])].reverse().find(e=>e.reward);
+  return noticePanel({id,kind:'挑战',attrs:attrs('challenge'),rows:[{label:'奖励',html:esc(reward?.reward?logPartsText(reward.reward):'已发放'),id:'challenge-reward-result'}]});
  }
  if(room.type==='item'){
-  const item=room.item?itemName(room.item):'道具';
-  return room.state==='done'?`<section class="service" id="adventure-room-panel" data-room-type="item" data-room-state="done"><h2>${heading}</h2><p>${esc(item)}已拾取，门口标记已变暗。</p></section>`:
-   `<section class="service" id="adventure-room-panel" data-room-type="item" data-room-state="idle"><h2>${heading}</h2><p>交互格上有${esc(item)}，拾取后会放入本局背包。</p>${button('take-adventure-item',`拾取${esc(item)}`,!canAct,'data-action="take-adventure-item" class="primary"')}</section>`;
+  const item=room.item?itemName(room.item):'道具',icon=room.item?itemIconImg(room.item,'notice-icon-img'):'';
+  return room.state==='done'?noticePanel({id,kind:'道具',attrs:attrs('item'),rows:[{label:'',html:icon+esc(item)+noticeTag('已取得')}]}):
+   noticePanel({id,kind:'道具',attrs:attrs('item'),rows:[{label:'',html:icon+esc(item)}],buttons:button('take-adventure-item',`拾取`,!canAct,'data-action="take-adventure-item" class="primary"')});
  }
- if(room.type==='commission')return `<section class="service" id="adventure-room-panel" data-room-type="commission" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以查看本层试炼，选择接下或拒绝；拒绝会完成此房间。':'此房间已处理；进行中的委托进度与效果显示在右侧。'}</p>${room.state==='idle'?button('interact-commission','查看本层委托',!canAct,'data-action="interact-commission"'):''}</section>`;
- return `<section class="service" id="adventure-room-panel" data-room-type="blessing" data-room-state="${room.state}"><h2>${heading}</h2><p>${room.state==='idle'?'交互后可以选择一项祝福，也可以放弃。':`此房间已处理；已获得的祝福显示在右侧。`}</p>${room.state==='idle'?button('interact-blessing','查看祝福选项',!canAct,'data-action="interact-blessing"'):''}</section>`;
+ return '';   // commission and blessing rooms open their choice at once (see the arrival handling in renderMain), so they have no panel
 }
-function render(){document.body.classList.toggle('camp-mode',screen==='play'&&store.atBase);syncDungeonLayout();for(const id of ['context-actions','hud-bottom','hud-item-targets'])$(id).replaceChildren();renderOverlay();renderMain();renderExtras();renderDungeonHud();refreshTransfer();syncSleepAdvance();if(screen==='play')void ensureBoard();}
+/** Panel focus: the learn, invitation and bag windows put the focus on their main control when they open, and keep it through re-renders. */
+let panelFocusKey='';
+function applyPanelFocus(previousId:string):void{
+ const s=live();let key='',first='';
+ if(screen==='play'&&s&&s.phase==='learning'){key='learn|'+s.runId+'|'+(s.pendingLearnMoves?.[0]?.move??'');first='#learn-confirm:not(:disabled), .c195-old .c195-move:not(:disabled)';}
+ else if(screen==='play'&&s&&s.phase==='invitation'){key='invite|'+(s.invitations.find(i=>i.status==='pending')?.id??'');first='#accept:not(:disabled), #out-0:not(:disabled)';}
+ else if(screen==='play'&&bagOpen){key='bag';first='.c195-bag-item.is-selected, .c195-bag-item';}
+ if(!key){panelFocusKey='';return;}
+ // The learn and invitation windows stay hidden through the animation and pause: wait, so the focus lands once they show.
+ if(key!=='bag'&&$('flow').hidden)return;
+ if(key!==panelFocusKey){panelFocusKey=key;document.querySelector<HTMLElement>(first)?.focus({preventScroll:true});return;}
+ const el=previousId?document.getElementById(previousId) as HTMLButtonElement|null:null;
+ if(el&&!el.disabled)el.focus({preventScroll:true});
+}
+function render(){const active=document.activeElement as HTMLElement|null,previousId=active&&active.id&&($('flow').contains(active)||$('hud-bag').contains(active))?active.id:'';try{renderAll();}finally{applyPanelFocus(previousId);reconcileDrag();}}
+function renderAll(){document.body.classList.toggle('camp-mode',screen==='play'&&store.atBase);syncDungeonLayout();for(const id of ['context-actions','hud-bottom','hud-item-targets'])$(id).replaceChildren();renderOverlay();renderMain();renderExtras();renderDungeonHud();refreshTransfer();syncSleepAdvance();if(screen==='play')void ensureBoard();}
 
+function confirmLearn(){const s=live();if(!s||s.phase!=='learning'||!learnChoice||store.status!=='ready'||anim.active)return;const replace=learnChoice;learnChoice=null;void send({type:'learnMove',replace});}
 function chooseHudSkill(skill:Skill){cancelMoveInput();selectedSkill=selectedSkill===skill?null:skill;choosingItem=null;bagOpen=false;actionsOpen=false;render();}
+/** Items that act on one party member (berries, tonics, seeds...). Team tonic and the orbs act on the whole team or the user, and the Reviver Seed is automatic. */
+const isTargetedItem=(item:Item):boolean=>item!=='teamTonic'&&item!=='reviverSeed'&&!ORB_ITEMS.includes(item);
+/** Party members the chosen item can be used on right now (the real rule check, so a full-HP member is not offered a berry). */
+let targetUsable=new Set<string>();
+/** Each check simulates one whole round, about 1.7 ms per member on a late floor (measured, 5 ms for three), and render runs often, so the answer is kept until something the check reads changes. */
+let targetCache:{sig:string;out:Set<string>}|null=null;
+const targetSignature=(s:World,item:Item):string=>JSON.stringify([item,s.runId,s.round,s.phase,s.leader,draft?.editor,draft?.main,s.prog?.items[item],s.queue.map(id=>{const u=s.units[id];return [id,u.hp,u.maxHp,u.pos,u.status,u.pp];})]);
+function itemTargets(s:World,item:Item):Set<string>{
+ const sig=targetSignature(s,item);if(targetCache?.sig===sig)return new Set(targetCache.out);
+ const out=computeItemTargets(s,item);targetCache={sig,out};return new Set(out);
+}
+function computeItemTargets(s:World,item:Item):Set<string>{
+ const actor=draft?.editor??s.leader,out=new Set<string>();
+ for(const id of s.queue){
+  const use:Action={type:'use',item,target:id};
+  const cmd=draft&&draft.editor!==s.leader?{type:'round' as const,action:draft.main??{type:'wait' as const},override:{actor,action:use}}:{type:'round' as const,action:use};
+  if(applyCommand(s,cmd).ok)out.add(id);
+ }
+ return out;
+}
+const targetMode=():boolean=>!!choosingItem&&isTargetedItem(choosingItem)&&!!live()&&live()!.phase==='playing';
+function useOn(id:string){if(choosingItem&&targetUsable.has(id)){const item=choosingItem;act({type:'use',item,target:id});}}
 function chooseHudItem(item:Item){
  cancelMoveInput();const s=live();if(!s||s.phase!=='playing'||store.status!=='ready'||anim.active)return;
- if((s.prog?.items[item]??0)<1){notice=`背包里没有${itemName(item)}；本轮未执行`;render();return;}
+ if((s.prog?.items[item]??0)<1){notice=`背包里没有${itemName(item)}；本回合未执行`;render();return;}
+ if(item==='reviverSeed'){notice='复活种子不能手动使用：队员倒下的瞬间会自动用掉。';render();return;}
  bagOpen=false;actionsOpen=false;selectedSkill=null;
- choosingItem=choosingItem===item?null:item;render();
+ if(choosingItem===item){choosingItem=null;render();return;}
+ const actor=draft?.editor??s.leader;
+ // No second confirmation: the whole-team and self items (orbs, team tonic) act at once, and so does a target item with exactly one usable target; several targets open the choice.
+ if(item==='teamTonic'||ORB_ITEMS.includes(item)){choosingItem=null;act({type:'use',item,target:actor});return;}
+ if(isTargetedItem(item)){const ok=itemTargets(s,item);if(ok.size===1){choosingItem=null;act({type:'use',item,target:[...ok][0]});return;}}
+ choosingItem=item;render();
 }
 function showMoveTip(skill:Skill,actor:string){
  const s=live();if(!s||bagOpen||anim.active)return;const pending=s.phase==='learning'?s.pendingLearnMoves?.find(p=>p.actor===actor&&p.move===skill):undefined,unit=s.units[actor];
  const preview=pending&&unit?{...s,units:{...s.units,[actor]:{...unit,pp:{...unit.pp,[skill]:pending.pp},maxPp:{...unit.maxPp,[skill]:pending.pp}}}}:s;
  const detailDialog=document.getElementById('unit-details-dialog') as HTMLDialogElement|null;
  const box=(s.phase==='learning'?document.getElementById('learning-tooltip'):detailDialog?.open?document.getElementById('detail-tooltip'):null)??$('hud-tooltip');
- if(s.phase==='learning')$('hud-tooltip').hidden=true;
+ if(s.phase==='learning'){$('hud-tooltip').hidden=true;if(box.id==='hud-tooltip')return;}   // the learning cards already show every field; a floating tip would cover the buttons
  box.dataset.sourceId=actor;box.innerHTML=hudMoveTip({...preview,leader:actor},skill);refreshDamagePreviews(s);box.hidden=false;
  if(box.id==='detail-tooltip'&&detailDialog){const row=detailDialog.querySelector<HTMLElement>('[data-detail-skill="'+CSS.escape(skill)+'"]')!,r=row.getBoundingClientRect(),d=detailDialog.getBoundingClientRect();box.style.left=Math.max(8,Math.min(detailDialog.clientWidth-box.offsetWidth-8,r.left-d.left-box.offsetWidth-12))+'px';box.style.top=Math.max(detailDialog.scrollTop+8,Math.min(r.top-d.top+detailDialog.scrollTop,detailDialog.scrollTop+detailDialog.clientHeight-box.offsetHeight-8))+'px';}
 }
@@ -247,12 +369,26 @@ function renderDetailsPanel(s:World,disabled:boolean){
  const focusId=previous?.contains(document.activeElement)?(document.activeElement as HTMLElement).id:null,scrollTop=previous?.scrollTop??0;
  host.replaceChildren();
  if(!detailsId||!s.units[detailsId]||s.phase!=='playing')return;
- const selected=detailsId,choices=[...s.queue,...s.enemies.filter(id=>!!enemyInfo(s,id))];
+ const selected=detailsId,choices=[...s.queue];
  host.innerHTML=unitDetails(s,selected,choices,disabled);const dialog=$('unit-details-dialog') as HTMLDialogElement;
  const close=()=>{const opener=detailsOpenerId;detailsId=null;detailsOpenerId=null;actionsOpen=false;render();if(opener)document.querySelector<HTMLButtonElement>('[data-hud-details="'+CSS.escape(opener)+'"]')?.focus({preventScroll:true});};bind('unit-detail-close',close);dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
  for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-unit]'))b.onclick=()=>{detailsId=b.dataset.detailUnit!;render();};
  for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-tactic]'))b.onclick=()=>{const tactic=b.dataset.detailTactic;if(isTactic(tactic))void setTactic(selected,tactic);};
  for(const b of host.querySelectorAll<HTMLButtonElement>('[data-detail-skill]')){const show=()=>showMoveTip(b.dataset.detailSkill!,selected),hide=()=>{const active=host.querySelector<HTMLButtonElement>('[data-detail-skill]:focus')??host.querySelector<HTMLButtonElement>('[data-detail-skill]:hover');if(active)showMoveTip(active.dataset.detailSkill!,selected);else{const tip=document.getElementById('detail-tooltip');if(tip)tip.hidden=true;}};b.onmouseenter=show;b.onfocus=show;b.onmouseleave=hide;b.onblur=hide;}
+ {const tip=dialog.querySelector<HTMLElement>('#stat-tip')!;let current:HTMLElement|null=null;
+  const hideTip=()=>{current=null;tip.hidden=true;for(const r of dialog.querySelectorAll('[data-stat-tip]'))r.removeAttribute('aria-describedby');};
+  const showTip=(row:HTMLElement)=>{current=row;tip.textContent=row.dataset.statTip??'';tip.hidden=false;row.setAttribute('aria-describedby','stat-tip');
+   const d=dialog.getBoundingClientRect(),r=row.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight,vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;
+   const lo=Math.max(d.left,0)+8,hi=Math.min(d.right,vw)-8,top0=Math.max(d.top,0)+8,bot0=Math.min(d.bottom,vh)-8;
+   let x=r.right+8;if(x+w>hi)x=r.left-8-w;x=Math.max(lo,Math.min(x,hi-w));
+   const y=Math.max(top0,Math.min(r.top+r.height/2-h/2,bot0-h));
+   tip.style.left=(x-d.left)+'px';tip.style.top=(y-d.top)+'px';};
+  for(const row of dialog.querySelectorAll<HTMLElement>('[data-stat-tip]')){
+   row.addEventListener('mouseenter',()=>showTip(row));row.addEventListener('mouseleave',()=>{if(document.activeElement!==row)hideTip();});
+   row.addEventListener('focus',()=>showTip(row));row.addEventListener('blur',hideTip);
+   row.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){e.stopPropagation();if(current===row)hideTip();else showTip(row);}});}
+  dialog.addEventListener('pointerdown',()=>{if(current&&document.activeElement!==current)hideTip();});
+  dialog.addEventListener('keydown',e=>{if(e.key==='Escape'&&current)hideTip();});}
  dialog.showModal();dialog.scrollTop=scrollTop;if(focusId&&dialog.contains(document.getElementById(focusId)))document.getElementById(focusId)?.focus({preventScroll:true});cancelSleepAdvance();
 }
 function refreshSettlementOverflow(){
@@ -260,17 +396,33 @@ function refreshSettlementOverflow(){
  const bottom=list.getBoundingClientRect().bottom-20,remaining=list.scrollHeight>list.clientHeight+1?Array.from(list.children).filter(el=>el.getBoundingClientRect().bottom>bottom+.5).length:0;
  cue.textContent='还有 '+remaining+' 项';cue.hidden=remaining===0;
 }
-function placeInspectBelowParty(){if(!dungeonMode())return;const party=$('party');$('inspect').style.top=(party.offsetTop+party.offsetHeight+8)+'px';}
+function placeInspectBelowParty(){if(!dungeonMode())return;const party=$('party'),box=$('inspect'),top=party.offsetTop+party.offsetHeight+8;box.style.top=top+'px';
+ // The card never covers the recent-events log: it stops 8px above it and scrolls inside.
+ box.style.setProperty('--inspect-max',Math.max(80,$('recent-events').offsetTop-top-8)+'px');}
 function renderDungeonHud(){
  if(!dungeonMode())return;
  const s=live()!,unavailable=store.status!=='ready'||s.phase!=='playing',disabled=anim.active||unavailable;
  $('party').innerHTML=hudParty(s,unavailable);
+ document.getElementById('target-hint')?.remove();   // the hint floats over the map (not inside the party list), so it is cleared here on every redraw
+ if(targetMode()){
+  // Choose-a-target state: usable cards are lit with an arrow, the rest dimmed and not clickable; a hint line sits on top (picking a partner as in Mystery Dungeon).
+  targetUsable=itemTargets(s,choosingItem!);
+  s.queue.slice(0,3).forEach((id,i)=>{const card=document.getElementById('unit-card-'+id);if(!card)return;
+   if(targetUsable.has(id)){card.classList.add('is-target');card.insertAdjacentHTML('beforeend','<span class="hud-target-arrow" aria-hidden="true"></span><kbd class="hud-target-key">'+(i+1)+'</kbd>');
+    card.querySelectorAll<HTMLButtonElement>('button').forEach(b=>{b.disabled=false;});
+    card.querySelector('.hud-party-main')?.setAttribute('aria-label','对'+unitLabel(s.units[id],id)+'使用');}
+   else{card.classList.add('is-dim');card.querySelectorAll<HTMLButtonElement>('button').forEach(b=>{b.disabled=true;});}});
+  {const actor=draft?.editor??s.leader,why=targetUsable.size?'':(()=>{const r=applyCommand(s,draft&&draft.editor!==s.leader?{type:'round',action:draft.main??{type:'wait'},override:{actor,action:{type:'use',item:choosingItem!,target:actor}}}:{type:'round',action:{type:'use',item:choosingItem!,target:actor}});return r.ok?'现在没有可以使用的目标；本回合未执行':r.error;})();   // nobody can use it right now: say why
+   document.getElementById('dungeon-hud')!.insertAdjacentHTML('beforeend','<div class="hud-target-hint" id="target-hint" role="status"><strong>选择使用目标</strong><span>'+esc(itemName(choosingItem!))+'</span><button type="button" id="target-cancel">取消</button><small data-selected-item-description>'+esc(itemDescription(choosingItem!))+'</small>'+(why?'<small id="target-none">'+esc(why)+'</small>':'')+'</div>');}
+  bind('target-cancel',()=>{choosingItem=null;render();});
+ }else targetUsable=new Set();
  placeInspectBelowParty();
  $('hud-bottom').innerHTML=hudBottom(s,quickItems,unavailable||sleeping(s.units[s.leader]),draft&&draft.editor!==s.leader?null:selectedSkill,choosingItem);
- $('hud-map').innerHTML=hudMinimap(s);
+ updateMinimap($('hud-map'),scene?.minimapWorld(s)??s);
+ syncHpBars(document,k=>{const u=s.units[k.slice(2)];return u?{hp:u.hp,max:u.maxHp}:undefined;},hpAnimated());
  $('activity-status').innerHTML=hudTracking(s);$('activity-status').hidden=!s.dungeon?.roguelike;
  $('hud-tooltip').hidden=true;$('hud-tooltip').innerHTML='';
- for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-leader]'))b.onclick=()=>{actionsOpen=false;void send({type:'switch',actor:b.dataset.hudLeader!});};
+ for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-leader]'))b.onclick=()=>{if(targetMode()){useOn(b.dataset.hudLeader!);return;}actionsOpen=false;void send({type:'switch',actor:b.dataset.hudLeader!});};
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-details]'))b.onclick=()=>{const id=b.dataset.hudDetails!;const close=actionsOpen&&detailsId===id;detailsId=close?null:id;detailsOpenerId=close?null:id;actionsOpen=!close;render();};
  // The old action editor retains its transactional draft, service and confirmation handlers.
  // Its move/item controls are replaced by the actual HUD controls, so no duplicate IDs remain.
@@ -278,26 +430,37 @@ function renderDungeonHud(){
  const draftSkills=$('controls').querySelector('.skills');
  if(draft&&draft.editor!==s.leader){draftSkills?.querySelectorAll<HTMLElement>('button').forEach(b=>{b.id='draft-'+b.id;b.querySelectorAll('small').forEach(el=>el.remove());const skill=b.id.slice('draft-skill-'.length),actor=draft!.editor;const show=()=>showMoveTip(skill,actor);const hide=()=>{$('hud-tooltip').hidden=true;};b.onmouseenter=show;b.onfocus=show;b.onmouseleave=hide;b.onblur=hide;});}else draftSkills?.remove();
  const context=$('context-actions');context.replaceChildren();
- for(const b of Array.from($('controls').querySelectorAll<HTMLButtonElement>(':scope > #take,:scope > #rest,:scope > #take-exit'))){context.append(b);}
- for(const panel of Array.from($('controls').querySelectorAll<HTMLElement>('#adventure-room-panel,#shop-panel,#exchange-panel'))){
-  panel.querySelectorAll('p:not(#purse-line):not(#challenge-reward-result):not(#exchange-result),h2 small').forEach(el=>el.remove());context.append(panel);
+ for(const b of Array.from($('controls').querySelectorAll<HTMLButtonElement>(':scope > #take,:scope > #take-exit'))){context.append(b);}
+ for(const panel of Array.from($('controls').querySelectorAll<HTMLElement>('#adventure-room-panel,#shop-panel,#exchange-panel,#rest-panel'))){
+  if(!panel.classList.contains('panel195'))panel.querySelectorAll('p:not(#purse-line):not(#challenge-reward-result):not(#exchange-result),h2 small').forEach(el=>el.remove());context.append(panel);
  }
- const targetBox=$('hud-item-targets');targetBox.hidden=!choosingItem;targetBox.innerHTML='';
- if(choosingItem){
-  const item=choosingItem,actor=draft?.editor??s.leader;
-  const targets=item==='teamTonic'?button('item-use-teamTonic','使用（全队）',disabled,`data-hud-item-target="${esc(actor)}"`):s.queue.filter(id=>{const u=s.units[id],a=s.units[actor];return u.hp>0&&u.pos&&a.pos&&(selfOrAdjacentReachable(s.floor,a.pos,u.pos));}).map(id=>button(item==='bigBerry'?`item-target-bigBerry-${id}`:`item-target-${id}`,esc(unitLabel(s.units[id],id)),disabled,`data-hud-item-target="${esc(id)}"`)).join('');
-   targetBox.innerHTML=`<strong>${esc(itemName(item))}</strong><p data-selected-item-description>${esc(itemDescription(item))}</p><div>${targets}</div>`;
-  targetBox.querySelectorAll<HTMLButtonElement>('[data-hud-item-target]').forEach(b=>b.onclick=()=>act({type:'use',item,target:b.dataset.hudItemTarget!}));
+ {// Services, rooms and the shop open as a centred panel; × closes it until the leader moves, and a small button brings it back.
+  const lp=s.units[s.leader]?.pos,svcKey=lp?`${s.runId}|${s.dungeon?.level??0}|${lp.x},${lp.y}`:'',panels=Array.from(context.querySelectorAll<HTMLElement>('.service'));
+  if(serviceClosedKey&&serviceClosedKey!==svcKey)serviceClosedKey='';
+  if(panels.length&&serviceClosedKey===svcKey){const kind=panels[0].id==='shop-panel'?'商店':panels[0].id==='exchange-panel'?'交换机':panels[0].id==='rest-panel'?'休整点':({challenge:'挑战',item:'道具',commission:'委托',blessing:'祝福'} as Record<string,string>)[panels[0].dataset.roomType??'']??'房间';
+   panels.forEach(el=>el.remove());   // closed with ×: an ordinary button next to the bag button brings it back (no floating bar)
+   document.querySelector('#hud-bottom .hud-bag-button-wrap')?.insertAdjacentHTML('afterbegin','<button type="button" id="service-reopen" class="hud-bag-open hud-service-open">'+kind+'</button>');bind('service-reopen',()=>{serviceClosedKey='';render();});}
+  else if(panels.length){for(const el of panels){if(!el.querySelector('.service-close'))el.insertAdjacentHTML('afterbegin','<button type="button" class="paper-close service-close" aria-label="关闭面板（Esc）">×</button>');}
+   context.querySelectorAll<HTMLButtonElement>('.service-close').forEach(b=>b.onclick=()=>{serviceClosedKey=svcKey;render();});}
  }
+ {// closed with "不前进": a small button next to the bag button reopens the prompt while the leader still stands on the stairs
+  const here=stairsKeyOf(s);
+  if(here&&!anim.active&&s.points.some(q=>q.kind==='down'&&same(q.pos,s.units[s.leader].pos!)))scene?.flushPrefetch(s);   // not while a step animates: decoding sheets there would hitch the camera
+  if(here&&stairsClosedKey===here&&!anim.active)document.querySelector('#hud-bottom .hud-bag-button-wrap')?.insertAdjacentHTML('afterbegin','<button type="button" id="stairs-reopen" class="hud-bag-open hud-service-open">楼梯</button>');
+  bind('stairs-reopen',()=>{stairsClosedKey='';render();});
+ }
+ $('hud-item-targets').hidden=true;   // items act at once or open the party target state; there is no separate confirm bar
  renderDetailsPanel(s,disabled);
  $('hud-actions').hidden=store.status==='ready'&&(!actionsOpen||!!detailsId);
  $('hud-actions').classList.toggle('has-draft',!!draft);
+ {const menu=$('hud-actions'),existing=document.getElementById('abandon-open');if(runCanBeAbandoned()){if(!existing)menu.insertAdjacentHTML('beforeend','<button id="abandon-open" type="button" class="abandon-open">放弃探险…</button>');bind('abandon-open',openAbandon);}else existing?.remove();}
  $('flow').querySelectorAll('.muted').forEach(el=>el.remove());
  $('flow').hidden=!$('flow').innerHTML.trim();
- if(s.phase==='playing'&&!confirmExit)$('flow').hidden=true;
+ if(s.phase==='playing'&&!confirmExit&&!stairsPromptShown)$('flow').hidden=true;
+ if(anim.active&&s.phase!=='playing'&&s.phase!=='exit'&&s.phase!=='transit')$('flow').hidden=true;
  if(s.phase==='ended'&&store.status==='failed'){($('flow').querySelector('#settlement-save')??$('flow')).prepend($('save'));$('hud-actions').hidden=true;}
  $('hud-bag').hidden=!bagOpen;
- $('hud-bag').innerHTML=bagOpen?hudBag(s,quickItems,bagCategory,bagSlot,bagSelectedItem):'';
+ $('hud-bag').innerHTML=bagOpen?hudBag(s,quickItems,bagCategory,bagSlot,bagSelectedItem,!unavailable&&!anim.active):'';
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-hud-skill]')){
   const skill=b.dataset.hudSkill!;b.onclick=()=>{if(draft)draft.editor=s.leader;chooseHudSkill(skill);};
   const show=()=>showMoveTip(skill,s.leader);
@@ -307,17 +470,17 @@ function renderDungeonHud(){
  bind('bag-open',()=>{bagOpen=!bagOpen;choosingItem=null;render();});bind('bag-close',()=>{bagOpen=false;render();});
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-slot]'))b.onclick=()=>{bagSlot=Number(b.dataset.bagSlot);render();};
  for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-category]'))b.onclick=()=>{bagCategory=b.dataset.bagCategory!;render();};
- for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-item]'))b.onclick=()=>{const item=b.dataset.bagItem as Item;bagSelectedItem=item;quickItems=quickItems.map((v,i)=>i===bagSlot?item:v===item?null:v);bagSlot=(bagSlot+1)%6;render();};
- document.querySelector<HTMLButtonElement>('[data-bag-clear]')?.addEventListener('click',()=>{quickItems[bagSlot]=null;render();});
+ for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-item]'))b.onclick=()=>{bagSelectedItem=b.dataset.bagItem!;render();};
+ for(const b of document.querySelectorAll<HTMLButtonElement>('[data-bag-tm]'))b.onclick=()=>{bagSelectedItem='tm:'+b.dataset.bagTm;render();};
+ document.querySelector<HTMLButtonElement>('[data-bag-pin]')?.addEventListener('click',e=>{const item=(e.currentTarget as HTMLElement).dataset.bagPin as Item;bagSelectedItem=item;quickItems=quickItems.map((v,i)=>i===bagSlot?item:v===item?null:v);render();});
+ document.querySelector<HTMLButtonElement>('[data-bag-unpin]')?.addEventListener('click',e=>{const item=(e.currentTarget as HTMLElement).dataset.bagUnpin as Item;quickItems=quickItems.map(v=>v===item?null:v);render();});
+ document.querySelector<HTMLButtonElement>('[data-bag-use]')?.addEventListener('click',e=>{chooseHudItem((e.currentTarget as HTMLElement).dataset.bagUse as Item);});
  $('actions-open').onclick=()=>{actionsOpen=!actionsOpen;detailsId=null;render();};$('hud-settings').onclick=openSettings;
  if(anim.active)document.querySelectorAll<HTMLButtonElement|HTMLSelectElement>('#controls button,#controls select,#party button,#hud-bottom button').forEach(el=>{if(!unavailable&&!el.disabled&&el.matches('[data-hud-leader],[data-hud-details],[data-hud-skill],[data-hud-quick],#bag-open'))el.dataset.animationLocked='true';el.disabled=true;});
- $('recent-events').querySelector('h2')?.remove();
- const rows=Array.from($('recent-events').querySelectorAll('li'));rows.slice(0,-3).forEach(el=>el.remove());
- // Runtime details and source IDs stay in developer diagnostics, not in the player's messages.
- if(!dev){for(const el of $('recent-events').querySelectorAll('li'))el.textContent=el.textContent?.replace(/（推断）/g,'')??'';}
+ $('recent-events').scrollTop=Math.min($('recent-events').scrollHeight,$('recent-events').scrollTop);
 }
 
-function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend-items').hidden=!s?.prog||roguelike;$('legend-items-roguelike').hidden=!s?.prog||!roguelike;$('legend-goal').hidden=roguelike;$('legend-adventures').hidden=!roguelike||!s?.adventureRooms?.length;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 轮 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'尚未出发');const runSummary=s?`${roguelike?'':`目标 ${s.goal?'已完成':'未完成'} · `}背包 ${s.bag}${s.prog?` · ${experienceProgress(s)} · 橙橙果×${s.prog.items.berry} PP多项小补剂×${s.prog.items.tonic}${roguelike?` · ${ITEM_NAMES.bigBerry}×${s.prog.items.bigBerry??0} · ${itemName('teamTonic')}×${s.prog.items.teamTonic??0}`:''}${s.dungeon?.base?` · 钱袋 ${s.purse??0}`:''}`:''}`:'';$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:runSummary;
+function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend-items').hidden=!s?.prog||roguelike;$('legend-items-roguelike').hidden=!s?.prog||!roguelike;$('legend-goal').hidden=roguelike;$('legend-adventures').hidden=!roguelike||!s?.adventureRooms?.length;scene?.paint(s);$('world-label').textContent=s?`${checkMode?'独立检查 · ':''}第 ${s.round} 回合 · ${s.phase==='ended'?'已结束':(s.dungeon?`第${s.dungeon.level}层`:'第一层')}`:(store.atBase?'基地':'尚未出发');const runSummary=s?`${roguelike?'':`目标 ${s.goal?'已完成':'未完成'} · `}背包 ${s.bag}${s.prog?` · ${experienceProgress(s)} · 橙橙果×${s.prog.items.berry} PP多项小补剂×${s.prog.items.tonic}${roguelike?` · ${ITEM_NAMES.bigBerry}×${s.prog.items.bigBerry??0} · ${itemName('teamTonic')}×${s.prog.items.teamTonic??0}`:''}${s.dungeon?.base?` · 钱袋 ${s.purse??0}`:''}`:''}`:'';$('goal-label').textContent=!s&&store.atBase?`已完成远征 ${store.profile?.expeditions??0} 次`:runSummary;
  const activityMarkup=s?activityStatus(s):'',activityRoot=$('activity-status');activityRoot.innerHTML=activityMarkup;activityRoot.hidden=!activityMarkup;
  $('message').textContent=(s?localizeLog(s,notice):playerText(notice)).replaceAll('主控','操控者');
  const expeditionMemory=s?.scenario==='expedition'&&s.phase!=='ended';
@@ -326,9 +489,9 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
  bind('retry',()=>void transition(store.retry()));
  bind('export',()=>{const raw=store.exportRaw();if(raw===null){notice='无法读取原记录，不能重置；请保留当前浏览器数据。';render();return;}download(raw);notice='已提供原记录下载；请确认文件已保留，再选择重置。';render();});
  bind('reset',()=>{if(window.confirm('仅在已保留导出原记录后重置。该操作将开始一份新存档，是否确认？'))void transition(store.resetAfterExport(createMain(newId()),true));});
- $('history').innerHTML=s?visibleLog(s).slice(-12).map(t=>`<li>${esc(localizeLog(s,t))}</li>`).join(''):'';
+ $('history').innerHTML=s?visibleLog(s).slice(-12).map(t=>`<li>${esc(t)}</li>`).join(''):'';
  if(!s&&store.atBase){renderBase();return;}
- if(!s){$('party').innerHTML='<p class="muted">出发后在这里显示队伍。</p>';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>还没有存档。请返回标题开始新游戏。</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>开发者场景只在本次页面内存中运行，不会写入玩家营地存档。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（三层首领战，仅在内存）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(checkMode?store.start(createScenario(fixture!,newId()),scenarioProfile(fixture!)):store.start(begin(selectedConfig),selectedConfig==='expedition'?initialProfile():undefined));});return;}
+ if(!s){$('party').innerHTML='';$('controls').innerHTML='';$('flow').innerHTML=store.status==='empty'?(!dev?'<p>尚无存档</p>':`<h2>开发者菜单：开始一份独立试验</h2><p>开发者场景只在本次页面内存中运行，不会写入玩家营地存档。</p><label>邀请配置 <select id="config"><option value="main-invite">固定有邀请</option><option value="main-none">无邀请对照</option><option value="expedition">远征（三层首领战，仅在内存）</option></select></label>${button('start','开始探索',false,'class="primary"')}`):'';bind('start',()=>{selectedConfig=(document.getElementById('config') as HTMLSelectElement).value;void transition(checkMode?store.start(createScenario(fixture!,newId()),scenarioProfile(fixture!)):store.start(begin(selectedConfig),selectedConfig==='expedition'?initialProfile():undefined));});return;}
  const ready=store.status==='ready',playing=s.phase==='playing',editable=ready||store.status==='saving';
  $('party').innerHTML=s.queue.map((id,i)=>{const u=s.units[id];const down=u.hp===0,level=u.level??s.prog?.level;return `<article class="unit ${id===s.leader?'leader':''}" id="unit-card-${esc(id)}"><div><strong>${esc(unitLabel(u,id))}</strong><span>${down?'倒下 · 仍占名额':id===s.leader?'操控者':'同行'}${u.protected?' · 初始成员':''} · ${u.hp}/${u.maxHp}${u.species?` · ${esc(specName(u))}`:''}${level===undefined?'':` · Lv${level}`}</span></div><div class="hp"><i style="width:${u.hp/u.maxHp*100}%"></i></div><p class="muted" data-unit-status="${esc(id)}" ${combatStatus(u)?'':'hidden'}>${esc(combatStatus(u))}</p><p>${u.learned.map(k=>`${skillLabel(u,k)} ${u.pp[k]??0}/${u.maxPp[k]??0}`).join(' · ')||'普通攻击，不耗PP'}</p>${tacticSelect(`tactic-run-${id}`,u.tactic??'together',!ready||!playing)}${button('leader-'+i,'设为操控者',!ready||!playing||down||s.leader===id)}${button('detail-'+i,'详情')}</article>`;}).join('')+(s.camp.length?`<p class="muted">此前已回营：${s.camp.map(id=>esc(resources(s,id))).join('；')}（本局不可调回）</p>`:'');
   s.queue.forEach((id,i)=>{bind('leader-'+i,()=>{void send({type:'switch',actor:id});});bind('detail-'+i,()=>{detailsId=detailsId===id?null:id;detailsOpenerId=detailsId;render();});
@@ -339,7 +502,7 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   const resultSummary=s.dungeon?.roguelike?`<p>讨伐首领：${end.boss?'成功':'未击败'}</p>`:`<p>目标${end.goal?'已完成':'未完成'} · 已取得 ${end.acquired} · 正常带出 ${end.brought}${end.boss===undefined?'':` · 讨伐首领：${end.boss?'成功':'未挑战'}`}</p>`;
   const previousResult=$('flow').querySelector<HTMLElement>('.settlement194'),sameResult=previousResult?.dataset.runId===s.runId;
   const resultScroll=sameResult?['rank-breakdown','partner-loot-scroll','tm-list'].map(id=>{const el=document.getElementById(id);return {id,top:el?.scrollTop??0,left:el?.scrollLeft??0};}):[],flowScroll=sameResult?$('flow').scrollTop:0,resultFocus=sameResult&&$('flow').contains(document.activeElement)?(document.activeElement as HTMLElement).id:null;
-  $('flow').innerHTML=s.dungeon?.roguelike?settlement(s,store.settlementSummary,ready,persistentRun):`<div class="result"><small>本局结果</small><h2>${end.outcome==='won'?'击败首领':end.outcome==='normal'?'正常撤离':'全队倒下'}${s.difficulty&&s.difficulty!=='normal'?`（${DIFFICULTY_LABEL[s.difficulty]}）`:''}</h2>${resultSummary}<p>${end.team.map(id=>`${esc(resources(s,id))}，${s.dungeon?.roguelike?'伙伴归营':end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。远征中已学的永久招式保留，回营后可以整备再出发。</p>${resultDetails(s)}${persistentRun?button('to-base','返回基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}<p class="muted">${persistentRun?(ready?'终局已结算并自动保存。':'终局已结算，保存失败；重试成功前不能回营地。'):'这是内存开发场景；结算不会写入营地存档。'}</p></div>`;
+  $('flow').innerHTML=s.dungeon?.roguelike?settlement(s,store.settlementSummary,ready,persistentRun):`<div class="result"><small>本局结果</small><h2>${end.outcome==='won'?'击败首领':end.outcome==='normal'?'正常撤离':'全队倒下'}${s.difficulty&&s.difficulty!=='normal'?`（${DIFFICULTY_LABEL[s.difficulty]}）`:''}</h2>${resultSummary}<p>${end.team.map(id=>`${esc(resources(s,id))}，${s.dungeon?.roguelike?'伙伴归营':end.outcome==='normal'?'按名单归营':'仍同行、倒下'}`).join('；')}</p><p>此前回营：${end.camp.length?end.camp.map(id=>esc(resources(s,id))).join('；'):'无'}。远征中已学的永久招式保留。</p>${resultDetails(s)}${persistentRun?button('to-base','返回基地',!ready,'class="primary"'):button('new','开始独立试验',!ready,'class="primary"')}<p class="muted">${persistentRun?(ready?'终局已结算并自动保存。':'终局已结算，保存失败；重试成功前不能回营地。'):'这是内存开发场景；结算不会写入营地存档。'}</p></div>`;
   for(const pos of resultScroll){const el=document.getElementById(pos.id);if(el){el.scrollTop=pos.top;el.scrollLeft=pos.left;}}if(sameResult)$('flow').scrollTop=flowScroll;if(resultFocus)document.getElementById(resultFocus)?.focus({preventScroll:true});
   const tally=document.getElementById('rank-breakdown');if(tally)tally.onscroll=refreshSettlementOverflow;requestAnimationFrame(refreshSettlementOverflow);
   bind('result-settings',openSettings);
@@ -350,51 +513,59 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
   if(!pending||pending.type!=='commission'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的委托选择。</p></div>';return;}
   const spec=COMMISSIONS[pending.commission],full=(s.commissions?.length??0)>=3;
-  $('flow').innerHTML=`<div class="result" id="commission-choice" role="dialog" aria-labelledby="commission-heading"><small>本层委托</small><h2 id="commission-heading">${esc(spec.name)}</h2><p>${esc(spec.description)}</p><p>完成后经验折合 ${spec.equivalentEnemies} 只敌人。</p><p>接下后立即生效的负面效果：${commissionPenaltyText(spec.penalty)}。</p><p>委托须在本层完成；未完成时成功下楼会使委托失败并移除，不发奖励、不另加惩罚。</p>${full?'<p class="error">同时进行的委托已达 3 条，无法接下；拒绝本条后此房间完成。</p>':'<p>选择接下后，本层完成即可领取奖励；也可以拒绝并完成此房间。</p>'}<div class="button-row">${button('commission-accept','接下委托',!ready||full,'class="primary"')}${button('commission-reject','拒绝并完成房间',!ready)}</div></div>`;
+  $('flow').innerHTML=commissionNotice(spec,pending.commission,full,ready);
   bind('commission-accept',()=>void send({type:'commissionChoice',choice:'accept'}));bind('commission-reject',()=>void send({type:'commissionChoice',choice:'reject'}));return;
  }
  if(s.phase==='blessing'){
   $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
   if(!pending||pending.type!=='blessing'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的祝福选择。</p></div>';return;}
-  const source=pending.source==='challenge'?'挑战奖励':'祝福房';
-  $('flow').innerHTML=`<div class="result" id="blessing-choice" role="dialog" aria-labelledby="blessing-heading"><small>${source} · 可选 ${pending.options.length} 项</small><h2 id="blessing-heading">选择一项祝福</h2><div>${pending.options.map(id=>{const blessing=BLESSINGS[id];return button(`blessing-${id}`,`${esc(blessing.name)}<small style="display:block;color:#405038">${esc(blessing.description)}</small>`,!ready,'class="primary"');}).join('')}</div><div class="button-row">${button('blessing-skip','放弃祝福',!ready)}</div></div>`;
-  for(const id of pending.options)bind(`blessing-${id}`,()=>void send({type:'blessingChoice',blessing:id}));bind('blessing-skip',()=>void send({type:'blessingChoice',blessing:null}));return;
+  const source=pending.source==='challenge'?'挑战奖励':'祝福',refreshes=s.blessingRefreshes??0;
+  // The blessing choice is a paper notice panel like the commission offer: one card per blessing (name and effect), then a way out.
+  $('flow').innerHTML=noticePanel({id:'blessing-choice',kind:source,asDialog:true,rows:[{label:'',html:'<span class="notice-cards">'+pending.options.map(id=>{const blessing=BLESSINGS[id];return button(`blessing-${id}`,`<strong>${esc(blessing.name)}<em class="rarity-tag">${esc(BLESSING_RARITY.names[blessing.rarity])}</em></strong><span>${esc(blessingEffectLabel(id))}</span>`,!ready,`class="paper-button notice-card" data-rarity="${blessing.rarity}"`);}).join('')+'</span>'}],buttons:button('blessing-refresh',`刷新（${refreshes}）`,!ready||refreshes<=0,'class="paper-button"')+button('blessing-skip','放弃',!ready,'class="paper-button"')});
+  for(const id of pending.options)bind(`blessing-${id}`,()=>void send({type:'blessingChoice',blessing:id}));bind('blessing-refresh',()=>void send({type:'blessingRefresh'}));bind('blessing-skip',()=>void send({type:'blessingChoice',blessing:null}));return;
  }
  if(s.phase==='tmChoice'){
   $('controls').innerHTML='';const pending=s.pendingChoices?.[0];
   if(!pending||pending.type!=='tmChoice'){$('flow').innerHTML='<div class="result"><p class="error">缺少待处理的招式机选择。</p></div>';return;}
-  $('flow').innerHTML=`<div class="result" id="tm-choice" role="dialog" aria-labelledby="tm-choice-heading"><small>${SRC[pending.source]} · 下一张招式机</small><h2 id="tm-choice-heading">选择一张招式机</h2><p>选择后即可继续本轮。</p><div>${pending.options.map(move=>button(`tm-choice-${move}`,`${esc(tmZh(move))}招式机`,!ready,'class="primary"')).join('')}</div></div>`;
+  $('flow').innerHTML=`<section class="paper-window c195 c195-tm" id="tm-choice" role="dialog" aria-labelledby="tm-choice-heading"><h2 class="paper-plaque" id="tm-choice-heading">选择一张招式机</h2><small>${SRC[pending.source]}</small><div class="choice-grid">${pending.options.map(move=>tmTile(move,{disabled:!ready})).join('')}</div></section>`;
   for(const move of pending.options)bind(`tm-choice-${move}`,()=>void send({type:'tmChoice',move}));return;
  }
  if(s.phase==='learning'){
   $('controls').innerHTML='';const pending=s.pendingLearnMoves?.[0],unit=pending?s.units[pending.actor]:undefined;
-  $('flow').innerHTML=pending&&unit?`<div class="result" id="learning-choice" role="dialog" aria-labelledby="learning-heading"><h2 id="learning-heading">${esc(unitLabel(unit,pending.actor))}可以学会新招式</h2><div class="learning-new" data-learning-preview="${esc(pending.move)}" tabindex="0"><strong>${esc(moveZh(pending.move))}</strong><span>PP ${pending.pp}/${pending.pp}</span></div><div id="learning-tooltip" role="region" aria-label="招式说明" tabindex="0"></div><p>选择要替换的招式</p><div class="learning-moves">${unit.learned.map(move=>button('learn-replace-'+move,`<strong>${esc(moveZh(move))}</strong><span>PP ${unit.pp[move]??0}/${unit.maxPp[move]??0}</span>`,!ready,`data-learning-preview="${esc(move)}" class="learning-move"`)).join('')}</div><div class="button-row">${button('learn-skip','放弃学习',!ready)}${button('learn-close','关闭',!ready,'aria-label="关闭学招选择并放弃学习"')}</div></div>`:'<p class="error">缺少待处理的学招选择。</p>';
-  if(pending&&unit){for(const move of unit.learned)bind('learn-replace-'+move,()=>void send({type:'learnMove',replace:move}));for(const id of ['learn-skip','learn-close'])bind(id,()=>void send({type:'learnMove',replace:null}));for(const el of $('flow').querySelectorAll<HTMLElement>('[data-learning-preview]')){const show=()=>showMoveTip(el.dataset.learningPreview!,pending.actor);el.onmouseenter=show;el.onfocus=show;const hide=()=>{$('hud-tooltip').hidden=true;};el.onmouseleave=hide;el.onblur=hide;}showMoveTip(pending.move,pending.actor);}
+  if(!pending||!unit){$('flow').innerHTML='<p class="error">缺少待处理的学招选择。</p>';return;}
+  const learnKey=s.runId+'|'+pending.actor+'|'+pending.move;if(learnKeyShown!==learnKey){learnKeyShown=learnKey;learnChoice=null;}
+  $('flow').innerHTML=learningPanel(s,pending,unit,learnChoice,ready);
+  for(const move of unit.learned)bind('learn-replace-'+move,()=>{learnChoice=move;render();});
+  bind('learn-confirm',confirmLearn);bind('learn-skip',()=>void send({type:'learnMove',replace:null}));
   return;
  }
   if(s.phase==='evolution'){
    $('controls').innerHTML='';const pending=s.pendingEvolutions?.[0],unit=pending?s.units[pending.actor]:undefined;
-   $('flow').innerHTML=pending?`<div class="result" id="evolution-choice" role="dialog" aria-labelledby="evolution-heading"><small>升级后进化</small><h2 id="evolution-heading">${esc(unitLabel(unit,pending.actor))}可以进化</h2><p>请选择下一形态。关闭选择会暂不进化，并在下次升级时再询问。</p><div>${pending.choices.map(choice=>button(`evolve-${choice}`,spName(choice),!ready,'class="primary"')).join('')}</div>${button('evolution-close','暂不进化（下次升级时再问）',!ready)}</div>`:'<p class="error">进化阶段缺少待处理选择。</p>';
+   $('flow').innerHTML=pending?`<div class="result" id="evolution-choice" role="dialog" aria-labelledby="evolution-heading"><small>升级后进化</small><h2 id="evolution-heading">${esc(unitLabel(unit,pending.actor))}可以进化</h2><div>${pending.choices.map(choice=>button(`evolve-${choice}`,spName(choice),!ready,'class="primary"')).join('')}</div>${button('evolution-close','暂不进化',!ready)}</div>`:'<p class="error">进化阶段缺少待处理选择。</p>';
    if(pending){for(const choice of pending.choices)bind(`evolve-${choice}`,()=>void send({type:'evolve',species:choice}));bind('evolution-close',()=>void send({type:'evolve',species:null}));}
    return;
   }
  if(s.phase==='invitation'){
-  $('controls').innerHTML='';const pending=s.invitations.find(i=>i.status==='pending')!,preview=previewInvitation(s,inviteChoice),old=inviteChoice?s.units[inviteChoice]:null,full=s.queue.length>=3;
-  const incoming=unitLabel(pending.unit,pending.unit.id);
-  $('flow').innerHTML=`<h2>${esc(incoming)}想加入</h2><p>同行的新伙伴下一轮才行动。</p><div class="compare"><div><strong>新人 ${esc(incoming)}</strong><p>${pending.unit.hp}/${pending.unit.maxHp}HP</p><p>${pending.unit.learned.map(k=>skillLabel(pending.unit,k)+' '+pending.unit.pp[k]+'/'+pending.unit.maxPp[k]).map(esc).join(' · ')}</p></div><div><strong>${old?'回营 '+esc(unitLabel(old,inviteChoice!)):'同行名额'}</strong><p>${old?old.hp+'/'+old.maxHp+'HP':full?'选择一名同行回营，或让新人直接回营。':'可以补入空位。'}</p><p>${old?old.learned.map(k=>skillLabel(old,k)+' '+old.pp[k]+'/'+old.maxPp[k]).map(esc).join(' · '):''}</p></div></div><div class="button-row">${s.queue.map((id,i)=>button('out-'+i,unitLabel(s.units[id],id)+'回营',!ready,inviteChoice===id?'class="selected"':'')).join('')}${!full?button('out-none','补空位',!ready):''}</div><p>${preview.ok?'接受后加入本局同行。':esc(preview.error)}</p>${inviteReject?'<p>将拒绝这份邀请，不会生成伙伴。</p>'+button('reject-confirm','确认拒绝',!ready,'data-confirm="true"')+button('back','返回比较'):button('accept',full?'接受并替换同行':'接受同行',!ready||!preview.ok,'data-confirm="true" class="primary"')+(full?button('invite-to-camp','新人直接回营',!ready||anim.active)+'<p data-camp-invite-help>新人本局不入场，结算时加入营地名册。</p>':'')+button('reject','选择拒绝',!ready)}`;
-  s.queue.forEach((id,i)=>bind('out-'+i,()=>{inviteChoice=id;inviteReject=false;render();}));bind('out-none',()=>{inviteChoice=undefined;render();});bind('accept',()=>void send({type:'invite',choice:'accept',outgoing:inviteChoice}));bind('invite-to-camp',()=>void send({type:'invite',choice:'camp'}));bind('reject',()=>{inviteReject=true;render();});bind('reject-confirm',()=>void send({type:'invite',choice:'reject'}));bind('back',()=>{inviteReject=false;render();});return;
+  $('controls').innerHTML='';const pending=s.invitations.find(i=>i.status==='pending')!,preview=previewInvitation(s,inviteChoice);
+  $('flow').innerHTML=invitationPanel(s,pending,inviteChoice,preview,ready);
+  s.queue.forEach((id,i)=>bind('out-'+i,()=>{inviteChoice=inviteChoice===id?undefined:id;render();}));
+  bind('accept',()=>void send({type:'invite',choice:'accept',outgoing:inviteChoice}));bind('invite-to-camp',()=>void send({type:'invite',choice:'camp'}));bind('reject',()=>void send({type:'invite',choice:'reject'}));return;
  }
- if(s.phase==='exit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮撤离请求已成立；正在完成终局处理。</p>';return;}
- if(s.phase==='transit'){$('controls').innerHTML='';$('flow').innerHTML='<p>本轮跨层请求已成立；正在切换楼层。</p>';return;}
+ if(s.phase==='exit'){$('controls').innerHTML='';$('flow').innerHTML='';return;}
+ if(s.phase==='transit'){$('controls').innerHTML='';$('flow').innerHTML='';return;}
  const leaderPoint=s.points.find(p=>same(p.pos,s.units[s.leader].pos)),onStairs=leaderPoint?.kind==='down'||leaderPoint?.kind==='up';
- $('flow').innerHTML=confirmExit?`<h2>${onStairs?'本轮请求跨层？':'本轮请求撤离？'}</h2><p>消耗操控者行动，敌人仍会行动。使用者轮末存活且仍在交互格才成立。</p>${button('exit-confirm',onStairs?'确认本轮跨层':'确认本轮撤离',!ready,'data-confirm="true" class="primary"')}${button('cancel-exit','继续查看')}`:'';
+ const stairsKey=stairsKeyOf(s);if(stairsClosedKey&&stairsClosedKey!==stairsKey)stairsClosedKey='';
+ stairsPromptShown=!!stairsKey&&stairsClosedKey!==stairsKey&&!draft&&!confirmExit;
+ const stairsUp=(()=>{const L=s.units[s.leader],p=L?.pos&&s.points.find(q=>same(q.pos,L.pos!));return p?.kind==='up';})();
+ $('flow').innerHTML=stairsPromptShown?`<section class="paper-window c195 c195-stairs" id="stairs-prompt" role="dialog" aria-label="楼梯"><p class="stairs-ask">${stairsUp?'要回到上一层吗？':'要前进到下一层吗？'}</p><footer class="c195-foot">${button('stairs-go',stairsUp?'返回':'前进',!ready,'class="paper-button is-primary" data-confirm="true"')}${button('stairs-stay',stairsUp?'不返回':'不前进',!ready,'class="paper-button"')}</footer></section>`:confirmExit?`<section class="paper-window c195 c195-stairs" id="exit-prompt" role="dialog" aria-label="撤离"><p class="stairs-ask">要撤离吗？</p><footer class="c195-foot">${button('exit-confirm','撤离',!ready,'class="paper-button is-primary" data-confirm="true"')}${button('cancel-exit','不撤离',false,'class="paper-button"')}</footer></section>`:'';
+ bind('stairs-go',()=>{stairsClosedKey=stairsKey;void send({type:'round',action:{type:'interact',exit:true}});});bind('stairs-stay',()=>{stairsClosedKey=stairsKey;render();});
  bind('exit-confirm',()=>void send({type:'round',action:{type:'interact',exit:true}}));bind('cancel-exit',()=>{confirmExit=false;render();});
  const editor=draft?.editor??s.leader;const u=s.units[editor];
  const point=s.points.find(p=>same(p.pos,u.pos));const stairKind=point?.kind==='down'||point?.kind==='up';const restPoint=point?.kind==='rest';const serviceCell=point?.kind==='shop'||point?.kind==='exchange';const canCollect=!!point&&!point.used&&point.kind!=='exit'&&!stairKind&&!restPoint&&!serviceCell;const pickup=point?.kind==='berry'||point?.kind==='tonic';
  let draftText='';if(draft){const valid=draft.main&&(draft.swap||draft.action)?applyCommand(s,{type:'round',action:draft.main,...(!draft.swap?{override:{actor:draft.partner,action:draft.action!}}:{})}):null;
- draftText=`<div class="draft"><strong>本轮草稿中 · 正在编辑 ${esc(unitLabel(s.units[editor],editor))}</strong><p>${button('edit-main',`${unitLabel(s.units[s.leader],s.leader)}：${actionLabel(draft.main,s.leader)}`,draft.swap)}${button('edit-partner',`${unitLabel(s.units[draft.partner],draft.partner)}：${draft.swap?'换位（双方行动）':actionLabel(draft.action,draft.partner)}`,draft.swap)}</p><p>之后：敌方阶段</p>${draftOrder(s,draft)}${valid&&!valid.ok?`<p class="error">${esc(playerText(valid.error))}</p>`:''}${button('submit',draft.main?.type==='interact'&&draft.main.exit?'提交整轮并交互':'提交整轮',!ready||!valid?.ok,'data-confirm="true" class="primary"')}${button('cancel-draft','取消组合')}</div>`;
+ draftText=`<div class="draft"><strong>本回合草稿中 · 正在编辑 ${esc(unitLabel(s.units[editor],editor))}</strong><p>${button('edit-main',`${unitLabel(s.units[s.leader],s.leader)}：${actionLabel(draft.main,s.leader)}`,draft.swap)}${button('edit-partner',`${unitLabel(s.units[draft.partner],draft.partner)}：${draft.swap?'换位':actionLabel(draft.action,draft.partner)}`,draft.swap)}</p><p>之后：敌方阶段</p>${draftOrder(s,draft)}${valid&&!valid.ok?`<p class="error">${esc(playerText(valid.error))}</p>`:''}${button('submit',draft.main?.type==='interact'&&draft.main.exit?'提交本回合并交互':'提交本回合',!ready||!valid?.ok,'data-confirm="true" class="primary"')}${button('cancel-draft','取消组合')}</div>`;
  }
- $('controls').innerHTML=`<h2>${draft?'组合安排':'操控者行动'} <small>${esc(unitLabel(s.units[editor],editor))}</small></h2>${draftText}<div class="button-row">${button('wait','等待（.）',!editable||(!ready&&!draft)||!!draft?.swap)}${button('arrange','安排伙伴',!editable||!!draft)}${button('swap','换位',!editable||!!draft)}</div>${choosingPartner||choosingSwap?`<p>选择另一名伙伴：</p>${s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0).map(id=>button('partner-'+id,unitLabel(s.units[id],id),!editable)).join('')}`:''}<div class="skills">${u.learned.map(k=>button('skill-'+k,`${esc(skillLabel(u,k))} ${u.pp[k]??0}/${u.maxPp[k]??0}<small data-move-preview="${esc(k)}" style="display:block">${esc(moveSummary(k,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</small>`,!editable||(!ready&&!draft)||!!draft?.swap||(u.pp[k]??0)<1,selectedSkill===k?'class="selected"':'')).join('')}</div>${s.prog?`<div class="items"><p class="muted">背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）。占该成员一次行动，对自己或相邻同行。</p>${(['berry','tonic'] as Item[]).map(k=>button('use-'+k,`使用${ITEM_NAMES[k]}`,!editable||(!ready&&!draft)||!!draft?.swap,choosingItem===k?'class="selected"':'')).join('')}${choosingItem&&u.pos?`<p>对谁使用${ITEM_NAMES[choosingItem]}？</p>${s.queue.filter(id=>s.units[id].hp>0&&s.units[id].pos&&(selfOrAdjacentReachable(s.floor,u.pos!,s.units[id].pos!))).map(id=>button('item-target-'+id,id===editor?`${id}（自己）`:id,!editable)).join('')}`:''}</div>`:''}<p class="muted">${selectedSkill?`已选${esc(skillLabel(u,selectedSkill))}：<span id="selected-move-preview">${esc(moveSummary(selectedSkill,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</span>。消耗1PP；金圈标出合法目标${moveOf(selectedSkill)?.range==='user'||moveOf(selectedSkill)?.range==='room'?'（自身）':''}。`:draft?'点地图或方向键只编辑动作，尚未执行。':'方向键移动；点相邻敌人普通攻击；K选招式。'}</p>${point&&editor===s.leader&&restPoint?button('rest',point.used?'休整点已使用':`整理招式补给（休整点，每招恢复${PROG.restPp} PP，每局一次）`,!editable||(!ready&&!draft)||!!draft?.swap||point.used):''}${point&&editor===s.leader&&!restPoint&&!serviceCell?(canCollect?button('take',pickup?`拾取${ITEM_NAMES[point!.kind as Item]}`:'取得并继续',!editable||(!ready&&!draft)||!!draft?.swap):'')+(pickup||(s.dungeon?.roguelike&&!stairKind)?'':button('take-exit',stairKind?(point!.kind==='down'?'走下楼梯（请求跨层）':'走上楼梯（请求跨层）'):canCollect?'取得／请求撤离':'请求撤离',!editable||(!ready&&!draft)||!!draft?.swap)):''}`;
+ $('controls').innerHTML=`<h2>${draft?'组合安排':'操控者行动'} <small>${esc(unitLabel(s.units[editor],editor))}</small></h2>${draftText}<div class="button-row">${button('wait','等待（.）',!editable||(!ready&&!draft)||!!draft?.swap)}${button('arrange','安排伙伴',!editable||!!draft)}${button('swap','换位',!editable||!!draft)}</div>${choosingPartner||choosingSwap?`<p>选择另一名伙伴：</p>${s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0).map(id=>button('partner-'+id,unitLabel(s.units[id],id),!editable)).join('')}`:''}<div class="skills">${u.learned.map(k=>button('skill-'+k,`${esc(skillLabel(u,k))} ${u.pp[k]??0}/${u.maxPp[k]??0}<small data-move-preview="${esc(k)}" style="display:block">${esc(moveSummary(k,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</small>`,!editable||(!ready&&!draft)||!!draft?.swap||(u.pp[k]??0)<1,selectedSkill===k?'class="selected"':'')).join('')}</div>${s.prog?`<div class="items"><p class="muted">背包（本局，不带出）：${ITEM_NAMES.berry}×${s.prog.items.berry}（回复${PROG.berryHeal}HP）· ${ITEM_NAMES.tonic}×${s.prog.items.tonic}（每招+${PROG.tonicPp}PP）。占该成员一次行动，对自己或相邻同行。</p>${(['berry','tonic'] as Item[]).map(k=>button('use-'+k,`使用${ITEM_NAMES[k]}`,!editable||(!ready&&!draft)||!!draft?.swap,choosingItem===k?'class="selected"':'')).join('')}${choosingItem&&u.pos?`<p>对谁使用${ITEM_NAMES[choosingItem]}？</p>${s.queue.filter(id=>s.units[id].hp>0&&s.units[id].pos&&(selfOrAdjacentReachable(s.floor,u.pos!,s.units[id].pos!))).map(id=>button('item-target-'+id,id===editor?`${id}（自己）`:id,!editable)).join('')}`:''}</div>`:''}<p class="muted">${selectedSkill?`已选${esc(skillLabel(u,selectedSkill))}：<span id="selected-move-preview">${esc(moveSummary(selectedSkill,{s,sourceId:editor,targetId:visibleHoverTarget(s)}))}</span>。消耗1PP；金圈标出合法目标${moveOf(selectedSkill)?.range==='user'||moveOf(selectedSkill)?.range==='room'?'（自身）':''}。`:draft?'点地图或方向键只编辑动作，尚未执行。':'方向键移动；点相邻敌人普通攻击；K选招式。'}</p>${point&&editor===s.leader&&!restPoint&&!serviceCell?(canCollect?button('take',pickup?`拾取${ITEM_NAMES[point!.kind as Item]}`:'取得并继续',!editable||(!ready&&!draft)||!!draft?.swap):'')+(pickup||stairKind||(s.dungeon?.roguelike&&!stairKind)?'':button('take-exit',canCollect?'取得（继续）':'撤离',!editable||(!ready&&!draft)||!!draft?.swap)):''}`;
  if(choosingItem==='bigBerry')document.querySelectorAll<HTMLElement>('#controls [id^="item-target-"]').forEach(el=>{const id=el.id.slice('item-target-'.length);el.id=`item-target-bigBerry-${id}`;el.dataset.action=`item-target-bigBerry-${id}`;});
  const backpack=$('controls').querySelector<HTMLElement>('.items');
  if(backpack&&s.prog&&s.dungeon?.roguelike){
@@ -402,31 +573,37 @@ function renderMain(){const s=live(),roguelike=!!s?.dungeon?.roguelike;$('legend
   backpack.insertAdjacentHTML('beforeend',button('use-bigBerry',`使用${ITEM_NAMES.bigBerry}`,!editable||(!ready&&!draft)||!!draft?.swap,`data-action="use-bigBerry" ${choosingItem==='bigBerry'?'class="selected"':''}`)+button('use-teamTonic',`使用${itemName('teamTonic')}`,!editable||(!ready&&!draft)||!!draft?.swap,`data-action="use-teamTonic"`));
  }
  const leaderPos=s.units[s.leader]?.pos??null,activeAdventure=(s.adventureRooms??[]).find(room=>same(room.interaction,leaderPos));
- if(activeAdventure){$('controls').insertAdjacentHTML('beforeend',adventureRoomPanel(s,activeAdventure,editor,ready,!!draft));
-  bind('start-challenge',()=>act({type:'interact',exit:false}));bind('take-adventure-item',()=>act({type:'interact',exit:false}));
-  bind('interact-commission',()=>act({type:'interact',exit:false}));bind('interact-blessing',()=>act({type:'interact',exit:false}));}
- if(!draft&&editor===s.leader){$('controls').insertAdjacentHTML('beforeend',servicePanel(s,point,ready));bindService(s);}
+ // A commission or blessing room opens its choice as soon as the leader stands on the cell: no panel with a single button in between.
+ if(activeAdventure&&(activeAdventure.type==='commission'||activeAdventure.type==='blessing')&&activeAdventure.state==='idle'&&!draft&&editor===s.leader&&ready&&!(window as unknown as {__trialNoAutoInteract?:boolean}).__trialNoAutoInteract){   // the flag lets a test that proves one key = one round keep the step and the choice apart
+  const arrival=`${s.runId}|${s.dungeon?.level??0}|${activeAdventure.room}|${s.leader}`;   // per room and per controller: a companion who takes over on the cell opens it too
+  // Claimed only when no animation is running, and given back when the check at the timeout fails: the first render after a step is drawn while the step's
+  // animation still plays, and a key claimed then would never fire again for this room.
+  if(autoInteractKey!==arrival&&!anim.active){autoInteractKey=arrival;setTimeout(()=>{const now=live();if(now&&now.phase==='playing'&&!anim.active&&!draft&&store.status==='ready'&&same(now.units[now.leader]?.pos??null,activeAdventure.interaction))act({type:'interact',exit:false});else autoInteractKey='';},0);}
+ }
+ if(activeAdventure&&!(activeAdventure.type==='challenge'&&activeAdventure.state==='sealed')&&!(activeAdventure.type==='commission'||activeAdventure.type==='blessing')){   // no room panel in the middle of a challenge fight, and none for the rooms that open their choice at once
+  $('controls').insertAdjacentHTML('beforeend',adventureRoomPanel(s,activeAdventure,editor,ready,!!draft));
+  bind('start-challenge',()=>act({type:'interact',exit:false}));bind('take-adventure-item',()=>act({type:'interact',exit:false}));}
+ if(editor===s.leader&&(!draft||point?.kind==='rest')){$('controls').insertAdjacentHTML('beforeend',servicePanel(s,point,ready||!!draft,!!draft?.swap));bindService(s);}   // the rest point stays reachable while a combination is being arranged
  bind('wait',()=>act({type:'wait'}));bind('arrange',()=>{actionsOpen=true;choosingPartner=true;choosingSwap=false;selectedSkill=null;render();});bind('swap',()=>{actionsOpen=true;choosingSwap=true;choosingPartner=false;selectedSkill=null;render();});
  for(const id of s.queue.filter(id=>id!==s.leader))bind('partner-'+id,()=>{const swap=choosingSwap;draft={partner:id,action:null,main:swap?{type:'swap',target:id}:null,editor:swap?s.leader:id,swap};choosingPartner=false;choosingSwap=false;render();});
  u.learned.forEach(k=>bind('skill-'+k,()=>{selectedSkill=k;choosingItem=null;render();}));
- for(const k of (s.dungeon?.roguelike?['berry','tonic','bigBerry']:['berry','tonic']) as Item[]){bind('use-'+k,()=>{if((s.prog?.items[k]??0)<1){notice=`背包里没有${ITEM_NAMES[k]}；本轮未执行`;choosingItem=null;render();return;}choosingItem=choosingItem===k?null:k;selectedSkill=null;choosingPartner=false;choosingSwap=false;render();});
+ for(const k of (s.dungeon?.roguelike?['berry','tonic','bigBerry']:['berry','tonic']) as Item[]){bind('use-'+k,()=>{choosingPartner=false;choosingSwap=false;chooseHudItem(k);});
   for(const id of s.queue)bind(k==='bigBerry'?`item-target-bigBerry-${id}`:'item-target-'+id,()=>{if(choosingItem===k)act({type:'use',item:k,target:id});});}bind('take',()=>act({type:'interact',exit:false}));bind('rest',()=>act({type:'interact',exit:false}));bind('take-exit',()=>act({type:'interact',exit:true}));bind('edit-main',()=>{if(draft){draft.editor=s.leader;selectedSkill=null;render();}});bind('edit-partner',()=>{if(draft){draft.editor=draft.partner;selectedSkill=null;render();}});bind('cancel-draft',()=>{clear();render();});
- if(s.dungeon?.roguelike)bind('use-teamTonic',()=>{if((s.prog?.items.teamTonic??0)<1){notice=`背包里没有${itemName('teamTonic')}；本轮未执行`;render();return;}act({type:'use',item:'teamTonic',target:editor});});
+ if(s.dungeon?.roguelike)bind('use-teamTonic',()=>{if((s.prog?.items.teamTonic??0)<1){notice=`背包里没有${itemName('teamTonic')}；本回合未执行`;render();return;}act({type:'use',item:'teamTonic',target:editor});});
  bind('submit',()=>{if(draft?.main){const cmd={type:'round' as const,action:draft.main,...(!draft.swap?{override:{actor:draft.partner,action:draft.action!}}:{})};void send(cmd);}});
 }
 /** 6.5 base screen: roster, technique machines, carried moves, squad and departure. Every edit is one saved write; the next edit waits for it. */
 function rankPanel(p:Profile,ready:boolean):string{
  const level=rankLevel(p.rankExp),floor=rankThreshold(level),next=rankThreshold(level+1),points=availableTalentPoints(p);
+ const pips=(n:number)=>Array.from({length:TALENT_MAX_RANK},(_,i)=>`<i class="${i<n?'is-on':''}"></i>`).join('');
  const rows=(['vitality','offense','supplies'] as TalentId[]).map(id=>{
   const n=p.talents[id]??0;
   const effect=id==='vitality'?`全队最大 HP +${n*5}%`:id==='offense'?`对敌伤害 +${n*3}%`:`橙橙果回复 +${n} HP${n>=3?' · 出发带 1 个橙橙果':''}`;
-  return `<article class="unit" id="talent-${id}"><h3>${esc(TALENTS[id].name)} <small>${n}/${TALENT_MAX_RANK}</small></h3><p>${effect}</p>${button(`talent-add-${id}`,'加一点',!ready||points<1||n>=TALENT_MAX_RANK)}</article>`;
+  return `<article class="camp194-talent-card" id="talent-${id}"><h3>${esc(TALENTS[id].name)} <small>${n}/${TALENT_MAX_RANK}</small></h3><div class="camp194-talent-pips">${pips(n)}</div><p>${effect}</p>${button(`talent-add-${id}`,'加一点',!ready||points<1||n>=TALENT_MAX_RANK)}</article>`;
  }).join('');
- return `<section id="rank-panel"><p id="rank-level">探险队 Lv${level}</p>
-  <p id="rank-progress">下一级 ${p.rankExp-floor}/${next-floor}</p>
-  <p id="talent-points">未分配天赋点：${points}</p>
-  <div id="talent-tree">${rows}</div>
-  ${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0))}</section>`;
+ return `<section id="rank-panel" class="camp194-talents"><div class="camp194-talent-head"><strong id="rank-level">探险队 Lv${level}</strong><span id="talent-points" class="camp194-talent-points">未分配天赋点：${points}</span><p id="rank-progress" class="camp194-talent-xp"><span>下一级</span><b>${p.rankExp-floor}/${next-floor}</b></p></div>
+  <div id="talent-tree" class="camp194-talent-cards">${rows}</div>
+  ${button('talent-reset','免费重置',!ready||Object.values(p.talents).every(n=>n===0),'class="camp194-talent-reset"')}</section>`;
 }
 function renderBase(){
  const p=store.profile;
@@ -470,6 +647,7 @@ function renderBase(){
    if(target&&openDialog?.contains(target))target.focus({preventScroll:true});
   }
  };
+ campDragCtx={edit:a=>edit(a),p};
  for(const talent of ['vitality','offense','supplies'] as TalentId[])bind('talent-add-'+talent,()=>void edit({type:'talent',talent}));
  bind('talent-reset',()=>void edit({type:'resetTalents'}));
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-camp-member]'))el.onclick=()=>{campSelected=el.dataset.campMember!;notice='';render();};
@@ -478,7 +656,10 @@ function renderBase(){
   for(const l of i.learned)bind('carry-'+i.id+'-'+l.move,()=>void edit({type:'carry',inst:i.id,moves:i.carry.includes(l.move)?i.carry.filter(n=>n!==l.move):[...i.carry,l.move]}));
   bind('team-'+i.id,()=>{const team=p.team.includes(i.id)?p.team.filter(t=>t!==i.id):[...p.team,i.id];void edit({type:'team',team,leader:team.includes(p.leader)?p.leader:team[0]??p.leader});});
   bind('lead-'+i.id,()=>void edit({type:'team',team:p.team,leader:i.id}));
-  bind('learn-'+i.id,()=>{const move=vaultState.move;if(move)void edit({type:'learn',inst:i.id,move});});
+  bind('learn-'+i.id,()=>{const move=vaultState.move;if(!move)return;
+   // Four moves already carried: ask which one to replace (or learn without carrying), like the in-run learning window.
+   if(i.carry.length>=4&&!i.learned.some(l=>l.move===move)){void askLearnCarry(i,move).then(choice=>{if(choice)void edit({type:'learn',inst:i.id,move,replace:choice.replace});});return;}
+   void edit({type:'learn',inst:i.id,move});});
  }
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-tab]'))el.onclick=()=>{vaultState.tab=el.dataset.vaultTab==='shards'?'shards':'tm';notice='';render();};
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-by]'))el.onclick=()=>{vaultState.by=el.dataset.vaultBy==='category'?'category':'type';vaultState.filter='all';vaultState.move=null;vaultState.learner=null;render();};
@@ -487,13 +668,12 @@ function renderBase(){
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-vault-shard]'))el.onclick=()=>{vaultState.shard=el.dataset.vaultShard!;render();};
  for(const m of ALL_TM_MOVES)bind('tm-'+m,()=>{vaultState.move=m;vaultState.learner=null;notice='';render();});
  for(const difficulty of ['easy','normal','hard'])if(isDifficulty(difficulty))bind('difficulty-'+difficulty,()=>void edit({type:'difficulty',difficulty}));
+ const showTip=(el:HTMLButtonElement|null|undefined)=>{const tip=document.getElementById('camp-move-tooltip');if(!tip)return;if(el){tip.innerHTML=campMoveTooltip194(el.dataset.campMove!);tip.hidden=false;}else tip.hidden=true;};
  for(const el of document.querySelectorAll<HTMLButtonElement>('[data-camp-move]')){
-  const show=()=>{const tip=document.getElementById('camp-move-tooltip');if(tip){tip.innerHTML=campMoveTooltip194(el.dataset.campMove!);tip.hidden=false;}};
-  const hide=()=>{const active=dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus')??dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:hover');const tip=document.getElementById('camp-move-tooltip');if(tip){if(active){tip.innerHTML=campMoveTooltip194(active.dataset.campMove!);tip.hidden=false;}else tip.hidden=true;}};
-  el.onmouseenter=show;el.onfocus=show;el.onmouseleave=hide;el.onblur=hide;
+  const hide=()=>showTip(dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus')??dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:hover'));
+  el.onmouseenter=()=>showTip(el);el.onfocus=()=>showTip(el);el.onmouseleave=hide;el.onblur=hide;
  }
- const focusedMove=dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus'),focusedTip=document.getElementById('camp-move-tooltip');
- if(focusedMove&&focusedTip){focusedTip.innerHTML=campMoveTooltip194(focusedMove.dataset.campMove!);focusedTip.hidden=false;}
+ showTip(dialog?.querySelector<HTMLButtonElement>('[data-camp-move]:focus'));
  bind('depart',()=>{if(anim.active||store.status!=='ready')return;campWindowCycle++;departureOpen=true;campPanel=null;notice='';render();});
  bind('depart-confirm',()=>{if(anim.active||store.status!=='ready')return;clear();departureOpen=false;notice='';const pending=store.depart(newId(),newSeed(),0);render();void pending.then(()=>render());});
 }
@@ -506,47 +686,60 @@ function resultDetails(s:World):string{
   const brought=summary?.brought??[...s.queue,...s.camp,...(s.exchange?.sent?[s.exchange.sent]:[])].map(id=>({id,species:s.units[id].entrySpecies??s.units[id].species??''}));
   const shards=summary?.shards??[];
   const rank=summary?.rank;
-  const rankRewards=rank?`<ul id="rank-breakdown"><li>深度：+${rank.depth}</li><li>击败首领：+${rank.boss}</li><li>完成委托：+${rank.commissions}（最多 3）</li><li>新招募伙伴：+${rank.recruits}（最多 2，碎片不计）</li><li>带回招式机：+${rank.tms}（最多 4）</li></ul><p id="rank-gain"><strong>探险队经验 +${rank.total}</strong> · 累计 ${rank.before} → ${rank.after}</p><p id="rank-level-change">${rank.levelAfter>rank.levelBefore?`探险队升级：Lv${rank.levelBefore} → Lv${rank.levelAfter}，获得 ${rank.levelAfter-rank.levelBefore} 个天赋点`:`探险队 Lv${rank.levelAfter}`}</p><p class="muted">三档难度的探险队经验计算相同。</p>`:'<p>本局无此项奖励</p>';
+  const rankRewards=rank?`<ul id="rank-breakdown"><li>深度：+${rank.depth}</li><li>击败首领：+${rank.boss}</li><li>完成委托：+${rank.commissions}（最多 3）</li><li>新招募伙伴：+${rank.recruits}（最多 2，碎片不计）</li><li>带回招式机：+${rank.tms}（最多 4）</li></ul><p id="rank-gain"><strong>探险队经验 +${rank.total}</strong> · 累计 ${rank.before} → ${rank.after}</p><p id="rank-level-change">${rank.levelAfter>rank.levelBefore?`探险队升级：Lv${rank.levelBefore} → Lv${rank.levelAfter}，获得 ${rank.levelAfter-rank.levelBefore} 个天赋点`:`探险队 Lv${rank.levelAfter}`}</p>`:'<p>本局无此项奖励</p>';
   return `<div id="settle"><section id="depth-rewards"><h2>深度和难度奖励</h2><p>到达第 ${s.dungeon.level} 层 · ${DIFFICULTY_LABEL[s.difficulty??'normal']}</p>${rankRewards}</section><section id="harvest-rewards"><h2>收获型奖励</h2><h3>带回的伙伴</h3><ul id="brought-partners">${brought.length?brought.map(i=>`<li>${esc(spName(i.species)||i.id)}</li>`).join(''):'<li>无新增伙伴</li>'}</ul><h3>伙伴碎片</h3><ul id="brought-shards">${shards.length?shards.map(i=>`<li>${esc(spName(i.species))}碎片 ×${i.count}</li>`).join(''):'<li>无</li>'}</ul><h3>招式机（${won?'已带回':'全队倒下，未带回'}）</h3><ul id="tm-list">${s.end.tms?.length?s.end.tms.map(t=>`<li>${esc(tmLine(t))}</li>`).join(''):'<li>本局没有取得招式机。</li>'}</ul></section><section id="camp-task-rewards"><h2>营地任务奖励</h2><p>本局无此项奖励</p></section></div>`;
  }
 
  const end=s.end!;
- if(!s.prog||end.effective===undefined)return `<p>报酬／救援未启用。${end.outcome==='wipe'?'普通背包已取得但未带出，不进入跨局库存。':''}</p>`;
+ if(!s.prog||end.effective===undefined)return `<p>报酬／救援未启用。</p>`;
  const label=(id:string)=>esc(unitLabel(s.units[id],id));
  const sum=s.scenario==='expedition'?store.settlementSummary:null;
  const savedSettlement=!!store.envelope&&store.status==='ready';
  const sp=(x:{id:string;species:string})=>`${esc(x.id)} ${esc(spName(x.species))}`;
- const pool=sum?`<ul id="pool-change">${sum.returned.length?`<li>回归名册：${sum.returned.map(sp).join('、')}</li>`:''}${sum.gone.length?`<li>永久失去（期限用完且未付费）：${sum.gone.map(sp).join('、')}</li>`:''}${sum.missing.length?`<li>本局走失、进入救援池（期限 ${ECON.window} 次有效探险，从下一局起计）：${sum.missing.map(sp).join('、')}</li>`:''}${sum.advanced.map(a=>`<li>${sp(a)}：${a.paid?'等待':'期限'} ${a.from} → ${a.to}</li>`).join('')}${!sum.returned.length&&!sum.gone.length&&!sum.missing.length&&!sum.advanced.length?'<li>救援池没有变化。</li>':''}</ul><p>账户：${sum.account.before} → ${sum.account.after}（${savedSettlement?'终局已入账':store.envelope?'保存成功后入账':'仅本次内存场景结算'}）</p>`:'';
+ const pool=sum?`<ul id="pool-change">${sum.returned.length?`<li>回归名册：${sum.returned.map(sp).join('、')}</li>`:''}${sum.gone.length?`<li>永久失去：${sum.gone.map(sp).join('、')}</li>`:''}${sum.missing.length?`<li>走失：${sum.missing.map(sp).join('、')}</li>`:''}${sum.advanced.map(a=>`<li>${sp(a)}：${a.paid?'等待':'期限'} ${a.from} → ${a.to}</li>`).join('')}${!sum.returned.length&&!sum.gone.length&&!sum.missing.length&&!sum.advanced.length?'<li>救援池没有变化。</li>':''}</ul><p>账户：${sum.account.before} → ${sum.account.after}（${savedSettlement?'终局已入账':store.envelope?'保存成功后入账':'仅本次内存场景结算'}）</p>`:'';
  return `<div id="settle"><h2>结算</h2>
- <p id="eff-line">本局${end.effective?'算':'不算'}有效探险${end.reasons!.length?`：${end.reasons!.map(r=>REASON[r]).join('；')}`:'：没有完成基础目标，也没有保留新成果'}。${end.effective?'出发前就在救援池里的伙伴，等待次数各减1。':'救援池的等待次数不变。'}</p>
+ <p id="eff-line">本局${end.effective?'算':'不算'}有效探险${end.reasons!.length?`：${end.reasons!.map(r=>REASON[r]).join('；')}`:''}</p>
  <p id="reward-line">基础报酬：${end.reward}${end.reward?'（完成了 G，全灭也照付）':'（没有完成 G，不发）'}。钱袋余额 ${end.purse}：${end.outcome==='normal'?`退回账户 ${end.refund}`:'全灭，丢失'}。</p>
- <p id="lost-line">走失的伙伴：${end.lost!.length?end.lost!.map(label).join('、'):'无'}${end.outcome==='wipe'?`（初始成员不会走失；其余伙伴各以一半概率走失，${savedSettlement?'结果已随终局保存，之后打开仍保留':store.envelope?'保存成功后会保留':'结果只保存在开发场景内存中'}）`:''}。</p>
+ <p id="lost-line">走失的伙伴：${end.lost!.length?end.lost!.map(label).join('、'):'无'}</p>
  <ul id="tm-list">${end.tms!.length?end.tms!.map(t=>`<li>${esc(tmLine(t))}</li>`).join(''):'<li>本局没有取得招式机。</li>'}</ul>
- <h2>救援池的变化</h2>${pool||'<p class="muted">没有基地档案，无救援池。</p>'}</div>`;
+ <h2>救援池的变化</h2>${pool||'<p class="muted">无</p>'}</div>`;
 }
 /** Shop and exchanger panels, shown when the leader stands on the cell. Buying takes no round; the exchanger takes the leader's action. */
-function servicePanel(s:World,point:Point|undefined,ready:boolean):string{
+/** Shop stock beyond the three fixed rows: the cure berry, heal seed (stock existed, never listed), the four orbs and the Reviver Seed. */
+let shopSelected:ShopItem='berry',serviceClosedKey='';
+const SHOP_EXTRA=['pechaBerry','healSeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb','reviverSeed'] as const;
+function servicePanel(s:World,point:Point|undefined,ready:boolean,swapping=false):string{
  if(!point||!s.prog)return '';
  if(point.kind==='shop'&&s.shop){
   const sh=s.shop,purse=s.purse??0;
-  const row=(item:ShopItem,label:string,left:number)=>{const price=ECON.price[item];const short=purse<price;
-   return `<li>${esc(label)} · 价格 ${price} · 库存 ${left}${button('buy-'+item,left<1?'售罄':'购买',!ready||left<1||short)}${left>0&&short?`<small>钱袋不足，还差${price-purse}</small>`:''}</li>`;};
-  return `<div class="service" id="shop-panel"><h2>商店 <small>只能用钱袋付款；买东西不占回合；本次远征期间库存固定；关闭或刷新会返回出发前；不收购</small></h2><p id="purse-line">钱袋余额：${purse}</p><ul>${row('berry',ITEM_NAMES.berry,sh.stock.berry)}${row('tonic',ITEM_NAMES.tonic,sh.stock.tonic)}${row('tm',sh.stock.tm?`招式机：${tmName(sh.stock.tm)}`:'招式机',sh.stock.tm?1:0)}</ul></div>`;
+  const goods:ShopItem[]=['berry','tonic','tm',...SHOP_EXTRA];
+  const stockOf=(item:ShopItem)=>item==='tm'?(sh.stock.tm?1:0):(sh.stock[item]??0);
+  const nameOf=(item:ShopItem)=>item==='tm'?(sh.stock.tm?`招式机：${tmName(sh.stock.tm)}`:'招式机'):ITEM_NAMES[item];
+  const picked=goods.includes(shopSelected)?shopSelected:'berry',price=ECON.price[picked],left=stockOf(picked),short=purse<price;
+  const iconOf=(item:ShopItem,big=false)=>item!=='tm'?itemIconImg(item as Item,big?'shop-icon is-big':'shop-icon'):`<span class="shop-icon tm-icon">${sh.stock.tm?tmDiscOf(sh.stock.tm):''}</span>`;
+  const rows=goods.map(item=>{const pr=ECON.price[item],lf=stockOf(item),sh2=purse<pr&&lf>0;
+   return `<li><button type="button" id="shop-pick-${item}" class="shop-row${item===picked?' is-selected':''}${lf<1?' is-sold':''}${sh2?' is-short':''}" aria-pressed="${item===picked}">${iconOf(item)}<span class="shop-name">${esc(nameOf(item))}</span><span class="shop-price">价格 ${pr}</span><span class="shop-stock">库存 ${lf}</span></button></li>`;}).join('');
+  const description=picked==='tm'?(sh.stock.tm?moveSummary(sh.stock.tm,undefined,undefined,unitMoveLevel(s,s.units[s.leader])):'已经卖完了。'):itemDescription(picked as Item);
+  return `<div class="service panel195 shop195" id="shop-panel" role="dialog" aria-labelledby="shop-heading"><h2 class="paper-plaque" id="shop-heading">商店</h2><p id="purse-line" class="shop-purse">钱袋余额：<strong>${purse}</strong></p><div class="shop-body"><ul class="shop-list" aria-label="商品">${rows}</ul><aside class="shop-detail" aria-label="商品详情"><div class="shop-detail-head">${iconOf(picked,true)}<div><strong>${esc(nameOf(picked))}</strong><small class="${left>0&&short?'is-short':''}">价格 <b class="shop-price-num">${price}</b> · 库存 ${left}</small></div></div><p class="shop-detail-text">${esc(description)}</p>${button('buy-'+picked,left<1?'售罄':'购买',!ready||left<1||short,'class="paper-button is-primary"')}</aside></div></div>`;
+ }
+ if(point.kind==='rest'){   // a centred paper panel like the shop: what the rest does, one button; a used point shows nothing
+  if(point.used)return '';
+  return `<div class="service panel195 rest195" id="rest-panel" role="dialog" aria-labelledby="rest-heading"><h2 class="paper-plaque" id="rest-heading">休整点</h2><p id="rest-text">每个招式 PP +${PROG.restPp}</p>${button('rest','休整',!ready||swapping,'class="primary"')}</div>`;
  }
  if(point.kind==='exchange'&&s.exchange){
   const ex=s.exchange;
   if(ex.used)return `<div class="service" id="exchange-panel"><h2>伙伴交换机</h2><p id="exchange-result">本局已经使用：${esc(unitLabel(s.units[ex.sent!],ex.sent!))}安全返回基地。</p></div>`;
   const cands=s.queue.filter(id=>id!==s.leader&&s.units[id].hp>0);
   const held=(s.tms??[]).map((t,i)=>({t,i})).filter(x=>x.t.fate==='held');
-  return `<div class="service" id="exchange-panel"><h2>伙伴交换机 <small>每局只能用一次；占操控者一次行动；不回血、不补PP；被送回的伙伴本局不再参战，空位只能靠再次击败敌人、触发邀请来补</small></h2>
-  <p>选择送回基地的同行伙伴（须存活，不能是操控者）：</p>${cands.length?cands.map(id=>button('ex-target-'+id,esc(unitLabel(s.units[id],id)),!ready,exTarget===id?'class="selected"':'')).join(''):'<p class="muted">没有可送回的伙伴。</p>'}
-  <p>随行运送招式机（最多${ECON.exchangeCargo}份；${s.dungeon?.roguelike?'击败首领后才带回，全队倒下仍会丢失':'送回后全灭也不丢'}）：</p>${held.length?held.map(x=>button('ex-cargo-'+x.i,esc(tmLine(x.t).split('：')[0]),!ready,exCargo.includes(x.i)?'class="selected"':'')).join(''):'<p class="muted">本局没有持有的招式机。</p>'}
+  return `<div class="service" id="exchange-panel"><h2>伙伴交换机</h2>
+  <p>送回基地：</p>${cands.length?cands.map(id=>button('ex-target-'+id,esc(unitLabel(s.units[id],id)),!ready,exTarget===id?'class="selected"':'')).join(''):'<p class="muted">无</p>'}
+  <p>随行招式机（最多${ECON.exchangeCargo}份）：</p>${held.length?held.map(x=>button('ex-cargo-'+x.i,esc(tmLine(x.t).split('：')[0]),!ready,exCargo.includes(x.i)?'class="selected"':'')).join(''):'<p class="muted">无</p>'}
   ${button('ex-confirm','确认送回',!ready||!exTarget,'data-confirm="true" class="primary"')}</div>`;
  }
  return '';
 }
 function bindService(s:World){
- for(const item of ['berry','tonic','tm'] as ShopItem[])bind('buy-'+item,()=>void buyItem(item));
+ for(const item of ['berry','tonic','tm',...SHOP_EXTRA] as ShopItem[]){bind('buy-'+item,()=>void buyItem(item));bind('shop-pick-'+item,()=>{shopSelected=item;render();});}
  for(const id of s.queue)bind('ex-target-'+id,()=>{exTarget=exTarget===id?null:id;render();});
  (s.tms??[]).forEach((_,i)=>bind('ex-cargo-'+i,()=>{exCargo=exCargo.includes(i)?exCargo.filter(n=>n!==i):exCargo.length<ECON.exchangeCargo?[...exCargo,i]:exCargo;if(exCargo.length===ECON.exchangeCargo&&!exCargo.includes(i))notice=`最多运送${ECON.exchangeCargo}份`;render();}));
  bind('ex-confirm',()=>{if(exTarget)void send({type:'round',action:{type:'exchange',target:exTarget,cargo:[...exCargo]}});});
@@ -576,6 +769,9 @@ function renderOverlay(){
   bind('overwrite-cancel',()=>{askOverwrite=false;render();});
   return;
  }
+ // The picker shows a starter from the start, so that starter is the selection and the confirm button is live.
+ if(ng.step===1&&!ng.main)ng.main=STARTER_IDS[0];
+ if(ng.step===2&&!ng.deputy)ng.deputy=STARTER_IDS.find(id=>id!==ng.main)??null;
  el.innerHTML=renderNewGame(ng,ngError);
  for(const id of STARTER_IDS){
   bind(`pick-main-${id}`,()=>{ng.main=id;if(ng.deputy===id)ng.deputy=null;ngError='';render();});
@@ -601,22 +797,74 @@ async function startNewGame(){
  const ok=await store.beginNewGame(made.profile,ng.overwrite);
  if(!ok){ngError=store.error?`没有写入新存档：${store.error}。原存档保持不变。`:'没有写入新存档；原存档保持不变。';render();return;}
  quickItems=Array.from({length:6},()=>null);bagSlot=0;bagCategory='all';bagOpen=false;campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;
- clear();notice='';vaultState.move=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshCount=0;exportedOriginal=false;screen='play';render();
+ clear();notice='';vaultState.move=null;detailsId=null;pinnedId=null;hoverId=null;attrib=new Map();freshSeq=Infinity;exportedOriginal=false;screen='play';render();
 }
-/** View-only event rows; the engine log remains intact for animation and saving. */
-let displayedLogRun="",displayedLogRows:string[]=[];
-function visibleLogEntries(s:World):{t:string;fromEnd:number}[]{
- const run=s.runId+"|"+(s.dungeon?.level??0);if(displayedLogRun!==run){displayedLogRun=run;displayedLogRows=[];}
- const hidden=s.enemies.filter(id=>{const u=s.units[id];return u.pos&&!s.seen.includes(key(u.pos));});
- // Match the raw note format independently of the current floor's actor dictionary.
- const routine=/^[A-Za-z0-9_:-]+(?:移动到-?\d+,-?\d+|与[A-Za-z0-9_:-]+换位|(?:无路可走，)?等待)$/;
- // Floor enemies use w<level><a-f> or challenge c<level><a-d>; removed-floor rows cannot be localized safely.
- const retiredEnemy=(t:string)=>[...t.matchAll(/(?:^|[^A-Za-z0-9_:-])(w\d+[a-f]|c\d+[a-d])(?=$|[^A-Za-z0-9_:-])/g)].some(m=>!s.units[m[1]]);
- const rows=s.log.map((t,i)=>({t,fromEnd:s.log.length-i})).filter(({t})=>!hidden.some(id=>t.startsWith(id)&&!/[A-Za-z0-9-]/.test(t[id.length]??" "))&&!routine.test(t)&&!retiredEnemy(t));
- if(rows.length){displayedLogRows=rows.map(r=>r.t);return rows;}
- return displayedLogRows.map(t=>({t,fromEnd:Infinity}));
+/** The whole run's record, kept by the interface (the engine keeps only the last 80 entries). Rows are built from the engine's structured entries (`World.entries`) when they arrive, so they stay readable after a floor change. No log text is read or parsed here. */
+type LogRow={n:number;text:string;damage?:{target:string;amount:number}};
+const RUN_LOG_LIMIT=2000;
+let runLogId="",runLogRows:LogRow[]=[],runLogLast=0;
+function trackRunLog(s:World):void{
+ if(s.runId!==runLogId||(s.logSeq??0)<runLogLast){runLogId=s.runId;runLogRows=[];runLogLast=0;}
+ for(const e of s.entries??[]){
+  if(e.n<=runLogLast||!logEntryShown(s,e))continue;
+  runLogRows.push({n:e.n,text:logEntryText(e),...(e.damage?{damage:{target:e.damage.target,amount:e.damage.amount}}:{})});
+ }
+ runLogLast=s.logSeq??runLogLast;
+ if(runLogRows.length>RUN_LOG_LIMIT)runLogRows.splice(0,runLogRows.length-RUN_LOG_LIMIT);
 }
-function visibleLog(s:World):string[]{return visibleLogEntries(s).map(r=>r.t);}
+function visibleLogEntries(s:World):LogRow[]{trackRunLog(s);return runLogRows;}
+function visibleLog(s:World):string[]{return visibleLogEntries(s).map(r=>r.text);}
+/** Full log window (L): every kept entry of this run, newest last, opened scrolled to the bottom. The engine keeps at most 80 raw entries (note() in engine.ts). */
+const logDialog=document.createElement('dialog');logDialog.id='log-dialog';logDialog.setAttribute('aria-labelledby','log-title');
+logDialog.innerHTML='<div class="log-head"><h2 id="log-title">本局记录</h2><button type="button" id="log-close" aria-label="关闭记录（Esc）">×</button></div><ol id="log-list"></ol>';document.body.append(logDialog);
+logDialog.addEventListener('cancel',e=>{e.preventDefault();closeLog();});
+logDialog.querySelector('#log-close')!.addEventListener('click',()=>closeLog());
+/** Camp: the same replace-a-move window as the in-run one, for a machine used on a member that already carries four moves. Resolves null when cancelled. */
+function askLearnCarry(inst:{id:string;species:string;carry:string[];learned:{move:string;pp:number}[]},move:string):Promise<{replace:string|null}|null>{
+ return new Promise(resolve=>{
+  const dialog=document.createElement('dialog');dialog.id='learn-carry-dialog';dialog.className='paper-window c195 c195-learn';dialog.setAttribute('aria-labelledby','learn-carry-heading');
+  let chosen:string|null=null;const finish=(v:{replace:string|null}|null)=>{dialog.close();dialog.remove();resolve(v);};
+  const ppOf=(m:string)=>inst.learned.find(l=>l.move===m)?.pp??0,side='friend' as const,name=speciesZh(inst.species);
+  const draw=()=>{dialog.innerHTML=`<h2 class="paper-plaque">带哪些招式</h2><div class="c195-scroll"><header class="c195-head"><div><div class="c195-learner-types">${SPECIES[inst.species]?typeChips(SPECIES[inst.species].types??[]):''}</div><h3 id="learn-carry-heading" class="c195-title">${esc(name)}学会了${esc(moveZh(move))}，但已经带了 4 个招式</h3></div></header>
+   <div class="c195-learn-grid"><div class="c195-col"><h4>新招式</h4>${moveCard(move,ppOf(move)||learnableMoveMaxPp(inst.species,move),learnableMoveMaxPp(inst.species,move),side,{tag:'新'})}</div><div class="c195-col"><h4>现在携带的招式</h4><div class="c195-old">${inst.carry.map((m,n)=>moveCard(m,ppOf(m),ppOf(m),side,{key:n+1,selected:m===chosen,button:{id:'carry-replace-'+m,disabled:false}})).join('')}</div></div></div></div>
+   <footer class="c195-foot"><button type="button" id="carry-confirm" class="paper-button is-primary"${chosen?'':' disabled'}>${chosen?`让${esc(moveZh(chosen))}让位，带上${esc(moveZh(move))}`:'让位并带上'}</button><button type="button" id="carry-only-learn" class="paper-button">只学不带</button><button type="button" id="carry-cancel" class="paper-button">取消</button></footer>`;
+   for(const m of inst.carry)(dialog.querySelector('#carry-replace-'+CSS.escape(m)) as HTMLElement).onclick=()=>{chosen=m;draw();(dialog.querySelector('#carry-confirm') as HTMLElement).focus();};
+   (dialog.querySelector('#carry-confirm') as HTMLElement).onclick=()=>{if(chosen)finish({replace:chosen});};
+   (dialog.querySelector('#carry-only-learn') as HTMLElement).onclick=()=>finish({replace:null});
+   (dialog.querySelector('#carry-cancel') as HTMLElement).onclick=()=>finish(null);};
+  dialog.addEventListener('cancel',e=>{e.preventDefault();finish(null);});
+  dialog.addEventListener('keydown',e=>{const n=Number(e.key);if(n>=1&&n<=inst.carry.length){e.preventDefault();chosen=inst.carry[n-1];draw();(dialog.querySelector('#carry-confirm') as HTMLElement).focus();}});
+  draw();document.body.append(dialog);dialog.showModal();(dialog.querySelector('.c195-old .c195-move') as HTMLElement|null)?.focus();
+ });
+}
+const learnableMoveMaxPp=(species:string,move:string):number=>learnableMove(species,move)?.pp??0;
+/** Give up the run (settings and the "…" menu): a confirmation first, naming what is lost; the engine then settles it exactly like a wipe. */
+const abandonDialog=document.createElement('dialog');abandonDialog.id='abandon-dialog';abandonDialog.className='paper-window c195';abandonDialog.setAttribute('aria-labelledby','abandon-heading');document.body.append(abandonDialog);
+abandonDialog.addEventListener('cancel',e=>{e.preventDefault();abandonDialog.close();syncSleepAdvance();});
+function runCanBeAbandoned():boolean{const s=live();return screen==='play'&&!store.atBase&&!!s&&!!s.prog&&s.phase!=='ended'&&s.pendingEnd!=='won'&&!(s.dungeon?.roguelike&&bossDefeated(s));}
+function openAbandon(){
+ const s=live();if(!runCanBeAbandoned()||!s||anim.active||store.status!=='ready')return;
+ if(settings.open)settings.close();cancelMoveInput();cancelSleepAdvance();
+ const level=Math.max(1,Math.min(3,s.dungeon?.level??1));
+ abandonDialog.innerHTML=`<h2 class="paper-plaque">放弃探险</h2><h3 id="abandon-heading" class="c195-title">要放弃这一局探险吗？</h3><ul class="c195-consequences"><li>这一局<strong>立刻结束</strong>，按“全队倒下”结算，不能继续。</li><li>本局取得的<strong>招式机全部丢失</strong>，没有带出的物品和钱袋也作废。</li><li>参加这局的伙伴都会回到营地，不会走失。</li><li>探险队经验照样结算：按到达的<strong>第 ${level} 层</strong>发放，没有击败首领的奖励。</li></ul><footer class="c195-foot"><button type="button" id="abandon-cancel" class="paper-button is-primary">继续探险</button><button type="button" id="abandon-confirm" class="paper-button">确认放弃</button></footer>`;
+ (abandonDialog.querySelector('#abandon-cancel') as HTMLElement).onclick=()=>{abandonDialog.close();syncSleepAdvance();};
+ (abandonDialog.querySelector('#abandon-confirm') as HTMLElement).onclick=()=>{abandonDialog.close();clear();notice='';void send({type:'abandon'});};
+ abandonDialog.showModal();(abandonDialog.querySelector('#abandon-cancel') as HTMLElement).focus();
+}
+function openLog(){
+ const s=live();if(!s||screen!=='play'||store.atBase||logDialog.open||(settings.open||wikiOpen()))return;
+ hold?.end();   // the pause is over once the record is open: the next click is the window's, not a skip
+ cancelMoveInput();cancelSleepAdvance();
+ fillLog(s,true);logDialog.showModal();const list=$('log-list');list.scrollTop=list.scrollHeight;
+}
+/** Fills the run record; an open record is refreshed when a round's animation ends, keeping the reader's place unless they were at the bottom. */
+function fillLog(s:World,initial=false){
+ const list=$('log-list'),top=list.scrollTop,stick=initial||list.scrollTop+list.clientHeight>=list.scrollHeight-4;
+ const rows=visibleLogEntries(s).map(r=>`<li>${esc(r.text)}</li>`);
+ list.innerHTML=rows.join('')||'<li class="muted">还没有记录。</li>';
+ if(!initial)list.scrollTop=stick?list.scrollHeight:top;
+}
+function closeLog(){if(logDialog.open)logDialog.close();syncSleepAdvance();}
 function renderExtras(){
  const s=live();
  const toTitle=document.getElementById('to-title');if(toTitle)toTitle.hidden=screen!=='play';
@@ -624,26 +872,63 @@ function renderExtras(){
  const box=$('recent-events');
  if(!s)box.innerHTML='';
  else{
-  const rows=visibleLogEntries(s).slice(-6).map(({t,fromEnd})=>{
-   let extra='';const m=/^([^\s受]+)受到(\d+)伤害/.exec(t);
-   if(m&&fromEnd<=freshCount){const a=attrib.get(`${m[1]}|${m[2]}`);
-    if(a){const u=s.units[a];extra=u&&u.pos&&s.seen.includes(key(u.pos))?` ← ${unitLabel(u,a)}（推断）`:' ← 视野外的敌人';}}
-   return `<li>${esc(localizeLog(s,t))}${esc(extra)}</li>`;});
-  box.innerHTML=`<h2>最近事件 <small>最新的在最下面；“←”后是推断的攻击者</small></h2><ol id="recent-list">${rows.join('')||'<li class="muted">还没有事件。</li>'}</ol>`;
+  const rows=visibleLogEntries(s).slice(-60).map(({n,text,damage})=>{
+   let extra='';
+   if(damage&&n>freshSeq){const a=attrib.get(`${damage.target}|${damage.amount}`);
+    // The "inferred" note is a developer diagnostic; the player sees only the name.
+    if(a){const u=s.units[a];extra=u&&u.pos&&s.seen.includes(key(u.pos))?` ← ${unitLabel(u,a)}${dev?'（推断）':''}`:' ← 视野外的敌人';}}
+   return `<li>${esc(text)}${esc(extra)}</li>`;});
+  const stick=box.scrollTop+box.clientHeight>=box.scrollHeight-4;
+  box.innerHTML=`<ol id="recent-list">${rows.join('')||'<li class="muted">还没有事件。</li>'}</ol>`;
+  if(stick||!box.dataset.touched)box.scrollTop=box.scrollHeight;
  }
   updateInspect();
  $('guide').innerHTML='';
 }
 /** The enemy under a board cell, only when its cell is revealed. */
+/** Names of map objects (drops, props, services), shown only while the pointer is over a revealed one. */
+const mapHint=document.createElement('div');mapHint.id='map-hint';mapHint.hidden=true;document.body.append(mapHint);
+function mapObjectName(s:World,p:Pos):string|null{
+ if(!s.seen.includes(key(p)))return null;
+ const room=(s.adventureRooms??[]).find(r=>same(r.interaction,p));
+ if(room)return room.type==='item'&&room.item&&room.state!=='done'?`${adventureRoomTypeZh('item')}房：${ITEM_NAMES[room.item]}`:`${adventureRoomTypeZh(room.type)}房 · ${adventureRoomStateZh(room.type,room.state)}`;
+ const point=s.points.find(q=>same(q.pos,p));return point?POINT_VISUALS[point.kind].name:null;
+}
+function showMapHint(s:World,cell:Pos,e:MouseEvent|undefined){
+ const name=enemyAt(cell)?null:mapObjectName(s,cell);
+ if(!name||!e||typeof e.clientX!=='number'){mapHint.hidden=true;return;}
+ mapHint.textContent=name;mapHint.style.left=Math.min(innerWidth-160,e.clientX+14)+'px';mapHint.style.top=Math.max(8,e.clientY-30)+'px';mapHint.hidden=false;
+}
 function enemyAt(p:Pos):string|null{const s=live();if(!s)return null;return s.enemies.find(id=>{const u=s.units[id];return u.hp>0&&same(u.pos,p)&&s.seen.includes(key(p));})??null;}
+/** A hit or heal lands in the middle of an animation: only the HP numbers and bars change (party cards, the bottom bar, the enemy card), not a whole redraw, so the animation keeps its frame budget. */
+/** The damage trail runs only while animations play: off, skipped (Shift) or reduced motion leave the bar without it. */
+const hpAnimated=():boolean=>animationEnabled()&&!anim.shift&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+function patchHpDisplays():void{
+ const s=live();if(!s)return;
+ for(const id of s.queue){
+  const u=s.units[id],card=document.getElementById('unit-card-'+id);if(!u||!card)continue;
+  const text=card.querySelector('.hud-party-hp');if(text)text.textContent=u.hp+'/'+u.maxHp;
+  const track=card.querySelector<HTMLElement>('.hud-hp-track');if(track)applyHpBar(track,u.hp,u.maxHp,hpAnimated());
+ }
+ const leader=s.units[s.leader];
+ if(leader){
+  const value=document.querySelector('#hud-bottom .hud-current-hp-value');if(value)value.textContent='HP '+leader.hp+'/'+leader.maxHp;
+  const big=document.querySelector<HTMLElement>('#hud-bottom .hud-hp-track-large');if(big)applyHpBar(big,leader.hp,leader.maxHp,hpAnimated());
+ }
+ if(hoverId||pinnedId||$('inspect').childElementCount)updateInspect();   // let updateInspect clear a card whose enemy just fell
+}
 function updateInspect(){
  const box=$('inspect');const s=live();
  if(!s){box.innerHTML='';return;}
  const pick=hoverId??pinnedId,info=pick?enemyInfo(s,pick):null;
- if(info)box.innerHTML=`<div class="inspect-card" id="enemy-info"><strong>${esc(info.name)}</strong>${info.types?`<span>${esc(info.types)}属性</span>`:''}<p>${info.level===null?'等级未知':`Lv${info.level}`} · 生命 ${info.hp}/${info.maxHp}</p><p>作战方针：${esc(info.tactic)}</p><ul class="enemy-move-list">${info.moveRows.map(move=>`<li><details><summary><span>${esc(move.name)}</span> <span>${esc(move.type)}</span> <span>PP ${move.pp}/${move.maxPp}</span></summary><p>${esc(move.detail)}</p></details></li>`).join('')||'<li>无招式</li>'}</ul>${info.note?`<p class="muted">${esc(info.note)}</p>`:''}</div>`;
+ if(info)box.innerHTML=`<div class="inspect-card" id="enemy-info"><button type="button" class="inspect-close" id="inspect-close" aria-label="关闭信息卡（Esc）">×</button><strong>${esc(info.name)}</strong>${info.types?`<span>${esc(info.types)}属性</span>`:''}<p>${info.level===null?'等级未知':`Lv${info.level}`} · 生命 ${info.hp}/${info.maxHp}</p><p>作战方针：${esc(info.tactic)}</p><p class="enemy-status" id="enemy-status">状态：${info.statuses.length?esc(info.statuses.join('、')):'无'}</p><ul class="enemy-move-list">${info.moveRows.map(move=>`<li><details><summary><span>${esc(move.name)}</span> <span>${esc(move.type)}</span> <span>PP ${move.pp}/${move.maxPp}</span></summary><p>${esc(move.summary)}</p></details></li>`).join('')||'<li>无招式</li>'}</ul></div>`;
  else box.innerHTML='';
+ bind('inspect-close',closeInspect);placeInspectBelowParty();
  refreshDamagePreviews(s);
 }
+/** The info card can be closed with its × button or Esc; closing also forgets the hovered enemy until the pointer enters one again. */
+function inspectShown():boolean{const s=live();const pick=hoverId??pinnedId;return !!s&&!!pick&&!!enemyInfo(s,pick);}
+function closeInspect(){pinnedId=null;hoverId=null;updateInspect();}
 /** Only the enemy currently under the pointer supplies a combat target; a pinned info card is not a hover target. */
 function visibleHoverTarget(s:World):string|undefined{return hoverId&&enemyInfo(s,hoverId)?hoverId:undefined;}
 function refreshDamagePreviews(s:World):void{
@@ -662,38 +947,91 @@ function refreshDamagePreviews(s:World):void{
 function draftOrder(s:World,d:NonNullable<typeof draft>):string{
  const main:Action=d.main??{type:'wait'};
  const steps=traceRound(s,{type:'round',action:main,...(!d.swap&&d.action?{override:{actor:d.partner,action:d.action}}:{})});
- if(!steps)return '<p class="muted" id="draft-order">本轮顺序暂时无法预演（草稿里有不合法的动作）。</p>';
- return `<p id="draft-order"><strong>本轮顺序：</strong>${esc(orderLine(s,steps))}</p><ul id="draft-steps">${stepRows(s,steps).map(r=>`<li>${esc(r.text)}</li>`).join('')}</ul>${d.main?'':'<p class="muted">操控者的动作还没选；预览暂按“等待”。</p>'}${!d.swap&&!d.action?'<p class="muted">伙伴的动作还没选；预览用默认行为，可以直接提交。</p>':''}`;
+ if(!steps)return '<p class="muted" id="draft-order">本回合顺序暂时无法预演（草稿里有不合法的动作）。</p>';
+ return `<p id="draft-order"><strong>本回合顺序：</strong>${esc(orderLine(s,steps))}</p><ul id="draft-steps">${stepRows(s,steps).map(r=>`<li>${esc(r.text)}</li>`).join('')}</ul>`;
 }
 function download(raw:string,filename='trial-save-original.json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([raw],{type:'application/json'}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function makeBoardScene(Phaser:typeof import('phaser')){
 class BoardScene extends Phaser.Scene {
- private graphics!:Phaser.GameObjects.Graphics;private pointGraphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;
+ private graphics!:Phaser.GameObjects.Graphics;private pointGraphics!:Phaser.GameObjects.Graphics;private overlay!:Phaser.GameObjects.Graphics;private labels:Phaser.GameObjects.Text[]=[];private tiles:Phaser.GameObjects.Image[]=[];private sprites=new Map<string,Phaser.GameObjects.Sprite>();private views=new Map<string,UnitView>();private temp=new Set<Phaser.GameObjects.GameObject>();private skipNow:(()=>void)|null=null;private lastGeometry:ReturnType<BoardScene['geometry']>|null=null;private shown:{before:World;after:World;revealed:boolean}|null=null;private minimapSig='';
  constructor(){super('board');}
  preload(){preloadArt(this);}
  private dtefLayer!:DtefTerrainLayer;private painterLayer!:PainterTerrainLayer;private darkness!:DungeonDarkness;private lightWorld:World|null=null;
- update(time:number){this.dtefLayer?.update(time);this.followSprites();this.darkness?.update(time,this.partyLights());}
+ update(time:number){this.dtefLayer?.update(time);this.followSprites();this.floatZs(time);this.darkness?.update(time,this.partyLights());this.syncMinimap();}
+ /** The world as the board draws it right now, for the small map. While a round plays, the engine state is already the end of the round, so units stand where their sprites are and what is known switches from the old state to the new one at the moment the board reveals the new terrain. Outside an animation this is the state itself. */
+ minimapWorld(s:World):World{
+  const sh=this.shown,g=this.lastGeometry;if(!sh||!g||!anim.active)return s;
+  return playbackMinimapWorld(sh.before,sh.after,sh.revealed,id=>boardCell(this.views.get(id),this.placeholders.includes(id),g));
+ }
+ /** Keeps the small map in step with the board while a round plays (the interface itself is drawn only when something is clicked or the round ends). */
+ private syncMinimap(){
+  if(!anim.active||!this.shown)return;   // never read store.state here: it clones the whole world
+  const w=this.minimapWorld(this.shown.after),sig=(this.shown.revealed?'1':'0')+Object.values(w.units).map(u=>u.pos?u.pos.x+','+u.pos.y:'x').join('|');
+  if(sig===this.minimapSig)return;this.minimapSig=sig;
+  const host=document.getElementById('hud-map');if(host)updateMinimap(host,w);
+ }
  private followSprites(){
   for(const view of this.views.values()){const hp=view.labels[0];if(hp){placeHp(view.sprite,hp.t,this.lastGeometry?.cell??48,view.gfx.y);hp.dx=hp.t.x-view.gfx.x;hp.dy=hp.t.y-view.gfx.y;}}
   if(this.lastGeometry?.dungeon&&this.lightWorld){const sprite=this.views.get(this.lightWorld.leader)?.sprite;if(sprite)this.cameras.main.setRoundPixels(true).setScroll(Math.round(sprite.x-this.scale.width/2),Math.round(sprite.y-this.scale.height/2));}
  }
+ /** Sleep marks: floating pixel "Z"s ride above a sleeping unit's head; positions are recomputed every frame from the sprite, so no tween objects can outlive a repaint. */
+ private zPlace(view:UnitView,i:number,phase:number){const sp=view.sprite,cell=this.lastGeometry?.cell??48,z=view.zs![i],head=sp.y-sp.originY*sp.displayHeight+sp.displayHeight*.32;
+  if(!view.zMoving){z.setPosition(Math.round(sp.x+cell*.16),Math.round(head)).setAlpha(1);return;}
+  z.setPosition(Math.round(sp.x+cell*(.05+.1*phase)+Math.sin((phase+i)*5)*cell*.04),Math.round(head-phase*cell*.5)).setAlpha(Math.min(1,phase*5)*(1-phase)).setScale(.7+.5*phase);}
+ private floatZs(time:number){for(const view of this.views.values()){if(!view.zs||!view.zMoving)continue;view.zs.forEach((_,i)=>this.zPlace(view,i,((time/2400)+i/3)%1));}}
  private partyLights(){
   const s=this.lightWorld,g=this.lastGeometry;if(!s||!g)return [];
-  return s.queue.flatMap(id=>{const u=s.units[id],v=this.views.get(id);return u?.hp>0&&u.pos&&v?.sprite.visible?[{x:(v.sprite.x-g.ox)/g.cell+g.minX-.5,y:(v.sprite.y-g.oy)/g.cell+g.minY-.5,primary:id===s.leader,fire:!!(u.species&&SPECIES[u.species]?.types?.includes('Fire'))}]:[];});
+  return s.queue.flatMap(id=>{const u=s.units[id],v=this.views.get(id);return u?.hp>0&&u.pos&&v?.sprite.visible?[{x:(v.sprite.x-g.ox)/g.cell+g.minX-.5,y:(v.sprite.y-g.oy)/g.cell+g.minY-.5,primary:id===s.leader}]:[];});
  }
+ /** Sprites load on demand: what this world shows now first (units are drawn only once their sheets are ready, so none flashes blank), then the next floor's planned enemies while the player is busy elsewhere. */
+ private prefetched='';
+ /** The next floor's species arrive one at a time while the player is idle (decoding a sheet costs a few milliseconds, which must never land in the middle of a walk or an animation). */
+ private drip:string[]=[];private dripTimer:ReturnType<typeof setTimeout>|null=null;
+ private dripNext(){
+  if(this.dripTimer!==null||!this.drip.length)return;
+  this.dripTimer=setTimeout(()=>{this.dripTimer=null;if(!this.graphics?.scene)return;
+   if(anim.active||heldDirections.size||moveInFlight||walkActive()){this.dripNext();return;}
+   const d=this.drip.shift()!;void ensureCharacters(this,[d]).then(()=>this.dripNext());},900);
+ }
+ /** Sheets still missing: the picture is drawn at once without those units (a gap of a moment), one repaint follows when they are in, and a unit still without its sheet after 1.2 s is drawn as a shadow and a dot. A slow load is retried every 3 s. */
+ /** The world of the last explicit `trial.repaint` (browser checks); any ordinary paint drops it. */
+ private pinned:World|null=null;
+ private waitingSince=0;private everShown=false;private repaintScheduled=false;private placeholders:string[]=[];private placeholderTimer:ReturnType<typeof setTimeout>|null=null;
+ private fetchSprites(s:World|null,force=false):void{
+  if(!s)return;
+  const next=nextFloorDex(s),mark=s.runId+'|'+(s.dungeon?.level??0);
+  if(next.length&&this.prefetched!==mark){this.prefetched=mark;for(const d of next)if(!characterReady(d)&&!this.drip.includes(d))this.drip.push(d);this.dripNext();}
+  const missing=worldDex(s).filter(d=>!characterReady(d));
+  const canvas=this.game.canvas;
+  if(!missing.length){this.waitingSince=0;this.everShown=true;canvas.style.opacity='';return;}
+  if(!this.waitingSince)this.waitingSince=performance.now();
+  canvas.style.opacity=this.everShown||performance.now()-this.waitingSince>1200?'':'0';   // only the very first picture of the session waits invisibly, and for 1.2 s at most (the camera has no leader to follow yet); later floors just show a short gap
+  const again=(ms:number)=>{if(this.placeholderTimer!==null)clearTimeout(this.placeholderTimer);this.placeholderTimer=setTimeout(()=>{this.placeholderTimer=null;if(this.graphics?.scene)this.paint(this.pinned??live()??s,force);},ms);};   // a world given to `trial.repaint` (pinned) keeps being drawn by this late repaint until the next ordinary paint; the real game never pins, so there it draws the current world
+  again(1300);
+  void ensureCharacters(this,missing).then(()=>{   // many repaints may queue on the same load chain: they are merged into one catch-up repaint
+   if(this.repaintScheduled)return;this.repaintScheduled=true;
+   queueMicrotask(()=>{this.repaintScheduled=false;if(!this.graphics?.scene)return;this.paint(force?s:live()??s,force);if(worldDex(live()??s).some(d=>!characterReady(d)))again(3000);});
+  });   // an explicit repaint of a given world (force) draws that world; an ordinary one draws whatever is current
+ }
+ /** Standing on the stairs down (the question is on screen): the next floor's species are fetched now, all at once, instead of one by one. */
+ flushPrefetch(s:World){const need=nextFloorDex(s).filter(d=>!characterReady(d));if(need.length){this.drip=[];void ensureCharacters(this,need);}}
  private showDarkness(s:World,durationMs=0){
-  if(!s.dungeon||!this.lastGeometry)return;const g=this.lastGeometry,theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),map=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.seen,seenWalls:s.seenWalls,onlyRevealed:true});
+  if(!s.dungeon||!this.lastGeometry)return;const g=this.lastGeometry,theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),map=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:terrainKnown(s).seen,seenWalls:terrainKnown(s).seenWalls,onlyRevealed:true});
   const wallColor=terrainSource()==='dtef'?this.dtefLayer.wallColor():this.painterLayer.wallColor();const staticLights=s.points.filter(p=>(p.kind==='down'||p.kind==='up')&&s.seen.includes(key(p.pos))).map(p=>({...p.pos,inner:.3,outer:1.25,strength:.45}));
   if(theme==='ash')for(const cell of s.liquid??[]){const pos=typeof cell==='string'?{x:Number(cell.split(',')[0]),y:Number(cell.split(',')[1])}:cell;if(map.known.has(key(pos)))staticLights.push({...pos,inner:.4,outer:1.7,strength:.55});}
-  this.darkness.show([s.runId,s.dungeon.level,theme,map.width,map.height].join(':'),theme,g.cell,{width:map.width,height:map.height,known:map.known,visible:playerVisibleCells(s),lights:this.partyLights(),seed:s.dungeon.seed,wallColor,staticLights},durationMs>0,durationMs);
+  this.darkness.show([s.runId,s.dungeon.level,theme,map.width,map.height].join(':'),theme,g.cell,{width:map.width,height:map.height,known:map.known,litRooms:litRoomsOf(s),lights:this.partyLights(),seed:s.dungeon.seed,wallColor,staticLights},durationMs>0);
   this.cameras.main.setBackgroundColor(darknessBackground(theme,wallColor));
  }
- create(){createAnims(this);this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.dtefLayer=new DtefTerrainLayer(this);this.painterLayer=new PainterTerrainLayer(this);this.events.once('shutdown',()=>{this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();});this.graphics=this.add.graphics().setDepth(0);this.pointGraphics=this.add.graphics().setDepth(2);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
+ create(){this.darkness=new DungeonDarkness(this,Phaser.Textures.FilterMode.LINEAR);this.dtefLayer=new DtefTerrainLayer(this);this.painterLayer=new PainterTerrainLayer(this);this.events.once('shutdown',()=>{this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();});this.graphics=this.add.graphics().setDepth(0);this.pointGraphics=this.add.graphics().setDepth(2);this.overlay=this.add.graphics().setDepth(5);this.input.on('pointerdown',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);
   // worldX/worldY already include the camera scroll, so clicks stay correct while the camera follows the leader.
   const x=Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX;const y=Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY;pinnedId=enemyAt({x,y});updateInspect();clickCell({x,y});});
-  this.input.on('pointermove',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);const id=enemyAt({x:Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX,y:Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY});if(id!==hoverId){hoverId=id;updateInspect();}});scene=this;this.scale.on('resize',()=>{if(!anim.active)this.paint(live());});this.paint(live());}
+  this.input.on('pointermove',(pointer:Phaser.Input.Pointer)=>{const s=live();if(!s)return;const g=this.geometry(s);const cell={x:Math.floor((pointer.worldX-g.ox)/g.cell)+g.minX,y:Math.floor((pointer.worldY-g.oy)/g.cell)+g.minY};const id=enemyAt(cell);if(id!==hoverId){hoverId=id;updateInspect();}showMapHint(s,cell,pointer.event as MouseEvent);});scene=this;this.scale.on('resize',()=>{if(!anim.active)this.paint(live());});this.paint(live());}
+ /** A 64 px room prop standing on the bottom edge of its cell, a little taller than the cell, under the units (depth 2). Finished or emptied props are greyed and dimmed. */
+ private prop(key:string,c:{x:number;y:number},cell:number,alpha:number,spent:boolean){
+  const im=this.add.image(c.x,c.y+cell/2,key).setOrigin(.5,1).setScale(cell*1.1/64).setAlpha(alpha).setDepth(2);if(spent)im.setTint(0x888888);this.tiles.push(im);
+ }
  private showTerrain(s:World,g:ReturnType<BoardScene['geometry']>){
-  if(!s.dungeon)return;const theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),scale=g.cell/TILE,dungeonMap=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.dungeon.roguelike?s.seen:[],seenWalls:s.dungeon.roguelike?s.seenWalls:[],onlyRevealed:true}),center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});
+  if(!s.dungeon)return;const theme=themeOfLevel(s.dungeon.boss,s.dungeon.level),scale=g.cell/TILE,dungeonMap=prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.dungeon.roguelike?terrainKnown(s).seen:[],seenWalls:s.dungeon.roguelike?terrainKnown(s).seenWalls:[],onlyRevealed:true}),center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});
     const dtef=terrainSource()==='dtef',seed=s.dungeon!.seed,level=s.dungeon!.level,map=dungeonMap!,floorKey=[s.runId,level,theme,seed,dtef?'dtef':'painter'].join(':');
   if(dtef){this.painterLayer.clear();this.dtefLayer.show(floorKey,{map,theme,seed,level,scale,frozen:!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim,center});}
   else{this.dtefLayer.clear();createTerrainArt(this,theme);const excluded=[...s.points.map(p=>p.pos),...(s.adventureRooms??[]).map(r=>r.interaction),...(s.rooms??[]).flatMap((r,i)=>i===s.bossRoom?Array.from({length:r.h},(_,dy)=>Array.from({length:r.w},(_,dx)=>({x:r.x+dx,y:r.y+dy}))).flat():[])];if(s.arrival)excluded.push(s.arrival);this.painterLayer.show(floorKey,{map,theme,seed,level,scale,excluded,center});}
@@ -701,9 +1039,12 @@ class BoardScene extends Phaser.Scene {
  }
  geometry(s:World){if(s.dungeon){const d=s.dungeon,cell=dungeonCellSize(this.scale.height);return {minX:0,minY:0,cell,ox:0,oy:0,dungeon:true,w:d.width*cell,h:d.height*cell};}
   const minX=Math.min(...s.floor.map(p=>p.x)),maxX=Math.max(...s.floor.map(p=>p.x)),minY=Math.min(...s.floor.map(p=>p.y)),maxY=Math.max(...s.floor.map(p=>p.y));const cell=Math.min(66,(this.scale.width-80)/(maxX-minX+1),(this.scale.height-80)/(maxY-minY+1));return {minX,minY,cell,ox:(this.scale.width-(maxX-minX+1)*cell)/2,oy:(this.scale.height-(maxY-minY+1)*cell)/2,dungeon:false,w:this.scale.width,h:this.scale.height};}
- paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
- this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));text(340,175,store.atBase?'基地：整备伙伴，准备好就出发。':'准备好以后，开始探索。','#8ba39b',20);return;}
- const g=this.geometry(s);const fog=g.dungeon;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
+ /** Browser checks only: stops every unit's idle animation on its first frame, so two screenshots of the same picture are identical (call after each repaint). */
+ freezeSprites(){this.views.forEach(v=>{const a=v.sprite.anims;if(a.currentAnim)a.pause(a.currentAnim.frames[0]);});}
+ pinPaint(w:World|null){this.pinned=w;this.paint(w,true);}
+ paint(s:World|null,force=false){if(!this.graphics||(anim.active&&!force))return;if(!force)this.pinned=null;this.fetchSprites(s,force);this.views.forEach(v=>{v.gfx.destroy();v.labels.forEach(l=>l.t.destroy());v.zs?.forEach(z=>z.destroy());});this.views.clear();this.graphics.clear();this.pointGraphics.clear();this.overlay.clear();this.placeholders=[];this.labels.forEach(t=>t.destroy());this.labels=[];this.tiles.forEach(t=>t.destroy());this.tiles=[];this.lightWorld=s;const text=(x:number,y:number,t:string,color='#d9e6e0',size=16):Phaser.GameObjects.Text=>{const label=this.add.text(x,y,t,{fontFamily:'sans-serif',fontSize:size,color,stroke:'#17120e',strokeThickness:3}).setOrigin(.5).setDepth(6);this.labels.push(label);return label;};
+ this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,this.scale.width,this.scale.height);if(!s){this.darkness.clear();this.dtefLayer.clear();this.painterLayer.clear();this.cameras.main.setBackgroundColor(BOARD_BACKGROUND).setScroll(0,0);this.sprites.forEach(sp=>sp.setVisible(false));return;}
+ const g=this.geometry(s);const fog=g.dungeon;const nowVisible=s.dungeon?playerVisibleCells(s):null;if(!fog)this.darkness.clear();if(fog){this.graphics.fillStyle(BOARD_BACKGROUND);this.graphics.fillRect(0,0,g.w,g.h);}const center=(p:Pos)=>({x:g.ox+(p.x-g.minX+.5)*g.cell,y:g.oy+(p.y-g.minY+.5)*g.cell});const scale=g.cell/TILE;
  const img=(key:string,c:{x:number;y:number},alpha:number,depth:number,size=1)=>this.tiles.push(this.add.image(c.x,c.y,key).setScale(scale*size).setAlpha(alpha).setDepth(depth));
  // 7.3 floor themes: boss-marked runs use the theme tiles of the floor (moss: the original stone). A missing texture falls back to the stone tile with a theme tint.
  const theme=themeOfLevel(s.dungeon?.boss,s.dungeon?.level??1),themeCfg=THEME_FLOORS.find(t=>t.theme===theme)!;
@@ -713,7 +1054,7 @@ class BoardScene extends Phaser.Scene {
  const arena=s.bossRoom!==undefined?s.rooms?.[s.bossRoom]??null:null;
  const inArena=(p:Pos)=>!!arena&&p.x>=arena.x&&p.x<arena.x+arena.w&&p.y>=arena.y&&p.y<arena.y+arena.h;
  const terrain=!!s.dungeon?.roguelike;
- const dungeonMap=s.dungeon?prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:s.seen,seenWalls:s.seenWalls,onlyRevealed:true}):null;
+ const dungeonMap=s.dungeon?prepareTerrainMap({width:s.dungeon.width,height:s.dungeon.height,floor:s.floor,liquid:s.liquid,seen:terrainKnown(s).seen,seenWalls:terrainKnown(s).seenWalls,onlyRevealed:true}):null;
  if(terrain)this.showTerrain(s,g);else{if(fog)this.showTerrain(s,g);else{this.dtefLayer.clear();this.painterLayer.clear();}
   const floorKeys=new Set(s.floor.map(key)),walls=new Set<string>();if(!fog)for(const p of s.floor)for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const q={x:p.x+dx,y:p.y+dy};if(!floorKeys.has(key(q))&&!walls.has(key(q))){walls.add(key(q));tileImg('wall',wallName,center(q),s.seen.includes(key(p))?.85:.3);}}
  for(const wall of s.seenWalls??[]){if(floorKeys.has(wall)||walls.has(wall))continue;const [x,y]=wall.split(',').map(Number);tileImg('wall',wallName,center({x,y}),.85);walls.add(wall);}
@@ -724,55 +1065,64 @@ class BoardScene extends Phaser.Scene {
   const point=seen?s.points.find(q=>same(p,q.pos)):undefined;
   if(point){
    const visual=POINT_VISUALS[point.kind],alpha=point.used?.3:1,pg=this.pointGraphics;
-   if(visual.icon==='berry'){
-    pg.fillStyle(visual.color,alpha);pg.fillEllipse(c.x-g.cell*.07,c.y,g.cell*.29,g.cell*.31);pg.fillEllipse(c.x+g.cell*.07,c.y,g.cell*.29,g.cell*.31);
-    pg.lineStyle(1,0x3b2b25,alpha);pg.strokeEllipse(c.x,c.y,g.cell*.42,g.cell*.34);
-    pg.fillStyle(0x75a450,alpha);pg.fillTriangle(c.x,c.y-g.cell*.12,c.x+g.cell*.2,c.y-g.cell*.25,c.x+g.cell*.12,c.y-g.cell*.08);
-   }else if(visual.icon==='seed'){
-    pg.fillStyle(visual.color,alpha);pg.fillEllipse(c.x,c.y,g.cell*.27,g.cell*.4);pg.lineStyle(2,0x7b6338,alpha);pg.lineBetween(c.x-g.cell*.02,c.y-g.cell*.15,c.x+g.cell*.04,c.y+g.cell*.14);
-   }else if(visual.icon==='rest'||visual.icon==='shop'||visual.icon==='exchange'){
+   const prop=visual.icon==='rest'?'room-rest':visual.icon==='shop'?'room-shop':null;
+   if(prop)this.prop(prop,c,g.cell,point.used?.45:1,!!point.used);
+   else if(visual.icon==='exchange'){
     pg.fillStyle(visual.color,alpha*.4);pg.fillCircle(c.x,c.y,g.cell*.28);pg.lineStyle(2,visual.color,alpha);pg.strokeCircle(c.x,c.y,g.cell*.28);
-    text(c.x,c.y,visual.icon==='rest'?'休':visual.icon==='shop'?'商':'换','#edf7f4',Math.min(20,g.cell*.3)).setAlpha(alpha);
+    text(c.x,c.y,'换','#edf7f4',Math.min(20,g.cell*.3)).setAlpha(alpha);
+   }else if(visual.icon==='drop'){
+    // A picked-up drop is gone. One that was seen but is out of sight right now is drawn dimmer, so it is not mistaken for a live item.
+    if(!point.used)this.tiles.push(this.add.image(c.x,c.y,visual.texture!).setScale(g.cell*.62/32).setAlpha(!nowVisible||nowVisible.has(key(p))?1:.55).setDepth(2));
    }else{
-    const texture=visual.icon==='tonic'?'item-tonic':visual.icon;img(texture,c,alpha,2,visual.icon==='exit'||visual.icon.startsWith('stairs')?1:.8);
+    img(visual.icon,c,alpha,2,visual.icon==='exit'||visual.icon.startsWith('stairs')?1:.8);
+    if(!visual.icon.startsWith('stairs'))text(c.x,c.y+g.cell*.38,visual.name,'#e4efb0',Math.max(10,Math.min(13,g.cell/6))).setAlpha(alpha).setWordWrapWidth(g.cell*1.6,true);
    }
-   text(c.x,c.y+g.cell*.38,visual.name,'#e4efb0',Math.max(10,Math.min(13,g.cell/6))).setAlpha(alpha).setWordWrapWidth(g.cell*1.6,true);
   }
-  if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,p.x+','+p.y,'#8fa89c',9);
+  if(showCoords)text(c.x-g.cell*.3,c.y+g.cell*.4,p.x+','+p.y,'#cdb985',9);
  }
- for(const marker of roomMarkers){const c=center(marker.at),color=marker.dimmed?'#84918a':marker.state==='sealed'?'#ffb7a7':marker.roomType==='challenge'?'#f4d58d':marker.roomType==='commission'?'#a4d8e8':marker.roomType==='blessing'?'#d7b3ff':'#c4e89a';
-  if(marker.kind==='interaction'){const hex=marker.roomType==='challenge'?0xf4d58d:marker.roomType==='commission'?0xa4d8e8:marker.roomType==='blessing'?0xd7b3ff:0xc4e89a;this.overlay.fillStyle(hex,marker.dimmed?0.12:0.28);this.overlay.fillCircle(c.x,c.y,g.cell*.3);this.overlay.lineStyle(2,hex,marker.dimmed?0.3:0.9);this.overlay.strokeCircle(c.x,c.y,g.cell*.3);}
-  const labelAt=marker.kind==='interaction'?{x:c.x+g.cell*.27,y:c.y-g.cell*.27}:c;
-  const label=text(labelAt.x,labelAt.y,marker.label,color,marker.kind==='door'?(marker.label==='封闭'?12:14):15);if(marker.dimmed)label.setAlpha(.45);
+ for(const marker of roomMarkers){const c=center(marker.at),color=marker.dimmed?'#a89b80':marker.state==='sealed'?'#ffb7a7':marker.roomType==='challenge'?'#f4d58d':marker.roomType==='commission'?'#a4d8e8':marker.roomType==='blessing'?'#d7b3ff':'#c4e89a';
+  if(marker.kind==='interaction'){this.prop(marker.roomType==='challenge'?'room-challenge':marker.roomType==='commission'?'room-commission':marker.roomType==='blessing'?'room-blessing':'room-treasure',c,g.cell,marker.dimmed?.45:1,marker.dimmed);continue;}
+  const label=text(c.x,c.y,marker.label,color,marker.kind==='door'?(marker.label==='封闭'?12:14):15);if(marker.dimmed)label.setAlpha(.45);
  }
  const shown=new Set<string>();const visible=(id:string)=>{const u=s.units[id];return u.pos&&u.hp>0&&s.seen.includes(key(u.pos))?u:null;};
- for(const id of [...s.enemies,...s.queue]){const u=visible(id);if(!u||!u.pos)continue;shown.add(id);const c=center(u.pos);
+ for(const id of [...s.enemies,...s.queue]){const u=visible(id);if(!u||!u.pos)continue;if(!characterDrawable(this,skinFor(id,u.side,u.species))){   // sheets not here yet: nothing for the first moments, then a shadow and a dot, so a unit that exists is never invisible
+   const waited=this.waitingSince>0&&performance.now()-this.waitingSince>1200;
+   if(waited||characterFailed(skinFor(id,u.side,u.species))){const pc=center(u.pos);this.placeholders.push(id);this.overlay.fillStyle(0x000000,.35);this.overlay.fillEllipse(pc.x,pc.y+g.cell*UNIT_GROUND_FRACTION,g.cell*.55,g.cell*.2);this.overlay.fillStyle(u.side==='enemy'?0xff7a6a:0x7fe0c0,1);this.overlay.fillCircle(pc.x,pc.y,g.cell*.13);this.overlay.lineStyle(2,0x17120e);this.overlay.strokeCircle(pc.x,pc.y,g.cell*.13);}
+   continue;}
+  shown.add(id);const c=center(u.pos);
   // Shadow and leader ring live in a per-unit Graphics (local origin = cell centre, depth 3: above floor tiles and props, below sprites, highlights and labels) so animation can move them with the sprite.
   const ug=this.add.graphics().setDepth(3).setPosition(c.x,c.y);  // above floor tiles (1-2), below sprites (4)
  ug.fillStyle(0x000000,.35);ug.fillEllipse(0,g.cell*UNIT_GROUND_FRACTION,g.cell*.55,g.cell*.2);if(id===s.leader){ug.lineStyle(3,0xf3d997);ug.strokeEllipse(0,g.cell*UNIT_GROUND_FRACTION,g.cell*.86,g.cell*.34);}
   const direction=facingOf(u),row=facingRow(direction.x,direction.y),dex=skinFor(id,u.side,u.species),anim=animKey(dex,'Idle',row);
   let sp=this.sprites.get(id);if(!sp){sp=this.add.sprite(c.x,c.y,`${dex}-Idle`).setDepth(4);this.sprites.set(id,sp);}
   sp.clearTint();sp.setVisible(true).setAlpha(1).setPosition(c.x,c.y+g.cell*UNIT_GROUND_FRACTION).setScale(scale*(u.boss?1.5:1)).setOrigin(.5,groundOriginY(dex,'Idle'));sp.anims.timeScale=1;if(sp.anims.currentAnim?.key!==anim)sp.play(anim);
-  const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:Math.max(10,Math.round(g.cell*.12)),color,stroke:'#0b1312',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
+  // Sleeping units (born asleep, slp, nap; either side) hold one frame: the sheets have no Sleep action.
+  const asleep=!!u.asleep||sleeping(u);if(asleep)sp.anims.pause(sp.anims.currentAnim?.frames[0]);else if(sp.anims.isPaused)sp.anims.resume();
+  const ut=(dx:number,dy:number,t:string,color:string)=>({t:this.add.text(c.x+dx,c.y+dy,t,{fontFamily:'sans-serif',fontSize:Math.max(10,Math.round(g.cell*.12)),color,stroke:'#17120e',strokeThickness:3}).setOrigin(.5).setDepth(6),dx,dy});
   // Only HP sits beside the model; species names remain in the HUD and information cards.
-  const hp=ut(0,0,`${u.hp}`,'#73ff7a');hp.t.setStyle({fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(16,Math.round(g.cell*.22))});placeHp(sp,hp.t,g.cell,c.y);hp.dx=hp.t.x-c.x;hp.dy=hp.t.y-c.y;
-  this.views.set(id,{sprite:sp,gfx:ug,labels:[hp,...(u.boss?[ut(0,-g.cell*.78,'首领','#ffd37a')]:[])],dex,row});}
+  const hp=ut(0,0,`${u.hp}`,hpTextColor(u.hp,u.maxHp));hp.t.setStyle({fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(16,Math.round(g.cell*.22))});placeHp(sp,hp.t,g.cell,c.y);hp.dx=hp.t.x-c.x;hp.dy=hp.t.y-c.y;
+  const view:UnitView={sprite:sp,gfx:ug,labels:[hp,...(u.boss?[ut(0,-g.cell*.78,'首领','#ffd37a')]:[])],dex,row};
+  if(asleep){const moving=animationEnabled()&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;view.zMoving=moving;
+   view.zs=Array.from({length:moving?3:1},()=>this.add.text(c.x,c.y,moving?'Z':'Zz',{fontFamily:'Verdana, Arial, sans-serif',fontStyle:'bold',fontSize:Math.max(14,Math.round(g.cell*.26)),color:'#cfe8ff',stroke:'#16304f',strokeThickness:3}).setOrigin(.5).setDepth(7));
+   view.zs.forEach((_,i)=>this.zPlace(view,i,(i/3)%1));}
+  this.views.set(id,view);}
  this.sprites.forEach((sp,id)=>{if(!shown.has(id))sp.setVisible(false);});this.lastGeometry=g;
  if(g.dungeon)this.followSprites();else this.cameras.main.setScroll(0,0);
  if(dungeonMap)this.showDarkness(s);
+ if(walkMarker&&s.phase==='playing'){const c=center(walkMarker);this.overlay.lineStyle(2,0x9fe3ff);this.overlay.strokeCircle(c.x,c.y,g.cell*.34);this.overlay.lineStyle(1,0x9fe3ff,.55);this.overlay.strokeCircle(c.x,c.y,g.cell*.2);}
  if(selectedSkill&&s.phase==='playing'&&!draft?.swap){const editor=draft?.editor??s.leader;for(const target of skillTargets(s,editor,selectedSkill)){const u=s.units[target];if(!u?.pos||!s.seen.includes(key(u.pos)))continue;const c=center(u.pos);this.overlay.lineStyle(2,0xf1d88e);this.overlay.strokeCircle(c.x,c.y,g.cell*.46);}}
- if(s.phase==='invitation'&&inviteChoice){const p=previewInvitation(s,inviteChoice);if(p.ok){const c=center(p.pos);this.overlay.lineStyle(3,0xf1d88e);this.overlay.strokeRect(c.x-g.cell/2+3,c.y-g.cell/2+3,g.cell-6,g.cell-6);}}
  }
  /** Paints the state before the round, then plays the inferred steps on top; resolves when finished, skipped or timed out. */
  animate(before:World,after:World,events:AnimEvent[]):Promise<void>{
   const p=plan(events);this.paint(before,true);const g=this.lastGeometry;
   if(!p||!g)return Promise.resolve();
+  const shown={before,after,revealed:false};this.shown=shown;this.minimapSig='';
   const center=(q:Pos)=>({x:g.ox+(q.x-g.minX+.5)*g.cell,y:g.oy+(q.y-g.minY+.5)*g.cell});
-  this.lightWorld=after;let revealed=false,movingFog=false;const terrainAtStart=!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway'),seenBefore=new Set(before.seen),seenAfter=new Set(after.seen),camera=this.cameras.main,cameraX=camera.x,cameraY=camera.y;
-  const st:Stage={scene:this,views:this.views,center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;movingFog=true;this.darkness.setMovementProgress(0);this.showTerrain(after,g);this.showDarkness(after,duration);},onMovementProgress:progress=>{if(!movingFog)return;this.darkness.setMovementProgress(progress);if(progress>=1)movingFog=false;}};
-  if(!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway')){this.showTerrain(after,g);this.showDarkness(after);}
+  this.lightWorld=after;let revealed=false;const terrainAtStart=!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway'),seenBefore=new Set(before.seen),seenAfter=new Set(after.seen),camera=this.cameras.main,cameraX=camera.x,cameraY=camera.y;
+  const st:Stage={scene:this,views:this.views,onHp:(id,hp)=>{const hpLabel=this.views.get(id)?.labels[0]?.t;if(hpLabel){hpLabel.setText(String(hp));const max=after.units[id]?.maxHp??before.units[id]?.maxHp;if(max)hpLabel.setColor(hpTextColor(hp,max));}hpShown?.set(id,hp);hpShownVer++;patchHpDisplays();},center,cell:g.cell,scale:g.cell/TILE,temp:this.temp,f:p.scale,setHitFlash:(view,on)=>{if(on)view.sprite.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);else view.sprite.clearTint();},effectCells:caster=>{const seen=terrainAtStart||revealed?seenAfter:seenBefore,room=after.rooms?.find(r=>caster.x>=r.x&&caster.x<r.x+r.w&&caster.y>=r.y&&caster.y<r.y+r.h);return after.floor.filter(q=>seen.has(key(q))&&(room?q.x>=room.x&&q.x<room.x+room.w&&q.y>=room.y&&q.y<room.y+room.h:Math.max(Math.abs(q.x-caster.x),Math.abs(q.y-caster.y))<=2));},reduceMotion:!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,onMovementStart:duration=>{if(revealed)return;revealed=true;shown.revealed=true;this.showTerrain(after,g);this.showDarkness(after,duration);}};
+  if(!events.some(e=>e.k==='move'||e.k==='swap'||e.k==='blowaway')){shown.revealed=true;this.showTerrain(after,g);this.showDarkness(after);}
   return new Promise<void>(resolve=>{
-   let done=false;st.cancelled=()=>done;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.darkness.setMovementProgress(undefined);this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();resetCombatShake(this);camera.setPosition(cameraX,cameraY);try{this.paint(live(),true);}finally{resolve();}};
+   let done=false;st.cancelled=()=>done;const finish=()=>{if(done)return;done=true;clearTimeout(timer);this.skipNow=null;this.shown=null;this.tweens.killAll();this.time.removeAllEvents();this.temp.forEach(o=>o.destroy());this.temp.clear();resetCombatShake(this);camera.setPosition(cameraX,cameraY);try{this.paint(store.state,true);}finally{resolve();}};
    const timer=setTimeout(finish,3000); // safety net, e.g. a hidden tab where Phaser's clock is paused
    this.skipNow=finish;
    void playEvents(st,events).then(finish,finish);
@@ -781,7 +1131,8 @@ class BoardScene extends Phaser.Scene {
  exportTerrain(theme:TerrainThemeKey,layer:TerrainLayer|'floor'){exportTerrainArt(this,theme,layer);}
  skip(){this.skipNow?.();}
  /** Read-only view of what is drawn, for the browser checks: the tile textures in use, and the boss sprite's scale next to a normal unit's, with its labels. */
- debug(){const terrainImages=[...this.tiles,...this.dtefLayer.images,...this.painterLayer.images];const unit=(id:string)=>{const v=this.views.get(id);return v?{whiteFlash:v.sprite.tintMode===Phaser.TintModes.FILL&&v.sprite.tintTopLeft===0xffffff,scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{centerY:v.gfx.y,y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text),labelPositions:v.labels.map(l=>({text:l.t.text,x:l.t.x,y:l.t.y,width:l.t.width,height:l.t.height,originX:l.t.originX,originY:l.t.originY}))}:null;};const worldView=this.cameras.main.worldView;return {combatEffects:[...this.temp].flatMap(object=>{const effect=object.getData?.('combatEffect');return effect?[effect]:[];}),temporaryObjects:this.temp.size,terrainCache:terrainSource()==='dtef'?this.dtefLayer.debug():this.painterLayer.debug(),darkness:this.darkness.debug(),tiles:[...new Set(terrainImages.map(t=>t.texture.key))].sort(),terrain:terrainImages.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:terrainImages.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},cameraPosition:{x:this.cameras.main.x,y:this.cameras.main.y},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
+ darknessAlpha(x:number,y:number){return this.darkness.alphaAt(x,y);}
+ debug(){const terrainImages=[...this.tiles,...this.dtefLayer.images,...this.painterLayer.images];const unit=(id:string)=>{const v=this.views.get(id);return v?{texture:v.sprite.texture.key,whiteFlash:v.sprite.tintMode===Phaser.TintModes.FILL&&v.sprite.tintTopLeft===0xffffff,scale:Number(v.sprite.scaleX.toFixed(3)),row:v.row,animation:v.sprite.anims.currentAnim?.key??null,originY:v.sprite.originY,frame:{x:v.sprite.frame.cutX,y:v.sprite.frame.cutY,w:v.sprite.frame.cutWidth,h:v.sprite.frame.cutHeight},ground:{centerY:v.gfx.y,y:v.gfx.y+(this.lastGeometry?.cell??0)*UNIT_GROUND_FRACTION,top:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION-.1),bottom:v.gfx.y+(this.lastGeometry?.cell??0)*(UNIT_GROUND_FRACTION+.1)},x:v.sprite.x,y:v.sprite.y,labels:v.labels.map(l=>l.t.text),labelColors:v.labels.map(l=>l.t.style.color),sleepMarks:(v.zs??[]).map(z=>({text:z.text,x:z.x,y:z.y,alpha:z.alpha})),spritePaused:v.sprite.anims.isPaused,labelPositions:v.labels.map(l=>({text:l.t.text,x:l.t.x,y:l.t.y,width:l.t.width,height:l.t.height,originX:l.t.originX,originY:l.t.originY}))}:null;};const worldView=this.cameras.main.worldView;return {drops:this.tiles.filter(t=>t.texture.key.startsWith('item2-')).map(t=>({texture:t.texture.key,alpha:t.alpha})),placeholders:[...this.placeholders],floatTexts:[...this.temp].flatMap(o=>{const t=o as Phaser.GameObjects.Text;return t.type==='Text'?[{text:t.text,color:t.style.color,x:Math.round(t.x),y:Math.round(t.y)}]:[];}),combatEffects:[...this.temp].flatMap(object=>{const effect=object.getData?.('combatEffect');return effect?[effect]:[];}),temporaryObjects:this.temp.size,terrainCache:terrainSource()==='dtef'?this.dtefLayer.debug():this.painterLayer.debug(),darkness:this.darkness.debug(),tiles:[...new Set(terrainImages.map(t=>t.texture.key))].sort(),terrain:terrainImages.filter(t=>t.texture.key.startsWith('terrain-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),decorations:terrainImages.filter(t=>t.texture.key.startsWith('deco-')).map(t=>({texture:t.texture.key,frame:t.frame.name,x:t.x,y:t.y,depth:t.depth})),geometry:this.lastGeometry,cameraView:{x:worldView.x,y:worldView.y,width:worldView.width,height:worldView.height},cameraPosition:{x:this.cameras.main.x,y:this.cameras.main.y},boss:unit('boss'),leader:unit(live()?.leader??''),units:Object.fromEntries([...this.views.keys()].map(id=>[id,unit(id)]))};}
 }
 return BoardScene;
 }
@@ -790,13 +1141,30 @@ async function ensureBoard():Promise<void>{
  if(boardLoading)return boardLoading;
  boardLoading=(async()=>{
   try{const {default:Phaser}=await import('phaser');
-   const board=$('board');const game=new Phaser.Game({type:Phaser.AUTO,width:board.clientWidth||680,height:board.clientHeight||350,parent:'board',backgroundColor:'#101c1b',scene:makeBoardScene(Phaser),scale:{mode:Phaser.Scale.NONE},pixelArt:true});
+   const board=$('board');const game=new Phaser.Game({type:Phaser.AUTO,width:board.clientWidth||680,height:board.clientHeight||350,parent:'board',backgroundColor:'#2a1f17',scene:makeBoardScene(Phaser),scale:{mode:Phaser.Scale.NONE},pixelArt:true});
    new ResizeObserver(()=>{if(board.clientWidth&&board.clientHeight)game.scale.resize(board.clientWidth,board.clientHeight);}).observe(board);
   }catch{notice='画面加载失败，请刷新重试。存档没有被清除。';$('message').textContent=notice.replaceAll('主控','操控者');}
  })();
  return boardLoading;
 }
 const settings=$('settings') as HTMLDialogElement;
+/** The in-game wiki (D-20261109-03): opens from settings or H, in the camp and in the dungeon. Opening it pauses held input and the sleep auto-advance; closing resumes them. */
+const wiki=createWiki({showRules:dev,onOpen:()=>{cancelMoveInput();cancelSleepAdvance();},onClose:()=>syncSleepAdvance()});
+/** The big map (M, G13.1/G13.3): a centred window of the whole floor. Like the wiki it pauses held input and the sleep auto-advance and locks the board while open. */
+const bigMap=(()=>{
+ const dialog=document.createElement('dialog');dialog.id='map-dialog';dialog.className='paper-window map194';dialog.setAttribute('aria-labelledby','map-heading');
+ dialog.innerHTML='<h2 id="map-heading" class="paper-plaque">地图</h2><button type="button" id="map-close" class="paper-close" aria-label="关闭地图">×</button><div class="hud-minimap-heading map-heading-line"></div><div class="map-body"></div>';
+ document.body.append(dialog);
+ const close=()=>{if(dialog.open)dialog.close();};
+ dialog.querySelector('#map-close')!.addEventListener('click',close);
+ dialog.addEventListener('close',()=>syncSleepAdvance());
+ return {dialog,isOpen:()=>dialog.open,close,open(s:World){if(dialog.open)return;const m=bigMinimapMarkup(s);
+  dialog.querySelector('.map-heading-line')!.innerHTML=m.heading;const body=dialog.querySelector<HTMLElement>('.map-body')!;body.innerHTML=m.svg;body.style.setProperty('--map-aspect',m.width+'/'+m.height);
+  cancelMoveInput();cancelSleepAdvance();dialog.showModal();}};
+})();
+function wikiOpen(){return wiki.isOpen()||bigMap.isOpen();}   // either modal window locks the board
+function openWiki(){if(!wiki.isOpen())wiki.open();}
+bind('settings-wiki',()=>{if(transferBusy)return;settings.close();openWiki();});
 let transferBusy=false;
 let settingsTab:'display'|'keys'|'save'='display';
 function setSettingsTab(tab:typeof settingsTab){settingsTab=tab;for(const name of ['display','keys','save']){$('settings-pane-'+name).hidden=name!==tab;$('settings-tab-'+name).setAttribute('aria-pressed',String(name===tab));}}
@@ -806,6 +1174,7 @@ function refreshTransfer(){
  ($('save-export') as HTMLButtonElement).disabled=busy||!['ready','blocked'].includes(store.status);
  ($('save-import') as HTMLButtonElement).disabled=busy||store.status==='failed';
  ($('settings-close') as HTMLButtonElement).disabled=transferBusy;
+ ($('settings-wiki') as HTMLButtonElement).disabled=transferBusy;
  const campTitle=$('camp-title') as HTMLButtonElement;
  campTitle.hidden=!store.atBase||screen!=='play'||dev;campTitle.disabled=transferBusy;
  $('save-export').textContent=store.status==='blocked'?'导出原记录':'导出存档';
@@ -816,10 +1185,12 @@ function refreshTransfer(){
 }
 function openSettings(){
  if(anim.active)return;
+ ($('settings-run') as HTMLElement).hidden=!runCanBeAbandoned();
  $('transfer-message').textContent=store.status==='blocked'?`${store.error}。请先导出原记录保留备份，再导入其他存档。`:store.status==='failed'?'当前改动尚未保存，请先重试保存。':'';
  refreshTransfer();setSettingsTab(store.status==='blocked'||store.status==='failed'?'save':settingsTab);settings.showModal();cancelSleepAdvance();
 }
 bind('open-settings',openSettings);
+{const box=document.getElementById('recent-events')!;box.addEventListener('click',()=>openLog());box.addEventListener('wheel',()=>{box.dataset.touched='1';},{passive:true});box.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();openLog();}});box.tabIndex=0;box.setAttribute('role','button');box.setAttribute('aria-label','最近事件；点击打开完整记录');}bind('log-open',openLog);bind('abandon-run',openAbandon);
 bind('settings-close',()=>{settings.close();syncSleepAdvance();});
 settings.addEventListener('cancel',e=>{if(transferBusy)e.preventDefault();});
 settings.addEventListener('close',()=>syncSleepAdvance());
@@ -843,8 +1214,8 @@ $('save-file').addEventListener('change',async()=>{
   }
   const pending=store.importRecord(raw,true);render();
   const ok=await pending;
-  if(ok){clear();campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;inviteChoice=undefined;inviteReject=false;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshCount=0;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
-   $('transfer-message').textContent='存档已导入并保存，关闭设置后可继续游戏。';
+  if(ok){clear();campPanel=null;departureOpen=false;campSelected=null;lastCampReport=null;inviteChoice=undefined;detailsId=null;pinnedId=null;hoverId=null;attrib.clear();freshSeq=Infinity;askOverwrite=false;exportedOriginal=false;ngError='';screen=dev?'play':'title';
+   $('transfer-message').textContent='存档已导入并保存。';
   }else $('transfer-message').textContent=store.importError;
   render();
   const next=ok?finishing():null;if(next)await transition(store.dispatch(next));
@@ -869,7 +1240,7 @@ function queueHeldMove(){moveFrame=requestAnimationFrame(()=>{moveFrame=null;if(
 async function flushMoveInput(tapDirection?:Pos){
  const tap=tapDirection??moveTap;moveTap=null;
  if(moveTimer!==null)clearTimeout(moveTimer);if(moveFrame!==null)cancelAnimationFrame(moveFrame);moveTimer=null;moveFrame=null;moveCollecting=false;if(moveInFlight)return;
- const s=live();if(!s||s.phase!=='playing'||sleeping(s.units[s.leader])||anim.active||bagOpen||settings.open||screen!=='play'||store.status!=='ready'){cancelMoveInput();return;}
+ const s=live();if(!s||s.phase!=='playing'||sleeping(s.units[s.leader])||anim.active||bagOpen||(settings.open||wikiOpen())||screen!=='play'||store.status!=='ready'){cancelMoveInput();return;}
  const dx=tap?.x??(Number(heldDirections.has('d')||heldDirections.has('ArrowRight'))-Number(heldDirections.has('a')||heldDirections.has('ArrowLeft')));
  const dy=tap?.y??(Number(heldDirections.has('s')||heldDirections.has('ArrowDown'))-Number(heldDirections.has('w')||heldDirections.has('ArrowUp')));
  const u=s.units[draft?.editor??s.leader];if(!(dx||dy)||!u.pos)return;
@@ -881,7 +1252,7 @@ async function flushMoveInput(tapDirection?:Pos){
  moveInFlight=true;let played=false;
  try{played=!!(await send({type:'round',action:{type:'move',to}},true));}
  finally{moveInFlight=false;}
- const after=live();if(!after||after.runId!==run||after.dungeon?.level!==level||after.round===round||after.phase!=='playing'||store.status!=='ready'||bagOpen||settings.open){cancelMoveInput();return;}
+ const after=live();if(!after||after.runId!==run||after.dungeon?.level!==level||after.round===round||after.phase!=='playing'||store.status!=='ready'||bagOpen||(settings.open||wikiOpen())){cancelMoveInput();return;}
  if([...movementEnemies(after)].some(id=>!beforeEnemies.has(id))){cancelMoveInput();return;}
  if(heldDirections.size){if(played)void flushMoveInput();else queueHeldMove();}
 }
@@ -895,31 +1266,51 @@ document.addEventListener('keyup',e=>{
  }
  const opposed=!(dx||dy);heldDirections.delete(k);if(!heldDirections.size)cancelMoveInput();else if(opposed&&!moveInFlight&&!anim.active&&moveTimer===null&&moveFrame===null)void flushMoveInput();
 });
-document.addEventListener('click',e=>{if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary')){e.stopPropagation();e.preventDefault();}},true);
+document.addEventListener('click',e=>{if(hold&&!(e.target as HTMLElement).closest('dialog')){e.stopPropagation();e.preventDefault();hold.end();return;}if((e.target as HTMLElement).closest('button,select'))cancelMoveInput();if(anim.active&&!(e.target as HTMLElement).closest('#anim-toggle, #anim-on, #anim-off, label:has(#anim-toggle), summary, #log-open, #recent-events, #log-dialog, #wiki-dialog, #map-dialog, #abandon-dialog, #learn-carry-dialog')){e.stopPropagation();e.preventDefault();}},true);
 document.addEventListener('keydown',e=>{
- if(settings.open||(document.getElementById('unit-details-dialog') as HTMLDialogElement|null)?.open||screen!=='play'||store.atBase)return;
+ if(bigMap.isOpen()){if((e.key==='m'||e.key==='M')&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();if(!e.repeat)bigMap.close();}return;}   // Esc closes through the dialog's own cancel
+ if(logDialog.open||abandonDialog.open||wikiOpen())return;
+ if(hold&&e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='r')){e.preventDefault();e.stopPropagation();if(!e.repeat)hold.end();return;}
+ if(logDialog.open||abandonDialog.open||wikiOpen())return;
+ if((e.key==='m'||e.key==='M')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&screen==='play'&&!store.atBase&&!settings.open&&!(e.target as HTMLElement).matches('input,select,textarea')&&!document.querySelector('dialog[open]')){const ms=live();if(ms?.dungeon&&ms.phase==='playing'&&$('flow').hidden&&!bagOpen&&!choosingItem&&!draft&&!stairsPromptShown&&!confirmExit){e.preventDefault();if(!e.repeat)bigMap.open(ms);return;}}   // the big map, also while an animation plays
+ if((e.key==='h'||e.key==='H')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&screen==='play'&&!settings.open&&!(e.target as HTMLElement).matches('input,select,textarea')&&!document.querySelector('dialog[open]')){e.preventDefault();if(!e.repeat)openWiki();return;}   // the wiki, also while an animation plays and in the camp
+ if((settings.open||wikiOpen())||(document.getElementById('unit-details-dialog') as HTMLDialogElement|null)?.open||screen!=='play'||store.atBase)return;
+ if((e.key==='l'||e.key==='L')&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!(e.target as HTMLElement).matches('input,select,textarea')){e.preventDefault();if(!e.repeat)openLog();return;}   // also while an animation plays
  if(e.key==='Shift'){anim.shift=true;if(anim.active)scene?.skip();return;}
  if(e.repeat){e.preventDefault();return;}
  if(anim.active){const direction=e.key.length===1?e.key.toLowerCase():e.key;if(heldDirections.size&&['w','a','s','d','ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(direction)&&!(e.target as HTMLElement).matches('input,select,textarea'))heldDirections.add(direction);if(e.key!=='Tab'&&e.key!=='F5')e.preventDefault();return;}
  const target=e.target as HTMLElement;if(target.matches('input,select,textarea'))return;
- if(e.key==='Enter'){if(target.matches('button[data-confirm]')&&!target.hasAttribute('disabled')){e.preventDefault();target.click();}else e.preventDefault();return;}
+ {const ls=live();if(ls?.phase==='learning'&&store.status==='ready'){const unit=ls.pendingLearnMoves?.[0]?ls.units[ls.pendingLearnMoves[0].actor]:undefined;
+  if(unit&&['1','2','3','4'].includes(e.key)&&unit.learned[Number(e.key)-1]){e.preventDefault();learnChoice=unit.learned[Number(e.key)-1];render();return;}
+  if(e.key==='Enter'&&learnChoice&&!target.matches('button:not([data-confirm])')){e.preventDefault();confirmLearn();return;}}}
+ {const is=live();if(is?.phase==='invitation'&&store.status==='ready'&&is.queue.length>=3){
+  const index=['1','2','3'].indexOf(e.key);if(index>=0&&is.queue[index]){e.preventDefault();inviteChoice=inviteChoice===is.queue[index]?undefined:is.queue[index];render();(document.getElementById('accept') as HTMLButtonElement|null)?.focus({preventScroll:true});return;}
+  const accept=document.getElementById('accept') as HTMLButtonElement|null;
+  if(e.key==='Enter'&&inviteChoice&&accept&&!accept.disabled&&!target.matches('button:not([data-confirm])')){e.preventDefault();accept.click();return;}}}
+ if(e.key==='Enter'){if(target.matches('button')&&!target.hasAttribute('disabled')&&(target.hasAttribute('data-confirm')||target.closest('#flow,#hud-bag'))){e.preventDefault();target.click();}else e.preventDefault();return;}
  if(e.key==='Escape'){
-  if(bagOpen){bagOpen=false;render();return;}
+  if(bagOpen){e.preventDefault();bagOpen=false;render();return;}
+  if(choosingItem){e.preventDefault();choosingItem=null;render();return;}   // only the target state closes: a combination draft and a service panel stay as they are
+  if(document.querySelector('#context-actions .service-close')){e.preventDefault();(document.querySelector('#context-actions .service-close') as HTMLElement).click();return;}
+  if(inspectShown()){e.preventDefault();closeInspect();return;}
   if(live()?.phase==='learning'){e.preventDefault();void send({type:'learnMove',replace:null});return;}
   if(live()?.phase==='evolution'){e.preventDefault();void send({type:'evolve',species:null});return;}
-  if(live()?.phase==='invitation'&&inviteReject){inviteReject=false;notice='已取消拒绝，返回邀请比较。';}else{clear();actionsOpen=false;notice='';}render();return;
+  clear();actionsOpen=false;notice='';render();return;
  }
  const s=live();if(!s||s.phase!=='playing'||(store.status!=='ready'&&!(draft&&store.status==='saving')))return;
  const k=e.key.toLowerCase();
+ if(k==='l'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();openLog();return;}
  if(k==='b'){e.preventDefault();bagOpen=!bagOpen;choosingItem=null;cancelMoveInput();render();return;}
  if(bagOpen)return;
  if(e.key==='Tab'){e.preventDefault();const alive=s.queue.filter(id=>s.units[id].hp>0);void send({type:'switch',actor:alive[(alive.indexOf(s.leader)+1)%alive.length]});return;}
  if(sleeping(s.units[s.leader])&&e.key!=='.'){if(e.key!=='F5'&&!((e.ctrlKey||e.metaKey)&&k==='r'))e.preventDefault();return;}
+ if(targetMode()&&['1','2','3','4'].includes(e.key)){e.preventDefault();const id=e.key==='4'?undefined:s.queue[Number(e.key)-1];if(id)useOn(id);return;}   // 4 has no card: it does not switch to a move behind the player's back
  if(['1','2','3','4'].includes(e.key)){e.preventDefault();const skill=s.units[draft?.editor??s.leader].learned[Number(e.key)-1];if(skill&&(s.units[draft?.editor??s.leader].pp[skill]??0)>0)chooseHudSkill(skill);return;}
  if(['5','6','7','8','9','0'].includes(e.key)){e.preventDefault();const item=quickItems[['5','6','7','8','9','0'].indexOf(e.key)];if(item)chooseHudItem(item);return;}
  const directionKey=e.key.length===1?k:e.key;
  if(['w','a','s','d','ArrowRight','ArrowDown','ArrowLeft','ArrowUp'].includes(directionKey)){
-  e.preventDefault();const first=heldDirections.size===0;heldDirections.add(directionKey);
+  e.preventDefault();if(choosingItem){choosingItem=null;render();}   // walking away leaves the target state
+  const first=heldDirections.size===0;heldDirections.add(directionKey);
   // Only a fresh press collects a chord; held movement changes direction at the next step.
   if(moveCollecting)moveTap=null;
   if(first){moveCollecting=true;moveTimer=setTimeout(()=>void flushMoveInput(),40);}else if(!moveCollecting&&!moveInFlight)void flushMoveInput();return;
@@ -928,9 +1319,47 @@ document.addEventListener('keydown',e=>{
  if(e.key==='.')act({type:'wait'});
  if(k==='k'){const skill=s.units[draft?.editor??s.leader].learned[0];if(skill)chooseHudSkill(skill);}
 });
+document.addEventListener('contextmenu',e=>{if(targetMode()){e.preventDefault();choosingItem=null;render();}});
 window.addEventListener('blur',()=>{cancelMoveInput();anim.shift=false;selectedSkill=null;render();});
 {const box=document.getElementById('anim-toggle') as HTMLInputElement;box.checked=animationEnabled();box.disabled=params.get('anim')!==null||!!(window as unknown as {__trialNoAnim?:boolean}).__trialNoAnim;
  box.addEventListener('change',()=>{try{window.localStorage.setItem(PREF_KEY,box.checked?'on':'off');}catch{/* preference is optional */}if(!box.checked)scene?.skip();refreshTransfer();});for(const [id,value] of [['anim-on',true],['anim-off',false]] as const)bind(id,()=>{if(!box.disabled){box.checked=value;box.dispatchEvent(new Event('change'));}});}
+/* ---- Drag and drop (pointer events; mouse and touch). Clicking stays available for every action below. ---- */
+function pinQuick(item:Item,slot:number){quickItems=quickItems.map((v,i)=>i===slot?item:v===item?null:v);bagSlot=slot;bagSelectedItem=item;render();}
+const quickIndex=(el:HTMLElement)=>Number(el.dataset.bagSlot??el.dataset.hudQuick);
+function dropMember(id:string,target:HTMLElement){
+ const ctx=campDragCtx;if(!ctx)return;const p=ctx.p;let team=[...p.team];
+ const keepLeader=(t:string[])=>({type:'team' as const,team:t,leader:t.includes(p.leader)?p.leader:t[0]});
+ if(target.matches('#camp-party-roster,.camp194-roster-block')){if(team.includes(id)&&team.length>1)void ctx.edit(keepLeader(team.filter(t=>t!==id)));return;}
+ const over=target.dataset.campMember;
+ if(over&&over!==id){const at=team.indexOf(over);if(team.includes(id)){const from=team.indexOf(id);[team[from],team[at]]=[team[at],team[from]];}else team[at]=id;void ctx.edit(keepLeader(team));}
+ else if(!over){if(team.includes(id))team=[...team.filter(t=>t!==id),id];else if(team.length<3)team.push(id);else return;void ctx.edit(keepLeader(team));}
+}
+function dropMove(source:HTMLElement,target:HTMLElement){
+ const ctx=campDragCtx;if(!ctx||!campSelected)return;const inst=ctx.p.roster.find(i=>i.id===campSelected);if(!inst)return;
+ const move=source.dataset.campMove!,carried=!!source.closest('#camp-party-carry');let carry=[...inst.carry];
+ if(target.matches('#camp-party-learned')){if(carried)carry=carry.filter(m=>m!==move);else return;}
+ else if(target.matches('#camp-party-carry .camp194-move-tile')){const over=target.dataset.campMove!;if(over===move)return;
+  if(carried){const a=carry.indexOf(move),b=carry.indexOf(over);[carry[a],carry[b]]=[carry[b],carry[a]];}else carry=carry.map(m=>m===over?move:m);}
+ else{if(carried)carry=[...carry.filter(m=>m!==move),move];else if(carry.length<4)carry.push(move);else return;}
+ void ctx.edit({type:'carry',inst:inst.id,moves:carry});
+}
+installDrag([
+ // Backpack: drag an item onto a quick slot (in the bag or on the bottom bar) to pin it.
+ {source:'.c195-bag-item[data-bag-item]:not([data-bag-item="reviverSeed"])',targets:'.c195-slot,.hud-quick-slot[data-hud-quick]',accept:(src,t)=>quickItems[quickIndex(t)]!==src.dataset.bagItem,drop:(src,target)=>pinQuick(src.dataset.bagItem as Item,quickIndex(target))},
+ // ...move or swap a pinned item between slots, or drag it off onto the item grid to unpin it.
+ {source:'.c195-slot:not(.is-empty)',targets:'.c195-slot,.hud-quick-slot[data-hud-quick],.c195-bag-grid',accept:(src,t)=>t.matches('.c195-bag-grid')||quickIndex(t)!==quickIndex(src),
+  drop:(src,target)=>{const a=quickIndex(src);if(target.matches('.c195-bag-grid')){quickItems[a]=null;render();return;}const b=quickIndex(target);[quickItems[a],quickItems[b]]=[quickItems[b],quickItems[a]];bagSlot=b;render();}},
+ // Camp: roster card or team slot onto the team slots (add, replace, reorder); a team slot onto the roster to send it back to camp.
+ {source:'.camp194-roster-select[data-camp-member]',targets:'.camp194-team-slot',drop:(src,target)=>dropMember(src.dataset.campMember!,target)},
+ {source:'.camp194-team-slot[data-camp-member]',targets:'.camp194-team-slot,#camp-party-roster,.camp194-roster-block',accept:(_src,t)=>!t.matches('#camp-party-roster,.camp194-roster-block')||(campDragCtx?.p.team.length??0)>1,drop:(src,target)=>dropMember(src.dataset.campMember!,target)},
+ // Camp: moves between the learned list and the carried four, and the order of the carried four.
+ {source:'.camp194-move-tile[data-camp-move]',targets:'#camp-party-carry,#camp-party-learned,#camp-party-carry .camp194-move-tile',accept:(src,t)=>{
+   const carried=!!src.closest('#camp-party-carry'),inst=campDragCtx?.p.roster.find(i=>i.id===campSelected);
+   if(t.matches('#camp-party-learned'))return carried;                                   // only a carried move can be set down there
+   if(t.matches('#camp-party-carry .camp194-move-tile'))return t.dataset.campMove!==src.dataset.campMove;   // replace or swap with another carried move
+   return carried||(inst?inst.carry.length<4:false);                                      // the empty part of the list: only while there is room
+  },drop:dropMove},
+]);
 // Read-only state inspection and the same dispatch API for private browser acceptance.
-Object.assign(window,{trial:{store,autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),repaint:(w:World|null)=>scene?.paint(w,true),animationEnabled}});
+Object.assign(window,{trial:{store,minimapStats,walking:walkActive,render,spritesReady:()=>!charactersPending()&&document.querySelector<HTMLElement>('#board canvas')?.style.opacity!=='0',autoSleep:(enabled:boolean)=>{(window as unknown as {__trialNoAutoSleep?:boolean}).__trialNoAutoSleep=!enabled;render();},profile:()=>store.profile,createScenario,applyCommand,getState:()=>store.state,camera:()=>({x:scene?.cameras.main.scrollX??0,y:scene?.cameras.main.scrollY??0}),animating:()=>anim.active,view:()=>scene?.debug(),reveal:(w:World)=>reveal(w),maskAlpha:(x:number,y:number)=>scene?.darknessAlpha(x,y)??0,repaint:(w:World|null)=>scene?.pinPaint(w),freezeSprites:()=>scene?.freezeSprites(),animationEnabled}});
 render();void store.whenReady.then(()=>{render();const next=finishing();if(next)void transition(store.dispatch(next));});

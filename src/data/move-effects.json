@@ -9,7 +9,7 @@
  },
  "moves": {
   "absorb": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "absorb",
@@ -25,7 +25,7 @@
    }
   },
   "acid": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -67,7 +67,7 @@
    }
   },
   "acidspray": {
-   "acc": 75,
+   "acc": 100,
    "fx": [
     {
      "chance": 100,
@@ -108,7 +108,7 @@
    }
   },
   "aircutter": {
-   "acc": 90,
+   "acc": 95,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "aircutter",
@@ -124,7 +124,7 @@
    }
   },
   "airslash": {
-   "acc": 88,
+   "acc": 95,
    "fx": [
     {
      "chance": 30,
@@ -181,7 +181,7 @@
    }
   },
   "ancientpower": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -210,7 +210,7 @@
    }
   },
   "aquajet": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "aquajet",
@@ -226,7 +226,7 @@
    }
   },
   "aquatail": {
-   "acc": 80,
+   "acc": 90,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "aquatail",
@@ -242,7 +242,7 @@
    }
   },
   "astonish": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -281,7 +281,7 @@
    }
   },
   "aurorabeam": {
-   "acc": 61.75,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -306,7 +306,7 @@
    }
   },
   "babydolleyes": {
-   "acc": 85,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "babydolleyes",
@@ -356,7 +356,7 @@
    }
   },
   "bind": {
-   "acc": 78,
+   "acc": 85,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "bind",
@@ -373,7 +373,7 @@
    }
   },
   "bite": {
-   "acc": 90,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -396,7 +396,7 @@
    }
   },
   "blazekick": {
-   "acc": 88,
+   "acc": 90,
    "thaw": true,
    "fx": [
     {
@@ -420,7 +420,7 @@
    }
   },
   "blizzard": {
-   "acc": 67.2,
+   "acc": 70,
    "fx": [
     {
      "chance": 10,
@@ -443,7 +443,7 @@
    }
   },
   "bodyslam": {
-   "acc": 85,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -466,7 +466,7 @@
    }
   },
   "bravebird": {
-   "acc": 88,
+   "acc": 100,
    "recoil": [
     33,
     100
@@ -500,7 +500,7 @@
    }
   },
   "brickbreak": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "brickbreak",
@@ -516,7 +516,7 @@
    }
   },
   "brine": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "brine",
@@ -532,7 +532,7 @@
    }
   },
   "bubblebeam": {
-   "acc": 83.6,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -573,7 +573,7 @@
    }
   },
   "bugbuzz": {
-   "acc": 77.44,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -615,7 +615,7 @@
    }
   },
   "bulldoze": {
-   "acc": 60,
+   "acc": 100,
    "fx": [
     {
      "chance": 100,
@@ -640,7 +640,7 @@
    }
   },
   "bulletpunch": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "bulletpunch",
@@ -690,7 +690,7 @@
    }
   },
   "chargebeam": {
-   "acc": 88,
+   "acc": 90,
    "fx": [
     {
      "chance": 70,
@@ -715,7 +715,7 @@
    }
   },
   "charm": {
-   "acc": 75,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "charm",
@@ -750,7 +750,7 @@
    }
   },
   "circlethrow": {
-   "acc": 95,
+   "acc": 90,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "circlethrow",
@@ -782,7 +782,7 @@
    }
   },
   "closecombat": {
-   "acc": 80,
+   "acc": 100,
    "cost": {
     "def": -1,
     "spd": -1
@@ -901,7 +901,7 @@
    }
   },
   "confusion": {
-   "acc": 85,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -958,7 +958,7 @@
    }
   },
   "covet": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "covet",
@@ -974,7 +974,7 @@
    }
   },
   "crabhammer": {
-   "acc": 77.44,
+   "acc": 90,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "crabhammer",
@@ -990,7 +990,7 @@
    }
   },
   "crosschop": {
-   "acc": 84,
+   "acc": 80,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "crosschop",
@@ -1006,7 +1006,7 @@
    }
   },
   "crosspoison": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -1029,7 +1029,7 @@
    }
   },
   "crunch": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 20,
@@ -1054,7 +1054,7 @@
    }
   },
   "crushclaw": {
-   "acc": 90,
+   "acc": 95,
    "fx": [
     {
      "chance": 50,
@@ -1079,7 +1079,7 @@
    }
   },
   "darkpulse": {
-   "acc": 73.92,
+   "acc": 100,
    "fx": [
     {
      "chance": 20,
@@ -1102,7 +1102,7 @@
    }
   },
   "dazzlinggleam": {
-   "acc": 90,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "dazzlinggleam",
@@ -1152,7 +1152,7 @@
    }
   },
   "discharge": {
-   "acc": 70,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -1243,7 +1243,7 @@
    }
   },
   "dracometeor": {
-   "acc": 80,
+   "acc": 90,
    "cost": {
     "spa": -2
    },
@@ -1263,7 +1263,7 @@
    }
   },
   "dragonbreath": {
-   "acc": 83.6,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -1286,7 +1286,7 @@
    }
   },
   "dragonclaw": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "dragonclaw",
@@ -1336,7 +1336,7 @@
    }
   },
   "dragonpulse": {
-   "acc": 80,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "dragonpulse",
@@ -1352,7 +1352,7 @@
    }
   },
   "dragonrush": {
-   "acc": 80,
+   "acc": 75,
    "fx": [
     {
      "chance": 20,
@@ -1375,7 +1375,7 @@
    }
   },
   "dragontail": {
-   "acc": 95,
+   "acc": 90,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "dragontail",
@@ -1391,7 +1391,7 @@
    }
   },
   "drainingkiss": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "drainingkiss",
@@ -1407,7 +1407,7 @@
    }
   },
   "drainpunch": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "drainpunch",
@@ -1423,7 +1423,7 @@
    }
   },
   "drillpeck": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "drillpeck",
@@ -1455,7 +1455,7 @@
    }
   },
   "dynamicpunch": {
-   "acc": 78,
+   "acc": 50,
    "fx": [
     {
      "chance": 100,
@@ -1478,7 +1478,7 @@
    }
   },
   "earthpower": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -1537,7 +1537,7 @@
    }
   },
   "electroweb": {
-   "acc": 60,
+   "acc": 95,
    "fx": [
     {
      "chance": 100,
@@ -1562,7 +1562,7 @@
    }
   },
   "ember": {
-   "acc": 88,
+   "acc": 100,
    "thaw": true,
    "fx": [
     {
@@ -1586,7 +1586,7 @@
    }
   },
   "energyball": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -1611,7 +1611,7 @@
    }
   },
   "extrasensory": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -1634,7 +1634,7 @@
    }
   },
   "extremespeed": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "extremespeed",
@@ -1650,7 +1650,7 @@
    }
   },
   "facade": {
-   "acc": 84,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "facade",
@@ -1666,7 +1666,7 @@
    }
   },
   "fakeout": {
-   "acc": 80,
+   "acc": 100,
    "fx": [
     {
      "chance": 100,
@@ -1773,7 +1773,7 @@
    }
   },
   "feint": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "feint",
@@ -1805,7 +1805,7 @@
    }
   },
   "fellstinger": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "fellstinger",
@@ -1821,7 +1821,7 @@
    }
   },
   "fireblast": {
-   "acc": 88,
+   "acc": 85,
    "thaw": true,
    "fx": [
     {
@@ -1845,7 +1845,7 @@
    }
   },
   "firefang": {
-   "acc": 88,
+   "acc": 95,
    "thaw": true,
    "fx": [
     {
@@ -1873,7 +1873,7 @@
    }
   },
   "firepunch": {
-   "acc": 78,
+   "acc": 100,
    "thaw": true,
    "fx": [
     {
@@ -1897,7 +1897,7 @@
    }
   },
   "firespin": {
-   "acc": 73,
+   "acc": 85,
    "thaw": true,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
@@ -1915,7 +1915,7 @@
    }
   },
   "flamecharge": {
-   "acc": 95,
+   "acc": 100,
    "thaw": true,
    "fx": [
     {
@@ -1941,7 +1941,7 @@
    }
   },
   "flamethrower": {
-   "acc": 83.6,
+   "acc": 100,
    "thaw": true,
    "fx": [
     {
@@ -1965,7 +1965,7 @@
    }
   },
   "flamewheel": {
-   "acc": 88,
+   "acc": 100,
    "thaw": true,
    "fx": [
     {
@@ -1989,7 +1989,7 @@
    }
   },
   "flareblitz": {
-   "acc": 88,
+   "acc": 100,
    "thaw": true,
    "fx": [
     {
@@ -2031,7 +2031,7 @@
    }
   },
   "flashcannon": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -2056,7 +2056,7 @@
    }
   },
   "focusblast": {
-   "acc": 80,
+   "acc": 70,
    "fx": [
     {
      "chance": 10,
@@ -2097,7 +2097,7 @@
    }
   },
   "forcepalm": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -2120,7 +2120,7 @@
    }
   },
   "foulplay": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "foulplay",
@@ -2136,7 +2136,7 @@
    }
   },
   "freezedry": {
-   "acc": 95,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -2159,7 +2159,7 @@
    }
   },
   "gigadrain": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "gigadrain",
@@ -2262,7 +2262,7 @@
    }
   },
   "gust": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "gust",
@@ -2278,7 +2278,7 @@
    }
   },
   "hammerarm": {
-   "acc": 80,
+   "acc": 90,
    "cost": {
     "spe": -1
    },
@@ -2315,7 +2315,7 @@
    }
   },
   "headbutt": {
-   "acc": 90,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -2372,7 +2372,7 @@
    }
   },
   "heatwave": {
-   "acc": 80,
+   "acc": 90,
    "thaw": true,
    "fx": [
     {
@@ -2413,7 +2413,7 @@
    }
   },
   "highhorsepower": {
-   "acc": 90,
+   "acc": 95,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "highhorsepower",
@@ -2463,7 +2463,7 @@
    }
   },
   "hornattack": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "hornattack",
@@ -2479,7 +2479,7 @@
    }
   },
   "hurricane": {
-   "acc": 75,
+   "acc": 70,
    "fx": [
     {
      "chance": 30,
@@ -2502,7 +2502,7 @@
    }
   },
   "hydropump": {
-   "acc": 79.8,
+   "acc": 80,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "hydropump",
@@ -2518,7 +2518,7 @@
    }
   },
   "hyperfang": {
-   "acc": 88,
+   "acc": 90,
    "fx": [
     {
      "chance": 10,
@@ -2541,7 +2541,7 @@
    }
   },
   "hypervoice": {
-   "acc": 90,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "hypervoice",
@@ -2557,7 +2557,7 @@
    }
   },
   "hypnosis": {
-   "acc": 88,
+   "acc": 60,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "hypnosis",
@@ -2576,7 +2576,7 @@
    }
   },
   "icebeam": {
-   "acc": 83.6,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -2599,7 +2599,7 @@
    }
   },
   "icefang": {
-   "acc": 88,
+   "acc": 95,
    "fx": [
     {
      "chance": 10,
@@ -2626,7 +2626,7 @@
    }
   },
   "icepunch": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -2649,7 +2649,7 @@
    }
   },
   "iceshard": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "iceshard",
@@ -2665,7 +2665,7 @@
    }
   },
   "iciclecrash": {
-   "acc": 85,
+   "acc": 90,
    "fx": [
     {
      "chance": 30,
@@ -2688,7 +2688,7 @@
    }
   },
   "icywind": {
-   "acc": 79.8,
+   "acc": 95,
    "fx": [
     {
      "chance": 100,
@@ -2713,7 +2713,7 @@
    }
   },
   "incinerate": {
-   "acc": 95,
+   "acc": 100,
    "thaw": true,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
@@ -2754,7 +2754,7 @@
    }
   },
   "infestation": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "infestation",
@@ -2788,7 +2788,7 @@
    }
   },
   "ironhead": {
-   "acc": 80,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -2811,7 +2811,7 @@
    }
   },
   "irontail": {
-   "acc": 78,
+   "acc": 75,
    "fx": [
     {
      "chance": 30,
@@ -2836,7 +2836,7 @@
    }
   },
   "kinesis": {
-   "acc": 100,
+   "acc": 80,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "kinesis",
@@ -2870,7 +2870,7 @@
    }
   },
   "lastresort": {
-   "acc": 80,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "lastresort",
@@ -2886,7 +2886,7 @@
    }
   },
   "lavaplume": {
-   "acc": 70.4,
+   "acc": 100,
    "thaw": true,
    "fx": [
     {
@@ -2922,7 +2922,7 @@
    }
   },
   "leafblade": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "leafblade",
@@ -2938,7 +2938,7 @@
    }
   },
   "leafstorm": {
-   "acc": 80,
+   "acc": 90,
    "cost": {
     "spa": -2
    },
@@ -2958,7 +2958,7 @@
    }
   },
   "leechlife": {
-   "acc": 90,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "leechlife",
@@ -3047,7 +3047,7 @@
    }
   },
   "liquidation": {
-   "acc": 95,
+   "acc": 100,
    "fx": [
     {
      "chance": 20,
@@ -3072,7 +3072,7 @@
    }
   },
   "lovelykiss": {
-   "acc": 88,
+   "acc": 75,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "lovelykiss",
@@ -3091,7 +3091,7 @@
    }
   },
   "lowsweep": {
-   "acc": 70,
+   "acc": 100,
    "fx": [
     {
      "chance": 100,
@@ -3116,7 +3116,7 @@
    }
   },
   "machpunch": {
-   "acc": 90,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "machpunch",
@@ -3148,7 +3148,7 @@
    }
   },
   "megadrain": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "megadrain",
@@ -3164,7 +3164,7 @@
    }
   },
   "megahorn": {
-   "acc": 84,
+   "acc": 85,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "megahorn",
@@ -3180,7 +3180,7 @@
    }
   },
   "megakick": {
-   "acc": 84,
+   "acc": 75,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "megakick",
@@ -3196,7 +3196,7 @@
    }
   },
   "megapunch": {
-   "acc": 88,
+   "acc": 85,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "megapunch",
@@ -3212,7 +3212,7 @@
    }
   },
   "metalclaw": {
-   "acc": 90,
+   "acc": 95,
    "fx": [
     {
      "chance": 10,
@@ -3237,7 +3237,7 @@
    }
   },
   "metalsound": {
-   "acc": 100,
+   "acc": 85,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "metalsound",
@@ -3274,7 +3274,7 @@
    }
   },
   "meteormash": {
-   "acc": 83.6,
+   "acc": 90,
    "fx": [
     {
      "chance": 20,
@@ -3338,7 +3338,7 @@
    }
   },
   "moonblast": {
-   "acc": 95,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -3363,7 +3363,7 @@
    }
   },
   "muddywater": {
-   "acc": 84,
+   "acc": 85,
    "fx": [
     {
      "chance": 30,
@@ -3388,7 +3388,7 @@
    }
   },
   "mudshot": {
-   "acc": 65,
+   "acc": 95,
    "fx": [
     {
      "chance": 100,
@@ -3413,7 +3413,7 @@
    }
   },
   "mudslap": {
-   "acc": 84,
+   "acc": 100,
    "fx": [
     {
      "chance": 100,
@@ -3438,7 +3438,7 @@
    }
   },
   "mysticalfire": {
-   "acc": 70,
+   "acc": 100,
    "thaw": true,
    "fx": [
     {
@@ -3498,7 +3498,7 @@
    }
   },
   "nightslash": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "nightslash",
@@ -3514,7 +3514,7 @@
    }
   },
   "nuzzle": {
-   "acc": 50,
+   "acc": 100,
    "fx": [
     {
      "chance": 100,
@@ -3537,7 +3537,7 @@
    }
   },
   "overheat": {
-   "acc": 84,
+   "acc": 90,
    "thaw": true,
    "cost": {
     "spa": -2
@@ -3558,7 +3558,7 @@
    }
   },
   "payday": {
-   "acc": 90,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "payday",
@@ -3574,7 +3574,7 @@
    }
   },
   "peck": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "peck",
@@ -3590,7 +3590,7 @@
    }
   },
   "petalblizzard": {
-   "acc": 85,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "petalblizzard",
@@ -3681,7 +3681,7 @@
    }
   },
   "poisonfang": {
-   "acc": 73.92,
+   "acc": 100,
    "fx": [
     {
      "chance": 50,
@@ -3704,7 +3704,7 @@
    }
   },
   "poisongas": {
-   "acc": 88,
+   "acc": 90,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "poisongas",
@@ -3734,7 +3734,7 @@
    }
   },
   "poisonjab": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -3757,7 +3757,7 @@
    }
   },
   "poisonpowder": {
-   "acc": 100,
+   "acc": 75,
    "powder": true,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
@@ -3788,7 +3788,7 @@
    }
   },
   "poisonsting": {
-   "acc": 73,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -3811,7 +3811,7 @@
    }
   },
   "poisontail": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -3834,7 +3834,7 @@
    }
   },
   "pound": {
-   "acc": 90,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "pound",
@@ -3850,7 +3850,7 @@
    }
   },
   "powdersnow": {
-   "acc": 90,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -3873,7 +3873,7 @@
    }
   },
   "powergem": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "powergem",
@@ -3889,7 +3889,7 @@
    }
   },
   "powerwhip": {
-   "acc": 80,
+   "acc": 85,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "powerwhip",
@@ -3922,7 +3922,7 @@
    }
   },
   "psybeam": {
-   "acc": 79.8,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -3945,7 +3945,7 @@
    }
   },
   "psychic": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -3970,7 +3970,7 @@
    }
   },
   "psychocut": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "psychocut",
@@ -3986,7 +3986,7 @@
    }
   },
   "psyshock": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "psyshock",
@@ -4002,7 +4002,7 @@
    }
   },
   "psystrike": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "psystrike",
@@ -4018,7 +4018,7 @@
    }
   },
   "pursuit": {
-   "acc": null,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "pursuit",
@@ -4034,7 +4034,7 @@
    }
   },
   "quickattack": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "quickattack",
@@ -4100,7 +4100,7 @@
    }
   },
   "rapidspin": {
-   "acc": 90,
+   "acc": 100,
    "fx": [
     {
      "chance": 100,
@@ -4125,7 +4125,7 @@
    }
   },
   "razorleaf": {
-   "acc": 79.8,
+   "acc": 95,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "razorleaf",
@@ -4141,7 +4141,7 @@
    }
   },
   "razorshell": {
-   "acc": 90,
+   "acc": 95,
    "fx": [
     {
      "chance": 50,
@@ -4230,7 +4230,7 @@
    }
   },
   "retaliate": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "retaliate",
@@ -4301,7 +4301,7 @@
    }
   },
   "rocktomb": {
-   "acc": 60,
+   "acc": 95,
    "fx": [
     {
      "chance": 100,
@@ -4326,7 +4326,7 @@
    }
   },
   "sandattack": {
-   "acc": 80,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "sandattack",
@@ -4360,7 +4360,7 @@
    }
   },
   "sandtomb": {
-   "acc": 73,
+   "acc": 85,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "sandtomb",
@@ -4377,7 +4377,7 @@
    }
   },
   "scald": {
-   "acc": 80,
+   "acc": 100,
    "thaw": true,
    "fx": [
     {
@@ -4401,7 +4401,7 @@
    }
   },
   "scratch": {
-   "acc": 90,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "scratch",
@@ -4417,7 +4417,7 @@
    }
   },
   "screech": {
-   "acc": 100,
+   "acc": 85,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "screech",
@@ -4452,7 +4452,7 @@
    }
   },
   "seedbomb": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "seedbomb",
@@ -4468,7 +4468,7 @@
    }
   },
   "shadowball": {
-   "acc": 83.6,
+   "acc": 100,
    "fx": [
     {
      "chance": 20,
@@ -4493,7 +4493,7 @@
    }
   },
   "shadowclaw": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "shadowclaw",
@@ -4525,7 +4525,7 @@
    }
   },
   "shadowsneak": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "shadowsneak",
@@ -4557,7 +4557,7 @@
    }
   },
   "sing": {
-   "acc": 87,
+   "acc": 55,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "sing",
@@ -4606,7 +4606,7 @@
    }
   },
   "slam": {
-   "acc": 78,
+   "acc": 75,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "slam",
@@ -4622,7 +4622,7 @@
    }
   },
   "slash": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "slash",
@@ -4638,7 +4638,7 @@
    }
   },
   "sleeppowder": {
-   "acc": 80,
+   "acc": 75,
    "powder": true,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
@@ -4676,7 +4676,7 @@
    }
   },
   "sludge": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -4699,7 +4699,7 @@
    }
   },
   "sludgebomb": {
-   "acc": 79.8,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -4722,7 +4722,7 @@
    }
   },
   "sludgewave": {
-   "acc": 85,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -4745,7 +4745,7 @@
    }
   },
   "smackdown": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "smackdown",
@@ -4778,7 +4778,7 @@
    }
   },
   "smog": {
-   "acc": 73,
+   "acc": 70,
    "fx": [
     {
      "chance": 40,
@@ -4836,7 +4836,7 @@
    }
   },
   "snarl": {
-   "acc": 85,
+   "acc": 95,
    "fx": [
     {
      "chance": 100,
@@ -4861,7 +4861,7 @@
    }
   },
   "snore": {
-   "acc": 95,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -4917,7 +4917,7 @@
    }
   },
   "spark": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -4940,7 +4940,7 @@
    }
   },
   "spore": {
-   "acc": 88,
+   "acc": 100,
    "powder": true,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
@@ -4960,7 +4960,7 @@
    }
   },
   "steelwing": {
-   "acc": 88,
+   "acc": 90,
    "fx": [
     {
      "chance": 10,
@@ -4985,7 +4985,7 @@
    }
   },
   "stomp": {
-   "acc": 90,
+   "acc": 100,
    "fx": [
     {
      "chance": 30,
@@ -5024,7 +5024,7 @@
    }
   },
   "stormthrow": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "stormthrow",
@@ -5040,7 +5040,7 @@
    }
   },
   "strugglebug": {
-   "acc": 75,
+   "acc": 100,
    "fx": [
     {
      "chance": 100,
@@ -5065,7 +5065,7 @@
    }
   },
   "stunspore": {
-   "acc": 88,
+   "acc": 75,
    "powder": true,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
@@ -5096,7 +5096,7 @@
    }
   },
   "submission": {
-   "acc": 84,
+   "acc": 80,
    "recoil": [
     1,
     4
@@ -5130,7 +5130,7 @@
    }
   },
   "suckerpunch": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "suckerpunch",
@@ -5146,7 +5146,7 @@
    }
   },
   "superpower": {
-   "acc": 90,
+   "acc": 100,
    "cost": {
     "atk": -1,
     "def": -1
@@ -5167,7 +5167,7 @@
    }
   },
   "supersonic": {
-   "acc": 100,
+   "acc": 55,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "supersonic",
@@ -5197,7 +5197,7 @@
    }
   },
   "surf": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "surf",
@@ -5213,7 +5213,7 @@
    }
   },
   "sweetkiss": {
-   "acc": 100,
+   "acc": 75,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "sweetkiss",
@@ -5341,7 +5341,7 @@
    }
   },
   "tackle": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "tackle",
@@ -5391,7 +5391,7 @@
    }
   },
   "takedown": {
-   "acc": 88,
+   "acc": 85,
    "recoil": [
     1,
     4
@@ -5441,7 +5441,7 @@
    }
   },
   "throatchop": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "throatchop",
@@ -5458,7 +5458,7 @@
    }
   },
   "thunder": {
-   "acc": 73,
+   "acc": 70,
    "fx": [
     {
      "chance": 30,
@@ -5481,7 +5481,7 @@
    }
   },
   "thunderbolt": {
-   "acc": 73.92,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -5504,7 +5504,7 @@
    }
   },
   "thunderfang": {
-   "acc": 88,
+   "acc": 95,
    "fx": [
     {
      "chance": 10,
@@ -5531,7 +5531,7 @@
    }
   },
   "thunderpunch": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -5554,7 +5554,7 @@
    }
   },
   "thundershock": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 10,
@@ -5577,7 +5577,7 @@
    }
   },
   "thunderwave": {
-   "acc": 65,
+   "acc": 90,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "thunderwave",
@@ -5641,7 +5641,7 @@
    }
   },
   "toxic": {
-   "acc": 88,
+   "acc": 90,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "toxic",
@@ -5688,7 +5688,7 @@
    }
   },
   "twister": {
-   "acc": 90,
+   "acc": 100,
    "fx": [
     {
      "chance": 20,
@@ -5711,7 +5711,7 @@
    }
   },
   "vacuumwave": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "vacuumwave",
@@ -5727,7 +5727,7 @@
    }
   },
   "venoshock": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "venoshock",
@@ -5743,7 +5743,7 @@
    }
   },
   "vinewhip": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "vinewhip",
@@ -5759,7 +5759,7 @@
    }
   },
   "visegrip": {
-   "acc": 90,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "visegrip",
@@ -5775,7 +5775,7 @@
    }
   },
   "waterfall": {
-   "acc": 88,
+   "acc": 100,
    "fx": [
     {
      "chance": 20,
@@ -5798,7 +5798,7 @@
    }
   },
   "watergun": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "watergun",
@@ -5814,7 +5814,7 @@
    }
   },
   "waterpulse": {
-   "acc": 83.6,
+   "acc": 100,
    "fx": [
     {
      "chance": 20,
@@ -5837,7 +5837,7 @@
    }
   },
   "weatherball": {
-   "acc": 85.5,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "weatherball",
@@ -5853,7 +5853,7 @@
    }
   },
   "whirlpool": {
-   "acc": 78,
+   "acc": 85,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "whirlpool",
@@ -5886,7 +5886,7 @@
    }
   },
   "wildcharge": {
-   "acc": 95,
+   "acc": 100,
    "recoil": [
     1,
     4
@@ -5920,7 +5920,7 @@
    }
   },
   "willowisp": {
-   "acc": 100,
+   "acc": 85,
    "thaw": true,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
@@ -5951,7 +5951,7 @@
    }
   },
   "wingattack": {
-   "acc": 95,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "wingattack",
@@ -6052,7 +6052,7 @@
    }
   },
   "xscissor": {
-   "acc": 88,
+   "acc": 100,
    "source": {
     "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
     "id": "xscissor",
@@ -6068,7 +6068,7 @@
    }
   },
   "zapcannon": {
-   "acc": 61.75,
+   "acc": 50,
    "fx": [
     {
      "chance": 100,
@@ -6091,7 +6091,7 @@
    }
   },
   "zenheadbutt": {
-   "acc": 88,
+   "acc": 90,
    "fx": [
     {
      "chance": 20,

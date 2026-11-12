@@ -34,12 +34,10 @@ export async function panels194Checks({setup,startMemory,state,ready,cell,artifa
   assert.equal(await p.evaluate(()=>document.activeElement?.id),'detail-tactic-wait','keyboard tactic changes restore the same control after renders');
   const move=p.locator('[data-detail-skill]').first();await move.focus();
   await p.locator('#detail-tooltip').waitFor({state:'visible'});
-  for(const text of ['威力','命中','PP','射程','范围'])assert.ok((await p.locator('#detail-tooltip').innerText()).includes(text));
+  for(const text of ['威力','命中','PP'])assert.ok((await p.locator('#detail-tooltip').innerText()).includes(text));
   await p.screenshot({path:artifact+'panels194-'+width+'-detail-tip.png'});
-  await p.locator('[data-detail-unit="boss"]').click();
-  assert.equal(await p.locator('.detail-tactics').count(),0,'enemy details cannot change enemy tactics');
-  assert.ok((await p.locator('.detail-hp').innerText()).includes('1/'));
-  await p.screenshot({path:artifact+'panels194-'+width+'-enemy-detail.png'});
+  assert.equal(await p.locator('[data-detail-unit="boss"]').count(),0,'the details window shows the party only: no tab for the boss or any enemy');
+  assert.equal(await p.locator('.detail-tactics').count(),1);
   await p.keyboard.press('Escape');assert.equal(await p.locator('#unit-details-dialog').count(),0);
   assert.equal(await p.evaluate(()=>document.activeElement?.getAttribute('data-hud-details')),before.queue[0],'Escape returns focus to the original member button');
   await p.locator('[data-hud-details]').first().click();await p.screenshot({path:artifact+'panels194-'+width+'-detail.png'});
@@ -59,7 +57,7 @@ export async function panels194Checks({setup,startMemory,state,ready,cell,artifa
   const bossPos=(await state(p)).units.boss.pos;await cell(p,bossPos.x,bossPos.y);await ready(p); // the one-HP adjacent boss is defeated by a real map attack
   let current=await state(p);
   for(let i=0;i<30&&current.phase==='learning';i++){await p.locator('#learn-skip').click();await ready(p);current=await state(p);}
-  if(current.phase==='invitation'){await p.locator('#reject').click();await p.locator('#reject-confirm').click();await ready(p);current=await state(p);}
+  if(current.phase==='invitation'){await p.locator('#reject').click();await ready(p);current=await state(p);}
   assert.equal(await p.locator('.settlement-heading').evaluate(el=>getComputedStyle(el).backgroundColor),'rgb(44, 31, 22)','result header keeps the design wood background');
   assert.equal(current.phase,'ended');assert.equal(current.end.outcome,'won');assert.equal(current.end.boss,true);
   await p.evaluate(()=>document.fonts.ready);

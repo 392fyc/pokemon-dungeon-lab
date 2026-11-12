@@ -30,12 +30,13 @@ test('N3 every species, type, kit move, learnable move and technique-machine mov
  for(const s of roster.species){
   assert.ok(NAME_TABLE.species[s.id],`species ${s.id}`);
   for(const t of s.types)assert.ok(NAME_TABLE.types[t],`type ${t}`);
-  for(const k of [...s.kit,...s.learnable])if(k.move!=='visegrip')assert.ok(NAME_TABLE.moves[k.move],`move ${k.move}`);
+  for(const k of [...s.kit,...s.learnable])assert.ok(NAME_TABLE.moves[k.move],`move ${k.move}`);
  }
  for(const m of ALL_TM_MOVES){assert.ok(NAME_TABLE.moves[m],`tm move ${m}`);assert.ok(NAME_TABLE.tms[m],`tm ${m}`);}
  for(const i of ['berry','tonic'])assert.ok(NAME_TABLE.items[i]);
- assert.equal(speciesZh('treecko'),'木守宫');assert.equal(moveZh('leafage'),'树叶');  // official name per wiki.52poke.com move list, checked 2026-10-30assert.equal(typeZh('Grass'),'草');assert.equal(tmZh('protect'),'守住');assert.equal(itemZh('berry'),'橙橙果');
- assert.equal(moveZh('visegrip'),'visegrip','the documented PokeAPI spelling exception falls back to its Showdown id');
+ assert.equal(speciesZh('treecko'),'木守宫');assert.equal(moveZh('leafage'),'树叶');  // official name per wiki.52poke.com move list, checked 2026-10-30
+ assert.equal(typeZh('Grass'),'草');assert.equal(tmZh('protect'),'守住');assert.equal(itemZh('berry'),'橙橙果');
+ assert.equal(moveZh('visegrip'),'夹住','no spelling exception is left: every move has its Simplified name');
  assert.equal(moveZh('not-a-move'),'not-a-move','unknown ids fall back to the id instead of throwing');
  for(const v of Object.values({...NAME_TABLE.species,...NAME_TABLE.moves}))assert.match(v,/[一-鿿]/,'every name contains Chinese characters');
 });

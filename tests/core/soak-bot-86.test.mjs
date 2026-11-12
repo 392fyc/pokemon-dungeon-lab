@@ -15,7 +15,7 @@ import {friend,enemy,world,row,pos} from '../acceptance/fixtures.mjs';
 const policies=['naive','tactical','tactical-stand','cautious'];
 const roomKinds=['challenge','item','commission','blessing'];
 const commissionKinds=['hunter','collector','scout','guardian','speedrun'];
-const blessingKinds=['berryBoost','floorHeal','battleSpirit','lullaby','rally','tmChoice'];
+const blessingKinds=['berryBoost','floorHeal','battleSpirit','lullaby','rally','tmChoice','nemesis','headhunter','fullpower','scholar','killheal','regen','thickskin','laststand'];
 const samePos=(a,b)=>a?.x===b?.x&&a?.y===b?.y;
 
 function makeWorld({roomType='challenge',roomX=2,downX=25,leaderX=roomX+1,leaderY=1,partyHp=[20,20,20]}={}){

@@ -4,7 +4,8 @@ import {applyCommand,estimateAttackDamage,speciesUnit} from '../../src/core/engi
 import {world,row} from '../acceptance/fixtures.mjs';
 import {sureHit} from './sure-hit.mjs';   // 8.8 (#165): these examples fix damage numbers, so the accuracy roll is taken out
 
-// Literal results from #112's approved examples, never derived with the production calculator.
+// Literal results worked out by hand, never derived with the production calculator. The ratio uses level-based ability values (playtest round 3):
+// stat = floor(2 x base x level / 100) + 5, so at Lv5 it is floor(base / 10) + 5 and at Lv22 it is floor(base x 0.44) + 5.
 function duel(attacker,defender,{side='friend',level=5,move='tackle'}={}){
  const a=speciesUnit('A',attacker,level,{x:2,y:1});
  const d=speciesUnit('D',defender,5,{x:3,y:1});
@@ -24,12 +25,12 @@ function strike(s,move){
  return result.state;
 }
 for(const [attacker,defender,move,level,friendDamage,enemyDamage] of [
- ['mudkip','pidgey','tackle',5,11,4], // round(9*1.25)=11, then enemy round(11*.4)=4
+ ['mudkip','pidgey','tackle',5,12,5], // Lv5 atk 12 / def 9: round(9*12/9)=12, then enemy round(12*.4)=5
  ['pidgey','mudkip','tackle',5,12,5], // round(9*45/50)=8; Pidgey Normal STAB makes 12. Enemy: round(8*.4)=3, then round(3*1.5)=5
- ['charmander','squirtle','ember',5,7,3], // round(10*60/64)=9; Fire STAB x Squirtle's 0.5 resistance gives round(9*.75)=7. Enemy: round(9*.4)=4, then round(4*.75)=3
- ['arcanine','mudkip','bite',22,18,7], // round((10+4)*1.25)=18, then round(18*.4)=7
+ ['charmander','squirtle','ember',5,8,3], // spa 11 / spd 11: 10; Fire STAB x Squirtle's 0.5 resistance gives round(10*.75)=8. Enemy: round(10*.4)=4, then round(4*.75)=3
+ ['arcanine','mudkip','bite',22,28,11], // Lv22 atk 53 / Lv5 def 10: ratio 5.3 clamps at 2: (10+4)*2=28, then round(28*.4)=11
  ['mudkip','arcanine','tackle',5,8,3], // round(9*70/80)=8
- ['treecko','arcanine','tackle',5,7,3], // round(9*.8)=7
+ ['treecko','arcanine','tackle',5,6,2], // atk 9 / def 13: round(9*9/13)=6, then round(6*.4)=2
 ])for(const [side,expected] of [['friend',friendDamage],['enemy',enemyDamage]]){
  test(`#112 ${attacker} -> ${defender}, ${move}, Lv${level}, ${side}: ${expected}`,()=>{
   const s=duel(attacker,defender,{side,level,move});
@@ -44,11 +45,11 @@ for(const [attacker,defender,move,level,friendDamage,enemyDamage] of [
 
 test('#112 普攻采用较高攻击对应的防御，相等时物理',()=>{
  for(const [attacker,defender,expected] of [
-  ['mudkip','pidgey',8], // round(6*1.25)=8, Physical upper clamp
-  ['bulbasaur','geodude',8], // spa65 > atk49; 65/spd30 reaches the upper clamp
-  ['pikachu','squirtle',5], // atk55 > spa50; round(6*55/65)=5
-  ['pidgey','squirtle',5], // atk45 > spa35; 45/65 reaches lower clamp; round(6*.8)=5
-  ['mew','geodude',6], // atk=spa=100; def100 (not spd30)
+  ['mudkip','pidgey',8], // Lv5 atk 12 / def 9: round(6*12/9)=8
+  ['bulbasaur','geodude',8], // spa 11 > atk 9, so special: round(6*11/8)=8 against spd 8
+  ['pikachu','squirtle',5], // atk 10 = spa 10 counts as physical (a tie goes to physical): round(6*10/11)=5
+  ['pidgey','squirtle',5], // atk 9 > spa 8: round(6*9/11)=5
+  ['mew','geodude',6], // atk = spa = 15; def 15 (not spd 8): ratio 1
  ]){
   const s=duel(attacker,defender,{move:null});
   assert.equal(estimateAttackDamage(s,'A','D'),expected,attacker);
@@ -68,7 +69,7 @@ test('#112 任一方无物种时比例为1，缺目标用于普通目标说明',
 test('#112 比例取整后乘难度，再处理阶段、屏障与反击；AI估算与实际一致',()=>{
  const s=duel('mudkip','pidgey',{side:'enemy'});
  s.units.A.stages.atk=2;s.units.D.stages.def=1;s.units.D.reflect=3;s.units.D.counter=3;
- // round(9*1.25)=11; round(11*.4)=4; +2-1=5; floor(5/2)=2.
+ // round(9*12/9 x 332/256 attack +2 / 332/256 defence +1)=12; round(12*.4)=5; floor(5/2)=2 under the screen.
  assert.equal(estimateAttackDamage(s,'A','D','tackle'),2);
  const after=strike(s,'tackle');
  assert.equal(after.units.D.hp,198);assert.equal(after.units.A.hp,198,'counter reflects actual lost HP');
@@ -80,8 +81,8 @@ test('#112 比例取整后乘难度，再处理阶段、屏障与反击；AI估�
 test('#112 自动选招比较物理和特殊的实际伤害',()=>{
  const s=duel('bulbasaur','geodude',{side:'enemy'});
  s.units.A.learned=['tackle','absorb'];s.units.A.pp={tackle:5,absorb:5};s.units.A.maxPp={...s.units.A.pp};
- // Tackle: round(9*.8)=7, enemy difficulty gives 3, then Rock resistance gives 2. Absorb: round(7*1.25)=9, enemy difficulty gives 4; Grass STAB x 4x weakness gives 24.
- assert.equal(estimateAttackDamage(s,'A','D','tackle'),2);
+ // Tackle: atk 9 / def 15: round(9*.6)=5, enemy difficulty gives 2, then Rock resistance gives 1. Absorb: spa 11 / spd 8: round(7*11/8)=10, enemy difficulty gives 4; Grass STAB x 4x weakness gives 24.
+ assert.equal(estimateAttackDamage(s,'A','D','tackle'),1);
  assert.equal(estimateAttackDamage(s,'A','D','absorb'),24);
  const after=strike(s);
  assert.equal(after.units.A.lastMove,'absorb');

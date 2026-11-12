@@ -18,7 +18,9 @@ export const ECON={
   /** Shop: chance that a run has one (floor 1 or 2), fixed stock, prices in purse money. */
   shopChance:0.35,
   /** 8.8 (#165, G9.4): the stock also holds one Pecha Berry and one Heal Seed (WORKING CANDIDATE prices 20 / 40). */
-  price:{berry:20,tonic:30,tm:80,pechaBerry:20,healSeed:40} as Record<'berry'|'tonic'|'tm'|'pechaBerry'|'healSeed',number>,stock:{berry:2,tonic:1,tm:1,pechaBerry:1,healSeed:1},
+  price:{berry:20,tonic:30,tm:80,pechaBerry:20,healSeed:40,slumberOrb:60,totterOrb:60,luminousOrb:60,rollcallOrb:60,reviverSeed:80} as Record<'berry'|'tonic'|'tm'|'pechaBerry'|'healSeed'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'reviverSeed',number>,
+  /** Playtest 1107: four orbs and the Reviver Seed join the stock (WORKING CANDIDATE prices: orbs 60 = 1.5x the dearest old item, Reviver Seed 80 = 2x). */
+  stock:{berry:2,tonic:1,tm:1,pechaBerry:1,healSeed:1,slumberOrb:1,totterOrb:1,luminousOrb:1,rollcallOrb:1,reviverSeed:1},
   /** Exchanger: chance that a run has one, and the most technique machines one use may carry home. */
   exchangeChance:0.25,exchangeCargo:2,
 } as const;

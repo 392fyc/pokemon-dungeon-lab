@@ -2,22 +2,34 @@ import type Phaser from 'phaser';
 import {TERRAIN_THEMES} from './terrain.ts';
 import type {TerrainThemeKey} from './terrain.ts';
 
-const SAMPLES_PER_CELL = 4;
-const NOISE_SCALE = 5;
-const WARP_AMOUNT = .24;
-const BLUR_ROUNDS = 2;
+/** The mask is a screen-space picture composed from geometry (circles and one rounded rectangle per lit room), never from per-cell values.
+ *  It is drawn at SAMPLES_PER_CELL texels per cell and stretched bilinearly, which keeps every edge a soft curve. */
+const SAMPLES_PER_CELL = 6;
 const BORDER_CELLS = 64;
-export const BOARD_BACKGROUND = 0x101c1b;
+/** A lit room is the room plus the ring of cells around it (corners included) as one rounded rectangle. */
+const ROOM_RADIUS = .5;
+const ROOM_FEATHER = .3;
+export const ROOM_FADE_MS = 225;
+/** A party member lights a circle of about 2.5 cells (full light inside CIRCLE_INNER, none beyond CIRCLE_OUTER). */
+export const CIRCLE_INNER = 1.9;
+export const CIRCLE_OUTER = 3.0;
+/** A party circle fades out over this many cells inside the border of the revealed picture (a lit room only half a cell, so its ring stays fully lit). */
+export const CIRCLE_FEATHER = .75;
+/** The base darkness sinks into the deeper fog over this many cells inside the border of the revealed picture. */
+export const FOG_FEATHER = .85;
+export const BOARD_BACKGROUND = 0x17120e;
 
-export type DarknessLight = {x: number; y: number; primary: boolean; fire: boolean};
+export type DarknessLight = {x: number; y: number; primary: boolean};
 export type StaticDarknessLight = {x: number; y: number; inner: number; outer: number; strength: number};
+export type DarknessRoom = {x: number; y: number; w: number; h: number};
 export type DarknessColor = readonly [number, number, number];
 export type Field = {
   width: number;
   height: number;
   known: ReadonlySet<string>;
-  visible: ReadonlySet<string>;
   lights: readonly DarknessLight[];
+  /** Rooms (before the outer ring) holding the leader or a living companion. */
+  litRooms?: readonly DarknessRoom[];
   seed?: number;
   wallColor?: DarknessColor;
   staticLights?: readonly StaticDarknessLight[];
@@ -52,12 +64,16 @@ function wallBrightness(color: DarknessColor): number {
   return (color[0] + color[1] + color[2]) / 3;
 }
 
-/** Unexplored darkness follows the research formula: clamp(1 - 26 / mean wall RGB, .7, .9). */
+/** The one darkness outside the light follows the research formula: clamp(1 - 26 / mean wall RGB, .7, .9). */
 export function unknownDarkness(color: DarknessColor): number {
   const brightness = wallBrightness(color);
   if (Number.isNaN(brightness)) return .7;
   return Math.min(.9, Math.max(.7, 1 - 26 / brightness));
 }
+
+/** Unrevealed cells (the picture ends there) sit in a deeper, fog-like darkness; revealed cells fade into it along the revealed-map ramp. Never below the base darkness. */
+export const UNKNOWN_DARKNESS = .88;
+export const deepDarkness = (color: DarknessColor): number => Math.max(unknownDarkness(color), UNKNOWN_DARKNESS);
 
 export function darknessBackground(theme: TerrainThemeKey, wallColor: DarknessColor = averageWallColor(theme)): number {
   const opacity = unknownDarkness(wallColor);
@@ -69,211 +85,108 @@ export function darknessBackground(theme: TerrainThemeKey, wallColor: DarknessCo
   ) >>> 0;
 }
 
-function coordinateKeys(width: number, height: number): string[] {
-  const keys = new Array<string>(width * height);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) keys[y * width + x] = x + ',' + y;
-  }
-  return keys;
+export const roomKey = (r: DarknessRoom) => r.x + ',' + r.y + ',' + r.w + ',' + r.h;
+
+/** Light on a rounded rectangle: 1 inside, 0 outside, feathered ROOM_FEATHER across the edge. Coordinates are in cells. */
+export function roomLight(room: DarknessRoom, x: number, y: number): number {
+  const x0 = room.x - 1, y0 = room.y - 1, hw = (room.w + 2) / 2, hh = (room.h + 2) / 2;
+  const qx = Math.abs(x - (x0 + hw)) - (hw - ROOM_RADIUS), qy = Math.abs(y - (y0 + hh)) - (hh - ROOM_RADIUS);
+  const outside = Math.hypot(Math.max(qx, 0), Math.max(qy, 0));
+  const sdf = outside + Math.min(Math.max(qx, qy), 0) - ROOM_RADIUS;
+  return 1 - smoothstep((sdf + ROOM_FEATHER / 2) / ROOM_FEATHER);
 }
 
-/** One entry per grid cell: visible 0, revealed edge 0.3, other revealed 0.58, unknown from wall brightness. */
-export function buildCellDarkness(field: Field, theme: TerrainThemeKey = 'moss'): Float32Array {
-  const {width, height, known, visible} = field;
-  const keys = coordinateKeys(width, height);
-  const values = new Float32Array(width * height);
-  const unknown = unknownDarkness(field.wallColor ?? averageWallColor(theme));
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const index = y * width + x;
-      const key = keys[index]!;
-      if (!known.has(key)) {
-        values[index] = unknown;
-      } else if (visible.has(key)) {
-        values[index] = 0;
-      } else {
-        let atVisibleEdge = false;
-        for (let dy = -1; dy <= 1 && !atVisibleEdge; dy++) {
-          for (let dx = -1; dx <= 1; dx++) {
-            if ((dx || dy) && x + dx >= 0 && x + dx < width && y + dy >= 0 && y + dy < height
-              && known.has(keys[(y + dy) * width + x + dx]!)
-              && visible.has(keys[(y + dy) * width + x + dx]!)) {
-              atVisibleEdge = true;
-              break;
-            }
-          }
-        }
-        values[index] = atVisibleEdge ? .3 : .58;
+/** Light of a circle at distance d (in cells). */
+export const circleLight = (distance: number, inner = CIRCLE_INNER, outer = CIRCLE_OUTER) =>
+  1 - smoothstep((distance - inner) / Math.max(1e-4, outer - inner));
+
+/** The whole mask in one pass: one even darkness, minus the rooms (with their fade levels) and the party circles, times the static glows.
+ *  Writes alpha 0..1 per texel (SAMPLES_PER_CELL texels per cell) into `out`. */
+export function composeMask(
+  width: number, height: number, dark: number,
+  rooms: readonly {room: DarknessRoom; level: number}[],
+  lights: readonly {x: number; y: number}[],
+  staticMul: Float32Array | undefined,
+  out: Float32Array,
+  knownMask?: Float32Array,
+  lightMask: Float32Array | undefined = knownMask,   // the (wider) ramp that shapes party circles
+  deep?: number,   // darkness of unrevealed cells: the base darkness ramps from `dark` (revealed) to `deep` along `fogMask`, so no cell edge shows
+  fogMask: Float32Array | undefined = lightMask,
+): Float32Array {
+  const S = SAMPLES_PER_CELL, pw = width * S, ph = height * S;
+  const base = (i: number) => (deep !== undefined && fogMask ? mix(deep, dark, fogMask[i]!) : dark);
+  if (staticMul) for (let i = 0; i < out.length; i++) out[i] = base(i) * staticMul[i]!;
+  else for (let i = 0; i < out.length; i++) out[i] = base(i);
+  const clampX = (v: number) => Math.max(0, Math.min(pw - 1, v)), clampY = (v: number) => Math.max(0, Math.min(ph - 1, v));
+  for (const {room, level} of rooms) {
+    if (level <= 0) continue;
+    const pad = ROOM_FEATHER;
+    const px0 = clampX(Math.floor((room.x - 1 - pad) * S)), px1 = clampX(Math.ceil((room.x + room.w + 1 + pad) * S));
+    const py0 = clampY(Math.floor((room.y - 1 - pad) * S)), py1 = clampY(Math.ceil((room.y + room.h + 1 + pad) * S));
+    for (let py = py0; py <= py1; py++) {
+      const y = (py + .5) / S;
+      for (let px = px0; px <= px1; px++) out[py * pw + px]! *= 1 - level * roomLight(room, (px + .5) / S, y) * (knownMask ? knownMask[py * pw + px]! : 1);
+    }
+  }
+  for (const light of lights) {
+    const lx = light.x + .5, ly = light.y + .5;
+    const px0 = clampX(Math.floor((lx - CIRCLE_OUTER) * S)), px1 = clampX(Math.ceil((lx + CIRCLE_OUTER) * S));
+    const py0 = clampY(Math.floor((ly - CIRCLE_OUTER) * S)), py1 = clampY(Math.ceil((ly + CIRCLE_OUTER) * S));
+    for (let py = py0; py <= py1; py++) {
+      const dy = (py + .5) / S - ly;
+      for (let px = px0; px <= px1; px++) {
+        const dx = (px + .5) / S - lx, d2 = dx * dx + dy * dy;
+        if (d2 >= CIRCLE_OUTER * CIRCLE_OUTER) continue;
+        const lit = d2 <= CIRCLE_INNER * CIRCLE_INNER ? 1 : circleLight(Math.sqrt(d2));
+        out[py * pw + px]! *= 1 - lit * (lightMask ? lightMask[py * pw + px]! : 1);
       }
     }
   }
-  return values;
+  return out;
 }
 
-function hashNoise(x: number, y: number, seed: number, salt: number): number {
-  let value = (
-    Math.imul(x | 0, 0x9e3779b1)
-    ^ Math.imul(y | 0, 0x85ebca6b)
-    ^ Math.imul(seed | 0, 0xc2b2ae35)
-    ^ (salt | 0)
-  ) >>> 0;
-  value ^= value >>> 16;
-  value = Math.imul(value, 0x7feb352d);
-  value ^= value >>> 15;
-  value = Math.imul(value, 0x846ca68b);
-  value ^= value >>> 16;
-  return (value >>> 0) / 0xffffffff;
+/** How much a texel belongs to the revealed map: 1 deep inside revealed cells, 0 in cells that are not revealed (and outside the map), and a smooth
+ *  ramp in between. The ramp follows the true distance (in cells) to the nearest unrevealed cell, so it is 0 exactly on the border of the picture and
+ *  has round corners; `feather` is how many cells inside the border the ramp takes. Light multiplied by this never reaches a cell that has no picture,
+ *  and the picture's straight cell edges never show as a lit line. */
+export function buildKnownMask(width: number, height: number, bits: Uint8Array, feather = .5): Float32Array {
+  const S = SAMPLES_PER_CELL, pw = width * S, ph = height * S, out = new Float32Array(pw * ph);
+  const known = (x: number, y: number) => x >= 0 && y >= 0 && x < width && y < height && bits[y * width + x] === 1;
+  const reach = Math.max(1, Math.ceil(feather));
+  for (let cy = 0; cy < height; cy++) for (let cx = 0; cx < width; cx++) {
+    if (!known(cx, cy)) continue;   // an unrevealed cell stays 0
+    const unknown: [number, number][] = [];
+    for (let dy = -reach; dy <= reach; dy++) for (let dx = -reach; dx <= reach; dx++) if ((dx || dy) && !known(cx + dx, cy + dy)) unknown.push([cx + dx, cy + dy]);
+    for (let sy = 0; sy < S; sy++) for (let sx = 0; sx < S; sx++) {
+      const x = cx + (sx + .5) / S, y = cy + (sy + .5) / S;
+      let d = feather;
+      for (const [ux, uy] of unknown) {   // distance from the texel to the unrevealed cell's square
+        const ex = Math.max(ux - x, 0, x - (ux + 1)), ey = Math.max(uy - y, 0, y - (uy + 1));
+        const e = Math.hypot(ex, ey);
+        if (e < d) d = e;
+      }
+      out[(cy * S + sy) * pw + cx * S + sx] = smoothstep(d / feather);
+    }
+  }
+  return out;
 }
 
-function valueNoise(x: number, y: number, seed: number, salt: number): number {
-  const x0 = Math.floor(x), y0 = Math.floor(y);
-  const tx = smoothstep(x - x0), ty = smoothstep(y - y0);
-  const top = mix(hashNoise(x0, y0, seed, salt), hashNoise(x0 + 1, y0, seed, salt), tx);
-  const bottom = mix(hashNoise(x0, y0 + 1, seed, salt), hashNoise(x0 + 1, y0 + 1, seed, salt), tx);
-  return mix(top, bottom, ty);
-}
-
-function sampleCellField(values: Float32Array, width: number, height: number, x: number, y: number): number {
-  const gx = Math.floor(x - .5);
-  const gy = Math.floor(y - .5);
-  const tx = smoothstep(x - .5 - gx);
-  const ty = smoothstep(y - .5 - gy);
-  const x0 = Math.max(0, Math.min(width - 1, gx));
-  const x1 = Math.max(0, Math.min(width - 1, gx + 1));
-  const y0 = Math.max(0, Math.min(height - 1, gy));
-  const y1 = Math.max(0, Math.min(height - 1, gy + 1));
-  const a = mix(values[y0 * width + x0]!, values[y0 * width + x1]!, tx);
-  const b = mix(values[y1 * width + x0]!, values[y1 * width + x1]!, tx);
-  return mix(a, b, ty);
-}
-
-function boxBlur(source: Float32Array, target: Float32Array, width: number, height: number, horizontal: boolean): void {
-  if (horizontal) {
-    for (let y = 0; y < height; y++) {
-      const row = y * width;
-      for (let x = 0; x < width; x++) {
-        const left = row + Math.max(0, x - 1);
-        const middle = row + x;
-        const right = row + Math.min(width - 1, x + 1);
-        target[middle] = (source[left]! + source[middle]! + source[right]!) / 3;
+/** Local glow of revealed stairs and magma: multiplies the darkness down around the source. */
+function buildStaticMultiplier(width: number, height: number, lights: readonly StaticDarknessLight[]): Float32Array {
+  const S = SAMPLES_PER_CELL, pw = width * S, ph = height * S, out = new Float32Array(pw * ph).fill(1);
+  for (const light of lights) {
+    const lx = light.x + .5, ly = light.y + .5, outer = Math.max(light.inner + .0001, light.outer);
+    const px0 = Math.max(0, Math.floor((lx - outer) * S)), px1 = Math.min(pw - 1, Math.ceil((lx + outer) * S));
+    const py0 = Math.max(0, Math.floor((ly - outer) * S)), py1 = Math.min(ph - 1, Math.ceil((ly + outer) * S));
+    for (let py = py0; py <= py1; py++) {
+      for (let px = px0; px <= px1; px++) {
+        const d = Math.hypot((px + .5) / S - lx, (py + .5) / S - ly);
+        if (d >= outer) continue;
+        out[py * pw + px]! *= 1 - light.strength * (d <= light.inner ? 1 : 1 - smoothstep((d - light.inner) / (outer - light.inner)));
       }
     }
-  } else {
-    for (let y = 0; y < height; y++) {
-      const above = Math.max(0, y - 1) * width;
-      const row = y * width;
-      const below = Math.min(height - 1, y + 1) * width;
-      for (let x = 0; x < width; x++) target[row + x] = (source[above + x]! + source[row + x]! + source[below + x]!) / 3;
-    }
   }
-}
-
-function buildBaseDarkness(field: Field, theme: TerrainThemeKey, seed: number): Uint8ClampedArray {
-  const {width, height} = field;
-  const cellValues = buildCellDarkness(field, theme);
-  const pixelWidth = width * SAMPLES_PER_CELL;
-  const pixelHeight = height * SAMPLES_PER_CELL;
-  const raw = new Float32Array(pixelWidth * pixelHeight);
-  for (let py = 0; py < pixelHeight; py++) {
-    const y = (py + .5) / SAMPLES_PER_CELL;
-    for (let px = 0; px < pixelWidth; px++) {
-      const x = (px + .5) / SAMPLES_PER_CELL;
-      const warpX = (valueNoise(x / NOISE_SCALE, y / NOISE_SCALE, seed, 0x51ed270b) - .5) * WARP_AMOUNT;
-      const warpY = (valueNoise(x / NOISE_SCALE, y / NOISE_SCALE, seed, 0x68bc21eb) - .5) * WARP_AMOUNT;
-      raw[py * pixelWidth + px] = sampleCellField(cellValues, width, height, x + warpX, y + warpY) * 255;
-    }
-  }
-  const scratch = new Float32Array(raw.length);
-  for (let round = 0; round < BLUR_ROUNDS; round++) {
-    boxBlur(raw, scratch, pixelWidth, pixelHeight, true);
-    boxBlur(scratch, raw, pixelWidth, pixelHeight, false);
-  }
-  const output = Uint8ClampedArray.from(raw);
-  applyStaticLightsToBase(output, field);
-  return output;
-}
-
-type LightSample = {x: number; y: number; inner: number; outer: number; strength: number; primary?: boolean; fire?: boolean};
-
-function partyLight(light: DarknessLight): LightSample {
-  const inner = light.primary ? (light.fire ? 1.3 : .9) : (light.fire ? .95 : .55);
-  const outer = light.primary ? (light.fire ? 2.8 : 1.95) : (light.fire ? 2.25 : 1.45);
-  const strength = light.primary ? 1 : light.fire ? .85 : .8;
-  return {x: light.x + .5, y: light.y + .5, inner, outer, strength, primary: light.primary, fire: light.fire};
-}
-
-function applyLightValues(
-  alpha: number, x: number, y: number, lightX: number, lightY: number,
-  innerInput: number, outerInput: number, strength: number,
-): number {
-  const dx = x - lightX;
-  const dy = y - lightY;
-  const inner = Math.max(0, innerInput);
-  const outer = Math.max(inner + .0001, outerInput);
-  const distanceSquared = dx * dx + dy * dy;
-  if (distanceSquared >= outer * outer) return alpha;
-  let attenuation: number;
-  if (distanceSquared <= inner * inner) attenuation = 1 - strength;
-  else {
-    const distance = Math.sqrt(distanceSquared);
-    const edge = smoothstep((distance - inner) / (outer - inner));
-    attenuation = 1 - strength * (1 - edge);
-  }
-  return alpha * attenuation;
-}
-
-function applyLight(alpha: number, x: number, y: number, light: LightSample): number {
-  return applyLightValues(alpha, x, y, light.x, light.y, light.inner, light.outer, light.strength);
-}
-
-function collectPartyLights(field: Field): LightSample[] {
-  return field.lights.map(partyLight);
-}
-
-function collectRevealedStaticLights(field: Field): LightSample[] {
-  const lights: LightSample[] = [];
-  for (const light of field.staticLights ?? []) {
-    if (field.known.has(Math.floor(light.x) + ',' + Math.floor(light.y))) {
-      lights.push({x: light.x + .5, y: light.y + .5, inner: light.inner, outer: light.outer, strength: light.strength});
-    }
-  }
-  return lights;
-}
-
-function applyStaticLightsToBase(base: Uint8ClampedArray, field: Field): void {
-  const lights = collectRevealedStaticLights(field);
-  if (!lights.length) return;
-  const width = field.width * SAMPLES_PER_CELL;
-  for (let py = 0; py < field.height * SAMPLES_PER_CELL; py++) {
-    const y = (py + .5) / SAMPLES_PER_CELL;
-    for (let px = 0; px < width; px++) {
-      const index = py * width + px;
-      const x = (px + .5) / SAMPLES_PER_CELL;
-      let alpha = base[index]! / 255;
-      for (const light of lights) alpha = applyLight(alpha, x, y, light);
-      base[index] = alpha * 255;
-    }
-  }
-}
-
-/** Builds the smooth 4× mask and applies current party and revealed static lights. */
-export function buildDarkness(field: Field, theme: TerrainThemeKey = 'moss'): Uint8ClampedArray {
-  const base = buildBaseDarkness(field, theme, field.seed ?? 0);
-  const output = base.slice();
-  const lights = collectPartyLights(field);
-  const {width, height} = field;
-  const pixelWidth = width * SAMPLES_PER_CELL;
-  for (let py = 0; py < height * SAMPLES_PER_CELL; py++) {
-    const y = (py + .5) / SAMPLES_PER_CELL;
-    for (let px = 0; px < pixelWidth; px++) {
-      const index = py * pixelWidth + px;
-      const x = (px + .5) / SAMPLES_PER_CELL;
-      let alpha = output[index]! / 255;
-      for (const light of lights) alpha = applyLight(alpha, x, y, light);
-      output[index] = alpha * 255;
-    }
-  }
-  return output;
+  return out;
 }
 
 function seedFromFloor(floor: string, mapSeed = 0): number {
@@ -287,40 +200,35 @@ function sameColor(a: DarknessColor | undefined, b: DarknessColor): boolean {
 }
 
 const textureKey = 'dungeon-darkness';
-const LIGHT_STRIDE = 7;
-const STATIC_LIGHT_STRIDE = 5;
+type RoomFade = {room: DarknessRoom; level: number; from: number; to: number; start: number; end: number};
 
+/** Everything outside the light is one even darkness (the unexplored wall-centre tiles and the explored terrain share it, so there are no
+ *  patches). Lit rooms and party circles cut soft holes into it. */
 export class DungeonDarkness {
   private width = 0;
   private height = 0;
-  private cellKeys: string[] = [];
-  private knownBits = new Uint8Array(0);
-  private visibleBits = new Uint8Array(0);
-  private nextKnownBits = new Uint8Array(0);
-  private nextVisibleBits = new Uint8Array(0);
   private texture?: Phaser.Textures.CanvasTexture;
   private image?: Phaser.GameObjects.Image;
   private border?: Phaser.GameObjects.Graphics;
   private pixels?: ImageData;
-  private base?: Uint8ClampedArray;
-  private target?: Uint8ClampedArray;
-  private from?: Uint8ClampedArray;
-  private changedAt = 0;
-  private transitionEnd = 0;
-  private transitionProgress = 1;
-  private movementProgress: number | undefined;
+  private alpha = new Float32Array(0);
+  private staticMul?: Float32Array;
+  private knownBits = new Uint8Array(0);
+  private knownMask?: Float32Array;
+  private lightMask?: Float32Array;
+  private fogMask?: Float32Array;
+  private dark = .7;
+  private deep = .88;
+  private fades = new Map<string, RoomFade>();
   private lastDrawMs = 0;
   private lastBaseBuildMs = 0;
   private baseBuildCount = 0;
-  private lightData = new Float32Array(20);
-  private lightCount = 0;
-  private staticData = new Float32Array(20);
-  private nextStaticData = new Float32Array(20);
-  private staticCount = 0;
-  private nextStaticCount = 0;
-  private currentLights: readonly DarknessLight[] = [];
+  private lights: {x: number; y: number; primary: boolean}[] = [];
   private tint?: DarknessColor;
   private borderKey = '';
+  private lastFloorKey = '';
+  private staticKey = '';
+  private transition = {start: 0, end: 0, progress: 1};
 
   private scene: Phaser.Scene;
   private filter: Phaser.Textures.FilterMode;
@@ -331,109 +239,115 @@ export class DungeonDarkness {
   }
 
   clear(): void {
-    this.image?.destroy();
-    this.border?.destroy();
-    if (this.texture) this.scene.textures.remove(textureKey);
-    this.image = undefined;
-    this.border = undefined;
-    this.texture = undefined;
-    this.pixels = undefined;
-    this.base = undefined;
-    this.target = undefined;
-    this.from = undefined;
+    this.destroyVisuals();
     this.width = 0;
     this.height = 0;
-    this.cellKeys = [];
-    this.knownBits = this.visibleBits = this.nextKnownBits = this.nextVisibleBits = new Uint8Array(0);
-    this.currentLights = [];
-    this.lightCount = 0;
-    this.staticCount = this.nextStaticCount = 0;
-    this.staticData = this.nextStaticData = new Float32Array(20);
-    this.tint = undefined;
-    this.borderKey = '';
-    this.transitionProgress = 1;
-    this.movementProgress = undefined;
-    this.changedAt = this.transitionEnd = 0;
+    this.alpha = new Float32Array(0);
+    this.staticMul = undefined;
+    this.knownMask = undefined;
+    this.lightMask = undefined;
+    this.fogMask = undefined;
+    this.knownBits = new Uint8Array(0);
+    this.fades.clear();
+    this.lights = [];
+    this.staticKey = '';
+    this.lastFloorKey = '';
+    this.transition = {start: 0, end: 0, progress: 1};
   }
 
-  show(
-    floor: string,
-    theme: TerrainThemeKey,
-    cellSize: number,
-    field: Field,
-    animate: boolean,
-    durationMs = 0,
-  ): void {
+  /** Called whenever the world changes. `animate` fades rooms in or out; a final repaint, a skip or reduced motion settles at once. */
+  show(floor: string, theme: TerrainThemeKey, cellSize: number, field: Field, animate: boolean): void {
     const now = this.scene.time.now;
     const {width, height} = field;
     if (width <= 0 || height <= 0) {
       this.clear();
       return;
     }
-
+    const reduced = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const fade = animate && !reduced;
     const changedDimensions = width !== this.width || height !== this.height;
-    const effectiveSeed = seedFromFloor(floor, field.seed ?? 0);
+    const floorKey = floor + ':' + seedFromFloor(floor, field.seed ?? 0);
+    const newFloor = floorKey !== this.lastFloorKey;
     const color = field.wallColor ?? averageWallColor(theme);
-    const cellsChanged = this.readAndCompareCells(field, width, height);
-    const staticLightsChanged = this.readAndCompareStaticLights(field);
-    const baseChanged = changedDimensions || effectiveSeed !== this.lastSeed || !sameColor(this.wallColor, color)
-      || cellsChanged || staticLightsChanged;
+    this.dark = unknownDarkness(color);
+    this.deep = deepDarkness(color);
 
     if (!this.texture || changedDimensions) {
       this.destroyVisuals();
       this.width = width;
       this.height = height;
-      this.cellKeys = coordinateKeys(width, height);
-      this.knownBits = new Uint8Array(width * height);
-      this.visibleBits = new Uint8Array(width * height);
-      this.nextKnownBits = new Uint8Array(width * height);
-      this.nextVisibleBits = new Uint8Array(width * height);
-      this.readCells(field);
+      this.alpha = new Float32Array(width * SAMPLES_PER_CELL * height * SAMPLES_PER_CELL);
       this.createTexture(width, height, cellSize);
+      this.staticKey = '';
+      this.knownMask = undefined;
     } else {
       this.image?.setDisplaySize(width * cellSize, height * cellSize);
     }
+    this.lastFloorKey = floorKey;
 
-    this.currentLights = field.lights;
-
-    if (baseChanged || !this.base) {
-      const buildStart = performance.now();
-      const next = buildBaseDarkness(field, theme, effectiveSeed);
-      this.lastBaseBuildMs = performance.now() - buildStart;
+    // Static glows (revealed stairs and magma): rebuilt only when their set changes.
+    const statics = (field.staticLights ?? []).filter(light => field.known.has(Math.floor(light.x) + ',' + Math.floor(light.y)));
+    const staticKey = statics.map(l => [l.x, l.y, l.inner, l.outer, l.strength].join(':')).join('|');
+    if (staticKey !== this.staticKey || (statics.length && !this.staticMul)) {
+      const start = performance.now();
+      this.staticMul = statics.length ? buildStaticMultiplier(width, height, statics) : undefined;
+      this.lastBaseBuildMs = performance.now() - start;
       this.baseBuildCount++;
-      this.lastSeed = effectiveSeed;
-      this.wallColor = [...color] as DarknessColor;
-      this.storeCellBits(field);
-      this.storeStaticLights();
-      if (!this.base || changedDimensions || this.base.length !== next.length) {
-        this.base = next;
-        this.from = undefined;
-        this.target = next;
-        this.transitionProgress = 1;
-        this.changedAt = now;
-        this.transitionEnd = now;
-      } else if (animate && durationMs > 0) {
-        this.advanceBase(now);
-        this.from = this.base.slice();
-        this.target = next;
-        this.transitionProgress = 0;
-        this.changedAt = now;
-        this.transitionEnd = now + durationMs;
-      } else {
-        this.base = next;
-        this.target = next;
-        this.from = undefined;
-        this.transitionProgress = 1;
-        this.changedAt = now;
-        this.transitionEnd = now;
+      this.staticKey = staticKey;
+    }
+
+    // The revealed map as a soft mask (rebuilt only when the revealed cells change).
+    {
+      const bits = new Uint8Array(width * height);
+      let same = bits.length === this.knownBits.length;
+      for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
+        const v = field.known.has(x + ',' + y) ? 1 : 0;
+        bits[y * width + x] = v;
+        if (same && this.knownBits[y * width + x] !== v) same = false;
       }
-    } else if (!animate) {
-      // A final repaint settles to its target without rebuilding the same base field.
-      if (this.from && this.target) this.base = this.target;
-      this.from = undefined;
-      this.transitionProgress = 1;
-      this.changedAt = now;
-      this.transitionEnd = now;
+      if (!same || !this.knownMask) {
+        const start = performance.now();
+        this.knownBits = bits;
+        this.knownMask = buildKnownMask(width, height, bits);
+        this.lightMask = buildKnownMask(width, height, bits, CIRCLE_FEATHER);
+        this.fogMask = buildKnownMask(width, height, bits, FOG_FEATHER);
+        this.lastBaseBuildMs = performance.now() - start;
+        this.baseBuildCount++;
+      }
+    }
+
+    // Rooms: entering rooms fade in and leaving rooms fade out as whole shapes.
+    const wanted = new Map<string, DarknessRoom>();
+    for (const room of field.litRooms ?? []) wanted.set(roomKey(room), room);
+    if (newFloor) this.fades.clear();
+    for (const [k, room] of wanted) {
+      const f = this.fades.get(k);
+      if (!f) {
+        const entry: RoomFade = {room, level: fade && !newFloor ? 0 : 1, from: 0, to: 1, start: now, end: now};
+        if (entry.level < 1) {
+          entry.end = now + ROOM_FADE_MS;
+          this.transition = {start: now, end: entry.end, progress: 0};
+        }
+        this.fades.set(k, entry);
+      } else if (f.to !== 1) {
+        f.from = f.level;
+        f.to = 1;
+        f.start = now;
+        f.end = fade ? now + ROOM_FADE_MS : now;
+        if (fade) this.transition = {start: now, end: f.end, progress: 0};
+      }
+    }
+    for (const [k, f] of this.fades) {
+      if (wanted.has(k) || f.to === 0) continue;
+      f.from = f.level;
+      f.to = 0;
+      f.start = now;
+      f.end = fade ? now + ROOM_FADE_MS : now;
+      if (fade) this.transition = {start: now, end: f.end, progress: 0};
+    }
+    if (!fade) {
+      for (const f of this.fades.values()) f.level = f.to;
+      this.transition = {start: now, end: now, progress: 1};
     }
 
     this.syncTint(theme);
@@ -441,33 +355,26 @@ export class DungeonDarkness {
     this.update(now, field.lights);
   }
 
-  /** Phaser tweens and Scene clocks can advance by different deltas; visual movement supplies the authoritative progress. */
-  setMovementProgress(progress: number | undefined): void {
-    this.movementProgress = progress === undefined ? undefined : Math.max(0, Math.min(1, progress));
-  }
-
   update(time: number, lights?: readonly DarknessLight[]): void {
-    if (!this.texture || !this.pixels || !this.base) return;
+    if (!this.texture || !this.pixels) return;
     const drawStart = performance.now();
-    if (lights) this.currentLights = lights;
-    this.advanceBase(time);
-    this.fillLightBuffer();
-    const rgba = this.pixels.data;
-    const pixelWidth = this.width * SAMPLES_PER_CELL;
-    for (let py = 0; py < this.height * SAMPLES_PER_CELL; py++) {
-      const y = (py + .5) / SAMPLES_PER_CELL;
-      for (let px = 0; px < pixelWidth; px++) {
-        const index = py * pixelWidth + px;
-        const x = (px + .5) / SAMPLES_PER_CELL;
-        let alpha = this.base[index]! / 255;
-        for (let lightIndex = 0; lightIndex < this.lightCount; lightIndex++) {
-          const offset = lightIndex * LIGHT_STRIDE;
-          alpha = applyLightValues(alpha, x, y, this.lightData[offset]!, this.lightData[offset + 1]!,
-            this.lightData[offset + 2]!, this.lightData[offset + 3]!, this.lightData[offset + 4]!);
-        }
-        rgba[index * 4 + 3] = alpha * 255;
+    if (lights) this.lights = lights.map(l => ({x: l.x, y: l.y, primary: l.primary}));
+    let running = false, progress = 1;
+    for (const [k, f] of [...this.fades]) {
+      if (time >= f.end || f.end <= f.start) {
+        f.level = f.to;
+        if (f.to === 0) this.fades.delete(k);
+      } else {
+        const p = smoothstep((time - f.start) / (f.end - f.start));
+        f.level = mix(f.from, f.to, p);
+        running = true;
+        progress = Math.min(progress, p);
       }
     }
+    this.transition.progress = running ? progress : 1;
+    composeMask(this.width, this.height, this.dark, [...this.fades.values()].map(f => ({room: f.room, level: f.level})), this.lights, this.staticMul, this.alpha, this.knownMask, this.lightMask, this.deep, this.fogMask);
+    const rgba = this.pixels.data;
+    for (let i = 0; i < this.alpha.length; i++) rgba[i * 4 + 3] = this.alpha[i]! * 255 + .5;
     this.texture.getContext().putImageData(this.pixels, 0, 0);
     this.texture.refresh();
     this.texture.setFilter(this.filter);
@@ -479,164 +386,23 @@ export class DungeonDarkness {
     baseBuildMs: number;
     drawMs: number;
     transition: {start: number; end: number; progress: number};
-    lights: {x: number; y: number; centerX: number; centerY: number; inner: number; outer: number; strength: number; primary: boolean; fire: boolean}[];
+    lights: {x: number; y: number; centerX: number; centerY: number; inner: number; outer: number; strength: number; primary: boolean}[];
+    rooms: {x: number; y: number; w: number; h: number; level: number}[];
   } {
-    const lights = new Array<{x: number; y: number; centerX: number; centerY: number; inner: number; outer: number; strength: number; primary: boolean; fire: boolean}>(this.lightCount);
-    for (let i = 0; i < this.lightCount; i++) {
-      const offset = i * LIGHT_STRIDE;
-      const centerX = this.lightData[offset]!;
-      const centerY = this.lightData[offset + 1]!;
-      lights[i] = {
-        x: centerX - .5,
-        y: centerY - .5,
-        centerX,
-        centerY,
-        inner: this.lightData[offset + 2]!,
-        outer: this.lightData[offset + 3]!,
-        strength: this.lightData[offset + 4]!,
-        primary: this.lightData[offset + 5] === 1,
-        fire: this.lightData[offset + 6] === 1,
-      };
-    }
     return {
       baseBuildCount: this.baseBuildCount,
       baseBuildMs: this.lastBaseBuildMs,
       drawMs: this.lastDrawMs,
-      transition: {start: this.changedAt, end: this.transitionEnd, progress: this.transitionProgress},
-      lights,
+      transition: {...this.transition},
+      lights: this.lights.map(l => ({x: l.x, y: l.y, centerX: l.x + .5, centerY: l.y + .5, inner: CIRCLE_INNER, outer: CIRCLE_OUTER, strength: 1, primary: l.primary})),
+      rooms: [...this.fades.values()].map(f => ({...f.room, level: f.level})),
     };
   }
 
-  private lastSeed = 0;
-  private wallColor?: DarknessColor;
-
-  private readAndCompareCells(field: Field, width: number, height: number): boolean {
-    if (width !== this.width || height !== this.height || this.cellKeys.length !== width * height) {
-      this.width = width;
-      this.height = height;
-      this.cellKeys = coordinateKeys(width, height);
-      this.knownBits = new Uint8Array(width * height);
-      this.visibleBits = new Uint8Array(width * height);
-      this.nextKnownBits = new Uint8Array(width * height);
-      this.nextVisibleBits = new Uint8Array(width * height);
-      return true;
-    }
-    let changed = false;
-    for (let i = 0; i < this.cellKeys.length; i++) {
-      const key = this.cellKeys[i]!;
-      const known = field.known.has(key) ? 1 : 0;
-      const visible = field.visible.has(key) ? 1 : 0;
-      this.nextKnownBits[i] = known;
-      this.nextVisibleBits[i] = visible;
-      if (known !== this.knownBits[i] || visible !== this.visibleBits[i]) changed = true;
-    }
-    return changed;
-  }
-
-  private readCells(field: Field): void {
-    for (let i = 0; i < this.cellKeys.length; i++) {
-      const key = this.cellKeys[i]!;
-      this.nextKnownBits[i] = field.known.has(key) ? 1 : 0;
-      this.nextVisibleBits[i] = field.visible.has(key) ? 1 : 0;
-    }
-    this.knownBits.set(this.nextKnownBits);
-    this.visibleBits.set(this.nextVisibleBits);
-  }
-
-  private storeCellBits(field: Field): void {
-    for (let i = 0; i < this.cellKeys.length; i++) {
-      const key = this.cellKeys[i]!;
-      this.nextKnownBits[i] = field.known.has(key) ? 1 : 0;
-      this.nextVisibleBits[i] = field.visible.has(key) ? 1 : 0;
-    }
-    const known = this.knownBits;
-    this.knownBits = this.nextKnownBits;
-    this.nextKnownBits = known;
-    const visible = this.visibleBits;
-    this.visibleBits = this.nextVisibleBits;
-    this.nextVisibleBits = visible;
-  }
-
-  private readAndCompareStaticLights(field: Field): boolean {
-    let changed = false;
-    this.nextStaticCount = 0;
-    for (const light of field.staticLights ?? []) {
-      if (!field.known.has(Math.floor(light.x) + ',' + Math.floor(light.y))) continue;
-      const offset = this.nextStaticCount * STATIC_LIGHT_STRIDE;
-      if (offset + STATIC_LIGHT_STRIDE > this.nextStaticData.length) {
-        const expanded = new Float32Array(Math.max(this.nextStaticData.length * 2, offset + STATIC_LIGHT_STRIDE));
-        expanded.set(this.nextStaticData);
-        this.nextStaticData = expanded;
-      }
-      const x = light.x + .5, y = light.y + .5;
-      this.nextStaticData[offset] = x;
-      this.nextStaticData[offset + 1] = y;
-      this.nextStaticData[offset + 2] = light.inner;
-      this.nextStaticData[offset + 3] = light.outer;
-      this.nextStaticData[offset + 4] = light.strength;
-      if (this.staticData[offset] !== x || this.staticData[offset + 1] !== y
-        || this.staticData[offset + 2] !== light.inner || this.staticData[offset + 3] !== light.outer
-        || this.staticData[offset + 4] !== light.strength) changed = true;
-      this.nextStaticCount++;
-    }
-    if (this.nextStaticCount !== this.staticCount) changed = true;
-    return changed;
-  }
-
-  private storeStaticLights(): void {
-    const previous = this.staticData;
-    this.staticData = this.nextStaticData;
-    this.nextStaticData = previous;
-    this.staticCount = this.nextStaticCount;
-  }
-
-  private advanceBase(time: number): void {
-    if (!this.from || !this.target || !this.base) return;
-    const progress = this.movementProgress ?? (this.transitionEnd <= this.changedAt
-      ? 1
-      : Math.max(0, Math.min(1, (time - this.changedAt) / (this.transitionEnd - this.changedAt))));
-    const eased = smoothstep(progress);
-    for (let i = 0; i < this.base.length; i++) {
-      this.base[i] = mix(this.from[i]!, this.target[i]!, eased);
-    }
-    this.transitionProgress = eased;
-    if (progress >= 1) {
-      this.base = this.target;
-      this.from = undefined;
-      this.transitionProgress = 1;
-      if(this.movementProgress!==undefined)this.transitionEnd=time;
-      this.movementProgress=undefined;
-    }
-  }
-
-  private fillLightBuffer(): void {
-    this.lightCount = 0;
-    for (const light of this.currentLights) {
-      const inner = light.primary ? (light.fire ? 1.3 : .9) : (light.fire ? .95 : .55);
-      const outer = light.primary ? (light.fire ? 2.8 : 1.95) : (light.fire ? 2.25 : 1.45);
-      const strength = light.primary ? 1 : light.fire ? .85 : .8;
-      this.appendLight(light.x + .5, light.y + .5, inner, outer, strength, light.primary, light.fire);
-    }
-  }
-
-  private appendLight(
-    x: number, y: number, innerInput: number, outerInput: number, strength: number, primary: boolean, fire: boolean,
-  ): void {
-    const offset = this.lightCount * LIGHT_STRIDE;
-    if (offset + LIGHT_STRIDE > this.lightData.length) {
-      const expanded = new Float32Array(Math.max(this.lightData.length * 2, offset + LIGHT_STRIDE));
-      expanded.set(this.lightData);
-      this.lightData = expanded;
-    }
-    this.lightData[offset] = x;
-    this.lightData[offset + 1] = y;
-    const inner = Math.max(0, innerInput);
-    this.lightData[offset + 2] = inner;
-    this.lightData[offset + 3] = Math.max(inner + .0001, outerInput);
-    this.lightData[offset + 4] = Math.max(0, Math.min(1, strength));
-    this.lightData[offset + 5] = primary ? 1 : 0;
-    this.lightData[offset + 6] = fire ? 1 : 0;
-    this.lightCount++;
+  /** The mask alpha (0..1) at a point given in cells (the centre of cell (3,2) is 3.5, 2.5); used by the browser checks. */
+  alphaAt(x: number, y: number): number {
+    const S = SAMPLES_PER_CELL, px = Math.min(this.width * S - 1, Math.max(0, Math.floor(x * S))), py = Math.min(this.height * S - 1, Math.max(0, Math.floor(y * S)));
+    return this.alpha[py * this.width * S + px] ?? 0;
   }
 
   private syncTint(theme: TerrainThemeKey): void {
@@ -662,7 +428,7 @@ export class DungeonDarkness {
     const mapWidth = this.width * cellSize;
     const mapHeight = this.height * cellSize;
     const margin = BORDER_CELLS * cellSize;
-    border.fillStyle(color, unknownDarkness(wallColor));
+    border.fillStyle(color, deepDarkness(wallColor));
     border.fillRect(-margin, -margin, margin, mapHeight + margin * 2);
     border.fillRect(mapWidth, -margin, margin, mapHeight + margin * 2);
     border.fillRect(0, -margin, mapWidth, margin);
@@ -678,6 +444,7 @@ export class DungeonDarkness {
     if (!texture) return;
     this.texture = texture;
     this.pixels = texture.getContext().createImageData(pixelWidth, pixelHeight);
+    this.tint = undefined;
     this.image = this.scene.add.image(0, 0, textureKey).setOrigin(0).setDepth(7)
       .setDisplaySize(width * cellSize, height * cellSize);
   }

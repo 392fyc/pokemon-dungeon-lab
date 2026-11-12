@@ -85,7 +85,7 @@ test('反射壁护住同房间伙伴；物理伤害先减防御再向下减半�
 }));
 
 test('光墙只减特殊攻击；首领的物理与特殊招式分别按招式类别结算',()=>withGuardMoves(()=>{
-  const a=friend('A',0,1,20),b=friend('B',2,1,20);a.stages.spd=1;equip(a,'lightscreen',2);   // 8.8 (G5.3 step 4): bubblebeam is special, so the special defence stage is the one that counts
+  const a=friend('A',0,1,20),b=friend('B',2,1,20);b.tactic='wait';a.stages.spd=1;equip(a,'lightscreen',2);   // 8.8 (G5.3 step 4): bubblebeam is special, so the special defence stage is the one that counts
   const r=shooter('R',0,3,100,'bubblebeam');
   let s=world({floor:rect(0,5,0,5),friends:[a,b],enemies:[r],rooms:[{x:0,y:0,w:4,h:3}]});
   s=use(s,'lightscreen','A');assert.equal(s.units.A.hp,19);assert.equal(s.units.A.lightscreen,9);assert.equal(s.units.B.lightscreen,9); // bubblebeam round(9 x 0.4)=4，防御阶段后3，光墙向下减半为1

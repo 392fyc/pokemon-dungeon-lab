@@ -32,8 +32,8 @@ test('#204 招式说明按使用者阵营：敌人的守住、反击、快速防
     assert.ok(/我方/.test(theirs),`${id} enemy text names the player side: ${theirs}`);
     assert.ok(!forbidden.test(theirs),`${id} enemy text no longer says enemy: ${theirs}`);
   }
-  assert.match(moveEffectLabel('reflect',undefined,'enemy'),/10个我方阶段/);
-  assert.match(moveEffectLabel('protect',undefined,'enemy'),/受到我方攻击伤害为0（3个我方阶段）/);
+  assert.match(moveEffectLabel('reflect',undefined,'enemy'),/10回合内受到我方造成的物理伤害/);
+  assert.match(moveEffectLabel('protect',undefined,'enemy'),/3回合内免疫我方攻击的伤害/);
   assert.match(moveEffectLabel('snore',undefined,'enemy'),/受到我方单位直接攻击/);
   assert.equal(moveSummary('protect'),moveSummary('protect',undefined,'friend'));
 });
@@ -46,11 +46,11 @@ test('#204 敌人情报卡和队友卡的招式文字按各自阵营生成',()=>
   s.units={A:a,E:e};s.queue=['A'];s.enemies=['E'];
   const info=enemyInfo(s,'E');assert.ok(info);
   const reflect=info.moveRows.find(row=>row.id==='reflect').detail;
-  assert.match(reflect,/10个我方阶段/);assert.doesNotMatch(reflect,/敌方/);
-  assert.match(info.moveRows.find(row=>row.id==='protect').detail,/3个我方阶段/);
+  assert.match(reflect,/10回合内受到我方造成的物理伤害/);assert.doesNotMatch(reflect,/敌方/);
+  assert.match(info.moveRows.find(row=>row.id==='protect').detail,/3回合内免疫我方攻击/);
   assert.match(info.moveRows.find(row=>row.id==='snore').detail,/我方单位/);
   const mate=teammateInfo(s,'A');assert.ok(mate);
-  assert.ok(mate.moves.some(t=>t.includes('10个敌方阶段')),'teammate keeps the player view: '+mate.moves.join(' | '));
+  assert.ok(mate.moves.some(t=>t.includes('10回合内受到敌方造成的物理伤害')),'teammate keeps the player view: '+mate.moves.join(' | '));
 });
 
 test('#204 文字与引擎一致：敌人的守住和反射壁在我方行动阶段倒数',()=>{
@@ -154,6 +154,8 @@ test('N-b 打鼾目标看不见时，后面敌人打队友的普攻不算成打�
   s.seen=s.seen.filter(cell=>cell!==key({x:0,y:1}));
   const after=structuredClone(s);after.round=s.round+1;
   after.log=[...s.log,'A受到3伤害，HP 297','A使用打鼾','E受到4伤害，HP 496','B受到3伤害，HP 297'];
+  // The animation reads the structured events, which the engine writes in the same order as these lines.
+  after.events=[{type:'hpLoss',unit:'A',amount:3,hp:297},{type:'cast',unit:'A',skill:'snore'},{type:'hpLoss',unit:'E',amount:4,hp:496},{type:'hpLoss',unit:'B',amount:3,hp:297}];
   const onB=inferEvents(s,after,{type:'round',action:{type:'wait'}}).find(event=>event.k==='hit'&&event.target==='B');
   assert.ok(onB);assert.equal(onB.attacker,'F');assert.notEqual(onB.effect?.move,'snore');
 });

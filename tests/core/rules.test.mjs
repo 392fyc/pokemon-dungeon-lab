@@ -38,7 +38,7 @@ test('V1/V2 refusal is immutable and explicit waiting fixes known conflict',()=>
  const fixed=round(s,move(4),{actor:'B',action:wait});assert.deepEqual(positions(fixed),[2,3,4]);
 });
 test('M4 B already on exit; no extra return damage',()=>{
- let s=createScenario('V1','m4');s=round(s,move(6));s=command(s,{type:'switch',actor:'B'});s=finish(round(s,interact(true)));assert.deepEqual(positions(s),[3,4,5]);assert.equal(s.units.C.hp,20);assert.equal(s.round,9);
+ let s=createScenario('V1','m4');s=round(s,move(6));s=command(s,{type:'switch',actor:'B'});s=finish(round(s,interact(true)));assert.deepEqual(positions(s),[3,4,6]);assert.equal(s.units.C.hp,20);assert.equal(s.round,9);   // playtest round 2: C walks toward the enemy it can see within six cells of the leader, so it is at 6 rather than 5
 });
 test('V3/V4 follow and V5/V6/V7 down membership',()=>{
  let s=legacyV(3);s=round(s,move(0));assert.deepEqual(positions(s),[3,2,0]);assert.equal(finish(round(s,interact(true))).phase,'ended');

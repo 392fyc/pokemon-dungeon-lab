@@ -30,7 +30,7 @@ export const TALENTS:Readonly<Record<TalentId,{name:string;description:string}>>
  * instance id, used to refill an empty squad.
  */
 export type Profile={expeditions:number;next:number;roster:Instance[];vault:Record<string,number>;team:string[];leader:string;account:number;rescue:RescueEntry[];lost:LostRecord[];origin:string;difficulty:Difficulty;shards:Record<string,number>;rankExp:number;talents:Partial<Record<TalentId,number>>};
-export type BaseAction={type:'learn';inst:string;move:string}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string}|{type:'tactic';inst:string;tactic:Tactic}|{type:'difficulty';difficulty:Difficulty}|{type:'talent';talent:TalentId}|{type:'resetTalents'};
+export type BaseAction={type:'learn';inst:string;move:string;replace?:string|null}|{type:'carry';inst:string;moves:string[]}|{type:'team';team:string[];leader:string}|{type:'rescue';inst:string}|{type:'tactic';inst:string;tactic:Tactic}|{type:'difficulty';difficulty:Difficulty}|{type:'talent';talent:TalentId}|{type:'resetTalents'};
 export type BaseResult={ok:true;profile:Profile}|{ok:false;error:string};
 export const MAX_CARRY=4,MAX_TEAM=3;
 const TALENT_IDS=Object.keys(TALENTS) as TalentId[];
@@ -77,14 +77,21 @@ export function newGameProfile(mainSpecies:string,deputySpecies:string):BaseResu
 }
 export const instanceOf=(p:Profile,id:string)=>p.roster.find(i=>i.id===id);
 
-export function learnTm(original:Profile,instId:string,move:string):BaseResult {
+/**
+ * Playtest round 2: the new move is also put on the carried list, so it is in the run without a second trip to the cottage. `replace` says what to do when four moves are
+ * already carried: a carried move name replaces that move, `null` learns without carrying; left out, a free slot is used and a full list is left as it was.
+ */
+export function learnTm(original:Profile,instId:string,move:string,replace?:string|null):BaseResult {
   if(!(ALL_TM_MOVES as readonly string[]).includes(move))return fail(`${moveZh(move)}不是招式机`);
   if((original.vault[move]??0)<1)return fail(`仓库里没有${moveZh(move)}招式机`);
   const inst=instanceOf(original,instId);if(!inst)return fail('没有这只伙伴');
   const m=learnableMove(inst.species,move);
   if(!m)return fail(`${speciesZh(inst.species)}不能学习${moveZh(move)}（不在它的可学清单里）；招式机没有消耗`);
   if(inst.learned.some(l=>l.move===move))return fail(`${instId}已经学会${moveZh(move)}，不能重复学习；招式机没有消耗`);
-  const p=clone(original);instanceOf(p,instId)!.learned.push(m);
+  if(typeof replace==='string'&&!inst.carry.includes(replace))return fail(`${moveZh(replace)}不在携带清单里，不能替换；招式机没有消耗`);
+  const p=clone(original),mine=instanceOf(p,instId)!;mine.learned.push(m);
+  if(typeof replace==='string')mine.carry=mine.carry.map(c=>c===replace?move:c);
+  else if(replace===undefined&&mine.carry.length<MAX_CARRY)mine.carry.push(move);
   p.vault[move]--;if(p.vault[move]===0)delete p.vault[move];
   return {ok:true,profile:p};
 }
@@ -145,7 +152,7 @@ function resetTalents(original:Profile):BaseResult {
 }
 export function applyBase(p:Profile,a:BaseAction):BaseResult {
   switch(a.type){
-    case 'learn':return learnTm(p,a.inst,a.move);
+    case 'learn':return learnTm(p,a.inst,a.move,a.replace);
     case 'carry':return setCarry(p,a.inst,a.moves);
     case 'rescue':return payRescue(p,a.inst);
     case 'tactic':return setTactic(p,a.inst,a.tactic);

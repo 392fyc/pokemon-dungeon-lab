@@ -1780,6 +1780,600 @@
    "seconds": 8.1,
    "raw": "20261105T014124Z-gpt-image-2.6-flare-low.png",
    "transparent_ok": true
+  },
+  {
+   "at": "20261107T081945Z",
+   "card": "item2-oran",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 99,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 99
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1548
+   },
+   "usd": 0.04397,
+   "seconds": 8.9,
+   "raw": "20261107T081945Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T081959Z",
+   "card": "item2-sitrus",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 109,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 109
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1558
+   },
+   "usd": 0.04401,
+   "seconds": 6.8,
+   "raw": "20261107T081959Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082006Z",
+   "card": "item2-pecha",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 98,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 98
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1547
+   },
+   "usd": 0.04396,
+   "seconds": 7.0,
+   "raw": "20261107T082006Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082014Z",
+   "card": "item2-rawst",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 98,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 98
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1547
+   },
+   "usd": 0.04396,
+   "seconds": 6.7,
+   "raw": "20261107T082014Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082021Z",
+   "card": "item2-cheri",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 98,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 98
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1547
+   },
+   "usd": 0.04396,
+   "seconds": 6.5,
+   "raw": "20261107T082021Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082028Z",
+   "card": "item2-chesto",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 99,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 99
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1548
+   },
+   "usd": 0.04397,
+   "seconds": 6.3,
+   "raw": "20261107T082028Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082034Z",
+   "card": "item2-heal-seed",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 101,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 101
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1550
+   },
+   "usd": 0.04398,
+   "seconds": 8.8,
+   "raw": "20261107T082034Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082043Z",
+   "card": "item2-violent-seed",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 100,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 100
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1549
+   },
+   "usd": 0.04397,
+   "seconds": 5.2,
+   "raw": "20261107T082043Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082049Z",
+   "card": "item2-ether",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 101,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 101
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1550
+   },
+   "usd": 0.04398,
+   "seconds": 7.6,
+   "raw": "20261107T082049Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082057Z",
+   "card": "item2-team-ether",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 103,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 103
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1552
+   },
+   "usd": 0.04399,
+   "seconds": 7.9,
+   "raw": "20261107T082057Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082105Z",
+   "card": "item2-max-elixir",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items2",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 105,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 105
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1554
+   },
+   "usd": 0.04399,
+   "seconds": 10.2,
+   "raw": "20261107T082105Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082115Z",
+   "card": "room-challenge",
+   "model": "gpt-image-2.6-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-rooms",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 112,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 112
+    },
+    "output_tokens": 1758,
+    "output_tokens_details": {
+     "image_tokens": 1758,
+     "text_tokens": 0
+    },
+    "total_tokens": 1870
+   },
+   "usd": 0.0533,
+   "seconds": 10.3,
+   "raw": "20261107T082115Z-gpt-image-2.6-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082126Z",
+   "card": "room-commission",
+   "model": "gpt-image-2.6-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-rooms",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 107,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 107
+    },
+    "output_tokens": 1758,
+    "output_tokens_details": {
+     "image_tokens": 1758,
+     "text_tokens": 0
+    },
+    "total_tokens": 1865
+   },
+   "usd": 0.05328,
+   "seconds": 10.5,
+   "raw": "20261107T082126Z-gpt-image-2.6-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082137Z",
+   "card": "room-blessing",
+   "model": "gpt-image-2.6-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-rooms",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 108,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 108
+    },
+    "output_tokens": 1758,
+    "output_tokens_details": {
+     "image_tokens": 1758,
+     "text_tokens": 0
+    },
+    "total_tokens": 1866
+   },
+   "usd": 0.05328,
+   "seconds": 8.8,
+   "raw": "20261107T082137Z-gpt-image-2.6-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082146Z",
+   "card": "room-treasure",
+   "model": "gpt-image-2.6-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-rooms",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 112,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 112
+    },
+    "output_tokens": 1758,
+    "output_tokens_details": {
+     "image_tokens": 1758,
+     "text_tokens": 0
+    },
+    "total_tokens": 1870
+   },
+   "usd": 0.0533,
+   "seconds": 8.4,
+   "raw": "20261107T082146Z-gpt-image-2.6-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082155Z",
+   "card": "room-shop",
+   "model": "gpt-image-2.6-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-rooms",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 107,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 107
+    },
+    "output_tokens": 1758,
+    "output_tokens_details": {
+     "image_tokens": 1758,
+     "text_tokens": 0
+    },
+    "total_tokens": 1865
+   },
+   "usd": 0.05328,
+   "seconds": 7.9,
+   "raw": "20261107T082155Z-gpt-image-2.6-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082203Z",
+   "card": "room-rest",
+   "model": "gpt-image-2.6-flare",
+   "quality": "high",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-rooms",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 104,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 104
+    },
+    "output_tokens": 1758,
+    "output_tokens_details": {
+     "image_tokens": 1758,
+     "text_tokens": 0
+    },
+    "total_tokens": 1862
+   },
+   "usd": 0.05326,
+   "seconds": 10.6,
+   "raw": "20261107T082203Z-gpt-image-2.6-flare-high.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082726Z",
+   "card": "item2-orb-slumber",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items3",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 106,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 106
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1555
+   },
+   "usd": 0.044,
+   "seconds": 8.4,
+   "raw": "20261107T082726Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082735Z",
+   "card": "item2-orb-totter",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items3",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 104,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 104
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1553
+   },
+   "usd": 0.04399,
+   "seconds": 7.7,
+   "raw": "20261107T082735Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082746Z",
+   "card": "item2-orb-luminous",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items3",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 104,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 104
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1553
+   },
+   "usd": 0.04399,
+   "seconds": 8.2,
+   "raw": "20261107T082746Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082800Z",
+   "card": "item2-orb-rollcall",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items3",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 106,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 106
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1555
+   },
+   "usd": 0.044,
+   "seconds": 7.9,
+   "raw": "20261107T082800Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
+  },
+  {
+   "at": "20261107T082812Z",
+   "card": "item2-reviver-seed",
+   "model": "gpt-image-2.6-flare",
+   "quality": "medium",
+   "size": "1024x1024",
+   "stage": "v01",
+   "batch": "v01-items3",
+   "status": "ok",
+   "usage": {
+    "input_tokens": 104,
+    "input_tokens_details": {
+     "image_tokens": 0,
+     "text_tokens": 104
+    },
+    "output_tokens": 1449,
+    "output_tokens_details": {
+     "image_tokens": 1449,
+     "text_tokens": 0
+    },
+    "total_tokens": 1553
+   },
+   "usd": 0.04399,
+   "seconds": 6.9,
+   "raw": "20261107T082812Z-gpt-image-2.6-flare-medium.png",
+   "transparent_ok": true
   }
  ]
 }

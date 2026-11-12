@@ -46,7 +46,7 @@ test('new expeditions use pool 5 for target and shop; the unmarked historical bo
 
   const shop=createExpedition('team-guard-old-shop-38',38,3,squadOf(initialProfile()),0);
   assert.equal(shop.dungeon.tmPool,5);
-  assert.deepEqual(shop.shop.stock,{berry:2,tonic:1,pechaBerry:1,healSeed:1,tm:'sleeptalk'});   // 8.8: two new stock items (G9.4)
+  assert.deepEqual(shop.shop.stock,{berry:2,tonic:1,pechaBerry:1,healSeed:1,slumberOrb:1,totterOrb:1,luminousOrb:1,rollcallOrb:1,reviverSeed:1,tm:'sleeptalk'});   // 8.8: two new stock items (G9.4)
 
   const boss=createScenario('BOSS','team-guard-old-boss');
   delete boss.dungeon.tmPool; // Explicit historical unmarked shape; new factories correctly default to pool 5.

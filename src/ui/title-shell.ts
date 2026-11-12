@@ -27,7 +27,7 @@ function titleStarters(): string {
 }
 export function renderTitle(c:TitleContext):string {
   const blocked=c.status==='blocked';
-  const ask=c.asking?`<div class="confirm-box" id="overwrite-box" role="alertdialog"><h2>开始新游戏会覆盖现有存档</h2><p>此浏览器里已有一份存档（${esc(c.saveLine||'无法读取')}）。覆盖后无法恢复；先导出原记录可以保留一份备份。取消则一切保持原样。</p>
+  const ask=c.asking?`<div class="confirm-box" id="overwrite-box" role="alertdialog"><h2>开始新游戏会覆盖现有存档</h2><p>此浏览器里已有一份存档（${esc(c.saveLine||'无法读取')}）。覆盖后无法恢复。</p>
   <button id="overwrite-export">导出原记录</button><button id="overwrite-yes" data-confirm="true" ${blocked&&!c.exported?'disabled':''}>确认覆盖，继续选择角色</button><button id="overwrite-cancel">取消</button>${blocked&&!c.exported?'<p class="muted">原记录无法读取，须先导出才能覆盖。</p>':''}</div>`:'';
   const menu = [
     c.hasRecord && !blocked
@@ -35,9 +35,8 @@ export function renderTitle(c:TitleContext):string {
       : '',
     `<button id="title-new" ${c.asking ? 'disabled' : ''} class="${c.hasRecord ? '' : 'primary'}">新的冒险</button>`,
   ].join('');
-  const floorTile = '<span style="background-image:url(assets/tiles/floor-stone.png)"></span>';
   return `<div class="screen-inner title-landing">
-    <div class="title-landscape" aria-hidden="true">${floorTile.repeat(3)}</div>
+    <div class="title-landscape" aria-hidden="true"></div>
     <div class="title-core">
       <h1 class="brand big">宝可梦地牢探索</h1>
       <div class="title-menu">${menu}</div>

@@ -2,6 +2,7 @@
    Expected values are literals worked out by hand from the roster kit table and the rules in
    https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/04-%E8%A7%84%E6%A0%BC/%E6%8B%9B%E5%8B%9F%E7%AD%89%E7%BA%A7%E4%B8%8E%E6%81%A2%E5%A4%8D%E5%93%81.md; fixtures are built by hand, not by the production factories. */
 import test from 'node:test';
+import {speciesMaxHp} from '../../src/core/roster.ts';
 import assert from 'node:assert/strict';
 import {createExpedition,createMain,applyCommand,reveal,rngStep,levelFor,PROG,speciesUnit} from '../../src/core/engine.ts';
 import {generateFloor,mulberry32} from '../../src/core/dungeon.ts';
@@ -17,7 +18,7 @@ const mon=(id,species,x,hp,maxHp,pp,maxPp,level=5)=>({id,side:'friend',level,tac
 const wild=(id,x,hp,species='rattata',level=5)=>{const e=enemy(id,x,1,hp,'melee',{waitOnly:true});e.species=species;e.level=level;return e;};
 /* Cumulative experience needed to reach a level (5 exp for Lv6, 6 more for Lv7, 7 more for Lv8, ...): literal table worked by hand. */
 const XP={5:0,6:5,7:11,8:18,9:26,13:68,21:200};
-/** A hand-built expedition on one row: A(0) charmander, B(1) squirtle, C(2) bulbasaur leads. `level` raises max HP by 1 per level above 5 (7.8 formula: roster HP + max(0, L-5)). */
+/** A hand-built expedition on one row: A(0) charmander, B(1) squirtle, C(2) bulbasaur leads. `level` only raises the hand-set max HP by 1 per level above 5 for the fixture's starting values; the engine recomputes max HP from the level-based formula at the first level-up. */
 function run({level=5,exp=XP[level]??0,rng=7,enemies=[wild('w',3,6)],points=[],items={berry:0,tonic:0},floor=row(9)}={}){
  const up=Math.max(0,level-5);
  const s=world({A:mon('A','charmander',0,19+up,19+up,{scratch:3,ember:2},{scratch:3,ember:2},level),B:mon('B','squirtle',1,20+up,20+up,{tackle:3,watergun:2},{tackle:3,watergun:2},level),
@@ -38,9 +39,9 @@ test('P1 a new expedition starts three roster starters at run level 5 with roste
  const s=createExpedition('start',777);
  assert.deepEqual(s.queue,['A','B','C']);assert.equal(s.leader,'C');
  const brief=id=>{const u=s.units[id];return [u.species,u.hp,u.maxHp,u.learned,u.pp,u.maxPp];};
- assert.deepEqual(brief('A'),['charmander',19,19,['scratch','ember'],{scratch:28,ember:15},{scratch:28,ember:15}]);// 8.8 (#165): official max PP
- assert.deepEqual(brief('B'),['squirtle',20,20,['tackle','watergun'],{tackle:30,watergun:17},{tackle:30,watergun:17}]);
- assert.deepEqual(brief('C'),['bulbasaur',21,21,['tackle','seedbomb'],{tackle:30,seedbomb:11},{tackle:30,seedbomb:11}]);
+ assert.deepEqual(brief('A'),['charmander',18,18,['scratch','ember'],{scratch:28,ember:15},{scratch:28,ember:15}]);// 8.8 (#165): official max PP
+ assert.deepEqual(brief('B'),['squirtle',19,19,['tackle','watergun'],{tackle:30,watergun:17},{tackle:30,watergun:17}]);
+ assert.deepEqual(brief('C'),['bulbasaur',19,19,['tackle','seedbomb'],{tackle:30,seedbomb:11},{tackle:30,seedbomb:11}]);
  assert.deepEqual(s.prog,{level:5,exp:0,rng:2779116292,made:0,kills:[],items:{berry:0,tonic:0}});   // 777 xor 0xA5A5F00D
  // spec 14.2: floor-1 theme = first type normal/grass/bug/rock/ground/flying, evolution level <= 6, no legendary; a no-boss run uses floor-1 species at Lv5 on every floor
  const theme=new Set(['Normal','Grass','Bug','Rock','Ground','Flying']);
@@ -48,7 +49,7 @@ test('P1 a new expedition starts three roster starters at run level 5 with roste
  assert.equal(s.enemies.length,6);
  assert.ok(s.enemies.every(id=>pool.has(s.units[id].species)),'wild enemies come from the floor-1 theme pool');
  assert.ok(s.enemies.every(id=>s.units[id].level===5&&s.units[id].tactic==='gofoes'));
- assert.ok(s.enemies.every(id=>{const u=s.units[id];return u.maxHp===Math.round(roster.species.find(x=>x.id===u.species).maxHp*0.4)&&u.hp===u.maxHp;}),'Lv5 enemy HP is the roster HP times the user-confirmed difficulty multiplier 0.4');
+ assert.ok(s.enemies.every(id=>{const u=s.units[id];return u.maxHp===speciesMaxHp(u.species,5,0.4)&&u.hp===u.maxHp;}),'Lv5 enemy HP is the level-based HP times the user-confirmed difficulty multiplier 0.4');
 });
 
 /* ---------- the recoverable random stream ---------- */
@@ -77,11 +78,11 @@ test('P3b no invitation when the draw is 0.3 or more; the draw is still spent',(
 });
 test('P3c Lv6 Pidgey joins with its latest eligible level-up moves and kit fallback at full PP',()=>{
  const s=round(run({rng:7,enemies:[wild('w',3,6,'pidgey')]}),basic('w'));
- assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,21,{tackle:30,gust:19,sandattack:20},{tackle:30,gust:19,sandattack:20}));
+ assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,20,{tackle:30,gust:19,sandattack:20},{tackle:30,gust:19,sandattack:20}));
 });
-test('P3d geodude keeps its guard move (8.8): full PP, defense curl 16 and tackle 30, Lv6 21 HP gives 10',()=>{
+test('P3d geodude keeps its guard move (8.8): full PP, defense curl 16 and tackle 30, Lv6 20 HP gives 10',()=>{
  const s=round(run({rng:7,enemies:[wild('w',3,6,'geodude')]}),basic('w'));
- const u=s.invitations[0].unit;assert.deepEqual([u.hp,u.maxHp,u.pp,u.maxPp],[10,21,{tackle:30,defensecurl:16},{tackle:30,defensecurl:16}]);
+ const u=s.invitations[0].unit;assert.deepEqual([u.hp,u.maxHp,u.pp,u.maxPp],[10,20,{tackle:30,defensecurl:16},{tackle:30,defensecurl:16}]);
 });
 test('P3e two defeats in one round draw in defeat order (queue order): B kills pidgey first, then C kills rattata',()=>{
  const floor=[...row(5),...row(5).map(p=>({x:p.x,y:2}))];
@@ -100,11 +101,11 @@ test('P3f a fixed seed reproduces the same outcome in a fresh process state: sam
 });
 
 /* ---------- shared run level ---------- */
-test('P4 3 exp plus a Lv3 kill is 9 exp = Lv6: every member +1 max HP, current HP unchanged; the invitation is taken at the settled level',()=>{
+test('P4 3 exp plus a Lv3 kill is 9 exp = Lv6: every member max HP is recomputed from its Lv6 stats, current HP unchanged; the invitation is taken at the settled level',()=>{
  const s=round(run({exp:3,rng:7,enemies:[wild('w',3,6,'pidgey',3)]}),basic('w'));   // a Lv3 kill is 3 x 2 = 6 exp: 3+6=9
  assert.deepEqual([s.prog.level,s.prog.exp],[6,9]);
- assert.deepEqual(s.queue.map(i=>[s.units[i].hp,s.units[i].maxHp,s.units[i].level]),[[19,20,6],[20,21,6],[21,22,6]]);
- assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,21,{tackle:30,gust:19,sandattack:20},{tackle:30,gust:19,sandattack:20}));
+ assert.deepEqual(s.queue.map(i=>[s.units[i].hp,s.units[i].maxHp,s.units[i].level]),[[19,20,6],[20,21,6],[21,21,6]]);
+ assert.deepEqual(s.invitations[0].unit,recruit('N1','pidgey',10,20,{tackle:30,gust:19,sandattack:20},{tackle:30,gust:19,sandattack:20}));
  const up=s.log.findIndex(t=>t==='升到 Lv6'),inv=s.log.findIndex(t=>/发出邀请/.test(t));
  assert.ok(up>=0&&inv>up,'level-up is settled before the invitation appears');
 });
@@ -112,12 +113,12 @@ test('P4b below the threshold nothing changes: a Lv2 kill gives 4 exp (the 5th i
  const s=round(run({exp:0,rng:1,enemies:[wild('w',3,6,'rattata',2)]}),basic('w'));
  assert.deepEqual([s.prog.level,s.prog.exp],[5,4]);assert.deepEqual(s.queue.map(i=>s.units[i].maxHp),[19,20,21]);
  const t=round(run({exp:1,rng:1,enemies:[wild('w',3,6,'rattata',2)]}),basic('w'));
- assert.deepEqual([t.prog.level,t.prog.exp],[6,5]);assert.deepEqual(t.queue.map(i=>t.units[i].maxHp),[20,21,22]);
+ assert.deepEqual([t.prog.level,t.prog.exp],[6,5]);assert.deepEqual(t.queue.map(i=>t.units[i].maxHp),[20,21,21]);   // Lv6: floor(2 x base x 6 / 100) + 16 for bases 39 / 44 / 45
 });
 test('P4a a kill is worth 2 x the enemy level: PROG.expMultiplier is 2, a Lv N enemy gives 2N exp (Lv1 2, Lv3 6, Lv5 10, Lv12 24)',()=>{
  assert.equal(PROG.expMultiplier,2);
  for(const lv of [1,3,5,12]){
-  const s=round(run({exp:0,rng:1,enemies:[wild('w',3,6,'rattata',lv)]}),basic('w'));
+  const s=round(run({exp:0,rng:1,enemies:[wild('w',3,1,'rattata',lv)]}),basic('w'));   // 1 HP so even a Lv12 enemy (higher defence now) dies to the hit
   assert.equal(s.prog.exp,2*lv,`Lv${lv} kill`);
  }
 });
@@ -130,23 +131,23 @@ test('P4c completing G gives no experience (goal exp 0): no level, no invitation
 });
 test('P4d there is no Lv5 cap: Lv6 at 10 exp plus a Lv3 kill is 16 exp = Lv7; one big kill can climb two levels; the level caps at 100',()=>{
  const s=round(run({level:6,exp:10,rng:1,enemies:[wild('w',3,6,'rattata',3)]}),basic('w'));   // Lv3 kill = 6 exp: 10+6=16, below the 18 for Lv8
- assert.deepEqual([s.prog.level,s.prog.exp],[7,16]);assert.deepEqual(s.queue.map(i=>s.units[i].maxHp),[21,22,23]);
+ assert.deepEqual([s.prog.level,s.prog.exp],[7,16]);assert.deepEqual(s.queue.map(i=>s.units[i].maxHp),[22,23,23]);   // Lv7: floor(2 x base x 7 / 100) + 17
  // from Lv5 with 4 exp, a Lv6 kill is 12 exp (4+12=16): Lv6 needs 5, Lv7 needs 11, Lv8 needs 18 -> Lv7
  const t=round(run({exp:4,rng:1,enemies:[wild('w',3,6,'rattata',6)]}),basic('w'));
- assert.deepEqual([t.prog.level,t.prog.exp],[7,16]);assert.deepEqual(t.queue.map(i=>t.units[i].maxHp),[21,22,23]);
+ assert.deepEqual([t.prog.level,t.prog.exp],[7,16]);assert.deepEqual(t.queue.map(i=>t.units[i].maxHp),[22,23,23]);
  assert.deepEqual([0,4,5,10,11,17,18,200].map(levelFor),[5,5,6,6,7,7,8,21]);
  assert.equal(levelFor(4939),99);assert.equal(levelFor(4940),100);assert.equal(levelFor(99999),100);
 });
 test('P4e a new member joins at the current level; a member sent back to camp no longer grows',()=>{
  let s=round(run({exp:2,rng:7,enemies:[wild('w',3,6,'pidgey',3)]}),basic('w'));   // a Lv3 kill is 6 exp: 2+6=8 exp: Lv6
- s=accept(s,'A');                                  // pidgey N1 (21 max, 10 now) replaces A
+ s=accept(s,'A');                                  // pidgey N1 (20 max, 10 now) replaces A
  assert.deepEqual(s.queue,['B','C','N1']);assert.deepEqual(s.camp,['A']);
- assert.deepEqual([s.units.N1.hp,s.units.N1.maxHp,s.units.N1.species,s.units.N1.level],[10,21,'pidgey',6]);
+ assert.deepEqual([s.units.N1.hp,s.units.N1.maxHp,s.units.N1.species,s.units.N1.level],[10,20,'pidgey',6]);
  assert.deepEqual([s.units.A.hp,s.units.A.maxHp],[19,20]);
  s.prog.exp=10;s.units.w2=wild('w2',3,6,'rattata',3);s.enemies=['w2'];     // test edit: one more Lv3 enemy next to C (+6 exp), exp one short of Lv7 (11) before the kill
  s=round(s,basic('w2'));
  assert.equal(s.prog.level,7);
- assert.deepEqual([s.units.B,s.units.C,s.units.N1].map(u=>[u.hp,u.maxHp]),[[20,22],[21,23],[10,22]]);   // +1 each, HP untouched
+ assert.deepEqual([s.units.B,s.units.C,s.units.N1].map(u=>[u.hp,u.maxHp]),[[20,23],[21,23],[10,22]]);   // max HP recomputed from the Lv7 stats (23 / 23 / 22), current HP untouched
  assert.deepEqual([s.units.A.hp,s.units.A.maxHp],[19,20],'the member at camp stays as it was');
 });
 test('P5 damage grows with the actor level: basic 6, tackle 9, seed bomb 14 at Lv5; +floor((L-5)/4) per level, so Lv9 adds 1, Lv13 adds 2, Lv21 adds 4',()=>{
@@ -162,8 +163,8 @@ const berryAt2=(extra={})=>run({enemies:[],points:[{pos:pos(2),kind:'berry',used
 test('P6 the leader picks an item up on its cell in one action; taken once; never an exit',()=>{
  const s=round(berryAt2(),interact(false));
  assert.deepEqual(s.prog.items,{berry:1,tonic:0});assert.equal(s.points[0].used,true);assert.equal(s.round,1);assert.equal(s.phase,'playing');
- assert.match(reject(s,{type:'round',action:interact(false)}).error,/橙橙果已拾取.*本轮未执行/);
- assert.match(reject(berryAt2(),{type:'round',action:interact(true)}).error,/不是出口.*本轮未执行/);
+ assert.match(reject(s,{type:'round',action:interact(false)}).error,/橙橙果已拾取.*本回合未执行/);
+ assert.match(reject(berryAt2(),{type:'round',action:interact(true)}).error,/不是出口.*本回合未执行/);
  assert.match(reject(berryAt2(),{type:'round',action:wait,override:{actor:'B',action:interact(false)}}).error,/伙伴不能代替主控交互/);
 });
 test('P7 berry heals 8 HP, capped at max, on self or an adjacent member; costs the user one action and one berry',()=>{
@@ -184,16 +185,16 @@ test('P8 tonic gives every move +10 PP (8.8) up to its maximum',()=>{
  const s=round(w,{type:'use',item:'tonic',target:'C'});
  assert.deepEqual(s.units.C.pp,{tackle:10,seedbomb:11});assert.equal(s.prog.items.tonic,0);
 });
-test('P8b an item that cannot work is refused before anything runs, with the reason and 本轮未执行',()=>{
+test('P8b an item that cannot work is refused before anything runs, with the reason and 本回合未执行',()=>{
  const full=run({enemies:[],items:{berry:1,tonic:1}});
- assert.match(reject(full,{type:'round',action:{type:'use',item:'berry',target:'C'}}).error,/C的HP已满.*本轮未执行/);
- assert.match(reject(full,{type:'round',action:{type:'use',item:'tonic',target:'C'}}).error,/所有招式PP已满.*本轮未执行/);
+ assert.match(reject(full,{type:'round',action:{type:'use',item:'berry',target:'C'}}).error,/C的HP已满.*本回合未执行/);
+ assert.match(reject(full,{type:'round',action:{type:'use',item:'tonic',target:'C'}}).error,/所有招式PP已满.*本回合未执行/);
  const none=run({enemies:[]});none.units.C.hp=3;
- assert.match(reject(none,{type:'round',action:{type:'use',item:'berry',target:'C'}}).error,/背包里没有橙橙果.*本轮未执行/);
+ assert.match(reject(none,{type:'round',action:{type:'use',item:'berry',target:'C'}}).error,/背包里没有橙橙果.*本回合未执行/);
  const far=run({enemies:[],items:{berry:1}});far.units.A.hp=3;
- assert.match(reject(far,{type:'round',action:{type:'use',item:'berry',target:'A'}}).error,/A不在相邻格.*本轮未执行/);
+ assert.match(reject(far,{type:'round',action:{type:'use',item:'berry',target:'A'}}).error,/A不在相邻格.*本回合未执行/);
  const down=run({enemies:[],items:{berry:1}});down.units.B.hp=0;down.units.B.pos=null;
- assert.match(reject(down,{type:'round',action:{type:'use',item:'berry',target:'B'}}).error,/B已倒下.*本轮未执行/);
+ assert.match(reject(down,{type:'round',action:{type:'use',item:'berry',target:'B'}}).error,/B已倒下.*本回合未执行/);
  assert.match(reject(full,{type:'round',action:{type:'use',item:'berry',target:'N9'}}).error,/只能对同行伙伴/);
  const foe=run({items:{berry:1}});foe.units.C.hp=3;
  assert.match(reject(foe,{type:'round',action:{type:'use',item:'berry',target:'w'}}).error,/只能对同行伙伴/);
@@ -201,7 +202,7 @@ test('P8b an item that cannot work is refused before anything runs, with the rea
 test('P8c the last item cannot be spent twice: leader and partner both using it refuses the whole round',()=>{
  const w=run({enemies:[],items:{berry:1}});w.units.C.hp=3;w.units.A.hp=3;
  const r=reject(w,{type:'round',action:{type:'use',item:'berry',target:'C'},override:{actor:'B',action:{type:'use',item:'berry',target:'A'}}});
- assert.match(r.error,/背包里没有橙橙果.*本轮未执行/);
+ assert.match(r.error,/背包里没有橙橙果.*本回合未执行/);
 });
 test('P8d items work only in a run that has a backpack: the fixed map refuses them',()=>{
  const r=reject(createMain('m',false),{type:'round',action:{type:'use',item:'berry',target:'A'}});
@@ -243,8 +244,8 @@ test('P8e a berry picked up on one floor is still taken, and not given again, af
  assert.ok(s.points.some(p=>p.kind==='exit'),'the fixed historical exit remains on floor 1');
  assert.deepEqual([s.dungeon.width,s.dungeon.height],[20,14]);
 });
-test('P8f floor item points (8.8): 2-4 per floor drawn from the six floor items, floor 2 also holds exactly one tonic',()=>{
- const FLOOR_ITEMS=new Set(['berry','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed']),counts=new Set(),kinds=new Set();
+test('P8f floor item points (8.8): 2-4 per floor drawn from the ten floor items, floor 2 also holds exactly one tonic',()=>{
+ const FLOOR_ITEMS=new Set(['berry','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb']),counts=new Set(),kinds=new Set();
  for(let seed=0;seed<300;seed++){
   const g1=generateFloor(seed,1),g2=generateFloor(seed,2),k=p=>(p.pos?p.pos:p).x+','+(p.pos?p.pos:p).y;
   const items1=g1.pickups.map(p=>p.kind),items2=g2.pickups.filter(p=>p.kind!=='tonic').map(p=>p.kind);

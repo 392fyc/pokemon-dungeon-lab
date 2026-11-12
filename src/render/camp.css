@@ -742,6 +742,8 @@ body:has(dialog[open]) .camp-badge { visibility: hidden; }
   background: var(--paper-2, #e0cfa4);
   font-size: 12px;
 }
+.camp194-tm-tags { display: flex; align-items: center; justify-content: center; gap: 3px; margin-top: 2px; }
+.camp194-tm-tags .paper-type, .camp194-tm-tags .camp194-category { padding: 0 4px; font-size: 10px; line-height: 14px; }
 .camp194-tm-tile > strong { overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
 .camp194-tm-disc {
   position: relative;

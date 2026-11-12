@@ -1,0 +1,10 @@
+{
+  "required_reading": [
+    "docs/01-现行规则/游戏规则.md",
+    "docs/01-现行规则/KB维护规则.md"
+  ],
+  "design_lanes": [],
+  "exempt": [
+    ".mercury/memory/*"
+  ]
+}

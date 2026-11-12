@@ -73,7 +73,7 @@ test('the fixed base-damage text and the details number agree: with the level it
  const s=duel(21,5),a=s.units.A;   // the run is Lv21: level bonus floor((21-5)/4) = 4
  assert.equal(moveBaseDamage(s,a,'tackle'),13,'6 + 3 + 4');
  assert.match(moveSummary('tackle',undefined,'friend',21),/造成13点基础伤害$/);
- assert.match(moveSummary('tackle',undefined,'friend'),/造成9点基础伤害（不含等级加成）$/);
+ assert.match(moveSummary('tackle',undefined,'friend'),/造成9点基础伤害，未计等级加成$/);
  assert.match(moveSummary('tackle',undefined,'friend',5),/造成9点基础伤害$/);
  // Snore is not a plain damage move but the engine estimates it from the same base
  const snorer=speciesUnit('S','bulbasaur',5,pos(1));snorer.learned=['snore'];

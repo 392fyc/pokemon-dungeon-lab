@@ -34,7 +34,7 @@
   },
   "speedrun": {
     "name": "速通",
-    "description": "在规定轮数内下楼。",
+    "description": "在规定回合内下楼。",
     "progressTarget": null,
     "equivalentEnemies": 3,
     "penalty": null,

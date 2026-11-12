@@ -252,7 +252,16 @@ body.dungeon-mode #context-actions:has(.service) .service h2.paper-plaque { colo
 .notice-icon { display: inline-block; width: 22px; height: 22px; background: #d9a63a; box-shadow: 0 0 0 2px var(--paper-ink, #2a1c14); clip-path: polygon(50% 0, 62% 36%, 100% 38%, 70% 60%, 80% 100%, 50% 76%, 20% 100%, 30% 60%, 0 38%, 38% 36%); }
 .notice-icon-img { width: 28px; height: 28px; image-rendering: pixelated; }
 .notice-actions { display: flex; gap: 10px; margin-top: 10px; }
-.c195-notice { width: min(440px, calc(100vw - 32px)); }
+.c195-tm, .c195-notice { width: min(440px, calc(100vw - 32px)); }
+body.dungeon-mode #flow .c195-tm > small { color: var(--paper-muted); }
+body.dungeon-mode #flow .c195-tm .camp194-tm-tile {
+  color: var(--paper-ink);
+  background: var(--paper-2);
+  border: 0;
+  border-radius: 0;
+  box-shadow: 0 0 0 2px var(--paper-ink);
+}
+body.dungeon-mode #flow .c195-tm .camp194-tm-tile:hover:not(:disabled) { background: #fff6dc; }
 
 .notice-cards { display: flex; gap: 10px; width: 100%; }
 .notice-card { display: grid; flex: 1 1 0; align-content: start; gap: 6px; min-height: 96px; padding: 10px; text-align: left; }

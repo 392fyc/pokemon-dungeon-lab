@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {createMain,applyCommand,clone,key} from '../../src/core/engine.ts';
 import {createScenario} from '../../src/core/scenarios.ts';
 const round=action=>({type:'round',action});
-function denied(s,cmd,reason){const before=JSON.stringify(s),r=applyCommand(s,cmd);assert.equal(r.ok,false);assert.strictEqual(r.state,s);assert.match(r.error,reason);assert.match(r.error,/本轮未执行$/);assert.equal(JSON.stringify(s),before);return r.error;}
+function denied(s,cmd,reason){const before=JSON.stringify(s),r=applyCommand(s,cmd);assert.equal(r.ok,false);assert.strictEqual(r.state,s);assert.match(r.error,reason);assert.match(r.error,/本回合未执行$/);assert.equal(JSON.stringify(s),before);return r.error;}
 function valid(s,cmd){const r=applyCommand(s,cmd);assert.equal(r.ok,true,r.error);return r.state;}
 const collect=round({type:'interact',exit:false}),leave=round({type:'interact',exit:true});
 test('used G rejects collection before any member or enemy acts, exit remains valid',()=>{

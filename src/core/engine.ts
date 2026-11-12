@@ -1464,7 +1464,7 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
     if(effect==='reflect'||effect==='lightscreen'){
       for(const target of landed)if(alive(target)&&target.side===actor.side){
         target[effect]=SCREEN_PHASES;
-        note(s,L`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续${SCREEN_PHASES}个${target.side==='enemy'?'我方':'敌方'}行动阶段`);emit(s,{type:'guard',unit:target.id,kind:effect});
+        note(s,L`${target.id}受到${effect==='reflect'?'反射壁':'光墙'}保护，持续${SCREEN_PHASES}回合`);emit(s,{type:'guard',unit:target.id,kind:effect});
       }
       continue;
     }
@@ -2100,7 +2100,7 @@ export function defaultLearningCommand(s:World):Extract<Command,{type:'learnMove
   return power(pending.move)>minimum?{type:'learnMove',replace:weakest}:{type:'learnMove',replace:null};
 }
 export function applyCommand(original:World,cmd:Command):Result {
-  const fail=(error:string):Result=>({ok:false,state:original,error:`${error}；本轮未执行`});
+  const fail=(error:string):Result=>({ok:false,state:original,error:`${error}；本回合未执行`});
   if(cmd.type==='learnMove'){
     if(original.phase!=='learning'||!original.pendingLearnMoves?.length)return fail('当前没有待处理的学招选择');
     const pending=original.pendingLearnMoves[0],unit=original.units[pending.actor];
@@ -2131,7 +2131,7 @@ export function applyCommand(original:World,cmd:Command):Result {
       if(choice.commission==='speedrun'&&speedLimit===null)return fail('委托点与楼梯之间没有可走路线');
       const progress=choice.commission==='speedrun'?1:0,progressTarget=speedLimit??def.progressTarget??1;
       (s.commissions??=[]).push({id:choice.commission,floor:currentFloorLevel(s),acceptedRound:s.round,progress,progressTarget,speedLimit});
-      note(s,L`接下委托：${def.name}${speedLimit===null?'':`，限${speedLimit}轮`}`);
+      note(s,L`接下委托：${def.name}${speedLimit===null?'':`，限${speedLimit}回合`}`);
     }else note(s,L`拒绝委托`);
     resumeAfterChoice(s);return {ok:true,state:s};
   }
@@ -2223,7 +2223,7 @@ export function applyCommand(original:World,cmd:Command):Result {
   }else if(cmd.choice==='accept'&&preview?.ok){
     if(cmd.outgoing){s.camp.push(cmd.outgoing);s.units[cmd.outgoing].pos=null;}
     const unit=clone(invite.unit);unit.pos=preview.pos;s.units[unit.id]=unit;s.queue=preview.queue;s.leader=preview.leader;invite.status='accepted';reveal(s);
-    note(s,L`${unit.id}加入，${cmd.outgoing??'空名额'}回营；下轮才行动`);
+    note(s,L`${unit.id}加入，${cmd.outgoing??'空名额'}回营；下回合才行动`);
   }else{invite.status='rejected';note(s,L`拒绝${invite.unit.id}`);}
   if(!s.invitations.some(i=>i.status==='pending')){
     if(completeAdventureIfReady(s))return {ok:true,state:s};

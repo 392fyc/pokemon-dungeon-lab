@@ -37,7 +37,7 @@ for(const [type,phase,name] of [['blessing','blessing','blessing-room'],['commis
 {
  const {ctx,p}=await open();await place(p,room('challenge'));await p.waitForSelector('#adventure-room-panel');
  const text=await p.locator('#adventure-room-panel').innerText();
- assert.match(text,/目标[\s\S]*打倒房内全部敌人/);assert.match(text,/奖励（其一）/);assert.equal(await p.locator('#start-challenge').count(),1);
+ assert.match(text,/目标[\s\S]*打倒房内全部敌人/);assert.match(text,/选择一项奖励/);assert.equal(await p.locator('#start-challenge').count(),1);
  await p.waitForTimeout(300);await p.screenshot({path:out+'r5-challenge-room.png'});await ctx.close();
 }
 {

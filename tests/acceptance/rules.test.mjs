@@ -8,7 +8,7 @@ const K=d=>sureHit(KFixture(d)),K5=()=>sureHit(K5Fixture());
 // V5 isolates the full-round sequence from hit RNG. V13 needs one Tackle hit: 9 × Normal→Rock/Ground 0.5 rounds to 5.
 const V=id=>{const s=VFixture(id);if(id===5||id===13)sureHit(s);if(id===13){s.units.E.hp=5;s.units.E.maxHp=5;}return s;};
 // 拒绝必须明确说明没有执行整轮；底层helper已比较完整世界不变。
-function reject(s,command){const r=rejectRaw(s,command);assert.match(r.error,/本轮未执行/);return r;}
+function reject(s,command){const r=rejectRaw(s,command);assert.match(r.error,/本回合未执行/);return r;}
 const U=[{tackle:2},{protect:2},{tackle:2,quickattack:2}];
 // 7.8: the main scenario's enemies are roster geodude/pidgey that chase and tackle for round(9 x0.4)=4 (base 6+ceil(6/2)=9 at enemy difficulty 0.4). They act for real in every
 // journey below; only their HP is a literal (E 16, R 6, so basic attacks of 6 are easy to count). Nothing here sets damage by hand: every HP asserted is

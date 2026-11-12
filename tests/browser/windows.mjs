@@ -1325,13 +1325,22 @@ await test('162 同页替换新档：成功清空快捷分配，写入失败保�
  }finally{await context.close();}
 });
 await test('7.1/7.8 可读性：悬停敌人看等级与招式、组合草稿显示执行顺序与默认行为',async()=>{
- const {context,page:p,errors}=await setup('K1');
+ const {context,page:p,errors}=await setup('K1','pass',false,'painter',{viewport:{width:1280,height:720}});
  try{
   await start(p);const s=await state(p);const h=s.units.H;
   await hoverCell(p,h.pos.x,h.pos.y);
   await p.waitForSelector('#enemy-info');const info=await p.locator('#enemy-info').innerText();
   const {moveZh,speciesZh}=await import('../../src/core/names.ts');assert.ok(info.includes(h.species?speciesZh(h.species):'敌人'));assert.doesNotMatch(info,/\bH\b/);assert.match(info,new RegExp(`Lv${h.level}`));assert.ok(info.includes(`${h.hp}/${h.maxHp}`));assert.match(info,/作战方针：主动出击/);assert.equal(await p.locator('#enemy-info .enemy-move-list > li').count(),h.learned.length);
   assert.ok(h.learned.length>0);for(const move of h.learned)assert.ok(info.includes(moveZh(move)),`enemy info shows ${move}`);
+  const {moveBaseDamage}=await import('../../src/core/describe.ts');
+  const moveRow=p.locator('#enemy-info .enemy-move-list li').first();
+  const baseDamage=moveBaseDamage(s,h,h.learned[0]);assert.ok(baseDamage!==null);
+  await moveRow.locator('summary').click();
+  const detail=await moveRow.locator('p').innerText();
+  assert.ok(detail.includes('造成'+baseDamage+'点基础伤害 · PP '));
+  assert.doesNotMatch(detail,/[（）]|未计等级加成/);
+  await p.screenshot({path:artifact+'r480-enemy-move.png'});
+  await moveRow.locator('summary').click();
   await click(p,'arrange');await click(p,'partner-B');
   const order=await p.locator('#draft-order').innerText();assert.match(order,/→.*敌方/);
   assert.match(await p.locator('#draft-steps').innerText(),/默认行为/);

@@ -103,6 +103,7 @@ test('wiki-zh.json: every hand-written entry has a category, text and rule numbe
     assert.ok(ids.has(e.category),e.id+' category');assert.ok(e.id.startsWith(e.category+':'),e.id+' id prefix');assert.ok(!seen.has(e.id),'duplicate '+e.id);seen.add(e.id);
     assert.ok(Array.isArray(e.body)&&e.body.length>0&&e.body.every(t=>typeof t==='string'&&t.length>0),e.id+' body');
     assert.ok(Array.isArray(e.rules)&&e.rules.length>0,e.id+' has rule numbers');
+    for(const text of e.body)assert.doesNotMatch(text,/[（）]/,e.id+' body has no explanatory parentheses');
     if(e.todo)assert.ok(e.todoNote,e.id+' todo has a note');
   }
   for(const c of wikiData.categories)assert.ok(c.rules.length>0,c.id+' category rule numbers');

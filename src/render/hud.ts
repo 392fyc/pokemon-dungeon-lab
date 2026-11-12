@@ -485,9 +485,7 @@ export function hudBag(
     '<div class="c195-bag-quick"><span>快捷格</span><div class="c195-bag-quick-grid" aria-label="快捷格">' + slots + "</div></div></section>";
 }
 
-export function hudDamageEstimate(s: World, actor: string, targetId?: string, skill?: Skill): string {
-  return damageEstimateText(s, actor, targetId, skill).replace(/（对普通目标）$/, "");
-}
+export const hudDamageEstimate = damageEstimateText;
 
 function formatAccuracy(chance: number): string {
   return String(Number(chance.toFixed(1))) + "%";

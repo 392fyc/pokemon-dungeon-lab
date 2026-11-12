@@ -168,10 +168,10 @@ const live=():World|null=>{
  return hpShownView;
 };
 const combatStatus=(u:Unit):string=>[
- u.protect>0?`守住：剩余${u.protect}个敌方阶段`:'',
- u.counter>0?`反击：剩余${u.counter}个敌方阶段`:'',
- (u.reflect??0)>0?`反射壁：剩余${u.reflect}个敌方阶段`:'',
- (u.lightscreen??0)>0?`光墙：剩余${u.lightscreen}个敌方阶段`:'',
+ u.protect>0?`守住：剩余${u.protect}回合`:'',
+ u.counter>0?`反击：剩余${u.counter}回合`:'',
+ (u.reflect??0)>0?`反射壁：剩余${u.reflect}回合`:'',
+ (u.lightscreen??0)>0?`光墙：剩余${u.lightscreen}回合`:'',
  u.stages.atk?`攻击${u.stages.atk>0?'+':''}${u.stages.atk}`:'',
  u.stages.def?`防御${u.stages.def>0?'+':''}${u.stages.def}`:'',
 ].filter(Boolean).join(' · ');

@@ -141,13 +141,14 @@ export function moveBaseDamage(s:World,u:Unit,move:string):number|null {
   const spec=moveOf(move);if(!spec||(!spec.effects.includes('damage')&&move!=='snore')||spec.power===null)return null;   // Snore hits through its own rule but uses the same base
   return 6+Math.ceil(spec.power/2)+levelDamageBonus(unitMoveLevel(s,u));
 }
-export type EnemyMoveRow={id:string;name:string;type:string;pp:number;maxPp:number;detail:string};
-export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];moveRows:EnemyMoveRow[];note:string;statuses:string[]};
+export type EnemyMoveRow={id:string;name:string;type:string;pp:number;maxPp:number;summary:string;detail:string};
+export type EnemyInfo={id:string;name:string;types:string;hp:number;maxHp:number;level:number|null;tactic:string;moves:string[];moveRows:EnemyMoveRow[];statuses:string[]};
 export type TeammateInfo={id:string;name:string;level:number|null;tactic:Tactic;moves:string[]};
 const tacticFor=(u:Unit):Tactic=>isTactic(u.tactic)?u.tactic:u.side==='enemy'?'gofoes':'together';
 const moveRows=(s:World,u:Unit,context?:DamageSummaryContext):EnemyMoveRow[]=>u.learned.map(id=>{
   const pp=u.pp[id]??0,maxPp=u.maxPp[id]??pp,type=MOVE_TYPES[id],name=moveZh(id);
-  return {id,name,type:type?typeZh(type):'—',pp,maxPp,detail:`${name} · ${moveSummary(id,context,u.side,unitMoveLevel(s,u))} · PP ${pp}/${maxPp}`};
+  const summary=moveSummary(id,context,u.side,unitMoveLevel(s,u));
+  return {id,name,type:type?typeZh(type):'—',pp,maxPp,summary,detail:`${name} · ${summary} · PP ${pp}/${maxPp}`};
 });
 /** Names of the conditions a unit is under now, in STATUS_NAMES order; a unit born asleep (not yet woken) shows as sleeping. */
 export function statusLabels(u:Unit):string[]{
@@ -161,10 +162,10 @@ export function enemyInfo(s:World,id:string):EnemyInfo|null {
   const u=s.units[id];
   if(!u||u.side!=='enemy'||u.hp<=0||!u.pos||!s.seen.includes(key(u.pos)))return null;
   const sp=u.species?SPECIES[u.species]:undefined;
-  const tactic=tacticFor(u),note=u.boss?'区域首领；击败后有概率发出加入邀请，入队的是普通形态。':u.species?'击败后有概率发出加入邀请。':'';
+  const tactic=tacticFor(u);
   const rows=moveRows(s,u);
   return {id,name:u.boss?`${unitName(u,'敌人')}（首领）`:unitName(u,'敌人'),types:sp?(sp.types??[]).map(typeZh).join('／'):'',hp:u.hp,maxHp:u.maxHp,
-    level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:rows.map(row=>row.detail),moveRows:rows,note,statuses:statusLabels(u)};
+    level:typeof u.level==='number'?u.level:null,tactic:TACTIC_LABELS[tactic],moves:rows.map(row=>row.detail),moveRows:rows,statuses:statusLabels(u)};
 }
 /** Read-only detail for a teammate card when the player explicitly opens it. */
 export function teammateInfo(s:World,id:string,targetId?:string):TeammateInfo|null {

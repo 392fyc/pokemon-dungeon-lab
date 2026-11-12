@@ -227,7 +227,7 @@ await test('M3：三格直线目标拒绝且不耗PP或回合',async()=>{
  }finally{await context.close();}
 });
 await test('M6：邀请替换、双方换位、承伤撤离',async()=>{
- const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await click(p,'leader-1');await click(p,'swap');await click(p,'partner-N');assert.ok((await p.locator('#controls').innerText()).includes('双方行动'));await click(p,'submit');
+ const {context,page:p,errors}=await setup();try{await start(p);await prefix(p);await click(p,'out-2');await click(p,'accept');await click(p,'leader-1');await click(p,'swap');await click(p,'partner-N');assert.match(await p.locator('#edit-partner').innerText(),/：换位$/);await click(p,'submit');
   // B now leads at x=3 and R is at 5. B waits (R steps adjacent), then trades basic attacks: R tackles B once (6 after Normal STAB), B's second hit (6+6>=8) kills it.
   await key(p,'.');await cell(p,4,1);await cell(p,4,1);assert.equal((await state(p)).units.R.hp,0);
   await key(p,'ArrowRight');await click(p,'take');await key(p,'ArrowRight');await key(p,'ArrowRight');await key(p,'ArrowRight');await exit(p);const s=await state(p);assert.equal(s.round,13);assert.deepEqual(s.queue,['A','B','N']);assert.deepEqual(s.queue.map(i=>s.units[i].hp),[20,14,10]);assert.equal(s.units.C.hp,12);assert.deepEqual(s.camp,['C']);assert.deepEqual(s.camp.map(i=>s.units[i].hp),[12]);assert.equal(s.units.B.pp.protect,2);assert.deepEqual(errors,[]);return {rounds:13,team:['A20','B14','N10'],camp:'C12'};}finally{await context.close();}
@@ -438,7 +438,7 @@ await test('阶段5 换位草稿不被方向键、句点或点地图改写',asyn
    order:(await draft.locator('#draft-order').innerText()).replace(/\s+/g,' ').trim(),
    steps:(await draft.locator('#draft-steps li').allTextContents()).map(text=>text.trim())
   };};
-  const plan=await draftContent();assert.match(plan.partner,/与A换位|换位（双方行动）/);
+  const plan=await draftContent();assert.match(plan.partner,/与A换位|：换位$/);
   await key(p,'ArrowRight');await key(p,'.');await cell(p,4,1);
   assert.deepEqual(await draftContent(),plan,'the visible draft actions and order stay unchanged');
   assert.match(await p.locator('#message').innerText(),/先取消组合/);
@@ -1337,8 +1337,8 @@ await test('7.1/7.8 可读性：悬停敌人看等级与招式、组合草稿显
   const baseDamage=moveBaseDamage(s,h,h.learned[0]);assert.ok(baseDamage!==null);
   await moveRow.locator('summary').click();
   const detail=await moveRow.locator('p').innerText();
-  assert.ok(detail.includes('造成'+baseDamage+'点基础伤害 · PP '));
-  assert.doesNotMatch(detail,/[（）]|未计等级加成/);
+  assert.equal(detail,'造成'+baseDamage+'点基础伤害');
+  assert.doesNotMatch(info,/加入邀请/);
   await p.screenshot({path:artifact+'r480-enemy-move.png'});
   await moveRow.locator('summary').click();
   await click(p,'arrange');await click(p,'partner-B');
@@ -1395,7 +1395,7 @@ await test('7.8 UI夹具：伊布进化选择与暂缓按钮实际可点击',asy
   await startMemory(first.page,evolutionWorld());
   assert.equal((await state(first.page)).phase,'evolution');
   assert.match(await first.page.locator('#evolution-choice').innerText(),/伊布可以进化/);
-  assert.equal(await first.page.locator('#evolution-close').innerText(),'暂不进化（下次升级时再问）');
+  assert.equal(await first.page.locator('#evolution-close').innerText(),'暂不进化');
   assert.doesNotMatch(await first.page.locator('#evolution-choice').innerText(),/请选择下一形态/);
   for(const id of ['vaporeon','jolteon','flareon'])assert.equal(await first.page.locator('#evolve-'+id).count(),1);
   await click(first.page,'evolve-vaporeon');
@@ -1431,8 +1431,8 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
   assert.ok(Math.abs(v.boss.scale/v.leader.scale-1.5)<0.01,'the boss is drawn 1.5 times larger: '+v.boss.scale/v.leader.scale);assert.ok(v.boss.labels.includes('首领'),'the boss carries a name tag');
   await hoverCell(p,s.units.boss.pos.x,s.units.boss.pos.y);await p.waitForSelector('#enemy-info');
   const info=await p.locator('#enemy-info').innerText();
-  const {moveZh}=await import('../../src/core/names.ts'),boss=s.units.boss;assert.match(info,/风速狗（首领）/);assert.ok(info.includes(`${boss.hp}/${boss.maxHp}`));assert.match(info,new RegExp(`Lv${boss.level}`));assert.match(info,/区域首领/);
-  for(const move of boss.learned)assert.ok(info.includes(moveZh(move)),`boss info shows ${move}`);assert.match(info,/击败后有概率发出加入邀请/);
+  const {moveZh}=await import('../../src/core/names.ts'),boss=s.units.boss;assert.match(info,/风速狗（首领）/);assert.ok(info.includes(`${boss.hp}/${boss.maxHp}`));assert.match(info,new RegExp(`Lv${boss.level}`));
+  for(const move of boss.learned)assert.ok(info.includes(moveZh(move)),`boss info shows ${move}`);assert.doesNotMatch(info,/加入邀请|入队的是/);
   await p.screenshot({path:artifact+'windows-boss-1-floor.png',fullPage:true});
   await click(p,'skill-roar');await cell(p,s.units.boss.pos.x,s.units.boss.pos.y);
   await p.waitForFunction(()=>document.getElementById('message').textContent.includes('首领不能被吹飞'));
@@ -2036,7 +2036,7 @@ await test('#194 持续移动、遇见新敌停止、碰墙免费转身与 F 打
  }finally{await context.close();}
 });
 await test('#194 全部物品说明、敌招分行与队友显式详情',async()=>{
- const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef');
+ const {context,page:p,errors}=await setup(undefined,'pass',false,'dtef',{viewport:{width:1280,height:720}});
  try{
   const {ITEM_NAMES}=await import('../../src/core/engine.ts');const w=await playtest194World();
   for(const item of Object.keys(ITEM_NAMES))w.prog.items[item]=2;
@@ -2058,9 +2058,15 @@ await test('#194 全部物品说明、敌招分行与队友显式详情',async()
   await p.mouse.move(bounds.x+(g.ox+(11-g.minX+.5)*g.cell-map.cam.x)*bounds.width/map.v.cameraView.width,bounds.y+(g.oy+(10-g.minY+.5)*g.cell-map.cam.y)*bounds.height/map.v.cameraView.height);
   await p.locator('#enemy-info').waitFor();
   const rows=p.locator('#enemy-info .enemy-move-list > li');assert.equal(await rows.count(),enemy.learned.length);
-  for(const row of await rows.all()){
-   assert.match(await row.locator('summary').innerText(),/PP \d+\/\d+/);assert.doesNotMatch(await row.locator('summary').innerText(),/射程|伤害|范围/);
-   await row.locator('summary').click();assert.ok((await row.locator('p').innerText()).length>5);await row.locator('summary').click();
+  const {moveSummary,unitMoveLevel}=await import('../../src/core/describe.ts');
+  assert.doesNotMatch(await p.locator('#enemy-info').innerText(),/加入邀请/);
+  for(const [index,row] of (await rows.all()).entries()){
+   const header=row.locator('summary');
+   assert.match(await header.innerText(),/PP \d+\/\d+/);assert.doesNotMatch(await header.innerText(),/射程|伤害|范围/);
+   await header.click();
+   assert.equal(await row.locator('p').innerText(),moveSummary(enemy.learned[index],undefined,enemy.side,unitMoveLevel(w,enemy)));
+   if(index===0)await p.screenshot({path:artifact+'r482-expedition-enemy.png'});
+   await header.click();
   }
   assert.doesNotMatch(await p.locator('#party').innerText(),/\b(?:A|B|C|w\d+[a-z]?|N\d+)\b/,'cards show species instead of opaque IDs');
   assert.deepEqual(errors,[]);return {items:Object.keys(ITEM_NAMES).length,accessibleFocusDescriptions:true,selectedDescription:true,enemyMoveRows:enemy.learned.length,explicitPartyDetails:true};

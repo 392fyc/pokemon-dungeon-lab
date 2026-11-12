@@ -156,7 +156,7 @@ function buildSpecies(id:string):WikiEntry {
   blocks.push({t:'chips',label:'初始招式',ids:sp.kit.map(m=>'moves:'+m.move)});
   if(sp.levelUp.length)blocks.push({t:'learnset',rows:sp.levelUp.map(m=>({level:m.level,move:m.move}))});
   const taught=sp.learnable.map(m=>m.move).filter(m=>!sp.kit.some(k=>k.move===m)&&!sp.levelUp.some(l=>l.move===m));
-  blocks.push({t:'chips',label:'可学招式（招式机等）',ids:taught.map(m=>'moves:'+m)});
+  blocks.push({t:'chips',label:'可学招式',ids:taught.map(m=>'moves:'+m)});
   return {id:'species:'+id,cat:'species',key:id,title:zh,subtitle:types.map(typeZh).join('／'),rules:['G12.1'],blocks,meta:{kind:'species',species:id,dex:sp.dex,types:[...types]},
     search:[zh,sp.name,id,sp.dex,types.map(typeZh).join(' '),types.join(' ')].join(' ').toLowerCase()};
 }

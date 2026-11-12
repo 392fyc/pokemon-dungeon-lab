@@ -12,7 +12,7 @@ import {foeOf} from './foe-fixture.mjs';
 import {sureHit} from './sure-hit.mjs';
 
 /*
- * 8.8 (#165) rules: hit chance, status conditions, stages, PP, floor items and the save migration. Current rules are docs/01-现行规则/游戏规则.md G5/G9/G11; generation and migration details are in docs/05-制作流程/实现备注.md sections 1 and 5.
+ * 8.8 (#165) rules: hit chance, status conditions, stages, PP, floor items and the save migration. Current rules are docs/01-现行规则/规则-战斗与敌人.md G5 and docs/01-现行规则/规则-物品结算与存档.md G9/G11; generation and migration details are in docs/05-制作流程/实现备注.md sections 1 and 5.
  * Random outcomes are made exact by choosing the state of the battle random stream (`battleRng`): `rngStep(state).value` is the next draw.
  */
 const rect=(x1,x2,y1,y2)=>Array.from({length:(x2-x1+1)*(y2-y1+1)},(_,i)=>({x:x1+i%(x2-x1+1),y:y1+Math.floor(i/(x2-x1+1))}));

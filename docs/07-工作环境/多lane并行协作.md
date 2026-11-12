@@ -2,7 +2,7 @@
 tags:
   - 工作环境
   - 项目/协作
-updated: 2026-11-10
+updated: 2026-11-12
 ---
 # 多 lane 并行协作：Claude 与 Codex
 
@@ -14,8 +14,8 @@ updated: 2026-11-10
 
 | lane | 主导方（lead harness） | 负责什么 | 不做什么 |
 | --- | --- | --- | --- |
-| `main` | Claude Code | 阶段计划与路线图、规则规格、研究与设计、平衡分析（当前为 7.4）、审查并合并 `dev` 的 PR、图片生成、与用户沟通 | 不和 `dev` 同时改同一批文件 |
-| `dev` | Codex | 按 `main` 写好的规格实现里程碑（当前为 7.5）；在 PR 描述里写自测证据 | 不改阶段计划、路线图和规则规格（需要改时开 issue 给 `main`）；不调用图片生成；不合并 PR |
+| `main` | Claude Code | 阶段计划与路线图、规则规格、研究与设计、平衡分析、界面样式（与用户商议确定，出设计与实装方案并审查代码，不直接改代码，D-20261111-01）、审查并合并 `dev` 的 PR、图片生成、与用户沟通 | 不和 `dev` 同时改同一批文件 |
+| `dev` | Codex | 按 `main` 写好的规格与实装方案实现代码（含界面；`tools/art/` 图片管线仍归 `main`，见第 6 节）；在 PR 描述里写自测证据 | 不改阶段计划、路线图和规则规格（需要改时开 issue 给 `main`）；不调用图片生成；不合并 PR |
 
 - 两条 lane 互为同伴（peers），地位平行；`main` 只多管“计划和规格”这一类单写者文件（Mercury 规则 4）。
 - 每条 lane 至多一个 Claude 会话和一个 Codex 会话；各自可以用子代理，子代理只在父会话的授权与写入范围内工作。
@@ -39,14 +39,7 @@ lane 状态与工作区只放本机，不进提交，不放凭据。
 
 **在 Windows 上运行 lane 脚本用 Git Bash，不用 WSL。** 本机 PATH 里的 `bash.exe`（`C:\WINDOWS\system32\bash.exe`）是 WSL 入口，而本机没有安装 Linux 发行版，调用会报 `WSL_E_DEFAULT_DISTRO_NOT_FOUND`（2026-10-30 `dev` 开工时实际遇到）。改用 Git for Windows 自带的 bash，例如在 PowerShell 中 `& '<Git 安装目录>\bin\bash.exe' -lc 'cd <主 checkout> && bash .mercury/packs/lanes/scripts/lane-paths.sh memory-dir'`；Git 安装目录可由 `(Get-Command git).Source` 推出（本机在 D 盘）。在 Git Bash 内部调用的 `bash` 即是它自己。
 
-**绑定必须先于任何 lane 脚本。** 没有 `.mercury/memory/lane-home` 时，lane 脚本会回退到用户主目录下的 `~/.claude/projects/...`，这违反“项目产物放在项目内”的规则。初始化顺序：
-
-1. 引入本页的 PR 合并，主 checkout 用 `git pull --ff-only` 快进到包含 `/.mercury/memory/` 忽略规则的提交（主 checkout 只停在 `main`，只做快进，不在其中提交）。
-2. 在主 checkout 建 `.mercury/memory/lanes/`，再写入 `.mercury/memory/lane-home`（一行 `lanes`）。
-3. 运行 `bash .mercury/packs/lanes/scripts/lane-paths.sh memory-dir`，输出必须以 `.mercury/memory/lanes` 结尾；不是就停下。
-4. 之后才运行 `lane-init.sh`、`lane-claim.sh` 等脚本或写登记表。
-
-此初始化由 `main` lane 做一次。任何会话运行 lane 脚本前，都先做第 3 步的核对。
+**绑定必须先于任何 lane 脚本。** 没有 `.mercury/memory/lane-home` 时，lane 脚本会回退到用户主目录下的 `~/.claude/projects/...`，这违反“项目产物放在项目内”的规则。`.mercury/memory/` 被 Git 忽略，只存在于各台机器的主 checkout 里，所以换新机器或重新克隆后必须重做一次：在主 checkout 建 `.mercury/memory/lanes/`，写入 `.mercury/memory/lane-home`（一行 `lanes`）。任何会话运行 lane 脚本前，先运行 `bash .mercury/packs/lanes/scripts/lane-paths.sh memory-dir` 核对，输出必须以 `.mercury/memory/lanes` 结尾；不是就停下。本机已经完成这一步（2026-11-11 主 checkout 里有 `lane-home`，内容为 `lanes`）。
 
 ## 3. 登记表
 
@@ -74,22 +67,16 @@ lane 状态与工作区只放本机，不进提交，不放凭据。
 - **起点**：都从 `origin/main` 开分支。
 - **worktree**：建在主 checkout 的 `.worktrees/<任务>/`，用 `git worktree add`；合并后按用户的全局规则清理。
 - **标签**：issue 和 PR 都加 `lane:main` 或 `lane:dev`。
-- **当前的文件分工**（避免两边同时改同一个文件）：
+- **文件分工**（避免两边同时改同一个文件）：下面是固定归属；其余文件按里程碑分配，由 `main` 在协调 issue 里写明。
 
-| 文件或目录 | 7.4／7.5 期间归谁 | 说明 |
+| 文件或目录 | 归谁 | 说明 |
 | --- | --- | --- |
-| `vite.config.ts`、`package.json`、`package-lock.json` | `dev` | 7.5 的相对路径与分包 |
-| `src/core/save.ts`、`src/main.ts`、`src/ui/title.ts` | `dev` | 7.5 的存档版本、导出导入与设置界面 |
-| 现有存档测试：`tests/acceptance/save.test.mjs`、`tests/core/expedition-save.test.mjs`、`tests/core/save-consistency.test.mjs`、`tests/core/fixtures72/` | `dev` | 与 `save.ts` 一起改 |
-| `src/render/`、`src/style.css`、`tests/browser/windows.mjs` | `dev` | 7.5 的界面与浏览器检查 |
-| `src/core/economy.ts`、`base.ts`、`dungeon.ts`、`engine.ts`、`scenarios.ts`、`roster.ts`、`describe.ts`、`names.ts`，`src/data/*.json`，以及上面未列出的现有 `tests/core/*.test.mjs` | `main` | 7.4 的数值与规则调整 |
-| `tests/core/loop-soak*`、长测脚本与统计工具 | `main` | 7.4 |
 | `tools/art/`（含 `usage-ledger.json`） | `main` | 只有 `main` 生成图片，见第 8 节 |
-| 各自新加的测试文件 | 新建者 | 文件名带上主题，避免同名 |
-| `docs/01-现行规则/`、`docs/03-决策/`、`docs/02-进度/进度.md` 与 `docs/02-进度/计划/` | `main` | `dev` 把自测证据写在 PR 描述里；需要改规则或进度时在 PR 描述的 `KB:` 行写明，由 `main` 合并前在该 PR 分支上追加提交更新（2026-10-31 KB 分级整改后的目录） |
+| `docs/01-现行规则/`、`docs/03-决策/`、`docs/02-进度/进度.md` 与 `docs/02-进度/计划/` | `main` | `dev` 把自测证据写在 PR 描述里；需要改规则或进度时在 PR 描述的 `KB:` 行写明，由 `main` 合并前在该 PR 分支上追加提交更新 |
 | 各目录 `README.md` 索引 | 两边都可加行 | 新文档必须在所在目录索引加一行；只加行时的文本冲突由后合并的一方用 `git-safe.ps1 sync` 解决 |
+| 各自新加的测试文件 | 新建者 | 文件名带上主题，避免同名 |
 
-  新里程碑开工前，由 `main` 在协调 issue 里写明这一张表的新分配。**写进协调 issue 的文件分配直接生效**（仅限两边不重叠的分配：不把同一个文件、单写者区域或共享规则同时交给两边），`dev` 据此开工，不需要用户再在 Codex 里确认；版本号变更仍按下一条开协调 issue 并由用户确认（2026-10-30 用户决定，原话：“改为直接生效”；针对的问题是“已写进协调 issue 的文件分配，以后要不要直接生效、不再需要你在 Codex 里确认”）。
+  新里程碑开工前，由 `main` 在协调 issue 里写明这个里程碑的文件分配。**写进协调 issue 的文件分配直接生效**（仅限两边不重叠的分配：不把同一个文件、单写者区域或共享规则同时交给两边），`dev` 据此开工，不需要用户再在 Codex 里确认；版本号变更仍按下一条开协调 issue 并由用户确认（2026-10-30 用户决定，原话：“改为直接生效”；针对的问题是“已写进协调 issue 的文件分配，以后要不要直接生效、不再需要你在 Codex 里确认”）。
 
 - **语义依赖**：不改同一个文件也可能互相影响。例如 `save.ts` 用 `ECON.purseMax`、`ECON.price`、`ECON.stock` 校验存档，`main` 一改价格或库存，旧存档就可能在 `dev` 的校验里被拒绝。所以凡是改动存档校验依赖的数值（`ECON`），或改动 `RULE_VERSION`、`CONTENT_VERSION` 的，都必须先开同时带 `lane:main` 与 `lane:dev` 的协调 issue，写明合并顺序和是否需要迁移；其中版本号变更须由用户确认。
 
@@ -138,7 +125,7 @@ GitHub issue 与 PR 评论仍用于留存决定与审查结论（可追溯的记
 
 - **审查**：`dev` 交 PR 前自行安排 Linux 复核（可用 Codex 云，见第 11 节）与视觉对照，结论写进 PR 并附完整 SHA；`main` 的 PR 需要 Linux 交叉检查、代码核验或视觉审核时，`main` 经 lane bus 请 `dev` 做（D-20261103-14；Claude 云会话已停用）。再由本机 `main` 做最终审查（只读 `mercury-reviewer`），在 PR 上写明结论和**审查通过的那个提交的完整 SHA**。`main` 只按这个 SHA 合并；之后再有任何新提交，都要重新审查。合并后由 `main` 清理该任务的 worktree 与分支。`main` 自己的 PR 照旧由只读审查子代理审查。规则、权限或存档的改动必须有独立审查。
 - **游戏检查与长测（D-20261101-21）**：需要大量重复运行的校验由 `dev` 执行——按改动选择 `npm run check`、`npm test`、`npm run test:acceptance`、`npm run build`、`npm run test:browser`（先启动 `vite preview`，用完关掉端口），以及 `tools/soak/balance.mjs` 长测；PR 描述写命令、原始输出位置与汇总表。`main` 不重复整套复跑，只做基线判断与抽查复现（单个测试文件或单个种子）。只说实际跑过的检查；Linux 上的结果不代替 Windows。
-- **界面样式（D-20261101-20、D-20261106-01）**：样式的讨论稿在[界面设计稿](../05-制作流程/界面设计稿/README.md)，由 `main` 维护；标“待确认”的项不算定稿，规则仍以 G 条目为准，实现样式时同一 PR 更新它。样式也可以由 `dev` 与用户在 Codex 直接商议，PR 描述写商定要点与用户原话出处；`main` 只在审查时做最后审核。试玩中的意见（8.7 与之前的里程碑试玩包）例外：用户全部先交给 `main`，由 `main` 整理成 issue 再交 `dev`（D-20261102-08）。
+- **界面样式（D-20261111-01、D-20261106-01）**：界面样式（布局、视觉样式、面板与按钮呈现、界面文案）由 `main` 与用户商议确定：`main` 把控 UI/UX，给出意见、设计与实装方案，并审查 `dev` 的代码，但不直接改代码；代码（含界面）由 `dev` 实现。样式的讨论稿在[界面设计稿](../05-制作流程/界面设计稿/README.md)，由 `main` 维护，`dev` 按定稿实现；标“待确认”的项不算定稿，规则仍以 G 条目为准，实现样式时同一 PR 更新它。试玩中的意见（8.7 与之前的里程碑试玩包）全部先交给 `main`，由 `main` 分流（D-20261102-08）。
 - **PR 必须完整（D-20261107-01）**：做这件事的 PR 要把它的进度写完，不开只为补记上一个 PR 进度的 PR。执行细节见 [KB 维护规则](../01-现行规则/KB维护规则.md) K4（D-20261107-02）。
 - **CI**：`Mercury verify` 由 GitHub Actions 自动运行，合并前确认它在 PR 头提交上通过。
 - **lane 工具本身**：试用 lane 脚本时先用 `--dry-run`。
@@ -149,7 +136,7 @@ GitHub issue 与 PR 评论仍用于留存决定与审查结论（可追溯的记
 
 | 环境 | 已知事实 | 未核实 |
 | --- | --- | --- |
-| `pokemon-dungeon-lab`（游戏） | 只绑定本仓库，访问范围 Only me，无秘密值；Linux，已验证 Node 24、Playwright 与 Chromium；联网现状只允许 `registry.npmjs.org`、`pypi.org`、`files.pythonhosted.org`、`github.com`、`cdn.playwright.dev`、`playwright.download.prss.microsoft.com`（`github.com` 用于取 PR 分支做 Linux 复核，D-20261109-12；两个 Playwright 域名用于装录像用的 ffmpeg，D-20261110-04；按下文“环境适配”调整，以 `cloud/README.md` 为准）（见 [`cloud/README.md`](../../cloud/README.md)、[REA 与 Codex Cloud](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/07-%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83/REA%E4%B8%8ECodexCloud.md)） | 云端 Shell 能否推送 GitHub、能否自定分支名 |
+| `pokemon-dungeon-lab`（游戏） | 只绑定本仓库，访问范围 Only me，无秘密值；Linux，已验证 Node 24、Playwright 与 Chromium；联网只允许 `cloud/README.md` 记录的少数几个域名，现状与每个域名为什么加入都以那一页为准（见 [`cloud/README.md`](../../cloud/README.md)、[REA 与 Codex Cloud](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/07-%E5%B7%A5%E4%BD%9C%E7%8E%AF%E5%A2%83/REA%E4%B8%8ECodexCloud.md)） | 云端 Shell 能否推送 GitHub、能否自定分支名 |
 | `REA-research-lab`（逆向研究） | 曾用于只读研究，结论在聊天里交付（见[研究范围与双云分工](https://github.com/392fyc/pokemon-dungeon-lab/blob/d03ef5144f5671b3b8d5418b94353223742e911a/docs/06-%E7%A0%94%E7%A9%B6/%E5%B8%82%E5%9C%BA%E7%A0%94%E7%A9%B6/%E7%A0%94%E7%A9%B6%E8%8C%83%E5%9B%B4%E4%B8%8E%E5%8F%8C%E4%BA%91%E5%88%86%E5%B7%A5.md)） | 绑定哪个仓库、访问范围、联网设置 |
 
 Claude 无法向它们派任务；`dev` lane 的本机 Codex 可以。本节是 `main` lane **应用户要求拟定的方针**（工作候选），用户可以随时修改或收回。
@@ -183,7 +170,7 @@ Claude 无法向它们派任务；`dev` lane 的本机 Codex 可以。本节是 
 
 云端交回的结论按“其他代理的结论”处理：本机核对固定提交和实际运行结果后才采用。PR 说明写明云任务链接、运行平台和实际跑过的检查。没有合并的云端分支在 issue 里列出，删除前先经用户确认。
 
-**派发时的任务说明要写清：** `[WORKER-OF=dev ISSUE=#<号>]`、本次范围和不许改的文件、要跑的检查、完成期限（按 AGENTS.md 的等待规则）、交回方式。仓库里的 [`cloud/start-skill.md`](../../cloud/start-skill.md) 仍写着阶段 3—4 的范围，已经过时；以任务说明和本页为准。环境里保存的启动规则按上文“环境适配”更新，与本页保持一致。
+**派发时的任务说明要写清：** `[WORKER-OF=dev ISSUE=#<号>]`、本次范围和不许改的文件、要跑的检查、完成期限（按 AGENTS.md 的等待规则）、交回方式。仓库里的 [`cloud/start-skill.md`](../../cloud/start-skill.md) 的文本已更新为只写通用步骤、不含里程碑范围；Codex 云环境里实际保存的启动规则需由用户或 `dev` 按该文件更新，未核对前以任务说明和本页为准（待查）。
 
 **费用。** 云任务若需要超出现有 ChatGPT 套餐的付费额度，属于新增付费服务，先问用户。
 

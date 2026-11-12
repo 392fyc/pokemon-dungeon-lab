@@ -39,7 +39,7 @@ const fits=async(p,size)=>{const box=await p.locator('#wiki-dialog').boundingBox
  await p.keyboard.press('h');assert.equal(await isOpen(p),false,'H does nothing while the settings window is open (G13.6: no other window open)');
  await p.locator('#settings-wiki').click();await p.locator('#wiki-dialog[open]').waitFor();
  assert.equal(await p.locator('#settings[open]').count(),0,'settings makes way for the wiki');
- assert.equal(await p.locator('.wiki-rule').count(),1,'with ?dev=1 the category home shows its rule number');
+ assert.equal(await p.locator('.wiki-rule').count(),1,'with ?dev=1 the first entry shows its rule number');
  await p.locator('#wiki-list .wiki-row').first().click();assert.ok(await p.locator('.wiki-rule').count()>=1,'?dev=1 shows the rule number tag');
  assert.deepEqual(await p.locator('.wiki-tabs [data-wiki-cat]').allInnerTexts(),names,'the tabs are the data-defined categories');
  await p.keyboard.press('Escape');assert.equal(await isOpen(p),false,'Esc closes the wiki');
@@ -91,7 +91,9 @@ const fits=async(p,size)=>{const box=await p.locator('#wiki-dialog').boundingBox
  for(const cat of cats){
   await p.locator('[data-wiki-cat="'+cat+'"]').click();
   const rows=await p.locator('#wiki-list .wiki-row').count();assert.ok(rows>=1,cat+' lists entries');
-  await p.locator('#wiki-list .wiki-row').first().click();
+  const first=p.locator('#wiki-list .wiki-row').first();
+  assert.equal(await first.getAttribute('aria-pressed'),'true',cat+' selects its first entry');
+  assert.equal(await p.locator('#wiki-detail .wiki-entry-head').getAttribute('data-wiki-entry'),await first.getAttribute('data-wiki-entry'));
   const text=(await p.locator('#wiki-detail').innerText()).trim();assert.ok(text.length>20,cat+' shows detail text');
   assert.ok(await p.locator('#wiki-search').isVisible(),cat+' has a search box');
   await p.screenshot({path:out+'r11-'+cat+'.png'});
@@ -105,6 +107,7 @@ const fits=async(p,size)=>{const box=await p.locator('#wiki-dialog').boundingBox
   const found=await p.locator('#wiki-list .wiki-row strong').allInnerTexts();
   assert.ok(found.length>=1&&found.every(t=>t.length>0)&&found.includes(title),cat+' search finds "'+title+'"');
   await p.locator('#wiki-search').fill('zzzzzz不存在');assert.equal(await p.locator('#wiki-list .wiki-row').count(),0,cat+' search with no match is empty');
+  assert.equal(await p.locator('#wiki-detail').innerHTML(),'');
   await p.locator('#wiki-search').fill('');assert.equal(await p.locator('#wiki-list .wiki-row').count(),total,cat+' clearing the search restores the list');
  }
  await p.locator('[data-wiki-cat="moves"]').click();await p.locator('#wiki-search').fill('喷射火焰');await p.waitForTimeout(100);
@@ -120,6 +123,7 @@ const fits=async(p,size)=>{const box=await p.locator('#wiki-dialog').boundingBox
  await p.screenshot({path:out+'r11-link.png'});
  await p.locator('#wiki-back').click();
  assert.equal(await p.locator('#wiki-detail .wiki-entry-head').getAttribute('data-wiki-entry'),'moves:flamethrower','Back returns to the move');
+ assert.equal(await p.locator('#wiki-search').inputValue(),'喷射火焰','Back restores the previous query');
  assert.equal(await p.locator('#wiki-back').isDisabled(),true,'Back is disabled with nothing to return to');
  // a species links to its moves, and a move to the species that learn it
  await p.locator('[data-wiki-cat="species"]').click();await p.locator('#wiki-search').fill('喷火龙');
@@ -188,7 +192,9 @@ const fits=async(p,size)=>{const box=await p.locator('#wiki-dialog').boundingBox
  await p.goto(base+'/');await p.locator('#title-settings').click();await p.locator('#settings[open]').waitFor();
  await p.locator('#settings-wiki').click();await p.locator('#wiki-dialog[open]').waitFor();
  assert.equal(await p.locator('.wiki-rule').count(),0,'no rule tag on the category home outside developer mode');
- assert.equal((await p.locator('#wiki-detail').innerText()).trim(),'名词','the category home keeps the heading without filler');
+ assert.equal(await p.locator('#wiki-list .wiki-row').first().getAttribute('aria-pressed'),'true');
+ assert.equal(await p.locator('#wiki-detail .wiki-entry-head').getAttribute('data-wiki-entry'),'terms:round');
+ assert.equal(await p.locator('#wiki-detail h3').innerText(),'回合');
  await p.screenshot({path:out+'r8-wiki-home.png'});
  await p.locator('#wiki-list .wiki-row').first().click();
  assert.equal(await p.locator('.wiki-rule').count(),0,'no rule tag on an entry outside developer mode');
@@ -222,6 +228,15 @@ const fits=async(p,size)=>{const box=await p.locator('#wiki-dialog').boundingBox
   return el.firstElementChild.dispatchEvent(new WheelEvent('wheel',{deltaY:90,bubbles:true,cancelable:true}));
  });
  assert.equal(atEdge,true,'a wheel at the horizontal edge remains available for native scrolling');
+ const handlesOnePixel=await tabs.evaluate(el=>{
+  el.style.overflowY='auto';el.scrollLeft=0;
+  Object.defineProperty(el,'scrollHeight',{configurable:true,value:el.clientHeight+1});
+  const wheel=new WheelEvent('wheel',{deltaY:90,bubbles:true,cancelable:true});
+  const consumed=!el.firstElementChild.dispatchEvent(wheel)&&el.scrollLeft>0;
+  delete el.scrollHeight;
+  return consumed;
+ });
+ assert.equal(handlesOnePixel,true,'one pixel of vertical overflow still permits horizontal wheel scrolling');
  const verticalAllowed=await tabs.evaluate(el=>{
   el.style.height='20px';el.style.overflowY='auto';el.scrollLeft=0;
   if(el.scrollHeight<=el.clientHeight)throw Error('test tab strip has no vertical overflow');

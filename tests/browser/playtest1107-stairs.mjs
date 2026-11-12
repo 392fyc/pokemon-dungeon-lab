@@ -28,7 +28,7 @@ if(dir)await p.keyboard.press(dir);else await p.evaluate(({st})=>{const s=window
 await p.waitForSelector('#stairs-prompt',{timeout:4000});
 const text=(await p.locator('#stairs-prompt').innerText()).replace(/\s+/g,' ').trim();
 assert.equal(text,'要前进到下一层吗？ 前进 不前进','one question and two buttons, nothing else');
-assert.doesNotMatch(await p.locator('body').innerText(),/请求跨层|消耗操控者行动|确认本轮跨层|继续查看|走下楼梯（/);
+assert.doesNotMatch(await p.locator('body').innerText(),/请求跨层|消耗操控者行动|确认本回合跨层|继续查看|走下楼梯（/);
 await p.waitForTimeout(300);await p.screenshot({path:out+'r5-stairs-prompt.png'});
 // not now: the prompt closes and a button in the bottom bar reopens it; leaving the cell removes the button
 await p.locator('#stairs-stay').click();assert.equal(await p.locator('#stairs-prompt').count(),0);

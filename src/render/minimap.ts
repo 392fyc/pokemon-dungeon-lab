@@ -140,7 +140,7 @@ export function minimapHeading(s: World, rooms: number | null): string {
   const floorLabel = s.dungeon ? mazeName + " " + s.dungeon.level + "F" : mazeName;
   const roomsMarkup = rooms === null ? "" :
     '<span class="hud-minimap-rooms" title="已进入的房间数" aria-label="已进入 ' + rooms + ' 个房间"><i class="hud-room-icon" aria-hidden="true"></i><b>' + rooms + "</b></span>";
-  return "<span>" + esc(floorLabel) + "</span>" + roomsMarkup + "<span>第 " + s.round + " 轮</span>";
+  return "<span>" + esc(floorLabel) + "</span>" + roomsMarkup + "<span>第 " + s.round + " 回合</span>";
 }
 
 function svgOf(terrain: Terrain, dynamic: string, cls: string): string {

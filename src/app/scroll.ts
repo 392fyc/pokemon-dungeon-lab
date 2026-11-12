@@ -5,7 +5,7 @@ export function scrollHorizontalWithWheel(event:WheelEvent):void {
   for(let el=event.target instanceof Element?event.target:null;el;el=el.parentElement){
     if(!(el instanceof HTMLElement))continue;
     const {overflowX,overflowY,lineHeight}=getComputedStyle(el);
-    if((overflowY==='auto'||overflowY==='scroll')&&el.scrollHeight>el.clientHeight)return;
+    if((overflowY==='auto'||overflowY==='scroll')&&el.scrollHeight-el.clientHeight>1)return;
     if((overflowX!=='auto'&&overflowX!=='scroll')||el.scrollWidth<=el.clientWidth)continue;
 
     const scale=event.deltaMode===WheelEvent.DOM_DELTA_LINE?Number.parseFloat(lineHeight)||16

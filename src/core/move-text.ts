@@ -43,7 +43,7 @@ export function situationalMoveEffect(effect:string,foe='对方',foeUnit=foe):st
     case 'blowaway':return '沿直线吹飞目标，最远'+BLOWAWAY_CELLS+'格；撞墙时目标受'+COLLISION_DAMAGE+'点伤害，撞到单位时两者各受'+COLLISION_DAMAGE+'点';
     case 'protect':return PROTECT_PHASES+'回合内免疫'+foe+'攻击的伤害、异常和能力降低；上一次行动是守住或快速防守时不能使用';
     case 'counter':return COUNTER_PHASES+'回合内，受到相邻'+foeUnit+'的伤害时，对其造成等量伤害';
-    case 'quickguard':return '使用时范围内的己方，在下一次'+foe+'行动阶段免疫距离大于1格的攻击及其异常和能力降低；上一次行动是守住或快速防守时不能使用';
+    case 'quickguard':return '使用时范围内的己方，1回合内免疫距离大于1格的'+(foe==='对方'?'':foe)+'攻击及其异常和能力降低；上一次行动是守住或快速防守时不能使用';
     case 'reflect':
     case 'lightscreen':{
       const category=effect==='reflect'?'物理':'特殊';
@@ -122,7 +122,7 @@ export function stageEffectNote(stat:StageKey,stage:number):string {
 }
 /** The hover text of a stage badge: "攻击 +1：造成的伤害×1.2，持续到换层". `effective` is the stage the engine really uses when it differs from the stored one (the hunter commission lowers a friend's defence stages by 1). */
 export function stageTitle(stat:StageKey,stage:number,effective=stage):string {
-  const note=effective!==stage?'（猎人委托使实际生效为 '+sign(effective)+'）':'';
+  const note=effective!==stage?'猎人委托使实际生效为 '+sign(effective)+'，':'';
   const fine=stageEffectNote(stat,effective);
-  return STAGE_NAMES[stat]+' '+sign(stage)+note+'：'+stageEffectLabel(stat,effective)+(fine?'（'+fine+'）':'')+'，持续到换层';
+  return STAGE_NAMES[stat]+' '+sign(stage)+'：'+note+stageEffectLabel(stat,effective)+'，持续到换层'+(fine?'。'+fine:'');
 }

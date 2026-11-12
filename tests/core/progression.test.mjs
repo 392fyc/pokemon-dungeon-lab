@@ -163,8 +163,8 @@ const berryAt2=(extra={})=>run({enemies:[],points:[{pos:pos(2),kind:'berry',used
 test('P6 the leader picks an item up on its cell in one action; taken once; never an exit',()=>{
  const s=round(berryAt2(),interact(false));
  assert.deepEqual(s.prog.items,{berry:1,tonic:0});assert.equal(s.points[0].used,true);assert.equal(s.round,1);assert.equal(s.phase,'playing');
- assert.match(reject(s,{type:'round',action:interact(false)}).error,/橙橙果已拾取.*本轮未执行/);
- assert.match(reject(berryAt2(),{type:'round',action:interact(true)}).error,/不是出口.*本轮未执行/);
+ assert.match(reject(s,{type:'round',action:interact(false)}).error,/橙橙果已拾取.*本回合未执行/);
+ assert.match(reject(berryAt2(),{type:'round',action:interact(true)}).error,/不是出口.*本回合未执行/);
  assert.match(reject(berryAt2(),{type:'round',action:wait,override:{actor:'B',action:interact(false)}}).error,/伙伴不能代替主控交互/);
 });
 test('P7 berry heals 8 HP, capped at max, on self or an adjacent member; costs the user one action and one berry',()=>{
@@ -185,16 +185,16 @@ test('P8 tonic gives every move +10 PP (8.8) up to its maximum',()=>{
  const s=round(w,{type:'use',item:'tonic',target:'C'});
  assert.deepEqual(s.units.C.pp,{tackle:10,seedbomb:11});assert.equal(s.prog.items.tonic,0);
 });
-test('P8b an item that cannot work is refused before anything runs, with the reason and 本轮未执行',()=>{
+test('P8b an item that cannot work is refused before anything runs, with the reason and 本回合未执行',()=>{
  const full=run({enemies:[],items:{berry:1,tonic:1}});
- assert.match(reject(full,{type:'round',action:{type:'use',item:'berry',target:'C'}}).error,/C的HP已满.*本轮未执行/);
- assert.match(reject(full,{type:'round',action:{type:'use',item:'tonic',target:'C'}}).error,/所有招式PP已满.*本轮未执行/);
+ assert.match(reject(full,{type:'round',action:{type:'use',item:'berry',target:'C'}}).error,/C的HP已满.*本回合未执行/);
+ assert.match(reject(full,{type:'round',action:{type:'use',item:'tonic',target:'C'}}).error,/所有招式PP已满.*本回合未执行/);
  const none=run({enemies:[]});none.units.C.hp=3;
- assert.match(reject(none,{type:'round',action:{type:'use',item:'berry',target:'C'}}).error,/背包里没有橙橙果.*本轮未执行/);
+ assert.match(reject(none,{type:'round',action:{type:'use',item:'berry',target:'C'}}).error,/背包里没有橙橙果.*本回合未执行/);
  const far=run({enemies:[],items:{berry:1}});far.units.A.hp=3;
- assert.match(reject(far,{type:'round',action:{type:'use',item:'berry',target:'A'}}).error,/A不在相邻格.*本轮未执行/);
+ assert.match(reject(far,{type:'round',action:{type:'use',item:'berry',target:'A'}}).error,/A不在相邻格.*本回合未执行/);
  const down=run({enemies:[],items:{berry:1}});down.units.B.hp=0;down.units.B.pos=null;
- assert.match(reject(down,{type:'round',action:{type:'use',item:'berry',target:'B'}}).error,/B已倒下.*本轮未执行/);
+ assert.match(reject(down,{type:'round',action:{type:'use',item:'berry',target:'B'}}).error,/B已倒下.*本回合未执行/);
  assert.match(reject(full,{type:'round',action:{type:'use',item:'berry',target:'N9'}}).error,/只能对同行伙伴/);
  const foe=run({items:{berry:1}});foe.units.C.hp=3;
  assert.match(reject(foe,{type:'round',action:{type:'use',item:'berry',target:'w'}}).error,/只能对同行伙伴/);
@@ -202,7 +202,7 @@ test('P8b an item that cannot work is refused before anything runs, with the rea
 test('P8c the last item cannot be spent twice: leader and partner both using it refuses the whole round',()=>{
  const w=run({enemies:[],items:{berry:1}});w.units.C.hp=3;w.units.A.hp=3;
  const r=reject(w,{type:'round',action:{type:'use',item:'berry',target:'C'},override:{actor:'B',action:{type:'use',item:'berry',target:'A'}}});
- assert.match(r.error,/背包里没有橙橙果.*本轮未执行/);
+ assert.match(r.error,/背包里没有橙橙果.*本回合未执行/);
 });
 test('P8d items work only in a run that has a backpack: the fixed map refuses them',()=>{
  const r=reject(createMain('m',false),{type:'round',action:{type:'use',item:'berry',target:'A'}});

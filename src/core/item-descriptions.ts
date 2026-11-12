@@ -2,7 +2,7 @@
 import { PROG, type Item } from "./engine.ts";
 
 export const ITEM_DESCRIPTIONS: Readonly<Record<Item, string>> = Object.freeze({
-  berry: "给自己或相邻队员回复最大 HP 的 30%（至少 " + PROG.berryHeal + "）",
+  berry: "给自己或相邻队员回复最大 HP 的 30%，至少 " + PROG.berryHeal + " 点",
   tonic: "给自己或相邻队员，每个招式回复 " + PROG.tonicPp + " PP",
   bigBerry: "回满目标的 HP",
   teamTonic: "在场存活队员的每个招式各回复 " + PROG.teamTonicPp + " PP",

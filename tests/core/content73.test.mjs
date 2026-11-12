@@ -179,7 +179,7 @@ test('B1 defeating the boss draws a machine then a normal Arcanine recruitment o
 test('B2 push on the boss is refused with the Chinese reason and costs no PP',()=>{
  const s=arena({units:{A:A(3),B:B(2)}});
  const r=applyCommand(s,{type:'round',action:{type:'skill',skill:'roar',target:'boss'}});
- assert.equal(r.ok,false);assert.match(r.error,/首领.*吹飞；本轮未执行/);assert.deepEqual(r.state,s);assert.equal(s.units.A.pp.roar,2);assert.equal(s.units.boss.pos.x,4);
+ assert.equal(r.ok,false);assert.match(r.error,/首领.*吹飞；本回合未执行/);assert.deepEqual(r.state,s);assert.equal(s.units.A.pp.roar,2);assert.equal(s.units.boss.pos.x,4);
 });
 test('B3 boss uses one shared move per round, spends PP, and never chases',()=>{
  const s=arena({units:{A:A(3),B:B(0)}}),hit=round(s,{type:'wait'});

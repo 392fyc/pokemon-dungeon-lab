@@ -73,7 +73,7 @@ export function moveEffectLabel(id:string,context?:DamageSummaryContext,side?:Un
     if(special){parts.push(special);continue;}
     if(effect==='damage')parts.push(spec.power===null?'造成伤害':context?`造成${damageEstimateText(context.s,context.sourceId,context.targetId,id)}`:level===undefined?`造成${6+Math.ceil(spec.power/2)}点基础伤害（不含等级加成）`:`造成${6+Math.ceil(spec.power/2)+levelDamageBonus(level)}点基础伤害`);
     else if(effect==='drain')parts.push('按实际伤害的50%回复HP');
-    else if(effect==='recoil'){const r=moveEffects(id)?.recoil;if(r)parts.push(`造成伤害后，承受实际伤害的${r[0]}/${r[1]}作为反作用（向下取整，至少1）`);}
+    else if(effect==='recoil'){const r=moveEffects(id)?.recoil;if(r)parts.push(`造成伤害后，承受实际伤害的${r[0]}/${r[1]}作为反作用，至少1点`);}
     else if(effect==='heal:1:2')parts.push(`${spec.target==='party'?'同房间全队':'自身'}回复各自最大HP的一半`);
     else if(effect.startsWith('status:'))parts.push(`命中后施加${STATUS_NAMES[effect.slice(7) as StatusId]}`);
     else {const stage=/^stage:(atk|def|spa|spd|acc|eva):([+-]\d+)$/.exec(effect);if(stage){const who=spec.range==='room'&&spec.target==='teammates'?'同房间队友':spec.range==='user'?'自身':'目标';parts.push(`${who}${STAGE_NAMES[stage[1] as StageKey]}${stage[2]}`);}}

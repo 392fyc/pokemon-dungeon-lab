@@ -222,7 +222,7 @@ await test('M3：三格直线目标拒绝且不耗PP或回合',async()=>{
  const {context,page:p,errors}=await setup('K5');try{await start(p);await reject(p);const before=await state(p);
   await click(p,'skill-quickattack');await cell(p,5,1);
   assert.deepEqual(await state(p),before);assert.equal(before.units.C.pp.quickattack,1);
-  assert.equal(await p.locator('#message').innerText(),'目标相距3格，超出招式射程2格；本轮未执行');assert.deepEqual(errors,[]);
+  assert.equal(await p.locator('#message').innerText(),'目标相距3格，超出招式射程2格；本回合未执行');assert.deepEqual(errors,[]);
   return {threeTileTargetRejected:true,noRoundOrPpSpent:true};
  }finally{await context.close();}
 });
@@ -358,7 +358,7 @@ await test('PR5 历史单层G/T重复交互不重复领取',async()=>{
  }
  return observations;
 });
-await test('PR5 非法移动点名真实原因且说明本轮未执行',async()=>{
+await test('PR5 非法移动点名真实原因且说明本回合未执行',async()=>{
  const observations=[];
  for(const fixture of [undefined,'V1']){
   const {context,page:p,errors}=await setup(fixture);
@@ -366,7 +366,7 @@ await test('PR5 非法移动点名真实原因且说明本轮未执行',async()=
    await start(p);const before=await state(p),bytes=await raw(p);
    const wall={x:before.units[before.leader].pos.x,y:before.units[before.leader].pos.y-1};await cell(p,wall.x,wall.y);
    const text=await p.locator('#message').innerText();
-   assert.match(text,/本轮未执行/);assert.doesNotMatch(text,/可能/);
+   assert.match(text,/本回合未执行/);assert.doesNotMatch(text,/可能/);
    assert.match(text,/墙|不可行走|非地面|不是可行走/);   // 8.8: both fixtures use the wall above the leader; the V1 teammate-block reason no longer exists
    assert.deepEqual(await state(p),before);assert.equal(await raw(p),bytes);await key(p,'ArrowUp');const turned=structuredClone(before);turned.units[before.leader].facing={x:0,y:-1};assert.deepEqual(await state(p),turned,'the same blocked direction key only turns');assert.equal(await raw(p),bytes);assert.deepEqual(errors,[]);
    observations.push({fixture:fixture??'main-invite',text});
@@ -630,7 +630,7 @@ await test('远征6.4：拾取橙橙果、满HP非法使用被拒、受伤后用
   assert.match(await p.locator('#goal-label').innerText(),/橙橙果×1/);assert.equal(await p.locator('#take').count(),0);
   // refusal: everyone is still at full HP (or the user is healthy), so the berry is refused with its reason
   const full=s.queue.every(i=>s.units[i].hp===s.units[i].maxHp);
-  if(full){await click(p,'use-berry');await p.locator('#target-hint').waitFor();assert.match(await p.locator('#target-none').innerText(),/HP已满.*本轮未执行/,'with nobody to heal every card is dimmed and the reason is shown');assert.equal(await p.locator('.hud-party-card.is-target').count(),0);await p.locator('#target-cancel').click();assert.deepEqual(await state(p),s);}
+  if(full){await click(p,'use-berry');await p.locator('#target-hint').waitFor();assert.match(await p.locator('#target-none').innerText(),/HP已满.*本回合未执行/,'with nobody to heal every card is dimmed and the reason is shown');assert.equal(await p.locator('.hud-party-card.is-target').count(),0);await p.locator('#target-cancel').click();assert.deepEqual(await state(p),s);}
   // get hurt: walk next to the melee enemy and hold the line until someone is below max HP
     await go(await (async()=>{const t=await state(p);const lp=t.units[t.leader].pos,f=t.units[t.enemies.filter(i=>t.units[i].hp>0&&t.units[i].pos).sort((x,y)=>Math.abs(t.units[x].pos.x-lp.x)+Math.abs(t.units[x].pos.y-lp.y)-Math.abs(t.units[y].pos.x-lp.x)-Math.abs(t.units[y].pos.y-lp.y))[0]].pos;const floor=new Set(t.floor.map(q=>q.x+','+q.y));return [{x:f.x+1,y:f.y},{x:f.x-1,y:f.y},{x:f.x,y:f.y+1},{x:f.x,y:f.y-1}].find(c=>floor.has(c.x+','+c.y));})());
   for(let i=0;i<8;i++){await settlePrompt();s=await state(p);if(s.queue.some(id=>s.units[id].hp>0&&s.units[id].hp<s.units[id].maxHp))break;await key(p,'.');}
@@ -1427,9 +1427,9 @@ await test('7.3 首领层（开发者菜单场景）：灰烬地砖、首领放�
   await p.screenshot({path:artifact+'windows-boss-1-floor.png',fullPage:true});
   await click(p,'skill-roar');await cell(p,s.units.boss.pos.x,s.units.boss.pos.y);
   await p.waitForFunction(()=>document.getElementById('message').textContent.includes('首领不能被吹飞'));
-  assert.equal(await p.locator('#message').innerText(),'首领不能被吹飞；本轮未执行');
+  assert.equal(await p.locator('#message').innerText(),'首领不能被吹飞；本回合未执行');
   const after=await state(p);assert.equal(after.round,0);assert.deepEqual(after.units.A.pp,s.units.A.pp,'no PP spent');assert.deepEqual(after.units.boss.pos,s.units.boss.pos);
-  assert.deepEqual(errors,[]);return {tiles:v.tiles,bossScale:v.boss.scale,message:'首领不能被吹飞；本轮未执行'};
+  assert.deepEqual(errors,[]);return {tiles:v.tiles,bossScale:v.boss.scale,message:'首领不能被吹飞；本回合未执行'};
  }finally{await context.close();}
 });
 await test('结算8.1：首领倒下后自动胜利，三组奖励与招式机带回',async()=>{
@@ -1485,7 +1485,7 @@ await test('7.7a 状态卡片：守住与反击递减、攻防阶段显示；开
   await startMemory(p,fixture);await key(p,'Tab');const before=await state(p);
   await click(p,'skill-protect');await cell(p,before.units.A.pos.x,before.units.A.pos.y);
   assert.deepEqual(await state(p),before);
-  assert.equal(await p.locator('#message').innerText(),'这种招式的目标必须填使用者自己；本轮未执行');
+  assert.equal(await p.locator('#message').innerText(),'这种招式的目标必须填使用者自己；本回合未执行');
   const status=p.locator('[data-unit-status="B"]');
   const badges=()=>status.locator('.hud-status-badge').allTextContents();
   assert.deepEqual(await badges(),['攻击↑1','防御↓2','守住2','反击1']);

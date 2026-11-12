@@ -27,7 +27,7 @@ test('every effect field the engine reads for a usable move has matching text an
       if(e==='blowaway')assert.ok(text.includes('吹飞')&&text.includes(String(BLOWAWAY_CELLS))&&text.includes(String(COLLISION_DAMAGE)),id);
       if(e==='protect')assert.ok(text.includes(PROTECT_PHASES+'回合内免疫对方攻击'),id);
       if(e==='counter')assert.ok(text.includes(COUNTER_PHASES+'回合内，受到相邻对方的伤害'),id);
-      if(e==='quickguard')assert.ok(text.includes('免疫距离大于1格的攻击'),id);
+      if(e==='quickguard')assert.ok(text.includes('1回合内免疫距离大于1格的攻击'),id);
       if(e==='reflect')assert.ok(text.includes(SCREEN_PHASES+'回合内受到的物理伤害减半'),id);
       if(e==='lightscreen')assert.ok(text.includes(SCREEN_PHASES+'回合内受到的特殊伤害减半'),id);
       if(e==='rest')assert.ok(text.includes('打盹')&&text.includes('回满HP'),id);
@@ -79,7 +79,7 @@ test('stage badges explain themselves from the engine tables (G5.1, G5.3, G5.5)'
   assert.equal(stageEffectLabel('eva',-1),'对方招式的命中率×1.33');
   assert.match(stageTitle('eva',1),/普攻和必中招式不受影响/);assert.match(stageTitle('acc',1),/普攻不受影响/);assert.doesNotMatch(stageTitle('acc',-1),/普攻不受影响/);
   assert.match(stageTitle('def',0,-1),/猎人委托使实际生效为 −1.*×1\.43/,'the label follows the stage the engine uses (hunter commission)');
-  assert.match(stageTitle('atk',8),/^攻击 \+8：物理招式造成的伤害×1\.\d+（普通攻击按[^）]*），持续到换层$/);
+  assert.match(stageTitle('atk',8),/^攻击 \+8：物理招式造成的伤害×1\.\d+，持续到换层。普通攻击按.+$/);
 });
 
 test('move text retains type immunities and describes blowaway generically',async()=>{

@@ -94,8 +94,8 @@ function describeMoveEffects(move:string):string[] {
     else if(e==='blowaway')lines.push(link('terms:blowaway','吹飞'));
     else if(e==='drain')lines.push(link('terms:drain','吸取'));
     else if(e.startsWith('heal:'))lines.push(link('terms:drain','回复'));
-    else if(e==='sleeptalk')lines.push('睡眠中随机使用另一个招式（梦话）');
-    else if(e==='snore')lines.push('睡眠中的反应招式（打鼾）');
+    else if(e==='sleeptalk')lines.push('睡眠中随机使用另一招');
+    else if(e==='snore')lines.push('睡眠中受击反击');
   }
   for(const f of fx?.fx??[]){
     const chance=f.chance>=100?'必定':f.chance+'%';
@@ -104,7 +104,7 @@ function describeMoveEffects(move:string):string[] {
     for(const [k,n] of stageChanges(f.self)){facts.stages.add(k);lines.push(chance+'自身 '+stageText(k,n));}
   }
   for(const [k,n] of stageChanges(fx?.cost)){facts.stages.add(k);lines.push('使用后自身 '+stageText(k,n));}
-  if(fx?.recoil)lines.push('反作用：造成伤害的 '+Math.round(fx.recoil[0]/fx.recoil[1]*100)+'%（'+link('terms:drain','说明')+'）');
+  if(fx?.recoil)lines.push(link('terms:drain','反作用')+'：实际伤害的 '+Math.round(fx.recoil[0]/fx.recoil[1]*100)+'%');
   if(fx?.thaw)lines.push('打中冰冻的目标会使其'+link('status:frz','解冻'));
   if(fx?.powder)lines.push('粉末招式，草系免疫');
   return lines;

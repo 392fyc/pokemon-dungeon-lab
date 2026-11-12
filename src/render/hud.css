@@ -638,7 +638,6 @@ body.dungeon-mode #message {
   pointer-events: none;
 }
 
-
 body.dungeon-mode #hud-tools {
   position: absolute;
   top: 14px;
@@ -1767,7 +1766,6 @@ body.dungeon-mode :focus-visible {
     bottom: 150px;
     font-size: 11px;
   }
-
 
   body.dungeon-mode #hud-tooltip {
     bottom: 144px;

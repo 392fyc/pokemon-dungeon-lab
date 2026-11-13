@@ -1752,6 +1752,9 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   if(cmd.override?.action.type==='interact'||cmd.override?.action.type==='exchange')return '伙伴不能代替主控交互';
   const swap=!leaderSleeping&&cmd.action.type==='swap'?cmd.action.target:null;
   if(swap){if(cmd.override)return '换位已占唯一伙伴干预';const err=invalid(s,lead,cmd.action);if(err)return err;}
+  // #211: only a member killed before its turn uses the round-start verdict. Living members still validate at their own turn.
+  const leadStartError=preflight&&!leaderSleeping?invalid(s,lead,cmd.action):null;
+  const overrideStartError=preflight&&cmd.override?invalid(s,cmd.override.actor,cmd.override.action):null;
   const later=swap?Math.max(s.queue.indexOf(lead),s.queue.indexOf(swap)):-1;
   // 7.2 exchanger: the leader's whole action. The companion leaves at once (it takes no further part this round), then everyone else acts as usual.
   // 8.8: a frozen leader cannot operate it; then the command falls through to the normal turn below, where the action is lost.
@@ -1759,11 +1762,14 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   if(ex){const err=invalid(s,lead,ex);if(err)return err;if(cmd.override?.actor===ex.target)return '被送走的伙伴不能同时被安排动作';
     sendHome(s,ex);trace?.push({id:lead,action:ex,explicit:true,failed:false});}
   const order=[...s.queue];
-  for(let i=0;i<order.length;i++){const id=order[i];if(!s.queue.includes(id)||!alive(s.units[id])||(ex&&id===lead)){if(ex&&id===lead&&alive(s.units[id]))endOwnTurn(s,id);continue;}
+  for(let i=0;i<order.length;i++){const id=order[i];
+    if(preflight&&!alive(s.units[id])){const err=id===lead?leadStartError:cmd.override?.actor===id?overrideStartError:null;if(err)return err;}
+    if(!s.queue.includes(id)||!alive(s.units[id])||(ex&&id===lead)){if(ex&&id===lead&&alive(s.units[id]))endOwnTurn(s,id);continue;}
     // 8.8: whatever happens in this turn (even a swap or a refused action), it counts as one of the member's own action opportunities.
     try{
     if(swap&&(id===lead||id===swap)){
-      if(i===later){const err=invalid(s,lead,cmd.action);if(err){if(preflight)return err;continue;}
+      if(preflight&&id===lead&&!alive(s.units[swap]))return invalid(s,lead,cmd.action);
+      if(i===later){const initiator=s.units[lead];if(!alive(initiator))continue;const err=invalid(s,lead,cmd.action);if(err){if(preflight)return err;continue;}
         // 8.8: a frozen leader or a frozen partner turns the swap into a lost action (no PP); a confused leader's swap becomes a random step instead.
         const blockedBy=statusBlock(s.units[lead],cmd.action)??(hasStatus(s.units[swap],'frz')?'swapPartnerFrozen' as const:null);
         if(blockedBy){s.units[lead].lastMove=null;note(s,L`${lead}${blockedBy==='swapPartnerFrozen'?'的换位对象冰冻中':BLOCK_TEXT[blockedBy]}，换位落空，未扣PP`,{player:L`${lead}${blockedBy==='swapPartnerFrozen'?'的换位对象冰冻中':BLOCK_TEXT_PLAYER[blockedBy]}，换位落空，未扣PP`});emit(s,{type:'fail',unit:lead,reason:blockedBy});trace?.push({id:lead,action:cmd.action,explicit:true,failed:true});continue;}

@@ -30,6 +30,8 @@ const {playEvents}=loadTs('../../src/render/playback.ts',{
  './sprites.ts':{animKey:()=>'',facingRow:()=>0,sheet:()=>null,groundOriginY:()=>0,UNIT_GROUND_FRACTION:.4},
  './animation.ts':animation,
  './combat-effects.ts':loadTs('../../src/render/combat-effects.ts',{}),
+ './floating-text.ts':loadTs('../../src/render/floating-text.ts',{}),
+ './unit-labels.ts':loadTs('../../src/render/unit-labels.ts',{'./sprites.ts':{animKey:()=>'',groundOriginY:()=>0}}),
 });
 
 const move=(id,x0,x1)=>({k:'move',by:id,id,from:{x:x0,y:0},to:{x:x1,y:0}});

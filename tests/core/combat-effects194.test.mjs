@@ -18,7 +18,7 @@ const expectedPalette={
 const expectedShape={Normal:'star',Fire:'flame',Water:'drop',Grass:'leaf',Electric:'bolt',Ice:'shard',Fighting:'star',Poison:'bubble',Ground:'rock',Flying:'streak',Psychic:'ring',Bug:'dot',Rock:'rock',Ghost:'wisp',Dragon:'shard',Dark:'claw',Steel:'spark',Fairy:'star'};
 const expectedTemplates=['melee','special','shot','beam','around','room','up','down','status','heal','guard','blow'];
 const positions={from:{x:1,y:1},at:{x:6,y:4}};
-function makeStage(cell=24,scale=cell/24,effectCells,{reduceMotion=false}={}){
+function makeStage(cell=24,scale=cell/24,effectCells,{reduceMotion=false,visibleFloorCells}={}){
  const graphics=[],tweens=[],temp=new Set(),camera={x:10,y:20,moves:0,setPosition(x,y){this.x=x;this.y=y;this.moves++;return this;}};
  const scene={
   cameras:{main:camera},
@@ -26,7 +26,7 @@ function makeStage(cell=24,scale=cell/24,effectCells,{reduceMotion=false}={}){
   tweens:{add(config){tweens.push(config);return {stop(){config.onStop?.();}};}},
   time:{delayedCall(){throw new Error('combat effects must not create timer events');}}
  };
- return {stage:{scene,views:new Map(),center:p=>({x:p.x*cell+cell/2,y:p.y*cell+cell/2}),cell,scale,temp,f:1,effectCells:effectCells?()=>effectCells:undefined,reduceMotion},graphics,tweens,temp,camera};
+ return {stage:{scene,views:new Map(),center:p=>({x:p.x*cell+cell/2,y:p.y*cell+cell/2}),cell,scale,temp,f:1,effectCells:effectCells?()=>effectCells:undefined,visibleFloorCells:visibleFloorCells?()=>visibleFloorCells:undefined,debugCombatGeometry:true,reduceMotion},graphics,tweens,temp,camera};
 }
 const run=(fixture,effect,duration=320,impacts=[positions.at])=>{
  const pending=playCombatEffect(fixture.stage,effect,positions.from,positions.at,impacts,duration);
@@ -320,4 +320,47 @@ test('the room wash covers every whitelist cell when the cell size is fractional
  const inside=(x,y)=>visible.some(p=>x>=p.x*cell&&x<p.x*cell+cell&&y>=p.y*cell&&y<p.y*cell+cell);
  for(let i=0;i<=100;i++)for(const r of frame(value,i/100))if(r.w<20)assert.ok(inside(r.x+.01,r.y+.01)&&inside(r.x+r.w-.5,r.y+r.h-.5),'particle stays in a revealed cell');
  value.tween.onComplete();
+});
+
+function insidePolygon(x,y,points){
+ let inside=false;
+ for(let i=0,j=points.length-1;i<points.length;j=i++){
+  const a=points[i],b=points[j];if(((a[1]>y)!==(b[1]>y))&&(x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0]))inside=!inside;
+ }
+ return inside;
+}
+function assertDrawnGeometryOnFloor(rects,visible,cell,template){
+ const visibleKeys=new Set(visible.map(p=>p.x+','+p.y));
+ for(const rect of rects){
+  const polygon=rect.poly?.map(p=>[p.x,p.y])??[[rect.x,rect.y],[rect.x+rect.w,rect.y],[rect.x+rect.w,rect.y+rect.h],[rect.x,rect.y+rect.h]];
+  assert.ok(polygon.length>=3,'the recorded fillRect/fillPoints geometry is a real polygon');
+  const xs=polygon.map(p=>p[0]),ys=polygon.map(p=>p[1]),x1=Math.min(...xs),x2=Math.max(...xs),y1=Math.min(...ys),y2=Math.max(...ys);
+  for(let y=y1+1;y<y2;y+=2)for(let x=x1+1;x<x2;x+=2){
+   if(insidePolygon(x,y,polygon))assert.ok(visibleKeys.has(Math.floor(x/cell)+','+Math.floor(y/cell)),template+' painted pixel '+x+','+y+' outside the visible floor');
+  }
+ }
+}
+
+test('all attack particles and paths are clipped to revealed floor pixels around an unknown hole',()=>{
+ const directions=[
+  [{x:2,y:6},{x:11,y:6},{x:6,y:6}],[{x:11,y:6},{x:2,y:6},{x:6,y:6}],
+  [{x:6,y:2},{x:6,y:11},{x:6,y:6}],[{x:6,y:11},{x:6,y:2},{x:6,y:6}],
+  [{x:2,y:2},{x:11,y:11},{x:6,y:6}],[{x:11,y:2},{x:2,y:11},{x:6,y:7}],
+  [{x:11,y:11},{x:2,y:2},{x:6,y:6}],[{x:2,y:11},{x:11,y:2},{x:6,y:7}]
+ ];
+ for(const cellSize of [48,72])for(const [from,at,hole] of directions){
+  const visible=[];for(let x=1;x<=12;x++)for(let y=1;y<=12;y++)if(!(x===hole.x&&y===hole.y)&&!(x===7&&y===8))visible.push({x,y});
+  for(const template of ['melee','special','shot','beam','around','blow']){
+   const fixture=makeStage(cellSize,cellSize/24,undefined,{visibleFloorCells:visible});
+   const effect={move:'fx228-'+template,template,type:'Flying'},pending=playCombatEffect(fixture.stage,effect,from,at,[at],320),value={pending,g:fixture.graphics.at(-1),tween:fixture.tweens.at(-1)};
+   let hadGeometry=false;
+   for(let i=0;i<=100;i+=5){
+    value.tween.onUpdate({}, {progress:i/100});
+    assertDrawnGeometryOnFloor(value.g.rects,visible,cellSize,template);
+    hadGeometry ||= value.g.rects.length>0;
+   }
+   assert.ok(hadGeometry,template+' draws real particle polygons');
+   value.tween.onStop();
+  }
+ }
 });

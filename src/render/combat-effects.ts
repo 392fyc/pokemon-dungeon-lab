@@ -29,7 +29,8 @@ export const effectImpactDelay=(effect:EffectStyle,durationMs:number):number=>{
 };
 type Point={x:number;y:number};
 type Palette=readonly [string,string,string];
-type Clip=(x:number,y:number,w:number,h:number)=>boolean;
+type CellRect={left:number;top:number;right:number;bottom:number;ix:number;iy:number};
+type Clip=(polygon:Point[])=>{pieces:Point[][];complete:boolean};
 const GREEN='#8affa0',ORANGE='#ff8a4a',BLUE='#6aa8ff',WHITE='#ffffff';
 const cap=(n:number,lo:number,hi:number)=>Math.max(lo,Math.min(hi,n));
 const mix=(a:number,b:number,t:number)=>a+(b-a)*t;
@@ -39,12 +40,41 @@ const between=(i:number,salt:number,lo:number,hi:number)=>lo+noise(i,salt)*(hi-l
 /** Evenly spread, still deterministic, horizontal offsets in [-16,16) so no two arrows or crosses share a column. */
 const spread=(i:number,salt:number)=>((i*.6180339887+noise(0,salt))%1)*32-16;
 const clips=new WeakMap<object,Clip>();
+const traces=new WeakMap<object,Point[][]>();
+const polygonArea=(points:Point[])=>Math.abs(points.reduce((area,p,i)=>{const q=points[(i+1)%points.length];return area+p.x*q.y-q.x*p.y;},0))/2;
+function clipEdge(points:Point[],inside:(p:Point)=>boolean,cross:(a:Point,b:Point)=>Point):Point[]{
+ if(!points.length)return [];
+ const result:Point[]=[];let a=points[points.length-1],aIn=inside(a);
+ for(const b of points){const bIn=inside(b);
+  if(aIn&&bIn)result.push(b);
+  else if(aIn&&!bIn)result.push(cross(a,b));
+  else if(!aIn&&bIn)result.push(cross(a,b),b);
+  a=b;aIn=bIn;
+ }
+ return result;
+}
+function clipToCell(points:Point[],cell:CellRect):Point[]{
+ let poly=points;
+ const vertical=(x:number,a:Point,b:Point):Point=>({x,y:a.y+(b.y-a.y)*(x-a.x)/(b.x-a.x)});
+ const horizontal=(y:number,a:Point,b:Point):Point=>({x:a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y),y});
+ poly=clipEdge(poly,p=>p.x>=cell.left,(a,b)=>vertical(cell.left,a,b));
+ poly=clipEdge(poly,p=>p.x<=cell.right,(a,b)=>vertical(cell.right,a,b));
+ poly=clipEdge(poly,p=>p.y>=cell.top,(a,b)=>horizontal(cell.top,a,b));
+ poly=clipEdge(poly,p=>p.y<=cell.bottom,(a,b)=>horizontal(cell.bottom,a,b));
+ return polygonArea(poly)>1e-6?poly:[];
+}
+function paintPolygon(g:Phaser.GameObjects.Graphics,polygon:Point[]):void{
+ const clip=clips.get(g),trace=traces.get(g),clipped=clip?.(polygon),pieces=clipped?(clipped.complete?[polygon]:clipped.pieces):[polygon];
+ for(const piece of pieces){if(piece.length<3)continue;g.fillPoints(piece as unknown as Phaser.Math.Vector2[],true);if(trace)trace.push(piece.map(p=>({x:p.x,y:p.y})));}
+}
 const sq=(g:Phaser.GameObjects.Graphics,x:number,y:number,w:number,h:number,color:string,alpha=1)=>{
  if(alpha<=0)return;
  const rx=Math.round(x),ry=Math.round(y),rw=Math.max(1,Math.round(w)),rh=Math.max(1,Math.round(h));
- const clip=clips.get(g);if(clip&&!clip(rx,ry,rw,rh))return;
  g.fillStyle(Number.parseInt(color.slice(1),16),cap(alpha,0,1));
- g.fillRect(rx,ry,rw,rh);
+ if(!clips.has(g)){g.fillRect(rx,ry,rw,rh);return;}
+ const polygon=[{x:rx,y:ry},{x:rx+rw,y:ry},{x:rx+rw,y:ry+rh},{x:rx,y:ry+rh}],clip=clips.get(g)!,result=clip(polygon),trace=traces.get(g);
+ if(result.complete){g.fillRect(rx,ry,rw,rh);trace?.push(polygon);return;}
+ for(const piece of result.pieces){g.fillPoints(piece as unknown as Phaser.Math.Vector2[],true);trace?.push(piece.map(p=>({x:p.x,y:p.y})));}
 };
 /** A bar of `width` along the unit direction `dir`; slanted bars are exact rotated rectangles. */
 function bar(g:Phaser.GameObjects.Graphics,from:Point,dir:Point,len:number,width:number,color:string,alpha=1):void{
@@ -54,18 +84,15 @@ function bar(g:Phaser.GameObjects.Graphics,from:Point,dir:Point,len:number,width
   const horizontal=Math.abs(dir.y)<1e-6;
   const x=Math.round(horizontal?(dir.x<0?from.x-len:from.x):from.x-width/2),y=Math.round(horizontal?from.y-width/2:(dir.y<0?from.y-len:from.y));
   const w=Math.max(1,Math.round(horizontal?len:width)),h=Math.max(1,Math.round(horizontal?width:len));
-  if(clip&&!clip(x,y,w,h))return;
-  g.fillStyle(col,alpha);g.fillRect(x,y,w,h);
+  g.fillStyle(col,alpha);
+  if(!clip){g.fillRect(x,y,w,h);return;}
+  paintPolygon(g,[{x,y},{x:x+w,y},{x:x+w,y:y+h},{x,y:y+h}]);
   return;
  }
  const nx=-dir.y*width/2,ny=dir.x*width/2,ex=from.x+dir.x*len,ey=from.y+dir.y*len;
  const pts=[{x:from.x+nx,y:from.y+ny},{x:ex+nx,y:ey+ny},{x:ex-nx,y:ey-ny},{x:from.x-nx,y:from.y-ny}];
- if(clip){
-  const xs=pts.map(q=>q.x),ys=pts.map(q=>q.y);
-  if(!clip(Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys)))return;
- }
  g.fillStyle(col,alpha);
- g.fillPoints(pts as unknown as Phaser.Math.Vector2[],true);
+ if(clip)paintPolygon(g,pts);else g.fillPoints(pts as unknown as Phaser.Math.Vector2[],true);
 }
 /**
  * The draft's particle shapes, with the draft's own offsets (the origin is the draft's (x,y)). `k` runs 1 to 0 over a
@@ -153,17 +180,31 @@ export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,
   const template=effect.template,timing=TIMING[template],draft=DRAFT[template],impactP=timing.impact/timing.total;
   const seed=[...(effect.move??'')].reduce((sum,ch)=>sum+ch.charCodeAt(0),template.length);
   const heavy=effect.superEffective===true;
-  // Room effects stay on the revealed floor of the caster's real reach: the stage lists those cells, the renderer never widens them.
-  const cells=template==='room'?(stage.effectCells?.(from)??[at]).map(p=>({key:p.x+','+p.y,...stage.center(p)})):[];
-  const cellKeys=cells.map(c=>c.key);
-  let grid:{ox:number;oy:number;top:number}|null=null;
+  // Room effects use the caster's real reach; flying effects use every currently visible floor cell.
+  const revealClipped=ATTACK_TEMPLATES.includes(template)&&template!=='room';
+  const cells=template==='room'?(stage.effectCells?.(from)??[at]).map(p=>({key:p.x+','+p.y,ix:p.x,iy:p.y,...stage.center(p)})):
+   revealClipped&&stage.visibleFloorCells?stage.visibleFloorCells().map(p=>({key:p.x+','+p.y,ix:p.x,iy:p.y,...stage.center(p)})):[];
+  const cellKeys=cells.map(c=>c.key),restrict=template==='room'||(revealClipped&&!!stage.visibleFloorCells);
+  const cellRects:CellRect[]=cells.map(c=>({left:c.x-stage.cell/2,top:c.y-stage.cell/2,right:c.x+stage.cell/2,bottom:c.y+stage.cell/2,ix:c.ix,iy:c.iy}));
+  const minCellX=cells.length?Math.min(...cells.map(c=>c.ix)):0,minCellY=cells.length?Math.min(...cells.map(c=>c.iy)):0;
+  const cellByKey=new Map(cellRects.map(cell=>[cell.ix+','+cell.iy,cell]));
+  const originCell=cells.length?stage.center({x:minCellX,y:minCellY}):{x:0,y:0};
+  if(restrict){
+   clips.set(g,(polygon)=>{
+    if(!cellRects.length)return {pieces:[],complete:false};
+    const xs=polygon.map(p=>p.x),ys=polygon.map(p=>p.y);
+    const minX=Math.floor((Math.min(...xs)-(originCell.x-stage.cell/2)+1e-7)/stage.cell),maxX=Math.floor((Math.max(...xs)-(originCell.x-stage.cell/2)-1e-7)/stage.cell);
+    const minY=Math.floor((Math.min(...ys)-(originCell.y-stage.cell/2)+1e-7)/stage.cell),maxY=Math.floor((Math.max(...ys)-(originCell.y-stage.cell/2)-1e-7)/stage.cell);
+    const candidate:CellRect[]=[];
+    for(let iy=minY;iy<=maxY;iy++)for(let ix=minX;ix<=maxX;ix++){const cell=cellByKey.get((ix+minCellX)+','+(iy+minCellY));if(cell)candidate.push(cell);}
+    const original=polygonArea(polygon),pieces=candidate.map(cell=>clipToCell(polygon,cell)).filter(piece=>piece.length>=3),covered=pieces.reduce((sum,piece)=>sum+polygonArea(piece),0);
+    return {pieces,complete:original>0&&covered>=original-1e-5};
+   });
+   if(stage.debugCombatGeometry)traces.set(g,[]);
+  }
+  let grid:{top:number}|null=null;
   if(cells.length){
-   const ox=cells[0].x,oy=cells[0].y,set=new Set<string>();
-   const col=(x:number)=>Math.round((x-ox)/stage.cell),row=(y:number)=>Math.round((y-oy)/stage.cell);
-   for(const c of cells)set.add(col(c.x)+','+row(c.y));
-   grid={ox,oy,top:Math.min(...cells.map(c=>c.y))-stage.cell/2};
-   const inside=(x:number,y:number)=>set.has(col(x)+','+row(y));
-   clips.set(g,(x,y,w,h)=>inside(x,y)&&inside(x+w-1e-6,y)&&inside(x,y+h-1e-6)&&inside(x+w-1e-6,y+h-1e-6));
+   grid={top:Math.min(...cells.map(c=>c.y))-stage.cell/2};
   }
   let finished=false,shakeStarted=false;const shake:{stop:(()=>void)|null}={stop:null};
   const cleanup=()=>{
@@ -186,6 +227,7 @@ export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,
    :p*draft.total;
   const draw=(progress:number)=>{
    if(finished)return;
+   traces.get(g)?.splice(0);
    g.clear();
    const p=cap(progress,0,1),tau=toDraft(p),u=size;
    const paint=(x:number,y:number,k=1,angle=0,shape=kind)=>particle(g,shape,x,y,palette,u,k,angle);
@@ -297,9 +339,9 @@ export function playCombatEffect(stage:Stage,effect:EffectStyle,from:Pos,at:Pos,
    // Super-effective hits shake the main camera from the moment of impact, on a real-time clock of their own.
    if(heavy&&ATTACK_TEMPLATES.includes(template)&&!stage.reduceMotion&&!shakeStarted&&tau>=draft.impact){shakeStarted=true;shake.stop=startShake(stage,u,seed);}
    const phase=p<.22?'start':p<impactP?'travel':'impact';
-   g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase,elapsed:Math.round(duration*p),superEffective:heavy,...(template==='room'?{cells:cellKeys}:{})});
+   g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase,elapsed:Math.round(duration*p),superEffective:heavy,...(template==='room'?{cells:cellKeys}:revealClipped&&stage.visibleFloorCells?{visibleCells:cellKeys}:{}),...(traces.has(g)?{actualGeometry:(traces.get(g)??[]).map(poly=>poly.map(q=>[q.x,q.y]))}:{})});
   };
-  g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase:'start',elapsed:0,superEffective:heavy,...(template==='room'?{cells:cellKeys}:{})});
+  g.setData('combatEffect',{template,type:effect.type,move:effect.move,phase:'start',elapsed:0,superEffective:heavy,...(template==='room'?{cells:cellKeys}:revealClipped&&stage.visibleFloorCells?{visibleCells:cellKeys}:{}),...(traces.has(g)?{actualGeometry:[]}:{})});
   stage.temp.add(g);
   try{
    stage.scene.tweens.add({targets:{progress:0},progress:1,duration,ease:'Linear',onUpdate:(_:unknown,target:{progress:number})=>draw(target.progress),onComplete:cleanup,onStop:cleanup} as unknown as Phaser.Types.Tweens.TweenBuilderConfig);

@@ -878,12 +878,10 @@ async function send(port,store,cmd,st,where){
  assert.equal(port.writes(),writesBefore,`${where}: rejected command wrote storage`);
  return r;
 }
-/** #200 follow-up: a confused companion can strike the leader dead before the leader's turn, and the engine then never checks the leader's command (known engine gap, tracked outside this probe), so the illegal-move probe is skipped in that state. */
-const confusedAlly=s=>s.queue.some(id=>id!==s.leader&&s.units[id]?.hp>0&&s.units[id].status?.confusion);
 /** Commands that must be refused in the current phase. Each one is checked to change nothing. */
 async function probe(port,store,st,where){
  const s=store.state;st.probes++;
- const bad=s.phase==='playing'?[{type:'finishExit'},{type:'finishTransit'},{type:'invite',choice:'reject'},...(!sleeping(s.units[s.leader])&&!confusedAlly(s)?[{type:'round',action:{type:'move',to:{x:-5,y:-5}}}]:[]),{type:'round',action:{type:'interact',exit:true},override:{actor:s.leader,action:{type:'wait'}}}]
+ const bad=s.phase==='playing'?[{type:'finishExit'},{type:'finishTransit'},{type:'invite',choice:'reject'},...(!sleeping(s.units[s.leader])?[{type:'round',action:{type:'move',to:{x:-5,y:-5}}}]:[]),{type:'round',action:{type:'interact',exit:true},override:{actor:s.leader,action:{type:'wait'}}}]
   :s.phase==='invitation'?[{type:'round',action:{type:'wait'}},{type:'finishExit'},{type:'switch',actor:s.leader}]
   :s.phase==='ended'?[{type:'round',action:{type:'wait'}},{type:'invite',choice:'reject'},{type:'finishExit'},{type:'finishTransit'}]
   :[{type:'round',action:{type:'wait'}}];

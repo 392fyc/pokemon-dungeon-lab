@@ -32,22 +32,33 @@ export function nearestClearVerticalOffset(swept:TextBounds,blockers:readonly Te
 }
 
 export type TextOffset={dx:number;dy:number};
+/** Search the gaps inside the camera, so an offscreen gap cannot hide a farther visible one. */
+function nearestVisibleVerticalOffset(swept:TextBounds,blockers:readonly TextBounds[],viewport:TextBounds):number|undefined{
+ if(swept.left<viewport.left||swept.right>viewport.right)return undefined;
+ const min=Math.ceil(viewport.top-swept.top),max=Math.floor(viewport.bottom-swept.bottom);
+ const blocked=blockers.filter(b=>swept.left<b.right&&swept.right>b.left)
+  .map(b=>[b.top-swept.bottom,b.bottom-swept.top] as const);
+ const candidates=[0,min,max,...blocked.flatMap(([top,bottom])=>[Math.ceil(top)-1,Math.floor(bottom)+1])];
+ return candidates.filter(dy=>dy>=min&&dy<=max&&blocked.every(([top,bottom])=>dy<top||dy>bottom))
+  .sort((a,b)=>Math.abs(a)-Math.abs(b)||a-b)[0];
+}
 /** Keep the vertical placement near the target; if it exceeds 0.75 cell, find the nearest visible side position. */
 export function nearestClearTextOffset(swept:TextBounds,blockers:readonly TextBounds[],cell:number,viewport?:TextBounds):TextOffset{
  const verticalThreshold=Math.ceil(cell*.75),verticalLimit=cell*3;
- const inside=(box:TextBounds)=>!viewport||(box.left>=viewport.left&&box.right<=viewport.right&&box.top>=viewport.top&&box.bottom<=viewport.bottom);
- const vertical=nearestClearVerticalOffset(swept,blockers,verticalLimit),verticalBox={left:swept.left,top:swept.top+vertical,right:swept.right,bottom:swept.bottom+vertical};
- if(Math.abs(vertical)<=verticalThreshold&&inside(verticalBox))return {dx:0,dy:vertical};
+ const vertical=viewport?nearestVisibleVerticalOffset(swept,blockers,viewport):nearestClearVerticalOffset(swept,blockers,verticalLimit);
+ if(vertical!==undefined&&Math.abs(vertical)<=verticalThreshold)return {dx:0,dy:vertical};
  let best:TextOffset|undefined,bestDistance=Infinity;
+ let visibleFallback=vertical===undefined?undefined:{dx:0,dy:vertical},fallbackDistance=vertical===undefined?Infinity:vertical*vertical;
  const horizontalLimit=cell*2;
  for(let dx=1;dx<=horizontalLimit;dx++)for(const signedX of [-dx,dx]){
   const moved={left:swept.left+signedX,top:swept.top,right:swept.right+signedX,bottom:swept.bottom};
-  const dy=nearestClearVerticalOffset(moved,blockers,verticalThreshold);
-  if(Math.abs(dy)>verticalThreshold)continue;
-  const placed={left:moved.left,top:moved.top+dy,right:moved.right,bottom:moved.bottom+dy};
-  if(!inside(placed))continue;
+  const dy=viewport?nearestVisibleVerticalOffset(moved,blockers,viewport):nearestClearVerticalOffset(moved,blockers,verticalThreshold);
+  if(dy===undefined)continue;
   const distance=signedX*signedX+dy*dy;
+  if(viewport&&distance<fallbackDistance){visibleFallback={dx:signedX,dy};fallbackDistance=distance;}
+  if(Math.abs(dy)>verticalThreshold)continue;
   if(distance<bestDistance){best={dx:signedX,dy};bestDistance=distance;}
  }
- return best??{dx:0,dy:vertical};
+ // If no non-overlapping rectangle fits anywhere in the searched viewport region, preserve the existing HP-clear fallback.
+ return best??visibleFallback??{dx:0,dy:nearestClearVerticalOffset(swept,blockers,verticalLimit)};
 }

@@ -41,4 +41,23 @@ test('dense blockers still produce a vertical placement outside every HP rectang
  assert.ok(blockers.every(b=>placed.bottom<=b.top||placed.top>=b.bottom));
 });
 
+test('dense targets near the top edge use a farther visible vertical gap when side positions are occupied',()=>{
+ const moving={left:20,top:10,right:40,bottom:30},blocker={left:0,top:15,right:100,bottom:50},viewport={left:0,top:0,right:100,bottom:120};
+ const offset=nearestClearTextOffset(moving,[blocker],20,viewport),placed={left:moving.left+offset.dx,top:moving.top+offset.dy,right:moving.right+offset.dx,bottom:moving.bottom+offset.dy};
+ assert.ok(placed.top>=viewport.top&&placed.bottom<=viewport.bottom,'the group stays visible instead of choosing the closer offscreen gap');
+ assert.ok(!intersects(placed,blocker),'the visible fallback still clears the dense HP labels');
+ assert.deepEqual(offset,{dx:0,dy:41},'the nearest visible vertical gap lies below the blockers');
+});
+
+test('fractional HP boundaries retain the one-pixel visible gap near either camera edge',()=>{
+ const viewport={left:0,top:0,right:100,bottom:120};
+ for(const [top,bottom,ranges,expected] of [[10,30,[[15,50.2],[71.8,100]],41],[90,110,[[20,48.2],[69.8,105]],-41]]){
+  const moving={left:20,top,right:40,bottom},blockers=ranges.map(([top,bottom])=>({left:0,top,right:100,bottom}));
+  const offset=nearestClearTextOffset(moving,blockers,20,viewport),placed={left:moving.left+offset.dx,top:top+offset.dy,right:moving.right+offset.dx,bottom:bottom+offset.dy};
+  assert.deepEqual(offset,{dx:0,dy:expected},'find the only safe integer offset between the two fractional blockers');
+  assert.ok(placed.top>=viewport.top&&placed.bottom<=viewport.bottom);
+  assert.ok(blockers.every(b=>!intersects(placed,b)));
+ }
+});
+
 function intersects(a,b){return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;}

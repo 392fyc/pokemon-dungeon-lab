@@ -7,6 +7,8 @@
 export type Cell={x:number;y:number};
 /** `boss` (7.3): themed floors, the new enemy pools and a regional boss on the last floor. */
 export type FloorParams={width:number;height:number;floors:number;boss?:boolean;roguelike?:true;difficulty?:Difficulty;enemySleepChance?:number};
+/** Diagnostic callback is separate from the serializable game parameters/results. */
+export type GenerationMeasure=(phase:'layout'|'liquid'|'placement',milliseconds:number)=>void;
 export const DEFAULT_PARAMS:FloorParams={width:36,height:24,floors:3,boss:true,roguelike:true};
 import {ECON} from './economy.ts';
 import {SPECIES,BOSS_CONFIG,speciesMaxHp,bossMaxHp,tmPool} from './roster.ts';
@@ -89,6 +91,11 @@ export function mulberry32(seed:number):()=>number {
 const k=(p:Cell)=>`${p.x},${p.y}`;
 const dist=(a:Cell,b:Cell)=>Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
 const DIRS:Cell[]=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
+// Manhattan-distance ordering depends only on which side of the goal we are on.
+// Each order keeps DIRS' tie order, just like the former stable sort at every node.
+const TOWARD_DIRS=[-1,0,1].flatMap(x=>[-1,0,1].map(y=>DIRS.slice().sort((a,b)=>
+  (Math.abs(x-a.x)+Math.abs(y-a.y))-(Math.abs(x-b.x)+Math.abs(y-b.y)))));
+const orderedDirections=(from:Cell,to:Cell)=>TOWARD_DIRS[(Math.sign(to.x-from.x)+1)*3+Math.sign(to.y-from.y)+1];
 export const center=(r:Room):Cell=>({x:r.x+Math.floor(r.w/2),y:r.y+Math.floor(r.h/2)});
 export const roomCells=(r:Room):Cell[]=>{const out:Cell[]=[];for(let y=r.y;y<r.y+r.h;y++)for(let x=r.x;x<r.x+r.w;x++)out.push({x,y});return out;};
 
@@ -360,7 +367,7 @@ const BUFFER=2;
 const TURN_EDGE_TRIES=4;
 /** Layout redraw limit; redraws come from failed connections, ground shapes, or liquid shaping. */
 const MAX_LAYOUT_ATTEMPTS=64;
-export function generateFloor(seed:number,level:number,params:FloorParams=DEFAULT_PARAMS):GeneratedFloor {
+export function generateFloor(seed:number,level:number,params:FloorParams=DEFAULT_PARAMS,measure?:GenerationMeasure):GeneratedFloor {
   const {width:W,height:H,floors}=params;
   const bossEnabled=params.boss===true;
   const bossFloor=bossEnabled&&level===floors;
@@ -451,25 +458,41 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const corridorInt=(lo:number,hi:number)=>lo+Math.floor(corridorRng()*(hi-lo+1));
     // 8.8 (#178): next to its own room (within BUFFER cells outside it) a route may only go straight out of, or into, a room face: no cell in a corner zone,
     // and no sideways step while any brush cell is that close. That is the door; running along the room's outside would be hugging.
-    const doorOk=(cellsNow:Cell[],cellsBefore:Cell[]|null,step:Cell|null,room:Room):boolean=>{
-      for(const group of cellsBefore?[cellsNow,cellsBefore]:[cellsNow])for(const c of group){
-        const dx=c.x<room.x?room.x-c.x:c.x>=room.x+room.w?c.x-(room.x+room.w-1):0;
-        const dy=c.y<room.y?room.y-c.y:c.y>=room.y+room.h?c.y-(room.y+room.h-1):0;
+    const doorMasks=rooms.map(()=>new Uint8Array(W*H));
+    // A layout's rooms never move. Cache each 2x2 footprint's legal door axes:
+    // bit 1 = legal at rest, bit 2 = horizontal step, bit 4 = vertical step.
+    const doorMask=(p:Cell,roomIndex:number):number=>{
+      const index=p.y*W+p.x,cache=doorMasks[roomIndex];
+      if(cache[index])return cache[index]-1;
+      const room=rooms[roomIndex];let mask=7;
+      for(let y=p.y;y<=p.y+1;y++)for(let x=p.x;x<=p.x+1;x++){
+        const dx=x<room.x?room.x-x:x>=room.x+room.w?x-(room.x+room.w-1):0;
+        const dy=y<room.y?room.y-y:y>=room.y+room.h?y-(room.y+room.h-1):0;
         if(Math.max(dx,dy)===0||Math.max(dx,dy)>BUFFER)continue;
-        if(dx>0&&dy>0)return false;
-        if(step&&((dx===0&&step.x!==0)||(dy===0&&step.y!==0)))return false;
+        if(dx>0&&dy>0){cache[index]=1;return 0;}
+        if(dx===0)mask&=~2;
+        if(dy===0)mask&=~4;
       }
-      return true;
+      cache[index]=mask+1;return mask;
+    };
+    const footprintMasks=new Map<number,Uint8Array>();
+    const footprintMask=(p:Cell,a:number,b:number):number=>{
+      if(p.x<1||p.y<1||p.x+1>=W-1||p.y+1>=H-1)return 0;
+      const pair=Math.min(a,b)*rooms.length+Math.max(a,b),index=p.y*W+p.x;
+      let cache=footprintMasks.get(pair);
+      if(!cache){cache=new Uint8Array(W*H);footprintMasks.set(pair,cache);}
+      if(cache[index])return cache[index]-1;
+      for(let i=0;i<rooms.length;i++)if(i!==a&&i!==b){
+        const r=rooms[i];if(p.x+1>=r.x-BUFFER&&p.x<r.x+r.w+BUFFER&&p.y+1>=r.y-BUFFER&&p.y<r.y+r.h+BUFFER){cache[index]=1;return 0;}
+      }
+      const mask=bossBox&&a!==bossRoom&&b!==bossRoom&&p.x+1>=bossBox.x&&p.x<bossBox.x+bossBox.w&&p.y+1>=bossBox.y&&p.y<bossBox.y+bossBox.h?0:doorMask(p,a)&doorMask(p,b);
+      cache[index]=mask+1;return mask;
     };
     const footprintLegal=(p:Cell,a:number,b:number,from:Cell|null=null):boolean=>{
-      const cellsHere=brush(p.x,p.y);
-      if(cellsHere.some(c=>c.x<1||c.y<1||c.x>=W-1||c.y>=H-1))return false;
-      for(let i=0;i<rooms.length;i++)if(i!==a&&i!==b){
-        const r=rooms[i];if(cellsHere.some(c=>c.x>=r.x-BUFFER&&c.x<r.x+r.w+BUFFER&&c.y>=r.y-BUFFER&&c.y<r.y+r.h+BUFFER))return false;
-      }
-      const before=from?brush(from.x,from.y):null,step=from?{x:p.x-from.x,y:p.y-from.y}:null;
-      if(!doorOk(cellsHere,before,step,rooms[a])||!doorOk(cellsHere,before,step,rooms[b]))return false;
-      return !(bossBox&&a!==bossRoom&&b!==bossRoom&&cellsHere.some(c=>inRect(c,bossBox)));
+      const current=footprintMask(p,a,b);if(!current)return false;
+      const mask=current&(from?doorMask(from,a)&doorMask(from,b):7);
+      if(!(mask&1)||(from&&((p.x!==from.x&&!(mask&2))||(p.y!==from.y&&!(mask&4)))))return false;
+      return true;
     };
     const toward=(at:Cell,q:Cell):Cell[]=>[
       ...(at.x===q.x?[]:[{x:Math.sign(q.x-at.x),y:0}]),
@@ -478,15 +501,15 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     const sameDir=(a:Cell,b:Cell)=>a.x===b.x&&a.y===b.y;
     // #200: a route never stands on the same position twice. The search states carry a direction and a flag, so one position can be
     // reached again by a different state; walking the chain of parent states keeps each found route a simple walk.
-    const onChain=(previous:Map<string,string|null>,positions:Map<string,{p:Cell}>,from:string,cell:Cell):boolean=>{
-      for(let at:string|null=from;at!==null;at=previous.get(at)??null){
-        const seen=positions.get(at)!.p;
+    const onChain=(states:readonly {p:Cell;parent:number}[],from:number,cell:Cell):boolean=>{
+      for(let at=from;at>=0;at=states[at].parent){
+        const seen=states[at].p;
         if(seen.x===cell.x&&seen.y===cell.y)return true;
       }
       return false;
     };
-    const hallwayPosition=(p:Cell,a:number,b:number)=>
-      brush(p.x,p.y).some(c=>!inRect(c,rooms[a]))&&brush(p.x,p.y).some(c=>!inRect(c,rooms[b]));
+    const outsideRoom=(p:Cell,r:Room)=>p.x<r.x||p.y<r.y||p.x+1>=r.x+r.w||p.y+1>=r.y+r.h;
+    const hallwayPosition=(p:Cell,a:number,b:number)=>outsideRoom(p,rooms[a])&&outsideRoom(p,rooms[b]);
     const hasHallwayTurn=(path:Cell[],a:number,b:number):boolean=>{
       let previous:Cell|null=null;
       for(let i=1;i<path.length;i++){
@@ -499,39 +522,35 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       return false;
     };
     const turningPath=(p:Cell,q:Cell,a:number,b:number,oneWayBossEntry=false):Cell[]|null=>{
-      const touchesBoss=(at:Cell)=>!!bossBox&&brush(at.x,at.y).some(c=>inRect(c,bossBox!));
+      const touchesBoss=(at:Cell)=>!!bossBox&&at.x+1>=bossBox.x&&at.x<bossBox.x+bossBox.w&&at.y+1>=bossBox.y&&at.y<bossBox.y+bossBox.h;
       const keyOf=(at:Cell,dx:number,dy:number,turned:boolean,entered:boolean)=>
-        `${k(at)}|${dx},${dy}|${turned?1:0}|${entered?1:0}`;
+        (at.y*W+at.x)*36+((dx+1)*3+dy+1)*4+(turned?2:0)+(entered?1:0);
       const start={x:p.x,y:p.y},startEntered=touchesBoss(start);
       const startKey=keyOf(start,0,0,false,startEntered);
-      const queue=[{p:start,dx:0,dy:0,turned:false,entered:startEntered}];
-      const previous=new Map<string,string|null>([[startKey,null]]);
-      const positions=new Map([[startKey,queue[0]]]);let found:string|undefined;
-      for(let i=0;i<queue.length&&!found;i++){
-        const current=queue[i],currentKey=keyOf(current.p,current.dx,current.dy,current.turned,current.entered);
-        if(current.p.x===q.x&&current.p.y===q.y&&current.turned&&(!oneWayBossEntry||current.entered)){found=currentKey;break;}
-        const directions=DIRS.slice().sort((u,v)=>
-          (Math.abs(current.p.x+u.x-q.x)+Math.abs(current.p.y+u.y-q.y))-
-          (Math.abs(current.p.x+v.x-q.x)+Math.abs(current.p.y+v.y-q.y)));
+      const queue=[{p:start,dx:0,dy:0,turned:false,entered:startEntered,parent:-1}];
+      const visited=new Uint8Array(W*H*36);visited[startKey]=1;let found=-1;
+      for(let i=0;i<queue.length&&found<0;i++){
+        const current=queue[i];
+        if(current.p.x===q.x&&current.p.y===q.y&&current.turned&&(!oneWayBossEntry||current.entered)){found=i;break;}
+        const directions=orderedDirections(current.p,q);
         for(const d of directions){
           if(d.x===-current.dx&&d.y===-current.dy&&(current.dx!==0||current.dy!==0))continue;
           const next={x:current.p.x+d.x,y:current.p.y+d.y};
-          if(!footprintLegal(next,a,b,current.p)||onChain(previous,positions,currentKey,next))continue;
+          if(!footprintLegal(next,a,b,current.p)||onChain(queue,i,next))continue;
           const nextEntered=touchesBoss(next);
           if(oneWayBossEntry&&current.entered&&!nextEntered)continue;
           const turned=current.turned||((current.dx!==0||current.dy!==0)
             &&(current.dx!==d.x||current.dy!==d.y)
             &&hallwayPosition(current.p,a,b)&&hallwayPosition(next,a,b));
           const nextKey=keyOf(next,d.x,d.y,turned,current.entered||nextEntered);
-          if(previous.has(nextKey))continue;
-          previous.set(nextKey,currentKey);
-          const state={p:next,dx:d.x,dy:d.y,turned,entered:current.entered||nextEntered};
-          positions.set(nextKey,state);queue.push(state);
+          if(visited[nextKey])continue;
+          visited[nextKey]=1;
+          queue.push({p:next,dx:d.x,dy:d.y,turned,entered:current.entered||nextEntered,parent:i});
         }
       }
-      if(!found)return null;
-      const path:Cell[]=[];let at:string|null=found;
-      while(at!==null){path.push(positions.get(at)!.p);at=previous.get(at)??null;}
+      if(found<0)return null;
+      const path:Cell[]=[];
+      for(let at=found;at>=0;at=queue[at].parent)path.push(queue[at].p);
       return path.reverse();
     };
     const curvePath=(p:Cell,q:Cell,a:number,b:number):Cell[]|null=>{
@@ -585,8 +604,7 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
       const previous=new Map<string,string|null>([[startKey,null]]),positions=new Map([[startKey,{p:start,entered:startEntered}]]),queue=[{p:start,entered:startEntered}];
       let found:string|undefined;
       for(let i=0;i<queue.length&&!found;i++){
-        const current=queue[i],at=current.p,ordered=DIRS.slice().sort((u,v)=>
-          (Math.abs(at.x+u.x-q.x)+Math.abs(at.y+u.y-q.y))-(Math.abs(at.x+v.x-q.x)+Math.abs(at.y+v.y-q.y)));
+        const current=queue[i],at=current.p,ordered=orderedDirections(at,q);
         for(const d of ordered){
           const next={x:at.x+d.x,y:at.y+d.y},nextKey=k(next);
           if(!footprintLegal(next,a,b,at))continue;
@@ -781,30 +799,30 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
         trimmed=true;
       }
     }
-    const validBrush=(p:Cell)=>brush(p.x,p.y).every(cell=>cells.has(k(cell)));
+    const validBrush=(p:Cell)=>cells.has(p.x+','+p.y)&&cells.has((p.x+1)+','+p.y)&&cells.has(p.x+','+(p.y+1))&&cells.has((p.x+1)+','+(p.y+1));
     const survivingBrushPath=(from:number,to:number,requireHallwayTurn:boolean):Cell[]|null=>{
       const start=anchor(rooms[from]),goal=anchor(rooms[to]);
-      const stateKey=(p:Cell,dx:number,dy:number,turned:boolean)=>`${k(p)}|${dx},${dy}|${turned?1:0}`;
-      const startKey=stateKey(start,0,0,false),queue=[{p:start,dx:0,dy:0,turned:false}],previous=new Map<string,string|null>([[startKey,null]]),positions=new Map([[startKey,queue[0]]]);
-      let found:string|undefined;
-      for(let i=0;i<queue.length&&!found;i++){
-        const current=queue[i],currentKey=stateKey(current.p,current.dx,current.dy,current.turned);
-        if(current.p.x===goal.x&&current.p.y===goal.y&&(!requireHallwayTurn||current.turned)){found=currentKey;break;}
+      const stateKey=(p:Cell,dx:number,dy:number,turned:boolean)=>(p.y*W+p.x)*18+((dx+1)*3+dy+1)*2+(turned?1:0);
+      const startKey=stateKey(start,0,0,false),queue=[{p:start,dx:0,dy:0,turned:false,parent:-1}],visited=new Uint8Array(W*H*18);
+      visited[startKey]=1;let found=-1;
+      for(let i=0;i<queue.length&&found<0;i++){
+        const current=queue[i];
+        if(current.p.x===goal.x&&current.p.y===goal.y&&(!requireHallwayTurn||current.turned)){found=i;break;}
         for(const d of DIRS){
           // #200: no U-turn on the spot. Stepping back to the cell just left is not a bend of the corridor.
           if(d.x===-current.dx&&d.y===-current.dy&&(current.dx!==0||current.dy!==0))continue;
           const next={x:current.p.x+d.x,y:current.p.y+d.y};
-          if(!validBrush(next)||!footprintLegal(next,from,to,current.p)||onChain(previous,positions,currentKey,next))continue;
+          if(!validBrush(next)||!footprintLegal(next,from,to,current.p)||onChain(queue,i,next))continue;
           const hallway=(current.dx!==0||current.dy!==0)
             &&hallwayPosition(current.p,from,to)&&hallwayPosition(next,from,to);
           const turned=current.turned||(hallway&&(current.dx!==d.x||current.dy!==d.y));
-          const nextKey=stateKey(next,d.x,d.y,turned);if(previous.has(nextKey))continue;
-          previous.set(nextKey,currentKey);positions.set(nextKey,{p:next,dx:d.x,dy:d.y,turned});queue.push({p:next,dx:d.x,dy:d.y,turned});
+          const nextKey=stateKey(next,d.x,d.y,turned);if(visited[nextKey])continue;
+          visited[nextKey]=1;queue.push({p:next,dx:d.x,dy:d.y,turned,parent:i});
         }
       }
-      if(!found)return null;
-      const path:Cell[]=[];let at:string|null=found;
-      while(at!==null){path.push(positions.get(at)!.p);at=previous.get(at)??null;}
+      if(found<0)return null;
+      const path:Cell[]=[];
+      for(let at=found;at>=0;at=queue[at].parent)path.push(queue[at].p);
       return path.reverse();
     };
     for(const route of corridors){
@@ -855,16 +873,21 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
   let topology:ReturnType<typeof tryLayout>=null,shaped:LiquidFeatures|null=null,floor:Cell[]=[];
   while(layoutAttempts<MAX_LAYOUT_ATTEMPTS&&!shaped){
     layoutAttempts++;
+    const layoutStarted=measure?performance.now():0;
     topology=tryLayout();
+    if(measure)measure('layout',performance.now()-layoutStarted);
     if(!topology)continue;
     floor=[...topology.cells.values()].sort((a,b)=>a.y-b.y||a.x-b.x);
+    const liquidStarted=measure?performance.now():0;
     const result=tryLiquidFeatures(seed,level,params,floor,topology.rooms);
+    if(measure)measure('liquid',performance.now()-liquidStarted);
     if(!result){liquidLayoutRetries++;liquidRetries+=LIQUID_ATTEMPTS;topology=null;continue;}
     liquidRetries+=result.attempts-1;shaped=result.features;
   }
   if(!topology||!shaped)throw new Error(`floor generator could not build a connected, well-shaped layout in ${MAX_LAYOUT_ATTEMPTS} attempts (seed ${seed}, level ${level})`);
   const {rooms,bossRoom,cells,corridors,ordinaryRooms,inRect}=topology;
   const generationStats={layoutAttempts,connectionRetries,shapeRetries,liquidRetries,liquidLayoutRetries};
+  const placementStarted=measure?performance.now():0;
 
   const distancesFrom=(start:Cell):Map<string,number>=>{
     const depth=new Map<string,number>([[k(start),0]]),queue=[start];
@@ -1027,8 +1050,10 @@ export function generateFloor(seed:number,level:number,params:FloorParams=DEFAUL
     }
   }
   const liquid=unionLiquid(shaped);
-  return {level,width:W,height:H,floor,rooms,corridors,generationStats,liquid,arrivalRoom,arrival,up:null,down,points:outputPoints,enemies,enemyAiRng,
+  const generated:GeneratedFloor={level,width:W,height:H,floor,rooms,corridors,generationStats,liquid,arrivalRoom,arrival,up:null,down,points:outputPoints,enemies,enemyAiRng,
     pickups,rest,services:outputServices,...(roguelike?{adventureRooms,
       ...(goalAnchor?{goalAnchor:{x:goalAnchor.x,y:goalAnchor.y}}:{})}:{}),
     ...(bossEnabled?{theme:themed.theme}:{}),...(bossFloor?{bossRoom}:{})};
+  if(measure)measure('placement',performance.now()-placementStarted);
+  return generated;
 }

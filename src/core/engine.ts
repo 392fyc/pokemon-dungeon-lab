@@ -1,5 +1,6 @@
 /** Approved trial rules, research 5f354788. Pure JSON state; no storage or renderer. */
 import {generateFloor,generateChallengeEncounter,serviceRoll,ENEMY_DIFFICULTY,DIFFICULTY,isDifficulty,BOSS,BOSS_CONFIG,INITIAL_LEVEL,streamSeed,mulberry32,type Difficulty,type GeneratedFloor,type AdventureRoom} from './dungeon.ts';
+import {cloneGameValue} from './clone.ts';
 import {ECON} from './economy.ts';
 import {currentStats} from './stats.ts';
 import {SPECIES,speciesOf,tmPool,learnableMove,speciesMaxHp,movesAtLevel,type KitMove} from './roster.ts';
@@ -210,7 +211,7 @@ export const DIRS:Pos[]=[{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0,y:-1}];
 /** 8.8 (4.1): eight movement directions. The four straight ones come first so equal-length paths still prefer them (right/down/left/up, then the diagonals). */
 export const DIRS8:Pos[]=[...DIRS,{x:1,y:1},{x:-1,y:1},{x:-1,y:-1},{x:1,y:-1}];
 export const plus=(a:Pos,b:Pos):Pos=>({x:a.x+b.x,y:a.y+b.y});
-export const clone=<T>(v:T):T=>structuredClone(v);
+export const clone=<T>(v:T):T=>cloneGameValue(v);
 const isDirection=(value:unknown):value is Pos=>!!value&&typeof value==='object'&&Number.isInteger((value as Pos).x)&&Number.isInteger((value as Pos).y)&&DIRS8.some(d=>d.x===(value as Pos).x&&d.y===(value as Pos).y);
 /** A unit's saved facing, or the legacy default when it has never moved or attacked. */
 export function facingOf(unit:Pick<Unit,'side'|'facing'>):Pos {

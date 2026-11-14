@@ -5,7 +5,7 @@ import {moveEffectLabel} from '../../src/core/describe.ts';
 import {MOVE_DEFS} from '../../src/core/moves.ts';
 import {moveEffectText} from '../../src/core/move-text.ts';
 
-const items=['berry','tonic','bigBerry','teamTonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','violentSeed','maxElixir','slumberOrb','totterOrb','luminousOrb','rollcallOrb','reviverSeed'];
+const items=['berry','tonic','bigBerry','teamTonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','joySeed','violentSeed','maxElixir','slumberOrb','totterOrb','luminousOrb','rollcallOrb','reviverSeed'];
 
 test('every current item has a visible Chinese effect description',()=>{
  assert.deepEqual(Object.keys(ITEM_DESCRIPTIONS),items);
@@ -15,7 +15,7 @@ test('every current item has a visible Chinese effect description',()=>{
  assert.match(itemDescription('berry'),/HP/);
  assert.match(itemDescription('tonic'),/PP/);
  assert.match(itemDescription('teamTonic'),/在场存活队员/);
- assert.match(itemDescription('healSeed'),/全部异常状态/);
+ assert.match(itemDescription('healSeed'),/全部坏异常状态/);
  assert.match(itemDescription('chestoBerry'),/解除睡眠/);
  assert.match(itemDescription('violentSeed'),/攻击和特攻/);
  assert.match(itemDescription('maxElixir'),/所有已学招式/);

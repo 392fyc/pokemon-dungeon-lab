@@ -91,6 +91,11 @@ SLEEP_STATUS_MOVES = {
 }
 SLEEP_ACTION_MOVES = {"rest": "rest", "snore": "snore", "sleeptalk": "sleeptalk"}
 SLEEP_MOVE_IDS = {**SLEEP_STATUS_MOVES, **SLEEP_ACTION_MOVES}
+RECHARGE_MOVE_IDS = {
+    "hyperbeam": ("line10", "all", "TDS"), "gigaimpact": ("front", "enemy", "TDS"),
+    "frenzyplant": ("front", "enemy", "S"), "hydrocannon": ("line10", "all", "S"),
+    "blastburn": ("around", "enemy", "TDS"),
+}
 TYPE_NAMES = (
     "Bug", "Dark", "Dragon", "Electric", "Fairy", "Fighting", "Fire", "Flying",
     "Ghost", "Grass", "Ground", "Ice", "Normal", "Poison", "Psychic", "Rock", "Steel", "Water",
@@ -107,7 +112,7 @@ GAME_OUTPUT = {
     "SMD": ("SMD", "超不可思议的迷宫"),
     "RTDX": ("RTDX", "救助队 DX"),
 }
-ADMISSION_KEYS = ("existingMoveRule", "blowaway", "drain", "pureDamage", "selfStages", "teamProtection", "foeStages", "status", "sleepStatus", "sleepAction", "recoil", "heal")
+ADMISSION_KEYS = ("existingMoveRule", "blowaway", "drain", "pureDamage", "selfStages", "teamProtection", "foeStages", "status", "sleepStatus", "sleepAction", "recharge", "recoil", "heal")
 EXCLUSION_KEYS = (
     "nonstandard", "noOfficialData", "unsupportedRange", "unsupportedTarget",
     "selfCostOrCondition", "ohko", "fixedDamage", "multihit", "recoil",
@@ -615,6 +620,34 @@ def classify_moves(union: set[str], showdown_moves: dict, pmd_data: dict, old_mo
         move = showdown_moves.get(move_id)
         if not isinstance(move, dict):
             fail(f"Showdown learnset 引用了不存在的招式：{move_id}")
+        if expanded and move_id in RECHARGE_MOVE_IDS:
+            if excluded_nonstandard(move_id, move):
+                fail(f"B3 固定准入招式被判为非标准：{move_id}")
+            row = selected_pmd_row(move_id, pmd_data)
+            if row is None or row["game"] != RECHARGE_MOVE_IDS[move_id][2]:
+                fail(f"{move_id} 缺少符合固定优先顺序的官方招式行")
+            range_value, range_reason = mapped_field(row["range"], RANGE_MAP, UNSUPPORTED_RANGES, "range", move_id)
+            target_value, target_reason = mapped_field(row["target"], TARGET_MAP, UNSUPPORTED_TARGETS, "target", move_id)
+            if range_reason or target_reason or (range_value, target_value) != RECHARGE_MOVE_IDS[move_id][:2]:
+                fail(f"{move_id} 的固定射程或目标字段不符合 B3：{row['range']} / {row['target']}")
+            flags, own = move.get("flags") or {}, move.get("self") or {}
+            if move.get("category") not in ("Physical", "Special") or move.get("target") != "normal" or not flags.get("recharge") or own.get("volatileStatus") != "mustrecharge":
+                fail(f"{move_id} 的固定 Showdown 充能字段不符合 B3：{move!r}")
+            power = as_power(row["pow"])
+            if power is None:
+                fail(f"{move_id} 的 TDS 威力不是固定整数：{row['pow']!r}")
+            effect = ["damage", "recharge"]
+            game_id, game_name = GAME_OUTPUT[row["game"]]
+            note = "B3：至少一个目标实际损失 HP 后，跳过下一次自身行动机会。"
+            specs[move_id] = {
+                "range": range_value, "target": target_value, "power": power,
+                "game": game_id, "gameName": game_name,
+                "official": {"basePp": row["pp"], "accuracy": row["acc"], "cutsCorners": row["cuts"], "range": row["range"], "target": row["target"]},
+                "effects": effect, "source": "Bulbapedia", "note": note,
+            }
+            result[move_id] = {"admitted": True, "kind": "recharge", "effects": effect}
+            admission_counts["recharge"] = admission_counts.get("recharge", 0) + 1
+            continue
         if expanded and move_id in SLEEP_MOVE_IDS:
             if excluded_nonstandard(move_id, move):
                 fail(f"8.9b 固定准入招式被判为非标准：{move_id}")
@@ -1381,7 +1414,7 @@ def build_outputs(snapshot_root: Path, main_root: Path, checked: dict):
         "items": {
             **baseline_names["items"],
             "rawstBerry": "莓莓果", "cheriBerry": "樱子果", "chestoBerry": "零余果",
-            "violentSeed": "暴力种子", "maxElixir": "单人满 PP 补剂",
+            "violentSeed": "暴力种子", "maxElixir": "单人满 PP 补剂", "joySeed": "喜悦种子",
         },
     }
     pmd_bytes = serialize_pmd(old_pmd, new_specs, baseline_snippets, data["moves"])

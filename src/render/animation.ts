@@ -32,7 +32,7 @@ export type AnimEvent =
 export type StageTag={target:string; at:Pos; text:string; color:string};
 
 /** Colours: a raised stage is warm, a lowered one cool (the arrows of the main games are red and blue); each status keeps its usual colour, and a status that ended is pale. */
-export const TAG_COLORS={up:'#ff9a62',down:'#6fb7ff',ended:'#c8d0d0',psn:'#c985f0',tox:'#c985f0',brn:'#ffa24a',par:'#ffe14d',frz:'#8fe6ff',slp:'#cdd6e6',nap:'#cdd6e6',confusion:'#ff85d4',flinch:'#e4e4e4'} as const;
+export const TAG_COLORS={up:'#ff9a62',down:'#6fb7ff',ended:'#c8d0d0',psn:'#c985f0',tox:'#c985f0',brn:'#ffa24a',par:'#ffe14d',frz:'#8fe6ff',slp:'#cdd6e6',nap:'#cdd6e6',recharge:'#ffb36b',confusion:'#ff85d4',flinch:'#e4e4e4'} as const;
 /** What changed on each living, visible unit between the two states: ability-stage steps (one arrow per step, at most three) and statuses that appeared or ended. */
 export function stageTags(b:World,a:World,visible:(p:Pos|null)=>boolean):StageTag[] {
   const tags:StageTag[]=[];

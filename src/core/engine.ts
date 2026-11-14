@@ -59,22 +59,22 @@ export type ExitRequest = {actor:string;pos:Pos;locked:boolean;to?:number};
 export type PointKind='goal'|'item'|'exit'|'down'|'up'|'berry'|'tonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'rest'|'shop'|'exchange';
 export type ShopItem='berry'|'tonic'|'tm'|'pechaBerry'|'healSeed'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'reviverSeed';
 /** 6.4 backpack items (expedition only): berry restores HP, tonic restores PP. Names are display text. */
-export type Item='berry'|'tonic'|'bigBerry'|'teamTonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'violentSeed'|'maxElixir'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'reviverSeed';
+export type Item='berry'|'tonic'|'bigBerry'|'teamTonic'|'pechaBerry'|'rawstBerry'|'cheriBerry'|'chestoBerry'|'healSeed'|'violentSeed'|'maxElixir'|'slumberOrb'|'totterOrb'|'luminousOrb'|'rollcallOrb'|'reviverSeed'|'joySeed';
 /** 8.8 (#165, G9.1): items lying on the floor, picked up by walking onto them. */
 export type PickupKind=Extract<PointKind,Item>;
 export const PICKUP_KINDS:readonly PickupKind[]=['berry','tonic','pechaBerry','rawstBerry','cheriBerry','chestoBerry','healSeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb'];
 export const isPickupKind=(kind:string):kind is PickupKind=>(PICKUP_KINDS as readonly string[]).includes(kind);
 export const SKILL_CN:Record<Skill,string>=(names as unknown as {moves:Record<string,string>}).moves;
-export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂',pechaBerry:'桃桃果',rawstBerry:'莓莓果',cheriBerry:'樱子果',chestoBerry:'零余果',healSeed:'治愈之种',violentSeed:'暴力种子',maxElixir:'单人满 PP 补剂',slumberOrb:'睡眠宝珠',totterOrb:'慌乱宝珠',luminousOrb:'发光宝珠',rollcallOrb:'邀回宝珠',reviverSeed:'复活种子'};
+export const ITEM_NAMES:Record<Item,string>={berry:'橙橙果',tonic:'PP多项小补剂',bigBerry:'大树果',teamTonic:'全员 PP 补剂',pechaBerry:'桃桃果',rawstBerry:'莓莓果',cheriBerry:'樱子果',chestoBerry:'零余果',healSeed:'治愈之种',violentSeed:'暴力种子',maxElixir:'单人满 PP 补剂',slumberOrb:'睡眠宝珠',totterOrb:'慌乱宝珠',luminousOrb:'发光宝珠',rollcallOrb:'邀回宝珠',reviverSeed:'复活种子',joySeed:'喜悦种子'};
 /** Items that are used by the member itself, on its own cell, and need no target. */
 export const ORB_ITEMS:readonly Item[]=['slumberOrb','totterOrb','luminousOrb','rollcallOrb'];
 /** Cure berries also restore a little HP (the original games do). */
 export const ITEM_HEALS:Partial<Record<Item,number>>={pechaBerry:4,rawstBerry:4,cheriBerry:4};
 /** Orange Berry: 30% of the target's maximum HP, but never less than the old flat 8. */
 export const berryBaseHeal=(maxHp:number):number=>Math.max(PROG.berryHeal,Math.floor(maxHp*0.3));
-/** 8.8 (#165, G9.1): which status conditions each cure item removes (Heal Seed: all of them). */
+/** 8.8 (#165, G9.1): which abnormal conditions each cure item removes (Heal Seed excludes nap and recharge). */
 export const ITEM_CURES:Partial<Record<Item,readonly StatusId[]>>={pechaBerry:['psn','tox'],rawstBerry:['brn'],cheriBerry:['par'],chestoBerry:['slp'],healSeed:['psn','tox','brn','par','frz','slp','confusion','flinch']};
-export const STATUS_NAMES:Record<StatusId,string>={psn:'中毒',tox:'剧毒',brn:'灼伤',par:'麻痹',frz:'冰冻',slp:'睡眠',nap:'打盹',confusion:'混乱',flinch:'畏缩'};
+export const STATUS_NAMES:Record<StatusId,string>={psn:'中毒',tox:'剧毒',brn:'灼伤',par:'麻痹',frz:'冰冻',slp:'睡眠',nap:'打盹',recharge:'休息',confusion:'混乱',flinch:'畏缩'};
 export const STAGE_NAMES:Record<StageKey,string>={atk:'攻击',def:'防御',spa:'特攻',spd:'特防',spe:'速度',acc:'命中',eva:'闪避'};
 export type CommissionId='hunter'|'collector'|'scout'|'guardian'|'speedrun';
 export type BlessingId='berryBoost'|'floorHeal'|'battleSpirit'|'lullaby'|'rally'|'tmChoice'|'nemesis'|'headhunter'|'fullpower'|'scholar'|'killheal'|'regen'|'thickskin'|'laststand';
@@ -96,7 +96,7 @@ export type Rect={x:number;y:number;w:number;h:number};
  * `rng` is the recruit-draw state (a 32-bit integer, separate from `dungeon.seed`); `kills` holds defeated enemies of the current round
  * until the round-end settlement and is empty at every checkpoint; `made` counts recruits created so far (ids N1, N2...).
  */
-export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number;pechaBerry?:number;rawstBerry?:number;cheriBerry?:number;chestoBerry?:number;healSeed?:number;violentSeed?:number;maxElixir?:number;slumberOrb?:number;totterOrb?:number;luminousOrb?:number;rollcallOrb?:number;reviverSeed?:number}};
+export type Progress={level:number;exp:number;rng:number;made:number;kills:string[];items:{berry:number;tonic:number;bigBerry?:number;teamTonic?:number;pechaBerry?:number;rawstBerry?:number;cheriBerry?:number;chestoBerry?:number;healSeed?:number;violentSeed?:number;maxElixir?:number;slumberOrb?:number;totterOrb?:number;luminousOrb?:number;rollcallOrb?:number;reviverSeed?:number;joySeed?:number}};
 /** Cumulative experience thresholds: reaching Lv L costs the sum of levels 5 through L-1. */
 const expThreshold=(level:number)=>level<=INITIAL_LEVEL?0:level*(level-1)/2-((INITIAL_LEVEL-1)*INITIAL_LEVEL)/2;
 export const PROG={recruitChance:0.3,thresholds:Array.from({length:101},(_,level)=>expThreshold(level)),initialLevel:INITIAL_LEVEL,maxLevel:100,hpPerLevel:1,damagePerLevel:1,damageEveryLevels:4,expMultiplier:2,goalExp:0,bossExp:0,berryHeal:8,tonicPp:10,teamTonicPp:5,restPp:5,bagLimit:null as number|null};
@@ -172,7 +172,7 @@ export type RoundEvent=
   /** A confused unit struck in a random direction (its own action; the next damage is what it hit, see `hpLoss.strike`). */
   |{type:'confusedStrike';unit:string}
   /** The unit's own action ended without a hit it could be credited with. */
-  |{type:'fail';unit:string;reason:'basicNoTarget'|'frozen'|'nap'|'sleep'|'paralyzed'|'flinch'|'invalid'|'noPath'|'wait'|'confusedWander'|'swapPartnerFrozen'}
+  |{type:'fail';unit:string;reason:'basicNoTarget'|'frozen'|'nap'|'sleep'|'paralyzed'|'flinch'|'recharge'|'invalid'|'noPath'|'wait'|'confusedWander'|'swapPartnerFrozen'}
   |{type:'blowaway';unit:string;target:string;to:Pos}
   /** HP lost: a plain hit (no `cause`) or status/recoil damage. `hp` is the HP left; `revive` the HP restored by a Reviver Seed in the same blow; `strike` the confused unit whose random strike this was; `crit` a critical hit. */
   |{type:'hpLoss';unit:string;amount:number;hp:number;cause?:string;crit?:true;strike?:string;revive?:number}
@@ -200,8 +200,8 @@ export type LogPart=string|LogSlot;
  */
 export type LogEntry={n:number;parts:LogPart[];player?:LogPart[];routine?:true;folded?:true;reward?:LogPart[];damage?:{target:string;amount:number;crit?:true;notes:string[]}};
 export type Result = {ok:true;state:World}|{ok:false;state:World;error:string};
-export const RULE_VERSION='trial-rules-6';
-export const CONTENT_VERSION='trial-content-7';
+export const RULE_VERSION='trial-rules-7';
+export const CONTENT_VERSION='trial-content-8';
 export const SPEC_SOURCE='5f3547889b30e59f6cdfebc5af8c91e46cba4ee4';
 export const key=(p:Pos)=>`${p.x},${p.y}`;
 export const same=(a:Pos|null,b:Pos|null)=>!!a&&!!b&&a.x===b.x&&a.y===b.y;
@@ -394,6 +394,13 @@ function applyStatus(s:World,targetId:string,kind:StatusId):void {
   note(s,L`${targetId}${had?'的':'陷入'}${name}${had?'持续时间重新计算':'状态'}`);
   emit(s,{type:'status',target:targetId,status:kind,change:had?'refresh':'apply'});
 }
+/** Recharge uses one action opportunity and must not be treated as a healable abnormal condition. */
+function applyRecharge(s:World,u:Unit,fresh:boolean):void {
+  const had=hasStatus(u,'recharge');
+  (u.status??={}).recharge={left:1,...(fresh?{fresh:true}:{})};
+  note(s,L`${u.id}${had?'继续':'进入'}休息状态`);
+  emit(s,{type:'status',target:u.id,status:'recharge',change:had?'refresh':'apply'});
+}
 function speciesTypes(u:Unit):readonly string[]{return u.species?speciesOf(u.species)?.types??[]:[];}
 /** Which types a status cannot be inflicted on (G5.13), which move ids have a type that cannot be hit by them, and which type shrugs off powder moves. The move texts read these tables. */
 export const STATUS_IMMUNE_TYPES:Partial<Record<StatusId,readonly string[]>>={psn:['poison','steel'],tox:['poison','steel'],brn:['fire'],frz:['ice'],par:['electric']};
@@ -432,7 +439,7 @@ function cureStatuses(s:World,u:Unit,kinds:readonly StatusId[]):StatusId[] {
 /** End of one of the unit's own action opportunities: action-counted conditions advance once per turn. */
 function endOwnTurn(s:World,id:string):void {
   const u=s.units[id];if(!alive(u)||!u.status)return;
-  for(const k of ['slp','nap','par','frz','confusion','flinch'] as const){
+  for(const k of ['slp','nap','par','frz','confusion','flinch','recharge'] as const){
     const st=u.status?.[k];if(!st)continue;
     if(st.fresh){delete st.fresh;continue;}
     st.left=(st.left??1)-1;
@@ -440,11 +447,15 @@ function endOwnTurn(s:World,id:string):void {
       dropStatus(u,k);note(s,L`${id}的${STATUS_NAMES[k]}解除`);emit(s,{type:'status',target:id,status:k,change:'expire'});
       if(k==='nap'){
         const before=u.hp;u.hp=u.maxHp;
-        const cured=cureStatuses(s,u,Object.keys(u.status??{}) as StatusId[]);
-        note(s,L`${id}打盹结束，HP ${before}→${u.hp}，异常状态全部解除${cured.length?'：'+cured.map(v=>STATUS_NAMES[v]).join('、'):''}`);
+        const cured=cureStatuses(s,u,Object.keys(u.status??{}).filter(k=>k!=='recharge') as StatusId[]);
+        note(s,L`${id}打盹结束，HP ${before}→${u.hp}，坏异常全部解除${cured.length?'：'+cured.map(v=>STATUS_NAMES[v]).join('、'):''}`);
       }
     }
   }
+}
+function expireRecharge(s:World,id:string):void {
+  const u=s.units[id];if(!dropStatus(u,'recharge'))return;
+  note(s,L`${id}的休息解除`);emit(s,{type:'status',target:id,status:'recharge',change:'expire'});
 }
 /** Round end: poison, bad poison and burn tick (first damage at the first round end after being applied, then every 20 / 2 / 20 rounds). */
 function statusRoundEnd(s:World):void {
@@ -1108,6 +1119,10 @@ function invalid(s:World,id:string,a:Action,moved:ReadonlySet<string>=new Set())
     if(!s.prog)return '这里没有可用的背包物品';
     if((s.prog.items[a.item]??0)<1)return `背包里没有${ITEM_NAMES[a.item]}`;
     if(a.item==='reviverSeed')return '复活种子不能主动使用，队员倒下的瞬间会自动用掉';
+    if(a.item==='joySeed'){
+      if(a.target!==id)return '喜悦种子由使用者发动，目标必须是使用者自己';
+      return levelFor(s.prog.exp)>=PROG.maxLevel?'队伍已达100级，喜悦种子不会有效果':null;
+    }
     if(ORB_ITEMS.includes(a.item)){
       if(a.target!==id)return `${ITEM_NAMES[a.item]}由使用者发动，目标必须是使用者自己`;
       if((a.item==='slumberOrb'||a.item==='totterOrb')&&!orbAffected(s,u,a.item).length)return `房间范围内没有能被影响的敌人，${ITEM_NAMES[a.item]}不会有效果`;
@@ -1223,7 +1238,7 @@ function hit(s:World,id:string,n:number,cause?:string,afterDamage?:(actual:numbe
   if(u.hp>0&&u.side==='friend'&&s.queue.includes(id)&&hasBless(s,'laststand')&&!u.standUsed&&u.hp<u.maxHp*(BLESSINGS.laststand.threshold??0.35)){
     u.standUsed=true;healUnit(s,id,Math.max(1,Math.floor(u.maxHp*(BLESSINGS.laststand.value??0.25))),'背水');
   }
-  if(before>0&&u.hp===0){u.pos=null;note(s,L`${id}倒下退图`,{player:L`${id}倒下了`});
+  if(before>0&&u.hp===0){dropStatus(u,'recharge');u.pos=null;note(s,L`${id}倒下退图`,{player:L`${id}倒下了`});
     if(u.side==='enemy'&&currentKiller&&hasBless(s,'killheal')){const k=s.units[currentKiller];if(alive(k)&&k.side==='friend')healUnit(s,k.id,Math.max(1,Math.floor(k.maxHp*(BLESSINGS.killheal.value??0.08))),'击倒回复');}
     if(u.side==='friend')for(const c of [...(s.commissions??[])].filter(c=>c.id==='guardian'))failCommission(s,c,'同行倒下');
     if(u.side==='enemy')progressCommission(s,'hunter');
@@ -1320,7 +1335,7 @@ function onDirectDamageToSleeper(s:World,owner:Unit,attacker:Unit,blockingGuard:
   if(hasStatus(owner,'slp')){
     if(battleRandom(s)<WAKE_ON_HIT_CHANCE){dropStatus(owner,'slp');note(s,L`${owner.id}被攻击后醒来`);emit(s,{type:'status',target:owner.id,status:'slp',change:'expire'});return;}
   }
-  if(!sleeping(owner)||hasStatus(owner,'par')||hasStatus(owner,'flinch'))return;
+  if(!sleeping(owner)||hasStatus(owner,'par')||hasStatus(owner,'flinch')||hasStatus(owner,'recharge'))return;
   if(owner.learned.includes('snore')){
     if((owner.pp.snore??0)>0&&moveOf('snore'))executeSkill(s,owner.id,{type:'skill',skill:'snore',target:attacker.id},blockingGuard,createdGuard,{suppressSleepTrigger:true,forcedTarget:attacker,ignoreConfusion:true});
     return;
@@ -1508,6 +1523,8 @@ function executeSkill(s:World,id:string,a:Extract<Action,{type:'skill'}>,blockin
   }
   // 8.8 (G5.15): the price of a few strong moves is paid when the move connects with at least one target; if every target was missed there is no price (main-series behaviour).
   if(fx?.cost&&alive(actor)&&landed.length>0)applyStageChange(s,id,fx.cost);
+  // B3: apply after hits and reactions. A Sleep Talk reaction itself is not an own action opportunity.
+  if(spec.effects.includes('recharge')&&dealt>0&&alive(actor))applyRecharge(s,actor,!suppressSleepTrigger);
 }
 /** 7.2: the exchanger's effect. The companion leaves the queue (its slot stays empty), the chosen machines become 'sent', the exchanger is used up. */
 function sendHome(s:World,a:Extract<Action,{type:'exchange'}>):void {
@@ -1552,7 +1569,11 @@ function execute(s:World,id:string,a:Action,blockingGuard:ReadonlySet<string>,cr
   }
   else if(a.type==='use'){
     const t=s.units[a.target];s.prog!.items[a.item]=(s.prog!.items[a.item]??0)-1;
-    if(a.item==='bigBerry'){
+    if(a.item==='joySeed'){
+      // Earlier actions already credit experience. Fill the exact next-level gap without the Scholar multiplier.
+      const before=s.prog!.exp,next=levelFor(before)+1;s.prog!.exp=PROG.thresholds[next];
+      note(s,L`${id}使用${ITEM_NAMES.joySeed}，队伍经验 ${before}→${s.prog!.exp}`);emit(s,{type:'itemUse',unit:id,item:'joySeed'});
+    }else if(a.item==='bigBerry'){
       const before=t.hp,heal=activeCommission(s,'guardian')?Math.floor(t.maxHp/2):t.maxHp;t.hp=Math.min(t.maxHp,t.hp+heal);note(s,L`${id}对${t.id}使用${ITEM_NAMES.bigBerry}，HP ${before}→${t.hp}`);emit(s,{type:'itemUse',unit:id,item:'bigBerry',target:t.id,from:before,to:t.hp});
     }else if(a.item==='berry'){
       const before=t.hp,heal=berryHealAmount(s,t);t.hp=Math.min(t.maxHp,t.hp+heal);note(s,L`${id}对${t.id}使用${ITEM_NAMES.berry}，HP ${before}→${t.hp}`);emit(s,{type:'itemUse',unit:id,item:'berry',target:t.id,from:before,to:t.hp});
@@ -1724,14 +1745,15 @@ function wakeAdjacentEnemies(s:World):void {
   }
 }
 /** Why a unit's action is lost, as a code; the log text of each code is `BLOCK_TEXT` (a swap with a frozen partner has its own code). */
-type BlockReason='frozen'|'nap'|'sleep'|'paralyzed'|'flinch';
-const BLOCK_TEXT_PLAYER:Record<BlockReason,string>={frozen:'冰冻中，无法行动',nap:'打盹中，无法行动',sleep:'睡眠中，无法行动',paralyzed:'麻痹中，无法使用招式和普通攻击',flinch:'畏缩中，无法使用招式和普通攻击'};
-const BLOCK_TEXT:Record<BlockReason,string>={frozen:'冰冻中，无法行动',nap:'打盹中，无法行动',sleep:'睡眠中，无法行动',paralyzed:'麻痹中，无法使用招式和普攻',flinch:'畏缩中，无法使用招式和普攻'};
+type BlockReason='frozen'|'nap'|'sleep'|'paralyzed'|'flinch'|'recharge';
+const BLOCK_TEXT_PLAYER:Record<BlockReason,string>={frozen:'冰冻中，无法行动',nap:'打盹中，无法行动',sleep:'睡眠中，无法行动',paralyzed:'麻痹中，无法使用招式和普通攻击',flinch:'畏缩中，无法使用招式和普通攻击',recharge:'休息中，无法行动'};
+const BLOCK_TEXT:Record<BlockReason,string>={frozen:'冰冻中，无法行动',nap:'打盹中，无法行动',sleep:'睡眠中，无法行动',paralyzed:'麻痹中，无法使用招式和普攻',flinch:'畏缩中，无法使用招式和普攻',recharge:'休息中，无法行动'};
 /** 8.8 (G5.13): why the unit's chosen action cannot happen because of a status condition, or null. */
 function statusBlock(u:Unit,a:Action):BlockReason|null {
   if(a.type==='wait')return null;
   if(hasStatus(u,'frz'))return 'frozen';
   if(sleeping(u))return hasStatus(u,'nap')?'nap':'sleep';
+  if(hasStatus(u,'recharge'))return 'recharge';
   if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'par'))return 'paralyzed';
   if((a.type==='skill'||a.type==='basic'||a.type==='basicForward')&&hasStatus(u,'flinch'))return 'flinch';
   return null;
@@ -1756,6 +1778,8 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   const leadStartError=preflight&&!leaderSleeping?invalid(s,lead,cmd.action):null;
   const overrideStartError=preflight&&cmd.override?invalid(s,cmd.override.actor,cmd.override.action):null;
   const later=swap?Math.max(s.queue.indexOf(lead),s.queue.indexOf(swap)):-1;
+  // A delayed swap resolves at the later participant's slot. Preserve only the leader's recharge across an earlier leader slot, then consume it there.
+  const deferLeaderRecharge=!!swap&&s.queue.indexOf(lead)<s.queue.indexOf(swap)&&hasStatus(s.units[lead],'recharge');
   // 7.2 exchanger: the leader's whole action. The companion leaves at once (it takes no further part this round), then everyone else acts as usual.
   // 8.8: a frozen leader cannot operate it; then the command falls through to the normal turn below, where the action is lost.
   const ex=!leaderSleeping&&cmd.action.type==='exchange'&&!statusBlock(s.units[lead],cmd.action)?cmd.action:null;
@@ -1764,7 +1788,7 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
   const order=[...s.queue];
   for(let i=0;i<order.length;i++){const id=order[i];
     if(preflight&&!alive(s.units[id])){const err=id===lead?leadStartError:cmd.override?.actor===id?overrideStartError:null;if(err)return err;}
-    if(!s.queue.includes(id)||!alive(s.units[id])||(ex&&id===lead)){if(ex&&id===lead&&alive(s.units[id]))endOwnTurn(s,id);continue;}
+    if(!s.queue.includes(id)||!alive(s.units[id])||(ex&&id===lead)){if(deferLeaderRecharge&&i===later)expireRecharge(s,lead);if(ex&&id===lead&&alive(s.units[id]))endOwnTurn(s,id);continue;}
     // 8.8: whatever happens in this turn (even a swap or a refused action), it counts as one of the member's own action opportunities.
     try{
     if(swap&&(id===lead||id===swap)){
@@ -1786,7 +1810,10 @@ function ownPhase(s:World,cmd:Extract<Command,{type:'round'}>,preflight:boolean,
     if(a.type==='move'&&hasStatus(s.units[id],'confusion'))a=confusedMove(s,id,a);
     const mate=a.type==='move'?allyAt(s,id,a.to):undefined;
     execute(s,id,a,blockingFromEnemies,friendGuard);if(a.type==='move')moved.add(id);trace?.push({id,action:a,explicit:!!explicit,failed:false,...(mate?{swapWith:mate.id}:{})});
-    }finally{endOwnTurn(s,id);}
+    }finally{
+      if(deferLeaderRecharge&&id===lead){const st=s.units[lead].status?.recharge;if(st)st.fresh=true;endOwnTurn(s,id);}
+      else{if(deferLeaderRecharge&&i===later)expireRecharge(s,lead);endOwnTurn(s,id);}
+    }
   }
   if(preflight)return null;
   decayOpponentStatuses(s,'friend');

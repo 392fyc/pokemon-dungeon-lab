@@ -27,7 +27,7 @@ function blocked(raw){
 }
 
 test('7.7b keeps both historical draw lists and enables the nine-move list only with a boss tmPool:3 mark (8.8: Tera Blast removed from both)',()=>{
-  assert.equal(RULE_VERSION,'trial-rules-6');assert.equal(CONTENT_VERSION,'trial-content-7');
+  assert.equal(RULE_VERSION,'trial-rules-7');assert.equal(CONTENT_VERSION,'trial-content-8');
   assert.deepEqual([...LEGACY_TM_MOVES],['protect','whirlwind','roar']);
   assert.deepEqual([...TM_MOVES],['protect','whirlwind','roar','dragontail','helpinghand','mudslap']);
   assert.deepEqual([...TM_MOVES_V3],[...TM_MOVES,'quickguard','reflect','lightscreen']);

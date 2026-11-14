@@ -45,6 +45,7 @@ const ITEM_CATEGORIES: Record<Item, string> = {
   chestoBerry: "berry",
   healSeed: "other",
   violentSeed: "other",
+  joySeed: "other",
   maxElixir: "drink",
   slumberOrb: "orb",
   totterOrb: "orb",
@@ -103,8 +104,9 @@ function statusMarkup(unit: Unit, world?: World): string {
     const state: StatusState | undefined = unit.status?.[kind];
     if (!state) continue;
     const remaining = state.left ?? state.tick;
-    badges.push('<span class="hud-status-badge is-down">' +
-      esc(STATUS_NAMES[kind] + (remaining === undefined ? "" : remaining)) + "</span>");
+    const title = kind === "recharge" ? '下一次自身行动机会落空，不额外消耗PP' : undefined;
+    badges.push('<span class="hud-status-badge is-down"' + (title ? ' title="' + esc(title) + '"' : '') + '>' +
+      esc(STATUS_NAMES[kind] + (kind === "recharge" || remaining === undefined ? "" : remaining)) + "</span>");
   }
   if (unit.asleep && !unit.status?.slp && !unit.status?.nap) badges.push('<span class="hud-status-badge is-down">睡眠</span>');
   if (unit.protect > 0) badges.push('<span class="hud-status-badge is-up">守住' + unit.protect + '</span>');
@@ -134,6 +136,7 @@ const QUICK_ITEM_NAMES: Record<Item, string> = {
   chestoBerry: "零余果",
   healSeed: "治愈种",
   violentSeed: "暴力种",
+  joySeed: "喜悦种",
   maxElixir: "满PP剂",
   slumberOrb: "睡眠珠",
   totterOrb: "慌乱珠",

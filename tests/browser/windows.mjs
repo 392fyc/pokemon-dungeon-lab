@@ -2042,11 +2042,11 @@ await test('#194 全部物品说明、敌招分行与队友显式详情',async()
   for(const item of Object.keys(ITEM_NAMES))w.prog.items[item]=2;
   const enemy=Object.values(w.units).find(u=>u.side==='enemy');enemy.pos={x:11,y:10};enemy.waitOnly=true;w.enemies=[enemy.id];
   await startMemory(p,w);await p.locator('#bag-open').click();
-  assert.equal(await p.locator('[data-bag-item]').count(),16,'all sixteen current items are visible in the all category');
+  assert.equal(await p.locator('[data-bag-item]').count(),17,'all seventeen current items are visible in the all category');
   for(const item of Object.keys(ITEM_NAMES)){
    const button=p.locator('[data-bag-item="'+item+'"]');await button.click();
    const description=p.locator('.c195-bag-text');assert.ok(await description.isVisible(),'effect stays visible in the detail panel: '+item);
-   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/回满.*HP/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠/,healSeed:/全部异常/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP/,slumberOrb:/所有敌人.*进入睡眠/,totterOrb:/所有敌人.*混乱/,luminousOrb:/全部地形/,rollcallOrb:/同行.*身边/,reviverSeed:/倒下时.*一半/};
+   const text=await description.innerText(),effects={berry:/HP.*8/,tonic:/10 PP/,bigBerry:/回满.*HP/,teamTonic:/存活.*5 PP/,pechaBerry:/中毒.*剧毒/,rawstBerry:/灼伤/,cheriBerry:/麻痹/,chestoBerry:/解除睡眠/,healSeed:/全部坏异常/,joySeed:/队伍.*局内经验.*下一级/,violentSeed:/攻击.*特攻.*\+3/,maxElixir:/所有已学招式.*PP/,slumberOrb:/所有敌人.*进入睡眠/,totterOrb:/所有敌人.*混乱/,luminousOrb:/全部地形/,rollcallOrb:/同行.*身边/,reviverSeed:/倒下时.*一半/};
    assert.match(text,effects[item],'visible effect matches the current item rule: '+item);assert.ok((await button.getAttribute('aria-label')).includes(ITEM_NAMES[item]),'accessible item label names the item: '+item);
    assert.match(await p.locator('.c195-bag-detail').innerText(),new RegExp(ITEM_NAMES[item]),'detail shows the selected item name');
   }
@@ -2135,7 +2135,7 @@ await test('#194 手机触屏 '+touchWidth+'px 全部快捷物品先选中看说
   const assign=async (item,slot=0)=>{await p.locator('#bag-open').tap();await p.locator('[data-bag-slot="'+slot+'"]').tap();await p.locator('[data-bag-category="all"]').tap();await p.locator('[data-bag-item="'+item+'"]').tap();await p.locator('#bag-pin').tap();await p.locator('#bag-close').tap();};
   // The Reviver Seed is automatic: it has no use or pin button (PR 214), so it is not part of the quick-slot walk.
   for(const [index,item] of Object.keys(ITEM_NAMES).filter(i=>i!=='reviverSeed').entries()){
-   if(['teamTonic','slumberOrb','totterOrb','luminousOrb','rollcallOrb','tonic','maxElixir','violentSeed'].includes(item))continue;   // these act at once when tapped (whole-team items, and the PP items while only the leader has spent PP), so there is no selected state to look at
+   if(['teamTonic','joySeed','slumberOrb','totterOrb','luminousOrb','rollcallOrb','tonic','maxElixir','violentSeed'].includes(item))continue;   // these act at once when tapped (whole-team items, and the PP items while only the leader has spent PP), so there is no selected state to look at
    const slot=index%6;await assign(item,slot);const quick=p.locator('[data-hud-quick="'+slot+'"]');await quick.tap();
    assert.equal(await quick.getAttribute('aria-pressed'),'true',item+' is selected after the tap');assert.ok(await p.locator('[data-selected-item-description]').isVisible(),item+' has a stable selected description after a real touch');
    assert.equal(await p.locator(['teamTonic','slumberOrb','totterOrb','luminousOrb','rollcallOrb'].includes(item)?'#hud-item-targets strong':'#target-hint span').innerText(),ITEM_NAMES[item]);

@@ -127,7 +127,7 @@ test('M191 violent seed maximizes both attack stages; full elixir fills every mo
 test('M191 camp content-5 migrates strictly and writes content-7; malformed old profiles keep original bytes',async()=>{
   const make=raw=>{const port={value:raw,getItem(){return this.value;},setItem(k,v){this.value=v;},removeItem(){this.value=null;}};return {port,store:new TrialStore(port)};};
   const old={format:2,rules:'trial-rules-5',content:'trial-content-5',build:BUILD_ID,sequence:9,profile:initialProfile()};
-  const {port,store}=make(JSON.stringify(old));await store.whenReady;assert.equal(store.status,'ready');assert.equal(CONTENT_VERSION,'trial-content-7');
+  const {port,store}=make(JSON.stringify(old));await store.whenReady;assert.equal(store.status,'ready');assert.equal(CONTENT_VERSION,'trial-content-8');
   const saved=JSON.parse(port.value);assert.equal(saved.content,CONTENT_VERSION);assert.equal(saved.sequence,10);assert.deepEqual(saved.profile,old.profile);
   const bad=JSON.stringify({...old,profile:{...old.profile,unknown:true}}),failed=make(bad);await failed.store.whenReady;
   assert.equal(failed.store.status,'blocked');assert.equal(failed.port.value,bad);

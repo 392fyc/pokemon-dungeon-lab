@@ -29,7 +29,7 @@ test('rules/content 3 camp records migrate tactics and v0.1 defaults, then persi
   expected.difficulty='normal';expected.shards={};expected.rankExp=0;expected.talents={};
   assert.deepEqual(store.profile,expected,'all profile fields remain, with one default added per instance');
   assert.deepEqual(Object.keys(store.envelope).sort(),['build','content','format','profile','rules','sequence']);
-  assert.equal(store.envelope.rules,'trial-rules-6');assert.equal(store.envelope.content,'trial-content-7');
+  assert.equal(store.envelope.rules,'trial-rules-7');assert.equal(store.envelope.content,'trial-content-8');
   assert.deepEqual(decode(port.raw()).profile,expected);
   assert.equal(store.envelope.sequence,8);
 });

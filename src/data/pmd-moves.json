@@ -36,6 +36,7 @@
   "belch": "Special",
   "bind": "Physical",
   "bite": "Physical",
+  "blastburn": "Special",
   "blazekick": "Physical",
   "blizzard": "Special",
   "bodyslam": "Physical",
@@ -113,7 +114,9 @@
   "forcepalm": "Physical",
   "foulplay": "Physical",
   "freezedry": "Special",
+  "frenzyplant": "Special",
   "gigadrain": "Special",
+  "gigaimpact": "Physical",
   "glare": "Status",
   "growl": "Status",
   "gunkshot": "Physical",
@@ -128,7 +131,9 @@
   "honeclaws": "Status",
   "hornattack": "Physical",
   "hurricane": "Special",
+  "hydrocannon": "Special",
   "hydropump": "Special",
+  "hyperbeam": "Special",
   "hyperfang": "Physical",
   "hypervoice": "Special",
   "hypnosis": "Status",
@@ -601,6 +606,26 @@
    ],
    "source": "Bulbapedia",
    "note": "省略畏缩"
+  },
+  "blastburn": {
+   "range": "around",
+   "target": "enemy",
+   "power": 30,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "6",
+    "accuracy": "84%",
+    "cutsCorners": "Yes",
+    "range": "1 tile around user",
+    "target": "Enemy"
+   },
+   "effects": [
+    "damage",
+    "recharge"
+   ],
+   "source": "Bulbapedia",
+   "note": "B3：至少一个目标实际损失 HP 后，跳过下一次自身行动机会。"
   },
   "blazekick": {
    "range": "front",
@@ -1923,6 +1948,26 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "frenzyplant": {
+   "range": "front",
+   "target": "enemy",
+   "power": 45,
+   "game": "MDSky",
+   "gameName": "空之探险队",
+   "official": {
+    "basePp": "6",
+    "accuracy": "84%",
+    "cutsCorners": "Yes",
+    "range": "Front",
+    "target": "Enemy"
+   },
+   "effects": [
+    "damage",
+    "recharge"
+   ],
+   "source": "Bulbapedia",
+   "note": "B3：至少一个目标实际损失 HP 后，跳过下一次自身行动机会。"
+  },
   "gigadrain": {
    "range": "front",
    "target": "enemy",
@@ -1940,6 +1985,26 @@
    ],
    "source": "Bulbapedia",
    "note": ""
+  },
+  "gigaimpact": {
+   "range": "front",
+   "target": "enemy",
+   "power": 60,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "4",
+    "accuracy": "80%",
+    "cutsCorners": "No",
+    "range": "Front",
+    "target": "Enemy"
+   },
+   "effects": [
+    "damage",
+    "recharge"
+   ],
+   "source": "Bulbapedia",
+   "note": "B3：至少一个目标实际损失 HP 后，跳过下一次自身行动机会。"
   },
   "glare": {
    "range": "front",
@@ -2181,6 +2246,26 @@
    "source": "Bulbapedia",
    "note": "省略次要效果"
   },
+  "hydrocannon": {
+   "range": "line10",
+   "target": "all",
+   "power": 33,
+   "game": "MDSky",
+   "gameName": "空之探险队",
+   "official": {
+    "basePp": "6",
+    "accuracy": "84%",
+    "cutsCorners": "Yes",
+    "range": "10 tiles away",
+    "target": "All"
+   },
+   "effects": [
+    "damage",
+    "recharge"
+   ],
+   "source": "Bulbapedia",
+   "note": "B3：至少一个目标实际损失 HP 后，跳过下一次自身行动机会。"
+  },
   "hydropump": {
    "range": "line10",
    "target": "all",
@@ -2197,6 +2282,26 @@
    ],
    "source": "Bulbapedia",
    "note": "省略次要效果"
+  },
+  "hyperbeam": {
+   "range": "line10",
+   "target": "all",
+   "power": 30,
+   "game": "MDTDS",
+   "gameName": "时／暗／空之探险队",
+   "official": {
+    "basePp": "8",
+    "accuracy": "85.5%",
+    "cutsCorners": "Yes",
+    "range": "10 tiles away",
+    "target": "All"
+   },
+   "effects": [
+    "damage",
+    "recharge"
+   ],
+   "source": "Bulbapedia",
+   "note": "B3：至少一个目标实际损失 HP 后，跳过下一次自身行动机会。"
   },
   "hyperfang": {
    "range": "front",

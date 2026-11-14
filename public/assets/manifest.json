@@ -23435,6 +23435,22 @@
         "command": "node tools/art/font-characters.mjs <characters.json> && <font-venv-python> tools/art/subset_ui_fonts.py --source-dir <verified-original-font-cache> --characters <characters.json>"
       }
     },
+    "props/item-joy-seed.png": {
+      "bytes": 288,
+      "sha256": "5e278d7879473eb881f87240202f800a4f84c696a649f0bbca0d5d0f11edbf56",
+      "source": "PMDCollab/RawAsset",
+      "commit": "03c80dad937911572f8fb19903771a47956fc696",
+      "sourcePath": "Item/Seed_Yellow.None.png",
+      "sourceUrl": "https://github.com/PMDCollab/RawAsset/blob/03c80dad937911572f8fb19903771a47956fc696/Item/Seed_Yellow.None.png",
+      "gitBlob": "fe15cd287578dbd24b2437cdb137e0e32b111c0b",
+      "use": "Generic yellow seed sprite assigned to Joy Seed in this game; no claim that this is the original Joy Seed palette mapping.",
+      "postprocess": {
+        "operation": "none",
+        "width": 16,
+        "height": 16
+      },
+      "licence": "Original Pokemon Mystery Dungeon game item sprite. Rights belong to Spike Chunsoft, Nintendo and others; the source repository carries no licence text. Private build only under the existing third-party asset authorization; replace before public release."
+    },
     "props/item2-cheri.png": {
       "bytes": 947,
       "sha256": "20358722f399a213a026dac62f25eb02eb5bc7899e894b93c6e630b0b00f2abe",

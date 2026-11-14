@@ -132,7 +132,7 @@ def main():
         "source": {
             "project": "Pokémon Showdown", "file": "moves.json", "sha256": MOVES_SHA256,
             "githubCommit": SOURCE_COMMIT,
-            "accuracy": "探险队 official.accuracy（Bulbapedia）；Showdown accuracy 为 true 或探险队为“—%”时必中",
+            "accuracy": "取 Showdown 正作 accuracy 百分数；accuracy 为 true 时必中（D-20261110-08）",
             "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建",
         },
         "moves": build(showdown, pmd),

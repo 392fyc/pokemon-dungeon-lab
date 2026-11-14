@@ -4,7 +4,7 @@
   "file": "moves.json",
   "sha256": "26909a321a7e4528d14a7dffd24173aa03a6845776cf41c39cc3d76f8e14616b",
   "githubCommit": "ccfaa20f32af363569cd21a9d501b2bc1ded26b1",
-  "accuracy": "探险队 official.accuracy（Bulbapedia）；Showdown accuracy 为 true 或探险队为“—%”时必中",
+  "accuracy": "取 Showdown 正作 accuracy 百分数；accuracy 为 true 时必中（D-20261110-08）",
   "license": "代码 MIT；宝可梦数据知识产权不在许可之内，仅私有构建"
  },
  "moves": {
@@ -392,6 +392,26 @@
      "basePp": "19",
      "accuracy": "90%",
      "cutsCorners": "No"
+    }
+   }
+  },
+  "blastburn": {
+   "acc": 90,
+   "thaw": true,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "blastburn",
+    "fields": [
+     "accuracy",
+     "self",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "6",
+     "accuracy": "84%",
+     "cutsCorners": "Yes",
+     "range": "1 tile around user",
+     "target": "Enemy"
     }
    }
   },
@@ -2158,6 +2178,25 @@
     }
    }
   },
+  "frenzyplant": {
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "frenzyplant",
+    "fields": [
+     "accuracy",
+     "self",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "6",
+     "accuracy": "84%",
+     "cutsCorners": "Yes",
+     "range": "Front",
+     "target": "Enemy"
+    }
+   }
+  },
   "gigadrain": {
    "acc": 100,
    "source": {
@@ -2171,6 +2210,25 @@
      "basePp": "10",
      "accuracy": "88%",
      "cutsCorners": "No"
+    }
+   }
+  },
+  "gigaimpact": {
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "gigaimpact",
+    "fields": [
+     "accuracy",
+     "self",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "4",
+     "accuracy": "80%",
+     "cutsCorners": "No",
+     "range": "Front",
+     "target": "Enemy"
     }
    }
   },
@@ -2501,6 +2559,25 @@
     }
    }
   },
+  "hydrocannon": {
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "hydrocannon",
+    "fields": [
+     "accuracy",
+     "self",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "6",
+     "accuracy": "84%",
+     "cutsCorners": "Yes",
+     "range": "10 tiles away",
+     "target": "All"
+    }
+   }
+  },
   "hydropump": {
    "acc": 80,
    "source": {
@@ -2514,6 +2591,25 @@
      "basePp": "8",
      "accuracy": "79.8%",
      "cutsCorners": "Yes"
+    }
+   }
+  },
+  "hyperbeam": {
+   "acc": 90,
+   "source": {
+    "showdown": "https://github.com/smogon/pokemon-showdown/blob/ccfaa20f32af363569cd21a9d501b2bc1ded26b1/data/moves.ts",
+    "id": "hyperbeam",
+    "fields": [
+     "accuracy",
+     "self",
+     "flags"
+    ],
+    "pmd": {
+     "basePp": "8",
+     "accuracy": "85.5%",
+     "cutsCorners": "Yes",
+     "range": "10 tiles away",
+     "target": "All"
     }
    }
   },

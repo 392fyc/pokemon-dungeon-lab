@@ -1,8 +1,8 @@
-/** One 32 px icon per backpack item (public/assets/props/item2-*.png). Used by the bag, quick slots, bottom bar, map drops, shop and settlement. */
+/** One icon per backpack item (public/assets/props/*.png). Used by the bag, quick slots, bottom bar, map drops, shop and settlement. */
 import type {Item} from '../core/engine.ts';
 export const ITEM_ICON_FILE:Record<Item,string>={
  berry:'item2-oran',bigBerry:'item2-sitrus',pechaBerry:'item2-pecha',rawstBerry:'item2-rawst',cheriBerry:'item2-cheri',chestoBerry:'item2-chesto',
- healSeed:'item2-heal-seed',violentSeed:'item2-violent-seed',tonic:'item2-ether',teamTonic:'item2-team-ether',maxElixir:'item2-max-elixir',
+ healSeed:'item2-heal-seed',violentSeed:'item2-violent-seed',joySeed:'item-joy-seed',tonic:'item2-ether',teamTonic:'item2-team-ether',maxElixir:'item2-max-elixir',
  slumberOrb:'item2-orb-slumber',totterOrb:'item2-orb-totter',luminousOrb:'item2-orb-luminous',rollcallOrb:'item2-orb-rollcall',reviverSeed:'item2-reviver-seed',
 };
 export const ITEM_ICON_KEYS:readonly string[]=Object.values(ITEM_ICON_FILE);

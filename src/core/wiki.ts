@@ -91,6 +91,7 @@ function describeMoveEffects(move:string):string[] {
     if(e.startsWith('status:')){const id=e.slice(7) as StatusId;facts.statuses.add(id);lines.push((foe?'使对方陷入':'使自身陷入')+link('status:'+id,STATUS_NAMES[id]));continue;}
     if(e==='protect'||e==='counter'||e==='quickguard'||e==='reflect'||e==='lightscreen')lines.push(link('terms:guard',({protect:'守住',counter:'反击',quickguard:'快速防守',reflect:'反射壁',lightscreen:'光墙'})[e]));
     else if(e==='rest')lines.push('进入'+link('status:nap','打盹'));
+    else if(e==='recharge'){facts.statuses.add('recharge');lines.push('至少一个目标实际损失HP后进入'+link('status:recharge','休息'));}
     else if(e==='blowaway')lines.push(link('terms:blowaway','吹飞'));
     else if(e==='drain')lines.push(link('terms:drain','吸取'));
     else if(e.startsWith('heal:'))lines.push(link('terms:drain','回复'));

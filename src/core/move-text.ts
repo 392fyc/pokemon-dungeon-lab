@@ -34,7 +34,7 @@ export function statusWithDuration(st:StatusId,moveId?:string):string {
 const stageParts=(who:string,c:StageChange|undefined)=>Object.entries(c??{}).filter(([k])=>k!=='spe').map(([k,n])=>who+STAGE_NAMES[k as StageKey]+sign(n as number));
 
 /** Effect ids of pmd-moves.json the engine executes, and fields of move-effects.json it reads; the coverage test compares the data against these. */
-export const HANDLED_EFFECTS=['damage','drain','recoil','blowaway','lightscreen','protect','counter','quickguard','heal:1:2','reflect','rest','sleeptalk','snore'] as const;
+export const HANDLED_EFFECTS=['damage','drain','recoil','blowaway','lightscreen','protect','counter','quickguard','heal:1:2','reflect','rest','recharge','sleeptalk','snore'] as const;
 export const HANDLED_FX_FIELDS=['acc','fx','thaw','recoil','cost','powder','source'] as const;
 
 /** Shared effect copy for cards and the wiki. The opposing side is relative to the move user. */
@@ -52,8 +52,9 @@ export function situationalMoveEffect(effect:string,foe='对方',foeUnit=foe):st
     }
     case 'rest':{
       const [min,max]=STATUS_DURATION.nap!;
-      return '自身打盹'+min+'—'+max+'回合，期间无法行动；自然醒来时回满HP并解除全部异常，换层会提前结束打盹；HP已满且没有异常时不能使用';
+      return '自身打盹'+min+'—'+max+'回合，期间无法行动；自然醒来时回满HP并解除全部坏异常，换层会提前结束打盹；HP已满且没有坏异常时不能使用';
     }
+    case 'recharge':return '至少一个目标实际损失HP后进入休息；下一次自身行动机会落空，不额外消耗PP';
     case 'sleeptalk':return '睡眠或打盹期间受到'+foeUnit+'直接攻击，未苏醒时随机对自身或攻击者发动符合条件的另一招，仅消耗梦话的PP；携带打鼾时优先判定打鼾；不能主动使用';
     case 'snore':return '睡眠或打盹期间受到'+foeUnit+'直接攻击，未苏醒时对攻击者发动反击，消耗打鼾的PP；不能主动使用';
   }

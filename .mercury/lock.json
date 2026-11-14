@@ -63,10 +63,10 @@
     ".mercury/packs/core/skills/test-file-delivery/references/transfer.md": "58ecc6f9a47805686ee5f5533d3364cb6c4433662a80b767fe9cb06a9816e00c",
     ".mercury/packs/core/skills/test-file-delivery/scripts/transfer.py": "b88eac7ee15bc3d7152850d0eafff01235ca9943fd79fbce32d8061ac4398178",
     ".mercury/packs/core/skills/web-research/SKILL.md": "21cf0851379c5eb18445f39d0598bea1fedadbab461d7c9a196cf127fd3efd38",
-    ".mercury/packs/deploy/agents.md": "f4cec2429b4c187df9b58c907e93db0e4dd6131c45ecb60941a39ea0dc80db70",
+    ".mercury/packs/deploy/agents.md": "37f46d738c918b302a5cf024e987beeadc5208457225f18921ccb030cbd1ba9f",
     ".mercury/packs/deploy/pack.json": "45872a9425dc8fafdf765813adb19d6db6ba2bb75aac863134539785d79bf1a2",
     ".mercury/packs/deploy/templates/mercury-update.yml": "0e076ce1af9901c936fce1d98355335a611ef7b35928c4970d4ffa721ecdf530",
-    ".mercury/packs/deploy/templates/mercury-verify.yml": "0a8965301196126b636491c50e2fa3fac9ac2eb336bae58e9f0f11c73dd97a47",
+    ".mercury/packs/deploy/templates/mercury-verify.yml": "0359a3f9bcf60f92a9c6edd355a3ac33f7a1d9d01a8ae07bd6317089a5fec5f2",
     ".mercury/packs/git-safe/agents.md": "cb8aa33369e45194c98c381eb0c78b159e27eeae08fd24a6db4948198794ac5e",
     ".mercury/packs/git-safe/docs/pr-procedure.md": "3cceb232200f2112986c4246e94796e281f3006803f08234b617473fbdffebc9",
     ".mercury/packs/git-safe/pack.json": "4ff3e788fde0727baa7d6f09d9286ac7ebe18ff5839313be35c5c1ef60108f11",
@@ -132,10 +132,10 @@
   "mercury_json_sha256": "03e73b8e2f043108012eb3ce864710d9dc0d3f370103b86952f42bbe367ddc99",
   "schema_version": 1,
   "sections": {
-    "AGENTS.md": "322ce281d6bd1c3707f16a1d2179d245c0136b1c1202cdf25864ecd83b289621",
+    "AGENTS.md": "a722ba03d83687fed68aaed762ed9abb87a5794ed8d557c06261e44aa5652d22",
     "CLAUDE.md": "c8adcf29c1d31304ea737b7a1a7dd801ed3ce007436a18a2647ef8a68aaf99f1"
   },
-  "source": "mercury@6a2dd16b5202ef82972d4a4bec60e20d9fae682a",
-  "source_commit": "6a2dd16b5202ef82972d4a4bec60e20d9fae682a",
+  "source": "mercury@5e68188dbd5bde5f56deb20de2afb528118af944",
+  "source_commit": "5e68188dbd5bde5f56deb20de2afb528118af944",
   "source_repo": "392fyc/Mercury"
 }

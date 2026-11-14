@@ -17,7 +17,7 @@ updated: 2026-11-14
 | `main` | Claude Code | 项目统筹、规则设计、平衡分析、UI/UX 设计、审查与合并；直接使用 dev 交付的研究与资产 | 不介入 dev 负责的参考作品研究、素材收集和自制美术产线 |
 | `dev` | Codex | 代码实现；官方宝可梦作品及用户指定的非官方作品研究；素材收集、自制美术产线及资产交付 | 遵守用户保留的产品决定、费用、网络和发布边界 |
 
-2026-11-14 用户确认上述研究和资产分工，原话见 [#229]( https://github.com/392fyc/pokemon-dungeon-lab/issues/229#issuecomment-6874384171 )。Claude 离线期间，本机 Codex 还按用户授权临时代管全盘开发与合并，直到用户声明 Claude 上线。此时研究与规格可由本机 Codex 独立完成，仍只维护自己的 lane 私有文件。
+2026-11-14 用户确认上述研究和资产分工，原话见 [#229](https://github.com/392fyc/pokemon-dungeon-lab/issues/229#issuecomment-6874384171)。Claude 离线期间，本机 Codex 还按用户授权临时代管全盘开发与合并，直到用户声明 Claude 上线。此时研究与规格可由本机 Codex 独立完成，仍只维护自己的 lane 私有文件。
 
 - 两条 lane 互为同伴（peers），地位平行；`main` 只多管“计划和规格”这一类单写者文件（Mercury 规则 4）。
 - 每条 lane 至多一个 Claude 会话和一个 Codex 会话；各自可以用子代理，子代理只在父会话的授权与写入范围内工作。

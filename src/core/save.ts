@@ -403,6 +403,7 @@ const LEGACY_RULES_2='trial-rules-2',LEGACY_CONTENT_2='trial-content-2';
 const LEGACY_RULES_3='trial-rules-3',LEGACY_CONTENT_3='trial-content-3';
 const LEGACY_RULES_4='trial-rules-4',LEGACY_CONTENT_4='trial-content-4';
 const LEGACY_RULES_5='trial-rules-5',LEGACY_CONTENT_5='trial-content-5',LEGACY_CONTENT_6='trial-content-6';
+const LEGACY_RULES_6='trial-rules-6',LEGACY_CONTENT_7='trial-content-7';
 const PROFILE_KEYS_V4=['expeditions','next','roster','vault','team','leader','account','rescue','lost','origin'];
 const PROFILE_KEYS=[...PROFILE_KEYS_V4,'difficulty','shards','rankExp','talents'];
 function defaultProfileTactics(v:unknown):void {
@@ -460,8 +461,18 @@ function migrateV5Camp(raw:string):Envelope {
   const e=parsed;
   if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isSafeInteger(e.sequence)||Number(e.sequence)<1)
     throw Error('旧存档结构损坏；原记录已保留');
-  // `decode` applies the existing PP normalization and strict camp checks. Replacing only the known version pair preserves roster, vault, and old two-move carries.
+  // Only these pre-official-PP versions need normalization; current and rules-6 records must already have valid PP.
+  migrateProfilePp(e.profile);
   const migrated=decode(JSON.stringify({...e,rules:RULE_VERSION,content:CONTENT_VERSION}));
+  migrated.sequence=Math.min(migrated.sequence+1,Number.MAX_SAFE_INTEGER);
+  return migrated;
+}
+/** B3/B9 change expedition rules and content, but preserve the exact rules-6/content-7 camp profile. */
+function migrateV6Camp(raw:string):Envelope {
+  const parsed=parseJson(raw);
+  if(!object(parsed)||parsed.format!==2||parsed.rules!==LEGACY_RULES_6||parsed.content!==LEGACY_CONTENT_7)
+    throw Error('存档版本不兼容；原记录已保留');
+  const migrated=decode(JSON.stringify({...parsed,rules:RULE_VERSION,content:CONTENT_VERSION}));
   migrated.sequence=Math.min(migrated.sequence+1,Number.MAX_SAFE_INTEGER);
   return migrated;
 }
@@ -520,15 +531,15 @@ export function decode(raw:string):Envelope {
   const e=parsed;
   if(e.format!==2||e.rules!==RULE_VERSION||e.content!==CONTENT_VERSION)throw Error('存档版本不兼容；原记录已保留');
   if(!exactKeys(e,['format','rules','content','build','sequence','profile'])||typeof e.build!=='string'||!Number.isSafeInteger(e.sequence)||Number(e.sequence)<1)throw Error('存档结构损坏；原记录已保留');
-  // 8.8 (#165): records written before the official-PP change keep the same version numbers; their moves are brought up to date here.
   const normalized=structuredClone(e) as unknown as Envelope;
-  defaultProfileTactics(normalized.profile);migrateProfilePp(normalized.profile);
+  defaultProfileTactics(normalized.profile);
   if(!strictProfileShape(normalized.profile))throw Error('存档结构损坏；原记录已保留');
   return normalized;
 }
 function campFromLegacy(raw:string):Envelope {
   const parsed=parseJson(raw);
   if(object(parsed)&&parsed.format===2){
+    if(parsed.rules===LEGACY_RULES_6&&parsed.content===LEGACY_CONTENT_7)return migrateV6Camp(raw);
     if(parsed.rules===LEGACY_RULES_5&&(parsed.content===LEGACY_CONTENT_5||parsed.content===LEGACY_CONTENT_6))return migrateV5Camp(raw);
     if(parsed.rules===LEGACY_RULES_4&&parsed.content===LEGACY_CONTENT_4)return migrateV4Camp(raw);
     if(parsed.rules===LEGACY_RULES_3&&parsed.content===LEGACY_CONTENT_3)return migrateV3Camp(raw);

@@ -121,3 +121,8 @@ Copyright notices and full licenses: assets/fonts/NotoSansSC-OFL.txt and assets/
 The distributed WOFF2 subsets are modified font software, internally renamed PDL Sans SC and PDL Display.
 Copyright and OFL notices are retained. Sources, hashes, selections and reproduction commands are recorded in assets/manifest.json.
 Fonts load locally with font-display: swap and system fallbacks; no external font service is used by the game.
+
+Joy Seed icon (public/assets/props/item-joy-seed.png): unmodified generic yellow seed sprite, Item/Seed_Yellow.None.png,
+from PMDCollab/RawAsset commit 03c80dad937911572f8fb19903771a47956fc696. This project assigns the sprite to Joy Seed;
+the source filename does not establish the original game item mapping. Rights belong to Spike Chunsoft, Nintendo and others.
+The repository carries no licence text. Private build only; replace before public release. Original bytes and source are recorded in assets/manifest.json.

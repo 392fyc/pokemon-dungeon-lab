@@ -353,7 +353,7 @@ test('K6 supplies start with no berry at rank 2 and one at rank 3; blessing is a
 });
 
 test('K7 an existing current-version record stays byte-for-byte unchanged; invalid talent imports preserve the current record',async()=>{
-  assert.equal(RULE_VERSION,'trial-rules-6');assert.equal(CONTENT_VERSION,'trial-content-7');
+  assert.equal(RULE_VERSION,'trial-rules-7');assert.equal(CONTENT_VERSION,'trial-content-8');
   const profile=initialProfile(),old={format:2,rules:RULE_VERSION,content:CONTENT_VERSION,build:BUILD_ID,sequence:7,profile};
   const raw=JSON.stringify(old),port=memoryPort(raw),store=new TrialStore(port,'rank-v5');
   assert.equal(await store.whenReady,true,store.error);

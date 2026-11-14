@@ -413,8 +413,8 @@ test('recruits and ordinary enemies use level-based loadouts, bosses keep their 
   assert.equal(ITEM_NAMES.chestoBerry,'零余果');
   assert.deepEqual(ITEM_CURES.chestoBerry,['slp']);
   assert.deepEqual(tmPool({boss:true,tmPool:5}),TM_MOVES_V5);
-  assert.equal(RULE_VERSION,'trial-rules-6');
-  assert.equal(CONTENT_VERSION,'trial-content-7');
+  assert.equal(RULE_VERSION,'trial-rules-7');
+  assert.equal(CONTENT_VERSION,'trial-content-8');
   assert.ok(moveEffectLabel('rest').includes('打盹'));
   assert.ok(moveEffectLabel('snore').includes('睡眠'));
 });

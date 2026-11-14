@@ -4231,11 +4231,19 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -4350,6 +4358,11 @@
      "level": 50,
      "move": "dragondance",
      "pp": 22
+    },
+    {
+     "level": 60,
+     "move": "hyperbeam",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[dratini]; learnsets.json[dratini] 第9世代; moves.json",
@@ -5329,8 +5342,16 @@
      "pp": 15
     },
     {
+     "move": "frenzyplant",
+     "pp": 6
+    },
+    {
      "move": "gigadrain",
      "pp": 10
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
     },
     {
      "move": "growl",
@@ -5339,6 +5360,10 @@
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "leafstorm",
@@ -5762,6 +5787,10 @@
      "pp": 15
     },
     {
+     "move": "blastburn",
+     "pp": 6
+    },
+    {
      "move": "bodyslam",
      "pp": 17
     },
@@ -5846,6 +5875,10 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -5860,6 +5893,10 @@
     {
      "move": "hurricane",
      "pp": 13
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "inferno",
@@ -6266,11 +6303,23 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
     {
+     "move": "hydrocannon",
+     "pp": 6
+    },
+    {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -6598,6 +6647,10 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gust",
      "pp": 19
     },
@@ -6608,6 +6661,10 @@
     {
      "move": "hurricane",
      "pp": 13
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "irondefense",
@@ -6929,6 +6986,14 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
+    },
+    {
      "move": "infestation",
      "pp": 17
     },
@@ -7235,6 +7300,10 @@
      "pp": 22
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gust",
      "pp": 19
     },
@@ -7245,6 +7314,10 @@
     {
      "move": "hurricane",
      "pp": 13
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "protect",
@@ -7399,6 +7472,14 @@
     {
      "move": "facade",
      "pp": 12
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hyperfang",
@@ -7605,11 +7686,19 @@
      "pp": 15
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
     {
      "move": "heatwave",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -8001,12 +8090,20 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "glare",
      "pp": 22
     },
     {
      "move": "gunkshot",
      "pp": 6
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icefang",
@@ -8247,12 +8344,20 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "irontail",
@@ -8454,12 +8559,20 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gunkshot",
      "pp": 6
     },
     {
      "move": "highhorsepower",
      "pp": 10
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "leechlife",
@@ -9053,6 +9166,10 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -9063,6 +9180,10 @@
     {
      "move": "highhorsepower",
      "pp": 10
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icebeam",
@@ -9662,6 +9783,10 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -9672,6 +9797,10 @@
     {
      "move": "hornattack",
      "pp": 18
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icebeam",
@@ -10202,12 +10331,20 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -10654,12 +10791,20 @@
      "pp": 17
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "incinerate",
@@ -11124,8 +11269,16 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -11323,7 +11476,15 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "heatwave",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -11878,8 +12039,16 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "leafstorm",
@@ -12262,6 +12431,14 @@
     {
      "move": "gigadrain",
      "pp": 10
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "leechlife",
@@ -12655,6 +12832,14 @@
     {
      "move": "gigadrain",
      "pp": 10
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "leechlife",
@@ -13075,12 +13260,20 @@
      "pp": 17
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "mudshot",
@@ -13549,6 +13742,10 @@
      "pp": 17
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -13559,6 +13756,10 @@
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -14039,11 +14240,19 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -14484,12 +14693,20 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gunkshot",
      "pp": 6
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icepunch",
@@ -14716,12 +14933,20 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -15311,6 +15536,10 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -15320,6 +15549,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -15865,6 +16098,14 @@
     {
      "move": "foulplay",
      "pp": 17
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icepunch",
@@ -16492,12 +16733,20 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
     {
      "move": "highhorsepower",
      "pp": 10
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icepunch",
@@ -17098,6 +17347,14 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
+    },
+    {
      "move": "leafblade",
      "pp": 12
     },
@@ -17516,11 +17773,19 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gunkshot",
      "pp": 6
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -17933,8 +18198,16 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "highhorsepower",
      "pp": 10
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "irondefense",
@@ -18320,6 +18593,10 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -18330,6 +18607,10 @@
     {
      "move": "highhorsepower",
      "pp": 10
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "inferno",
@@ -18813,6 +19094,10 @@
      "pp": 17
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -18826,6 +19111,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -19057,6 +19346,10 @@
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "irondefense",
@@ -19619,12 +19912,20 @@
      "pp": 22
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "mudslap",
@@ -19999,6 +20300,10 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -20012,6 +20317,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -20483,6 +20792,10 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gunkshot",
      "pp": 6
     },
@@ -20493,6 +20806,10 @@
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icepunch",
@@ -20909,11 +21226,19 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -21513,8 +21838,16 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gunkshot",
      "pp": 6
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypnosis",
@@ -21952,12 +22285,20 @@
      "pp": 17
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "headbutt",
      "pp": 17
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypnosis",
@@ -22397,6 +22738,10 @@
      "pp": 15
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "hammerarm",
      "pp": 16
     },
@@ -22410,6 +22755,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -22789,8 +23138,16 @@
      "pp": 17
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "lightscreen",
@@ -23147,8 +23504,16 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypnosis",
@@ -23533,12 +23898,20 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
     {
      "move": "headbutt",
      "pp": 17
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icebeam",
@@ -23731,6 +24104,10 @@
     {
      "move": "focusblast",
      "pp": 6
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
     },
     {
      "move": "helpinghand",
@@ -23933,6 +24310,10 @@
     {
      "move": "focuspunch",
      "pp": 8
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
     },
     {
      "move": "helpinghand",
@@ -24158,6 +24539,10 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "hammerarm",
      "pp": 16
     },
@@ -24167,6 +24552,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -24569,11 +24958,19 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gunkshot",
      "pp": 6
     },
     {
      "move": "heatwave",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -25020,6 +25417,10 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "hammerarm",
      "pp": 16
     },
@@ -25037,6 +25438,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -25300,8 +25705,16 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -25528,6 +25941,14 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
+    },
+    {
      "move": "leafstorm",
      "pp": 5
     },
@@ -25746,6 +26167,10 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -25763,6 +26188,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -26165,7 +26594,15 @@
      "pp": 11
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -26508,11 +26945,19 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "hornattack",
      "pp": 18
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -26930,11 +27375,19 @@
      "pp": 11
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "harden",
      "pp": 16
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -27139,8 +27592,16 @@
      "pp": 17
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypnosis",
@@ -27380,8 +27841,16 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "leer",
@@ -27576,8 +28045,16 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -27804,8 +28281,16 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icepunch",
@@ -27937,6 +28422,11 @@
      "level": 58,
      "move": "thunder",
      "pp": 7
+    },
+    {
+     "level": 64,
+     "move": "gigaimpact",
+     "pp": 4
     }
    ],
    "source": "pokedex.json[electabuzz]; learnsets.json[electabuzz] 第9世代; moves.json",
@@ -28041,12 +28531,20 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "lavaplume",
@@ -28148,6 +28646,11 @@
      "level": 58,
      "move": "fireblast",
      "pp": 9
+    },
+    {
+     "level": 64,
+     "move": "hyperbeam",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[magmar]; learnsets.json[magmar] 第9世代; moves.json",
@@ -28228,6 +28731,10 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "harden",
      "pp": 16
     },
@@ -28238,6 +28745,10 @@
     {
      "move": "highhorsepower",
      "pp": 10
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "irondefense",
@@ -28411,6 +28922,10 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -28421,6 +28936,10 @@
     {
      "move": "hornattack",
      "pp": 18
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icebeam",
@@ -28536,6 +29055,11 @@
      "level": 55,
      "move": "doubleedge",
      "pp": 12
+    },
+    {
+     "level": 60,
+     "move": "gigaimpact",
+     "pp": 4
     }
    ],
    "source": "pokedex.json[tauros]; learnsets.json[tauros] 第9世代; moves.json",
@@ -28678,6 +29202,10 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -28687,6 +29215,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -28828,6 +29360,11 @@
      "level": 44,
      "move": "hurricane",
      "pp": 13
+    },
+    {
+     "level": 52,
+     "move": "hyperbeam",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[gyarados]; learnsets.json[gyarados] 第9世代; moves.json",
@@ -28922,6 +29459,10 @@
      "pp": 13
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -28931,6 +29472,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -29378,6 +29923,10 @@
      "pp": 22
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -29387,6 +29936,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -29629,12 +30182,20 @@
      "pp": 15
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -29875,6 +30436,10 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -29885,6 +30450,10 @@
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -30085,6 +30654,14 @@
     {
      "move": "foulplay",
      "pp": 17
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icebeam",
@@ -30500,7 +31077,15 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -30983,11 +31568,19 @@
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "harden",
      "pp": 16
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -31260,12 +31853,20 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
     {
      "move": "hurricane",
      "pp": 13
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icefang",
@@ -31384,6 +31985,16 @@
      "level": 45,
      "move": "stoneedge",
      "pp": 7
+    },
+    {
+     "level": 55,
+     "move": "hyperbeam",
+     "pp": 8
+    },
+    {
+     "level": 60,
+     "move": "gigaimpact",
+     "pp": 4
     }
    ],
    "source": "pokedex.json[aerodactyl]; learnsets.json[aerodactyl] 第8世代; moves.json",
@@ -31492,6 +32103,10 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gunkshot",
      "pp": 6
     },
@@ -31506,6 +32121,10 @@
     {
      "move": "highhorsepower",
      "pp": 10
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -31662,6 +32281,11 @@
      "level": 52,
      "move": "belch",
      "pp": 15
+    },
+    {
+     "level": 56,
+     "move": "gigaimpact",
+     "pp": 4
     }
    ],
    "source": "pokedex.json[snorlax]; learnsets.json[snorlax] 第9世代; moves.json",
@@ -31739,6 +32363,10 @@
      "pp": 13
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gust",
      "pp": 19
     },
@@ -31749,6 +32377,10 @@
     {
      "move": "hurricane",
      "pp": 13
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icebeam",
@@ -31916,6 +32548,10 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
@@ -31926,6 +32562,10 @@
     {
      "move": "hurricane",
      "pp": 13
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "lightscreen",
@@ -32121,6 +32761,10 @@
      "pp": 6
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "gust",
      "pp": 19
     },
@@ -32135,6 +32779,10 @@
     {
      "move": "hurricane",
      "pp": 13
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "incinerate",
@@ -32309,11 +32957,19 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -32418,6 +33074,11 @@
      "level": 60,
      "move": "dragondance",
      "pp": 22
+    },
+    {
+     "level": 74,
+     "move": "hyperbeam",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[dragonair]; learnsets.json[dragonair] 第9世代; moves.json",
@@ -32547,6 +33208,10 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
@@ -32560,6 +33225,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -32697,6 +33366,11 @@
      "level": 62,
      "move": "dragondance",
      "pp": 22
+    },
+    {
+     "level": 80,
+     "move": "hyperbeam",
+     "pp": 8
     }
    ],
    "source": "pokedex.json[dragonite]; learnsets.json[dragonite] 第9世代; moves.json",
@@ -32826,12 +33500,20 @@
      "pp": 17
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
     {
      "move": "hurricane",
      "pp": 13
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icebeam",
@@ -33057,6 +33739,10 @@
      "pp": 10
     },
     {
+     "move": "blastburn",
+     "pp": 6
+    },
+    {
      "move": "blizzard",
      "pp": 7
     },
@@ -33237,8 +33923,16 @@
      "pp": 17
     },
     {
+     "move": "frenzyplant",
+     "pp": 6
+    },
+    {
      "move": "gigadrain",
      "pp": 10
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
     },
     {
      "move": "gunkshot",
@@ -33261,7 +33955,15 @@
      "pp": 13
     },
     {
+     "move": "hydrocannon",
+     "pp": 6
+    },
+    {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -33813,8 +34515,16 @@
      "pp": 22
     },
     {
+     "move": "frenzyplant",
+     "pp": 6
+    },
+    {
      "move": "gigadrain",
      "pp": 10
+    },
+    {
+     "move": "gigaimpact",
+     "pp": 4
     },
     {
      "move": "growl",
@@ -33823,6 +34533,10 @@
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "leafstorm",
@@ -34204,6 +34918,10 @@
      "pp": 8
     },
     {
+     "move": "blastburn",
+     "pp": 6
+    },
+    {
      "move": "bodyslam",
      "pp": 17
     },
@@ -34272,12 +34990,20 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "inferno",
@@ -34766,11 +35492,23 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
     {
+     "move": "hydrocannon",
+     "pp": 6
+    },
+    {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -35263,12 +36001,24 @@
      "pp": 8
     },
     {
+     "move": "frenzyplant",
+     "pp": 6
+    },
+    {
      "move": "gigadrain",
      "pp": 10
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "leafage",
@@ -35705,6 +36455,10 @@
      "pp": 10
     },
     {
+     "move": "blastburn",
+     "pp": 6
+    },
+    {
      "move": "blazekick",
      "pp": 13
     },
@@ -35781,6 +36535,10 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -35791,6 +36549,10 @@
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "lowsweep",
@@ -36251,6 +37013,10 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "growl",
      "pp": 20
     },
@@ -36267,7 +37033,15 @@
      "pp": 10
     },
     {
+     "move": "hydrocannon",
+     "pp": 6
+    },
+    {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -36531,6 +37305,10 @@
      "pp": 8
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
     },
@@ -36540,6 +37318,10 @@
     },
     {
      "move": "hydropump",
+     "pp": 8
+    },
+    {
+     "move": "hyperbeam",
      "pp": 8
     },
     {
@@ -36762,12 +37544,20 @@
      "pp": 17
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "heatwave",
      "pp": 8
     },
     {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "hypervoice",
@@ -36991,8 +37781,16 @@
      "pp": 12
     },
     {
+     "move": "gigaimpact",
+     "pp": 4
+    },
+    {
      "move": "helpinghand",
      "pp": 16
+    },
+    {
+     "move": "hyperbeam",
+     "pp": 8
     },
     {
      "move": "icepunch",

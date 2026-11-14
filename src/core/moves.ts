@@ -33,7 +33,7 @@ export function moveCategory(id:string):MoveCategory|undefined {
 import effectSource from '../data/move-effects.json' with {type:'json'};
 export type StageKey='atk'|'def'|'spa'|'spd'|'spe'|'acc'|'eva';
 export type StageChange=Partial<Record<StageKey,number>>;
-export type StatusId='psn'|'tox'|'brn'|'par'|'frz'|'slp'|'nap'|'confusion'|'flinch';
+export type StatusId='psn'|'tox'|'brn'|'par'|'frz'|'slp'|'nap'|'recharge'|'confusion'|'flinch';
 export type MoveFx={chance:number;status?:StatusId;foe?:StageChange;self?:StageChange};
 export type MoveEffects={acc:number|null;fx?:MoveFx[];cost?:StageChange;thaw?:true;recoil?:[number,number];powder?:true};
 const effects:Record<string,MoveEffects>=(effectSource as unknown as {moves:Record<string,MoveEffects>}).moves;

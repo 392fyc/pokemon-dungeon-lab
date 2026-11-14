@@ -21,10 +21,11 @@ const fixture = JSON.parse(fs.readFileSync(new URL('./fixtures-pokedex/legacy-ba
 const evolutionIds = ['bayleef', 'meganium', 'quilava', 'typhlosion', 'croconaw', 'feraligatr', 'grovyle', 'sceptile', 'combusken', 'blaziken', 'marshtomp', 'swampert', 'quagsire', 'houndoom', 'hariyama'];
 const roster160Baseline = JSON.parse(fs.readFileSync(new URL('./fixtures-pokedex/roster160-baseline.json', import.meta.url), 'utf8'));
 const generationOneIds = ['metapod', 'kakuna', 'abra', 'magikarp', 'ditto'];
-const admissionKeys = ['existingMoveRule', 'blowaway', 'drain', 'pureDamage', 'selfStages', 'teamProtection', 'foeStages', 'status', 'sleepStatus', 'sleepAction', 'recoil', 'heal'];
+const admissionKeys = ['existingMoveRule', 'blowaway', 'drain', 'pureDamage', 'selfStages', 'teamProtection', 'foeStages', 'status', 'sleepStatus', 'sleepAction', 'recharge', 'recoil', 'heal'];
 const expansionSources = JSON.parse(fs.readFileSync(new URL('../../tools/data/moves-items-191-sources.json', import.meta.url), 'utf8'));
 const sleepMoveIds = ['hypnosis','sleeppowder','sing','spore','lovelykiss','rest','snore','sleeptalk'];
-const expandedMoveIds = new Set([...Object.keys(expansionSources.moves),...sleepMoveIds]);
+const rechargeMoveIds = ['hyperbeam','gigaimpact','frenzyplant','hydrocannon','blastburn'];
+const expandedMoveIds = new Set([...Object.keys(expansionSources.moves),...sleepMoveIds,...rechargeMoveIds]);
 const exclusionKeys = ['nonstandard', 'noOfficialData', 'unsupportedRange', 'unsupportedTarget', 'selfCostOrCondition', 'ohko', 'fixedDamage', 'multihit', 'recoil', 'selfSwitch', 'basePowerCallback', 'zeroBasePower', 'charge', 'officialPowerUnavailable', 'changeMoveNoTemplate'];
 const requiredSnapshots = [
   'showdown/pokedex.json', 'showdown/moves.json', 'showdown/learnsets.json', 'showdown/typechart.ts',
@@ -415,9 +416,9 @@ test('图鉴正式静态产物覆盖175种，保留旧名单、25招原文字节
   assert.deepEqual(evolutionIds.map(id => names.species[id]), ['月桂叶', '大竺葵', '火岩鼠', '火暴兽', '蓝鳄', '大力鳄', '森林蜥蜴', '蜥蜴王', '力壮鸡', '火焰鸡', '沼跃鱼', '巨沼怪', '沼王', '黑鲁加', '铁掌力士']);
   assert.equal(moveDoc.categories.ember,'Special');assert.equal(moveDoc.categories.extremespeed,'Physical');assert.equal(moveDoc.categories.reflect,'Status');
   assert.deepEqual(Object.keys(moveDoc.categories).sort(),Object.keys(moveDoc.moves).sort());
-  assert.equal(Object.keys(moveDoc.moves).length, 275, 'committed move table contains the original 217, fifty 8.9a moves and eight 8.9b moves');
+  assert.equal(Object.keys(moveDoc.moves).length, 280, 'committed move table also contains the five B3 recharge moves');
   const gen1Moves = new Set(roster.species.filter(entry => Number(entry.dex) <= 151).flatMap(entry => entry.learnable.map(item => item.move)));
-  assert.equal([...gen1Moves].filter(id => Object.hasOwn(moveDoc.moves, id)).length, 272, 'generation-one learnable moves: the prior 264 plus eight 8.9b moves');
+  assert.equal([...gen1Moves].filter(id => Object.hasOwn(moveDoc.moves, id)).length, 277, 'generation-one learnable moves also include the five B3 recharge moves');
   // 8.8 (#165): max PP is the official basePp, so the converted values 1/2/3 became 13/15/15; Tera Blast is learnable by nobody.
   assert.equal(roster.species.some(entry => entry.learnable.some(item => item.move === 'terablast')), false, 'terablast removed from every learnable list');
   for (const [id, count, pp] of [['quickguard', 9, 13], ['reflect', 30, 15], ['lightscreen', 45, 15]]) {
@@ -518,6 +519,29 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
       assert.equal(generatedById.get(speciesId).learnable.find(item => item.move === moveId).pp, expectedPp, `${speciesId}/${moveId} uses the global official PP`);
     }
   }
+  const expectedRecharge = {
+    hyperbeam: {range:'line10',target:'all',power:30,game:'MDTDS',pp:'8',accuracy:'85.5%'},
+    gigaimpact: {range:'front',target:'enemy',power:60,game:'MDTDS',pp:'4',accuracy:'80%'},
+    frenzyplant: {range:'front',target:'enemy',power:45,game:'MDSky',pp:'6',accuracy:'84%'},
+    hydrocannon: {range:'line10',target:'all',power:33,game:'MDSky',pp:'6',accuracy:'84%'},
+    blastburn: {range:'around',target:'enemy',power:30,game:'MDTDS',pp:'6',accuracy:'84%'},
+  };
+  for (const [moveId, wanted] of Object.entries(expectedRecharge)) {
+    const move = generated.moveDoc.moves[moveId];
+    assert.deepEqual({range:move.range,target:move.target,power:move.power,game:move.game,pp:move.official.basePp,accuracy:move.official.accuracy,effects:move.effects},
+      {...wanted,effects:['damage','recharge']}, `${moveId} B3 admission uses its fixed official row`);
+    const expectedIds = expected.speciesIds.filter(speciesId => {
+      const generation = expected.selectedGeneration.get(speciesId);
+      return (learnsets[speciesId].learnset[moveId] ?? []).some(code => {
+        const match = generationPattern.exec(code);
+        return match && Number(match[1]) === generation && match[2] !== 'V';
+      });
+    }).sort();
+    const actualIds = generated.roster.species.filter(entry => entry.learnable.some(item => item.move === moveId)).map(entry => entry.id).sort();
+    assert.deepEqual(actualIds, expectedIds, `${moveId} learnable species follow the selected fixed era`);
+    assert.ok(actualIds.length > 0, `${moveId} has an eligible learner`);
+    for (const speciesId of actualIds) assert.equal(generatedById.get(speciesId).learnable.find(item => item.move === moveId).pp, Number(wanted.pp), `${speciesId}/${moveId} official PP`);
+  }
   const outputMoveIds = new Set(Object.keys(generated.moveDoc.moves));
   assert.deepEqual(generated.summary.learnsetGenerationCounts, expected.gen1GenerationCounts, 'reported generation counts must match the 151 input species');
 
@@ -533,14 +557,14 @@ test('离线导入可重复、计数闭合、抽检官方行，错误SHA不产�
   const unavailablePower = generated.summary.officialPowerUnavailable;
   assert.deepEqual(unavailablePower.map(entry => entry.id).sort(), ["futuresight", "hiddenpower", "knockoff", "strength", "vitalthrow", "wrap"], "official-power exclusion contains exactly the six specified moves");
   assert.equal(generated.summary.exclusionCounts.officialPowerUnavailable, 6);
-  assert.equal(admitted, 275);
-  assert.equal(excluded, 247);
+  assert.equal(admitted, 280);
+  assert.equal(excluded, 242);
   assert.equal(totals.notAdmittedMoves, excluded, "every non-admitted move has a rule exclusion");
   assert.equal(admitted + excluded, expected.allMoves.size, "admitted moves plus rule exclusions must equal the learnset union");
   assert.equal(generated.summary.comparison.preview.admittedMoves, 217);
   assert.equal(generated.summary.comparison.preview.generation1AdmittedMoves, 215);
-  assert.equal(generated.summary.comparison.observed.admittedMoves, 275);
-  assert.equal(generated.summary.comparison.observed.generation1AdmittedMoves, 273);
+  assert.equal(generated.summary.comparison.observed.admittedMoves, 280);
+  assert.equal(generated.summary.comparison.observed.generation1AdmittedMoves, 278);
   assert.equal([...expected.allMoves].filter(id => outputMoveIds.has(id)).length, admitted, "move table membership must match admitted move count");
   assert.equal(totals.moveTableMoves, outputMoveIds.size, "move table total must match its generated entries");
   assert.deepEqual([...outputMoveIds].filter(id => !expected.allMoves.has(id)), [], "move table must contain no move outside the selected learnset union");

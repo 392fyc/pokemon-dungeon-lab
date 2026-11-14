@@ -257,7 +257,7 @@ async function autoWalk(target:Pos){
 document.addEventListener('pointerdown',e=>stopWalk((e.target as HTMLElement|null)?.tagName==='CANVAS'),true);
 document.addEventListener('keydown',()=>stopWalk(false),true);
 const itemName=(id:Item)=>id==='teamTonic'?itemZh(id):ITEM_NAMES[id];
-function actionLabel(a:Action|null,actor?:string){const target=(id:string)=>id===actor?'自身':unitLabel(live()?.units[id],id);if(!a)return '尚未选择';if(a.type==='move')return '移动';if(a.type==='skill')return `${moveZh(a.skill)} → ${target(a.target)}`;if(a.type==='basic')return `普通攻击 → ${target(a.target)}`;if(a.type==='basicForward')return '向前普通攻击';if(a.type==='swap')return `与${target(a.target)}换位`;if(a.type==='use')return a.item==='teamTonic'?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${target(a.target)}`;if(a.type==='interact')return a.exit?'前进或撤离':'取得并继续';return '等待';}
+function actionLabel(a:Action|null,actor?:string){const target=(id:string)=>id===actor?'自身':unitLabel(live()?.units[id],id);if(!a)return '尚未选择';if(a.type==='move')return '移动';if(a.type==='skill')return `${moveZh(a.skill)} → ${target(a.target)}`;if(a.type==='basic')return `普通攻击 → ${target(a.target)}`;if(a.type==='basicForward')return '向前普通攻击';if(a.type==='swap')return `与${target(a.target)}换位`;if(a.type==='use')return (a.item==='teamTonic'||a.item==='joySeed')?`使用${itemName(a.item)}（全队）`:`使用${itemName(a.item)} → ${target(a.target)}`;if(a.type==='interact')return a.exit?'前进或撤离':'取得并继续';return '等待';}
 type AdventureRoom=NonNullable<World['adventureRooms']>[number];
 function commissionPenaltyText(penalty:typeof COMMISSIONS[CommissionId]['penalty']):string{
  return penalty==='defenseMinusOne'?'全队防御阶段 −1（委托生效期间）':penalty==='berryHealHalf'?'树果回复减半（委托生效期间）':'无';
@@ -322,7 +322,7 @@ function renderAll(){document.body.classList.toggle('camp-mode',screen==='play'&
 function confirmLearn(){const s=live();if(!s||s.phase!=='learning'||!learnChoice||store.status!=='ready'||anim.active)return;const replace=learnChoice;learnChoice=null;void send({type:'learnMove',replace});}
 function chooseHudSkill(skill:Skill){cancelMoveInput();selectedSkill=selectedSkill===skill?null:skill;choosingItem=null;bagOpen=false;actionsOpen=false;render();}
 /** Items that act on one party member (berries, tonics, seeds...). Team tonic and the orbs act on the whole team or the user, and the Reviver Seed is automatic. */
-const isTargetedItem=(item:Item):boolean=>item!=='teamTonic'&&item!=='reviverSeed'&&!ORB_ITEMS.includes(item);
+const isTargetedItem=(item:Item):boolean=>item!=='teamTonic'&&item!=='joySeed'&&item!=='reviverSeed'&&!ORB_ITEMS.includes(item);
 /** Party members the chosen item can be used on right now (the real rule check, so a full-HP member is not offered a berry). */
 let targetUsable=new Set<string>();
 /** Each check simulates one whole round, about 1.7 ms per member on a late floor (measured, 5 ms for three), and render runs often, so the answer is kept until something the check reads changes. */
@@ -351,7 +351,7 @@ function chooseHudItem(item:Item){
  if(choosingItem===item){choosingItem=null;render();return;}
  const actor=draft?.editor??s.leader;
  // No second confirmation: the whole-team and self items (orbs, team tonic) act at once, and so does a target item with exactly one usable target; several targets open the choice.
- if(item==='teamTonic'||ORB_ITEMS.includes(item)){choosingItem=null;act({type:'use',item,target:actor});return;}
+ if(item==='teamTonic'||item==='joySeed'||ORB_ITEMS.includes(item)){choosingItem=null;act({type:'use',item,target:actor});return;}
  if(isTargetedItem(item)){const ok=itemTargets(s,item);if(ok.size===1){choosingItem=null;act({type:'use',item,target:[...ok][0]});return;}}
  choosingItem=item;render();
 }

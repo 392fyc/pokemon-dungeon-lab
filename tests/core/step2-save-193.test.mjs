@@ -53,8 +53,8 @@ test('camp can carry four distinct learned moves while retaining strict subset a
 });
 
 test('trial-rules-5 content-5 and content-6 camp records migrate to the active version and keep their profile',async()=>{
- assert.equal(RULE_VERSION,'trial-rules-6');
- assert.equal(CONTENT_VERSION,'trial-content-7');
+ assert.equal(RULE_VERSION,'trial-rules-7');
+ assert.equal(CONTENT_VERSION,'trial-content-8');
  for(const content of ['trial-content-5','trial-content-6']){
   const prior=profileWithTwoPermanentTms();
   // The old camp record is the real old scenario: two carried moves, the learned machine moves not carried (before camp learning carried them at once).

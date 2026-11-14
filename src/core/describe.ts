@@ -47,7 +47,7 @@ export function moveEffectTags(id:string):string[]{
     else if(e==='drain')out.push('吸取');else if(e==='recoil')out.push('反伤');else if(e==='blowaway')out.push('吹飞');
     else if(e.startsWith('heal:'))out.push('回复');else if(e==='rest')out.push('睡眠回复');
     else if(e==='protect')out.push('守住');else if(e==='counter')out.push('反击');else if(e==='quickguard')out.push('快速防守');
-    else if(e==='reflect')out.push('反射壁');else if(e==='lightscreen')out.push('光墙');else if(e==='sleeptalk')out.push('梦话');
+     else if(e==='reflect')out.push('反射壁');else if(e==='lightscreen')out.push('光墙');else if(e==='recharge')out.push('休息');else if(e==='sleeptalk')out.push('梦话');
   }
   if(spec.effects.includes('damage'))for(const f of fx?.fx??[]){if(f.status)out.push(STATUS_NAMES[f.status]);stage(f.foe,false);stage(f.self,true);}
   stage(fx?.cost,true);
@@ -108,7 +108,7 @@ export function actionText(s:World,actor:string,a:Action):string {
     case 'basicForward':return '向前普通攻击';
     case 'skill':return `${skillLabel(s.units[actor],a.skill)} → ${a.target===actor?'自身':who(a.target)}`;
     case 'swap':return `与${who(a.target)}换位`;
-    case 'use':return a.item==='teamTonic'?`使用${ITEM_NAMES[a.item]}恢复在场同行的PP`:ORB_ITEMS.includes(a.item)?`使用${ITEM_NAMES[a.item]}`:`使用${ITEM_NAMES[a.item]} → ${who(a.target)}`;
+    case 'use':return a.item==='joySeed'?`使用${ITEM_NAMES[a.item]}（全队）`:a.item==='teamTonic'?`使用${ITEM_NAMES[a.item]}恢复在场同行的PP`:ORB_ITEMS.includes(a.item)?`使用${ITEM_NAMES[a.item]}`:`使用${ITEM_NAMES[a.item]} → ${who(a.target)}`;
     case 'interact':return a.exit?'前进或撤离':'取得并继续';
     case 'exchange':return `启动交换机，把${who(a.target)}送回基地，运走${a.cargo.length}份招式机`;
     default:return '等待';
@@ -153,7 +153,7 @@ const moveRows=(s:World,u:Unit,context?:DamageSummaryContext):EnemyMoveRow[]=>u.
 /** Names of the conditions a unit is under now, in STATUS_NAMES order; a unit born asleep (not yet woken) shows as sleeping. */
 export function statusLabels(u:Unit):string[]{
   const out:string[]=[];
-  for(const kind of Object.keys(STATUS_NAMES) as StatusId[]){const st=u.status?.[kind];if(!st)continue;const left=st.left??st.tick;out.push(STATUS_NAMES[kind]+(left===undefined?'':'（剩余'+left+'）'));}
+   for(const kind of Object.keys(STATUS_NAMES) as StatusId[]){const st=u.status?.[kind];if(!st)continue;const left=st.left??st.tick;out.push(STATUS_NAMES[kind]+(kind==='recharge'||left===undefined?'':'（剩余'+left+'）'));}
   if(u.asleep&&!out.some(v=>v.startsWith(STATUS_NAMES.slp)))out.push(STATUS_NAMES.slp);
   return out;
 }
